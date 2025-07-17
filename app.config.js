@@ -1,5 +1,5 @@
-import { ExpoConfig, ConfigContext } from 'expo/config';
-export default ({ config }: ConfigContext): ExpoConfig => ({
+import { ConfigContext } from 'expo/config';
+export default ({ config }) => ({
   ...config,
 
   name: 'ELARO',
@@ -60,7 +60,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: './assets/notification-icon.png',
         color: '#2C5EFF',
-        sounds: ['./assets/notification-sound.wav'],
       },
     ],
     [
@@ -81,11 +80,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   extra: {
     eas: {
-      projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
+      projectId: '1c94fab8-6678-47fe-94e4-f2769fbfe428',
     },
     supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     paystackPublicKey: process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY,
+  },
+
+  cli: {
+    appVersionSource: 'project',
   },
 
   runtimeVersion: {
