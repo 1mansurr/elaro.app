@@ -5,17 +5,6 @@ export default ({ config }) => ({
   name: 'ELARO',
   slug: 'elaro-app',
   version: '1.0.0',
-  orientation: 'portrait',
-  userInterfaceStyle: 'light',
-  icon: './assets/icon.png',
-
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#2C5EFF',
-  },
-
-  assetBundlePatterns: ['**/*'],
 
   android: {
     package: 'com.elaro.app',
@@ -67,10 +56,6 @@ export default ({ config }) => ({
     paystackPublicKey: process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY,
   },
 
-  cli: {
-    appVersionSource: 'version',
-  },
-
   runtimeVersion: {
     policy: 'appVersion',
   },
@@ -80,17 +65,4 @@ export default ({ config }) => ({
   },
 
   owner: 'elaro',
-
-  hooks: {
-    postPublish: [
-      {
-        file: 'sentry-expo/upload-sourcemaps',
-        config: {
-          organization: process.env.SENTRY_ORGANIZATION,
-          project: process.env.SENTRY_PROJECT,
-          authToken: process.env.SENTRY_AUTH_TOKEN,
-        },
-      },
-    ],
-  },
 });
