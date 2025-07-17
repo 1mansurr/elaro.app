@@ -17,21 +17,6 @@ export default ({ config }) => ({
 
   assetBundlePatterns: ['**/*'],
 
-  ios: {
-    supportsTablet: true,
-    bundleIdentifier: 'com.elaro.app',
-    buildNumber: '1',
-    infoPlist: {
-      NSCameraUsageDescription: 'This app does not use the camera.',
-      NSPhotoLibraryUsageDescription: 'This app does not access your photo library.',
-      NSMicrophoneUsageDescription: 'This app does not use the microphone.',
-      UIBackgroundModes: ['remote-notification'],
-    },
-    config: {
-      usesNonExemptEncryption: false,
-    },
-  },
-
   android: {
     package: 'com.elaro.app',
     versionCode: 1,
@@ -64,10 +49,6 @@ export default ({ config }) => ({
     [
       'expo-build-properties',
       {
-        ios: {
-          deploymentTarget: '15.1',
-          useFrameworks: 'static',
-        },
         android: {
           compileSdkVersion: 34,
           targetSdkVersion: 34,
@@ -87,7 +68,7 @@ export default ({ config }) => ({
   },
 
   cli: {
-    appVersionSource: 'project',
+    appVersionSource: 'version',
   },
 
   runtimeVersion: {
