@@ -1,6 +1,5 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
-
-export default ({ config }) => ({
+export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'ELARO',
   slug: 'elaro-app',
@@ -11,11 +10,9 @@ export default ({ config }) => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#2C5EFF'
+    backgroundColor: '#2C5EFF',
   },
-  assetBundlePatterns: [
-    '**/*'
-  ],
+  assetBundlePatterns: ['**/*'],
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.elaro.app',
@@ -33,7 +30,7 @@ export default ({ config }) => ({
   android: {
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#2C5EFF'
+      backgroundColor: '#2C5EFF',
     },
     package: 'com.elaro.app',
     versionCode: 1,
@@ -47,8 +44,8 @@ export default ({ config }) => ({
     googleServicesFile: './google-services.json',
   },
   web: {
-    favicon: './assets/favicon.png',
     bundler: 'metro',
+    favicon: './assets/favicon.png',
   },
   plugins: [
     [
@@ -101,4 +98,4 @@ export default ({ config }) => ({
       },
     ],
   },
-}); 
+});
