@@ -1,18 +1,22 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
+
   name: 'ELARO',
   slug: 'elaro-app',
   version: '1.0.0',
   orientation: 'portrait',
-  icon: './assets/icon.png',
   userInterfaceStyle: 'light',
+  icon: './assets/icon.png',
+
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
     backgroundColor: '#2C5EFF',
   },
+
   assetBundlePatterns: ['**/*'],
+
   ios: {
     supportsTablet: true,
     bundleIdentifier: 'com.elaro.app',
@@ -27,13 +31,14 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       usesNonExemptEncryption: false,
     },
   },
+
   android: {
+    package: 'com.elaro.app',
+    versionCode: 1,
     adaptiveIcon: {
       foregroundImage: './assets/adaptive-icon.png',
       backgroundColor: '#2C5EFF',
     },
-    package: 'com.elaro.app',
-    versionCode: 1,
     permissions: [
       'android.permission.INTERNET',
       'android.permission.VIBRATE',
@@ -43,10 +48,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ],
     googleServicesFile: './google-services.json',
   },
+
   web: {
     bundler: 'metro',
     favicon: './assets/favicon.png',
   },
+
   plugins: [
     [
       'expo-notifications',
@@ -71,6 +78,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
+
   extra: {
     eas: {
       projectId: process.env.EXPO_PUBLIC_EAS_PROJECT_ID,
@@ -79,13 +87,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
     paystackPublicKey: process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY,
   },
-  owner: 'elaro',
+
   runtimeVersion: {
     policy: 'appVersion',
   },
+
   updates: {
     url: process.env.EXPO_PUBLIC_UPDATES_URL,
   },
+
+  owner: 'elaro',
+
   hooks: {
     postPublish: [
       {
