@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1008960716833",
+    "project_id": "elaro-c0a15",
+    "storage_bucket": "elaro-c0a15.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1008960716833:android:550f78346f413ea3732360",
+        "android_client_info": {
+          "package_name": "com.elaro.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAR2bcazYlIUY4TWw_iIbk59Uue4GqM1Vg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
