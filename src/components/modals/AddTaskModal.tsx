@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BaseModal from './BaseModal';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
 import { DateTimePicker } from '../DateTimePicker';
+import { useAuth } from '../../contexts/AuthContext';
+import { AuthModal } from '../AuthModal';
 
 const TASK_TYPES = [
   { value: 'assignment', label: 'Assignment', color: 'yellow' },
@@ -53,6 +55,8 @@ interface AddTaskModalProps {
 }
 
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit, isOddity, weeklyCount = 0, activeCount = 0 }) => {
+  const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [type, setType] = useState('assignment');
   const [title, setTitle] = useState('');
   const [date, setDate] = useState(new Date());
@@ -84,6 +88,10 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
 
   const handleDone = () => {
     if (!validate()) return;
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     // Plan enforcement
     if (!isOddity && weeklyCount >= ORIGIN_LIMIT) {
       setLimitModal(true);
@@ -266,6 +274,16 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
           </TouchableOpacity>
         </ScrollView>
       </BaseModal>
+      {/* Auth Modal for sign-in gating */}
+      <AuthModal 
+        visible={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onAuthSuccess={() => {
+          setShowAuthModal(false);
+          // Retry the submission after successful auth
+          handleDone();
+        }}
+      />
       {/* Plan Limit Modal */}
       <BaseModal visible={limitModal} title={isOddity ? 'You’ve got 35 active items.' : 'You’ve planned 14 things this week!'} onClose={handleDismiss} wide>
         <View style={{ alignItems: 'center', padding: 24 }}>

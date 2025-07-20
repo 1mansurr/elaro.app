@@ -762,11 +762,7 @@ Generate a detailed learning style assessment with comprehensive results:
 
       <FloatingAddButton 
         onPress={() => {
-          if (!user) {
-            setShowAuthModal(true);
-          } else {
-            setShowAddModal(true);
-          }
+          setShowAddModal(true);
         }}
         icon="plus"
         size="large"

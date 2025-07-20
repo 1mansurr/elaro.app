@@ -4,6 +4,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BaseModal from './BaseModal';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
 import { DateTimePicker } from '../DateTimePicker';
+import { useAuth } from '../../contexts/AuthContext';
+import { AuthModal } from '../AuthModal';
 
 const STUDY_COLORS = {
   green: '#4CAF50',
@@ -31,6 +33,8 @@ interface AddStudySessionModalProps {
 }
 
 const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, onClose, onSubmit, isOddity }) => {
+  const { user } = useAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [course, setCourse] = useState('');
   const [topic, setTopic] = useState('');
   const [date, setDate] = useState(new Date());
@@ -57,6 +61,10 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
 
   const handleDone = () => {
     if (!validate()) return;
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
     // Compose datetime
     const sessionDate = new Date(date);
     sessionDate.setHours(time.getHours());
@@ -196,6 +204,16 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
           </TouchableOpacity>
         </ScrollView>
       </BaseModal>
+      {/* Auth Modal for sign-in gating */}
+      <AuthModal 
+        visible={showAuthModal} 
+        onClose={() => setShowAuthModal(false)} 
+        onAuthSuccess={() => {
+          setShowAuthModal(false);
+          // Retry the submission after successful auth
+          handleDone();
+        }}
+      />
       {/* Confirmation Modal */}
       <BaseModal visible={showConfirm} title="Great! We’ll remind you at just the right times." onClose={handleDismiss} wide>
         <View style={{ alignItems: 'center', padding: 24 }}>

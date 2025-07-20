@@ -30,7 +30,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
           style={[
             styles.dateButton,
             isSelected && styles.selectedDateButton,
-            isToday && !isSelected && styles.todayButton,
+            isToday && styles.todayHighlight, // always apply todayHighlight if today
           ]}
           onPress={() => onDatePress(date)}
           accessibilityRole="button"
@@ -40,17 +40,20 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
           <Text style={[
             styles.dayText,
             isSelected && styles.selectedText,
-            isToday && !isSelected && styles.todayText,
+            isToday && styles.todayText,
           ]}>
             {DAY_NAMES[index]}
           </Text>
           <Text style={[
             styles.dateText,
             isSelected && styles.selectedText,
-            isToday && !isSelected && styles.todayText,
+            isToday && styles.todayText,
           ]}>
             {date.getDate()}
           </Text>
+          {isToday && (
+            <View style={styles.todayDot} />
+          )}
           {viewMode === 'weekly' && dayItems.length > 0 && (
             <View style={styles.eventDots}>
               {dayItems.slice(0, 3).map((item, idx) => (
@@ -125,5 +128,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.textSecondary,
     marginLeft: 2,
+  },
+  todayHighlight: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  todayDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
+    alignSelf: 'center',
   },
 }); 

@@ -1,0 +1,10 @@
+{
+  "react-native": {
+    "notifications": {
+      "android": {
+        "sound": true,
+        "vibrate": true
+      }
+    }
+  }
+} 

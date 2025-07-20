@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../contexts/AuthContext';
@@ -32,6 +33,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
@@ -158,7 +160,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
-
+    if (isSignUp && !agreedToTerms) {
+      Alert.alert('Agreement Required', 'You must agree to the Terms of Service and Privacy Policy to sign up.');
+      return;
+    }
     setLoading(true);
     try {
       const { error } = isSignUp
@@ -218,6 +223,49 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
               placeholder="Enter your password"
               secure
             />
+
+            {/* Terms of Service and Privacy Policy Checkbox */}
+            {isSignUp && (
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+                onPress={() => setAgreedToTerms(v => !v)}
+                activeOpacity={0.8}
+              >
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 6,
+                    borderWidth: 2,
+                    borderColor: agreedToTerms ? theme.primary : theme.gray300,
+                    backgroundColor: agreedToTerms ? theme.primary : theme.white,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginRight: 10,
+                  }}
+                >
+                  {agreedToTerms && (
+                    <Text style={{ color: theme.white, fontWeight: 'bold', fontSize: 16 }}>✓</Text>
+                  )}
+                </View>
+                <Text style={{ flex: 1, color: theme.textPrimary, fontSize: 14 }}>
+                  I agree to the{' '}
+                  <Text
+                    style={{ color: theme.primary, textDecorationLine: 'underline' }}
+                    onPress={() => Linking.openURL('https://elarolearning.com/terms')}
+                  >
+                    Terms of Service
+                  </Text>
+                  {' '}and{' '}
+                  <Text
+                    style={{ color: theme.primary, textDecorationLine: 'underline' }}
+                    onPress={() => Linking.openURL('https://elarolearning.com/privacy')}
+                  >
+                    Privacy Policy
+                  </Text>
+                </Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={[styles.authButton, loading && styles.authButtonDisabled, { backgroundColor: theme.primary }]}

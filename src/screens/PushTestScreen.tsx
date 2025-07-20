@@ -14,6 +14,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS, FONT_WEIGHTS } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
+import { sendTestPushNotification } from '../services/notifications';
 
 interface PushTestScreenProps {
   navigation: any;
@@ -203,6 +204,25 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
     setLastTestResult('');
   };
 
+  const handleSendTestPush = async () => {
+    setIsLoading(true);
+    setLastTestResult('');
+    try {
+      const token = await AsyncStorage.getItem('pushToken');
+      if (!token) {
+        setLastTestResult('No push token found.');
+        setIsLoading(false);
+        return;
+      }
+      const result = await sendTestPushNotification(token);
+      setLastTestResult('Test push notification sent!');
+    } catch (error) {
+      setLastTestResult('Failed to send test push notification.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -283,6 +303,18 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
             <Ionicons name="refresh-outline" size={18} color={theme.text} />
             <Text style={[styles.buttonText, styles.clearButtonText, { color: theme.text }]}>Clear Results</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.button, styles.primaryButton]}
+            onPress={handleSendTestPush}
+            disabled={isLoading}
+          >
+            <Ionicons name="notifications" size={20} color="#fff" />
+            <Text style={[styles.buttonText, { color: '#fff' }]}>Send Test Push Notification</Text>
+          </TouchableOpacity>
+          {lastTestResult ? (
+            <Text style={{ marginTop: 10, color: theme.success }}>{lastTestResult}</Text>
+          ) : null}
         </View>
 
         {lastTestResult !== '' && (

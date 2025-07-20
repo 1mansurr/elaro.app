@@ -9,6 +9,8 @@ import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { useAuth } from './src/contexts/AuthContext';
+import { notificationService } from './src/services/notifications';
 
 // Add global unhandled promise rejection logger for freeze/debugging
 if (typeof process !== 'undefined' && process.on) {
@@ -126,6 +128,17 @@ const ThemedStatusBar = () => {
 };
 
 // Main App Component
+// Move this logic into a child component
+function AuthEffects() {
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user && user.id) {
+      notificationService.initialize(user.id);
+    }
+  }, [user]);
+  return null;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -134,6 +147,7 @@ export default function App() {
           <AuthProvider>
             <SoftLaunchProvider>
               <ThemedStatusBar />
+              <AuthEffects /> {/* <-- use the hook here, inside the provider */}
               <AppNavigator />
             </SoftLaunchProvider>
           </AuthProvider>

@@ -17,6 +17,7 @@ import { CalendarItemModal } from '../components/calendar/CalendarItemModal';
 import { taskService } from '../services/supabase';
 import { sessionService } from '../services/supabase'; // Added import for sessionService
 import { shouldDecrementUsageOnDelete } from '../utils/dateUtils';
+import { AuthModal } from '../components/AuthModal';
 
 import AddStudySessionModal from '../components/modals/AddStudySessionModal';
 import AddTaskModal from '../components/modals/AddTaskModal';
@@ -318,6 +319,7 @@ export default function CalendarScreen() {
 
   const [showAddStudySessionModal, setShowAddStudySessionModal] = useState(false);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -388,6 +390,13 @@ export default function CalendarScreen() {
         isOddity={isSubscribed}
         weeklyCount={weeklyCount}
         activeCount={activeCount}
+      />
+      {/* AuthModal for guest sign-in prompt */}
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        title="Sign In Required"
+        message="Please sign in to add study sessions or tasks."
       />
       {/* ... CalendarItemModal and CelebrationToast ... */}
       {/* TODO: If you add more modal logic or async operations, ensure proper cleanup and only one modal open at a time. */}

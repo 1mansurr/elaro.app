@@ -1,10 +1,35 @@
 import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { ReminderTime, RepeatPattern } from '../types';
 import { analyticsService } from './supabase';
+import { supabase } from './supabase';
+
+/**
+ * Save push token to Supabase user_devices table
+ * @param userId string
+ * @param token string
+ */
+async function savePushTokenToSupabase(userId: string, token: string) {
+  const platform = Platform.OS;
+  const updated_at = new Date().toISOString();
+  const { error } = await supabase.from('user_devices').upsert([
+    {
+      user_id: userId,
+      push_token: token,
+      platform,
+      updated_at,
+    },
+  ], { onConflict: 'user_id,platform' });
+  if (error) {
+    console.error('❌ Error saving push token to Supabase:', error);
+  } else {
+    console.log('✅ Push token saved to Supabase');
+  }
+}
 
 // Configure notification behavior
 Notifications.setNotificationHandler({
@@ -27,9 +52,46 @@ const SRS_INTERVALS = {
   oddity: [0, 1, 3, 7, 14, 30, 60, 120, 180],
 };
 
+/**
+ * Send a test push notification using the Expo push API
+ * @param token Expo push token
+ * @param title Notification title
+ * @param body Notification body
+ */
+export async function sendTestPushNotification(token: string, title = 'Test Notification', body = 'This is a test push notification.') {
+  const message = {
+    to: token,
+    sound: 'default',
+    title,
+    body,
+    data: { test: true },
+  };
+  try {
+    const response = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Accept-encoding': 'gzip, deflate',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(message),
+    });
+    const data = await response.json();
+    if (data.data && data.data.status === 'ok') {
+      console.log('✅ Test push notification sent successfully');
+    } else {
+      console.error('❌ Failed to send test push notification:', data);
+    }
+    return data;
+  } catch (error) {
+    console.error('❌ Error sending test push notification:', error);
+    throw error;
+  }
+}
+
 export const notificationService = {
   // Initialize notifications
-  async initialize() {
+  async initialize(userId: string) {
     // Skip push notification setup in Expo Go to avoid warnings
     if (isExpoGo) {
       console.log('📱 Running in Expo Go - skipping push notification setup');
@@ -40,7 +102,7 @@ export const notificationService = {
 
     // Only setup push notifications in development builds or production
     if (isDevClient || !__DEV__) {
-    await this.registerForPushNotifications();
+    await this.registerForPushNotifications(userId);
     }
     
     await this.setupNotificationChannels();
@@ -48,7 +110,7 @@ export const notificationService = {
   },
 
   // Register for push notifications
-  async registerForPushNotifications() {
+  async registerForPushNotifications(userId: string) {
     let token;
 
     if (!Device.isDevice) {
@@ -79,13 +141,18 @@ export const notificationService = {
     }
 
     try {
-    token = (await Notifications.getExpoPushTokenAsync()).data;
+      token = (await Notifications.getExpoPushTokenAsync()).data;
       console.log('✅ Expo Push Token:', token);
 
-    // Store token for future use
-    await AsyncStorage.setItem('pushToken', token);
+      // Store token for future use
+      await AsyncStorage.setItem('pushToken', token);
 
-    return token;
+      // Save token to Supabase
+      if (userId && token) {
+        await savePushTokenToSupabase(userId, token);
+      }
+
+      return token;
     } catch (error) {
       console.error('❌ Error getting push token:', error);
       return null;
@@ -177,7 +244,7 @@ export const notificationService = {
           data: { ...data, type },
           sound: true,
         },
-        trigger: triggerDate,
+        trigger: { type: SchedulableTriggerInputTypes.DATE, date: triggerDate.getTime() },
       });
       console.log('✅ Scheduled notification:', id, 'for', triggerDate);
     } catch (error) {
@@ -359,14 +426,17 @@ export const notificationService = {
   calculateReminderTime(dateTime: Date, reminderTime: ReminderTime): Date {
     const triggerDate = new Date(dateTime);
     switch (reminderTime) {
+      case '15min':
+        triggerDate.setMinutes(triggerDate.getMinutes() - 15);
+        break;
       case '30min':
         triggerDate.setMinutes(triggerDate.getMinutes() - 30);
         break;
+      case '1hr':
+        triggerDate.setHours(triggerDate.getHours() - 1);
+        break;
       case '24hr':
         triggerDate.setHours(triggerDate.getHours() - 24);
-        break;
-      case '1week':
-        triggerDate.setDate(triggerDate.getDate() - 7);
         break;
     }
     return triggerDate;
@@ -374,14 +444,16 @@ export const notificationService = {
 
   getReminderTimeText(reminderTime: ReminderTime): string {
     switch (reminderTime) {
+      case '15min':
+        return '15 minutes before';
       case '30min':
-        return 'starts in 30 minutes';
+        return '30 minutes before';
+      case '1hr':
+        return '1 hour before';
       case '24hr':
-        return 'is tomorrow';
-      case '1week':
-        return 'is in one week';
+        return '24 hours before';
       default:
-        return 'is coming up';
+        return '';
     }
   },
 
