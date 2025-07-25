@@ -24,7 +24,8 @@ interface SoftLaunchProviderProps {
 }
 
 export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({ children }) => {
-  const [isSoftLaunch] = useState(false); // Soft launch disabled, all features enabled
+  // Soft launch disabled, all features enabled
+  const [isSoftLaunch] = useState(false);
 
   const getComingSoonMessage = (feature: string): string => {
     const messages = {
@@ -57,8 +58,9 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({ children
     Alert.alert('Coming Soon', message, [{ text: 'OK' }]);
   };
 
+  // Do not block any features
   const blockPremiumFeature = (feature: string): boolean => {
-    return true; // Do not block any features
+    return true;
   };
 
   const value: SoftLaunchContextType = {
