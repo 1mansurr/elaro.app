@@ -52,22 +52,14 @@ CREATE TABLE public.reminders (
 );
 
 -- 5. Create Streaks Tracking Table
-CREATE TABLE public.streaks (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID REFERENCES public.users(id) ON DELETE CASCADE,
-  current_streak INTEGER DEFAULT 0,
-  longest_streak INTEGER DEFAULT 0,
-  last_activity_date DATE,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- TODO: Streaks table and related logic were here. Re-add if/when streaks are reintroduced.
 
 -- 6. Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.study_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tasks_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reminders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.streaks ENABLE ROW LEVEL SECURITY;
+-- TODO: Streaks policies were here. Re-add if/when streaks are reintroduced.
 
 -- 7. Create RLS Policies
 
@@ -91,8 +83,7 @@ CREATE POLICY "Users can manage own reminders" ON public.reminders
   FOR ALL USING (auth.uid() = user_id);
 
 -- Streaks policies
-CREATE POLICY "Users can manage own streaks" ON public.streaks
-  FOR ALL USING (auth.uid() = user_id);
+-- TODO: Streaks policies were here. Re-add if/when streaks are reintroduced.
 
 -- 8. Create Functions for Automatic User Creation
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -101,8 +92,7 @@ BEGIN
   INSERT INTO public.users (id, email)
   VALUES (NEW.id, NEW.email);
   
-  INSERT INTO public.streaks (user_id, current_streak, longest_streak)
-  VALUES (NEW.id, 0, 0);
+  -- TODO: Streaks table and related logic were here. Re-add if/when streaks are reintroduced.
   
   RETURN NEW;
 END;
@@ -114,54 +104,7 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- 10. Create Function to Update Streaks
-CREATE OR REPLACE FUNCTION public.update_user_streak(user_uuid UUID)
-RETURNS VOID AS $$
-DECLARE
-  today_date DATE := CURRENT_DATE;
-  last_activity DATE;
-  current_streak_count INTEGER;
-BEGIN
-  -- Get current streak info
-  SELECT last_activity_date, current_streak 
-  INTO last_activity, current_streak_count
-  FROM public.streaks 
-  WHERE user_id = user_uuid;
-  
-  -- If no activity recorded yet
-  IF last_activity IS NULL THEN
-    UPDATE public.streaks 
-    SET current_streak = 1, 
-        longest_streak = GREATEST(longest_streak, 1),
-        last_activity_date = today_date,
-        updated_at = NOW()
-    WHERE user_id = user_uuid;
-    RETURN;
-  END IF;
-  
-  -- If activity is today, do nothing
-  IF last_activity = today_date THEN
-    RETURN;
-  END IF;
-  
-  -- If activity was yesterday, increment streak
-  IF last_activity = today_date - INTERVAL '1 day' THEN
-    UPDATE public.streaks 
-    SET current_streak = current_streak + 1,
-        longest_streak = GREATEST(longest_streak, current_streak + 1),
-        last_activity_date = today_date,
-        updated_at = NOW()
-    WHERE user_id = user_uuid;
-  ELSE
-    -- Streak broken, reset to 1
-    UPDATE public.streaks 
-    SET current_streak = 1,
-        longest_streak = GREATEST(longest_streak, 1),
-        last_activity_date = today_date,
-        updated_at = NOW()
-    WHERE user_id = user_uuid;
-  END IF;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- TODO: Streaks table and related logic were here. Re-add if/when streaks are reintroduced.
 
 -- 11. Create Indexes for Performance
 CREATE INDEX idx_study_sessions_user_id ON public.study_sessions(user_id);
@@ -170,7 +113,7 @@ CREATE INDEX idx_tasks_events_user_id ON public.tasks_events(user_id);
 CREATE INDEX idx_tasks_events_date ON public.tasks_events(due_date);
 CREATE INDEX idx_reminders_user_id ON public.reminders(user_id);
 CREATE INDEX idx_reminders_date ON public.reminders(reminder_date);
-CREATE INDEX idx_streaks_user_id ON public.streaks(user_id);
+-- TODO: Streaks table and related logic were here. Re-add if/when streaks are reintroduced.
 
 -- 12. Insert Sample Data (Optional - for testing)
 -- Uncomment the lines below if you want sample data for testing

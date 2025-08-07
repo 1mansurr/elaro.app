@@ -19,7 +19,6 @@ export { Modal } from './Modal';
 export { default as AddModal } from './AddModal';
 export { AddOptionModal } from './AddOptionModal';
 export { FloatingAddButton } from './FloatingAddButton';
-export { LearningStyleModal } from './LearningStyleModal';
 export { AuthModal } from './AuthModal';
 export { Toast, toast } from './Toast';
 
@@ -27,4 +26,4 @@ export { Toast, toast } from './Toast';
 export { ChecklistModal } from './ChecklistModal';
 export { default as VideoPlaceholder } from './VideoPlaceholder';
 export { ComingSoonBanner } from './ComingSoonBanner';
-export { DateTimePicker } from './DateTimePicker'; 
+export { DateTimePicker } from './DateTimePicker';

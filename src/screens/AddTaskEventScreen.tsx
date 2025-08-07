@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -25,7 +33,11 @@ const AddTaskEventScreen = () => {
   const [isRepeating, setIsRepeating] = useState(false);
   const [repeatDays, setRepeatDays] = useState<string[]>([]);
   const [endDate, setEndDate] = useState(new Date());
-  const [errors, setErrors] = useState<{ title?: string; repeatDays?: string; endDate?: string }>({});
+  const [errors, setErrors] = useState<{
+    title?: string;
+    repeatDays?: string;
+    endDate?: string;
+  }>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTypeSelector, setShowTypeSelector] = useState(false);
   const { theme } = useTheme();
@@ -33,7 +45,8 @@ const AddTaskEventScreen = () => {
   const validate = () => {
     const errs: typeof errors = {};
     if (!title.trim()) errs.title = 'Title is required';
-    if (isRepeating && repeatDays.length === 0) errs.repeatDays = 'Select at least one repeat day';
+    if (isRepeating && repeatDays.length === 0)
+      errs.repeatDays = 'Select at least one repeat day';
     if (isRepeating && !endDate) errs.endDate = 'End date is required';
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -44,51 +57,57 @@ const AddTaskEventScreen = () => {
       Alert.alert('Validation Error', 'Please fix the errors before saving.');
       return;
     }
-    
-    const data = { 
-      title: title.trim(), 
-      eventType, 
-      date, 
-      time, 
-      reminder, 
-      notes, 
-      repeatDays, 
+
+    const data = {
+      title: title.trim(),
+      eventType,
+      date,
+      time,
+      reminder,
+      notes,
+      repeatDays,
       endDate,
-      isRepeating 
+      isRepeating,
     };
-    
+
     console.log('Saving task:', data);
     navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: theme.gray100 }]}>
-        <TouchableOpacity 
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.card, borderBottomColor: theme.gray100 },
+        ]}>
+        <TouchableOpacity
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
-          accessibilityLabel="Close and go back"
-        >
+          accessibilityLabel="Close and go back">
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>New Task</Text>
-        <AnimatedTouchable 
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          New Task
+        </Text>
+        <AnimatedTouchable
           onPress={onSave}
           accessibilityLabel="Save task"
-          accessibilityHint="Double tap to save the task"
-        >
+          accessibilityHint="Double tap to save the task">
           <Text style={[styles.saveText, { color: theme.primary }]}>Save</Text>
         </AnimatedTouchable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <InputField 
-          label="Title" 
-          icon="pencil" 
-          required 
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+        <InputField
+          label="Title"
+          icon="pencil"
+          required
           error={errors.title}
-          accessibilityLabel="Task title input"
-        >
+          accessibilityLabel="Task title input">
           <TextInput
             style={[styles.textInput, { color: theme.text }]}
             placeholder="e.g. Read Chapter 4"
@@ -98,39 +117,42 @@ const AddTaskEventScreen = () => {
           />
         </InputField>
 
-        <InputField 
-          label="Type" 
+        <InputField
+          label="Type"
           icon="bookmark"
-          accessibilityLabel="Event type selector"
-        >
-          <TouchableOpacity 
+          accessibilityLabel="Event type selector">
+          <TouchableOpacity
             style={styles.selectorButton}
-            onPress={() => setShowTypeSelector(true)}
-          >
+            onPress={() => setShowTypeSelector(true)}>
             <Text style={styles.selectorText}>{eventType}</Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
         </InputField>
 
-        <InputField 
-          label="Date" 
+        <InputField
+          label="Date"
           icon="calendar"
-          accessibilityLabel="Date picker"
-        >
-          <TouchableOpacity 
+          accessibilityLabel="Date picker">
+          <TouchableOpacity
             style={styles.selectorButton}
-            onPress={() => setShowDatePicker(true)}
-          >
+            onPress={() => setShowDatePicker(true)}>
             <Text style={styles.selectorText}>{date.toLocaleDateString()}</Text>
-            <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={16}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
         </InputField>
 
-        <InputField 
-          label="Notes" 
+        <InputField
+          label="Notes"
           icon="document-text"
-          accessibilityLabel="Task notes input"
-        >
+          accessibilityLabel="Task notes input">
           <TextInput
             style={[styles.textInput, styles.notesInput, { color: theme.text }]}
             placeholder="Add any additional notes..."
@@ -223,4 +245,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddTaskEventScreen; 
+export default AddTaskEventScreen;

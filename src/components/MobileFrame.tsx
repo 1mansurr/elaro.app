@@ -7,7 +7,10 @@ interface MobileFrameProps {
   style?: any;
 }
 
-export const MobileFrame: React.FC<MobileFrameProps> = ({ children, style }) => {
+export const MobileFrame: React.FC<MobileFrameProps> = ({
+  children,
+  style,
+}) => {
   return (
     <View style={[styles.mobileFrame, style]}>
       <View style={styles.mobileScreen}>
@@ -16,10 +19,10 @@ export const MobileFrame: React.FC<MobileFrameProps> = ({ children, style }) => 
           <Text style={styles.statusText}>9:41</Text>
           <Text style={styles.statusText}>📶 📶 📶 🔋</Text>
         </View>
-        
+
         {/* Content */}
         {children}
-        
+
         {/* Home Indicator */}
         <View style={styles.homeIndicator} />
       </View>
@@ -79,4 +82,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default MobileFrame; 
+export default MobileFrame;

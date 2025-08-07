@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, TouchableOpacity, StyleSheet, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+} from 'react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { DAY_NAMES, MONTH_NAMES } from '../constants/calendar';
 
@@ -32,14 +40,20 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
   // --- Calendar Logic ---
   const daysInMonth = getDaysInMonth(calendarYear, calendarMonth);
   const firstDayOfWeek = getFirstDayOfWeek(calendarYear, calendarMonth);
-  const calendarDays: (number | null)[] = Array(firstDayOfWeek).fill(null).concat(
-    Array.from({ length: daysInMonth }, (_, i) => i + 1)
-  );
+  const calendarDays: (number | null)[] = Array(firstDayOfWeek)
+    .fill(null)
+    .concat(Array.from({ length: daysInMonth }, (_, i) => i + 1));
   while (calendarDays.length % 7 !== 0) calendarDays.push(null);
 
   const handleDayPress = (day: number | null) => {
     if (!day) return;
-    const newDate = new Date(calendarYear, calendarMonth, day, value.getHours(), value.getMinutes());
+    const newDate = new Date(
+      calendarYear,
+      calendarMonth,
+      day,
+      value.getHours(),
+      value.getMinutes(),
+    );
     onChange(newDate);
     setMode(null);
   };
@@ -86,7 +100,9 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
 
   return (
     <View style={{ marginBottom: 16 }}>
-      <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>{label}</Text>
+      <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+        {label}
+      </Text>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Pressable
           onPress={() => {
@@ -102,10 +118,17 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             borderRadius: 8,
             paddingVertical: 12,
             alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: mode === 'date' ? theme.primary : theme.text, fontWeight: mode === 'date' ? 'bold' : 'normal' }}>
-            {value.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+          }}>
+          <Text
+            style={{
+              color: mode === 'date' ? theme.primary : theme.text,
+              fontWeight: mode === 'date' ? 'bold' : 'normal',
+            }}>
+            {value.toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
           </Text>
         </Pressable>
         <Pressable
@@ -122,10 +145,16 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             borderRadius: 8,
             paddingVertical: 12,
             alignItems: 'center',
-          }}
-        >
-          <Text style={{ color: mode === 'time' ? theme.primary : theme.text, fontWeight: mode === 'time' ? 'bold' : 'normal' }}>
-            {value.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          }}>
+          <Text
+            style={{
+              color: mode === 'time' ? theme.primary : theme.text,
+              fontWeight: mode === 'time' ? 'bold' : 'normal',
+            }}>
+            {value.toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
           </Text>
         </Pressable>
       </View>
@@ -143,49 +172,74 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             </TouchableOpacity>
           </View>
           <View style={styles.weekRow}>
-            {DAY_NAMES.map((d) => (
-              <Text key={d} style={styles.weekDay(theme)}>{d}</Text>
+            {DAY_NAMES.map(d => (
+              <Text key={d} style={styles.weekDay(theme)}>
+                {d}
+              </Text>
             ))}
           </View>
           {/* Render calendar days in rows of 7 */}
-          {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIdx) => (
-            <View key={weekIdx} style={styles.daysGrid}>
-              {calendarDays.slice(weekIdx * 7, weekIdx * 7 + 7).map((day, idx) => {
-                const isSelected = day === value.getDate() && calendarMonth === value.getMonth() && calendarYear === value.getFullYear();
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.dayCell(theme),
-                      isSelected && styles.selectedDay(theme),
-                    ]}
-                    onPress={() => handleDayPress(day)}
-                    disabled={!day}
-                  >
-                    <Text style={isSelected ? styles.selectedDayText(theme) : styles.dayText(theme)}>
-                      {day ? day : ''}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ))}
+          {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map(
+            (_, weekIdx) => (
+              <View key={weekIdx} style={styles.daysGrid}>
+                {calendarDays
+                  .slice(weekIdx * 7, weekIdx * 7 + 7)
+                  .map((day, idx) => {
+                    const isSelected =
+                      day === value.getDate() &&
+                      calendarMonth === value.getMonth() &&
+                      calendarYear === value.getFullYear();
+                    return (
+                      <TouchableOpacity
+                        key={idx}
+                        style={[
+                          styles.dayCell(theme),
+                          isSelected && styles.selectedDay(theme),
+                        ]}
+                        onPress={() => handleDayPress(day)}
+                        disabled={!day}>
+                        <Text
+                          style={
+                            isSelected
+                              ? styles.selectedDayText(theme)
+                              : styles.dayText(theme)
+                          }>
+                          {day ? day : ''}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+              </View>
+            ),
+          )}
         </View>
       )}
       {mode === 'time' && (
         <View style={styles.timePickerContainer(theme)}>
-          <View style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}>
             {/* Hour wheel */}
             <ScrollView
               style={{ height: 120, width: 60 }}
               contentContainerStyle={{ alignItems: 'center' }}
               showsVerticalScrollIndicator={false}
               scrollEnabled={true}
-              nestedScrollEnabled={true}
-            >
-              {hours.map((item) => (
-                <TouchableOpacity key={item} onPress={() => setSelectedHour(item)}>
-                  <Text style={[styles.timeText(theme), item === selectedHour && styles.selectedTimeText(theme)]}>{item.toString().padStart(2, '0')}</Text>
+              nestedScrollEnabled={true}>
+              {hours.map(item => (
+                <TouchableOpacity
+                  key={item}
+                  onPress={() => setSelectedHour(item)}>
+                  <Text
+                    style={[
+                      styles.timeText(theme),
+                      item === selectedHour && styles.selectedTimeText(theme),
+                    ]}>
+                    {item.toString().padStart(2, '0')}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -197,11 +251,21 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
               showsVerticalScrollIndicator={false}
               scrollEnabled={true}
               nestedScrollEnabled={true}
-              onTouchStart={() => { if (typeof onPickerModeChange === 'function') onPickerModeChange('time'); }}
-            >
-              {minutes.map((item) => (
-                <TouchableOpacity key={item} onPress={() => setSelectedMinute(item)}>
-                  <Text style={[styles.timeText(theme), item === selectedMinute && styles.selectedTimeText(theme)]}>{item.toString().padStart(2, '0')}</Text>
+              onTouchStart={() => {
+                if (typeof onPickerModeChange === 'function')
+                  onPickerModeChange('time');
+              }}>
+              {minutes.map(item => (
+                <TouchableOpacity
+                  key={item}
+                  onPress={() => setSelectedMinute(item)}>
+                  <Text
+                    style={[
+                      styles.timeText(theme),
+                      item === selectedMinute && styles.selectedTimeText(theme),
+                    ]}>
+                    {item.toString().padStart(2, '0')}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -211,8 +275,7 @@ export const DateTimePicker: React.FC<DateTimePickerProps> = ({
             onPress={() => {
               handleTimeSelect(selectedHour, selectedMinute);
               setPickerMode(null);
-            }}
-          >
+            }}>
             <Text style={styles.setTimeButtonText(theme)}>Set Time</Text>
           </TouchableOpacity>
         </View>
@@ -324,4 +387,4 @@ const styles = {
     fontSize: 16,
     textAlign: 'center' as const,
   }),
-}; 
+};

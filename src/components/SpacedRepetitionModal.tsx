@@ -1,5 +1,13 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, FlatList, StyleSheet, useColorScheme } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  useColorScheme,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
@@ -30,17 +38,26 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <View style={styles.overlay}>
-        <View style={[styles.container, { backgroundColor: theme.card, borderColor: theme.border }]}> 
-          <TouchableOpacity style={styles.closeIcon} onPress={onClose} accessibilityLabel="Close modal">
+        <View
+          style={[
+            styles.container,
+            { backgroundColor: theme.card, borderColor: theme.border },
+          ]}>
+          <TouchableOpacity
+            style={styles.closeIcon}
+            onPress={onClose}
+            accessibilityLabel="Close modal">
             <Feather name="x" size={24} color={theme.text} />
           </TouchableOpacity>
 
-          <Text style={[styles.title, { color: theme.text }]}>📚 Spaced Repetition</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            📚 Spaced Repetition
+          </Text>
 
           {hasItems ? (
             <FlatList
               data={items}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               contentContainerStyle={{ paddingBottom: SPACING.lg }}
               renderItem={({ item }) => (
                 <TouchableOpacity
@@ -48,23 +65,41 @@ export const SpacedRepetitionModal: React.FC<SpacedRepetitionModalProps> = ({
                   style={[
                     styles.item,
                     { borderBottomColor: theme.border },
-                    item.completed && { backgroundColor: isDark ? theme.green700 : theme.green50 },
+                    item.completed && {
+                      backgroundColor: isDark ? theme.green700 : theme.green50,
+                    },
                   ]}
-                  accessibilityLabel={item.completed ? 'Mark as incomplete' : 'Mark as complete'}
-                >
-                  <Text style={[
-                    styles.itemText,
-                    { color: item.completed ? (isDark ? theme.green300 : theme.green700) : theme.text },
-                    item.completed && styles.itemTextDone,
-                  ]}>
+                  accessibilityLabel={
+                    item.completed ? 'Mark as incomplete' : 'Mark as complete'
+                  }>
+                  <Text
+                    style={[
+                      styles.itemText,
+                      {
+                        color: item.completed
+                          ? isDark
+                            ? theme.green300
+                            : theme.green700
+                          : theme.text,
+                      },
+                      item.completed && styles.itemTextDone,
+                    ]}>
                     {item.title} {item.time ? `• ${item.time}` : ''}
                   </Text>
-                  {item.completed && <Feather name="check" size={20} color={isDark ? theme.green300 : theme.green700} />}
+                  {item.completed && (
+                    <Feather
+                      name="check"
+                      size={20}
+                      color={isDark ? theme.green300 : theme.green700}
+                    />
+                  )}
                 </TouchableOpacity>
               )}
             />
           ) : (
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>🎉 You’ve completed all your spaced repetition for today!</Text>
+            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+              🎉 You’ve completed all your spaced repetition for today!
+            </Text>
           )}
         </View>
       </View>
@@ -118,4 +153,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SPACING.xl,
   },
-}); 
+});

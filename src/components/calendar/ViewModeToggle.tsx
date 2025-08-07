@@ -1,33 +1,51 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '../../constants/theme';
 
 interface ViewModeToggleProps {
   viewMode: 'daily' | 'weekly';
   setViewMode: (mode: 'daily' | 'weekly') => void;
 }
 
-export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({ viewMode, setViewMode }) => (
+export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
+  viewMode,
+  setViewMode,
+}) => (
   <View style={styles.toggleContainer}>
     <TouchableOpacity
       style={[styles.toggleButton, viewMode === 'daily' && styles.activeToggle]}
       onPress={() => setViewMode('daily')}
       accessibilityRole="button"
       accessibilityLabel="Daily view"
-      accessibilityState={{ selected: viewMode === 'daily' }}
-    >
-      <Text style={[styles.toggleText, viewMode === 'daily' && styles.activeToggleText]}>
+      accessibilityState={{ selected: viewMode === 'daily' }}>
+      <Text
+        style={[
+          styles.toggleText,
+          viewMode === 'daily' && styles.activeToggleText,
+        ]}>
         Daily
       </Text>
     </TouchableOpacity>
     <TouchableOpacity
-      style={[styles.toggleButton, viewMode === 'weekly' && styles.activeToggle]}
+      style={[
+        styles.toggleButton,
+        viewMode === 'weekly' && styles.activeToggle,
+      ]}
       onPress={() => setViewMode('weekly')}
       accessibilityRole="button"
       accessibilityLabel="Weekly view"
-      accessibilityState={{ selected: viewMode === 'weekly' }}
-    >
-      <Text style={[styles.toggleText, viewMode === 'weekly' && styles.activeToggleText]}>
+      accessibilityState={{ selected: viewMode === 'weekly' }}>
+      <Text
+        style={[
+          styles.toggleText,
+          viewMode === 'weekly' && styles.activeToggleText,
+        ]}>
         Weekly
       </Text>
     </TouchableOpacity>
@@ -66,4 +84,4 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontWeight: FONT_WEIGHTS.semibold as any,
   },
-}); 
+});

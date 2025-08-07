@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, FONT_SIZES, BORDER_RADIUS } from '../../constants/theme';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -19,7 +25,8 @@ export default function GuideScreen({ navigation, route }: GuideScreenProps) {
     {
       title: 'Getting Started',
       icon: 'rocket-outline',
-      description: 'Learn the basics of using ELARO to manage your academic tasks.',
+      description:
+        'Learn the basics of using ELARO to manage your academic tasks.',
     },
     {
       title: 'Task Management',
@@ -39,49 +46,85 @@ export default function GuideScreen({ navigation, route }: GuideScreenProps) {
     {
       title: 'Study Sessions',
       icon: 'time-outline',
-      description: 'Plan and track your study sessions for better productivity.',
+      description:
+        'Plan and track your study sessions for better productivity.',
     },
   ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
+      <View
+        style={[
+          styles.header,
+          { backgroundColor: theme.card, borderBottomColor: theme.border },
+        ]}>
         <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>Guide</Text>
         <View style={styles.placeholder} />
       </View>
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={[styles.introSection, { backgroundColor: theme.card, shadowColor: '#000' }]}>
-          <Text style={[styles.introTitle, { color: theme.text }]}>Welcome to ELARO</Text>
-          <Text style={[styles.introDescription, { color: theme.textSecondary }]}>
-            Your personal academic assistant designed to help you stay organized and achieve your goals.
+        <View
+          style={[
+            styles.introSection,
+            { backgroundColor: theme.card, shadowColor: '#000' },
+          ]}>
+          <Text style={[styles.introTitle, { color: theme.text }]}>
+            Welcome to ELARO
+          </Text>
+          <Text
+            style={[styles.introDescription, { color: theme.textSecondary }]}>
+            Your personal academic assistant designed to help you stay organized
+            and achieve your goals.
           </Text>
         </View>
 
         {guideSections.map((section, index) => (
-          <View key={index} style={[styles.guideCard, { backgroundColor: theme.card, shadowColor: '#000' }]}>
+          <View
+            key={index}
+            style={[
+              styles.guideCard,
+              { backgroundColor: theme.card, shadowColor: '#000' },
+            ]}>
             <View style={styles.guideHeader}>
-              <View style={[styles.iconContainer, { backgroundColor: theme.primaryLight }]}>
-                <Ionicons name={section.icon as any} size={24} color={theme.primary} />
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: theme.primaryLight },
+                ]}>
+                <Ionicons
+                  name={section.icon as any}
+                  size={24}
+                  color={theme.primary}
+                />
               </View>
               <View style={styles.guideInfo}>
-                <Text style={[styles.guideTitle, { color: theme.text }]}>{section.title}</Text>
-                <Text style={[styles.guideDescription, { color: theme.textSecondary }]}>{section.description}</Text>
+                <Text style={[styles.guideTitle, { color: theme.text }]}>
+                  {section.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.guideDescription,
+                    { color: theme.textSecondary },
+                  ]}>
+                  {section.description}
+                </Text>
               </View>
             </View>
           </View>
         ))}
 
-        <View style={[styles.tipSection, { backgroundColor: theme.primaryLight }]}>
-          <Text style={[styles.tipTitle, { color: theme.card }]}>💡 Pro Tips</Text>
+        <View
+          style={[styles.tipSection, { backgroundColor: theme.primaryLight }]}>
+          <Text style={[styles.tipTitle, { color: theme.card }]}>
+            💡 Pro Tips
+          </Text>
           <Text style={[styles.tipText, { color: theme.card }]}>
-            • Use different colors to categorize your tasks{'\n'}
-            • Set reminders for important deadlines{'\n'}
-            • Review your calendar regularly{'\n'}
-            • Break large tasks into smaller ones
+            • Use different colors to categorize your tasks{'\n'}• Set reminders
+            for important deadlines{'\n'}• Review your calendar regularly{'\n'}•
+            Break large tasks into smaller ones
           </Text>
         </View>
       </ScrollView>
@@ -180,4 +223,4 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     lineHeight: 22,
   },
-}); 
+});

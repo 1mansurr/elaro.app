@@ -36,7 +36,11 @@ interface ModalProps {
   title?: string;
   showCloseButton?: boolean;
   animationType?: 'slide' | 'fade' | 'none';
-  presentationStyle?: 'fullScreen' | 'pageSheet' | 'formSheet' | 'overFullScreen';
+  presentationStyle?:
+    | 'fullScreen'
+    | 'pageSheet'
+    | 'formSheet'
+    | 'overFullScreen';
   backdropOpacity?: number;
   backdropBlur?: boolean;
   closeOnBackdropPress?: boolean;
@@ -110,14 +114,17 @@ export const Modal: React.FC<ModalProps> = ({
         }),
       ]).start();
     }
-  }, [visible]);
+  }, [fadeAnim, scaleAnim, slideAnim, visible]);
 
   useEffect(() => {
     if (closeOnBackButton && visible) {
-      const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
-        onClose();
-        return true;
-      });
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        () => {
+          onClose();
+          return true;
+        },
+      );
 
       return () => backHandler.remove();
     }
@@ -126,9 +133,13 @@ export const Modal: React.FC<ModalProps> = ({
   const { theme, isDark } = useTheme();
 
   const backdrop = showBackdrop && (
-    <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}> 
+    <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
       {backdropBlur ? (
-        <BlurView intensity={40} style={StyleSheet.absoluteFill} tint={isDark ? 'dark' : 'light'} />
+        <BlurView
+          intensity={40}
+          style={StyleSheet.absoluteFill}
+          tint={isDark ? 'dark' : 'light'}
+        />
       ) : (
         <View
           style={[
@@ -160,22 +171,29 @@ export const Modal: React.FC<ModalProps> = ({
         modalAnimatedStyle,
       ]}
       accessible
-      accessibilityRole={accessibilityRole as any}
-    >
+      accessibilityRole={accessibilityRole as any}>
       {(title || showCloseButton) && (
-        <View style={[styles.header, { borderBottomColor: theme.border, backgroundColor: theme.surface }]}> 
+        <View
+          style={[
+            styles.header,
+            { borderBottomColor: theme.border, backgroundColor: theme.surface },
+          ]}>
           {title && (
-            <Text style={[styles.title, { color: theme.text }]} accessibilityRole="header">
+            <Text
+              style={[styles.title, { color: theme.text }]}
+              accessibilityRole="header">
               {title}
             </Text>
           )}
           {showCloseButton && (
             <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: isDark ? theme.input : theme.surface }]}
+              style={[
+                styles.closeButton,
+                { backgroundColor: isDark ? theme.input : theme.surface },
+              ]}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel="Close modal"
-            >
+              accessibilityLabel="Close modal">
               <Ionicons name="close" size={20} color={theme.textSecondary} />
             </TouchableOpacity>
           )}
@@ -191,12 +209,10 @@ export const Modal: React.FC<ModalProps> = ({
       transparent
       animationType="none"
       presentationStyle={presentationStyle}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <KeyboardAvoidingView
         style={styles.wrapper}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         {backdrop}
         {modalContent}
       </KeyboardAvoidingView>
@@ -242,4 +258,3 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
 });
-

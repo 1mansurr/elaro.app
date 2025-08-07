@@ -1,10 +1,22 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function ScheduleSR() {
@@ -123,50 +135,72 @@ export default function ScheduleSR() {
               colors={[theme.primary, theme.primaryDark]}
               style={styles.iconGradient}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-            >
+              end={{ x: 1, y: 1 }}>
               <Ionicons name="repeat-outline" size={48} color={theme.white} />
             </LinearGradient>
           </View>
-          
+
           {/* Decorative dots */}
           <View style={styles.decorativeDots}>
-            <View style={[styles.dot, { backgroundColor: theme.primaryLight, opacity: 0.6 }]} />
-            <View style={[styles.dot, { backgroundColor: theme.primaryLight, opacity: 0.4 }]} />
-            <View style={[styles.dot, { backgroundColor: theme.primaryLight, opacity: 0.2 }]} />
+            <View
+              style={[
+                styles.dot,
+                { backgroundColor: theme.primaryLight, opacity: 0.6 },
+              ]}
+            />
+            <View
+              style={[
+                styles.dot,
+                { backgroundColor: theme.primaryLight, opacity: 0.4 },
+              ]}
+            />
+            <View
+              style={[
+                styles.dot,
+                { backgroundColor: theme.primaryLight, opacity: 0.2 },
+              ]}
+            />
           </View>
         </View>
 
         {/* Text Content */}
         <View style={styles.textSection}>
-          <Text style={[styles.title, { color: theme.text }]}>Spaced Repetition</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            Spaced Repetition
+          </Text>
           <Text style={[styles.subtitle, { color: theme.text }]}>
             Schedule review sessions that help you remember more, for longer.
           </Text>
           <Text style={[styles.description, { color: theme.textSecondary }]}>
-            Our smart algorithm adapts to your learning pace, ensuring optimal retention.
+            Our smart algorithm adapts to your learning pace, ensuring optimal
+            retention.
           </Text>
         </View>
 
         {/* CTA Section */}
         <View style={styles.ctaSection}>
-          <Pressable 
+          <Pressable
             style={({ pressed }) => [
               styles.button,
-              pressed && styles.buttonPressed
+              pressed && styles.buttonPressed,
             ]}
             onPress={handleGetStarted}
             accessibilityRole="button"
-            accessibilityLabel="Get started with spaced repetition"
-          >
+            accessibilityLabel="Get started with spaced repetition">
             <LinearGradient
               colors={[theme.primary, theme.primaryDark]}
               style={styles.buttonGradient}
               start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-            >
-              <Ionicons name="play" size={20} color={theme.white} style={styles.buttonIcon} />
-              <Text style={[styles.buttonText, { color: theme.white }]}>Get Started</Text>
+              end={{ x: 1, y: 0 }}>
+              <Ionicons
+                name="play"
+                size={20}
+                color={theme.white}
+                style={styles.buttonIcon}
+              />
+              <Text style={[styles.buttonText, { color: theme.white }]}>
+                Get Started
+              </Text>
             </LinearGradient>
           </Pressable>
 
@@ -177,4 +211,4 @@ export default function ScheduleSR() {
       </View>
     </SafeAreaView>
   );
-} 
+}

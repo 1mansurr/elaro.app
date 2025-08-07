@@ -1,8 +1,21 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Switch, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Switch,
+  ScrollView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BaseModal from './BaseModal';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../../constants/theme';
 import { DateTimePicker } from '../DateTimePicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthModal } from '../AuthModal';
@@ -32,7 +45,12 @@ interface AddStudySessionModalProps {
   isOddity?: boolean; // Pass user plan
 }
 
-const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, onClose, onSubmit, isOddity }) => {
+const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({
+  visible,
+  onClose,
+  onSubmit,
+  isOddity,
+}) => {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [course, setCourse] = useState('');
@@ -42,10 +60,17 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
   const [selectedColor, setSelectedColor] = useState('green');
   const [useRepetition, setUseRepetition] = useState(false);
   const [reminders, setReminders] = useState<string[]>([]);
-  const [customReminders, setCustomReminders] = useState<{ value: string; unit: string }[]>([]);
+  const [customReminders, setCustomReminders] = useState<
+    { value: string; unit: string }[]
+  >([]);
 
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState<{ course?: string; topic?: string; date?: string; time?: string }>({});
+  const [errors, setErrors] = useState<{
+    course?: string;
+    topic?: string;
+    date?: string;
+    time?: string;
+  }>({});
   const [customValue, setCustomValue] = useState('');
   const [customUnit, setCustomUnit] = useState('minutes');
 
@@ -110,14 +135,21 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
 
   const handleAddCustomReminder = () => {
     if (!customValue.trim() || isNaN(Number(customValue))) return;
-    setCustomReminders([...customReminders, { value: customValue, unit: customUnit }]);
+    setCustomReminders([
+      ...customReminders,
+      { value: customValue, unit: customUnit },
+    ]);
     setCustomValue('');
     setCustomUnit('minutes');
   };
 
   return (
     <>
-      <BaseModal visible={visible} title="Add Study Session" onClose={onClose} wide>
+      <BaseModal
+        visible={visible}
+        title="Add Study Session"
+        onClose={onClose}
+        wide>
         <ScrollView contentContainerStyle={styles.form}>
           <Text style={styles.label}>Course</Text>
           <TextInput
@@ -141,10 +173,32 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
 
           {/* Apple-style Date & Time Picker */}
           <DateTimePicker
-            value={new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.getHours(), time.getMinutes())}
-            onChange={(newDateTime) => {
-              setDate(new Date(newDateTime.getFullYear(), newDateTime.getMonth(), newDateTime.getDate()));
-              setTime(new Date(newDateTime.getFullYear(), newDateTime.getMonth(), newDateTime.getDate(), newDateTime.getHours(), newDateTime.getMinutes()));
+            value={
+              new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate(),
+                time.getHours(),
+                time.getMinutes(),
+              )
+            }
+            onChange={newDateTime => {
+              setDate(
+                new Date(
+                  newDateTime.getFullYear(),
+                  newDateTime.getMonth(),
+                  newDateTime.getDate(),
+                ),
+              );
+              setTime(
+                new Date(
+                  newDateTime.getFullYear(),
+                  newDateTime.getMonth(),
+                  newDateTime.getDate(),
+                  newDateTime.getHours(),
+                  newDateTime.getMinutes(),
+                ),
+              );
             }}
             label="Date & Time"
           />
@@ -155,9 +209,14 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
               <TouchableOpacity
                 key={key}
                 onPress={() => setSelectedColor(key)}
-                style={[styles.colorDot, { backgroundColor: color }, selectedColor === key && styles.activeDot]}
-              >
-                {selectedColor === key && <Ionicons name="checkmark" size={14} color="#fff" />}
+                style={[
+                  styles.colorDot,
+                  { backgroundColor: color },
+                  selectedColor === key && styles.activeDot,
+                ]}>
+                {selectedColor === key && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -167,7 +226,10 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
             <Switch
               value={useRepetition}
               onValueChange={setUseRepetition}
-              trackColor={{ false: COLORS.gray100, true: COLORS.primary + '40' }}
+              trackColor={{
+                false: COLORS.gray100,
+                true: COLORS.primary + '40',
+              }}
               thumbColor={useRepetition ? COLORS.primary : COLORS.gray}
             />
           </View>
@@ -177,14 +239,24 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
             {REMINDER_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}
-                style={[styles.reminderBtn, reminders.includes(opt.value) && styles.reminderBtnActive]}
+                style={[
+                  styles.reminderBtn,
+                  reminders.includes(opt.value) && styles.reminderBtnActive,
+                ]}
                 onPress={() =>
-                  setReminders(reminders.includes(opt.value)
-                    ? reminders.filter(r => r !== opt.value)
-                    : [...reminders, opt.value])
-                }
-              >
-                <Text style={[styles.reminderText, reminders.includes(opt.value) && styles.reminderTextActive]}>{opt.label}</Text>
+                  setReminders(
+                    reminders.includes(opt.value)
+                      ? reminders.filter(r => r !== opt.value)
+                      : [...reminders, opt.value],
+                  )
+                }>
+                <Text
+                  style={[
+                    styles.reminderText,
+                    reminders.includes(opt.value) && styles.reminderTextActive,
+                  ]}>
+                  {opt.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -205,9 +277,9 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
         </ScrollView>
       </BaseModal>
       {/* Auth Modal for sign-in gating */}
-      <AuthModal 
-        visible={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
         onAuthSuccess={() => {
           setShowAuthModal(false);
           // Retry the submission after successful auth
@@ -215,9 +287,15 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
         }}
       />
       {/* Confirmation Modal */}
-      <BaseModal visible={showConfirm} title="Great! We’ll remind you at just the right times." onClose={handleDismiss} wide>
+      <BaseModal
+        visible={showConfirm}
+        title="Great! We’ll remind you at just the right times."
+        onClose={handleDismiss}
+        wide>
         <View style={{ alignItems: 'center', padding: 24 }}>
-          <Text style={{ fontSize: 18, color: COLORS.text, marginBottom: 16 }}>Your study session was added successfully.</Text>
+          <Text style={{ fontSize: 18, color: COLORS.text, marginBottom: 16 }}>
+            Your study session was added successfully.
+          </Text>
           <TouchableOpacity style={styles.dismissBtn} onPress={handleDismiss}>
             <Text style={styles.dismissText}>Dismiss</Text>
           </TouchableOpacity>
@@ -229,28 +307,98 @@ const AddStudySessionModal: React.FC<AddStudySessionModalProps> = ({ visible, on
 
 const styles = StyleSheet.create({
   form: { gap: 12, paddingBottom: 32 },
-  label: { fontSize: FONT_SIZES.sm, color: COLORS.text, fontWeight: '500', marginTop: 8 },
-  input: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, padding: 10, fontSize: FONT_SIZES.md, color: COLORS.text, backgroundColor: COLORS.card },
-  selector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, padding: 10, marginBottom: 8, backgroundColor: COLORS.card },
+  label: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+    fontWeight: '500',
+    marginTop: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    backgroundColor: COLORS.card,
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    backgroundColor: COLORS.card,
+  },
   selectorText: { fontSize: FONT_SIZES.md, color: COLORS.text },
   colorRow: { flexDirection: 'row', marginVertical: 8 },
-  colorDot: { width: 28, height: 28, borderRadius: 14, marginRight: 10, alignItems: 'center', justifyContent: 'center' },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   activeDot: { borderWidth: 2, borderColor: COLORS.primary },
-  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 8 },
+  rowBetween: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 8,
+  },
   reminderRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  reminderBtn: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8, marginBottom: 8, backgroundColor: COLORS.card },
+  reminderBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: COLORS.card,
+  },
   reminderBtnActive: { backgroundColor: COLORS.primary },
   reminderText: { color: COLORS.text, fontSize: 15 },
   reminderTextActive: { color: '#fff', fontWeight: '700' },
-  customReminderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  addBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 10, alignItems: 'center', justifyContent: 'center' },
+  customReminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 18 },
-  customReminderText: { color: COLORS.textSecondary, fontSize: 14, marginTop: 2 },
-  doneBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 18 },
+  customReminderText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 2,
+  },
+  doneBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 18,
+  },
   doneText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   error: { color: COLORS.error, fontSize: 13, marginTop: 2 },
-  dismissBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 8 },
+  dismissBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
   dismissText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
 
-export default AddStudySessionModal; 
+export default AddStudySessionModal;

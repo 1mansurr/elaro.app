@@ -38,4 +38,21 @@ export const featureGates: FeatureGates = {
     origin: true,
     oddity: false,
   },
-}; 
+  // --- NEW FLAGS FOR INCOMPLETE FEATURES ---
+  learningStyleAssessment: {
+    origin: false,
+    oddity: false,
+  },
+  videoContent: {
+    origin: false,
+    oddity: false,
+  },
+  addOddityFeature: {
+    origin: false,
+    oddity: false,
+  },
+  addOptionFeature: {
+    origin: false,
+    oddity: false,
+  },
+};

@@ -2,7 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 import { CalendarItem, EVENT_COLORS_DARKENED } from '../../constants/calendar';
 import SpacedRepetitionBadge from '../SpacedRepetitionBadge';
 
@@ -11,7 +18,10 @@ interface CalendarItemCardProps {
   onPress: (item: CalendarItem) => void;
 }
 
-export const CalendarItemCard: React.FC<CalendarItemCardProps> = ({ item, onPress }) => {
+export const CalendarItemCard: React.FC<CalendarItemCardProps> = ({
+  item,
+  onPress,
+}) => {
   const colors = EVENT_COLORS_DARKENED[item.type];
   const isAllDay = item.time === 'All Day';
 
@@ -21,32 +31,28 @@ export const CalendarItemCard: React.FC<CalendarItemCardProps> = ({ item, onPres
       onPress={() => onPress(item)}
       accessibilityRole="button"
       accessibilityLabel={`${item.title}, ${item.time}`}
-      accessibilityHint="Double tap to view details"
-    >
+      accessibilityHint="Double tap to view details">
       <LinearGradient
         colors={colors.gradient}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+        end={{ x: 1, y: 1 }}>
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.titleContainer}>
-              <Text style={[styles.title, item.completed && styles.completedText]}>
+              <Text
+                style={[styles.title, item.completed && styles.completedText]}>
                 {item.title}
               </Text>
               {item.hasSpacedRepetition && (
-                <SpacedRepetitionBadge 
-                  type="advanced" 
-                  size="small"
-                />
+                <SpacedRepetitionBadge type="advanced" size="small" />
               )}
             </View>
             <View style={styles.timeContainer}>
-              <Ionicons 
-                name={isAllDay ? "time-outline" : "time"} 
-                size={16} 
-                color={COLORS.white} 
+              <Ionicons
+                name={isAllDay ? 'time-outline' : 'time'}
+                size={16}
+                color={COLORS.white}
               />
               <Text style={styles.timeText}>
                 {isAllDay ? 'All Day' : item.time}
@@ -67,16 +73,18 @@ export const CalendarItemCard: React.FC<CalendarItemCardProps> = ({ item, onPres
                   SR: {item.srRemaining}/{item.srTotal}
                 </Text>
                 <View style={styles.progressBar}>
-                  <View 
+                  <View
                     style={[
                       styles.progressFill,
-                      { width: `${(item.srRemaining / (item.srTotal || 1)) * 100}%` }
-                    ]} 
+                      {
+                        width: `${(item.srRemaining / (item.srTotal || 1)) * 100}%`,
+                      },
+                    ]}
                   />
                 </View>
               </View>
             )}
-            
+
             {item.isRepeating && (
               <View style={styles.repeatIndicator}>
                 <Feather name="repeat" size={14} color={COLORS.white} />
@@ -175,4 +183,4 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.white,
   },
-}); 
+});

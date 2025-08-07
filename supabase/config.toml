@@ -1,3 +1,4 @@
+project_id = "oqwyoucchbjiyddnznwf"
 
 [functions.paystack-webhook]
 enabled = true
@@ -9,3 +10,15 @@ entrypoint = "./functions/paystack-webhook/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/paystack-webhook/*.html" ]
+
+[functions.schedule-reminders]
+import_map = "./functions/import_map.json"
+
+[functions.create-task]
+import_map = "./functions/import_map.json"
+
+[functions.get-streak-info]
+import_map = "./functions/import_map.json"
+
+[functions.cleanup-old-reminders]
+import_map = "./functions/import_map.json"

@@ -1,7 +1,23 @@
 import React, { useEffect, useRef } from 'react';
-import { Modal, View, StyleSheet, Text, TouchableOpacity, Animated, Easing, Platform, Dimensions } from 'react-native';
+import {
+  Modal,
+  View,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  Animated,
+  Easing,
+  Platform,
+  Dimensions,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, BORDER_RADIUS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
+import {
+  COLORS,
+  BORDER_RADIUS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../../constants/theme';
 
 interface BaseModalProps {
   visible: boolean;
@@ -11,7 +27,13 @@ interface BaseModalProps {
   wide?: boolean;
 }
 
-const BaseModal: React.FC<BaseModalProps> = ({ visible, title, onClose, children, wide }) => {
+const BaseModal: React.FC<BaseModalProps> = ({
+  visible,
+  title,
+  onClose,
+  children,
+  wide,
+}) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(60)).current;
   const { width } = Dimensions.get('window');
@@ -41,7 +63,7 @@ const BaseModal: React.FC<BaseModalProps> = ({ visible, title, onClose, children
 
   return (
     <Modal visible={visible} animationType="none" transparent>
-      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}> 
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         <Animated.View
           style={[
             styles.modal,
@@ -50,11 +72,12 @@ const BaseModal: React.FC<BaseModalProps> = ({ visible, title, onClose, children
               alignSelf: 'center',
             },
             { transform: [{ translateY: slideAnim }] },
-          ]}
-        > 
+          ]}>
           <View style={styles.header}>
             <Text style={styles.title}>{title}</Text>
-            <TouchableOpacity onPress={onClose} accessibilityLabel="Close modal">
+            <TouchableOpacity
+              onPress={onClose}
+              accessibilityLabel="Close modal">
               <Feather name="x" size={24} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
@@ -81,7 +104,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 16,
     elevation: 12,
-    ...Platform.select({ ios: { paddingBottom: 32 }, android: { paddingBottom: 24 } }),
+    ...Platform.select({
+      ios: { paddingBottom: 32 },
+      android: { paddingBottom: 24 },
+    }),
   },
   header: {
     flexDirection: 'row',
@@ -99,4 +125,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default BaseModal; 
+export default BaseModal;

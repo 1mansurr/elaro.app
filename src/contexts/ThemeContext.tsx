@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
 import { Appearance, ColorSchemeName, useColorScheme } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -218,7 +224,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   console.log('ThemeProvider mounted');
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useState<'light' | 'dark' | 'system'>('system');
-  const [colorScheme, setColorScheme] = useState<ColorSchemeName>(systemColorScheme);
+  const [colorScheme, setColorScheme] =
+    useState<ColorSchemeName>(systemColorScheme);
 
   useEffect(() => {
     (async () => {
@@ -252,7 +259,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const theme = isDark ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ theme, colorScheme, isDark, toggleTheme, mode }}>
+    <ThemeContext.Provider
+      value={{ theme, colorScheme, isDark, toggleTheme, mode }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -263,8 +271,11 @@ export const useTheme = () => {
   const ctx = useContext(ThemeContext);
   if (!ctx) {
     // Add a warning with stack trace for debugging
-    console.warn('[⚠️ useTheme] Called outside of ThemeProvider', new Error().stack);
+    console.warn(
+      '[⚠️ useTheme] Called outside of ThemeProvider',
+      new Error().stack,
+    );
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return ctx;
-}; 
+};

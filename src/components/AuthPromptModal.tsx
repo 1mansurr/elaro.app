@@ -16,8 +16,8 @@ export const AuthPromptModal: React.FC<AuthPromptModalProps> = ({
   onClose,
   onSignIn,
   onSignUp,
-  title = "Join the Community!",
-  message = "Please sign in or create an account to save your progress and access all features."
+  title = 'Join the Community!',
+  message = 'Please sign in or create an account to save your progress and access all features.',
 }) => {
   const { theme } = useTheme();
 
@@ -26,26 +26,33 @@ export const AuthPromptModal: React.FC<AuthPromptModalProps> = ({
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.centeredView}>
         <View style={[styles.modalView, { backgroundColor: theme.background }]}>
           <Text style={[styles.modalText, { color: theme.text }]}>{title}</Text>
-          <Text style={[styles.modalSubText, { color: theme.textSecondary }]}>{message}</Text>
+          <Text style={[styles.modalSubText, { color: theme.textSecondary }]}>
+            {message}
+          </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.primary }]}
-            onPress={onSignUp}
-          >
+            onPress={onSignUp}>
             <Text style={styles.textStyle}>Sign Up</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.button, styles.buttonSecondary, { borderColor: theme.primary }]}
-            onPress={onSignIn}
-          >
-            <Text style={[styles.textStyle, { color: theme.primary }]}>Sign In</Text>
+            style={[
+              styles.button,
+              styles.buttonSecondary,
+              { borderColor: theme.primary },
+            ]}
+            onPress={onSignIn}>
+            <Text style={[styles.textStyle, { color: theme.primary }]}>
+              Sign In
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={onClose}>
-            <Text style={[styles.closeText, { color: theme.textSecondary }]}>Maybe Later</Text>
+            <Text style={[styles.closeText, { color: theme.textSecondary }]}>
+              Maybe Later
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -101,4 +108,4 @@ const styles = StyleSheet.create({
     marginTop: 15,
     textAlign: 'center',
   },
-}); 
+});

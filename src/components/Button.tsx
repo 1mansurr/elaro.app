@@ -25,7 +25,13 @@ import { useTheme } from '../contexts/ThemeContext';
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'success';
+  variant?:
+    | 'primary'
+    | 'secondary'
+    | 'outline'
+    | 'ghost'
+    | 'danger'
+    | 'success';
   size?: 'small' | 'medium' | 'large';
   disabled?: boolean;
   loading?: boolean;
@@ -176,7 +182,12 @@ export const Button: React.FC<ButtonProps> = ({
       {!loading && icon && iconPosition === 'left' && (
         <Animated.View style={styles.icon}>{icon}</Animated.View>
       )}
-      <Text style={[styles.text, { color: variantStyles.textColor, fontSize: sizeStyles.fontSize }, textStyle]}>
+      <Text
+        style={[
+          styles.text,
+          { color: variantStyles.textColor, fontSize: sizeStyles.fontSize },
+          textStyle,
+        ]}>
         {title}
       </Text>
       {!loading && icon && iconPosition === 'right' && (
@@ -186,19 +197,26 @@ export const Button: React.FC<ButtonProps> = ({
   );
 
   const TouchableWrapper = (
-      <TouchableOpacity
-        onPress={onPress}
+    <TouchableOpacity
+      onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       activeOpacity={0.9}
-        disabled={disabled || loading}
+      disabled={disabled || loading}
       style={[styles.base, baseStyle, disabled && styles.disabled, style]}
-      {...accessibilityProps}
-      >
+      {...accessibilityProps}>
       {gradient && !disabled && !loading ? (
         <LinearGradient
-          colors={gradientColors || [theme.accent, isDark ? theme.text : theme.background]}
-          style={[StyleSheet.absoluteFill, { borderRadius: COMPONENTS.button.borderRadius }]}
+          colors={
+            gradientColors || [
+              theme.accent,
+              isDark ? theme.text : theme.background,
+            ]
+          }
+          style={[
+            StyleSheet.absoluteFill,
+            { borderRadius: COMPONENTS.button.borderRadius },
+          ]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         />
@@ -241,4 +259,3 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
 });
-

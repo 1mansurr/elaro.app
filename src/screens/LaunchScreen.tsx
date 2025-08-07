@@ -1,11 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  StatusBar,
-} from 'react-native';
+import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { CommonActions } from '@react-navigation/native';
@@ -39,20 +33,20 @@ const LaunchScreen = () => {
         CommonActions.reset({
           index: 0,
           routes: [{ name: 'Main' }],
-        })
+        }),
       );
     }, 3000);
 
     return () => clearTimeout(timeout);
-  }, [navigation]);
+  }, [fadeAnim, logoScale, navigation]);
 
   return (
     <LinearGradient
       colors={[theme.primary, theme.accent || '#3a3a3a']}
-      style={styles.container}
-    >
+      style={styles.container}>
       <StatusBar hidden />
-      <Animated.View style={{ opacity: fadeAnim, transform: [{ scale: logoScale }] }}>
+      <Animated.View
+        style={{ opacity: fadeAnim, transform: [{ scale: logoScale }] }}>
         <Text style={[styles.logoText, { color: theme.white }]}>ELARO</Text>
       </Animated.View>
     </LinearGradient>
@@ -83,4 +77,3 @@ const styles = StyleSheet.create({
 });
 
 export default LaunchScreen;
-

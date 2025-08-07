@@ -9,7 +9,15 @@ import {
   TextInputProps,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS, ANIMATIONS, COMPONENTS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+  ANIMATIONS,
+  COMPONENTS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface InputProps extends TextInputProps {
@@ -60,7 +68,7 @@ export const Input: React.FC<InputProps> = ({
         useNativeDriver: true,
       }).start();
     }
-  }, [isFocused, animated]);
+  }, [isFocused, animated, focusAnim]);
 
   useEffect(() => {
     if (animated && error) {
@@ -82,7 +90,7 @@ export const Input: React.FC<InputProps> = ({
         }),
       ]).start();
     }
-  }, [error, animated]);
+  }, [error, animated, shakeAnim]);
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
@@ -129,7 +137,11 @@ export const Input: React.FC<InputProps> = ({
         return {
           backgroundColor: 'transparent',
           borderWidth: 2,
-          borderColor: error ? theme.destructive : isFocused ? theme.accent : theme.inputBorder,
+          borderColor: error
+            ? theme.destructive
+            : isFocused
+              ? theme.accent
+              : theme.inputBorder,
         };
       case 'filled':
         return {
@@ -141,7 +153,11 @@ export const Input: React.FC<InputProps> = ({
         return {
           backgroundColor: theme.input,
           borderWidth: COMPONENTS.input.borderWidth,
-          borderColor: error ? theme.destructive : isFocused ? theme.accent : theme.inputBorder,
+          borderColor: error
+            ? theme.destructive
+            : isFocused
+              ? theme.accent
+              : theme.inputBorder,
         };
     }
   };
@@ -176,7 +192,11 @@ export const Input: React.FC<InputProps> = ({
   const labelStyle = [
     styles.label,
     {
-      color: error ? theme.destructive : isFocused ? theme.accent : theme.textSecondary,
+      color: error
+        ? theme.destructive
+        : isFocused
+          ? theme.accent
+          : theme.textSecondary,
       fontSize: isFocused || isFilled ? FONT_SIZES.xs : FONT_SIZES.sm,
       transform: [
         {
@@ -203,18 +223,25 @@ export const Input: React.FC<InputProps> = ({
           {required && <Text style={{ color: theme.destructive }}> *</Text>}
         </Animated.Text>
       )}
-      
-      <Animated.View style={[styles.inputContainer, animatedInputContainerStyle]}>
+
+      <Animated.View
+        style={[styles.inputContainer, animatedInputContainerStyle]}>
         {leftIcon && (
           <View style={styles.leftIcon}>
-            <Ionicons 
-              name={leftIcon} 
-              size={20} 
-              color={error ? theme.destructive : isFocused ? theme.accent : theme.textSecondary} 
+            <Ionicons
+              name={leftIcon}
+              size={20}
+              color={
+                error
+                  ? theme.destructive
+                  : isFocused
+                    ? theme.accent
+                    : theme.textSecondary
+              }
             />
           </View>
         )}
-        
+
         <TextInput
           {...props}
           style={[
@@ -229,17 +256,22 @@ export const Input: React.FC<InputProps> = ({
           placeholderTextColor={theme.textSecondary}
           maxLength={maxLength}
         />
-        
+
         {rightIcon && (
-          <TouchableOpacity 
-            style={styles.rightIcon} 
+          <TouchableOpacity
+            style={styles.rightIcon}
             onPress={onRightIconPress}
-            disabled={!onRightIconPress}
-          >
-            <Ionicons 
-              name={rightIcon} 
-              size={20} 
-              color={error ? theme.destructive : isFocused ? theme.accent : theme.textSecondary} 
+            disabled={!onRightIconPress}>
+            <Ionicons
+              name={rightIcon}
+              size={20}
+              color={
+                error
+                  ? theme.destructive
+                  : isFocused
+                    ? theme.accent
+                    : theme.textSecondary
+              }
             />
           </TouchableOpacity>
         )}
@@ -249,18 +281,24 @@ export const Input: React.FC<InputProps> = ({
         <View style={styles.helperContainer}>
           {error && (
             <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle" size={14} color={theme.destructive} />
-              <Text style={[styles.errorText, { color: theme.destructive }]}>{error}</Text>
+              <Ionicons
+                name="alert-circle"
+                size={14}
+                color={theme.destructive}
+              />
+              <Text style={[styles.errorText, { color: theme.destructive }]}>
+                {error}
+              </Text>
             </View>
           )}
-          
+
           {helperText && !error && (
             <Text style={styles.helperText}>{helperText}</Text>
           )}
-          
+
           {characterCount && maxLength && (
             <Text style={styles.characterCount}>
-              {(props.value?.length || 0)}/{maxLength}
+              {props.value?.length || 0}/{maxLength}
             </Text>
           )}
         </View>
@@ -340,4 +378,4 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: FONT_SIZES.sm,
   },
-}); 
+});

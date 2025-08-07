@@ -8,7 +8,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface LegalScreenProps {
@@ -114,12 +121,11 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onBack }) => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
+        <TouchableOpacity
+          style={styles.backButton}
           onPress={onBack}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
+          accessibilityLabel="Go back">
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -132,20 +138,25 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onBack }) => {
       <ScrollView
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.placeholderContainer}>
           <Ionicons
-            name={isPrivacy ? 'shield-checkmark-outline' : 'document-text-outline'}
+            name={
+              isPrivacy ? 'shield-checkmark-outline' : 'document-text-outline'
+            }
             size={72}
             color={theme.gray300}
             style={styles.icon}
           />
 
           <Text style={[styles.title, { color: theme.text }]}>
-            {isPrivacy ? 'Privacy Policy Placeholder' : 'Terms of Service Placeholder'}
+            {isPrivacy
+              ? 'Privacy Policy Placeholder'
+              : 'Terms of Service Placeholder'}
           </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Coming Soon</Text>
+          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
+            Coming Soon
+          </Text>
 
           <View style={[styles.infoBox, { backgroundColor: theme.gray50 }]}>
             <Text style={[styles.infoText, { color: theme.text }]}>
@@ -159,14 +170,17 @@ export const LegalScreen: React.FC<LegalScreenProps> = ({ type, onBack }) => {
         </View>
         {/* Move Contact Us card to the very bottom of the ScrollView */}
         <View style={styles.contact}>
-          <Text style={[styles.contactHeading, { color: theme.text }]}>Have Questions?</Text>
+          <Text style={[styles.contactHeading, { color: theme.text }]}>
+            Have Questions?
+          </Text>
           <Text style={[styles.contactText, { color: theme.textSecondary }]}>
             Reach out to our team anytime at:
           </Text>
-          <Text style={[styles.contactEmail, { color: theme.primary }]}>legal@elaro.app</Text>
+          <Text style={[styles.contactEmail, { color: theme.primary }]}>
+            legal@elaro.app
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
-

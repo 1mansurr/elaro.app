@@ -14,8 +14,13 @@ type AuthScreenWrapperParams = {
  */
 export const AuthScreenWrapper: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<AuthScreenWrapperParams, 'AuthScreenWrapper'>>();
-  const handleClose = route.params?.onClose ?? (() => { if (navigation.canGoBack()) navigation.goBack(); });
+  const route =
+    useRoute<RouteProp<AuthScreenWrapperParams, 'AuthScreenWrapper'>>();
+  const handleClose =
+    route.params?.onClose ??
+    (() => {
+      if (navigation.canGoBack()) navigation.goBack();
+    });
 
   return <AuthScreen onClose={handleClose} />;
-}; 
+};

@@ -19,7 +19,7 @@ export const useCelebrationAnimation = () => {
         useNativeDriver: true,
       }),
     ]).start();
-    
+
     setShowCelebration(true);
     setTimeout(() => setShowCelebration(false), 2000);
   }, [completionAnimation]);
@@ -29,4 +29,4 @@ export const useCelebrationAnimation = () => {
     showCelebration,
     triggerCelebration,
   };
-}; 
+};

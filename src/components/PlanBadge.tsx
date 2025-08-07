@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, PLAN_COLORS, GRADIENTS, FONT_WEIGHTS } from '../constants/theme';
+import {
+  COLORS,
+  PLAN_COLORS,
+  GRADIENTS,
+  FONT_WEIGHTS,
+} from '../constants/theme';
 
 interface PlanBadgeProps {
   plan: 'origin' | 'oddity';
@@ -12,9 +17,9 @@ interface PlanBadgeProps {
   textColor?: string;
 }
 
-export const PlanBadge: React.FC<PlanBadgeProps> = ({ 
-  plan, 
-  size = 'medium', 
+export const PlanBadge: React.FC<PlanBadgeProps> = ({
+  plan,
+  size = 'medium',
   showIcon = false,
   style,
   backgroundColor,
@@ -29,7 +34,11 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({
       style={[
         styles.badge,
         {
-          backgroundColor: backgroundColor ? backgroundColor : (isOddity ? undefined : colors.background),
+          backgroundColor: backgroundColor
+            ? backgroundColor
+            : isOddity
+              ? undefined
+              : colors.background,
           borderColor: colors.border,
           borderRadius: sizeStyle.borderRadius,
           paddingHorizontal: sizeStyle.paddingHorizontal,
@@ -38,19 +47,23 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({
         style,
       ]}
       accessibilityRole="text"
-      accessibilityLabel={`${plan === 'oddity' ? 'Oddity Plan' : 'Origin Plan'} badge`}
-    >
+      accessibilityLabel={`${plan === 'oddity' ? 'Oddity Plan' : 'Origin Plan'} badge`}>
       {showIcon && isOddity && <Text style={styles.icon}>👑</Text>}
       <Text
         style={[
-        styles.text,
-        {
-            color: textColor ? textColor : (isOddity ? COLORS.white : colors.text),
+          styles.text,
+          {
+            color: textColor
+              ? textColor
+              : isOddity
+                ? COLORS.white
+                : colors.text,
             fontSize: sizeStyle.fontSize,
-            fontWeight: (isOddity ? FONT_WEIGHTS.bold : FONT_WEIGHTS.medium) as any,
+            fontWeight: (isOddity
+              ? FONT_WEIGHTS.bold
+              : FONT_WEIGHTS.medium) as any,
           },
-        ]}
-      >
+        ]}>
         {isOddity ? 'ODDITY' : 'Origin Plan'}
       </Text>
     </View>
@@ -69,8 +82,7 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({
             paddingVertical: sizeStyle.paddingVertical,
           },
           style,
-        ]}
-      >
+        ]}>
         {badgeContent}
       </View>
     );
@@ -89,8 +101,7 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({
             paddingVertical: sizeStyle.paddingVertical,
           },
           style,
-        ]}
-      >
+        ]}>
         {badgeContent}
       </LinearGradient>
     );
@@ -101,12 +112,27 @@ export const PlanBadge: React.FC<PlanBadgeProps> = ({
 const getSizeStyles = (size: 'small' | 'medium' | 'large') => {
   switch (size) {
     case 'small':
-      return { paddingHorizontal: 8, paddingVertical: 4, fontSize: 10, borderRadius: 12 };
+      return {
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        fontSize: 10,
+        borderRadius: 12,
+      };
     case 'large':
-      return { paddingHorizontal: 12, paddingVertical: 6, fontSize: 14, borderRadius: 16 };
+      return {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        fontSize: 14,
+        borderRadius: 16,
+      };
     case 'medium':
     default:
-      return { paddingHorizontal: 10, paddingVertical: 5, fontSize: 12, borderRadius: 14 };
+      return {
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        fontSize: 12,
+        borderRadius: 14,
+      };
   }
 };
 
@@ -129,4 +155,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PlanBadge; 
+export default PlanBadge;

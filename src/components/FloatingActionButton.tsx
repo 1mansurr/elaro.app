@@ -62,8 +62,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           transform: [{ scale }],
         },
         style,
-      ]}
-    >
+      ]}>
       <TouchableOpacity
         activeOpacity={0.9}
         onPress={onPress}
@@ -72,8 +71,7 @@ export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        style={[styles.button, { width: size, height: size, borderRadius }]}
-      >
+        style={[styles.button, { width: size, height: size, borderRadius }]}>
         <LinearGradient
           colors={[COLORS.primary, COLORS.secondary]}
           start={{ x: 0.1, y: 0.1 }}
@@ -98,4 +96,3 @@ const styles = StyleSheet.create({
     ...SHADOWS.large,
   },
 });
-

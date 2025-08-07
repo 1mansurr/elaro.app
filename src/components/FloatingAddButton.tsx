@@ -74,10 +74,10 @@ export const FloatingAddButton: React.FC<FloatingAddButtonProps> = ({
             duration: 1500,
             useNativeDriver: true,
           }),
-        ])
+        ]),
       ).start();
     }
-  }, [animated]);
+  }, [animated, pulse, scale]);
 
   const handlePressIn = () => {
     setPressed(true);
@@ -160,8 +160,7 @@ export const FloatingAddButton: React.FC<FloatingAddButtonProps> = ({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
-      style={[styles.wrapper, getPositionStyle()]}
-    >
+      style={[styles.wrapper, getPositionStyle()]}>
       <Animated.View
         style={[
           {
@@ -170,20 +169,23 @@ export const FloatingAddButton: React.FC<FloatingAddButtonProps> = ({
             borderRadius: buttonSize / 2,
             justifyContent: 'center',
             alignItems: 'center',
-            backgroundColor: pressed ? (backgroundColor || COLORS.primary) : (backgroundColor || COLORS.white),
+            backgroundColor: pressed
+              ? backgroundColor || COLORS.primary
+              : backgroundColor || COLORS.white,
             borderWidth: 2,
             borderColor: backgroundColor || COLORS.primary,
             ...SHADOWS.lg,
           },
           disabled && { opacity: 0.5 },
           animatedStyle,
-        ]}
-      >
+        ]}>
         <Animated.View style={iconAnimatedStyle}>
           <Feather
             name={icon}
             size={iconSize}
-            color={pressed ? (iconColor || COLORS.white) : (iconColor || COLORS.primary)}
+            color={
+              pressed ? iconColor || COLORS.white : iconColor || COLORS.primary
+            }
           />
         </Animated.View>
       </Animated.View>
@@ -196,4 +198,4 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 1000,
   },
-}); 
+});

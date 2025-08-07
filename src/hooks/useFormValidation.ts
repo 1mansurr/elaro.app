@@ -23,7 +23,7 @@ export interface FormTouched {
 
 export const useFormValidation = <T extends Record<string, any>>(
   initialValues: T,
-  validationRules: ValidationRules
+  validationRules: ValidationRules,
 ) => {
   const [values, setValues] = useState<T>(initialValues);
   const [errors, setErrors] = useState<FormErrors>({});
@@ -37,7 +37,10 @@ export const useFormValidation = <T extends Record<string, any>>(
       if (!rule) return null;
 
       // Required validation
-      if (rule.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
+      if (
+        rule.required &&
+        (!value || (typeof value === 'string' && value.trim() === ''))
+      ) {
         return rule.message || `${name} is required`;
       }
 
@@ -47,17 +50,35 @@ export const useFormValidation = <T extends Record<string, any>>(
       }
 
       // Min length validation
-      if (rule.minLength && typeof value === 'string' && value.length < rule.minLength) {
-        return rule.message || `${name} must be at least ${rule.minLength} characters`;
+      if (
+        rule.minLength &&
+        typeof value === 'string' &&
+        value.length < rule.minLength
+      ) {
+        return (
+          rule.message ||
+          `${name} must be at least ${rule.minLength} characters`
+        );
       }
 
       // Max length validation
-      if (rule.maxLength && typeof value === 'string' && value.length > rule.maxLength) {
-        return rule.message || `${name} must be no more than ${rule.maxLength} characters`;
+      if (
+        rule.maxLength &&
+        typeof value === 'string' &&
+        value.length > rule.maxLength
+      ) {
+        return (
+          rule.message ||
+          `${name} must be no more than ${rule.maxLength} characters`
+        );
       }
 
       // Pattern validation
-      if (rule.pattern && typeof value === 'string' && !rule.pattern.test(value)) {
+      if (
+        rule.pattern &&
+        typeof value === 'string' &&
+        !rule.pattern.test(value)
+      ) {
         return rule.message || `${name} format is invalid`;
       }
 
@@ -68,7 +89,7 @@ export const useFormValidation = <T extends Record<string, any>>(
 
       return null;
     },
-    [validationRules]
+    [validationRules],
   );
 
   // Validate all fields
@@ -76,7 +97,7 @@ export const useFormValidation = <T extends Record<string, any>>(
     const newErrors: FormErrors = {};
     let isValid = true;
 
-    Object.keys(validationRules).forEach((fieldName) => {
+    Object.keys(validationRules).forEach(fieldName => {
       const error = validateField(fieldName, values[fieldName]);
       if (error) {
         newErrors[fieldName] = error;
@@ -91,40 +112,40 @@ export const useFormValidation = <T extends Record<string, any>>(
   // Set field value
   const setFieldValue = useCallback(
     (name: keyof T, value: any) => {
-      setValues((prev) => ({ ...prev, [name]: value }));
-      
+      setValues(prev => ({ ...prev, [name]: value }));
+
       // Clear error when user starts typing
       if (errors[name as string]) {
-        setErrors((prev) => ({ ...prev, [name]: '' }));
+        setErrors(prev => ({ ...prev, [name]: '' }));
       }
     },
-    [errors]
+    [errors],
   );
 
   // Handle field blur
   const handleFieldBlur = useCallback(
     (name: keyof T) => {
-      setTouched((prev) => ({ ...prev, [name]: true }));
-      
+      setTouched(prev => ({ ...prev, [name]: true }));
+
       // Validate field on blur
       const error = validateField(name as string, values[name]);
-      setErrors((prev) => ({ ...prev, [name]: error || '' }));
+      setErrors(prev => ({ ...prev, [name]: error || '' }));
     },
-    [values, validateField]
+    [values, validateField],
   );
 
   // Handle field change with validation
   const handleFieldChange = useCallback(
     (name: keyof T, value: any) => {
       setFieldValue(name, value);
-      
+
       // Validate field if it's been touched
       if (touched[name as string]) {
         const error = validateField(name as string, value);
-        setErrors((prev) => ({ ...prev, [name]: error || '' }));
+        setErrors(prev => ({ ...prev, [name]: error || '' }));
       }
     },
-    [setFieldValue, touched, validateField]
+    [setFieldValue, touched, validateField],
   );
 
   // Reset form
@@ -139,11 +160,11 @@ export const useFormValidation = <T extends Record<string, any>>(
   const handleSubmit = useCallback(
     async (onSubmit: (values: T) => Promise<void> | void) => {
       setIsSubmitting(true);
-      
+
       try {
         // Mark all fields as touched
         const allTouched: FormTouched = {};
-        Object.keys(validationRules).forEach((field) => {
+        Object.keys(validationRules).forEach(field => {
           allTouched[field] = true;
         });
         setTouched(allTouched);
@@ -156,12 +177,15 @@ export const useFormValidation = <T extends Record<string, any>>(
         setIsSubmitting(false);
       }
     },
-    [values, validationRules, validateForm]
+    [values, validationRules, validateForm],
   );
 
   // Check if form is valid
   const isValid = useMemo(() => {
-    return Object.keys(errors).length === 0 || Object.values(errors).every(error => !error);
+    return (
+      Object.keys(errors).length === 0 ||
+      Object.values(errors).every(error => !error)
+    );
   }, [errors]);
 
   // Check if form has been modified
@@ -221,4 +245,4 @@ export const validationRules = {
     maxLength: 100,
     message: 'Topic is required',
   },
-}; 
+};

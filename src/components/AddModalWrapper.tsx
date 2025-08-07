@@ -1,5 +1,13 @@
 import React from 'react';
-import { Modal, View, StyleSheet, TouchableOpacity, Dimensions, ScrollView, Pressable } from 'react-native';
+import {
+  Modal,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
+  ScrollView,
+  Pressable,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -11,31 +19,34 @@ interface AddModalWrapperProps {
   children: React.ReactNode;
 }
 
-const AddModalWrapper: React.FC<AddModalWrapperProps> = ({ visible, onClose, children }) => {
+const AddModalWrapper: React.FC<AddModalWrapperProps> = ({
+  visible,
+  onClose,
+  children,
+}) => {
   const { theme } = useTheme();
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <Pressable style={styles.overlay} onPress={onClose}>
         <View style={styles.centered} pointerEvents="box-none">
-          <Pressable style={[styles.card, { backgroundColor: theme.card }]} onPress={() => {}}>
+          <Pressable
+            style={[styles.card, { backgroundColor: theme.card }]}
+            onPress={() => {}}>
             <TouchableOpacity
               style={styles.closeButton}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel="Close modal"
-            >
+              accessibilityLabel="Close modal">
               <Feather name="x" size={24} color={theme.text} />
             </TouchableOpacity>
             <ScrollView
               style={styles.scroll}
               contentContainerStyle={{ padding: 24 }}
-              showsVerticalScrollIndicator={false}
-            >
+              showsVerticalScrollIndicator={false}>
               {children}
             </ScrollView>
           </Pressable>
@@ -83,4 +94,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddModalWrapper; 
+export default AddModalWrapper;

@@ -53,7 +53,9 @@ export const Card: React.FC<CardProps> = ({
 }) => {
   const { theme } = useTheme();
   const animatedOpacity = useRef(new Animated.Value(animated ? 0 : 1)).current;
-  const animatedTranslate = useRef(new Animated.Value(animated ? 20 : 0)).current;
+  const animatedTranslate = useRef(
+    new Animated.Value(animated ? 20 : 0),
+  ).current;
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export const Card: React.FC<CardProps> = ({
         }),
       ]).start();
     }
-  }, [animated, delay]);
+  }, [animated, delay, animatedOpacity, animatedTranslate]);
 
   const handlePressIn = () => {
     if (pressable && onPress) {
@@ -112,8 +114,8 @@ export const Card: React.FC<CardProps> = ({
   };
 
   const sharedStyle: ViewStyle = {
-      padding: SPACING[padding],
-      borderRadius: BORDER_RADIUS[borderRadius],
+    padding: SPACING[padding],
+    borderRadius: BORDER_RADIUS[borderRadius],
     backgroundColor: backgroundColor || theme.card,
     borderColor: borderColor || theme.border,
     borderWidth: 1,
@@ -125,32 +127,36 @@ export const Card: React.FC<CardProps> = ({
 
   const animatedStyle = {
     opacity: animatedOpacity,
-    transform: [
-      { translateY: animatedTranslate },
-      { scale: scaleAnim },
-    ],
+    transform: [{ translateY: animatedTranslate }, { scale: scaleAnim }],
   };
 
-  const Container = pressable && onPress ? TouchableWithoutFeedback : React.Fragment;
-  const containerProps = pressable && onPress ? {
-    onPress: onPress,
-    onPressIn: handlePressIn,
-    onPressOut: handlePressOut,
-  } : {};
+  const Container =
+    pressable && onPress ? TouchableWithoutFeedback : React.Fragment;
+  const containerProps =
+    pressable && onPress
+      ? {
+          onPress: onPress,
+          onPressIn: handlePressIn,
+          onPressOut: handlePressOut,
+        }
+      : {};
 
   if (gradient) {
     const { start, end } = getGradientDirection();
     return (
-      <Animated.View style={[animatedStyle, { transform: [{ scale: scaleAnim }] }]}> {/* All animations at root */}
+      <Animated.View
+        style={[animatedStyle, { transform: [{ scale: scaleAnim }] }]}>
+        {' '}
+        {/* All animations at root */}
         <LinearGradient
           colors={gradient || [theme.card, theme.surface]}
           start={start}
           end={end}
-          style={[styles.gradient, { borderRadius: BORDER_RADIUS[borderRadius] }]}
-        >
-          <View style={{ padding: SPACING[padding] }}>
-            {children}
-          </View>
+          style={[
+            styles.gradient,
+            { borderRadius: BORDER_RADIUS[borderRadius] },
+          ]}>
+          <View style={{ padding: SPACING[padding] }}>{children}</View>
         </LinearGradient>
       </Animated.View>
     );
@@ -159,9 +165,7 @@ export const Card: React.FC<CardProps> = ({
   return (
     <Animated.View style={[animatedStyle]}>
       <Container {...containerProps}>
-        <View style={[sharedStyle, style]}>
-          {children}
-        </View>
+        <View style={[sharedStyle, style]}>{children}</View>
       </Container>
     </Animated.View>
   );
@@ -175,4 +179,3 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 });
-

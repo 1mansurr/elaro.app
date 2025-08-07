@@ -1,6 +1,9 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator, StackNavigationOptions } from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  StackNavigationOptions,
+} from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, View } from 'react-native';
@@ -10,26 +13,20 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { COLORS } from '../constants/theme';
 import { RootStackParamList, MainTabParamList } from '../types';
+import { featureGates } from '../config/featureGates';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import AccountScreen from '../screens/AccountScreen';
-import { SettingsScreen } from '../screens/SettingsScreen';
 import { PushTestScreen } from '../screens/PushTestScreen';
-import GuideSectionScreen from '../screens/GuideSectionScreen';
 import AddStudyScreen from '../screens/AddStudyScreen';
 import AddEventScreen from '../screens/AddEventScreen';
 import AddTaskEventScreen from '../screens/AddTaskEventScreen';
-import LearningStyleScreen from '../screens/LearningStyleScreen';
 import SpacedRepetitionScreen from '../screens/SpacedRepetitionScreen';
 import ScheduleSR from '../screens/ScheduleSR';
 import { AuthScreenWrapper } from '../screens/AuthScreenWrapper';
-import HelpAndFeedbackScreen from '../screens/settings/HelpAndFeedbackScreen';
-import TermsOfUseScreen from '../screens/settings/TermsOfUseScreen';
-import PrivacyPolicyScreen from '../screens/settings/PrivacyPolicyScreen';
-import TawkChatScreen from '../screens/settings/TawkChatScreen';
 
 import { BottomTabBar } from '@react-navigation/bottom-tabs';
 
@@ -49,24 +46,18 @@ const MAIN_ROUTES = {
 
 const FUNCTIONAL_ROUTES = {
   PushTest: PushTestScreen,
-  Settings: SettingsScreen,
-  GuideSection: GuideSectionScreen,
   AddStudy: AddStudyScreen,
   AddEvent: AddEventScreen,
   AddTaskEvent: AddTaskEventScreen,
-  LearningStyleScreen: LearningStyleScreen,
   SpacedRepetitionScreen: SpacedRepetitionScreen,
   ScheduleSR: ScheduleSR,
 } as const;
 
-const SETTINGS_INFO_ROUTES = {
-  HelpAndFeedback: HelpAndFeedbackScreen,
-  TermsOfUse: TermsOfUseScreen,
-  PrivacyPolicy: PrivacyPolicyScreen,
-} as const;
-
 // Tab bar icon helper for cleaner code
-const getTabBarIcon = (routeName: keyof MainTabParamList, focused: boolean): keyof typeof Ionicons.glyphMap => {
+const getTabBarIcon = (
+  routeName: keyof MainTabParamList,
+  focused: boolean,
+): keyof typeof Ionicons.glyphMap => {
   switch (routeName) {
     case 'Home':
       return focused ? 'home' : 'home-outline';
@@ -84,51 +75,59 @@ const sharedScreenOptions: StackNavigationOptions = {
   headerShown: false,
 };
 
-const tabBarScreenOptions = (insets: any, theme: any) => ({ route }: { route: { name: keyof MainTabParamList } }) => ({
-  tabBarIcon: ({ focused, color, size }: { focused: boolean; color: string; size: number }) => (
-    <Ionicons
-      name={getTabBarIcon(route.name, focused)}
-      size={24}
-      color={color}
-      style={{ marginBottom: 0 }}
-    />
-  ),
-  tabBarActiveTintColor: theme.accent,
-  tabBarInactiveTintColor: theme.textSecondary,
-  tabBarStyle: {
-    backgroundColor: theme.card,
-    borderTopColor: theme.border,
-    height: Platform.OS === 'ios' ? 70 + insets.bottom : 70,
-    paddingBottom: insets.bottom > 0 ? insets.bottom : 14,
-    paddingTop: 10,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: -2 },
-    shadowRadius: 10,
-    elevation: 10,
-    borderWidth: 0,
-  },
-  tabBarLabelStyle: {
-    fontSize: 13,
-    marginTop: 2,
-  },
-  tabBarIconStyle: {
-    marginTop: 4,
-    marginBottom: 0,
-  },
-  headerShown: false,
-});
+const tabBarScreenOptions =
+  (insets: any, theme: any) =>
+  ({ route }: { route: { name: keyof MainTabParamList } }) => ({
+    tabBarIcon: ({
+      focused,
+      color,
+      size,
+    }: {
+      focused: boolean;
+      color: string;
+      size: number;
+    }) => (
+      <Ionicons
+        name={getTabBarIcon(route.name, focused)}
+        size={24}
+        color={color}
+        style={{ marginBottom: 0 }}
+      />
+    ),
+    tabBarActiveTintColor: theme.accent,
+    tabBarInactiveTintColor: theme.textSecondary,
+    tabBarStyle: {
+      backgroundColor: theme.card,
+      borderTopColor: theme.border,
+      height: Platform.OS === 'ios' ? 70 + insets.bottom : 70,
+      paddingBottom: insets.bottom > 0 ? insets.bottom : 14,
+      paddingTop: 10,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowOffset: { width: 0, height: -2 },
+      shadowRadius: 10,
+      elevation: 10,
+      borderWidth: 0,
+    },
+    tabBarLabelStyle: {
+      fontSize: 13,
+      marginTop: 2,
+    },
+    tabBarIconStyle: {
+      marginTop: 4,
+      marginBottom: 0,
+    },
+    headerShown: false,
+  });
 
 // Main Tab Navigator component
 const MainTabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
   return (
-    <Tab.Navigator
-      screenOptions={tabBarScreenOptions(insets, theme)}
-    >
+    <Tab.Navigator screenOptions={tabBarScreenOptions(insets, theme)}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Calendar" component={CalendarScreen} />
       <Tab.Screen name="Account" component={AccountScreen} />
@@ -150,10 +149,9 @@ export const AppNavigator: React.FC = () => {
 
   return (
     <NavigationContainer>
-      <Stack.Navigator 
-        screenOptions={sharedScreenOptions} 
-        initialRouteName={getInitialRouteName()}
-      >
+      <Stack.Navigator
+        screenOptions={sharedScreenOptions}
+        initialRouteName={getInitialRouteName()}>
         {/* Always show Launch screen */}
         <Stack.Screen name="Launch" component={LaunchScreen} />
         {/* Main app routes */}
@@ -165,27 +163,22 @@ export const AppNavigator: React.FC = () => {
             <Stack.Screen name="Auth" component={AuthScreenWrapper} />
             {/* Functional screens */}
             <Stack.Screen name="PushTest" component={PushTestScreen} />
-            <Stack.Screen name="Settings" component={SettingsScreen} />
-            <Stack.Screen name="GuideSection" component={GuideSectionScreen} />
             <Stack.Screen name="AddStudy" component={AddStudyScreen} />
             <Stack.Screen name="AddEvent" component={AddEventScreen} />
             <Stack.Screen name="AddTaskEvent" component={AddTaskEventScreen} />
-            <Stack.Screen name="LearningStyleScreen" component={LearningStyleScreen} />
-            <Stack.Screen name="SpacedRepetitionScreen" component={SpacedRepetitionScreen} />
-            <Stack.Screen name="ScheduleSR" component={ScheduleSR} />
-            {/* Settings info pages */}
-            <Stack.Screen name="HelpAndFeedback" component={HelpAndFeedbackScreen} />
-            <Stack.Screen name="TermsOfUse" component={TermsOfUseScreen} />
-            <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+            {/* Conditionally render LearningStyleScreen based on feature flag */}
+            {/* <Stack.Screen
+              name="LearningStyleScreen"
+              component={LearningStyleScreen}
+            /> */}
             <Stack.Screen
-              name="TawkChat"
-              component={TawkChatScreen}
-              options={{ title: 'Live Chat' }}
+              name="SpacedRepetitionScreen"
+              component={SpacedRepetitionScreen}
             />
+            <Stack.Screen name="ScheduleSR" component={ScheduleSR} />
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
-

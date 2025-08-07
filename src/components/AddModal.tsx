@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import {
   Modal,
   View,
@@ -12,7 +12,13 @@ import {
   Pressable,
 } from 'react-native';
 import { Feather } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 const { height } = Dimensions.get('window');
@@ -23,21 +29,17 @@ interface AddModalProps {
   onSelect: (type: 'study' | 'event') => void;
 }
 
-export default function AddModal({ visible, onClose, onSelect }: AddModalProps) {
+export default function AddModal({
+  visible,
+  onClose,
+  onSelect,
+}: AddModalProps) {
   const slideAnim = useRef(new Animated.Value(height)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
   const { theme, isDark } = useTheme();
 
-  useEffect(() => {
-    if (visible) {
-      animateIn();
-    } else {
-      resetAnimation();
-    }
-  }, [visible]);
-
-  const animateIn = () => {
+  const animateIn = useCallback(() => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
@@ -57,13 +59,21 @@ export default function AddModal({ visible, onClose, onSelect }: AddModalProps) 
         useNativeDriver: true,
       }),
     ]).start();
-  };
+  }, [fadeAnim, scaleAnim, slideAnim]);
 
-  const resetAnimation = () => {
+  const resetAnimation = useCallback(() => {
     fadeAnim.setValue(0);
     slideAnim.setValue(height);
     scaleAnim.setValue(0.95);
-  };
+  }, [fadeAnim, scaleAnim, slideAnim]);
+
+  useEffect(() => {
+    if (visible) {
+      animateIn();
+    } else {
+      resetAnimation();
+    }
+  }, [visible, animateIn, resetAnimation]);
 
   const handleSelect = (type: 'study' | 'event') => {
     // Add haptic feedback here if available
@@ -78,29 +88,33 @@ export default function AddModal({ visible, onClose, onSelect }: AddModalProps) 
       <TouchableWithoutFeedback onPress={onClose}>
         <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
           <TouchableWithoutFeedback>
-            <Animated.View 
+            <Animated.View
               style={[
-                styles.modalCard, 
-                { 
+                styles.modalCard,
+                {
                   backgroundColor: theme.card,
                   ...SHADOWS.medium,
                   borderTopLeftRadius: BORDER_RADIUS.xl,
                   borderTopRightRadius: BORDER_RADIUS.xl,
                   paddingHorizontal: SPACING.lg,
                   paddingTop: SPACING.md,
-                  paddingBottom: Platform.OS === 'ios' ? SPACING.xl * 1.5 : SPACING.xl,
-                  transform: [
-                    { translateY: slideAnim },
-                    { scale: scaleAnim }
-                  ] 
-                }
-              ]}
-            >
-              <View style={[styles.dragHandle, { backgroundColor: theme.inputBorder }]} />
+                  paddingBottom:
+                    Platform.OS === 'ios' ? SPACING.xl * 1.5 : SPACING.xl,
+                  transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
+                },
+              ]}>
+              <View
+                style={[
+                  styles.dragHandle,
+                  { backgroundColor: theme.inputBorder },
+                ]}
+              />
 
-              <Text style={[styles.title, { color: theme.text }]} >What do you want to add?</Text>
+              <Text style={[styles.title, { color: theme.text }]}>
+                What do you want to add?
+              </Text>
 
-              <Pressable 
+              <Pressable
                 style={({ pressed }) => [
                   styles.option,
                   { backgroundColor: pressed ? theme.input : theme.input },
@@ -108,19 +122,34 @@ export default function AddModal({ visible, onClose, onSelect }: AddModalProps) 
                 onPress={() => handleSelect('study')}
                 accessibilityRole="button"
                 accessibilityLabel="Add study session"
-                accessibilityHint="Opens form to create a new study session"
-              >
-                <View style={[styles.optionIcon, { backgroundColor: theme.accent + '22' }]}> 
+                accessibilityHint="Opens form to create a new study session">
+                <View
+                  style={[
+                    styles.optionIcon,
+                    { backgroundColor: theme.accent + '22' },
+                  ]}>
                   <Feather name="book-open" size={22} color={theme.accent} />
                 </View>
                 <View style={styles.optionContent}>
-                  <Text style={[styles.optionText, { color: theme.text }]} >Study Session</Text>
-                  <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Schedule a learning session</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}>
+                    Study Session
+                  </Text>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      { color: theme.textSecondary },
+                    ]}>
+                    Schedule a learning session
+                  </Text>
                 </View>
-                <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={theme.textSecondary}
+                />
               </Pressable>
 
-              <Pressable 
+              <Pressable
                 style={({ pressed }) => [
                   styles.option,
                   { backgroundColor: pressed ? theme.input : theme.input },
@@ -128,16 +157,31 @@ export default function AddModal({ visible, onClose, onSelect }: AddModalProps) 
                 onPress={() => handleSelect('event')}
                 accessibilityRole="button"
                 accessibilityLabel="Add task or event"
-                accessibilityHint="Opens form to create a new task or event"
-              >
-                <View style={[styles.optionIcon, { backgroundColor: theme.accent + '22' }]}> 
+                accessibilityHint="Opens form to create a new task or event">
+                <View
+                  style={[
+                    styles.optionIcon,
+                    { backgroundColor: theme.accent + '22' },
+                  ]}>
                   <Feather name="calendar" size={22} color={theme.accent} />
                 </View>
                 <View style={styles.optionContent}>
-                  <Text style={[styles.optionText, { color: theme.text }]} >Task / Event</Text>
-                  <Text style={[styles.optionDescription, { color: theme.textSecondary }]}>Create a reminder or event</Text>
+                  <Text style={[styles.optionText, { color: theme.text }]}>
+                    Task / Event
+                  </Text>
+                  <Text
+                    style={[
+                      styles.optionDescription,
+                      { color: theme.textSecondary },
+                    ]}>
+                    Create a reminder or event
+                  </Text>
                 </View>
-                <Feather name="chevron-right" size={20} color={theme.textSecondary} />
+                <Feather
+                  name="chevron-right"
+                  size={20}
+                  color={theme.textSecondary}
+                />
               </Pressable>
             </Animated.View>
           </TouchableWithoutFeedback>
@@ -214,4 +258,4 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
   },
-}); 
+});

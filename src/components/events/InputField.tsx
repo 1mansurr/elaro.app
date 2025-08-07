@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../../constants/theme';
 
 interface InputFieldProps {
   label: string;
@@ -20,18 +25,17 @@ export const InputField: React.FC<InputFieldProps> = ({
   required = false,
   accessibilityLabel,
 }) => (
-  <View 
+  <View
     style={styles.container}
     accessible={true}
     accessibilityLabel={accessibilityLabel || label}
-    accessibilityRole="text"
-  >
+    accessibilityRole="text">
     <View style={styles.labelContainer}>
       {icon && (
-        <Ionicons 
-          name={icon as any} 
-          size={16} 
-          color={COLORS.textSecondary} 
+        <Ionicons
+          name={icon as any}
+          size={16}
+          color={COLORS.textSecondary}
           style={styles.icon}
         />
       )}
@@ -40,9 +44,7 @@ export const InputField: React.FC<InputFieldProps> = ({
         {required && <Text style={styles.required}> *</Text>}
       </Text>
     </View>
-    <View style={styles.inputContainer}>
-      {children}
-    </View>
+    <View style={styles.inputContainer}>{children}</View>
     {error && (
       <View style={styles.errorContainer}>
         <Ionicons name="warning" size={14} color={COLORS.error} />
@@ -92,4 +94,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default InputField; 
+export default InputField;

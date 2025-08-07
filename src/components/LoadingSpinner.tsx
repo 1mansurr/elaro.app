@@ -60,7 +60,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
             duration: 1000,
             easing: Easing.linear,
             useNativeDriver: true,
-          })
+          }),
         ).start();
         break;
 
@@ -79,7 +79,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
               easing: Easing.inOut(Easing.ease),
               useNativeDriver: true,
             }),
-          ])
+          ]),
         ).start();
         break;
 
@@ -100,12 +100,12 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                 easing: Easing.inOut(Easing.ease),
                 useNativeDriver: true,
               }),
-            ])
+            ]),
           ).start();
         });
         break;
     }
-  }, [variant]);
+  }, [dotValues, pulseValue, spinValue, variant]);
 
   const spin = spinValue.interpolate({
     inputRange: [0, 1],
@@ -124,8 +124,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                 height: spinnerSize,
                 transform: [{ rotate: spin }],
               },
-            ]}
-          >
+            ]}>
             <LinearGradient
               colors={[GRADIENTS.ocean.start, GRADIENTS.ocean.end]}
               style={StyleSheet.absoluteFill}
@@ -146,10 +145,13 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
                 backgroundColor: color,
                 transform: [{ scale: pulseValue }],
               },
-            ]}
-          >
+            ]}>
             {showIcon && (
-              <Ionicons name={iconName} size={iconSize * 0.6} color={COLORS.white} />
+              <Ionicons
+                name={iconName}
+                size={iconSize * 0.6}
+                color={COLORS.white}
+              />
             )}
           </Animated.View>
         );
@@ -201,9 +203,7 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     <View style={styles.container}>
       {renderSpinner()}
       {text && (
-        <Text style={[styles.text, { fontSize: textSize, color }]}>
-          {text}
-        </Text>
+        <Text style={[styles.text, { fontSize: textSize, color }]}>{text}</Text>
       )}
     </View>
   );
@@ -244,4 +244,4 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium as any,
     textAlign: 'center',
   },
-}); 
+});

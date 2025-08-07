@@ -25,7 +25,7 @@ const ColorLabel: React.FC<ColorLabelProps> = ({
         styles.base,
         sizeStyle,
         { backgroundColor: color, borderRadius: sizeStyle.width / 2 },
-    style,
+        style,
       ]}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel || `Color label: ${color}`}
@@ -51,4 +51,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ColorLabel; 
+export default ColorLabel;

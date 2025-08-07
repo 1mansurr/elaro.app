@@ -2,7 +2,9 @@
 const PAYSTACK_PUBLIC_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY;
 
 if (!PAYSTACK_PUBLIC_KEY) {
-  throw new Error('Missing Paystack configuration. Please check your .env file.');
+  throw new Error(
+    'Missing Paystack configuration. Please check your .env file.',
+  );
 }
 
 export interface PaystackConfig {
@@ -21,28 +23,31 @@ export const paystackService = {
   // Initialize Paystack payment for Oddity subscription
   initializeOdditySubscription: async (userEmail: string, userId: string) => {
     try {
-      const response = await fetch('https://api.paystack.co/transaction/initialize', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${PAYSTACK_PUBLIC_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: userEmail,
-          amount: 500, // GHS 5.00 in pesewas
-          currency: 'GHS',
-          plan: 'PLN_1kpekg5eib9l2w8', // Your actual Oddity plan code
-          callback_url: 'elaro://subscription-success', // Deep link back to app
-          metadata: {
-            user_id: userId,
-            subscription_type: 'oddity',
-            plan_name: 'Oddity Plan',
+      const response = await fetch(
+        'https://api.paystack.co/transaction/initialize',
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_PUBLIC_KEY}`,
+            'Content-Type': 'application/json',
           },
-        }),
-      });
+          body: JSON.stringify({
+            email: userEmail,
+            amount: 500, // GHS 5.00 in pesewas
+            currency: 'GHS',
+            plan: 'PLN_1kpekg5eib9l2w8', // Your actual Oddity plan code
+            callback_url: 'elaro://subscription-success', // Deep link back to app
+            metadata: {
+              user_id: userId,
+              subscription_type: 'oddity',
+              plan_name: 'Oddity Plan',
+            },
+          }),
+        },
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Payment initialization failed');
       }
@@ -57,27 +62,30 @@ export const paystackService = {
   // Open Oddity subscription payment page
   openOddityPayment: (userEmail: string) => {
     const paymentUrl = `https://paystack.shop/pay/p5hctw96n8?email=${encodeURIComponent(userEmail)}`;
-    
+
     // For web, open in new window
     if (typeof window !== 'undefined') {
       window.open(paymentUrl, '_blank');
     }
-    
+
     return paymentUrl;
   },
 
   // Verify payment
   verifyPayment: async (reference: string) => {
     try {
-      const response = await fetch(`https://api.paystack.co/transaction/verify/${reference}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${PAYSTACK_PUBLIC_KEY}`,
+      const response = await fetch(
+        `https://api.paystack.co/transaction/verify/${reference}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_PUBLIC_KEY}`,
+          },
         },
-      });
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Payment verification failed');
       }
@@ -92,15 +100,18 @@ export const paystackService = {
   // Get subscription details
   getSubscription: async (subscriptionCode: string) => {
     try {
-      const response = await fetch(`https://api.paystack.co/subscription/${subscriptionCode}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${PAYSTACK_PUBLIC_KEY}`,
+      const response = await fetch(
+        `https://api.paystack.co/subscription/${subscriptionCode}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${PAYSTACK_PUBLIC_KEY}`,
+          },
         },
-      });
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Subscription fetch failed');
       }
@@ -117,14 +128,16 @@ export const paystackService = {
     try {
       // Verify the payment first
       const verification = await paystackService.verifyPayment(reference);
-      
+
       if (verification.data.status === 'success') {
         // Import Supabase service
         const { authService } = await import('./supabase');
-        
+
         // Update user subscription status in Supabase
-        await authService.updateUserProfile(userId, { is_subscribed_to_oddity: true });
-        
+        await authService.updateUserProfile(userId, {
+          is_subscribed_to_oddity: true,
+        });
+
         return {
           success: true,
           message: 'Subscription activated successfully!',
@@ -153,9 +166,9 @@ export const SUBSCRIPTION_PLANS = {
     currency: 'GHS',
     plan_code: 'PLN_1kpekg5eib9l2w8', // Your actual plan code
     payment_link: 'https://paystack.shop/pay/p5hctw96n8',
-    description: 'Unlock more study sessions, full AI guide access, and premium features',
+    description:
+      'Unlock more study sessions, full AI guide access, and premium features',
   },
 };
 
 export default paystackService;
-

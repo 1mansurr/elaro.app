@@ -27,7 +27,10 @@ interface AuthScreenProps {
   onAuthSuccess?: () => void;
 }
 
-export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }) => {
+export const AuthScreen: React.FC<AuthScreenProps> = ({
+  onClose,
+  onAuthSuccess,
+}) => {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -141,7 +144,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
       <View style={styles.inputContainer}>
         <Text style={styles.label}>{label}</Text>
         <TextInput
-          style={[styles.input, { color: theme.text, backgroundColor: theme.input, borderColor: theme.inputBorder }]}
+          style={[
+            styles.input,
+            {
+              color: theme.text,
+              backgroundColor: theme.input,
+              borderColor: theme.inputBorder,
+            },
+          ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -161,7 +171,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
       return;
     }
     if (isSignUp && !agreedToTerms) {
-      Alert.alert('Agreement Required', 'You must agree to the Terms of Service and Privacy Policy to sign up.');
+      Alert.alert(
+        'Agreement Required',
+        'You must agree to the Terms of Service and Privacy Policy to sign up.',
+      );
       return;
     }
     setLoading(true);
@@ -186,15 +199,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.gradient}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled"
-        >
+          keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Let's Save Your Journey</Text>
+            <Text style={styles.title}>Let&apos;s Save Your Journey</Text>
           </View>
 
           <View style={styles.form}>
@@ -227,10 +238,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
             {/* Terms of Service and Privacy Policy Checkbox */}
             {isSignUp && (
               <TouchableOpacity
-                style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginBottom: 16,
+                }}
                 onPress={() => setAgreedToTerms(v => !v)}
-                activeOpacity={0.8}
-              >
+                activeOpacity={0.8}>
                 <View
                   style={{
                     width: 22,
@@ -238,29 +252,46 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
                     borderRadius: 6,
                     borderWidth: 2,
                     borderColor: agreedToTerms ? theme.primary : theme.gray300,
-                    backgroundColor: agreedToTerms ? theme.primary : theme.white,
+                    backgroundColor: agreedToTerms
+                      ? theme.primary
+                      : theme.white,
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginRight: 10,
-                  }}
-                >
+                  }}>
                   {agreedToTerms && (
-                    <Text style={{ color: theme.white, fontWeight: 'bold', fontSize: 16 }}>✓</Text>
+                    <Text
+                      style={{
+                        color: theme.white,
+                        fontWeight: 'bold',
+                        fontSize: 16,
+                      }}>
+                      ✓
+                    </Text>
                   )}
                 </View>
-                <Text style={{ flex: 1, color: theme.textPrimary, fontSize: 14 }}>
+                <Text
+                  style={{ flex: 1, color: theme.textPrimary, fontSize: 14 }}>
                   I agree to the{' '}
                   <Text
-                    style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                    onPress={() => Linking.openURL('https://elarolearning.com/terms')}
-                  >
+                    style={{
+                      color: theme.primary,
+                      textDecorationLine: 'underline',
+                    }}
+                    onPress={() =>
+                      Linking.openURL('https://elarolearning.com/terms')
+                    }>
                     Terms of Service
-                  </Text>
-                  {' '}and{' '}
+                  </Text>{' '}
+                  and{' '}
                   <Text
-                    style={{ color: theme.primary, textDecorationLine: 'underline' }}
-                    onPress={() => Linking.openURL('https://elarolearning.com/privacy')}
-                  >
+                    style={{
+                      color: theme.primary,
+                      textDecorationLine: 'underline',
+                    }}
+                    onPress={() =>
+                      Linking.openURL('https://elarolearning.com/privacy')
+                    }>
                     Privacy Policy
                   </Text>
                 </Text>
@@ -268,10 +299,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
             )}
 
             <TouchableOpacity
-              style={[styles.authButton, loading && styles.authButtonDisabled, { backgroundColor: theme.primary }]}
+              style={[
+                styles.authButton,
+                loading && styles.authButtonDisabled,
+                { backgroundColor: theme.primary },
+              ]}
               onPress={handleAuth}
-              disabled={loading}
-            >
+              disabled={loading}>
               {loading ? (
                 <ActivityIndicator color={theme.white} />
               ) : (
@@ -283,10 +317,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
 
             <TouchableOpacity
               style={styles.switchButton}
-              onPress={() => setIsSignUp(!isSignUp)}
-            >
+              onPress={() => setIsSignUp(!isSignUp)}>
               <Text style={[styles.switchButtonText, { color: theme.primary }]}>
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+                {isSignUp
+                  ? 'Already have an account? Sign In'
+                  : "Don't have an account? Sign Up"}
               </Text>
             </TouchableOpacity>
 
@@ -301,4 +336,3 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onClose, onAuthSuccess }
     </KeyboardAvoidingView>
   );
 };
-

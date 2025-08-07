@@ -1,5 +1,11 @@
 import { StyleSheet } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, LAYOUT } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  LAYOUT,
+} from '../constants/theme';
 
 export const styles = StyleSheet.create({
   container: {
@@ -44,4 +50,4 @@ export const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SPACING.sm,
   },
-}); 
+});

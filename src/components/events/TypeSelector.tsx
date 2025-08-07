@@ -1,7 +1,21 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, Modal, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 
 // Enhanced color palette
 const EVENT_COLORS = {
@@ -14,7 +28,12 @@ const EVENT_COLORS = {
 
 const EVENT_TYPES = [
   { key: 'Study', label: 'Study', icon: '📗', color: EVENT_COLORS.Study },
-  { key: 'Assignment', label: 'Assignment', icon: '📝', color: EVENT_COLORS.Assignment },
+  {
+    key: 'Assignment',
+    label: 'Assignment',
+    icon: '📝',
+    color: EVENT_COLORS.Assignment,
+  },
   { key: 'Exam', label: 'Exam', icon: '🔴', color: EVENT_COLORS.Exam },
   { key: 'Lecture', label: 'Lecture', icon: '👨‍🏫', color: EVENT_COLORS.Lecture },
   { key: 'Program', label: 'Program', icon: '🎯', color: EVENT_COLORS.Program },
@@ -38,24 +57,24 @@ export const TypeSelector: React.FC<TypeSelectorProps> = ({
       visible={isVisible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Event Type</Text>
-            <TouchableOpacity 
-              onPress={onClose} 
+            <TouchableOpacity
+              onPress={onClose}
               style={styles.closeButton}
               accessibilityRole="button"
-              accessibilityLabel="Close type selector"
-            >
+              accessibilityLabel="Close type selector">
               <Ionicons name="close" size={24} color={COLORS.text} />
             </TouchableOpacity>
           </View>
-          
-          <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
-            {EVENT_TYPES.map((type) => (
+
+          <ScrollView
+            style={styles.modalBody}
+            showsVerticalScrollIndicator={false}>
+            {EVENT_TYPES.map(type => (
               <TouchableOpacity
                 key={type.key}
                 style={[
@@ -68,22 +87,27 @@ export const TypeSelector: React.FC<TypeSelectorProps> = ({
                 }}
                 accessibilityRole="button"
                 accessibilityLabel={`Select ${type.label} type`}
-                accessibilityState={{ selected: selectedType === type.key }}
-              >
-                <View style={[
-                  styles.typeIcon,
-                  { backgroundColor: type.color.light }
-                ]}>
+                accessibilityState={{ selected: selectedType === type.key }}>
+                <View
+                  style={[
+                    styles.typeIcon,
+                    { backgroundColor: type.color.light },
+                  ]}>
                   <Text style={styles.typeIconText}>{type.icon}</Text>
                 </View>
-                <Text style={[
-                  styles.typeLabel,
-                  selectedType === type.key && styles.typeLabelSelected,
-                ]}>
+                <Text
+                  style={[
+                    styles.typeLabel,
+                    selectedType === type.key && styles.typeLabelSelected,
+                  ]}>
                   {type.label}
                 </Text>
                 {selectedType === type.key && (
-                  <Ionicons name="checkmark" size={20} color={type.color.primary} />
+                  <Ionicons
+                    name="checkmark"
+                    size={20}
+                    color={type.color.primary}
+                  />
                 )}
               </TouchableOpacity>
             ))}
@@ -161,4 +185,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TypeSelector; 
+export default TypeSelector;

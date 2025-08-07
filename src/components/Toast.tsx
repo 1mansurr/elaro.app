@@ -1,5 +1,12 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useEffect, useCallback, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -79,6 +86,10 @@ export const Toast: React.FC<ToastProps> = ({
 
   const config = getToastConfig();
 
+  const handleClose = useCallback(() => {
+    onClose?.();
+  }, [onClose]);
+
   useEffect(() => {
     if (visible) {
       // Trigger haptic feedback
@@ -133,11 +144,16 @@ export const Toast: React.FC<ToastProps> = ({
         }),
       ]).start();
     }
-  }, [visible, duration]);
-
-  const handleClose = () => {
-    onClose?.();
-  };
+  }, [
+    config.hapticType,
+    handleClose,
+    hapticFeedback,
+    opacityAnim,
+    scaleAnim,
+    slideAnim,
+    duration,
+    visible,
+  ]);
 
   if (!visible) return null;
 
@@ -146,20 +162,15 @@ export const Toast: React.FC<ToastProps> = ({
       style={[
         styles.container,
         {
-          transform: [
-            { translateY: slideAnim },
-            { scale: scaleAnim },
-          ],
+          transform: [{ translateY: slideAnim }, { scale: scaleAnim }],
           opacity: opacityAnim,
         },
-      ]}
-    >
+      ]}>
       <LinearGradient
         colors={config.gradient}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+        end={{ x: 1, y: 1 }}>
         <View style={styles.content}>
           {showIcon && (
             <Ionicons
@@ -177,8 +188,7 @@ export const Toast: React.FC<ToastProps> = ({
               onPress={handleClose}
               style={styles.closeButton}
               accessibilityRole="button"
-              accessibilityLabel="Close toast"
-            >
+              accessibilityLabel="Close toast">
               <Ionicons name="close" size={20} color={config.textColor} />
             </TouchableOpacity>
           )}
@@ -271,4 +281,4 @@ export class ToastManager {
   }
 }
 
-export const toast = ToastManager.getInstance(); 
+export const toast = ToastManager.getInstance();

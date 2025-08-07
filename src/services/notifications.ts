@@ -16,14 +16,17 @@ import { supabase } from './supabase';
 async function savePushTokenToSupabase(userId: string, token: string) {
   const platform = Platform.OS;
   const updated_at = new Date().toISOString();
-  const { error } = await supabase.from('user_devices').upsert([
-    {
-      user_id: userId,
-      push_token: token,
-      platform,
-      updated_at,
-    },
-  ], { onConflict: 'user_id,platform' });
+  const { error } = await supabase.from('user_devices').upsert(
+    [
+      {
+        user_id: userId,
+        push_token: token,
+        platform,
+        updated_at,
+      },
+    ],
+    { onConflict: 'user_id,platform' },
+  );
   if (error) {
     console.error('❌ Error saving push token to Supabase:', error);
   } else {
@@ -46,19 +49,17 @@ Notifications.setNotificationHandler({
 const isExpoGo = Constants.appOwnership === 'expo';
 const isDevClient = !isExpoGo;
 
-// Spaced Repetition Intervals
-const SRS_INTERVALS = {
-  origin: [0, 1, 3],
-  oddity: [0, 1, 3, 7, 14, 30, 60, 120, 180],
-};
-
 /**
  * Send a test push notification using the Expo push API
  * @param token Expo push token
  * @param title Notification title
  * @param body Notification body
  */
-export async function sendTestPushNotification(token: string, title = 'Test Notification', body = 'This is a test push notification.') {
+export async function sendTestPushNotification(
+  token: string,
+  title = 'Test Notification',
+  body = 'This is a test push notification.',
+) {
   const message = {
     to: token,
     sound: 'default',
@@ -102,9 +103,9 @@ export const notificationService = {
 
     // Only setup push notifications in development builds or production
     if (isDevClient || !__DEV__) {
-    await this.registerForPushNotifications(userId);
+      await this.registerForPushNotifications(userId);
     }
-    
+
     await this.setupNotificationChannels();
     this.setupNotificationListeners();
   },
@@ -127,7 +128,8 @@ export const notificationService = {
       });
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const { status: existingStatus } =
+      await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
@@ -208,7 +210,10 @@ export const notificationService = {
   },
 
   async setNotificationsEnabled(enabled: boolean) {
-    await AsyncStorage.setItem('notificationSettings', JSON.stringify({ enabled }));
+    await AsyncStorage.setItem(
+      'notificationSettings',
+      JSON.stringify({ enabled }),
+    );
     if (!enabled) {
       await Notifications.cancelAllScheduledNotificationsAsync();
     }
@@ -244,7 +249,10 @@ export const notificationService = {
           data: { ...data, type },
           sound: true,
         },
-        trigger: { type: SchedulableTriggerInputTypes.DATE, date: triggerDate.getTime() },
+        trigger: {
+          type: SchedulableTriggerInputTypes.DATE,
+          date: triggerDate.getTime(),
+        },
       });
       console.log('✅ Scheduled notification:', id, 'for', triggerDate);
     } catch (error) {
@@ -279,61 +287,30 @@ export const notificationService = {
     }
   },
 
-  async scheduleSRReminders({
-    sessionId,
-    sessionTitle,
-    studyDate,
-    planType,
-    userId,
-  }: {
-    sessionId: string;
-    sessionTitle: string;
-    studyDate: Date;
-    planType: 'origin' | 'oddity';
-    userId: string;
-  }) {
-    const intervals = SRS_INTERVALS[planType];
-
-    for (let i = 0; i < intervals.length; i++) {
-      const dayOffset = intervals[i];
-      const triggerDate = new Date(studyDate);
-      triggerDate.setDate(triggerDate.getDate() + dayOffset);
-      triggerDate.setHours(9, 0, 0, 0);
-
-      const reminderId = `sr_${sessionId}_day${dayOffset}`;
-
-      await this.scheduleReminder({
-        id: reminderId,
-        title: '🧠 Time to review',
-        body: `Day ${dayOffset} review: ${sessionTitle}`,
-        triggerDate,
-        type: 'spaced_repetition',
-        data: { sessionId, dayOffset, userId },
-      });
-    }
-
-    await analyticsService.logEvent(userId, 'add_session', {
-      spaced_repetition: true,
-      plan_type: planType,
-      intervals_count: intervals.length,
-    });
-  },
-
   async cancelItemReminders(itemId: string) {
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const scheduledNotifications =
+      await Notifications.getAllScheduledNotificationsAsync();
     for (const notification of scheduledNotifications) {
       const data = notification.content.data;
-      if (data?.itemId === itemId || notification.identifier.startsWith(itemId)) {
-        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+      if (
+        data?.itemId === itemId ||
+        notification.identifier.startsWith(itemId)
+      ) {
+        await Notifications.cancelScheduledNotificationAsync(
+          notification.identifier,
+        );
       }
     }
   },
 
   async cancelSRReminders(sessionId: string) {
-    const scheduledNotifications = await Notifications.getAllScheduledNotificationsAsync();
+    const scheduledNotifications =
+      await Notifications.getAllScheduledNotificationsAsync();
     for (const notification of scheduledNotifications) {
       if (notification.identifier.startsWith(`sr_${sessionId}`)) {
-        await Notifications.cancelScheduledNotificationAsync(notification.identifier);
+        await Notifications.cancelScheduledNotificationAsync(
+          notification.identifier,
+        );
       }
     }
   },
@@ -376,7 +353,11 @@ export const notificationService = {
     reminderTimes: ReminderTime[];
     endDate?: Date;
   }) {
-    const occurrences = this.generateRepeatOccurrences(startDate, repeatPattern, endDate);
+    const occurrences = this.generateRepeatOccurrences(
+      startDate,
+      repeatPattern,
+      endDate,
+    );
     for (let i = 0; i < occurrences.length; i++) {
       const occurrence = occurrences[i];
       const occurrenceId = `${itemId}_occurrence_${i}`;
@@ -393,11 +374,12 @@ export const notificationService = {
   generateRepeatOccurrences(
     startDate: Date,
     repeatPattern: RepeatPattern,
-    endDate?: Date
+    endDate?: Date,
   ): Date[] {
     const occurrences: Date[] = [];
     const maxOccurrences = 52;
-    const finalEndDate = endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+    const finalEndDate =
+      endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
     let currentDate = new Date(startDate);
 
     for (let i = 0; i < maxOccurrences && currentDate <= finalEndDate; i++) {
@@ -458,7 +440,8 @@ export const notificationService = {
   },
 
   async getScheduledNotificationsCount(): Promise<number> {
-    const notifications = await Notifications.getAllScheduledNotificationsAsync();
+    const notifications =
+      await Notifications.getAllScheduledNotificationsAsync();
     return notifications.length;
   },
 

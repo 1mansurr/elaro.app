@@ -8,7 +8,11 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, name?: string) => Promise<{ error: any }>;
+  signUp: (
+    email: string,
+    password: string,
+    name?: string,
+  ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -23,7 +27,9 @@ export const useAuth = () => {
   return context;
 };
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session.data.session?.user) {
           await authService.createUserProfile(
             session.data.session.user.id,
-            session.data.session.user.email || ''
+            session.data.session.user.email || '',
           );
           const newProfile = await authService.getUserProfile(userId);
           console.log('AuthContext: created new user profile', newProfile);
@@ -74,11 +80,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      console.log('🔐 Initial session state:', session ? 'Authenticated' : 'Not authenticated');
+      console.log(
+        '🔐 Initial session state:',
+        session ? 'Authenticated' : 'Not authenticated',
+      );
       if (session?.user) {
         console.log('👤 User email:', session.user.email);
       }
-      
+
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id).then(profile => {
@@ -94,21 +103,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('🔄 Auth state change:', event, session ? 'Session present' : 'No session');
-        setSession(session);
-        if (session?.user) {
-          const userProfile = await fetchUserProfile(session.user.id);
-          setUser(userProfile);
-          console.log('AuthContext: setUser after auth change', userProfile);
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-        console.log('AuthContext: setLoading(false) after auth change');
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(
+        '🔄 Auth state change:',
+        event,
+        session ? 'Session present' : 'No session',
+      );
+      setSession(session);
+      if (session?.user) {
+        const userProfile = await fetchUserProfile(session.user.id);
+        setUser(userProfile);
+        console.log('AuthContext: setUser after auth change', userProfile);
+      } else {
+        setUser(null);
       }
-    );
+      setLoading(false);
+      console.log('AuthContext: setLoading(false) after auth change');
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -148,7 +161,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // User profile will be created automatically by the database trigger
       // But we can also create it manually if needed
       if (data.user && !data.user.email_confirmed_at) {
-        console.log('📧 User signed up successfully. Please check email for confirmation.');
+        console.log(
+          '📧 User signed up successfully. Please check email for confirmation.',
+        );
       }
 
       return { error: null };
@@ -183,4 +198,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-

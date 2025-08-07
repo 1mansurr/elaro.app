@@ -15,7 +15,7 @@ export const INITIAL_CHECKLIST: Omit<ChecklistItem, 'completed'>[] = [
 
 export const GUIDE_SECTIONS = [
   'Study Techniques',
-  'Memory Methods', 
+  'Memory Methods',
   'Time Management',
-  'Note-Taking'
-]; 
+  'Note-Taking',
+];

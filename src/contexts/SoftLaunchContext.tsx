@@ -9,7 +9,9 @@ interface SoftLaunchContextType {
   getComingSoonMessage: (feature: string) => string;
 }
 
-const SoftLaunchContext = createContext<SoftLaunchContextType | undefined>(undefined);
+const SoftLaunchContext = createContext<SoftLaunchContextType | undefined>(
+  undefined,
+);
 
 export const useSoftLaunch = () => {
   const context = useContext(SoftLaunchContext);
@@ -23,20 +25,30 @@ interface SoftLaunchProviderProps {
   children: ReactNode;
 }
 
-export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({ children }) => {
+export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
+  children,
+}) => {
   // Soft launch disabled, all features enabled
   const [isSoftLaunch] = useState(false);
 
   const getComingSoonMessage = (feature: string): string => {
     const messages = {
-      'study-guide': '🎁 Bonus: AI Study Guide is coming soon! You’ll get personalized learning strategies and advanced study techniques as a free bonus for Oddity members.',
-      'spaced-repetition': '🧠 Advanced Spaced Repetition is coming soon! Get intelligent review scheduling and extended intervals.',
-      'premium-analytics': '📊 Premium Analytics launching soon! Track your progress with detailed insights and trends.',
-      'unlimited-tasks': '🗂️ More tasks coming next week! Plan with fewer limits and organize your academic life.',
-      'priority-support': '🎯 Priority Support launching soon! Get faster responses and personalized help.',
-      'subscription': 'Become An Oddity to unlock premium features and analytics. Subscriptions open soon!',
-      'learning-style': '🧠 Learning Style Discovery is launching soon! Take a quick AI-powered quiz to discover your optimal study strategies.',
-      'default': '✨ This Oddity feature is launching soon! Become An Oddity to unlock premium tools and upgrades.',
+      'study-guide':
+        '🎁 Bonus: AI Study Guide is coming soon! You’ll get personalized learning strategies and advanced study techniques as a free bonus for Oddity members.',
+      'spaced-repetition':
+        '🧠 Advanced Spaced Repetition is coming soon! Get intelligent review scheduling and extended intervals.',
+      'premium-analytics':
+        '📊 Premium Analytics launching soon! Track your progress with detailed insights and trends.',
+      'unlimited-tasks':
+        '🗂️ More tasks coming next week! Plan with fewer limits and organize your academic life.',
+      'priority-support':
+        '🎯 Priority Support launching soon! Get faster responses and personalized help.',
+      subscription:
+        'Become An Oddity to unlock premium features and analytics. Subscriptions open soon!',
+      'learning-style':
+        '🧠 Learning Style Discovery is launching soon! Take a quick AI-powered quiz to discover your optimal study strategies.',
+      default:
+        '✨ This Oddity feature is launching soon! Become An Oddity to unlock premium tools and upgrades.',
     };
     return messages[feature as keyof typeof messages] || messages.default;
   };
@@ -46,9 +58,7 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({ children
     Alert.alert(
       '🚀 Become An Oddity',
       `${message}\n\nFull Oddity access launches next week (GHS 5/month). Stay tuned!`,
-      [
-        { text: 'Got it!', style: 'default' }
-      ]
+      [{ text: 'Got it!', style: 'default' }],
     );
   };
 
@@ -76,4 +86,4 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({ children
       {children}
     </SoftLaunchContext.Provider>
   );
-}; 
+};

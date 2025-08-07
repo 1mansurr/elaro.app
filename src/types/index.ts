@@ -81,19 +81,6 @@ export interface SpacedRepetitionReminder {
 }
 
 // ─────────────────────────────────────────────────────────────
-// 🔥 Streak Types
-// ─────────────────────────────────────────────────────────────
-
-export interface Streak {
-  id: string;
-  user_id: string;
-  current_streak: number;
-  longest_streak: number;
-  last_activity_date: string;
-  created_at: string;
-}
-
-// ─────────────────────────────────────────────────────────────
 // 📈 Analytics Types
 // ─────────────────────────────────────────────────────────────
 
@@ -223,18 +210,11 @@ export type RootStackParamList = {
   Main: undefined;
   Auth: { onClose?: () => void };
   PushTest: undefined;
-  Settings: undefined;
-  GuideSection: undefined;
   AddStudy: undefined;
   AddEvent: undefined;
   AddTaskEvent: undefined;
-  LearningStyleScreen: undefined;
   SpacedRepetitionScreen: undefined;
   ScheduleSR: undefined;
-  HelpAndFeedback: undefined;
-  TermsOfUse: undefined;
-  PrivacyPolicy: undefined;
-  TawkChat: undefined;
 };
 
 export type MainTabParamList = {
@@ -285,16 +265,7 @@ export interface AddTaskForm {
   details?: Record<string, any>;
 }
 
-// ─────────────────────────────────────────────────────────────
-// ⚙️ Settings Types
-// ─────────────────────────────────────────────────────────────
 
-export interface AppSettings {
-  notificationsEnabled: boolean;
-  defaultReminderTimes: ReminderTime[];
-  language: 'en';
-  colorPalette: ColorOption[];
-}
 
 // ─────────────────────────────────────────────────────────────
 // ❗ Error Types
@@ -306,3 +277,4 @@ export interface AppError {
   details?: any;
 }
 
+// TODO: Streak type was here. Re-define if/when streaks are reintroduced.

@@ -12,7 +12,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS, FONT_WEIGHTS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+  FONT_WEIGHTS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 import { sendTestPushNotification } from '../services/notifications';
 
@@ -20,15 +27,17 @@ interface PushTestScreenProps {
   navigation: any;
 }
 
-export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) => {
+export const PushTestScreen: React.FC<PushTestScreenProps> = ({
+  navigation,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [pushToken, setPushToken] = useState<string | null>(null);
   const [lastTestResult, setLastTestResult] = useState<string>('');
   const { theme } = useTheme();
 
   const styles = StyleSheet.create({
-    container: { 
-      flex: 1, 
+    container: {
+      flex: 1,
       backgroundColor: theme.background,
     },
     header: {
@@ -40,9 +49,9 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
       backgroundColor: theme.card,
       ...SHADOWS.sm,
     },
-    backButton: { 
-      width: 40, 
-      alignItems: 'center' 
+    backButton: {
+      width: 40,
+      alignItems: 'center',
     },
     headerTitle: {
       fontSize: FONT_SIZES.lg,
@@ -50,12 +59,12 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
       color: theme.text,
       marginLeft: SPACING.md,
     },
-    content: { 
-      flex: 1, 
-      padding: SPACING.md 
+    content: {
+      flex: 1,
+      padding: SPACING.md,
     },
-    section: { 
-      marginBottom: SPACING.lg 
+    section: {
+      marginBottom: SPACING.lg,
     },
     description: {
       fontSize: FONT_SIZES.md,
@@ -81,8 +90,8 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
       color: theme.textSecondary,
       lineHeight: 18,
     },
-    buttonGroup: { 
-      marginBottom: SPACING.xl 
+    buttonGroup: {
+      marginBottom: SPACING.xl,
     },
     button: {
       flexDirection: 'row',
@@ -146,7 +155,7 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
       setLastTestResult(
         token
           ? '✅ Push token retrieved successfully!'
-          : '❌ No push token found. Register first.'
+          : '❌ No push token found. Register first.',
       );
     } catch (error) {
       console.error('Fetch error:', error);
@@ -171,7 +180,11 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
         sound: 'default',
         title: '🧪 Test Notification',
         body: 'This is a test notification from ELARO!',
-        data: { type: 'test', screen: 'PushTestScreen', timestamp: new Date().toISOString() },
+        data: {
+          type: 'test',
+          screen: 'PushTestScreen',
+          timestamp: new Date().toISOString(),
+        },
       };
 
       const response = await fetch('https://exp.host/--/api/v2/push/send', {
@@ -226,12 +239,11 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
           style={styles.backButton}
           accessibilityRole="button"
-          accessibilityLabel="Go back"
-        >
+          accessibilityLabel="Go back">
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Push Test</Text>
@@ -241,7 +253,8 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <Text style={styles.description}>
-            Test push notifications for your device. You'll need to first fetch your Expo token, then send a test notification.
+            Test push notifications for your device. You&apos;ll need to first
+            fetch your Expo token, then send a test notification.
           </Text>
         </View>
 
@@ -260,14 +273,19 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
             onPress={fetchPushToken}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Fetch push token"
-          >
+            accessibilityLabel="Fetch push token">
             {isLoading ? (
               <ActivityIndicator color={theme.white} />
             ) : (
               <>
-                <Ionicons name="download-outline" size={18} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Fetch Push Token</Text>
+                <Ionicons
+                  name="download-outline"
+                  size={18}
+                  color={theme.white}
+                />
+                <Text style={[styles.buttonText, { color: theme.white }]}>
+                  Fetch Push Token
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -281,14 +299,15 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
             onPress={sendTestNotification}
             disabled={isLoading || !pushToken}
             accessibilityRole="button"
-            accessibilityLabel="Send test notification"
-          >
+            accessibilityLabel="Send test notification">
             {isLoading ? (
               <ActivityIndicator color={theme.white} />
             ) : (
               <>
                 <Ionicons name="send-outline" size={18} color={theme.white} />
-                <Text style={[styles.buttonText, { color: theme.white }]}>Send Test Notification</Text>
+                <Text style={[styles.buttonText, { color: theme.white }]}>
+                  Send Test Notification
+                </Text>
               </>
             )}
           </TouchableOpacity>
@@ -298,22 +317,31 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
             onPress={clearResults}
             disabled={isLoading}
             accessibilityRole="button"
-            accessibilityLabel="Clear results"
-          >
+            accessibilityLabel="Clear results">
             <Ionicons name="refresh-outline" size={18} color={theme.text} />
-            <Text style={[styles.buttonText, styles.clearButtonText, { color: theme.text }]}>Clear Results</Text>
+            <Text
+              style={[
+                styles.buttonText,
+                styles.clearButtonText,
+                { color: theme.text },
+              ]}>
+              Clear Results
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={[styles.button, styles.primaryButton]}
             onPress={handleSendTestPush}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <Ionicons name="notifications" size={20} color="#fff" />
-            <Text style={[styles.buttonText, { color: '#fff' }]}>Send Test Push Notification</Text>
+            <Text style={[styles.buttonText, { color: '#fff' }]}>
+              Send Test Push Notification
+            </Text>
           </TouchableOpacity>
           {lastTestResult ? (
-            <Text style={{ marginTop: 10, color: theme.success }}>{lastTestResult}</Text>
+            <Text style={{ marginTop: 10, color: theme.success }}>
+              {lastTestResult}
+            </Text>
           ) : null}
         </View>
 
@@ -327,12 +355,18 @@ export const PushTestScreen: React.FC<PushTestScreenProps> = ({ navigation }) =>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Steps</Text>
           <View style={styles.instructionList}>
-            <Text style={styles.instructionItem}>1. Tap "Fetch Push Token"</Text>
-            <Text style={styles.instructionItem}>2. Tap "Send Test Notification"</Text>
-            <Text style={styles.instructionItem}>3. Confirm the notification arrives</Text>
+            <Text style={styles.instructionItem}>
+              1. Tap &quot;Fetch Push Token&quot;
+            </Text>
+            <Text style={styles.instructionItem}>
+              2. Tap &quot;Send Test Notification&quot;
+            </Text>
+            <Text style={styles.instructionItem}>
+              3. Confirm the notification arrives
+            </Text>
           </View>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
-}; 
+};

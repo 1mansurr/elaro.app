@@ -54,12 +54,11 @@ export const AnimatedTouchable: React.FC<AnimatedTouchableProps> = ({
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
         accessibilityHint={accessibilityHint}
-        accessibilityState={{ disabled }}
-      >
+        accessibilityState={{ disabled }}>
         {children}
       </TouchableOpacity>
     </Animated.View>
   );
 };
 
-export default AnimatedTouchable; 
+export default AnimatedTouchable;

@@ -3,13 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  
   TextInput,
   TouchableOpacity,
   ScrollView,
   Platform,
   Dimensions,
-
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,12 +17,16 @@ import { Button } from './Button';
 import { AuthModal } from './AuthModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS } from '../constants/theme';
-import { taskService } from '../services/supabase';
+import { taskService, supabase } from '../services/supabase';
 import { notificationService } from '../services/notifications';
 import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../hooks/useSubscription';
 import { useSoftLaunch } from '../contexts/SoftLaunchContext';
-import { AddTaskForm, ColorOption, ReminderTime, RepeatPattern } from '../types';
+import {
+  AddTaskForm,
+  ColorOption,
+  ReminderTime,
+  RepeatPattern,
+} from '../types';
 import { Picker } from '@react-native-picker/picker';
 import { DateTimePicker } from './DateTimePicker';
 import { Input } from './Input';
@@ -43,7 +45,14 @@ const TASK_TYPES = [
   { value: 'program', label: 'Program', icon: 'calendar' },
 ];
 
-const COLOR_OPTIONS: ColorOption[] = ['green', 'blue', 'purple', 'orange', 'yellow', 'pink'];
+const COLOR_OPTIONS: ColorOption[] = [
+  'green',
+  'blue',
+  'purple',
+  'orange',
+  'yellow',
+  'pink',
+];
 const REMINDER_OPTIONS: { value: ReminderTime; label: string }[] = [
   { value: '15min', label: '15 minutes before' },
   { value: '30min', label: '30 minutes before' },
@@ -59,7 +68,9 @@ const REPEAT_OPTIONS = [
 
 // Locally override AddTaskForm type to allow string reminders
 // (ReminderTime | string)[]
-type AddTaskFormWithCustomReminders = Omit<AddTaskForm, 'reminders'> & { reminders: (ReminderTime | string)[] };
+type AddTaskFormWithCustomReminders = Omit<AddTaskForm, 'reminders'> & {
+  reminders: (ReminderTime | string)[];
+};
 
 export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   visible,
@@ -67,10 +78,9 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
-  const { isSubscribed } = useSubscription();
   const { blockPremiumFeature } = useSoftLaunch();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+
   const [form, setForm] = useState<AddTaskFormWithCustomReminders>({
     type: 'assignment',
     title: '',
@@ -79,7 +89,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     reminders: [],
     repeatPattern: undefined,
   });
-  
+
   // Remove any old custom calendar or time picker code and state
   // Only use the new DateTimePicker for date/time selection
   // Remove date and time state if not needed
@@ -119,11 +129,12 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     return fallback[color] || color;
   };
 
-  const handleInputChange = (field: keyof AddTaskFormWithCustomReminders, value: any) => {
+  const handleInputChange = (
+    field: keyof AddTaskFormWithCustomReminders,
+    value: any,
+  ) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
-
-
 
   const toggleReminder = (reminder: ReminderTime) => {
     const newReminders = form.reminders.includes(reminder)
@@ -134,11 +145,16 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   const getDefaultColor = (type: string): ColorOption => {
     switch (type) {
-      case 'assignment': return 'yellow';
-      case 'exam': return 'red';
-      case 'lecture': return 'purple';
-      case 'program': return 'blue';
-      default: return 'green';
+      case 'assignment':
+        return 'yellow';
+      case 'exam':
+        return 'red';
+      case 'lecture':
+        return 'purple';
+      case 'program':
+        return 'blue';
+      default:
+        return 'green';
     }
   };
 
@@ -154,36 +170,6 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
     return true;
   };
 
-  const checkTaskLimit = async (): Promise<boolean> => {
-    if (!user) return false;
-
-    try {
-      if (isSubscribed) {
-        // Check total active tasks for Oddity plan
-        const activeCount = await taskService.getActiveTasks(user.id);
-        if (activeCount >= 35) {
-          Alert.alert(
-            'Task Limit Reached',
-            'You have reached the maximum of 35 active tasks. Complete or delete some tasks to continue.',
-            [{ text: 'OK' }]
-          );
-          return false;
-        }
-      } else {
-        // Check weekly limit for Origin plan
-        const weeklyCount = await taskService.getWeeklyTaskCount(user.id);
-        if (weeklyCount >= 14) {
-          blockPremiumFeature('unlimited-tasks');
-          return false;
-        }
-      }
-      return true;
-    } catch (error) {
-      console.error('Error checking task limit:', error);
-      return true; // Allow creation if check fails
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user) {
       setShowAuthModal(true);
@@ -192,26 +178,39 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
     if (!validateForm()) return;
 
-    const canAdd = await checkTaskLimit();
-    if (!canAdd) return;
-
     setIsSubmitting(true);
 
     try {
-      // Create the task
-      const task = await taskService.createTask({
-        user_id: user.id,
-        type: form.type,
-        title: form.title.trim(),
-        date_time: form.dateTime.toISOString(),
-        color: form.color,
-        reminders: form.reminders.filter(r => typeof r !== 'string') as ReminderTime[],
-        repeat_pattern: form.repeatPattern,
-        completed: false,
+      // Create the task using the new Edge Function with limits
+      const { data: task, error } = await supabase.functions.invoke('create-task', {
+        body: {
+          type: form.type,
+          title: form.title.trim(),
+          date_time: form.dateTime.toISOString(),
+          color: form.color,
+          reminders: form.reminders.filter(
+            r => typeof r !== 'string',
+          ) as ReminderTime[],
+          repeat_pattern: form.repeatPattern,
+          completed: false,
+        },
       });
 
+      if (error) {
+        // Handle the error in the UI, for example, show a toast if the limit is exceeded.
+        console.error('Error creating task:', error.message);
+        if (error.message?.includes('limit exceeded')) {
+          Alert.alert('Limit Exceeded', error.message);
+        } else {
+          Alert.alert('Error', 'Failed to create task. Please try again.');
+        }
+        return;
+      }
+
       // Schedule reminders if any
-      const builtinReminders = form.reminders.filter(r => typeof r !== 'string') as ReminderTime[];
+      const builtinReminders = form.reminders.filter(
+        r => typeof r !== 'string',
+      ) as ReminderTime[];
       if (builtinReminders.length > 0) {
         if (form.repeatPattern && form.type === 'lecture') {
           // Schedule repeating reminders for lectures
@@ -237,7 +236,7 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
       Alert.alert('Success', 'Task created successfully!');
       onSuccess?.();
       onClose();
-      
+
       // Reset form
       setForm({
         type: 'assignment',
@@ -272,229 +271,428 @@ export const AddTaskModal: React.FC<AddTaskModalProps> = ({
 
   return (
     <>
-    <BottomModal
-      visible={visible}
-      onClose={onClose}
-      title="Add Task / Event"
-      height={0.6}
-    >
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }} scrollEnabled={!isTimePickerOpen}>
-        <View style={{ width: Math.min(screenWidth * 0.9, 500), alignSelf: 'center' }}>
-        {/* Task Type Selector */}
-        <View style={{ flexDirection: 'row', marginBottom: 20 }}>
-            {TASK_TYPES.map((type) => (
-              <TouchableOpacity
-                key={type.value}
-                style={{
-                  flex: 1,
-                  alignItems: 'center',
-                  paddingVertical: 10,
-                  borderRadius: 8,
-                  backgroundColor: form.type === type.value ? theme.input : 'transparent',
-                  borderWidth: form.type === type.value ? 1 : 0,
-                  borderColor: form.type === type.value ? theme.accent : 'transparent',
-                  marginRight: 8,
-                }}
-                onPress={() => handleInputChange('type', type.value)}
-                accessibilityRole="button"
-                accessibilityLabel={type.label}
-              >
-                <Ionicons name={type.icon as any} size={22} color={form.type === type.value ? theme.accent : theme.textSecondary} />
-                <Text style={{ color: form.type === type.value ? theme.accent : theme.textSecondary, fontWeight: '600', marginTop: 4 }}>{type.label}</Text>
-              </TouchableOpacity>
-            ))}
-        </View>
-        {/* Title Input */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Title</Text>
-          <TextInput
-          style={{
-            backgroundColor: theme.input,
-            color: theme.text,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: theme.inputBorder,
-            marginBottom: 16,
-          }}
-          placeholder="e.g. Math Assignment"
-          placeholderTextColor={theme.textSecondary}
-            value={form.title}
-          onChangeText={(text: string) => handleInputChange('title', text)}
-        />
-        {/* Type-Specific Fields */}
-        {form.type === 'assignment' && (
-          <>
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Course Name</Text>
-            <Input
-              value={form.details?.courseName || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, courseName: text })}
-              placeholder="e.g. Chemistry 101"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Description</Text>
-            <Input
-              value={form.details?.description || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, description: text })}
-              placeholder="Optional details or instructions"
-              placeholderTextColor={theme.textSecondary}
-              multiline
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>File Link</Text>
-            <Input
-              value={form.details?.fileLink || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, fileLink: text })}
-              placeholder="Paste a link to a file (optional)"
-              placeholderTextColor={theme.textSecondary}
-            />
-          </>
-        )}
-        {form.type === 'exam' && (
-          <>
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Course/Subject</Text>
-            <Input
-              value={form.details?.course || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, course: text })}
-              placeholder="e.g. Physics"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Exam Type</Text>
-            <Input
-              value={form.details?.examType || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, examType: text })}
-              placeholder="Midterm, Final, Quiz, etc."
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Location</Text>
-            <Input
-              value={form.details?.location || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, location: text })}
-              placeholder="Room or online link (optional)"
-              placeholderTextColor={theme.textSecondary}
-            />
-            {/* Toggles for studyReminder and spacedRepetition can be added here */}
-          </>
-        )}
-        {form.type === 'lecture' && (
-          <>
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Course/Topic</Text>
-            <Input
-              value={form.details?.courseOrTopic || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, courseOrTopic: text })}
-              placeholder="e.g. Thermodynamics Week 2"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Lecturer</Text>
-            <Input
-              value={form.details?.lecturer || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, lecturer: text })}
-              placeholder="Name (optional)"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Location/Link</Text>
-            <Input
-              value={form.details?.locationOrLink || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, locationOrLink: text })}
-              placeholder="Room or Zoom link"
-              placeholderTextColor={theme.textSecondary}
-            />
-            {/* RepeatPatternSelector and end date picker can be added here */}
-          </>
-        )}
-        {form.type === 'program' && (
-          <>
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Program Title</Text>
-            <Input
-              value={form.details?.programTitle || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, programTitle: text })}
-              placeholder="e.g. AWS Cloud Bootcamp"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Link</Text>
-            <Input
-              value={form.details?.link || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, link: text })}
-              placeholder="Registration or info link (optional)"
-              placeholderTextColor={theme.textSecondary}
-            />
-            <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Organizer</Text>
-            <Input
-              value={form.details?.organizer || ''}
-              onChangeText={(text: string) => handleInputChange('details', { ...form.details, organizer: text })}
-              placeholder="e.g. Tech Society (optional)"
-              placeholderTextColor={theme.textSecondary}
-            />
-            {/* Duration (start/end date) pickers can be added here */}
-          </>
-        )}
-        {/* Date and Time Picker */}
-        <DateTimePicker
-          value={form.dateTime}
-          onChange={(newDateTime) => {
-            setForm(prev => ({ ...prev, dateTime: newDateTime }));
-          }}
-          label="Date & Time"
-          onPickerModeChange={mode => setIsTimePickerOpen(mode === 'time')}
-        />
-        {/* Color Selector */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Color</Text>
-        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-            {COLOR_OPTIONS.map((color) => (
-              <TouchableOpacity
-                key={color}
+      <BottomModal
+        visible={visible}
+        onClose={onClose}
+        title="Add Task / Event"
+        height={0.6}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          scrollEnabled={!isTimePickerOpen}>
+          <View
+            style={{
+              width: Math.min(screenWidth * 0.9, 500),
+              alignSelf: 'center',
+            }}>
+            {/* Task Type Selector */}
+            <View style={{ flexDirection: 'row', marginBottom: 20 }}>
+              {TASK_TYPES.map(type => (
+                <TouchableOpacity
+                  key={type.value}
+                  style={{
+                    flex: 1,
+                    alignItems: 'center',
+                    paddingVertical: 10,
+                    borderRadius: 8,
+                    backgroundColor:
+                      form.type === type.value ? theme.input : 'transparent',
+                    borderWidth: form.type === type.value ? 1 : 0,
+                    borderColor:
+                      form.type === type.value ? theme.accent : 'transparent',
+                    marginRight: 8,
+                  }}
+                  onPress={() => handleInputChange('type', type.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={type.label}>
+                  <Ionicons
+                    name={type.icon as any}
+                    size={22}
+                    color={
+                      form.type === type.value
+                        ? theme.accent
+                        : theme.textSecondary
+                    }
+                  />
+                  <Text
+                    style={{
+                      color:
+                        form.type === type.value
+                          ? theme.accent
+                          : theme.textSecondary,
+                      fontWeight: '600',
+                      marginTop: 4,
+                    }}>
+                    {type.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* Title Input */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Title
+            </Text>
+            <TextInput
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: getColorHex(color),
-                marginRight: 10,
-                borderWidth: form.color === color ? 2 : 0,
-                borderColor: form.color === color ? theme.accent : 'transparent',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-                onPress={() => handleInputChange('color', color)}
-                accessibilityRole="button"
-              accessibilityLabel={color}
-              >
-              {form.color === color && <Ionicons name="checkmark" size={18} color={theme.text} />}
-            </TouchableOpacity>
-          ))}
-          </View>
-        {/* Reminders */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Reminders</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-          {REMINDER_OPTIONS.map((reminder) => (
-            <TouchableOpacity
-              key={reminder.value}
-              style={{
-                backgroundColor: form.reminders.includes(reminder.value) ? theme.accent : theme.input,
-                borderRadius: 16,
-                paddingVertical: 6,
-                paddingHorizontal: 14,
-                marginRight: 8,
-                marginBottom: 8,
+                backgroundColor: theme.input,
+                color: theme.text,
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 16,
                 borderWidth: 1,
-                borderColor: form.reminders.includes(reminder.value) ? theme.accent : theme.inputBorder,
+                borderColor: theme.inputBorder,
+                marginBottom: 16,
               }}
-              onPress={() => toggleReminder(reminder.value)}
-              accessibilityRole="button"
-              accessibilityLabel={reminder.label}
-            >
-              <Text style={{ color: form.reminders.includes(reminder.value) ? theme.background : theme.textSecondary }}>{reminder.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {/* Submit Button */}
-        <Button
-          title={isSubmitting ? 'Adding...' : 'Add Task'}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        />
-        </View>
-      </ScrollView>
-    </BottomModal>
-    <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
+              placeholder="e.g. Math Assignment"
+              placeholderTextColor={theme.textSecondary}
+              value={form.title}
+              onChangeText={(text: string) => handleInputChange('title', text)}
+            />
+            {/* Type-Specific Fields */}
+            {form.type === 'assignment' && (
+              <>
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Course Name
+                </Text>
+                <Input
+                  value={form.details?.courseName || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      courseName: text,
+                    })
+                  }
+                  placeholder="e.g. Chemistry 101"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Description
+                </Text>
+                <Input
+                  value={form.details?.description || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      description: text,
+                    })
+                  }
+                  placeholder="Optional details or instructions"
+                  placeholderTextColor={theme.textSecondary}
+                  multiline
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  File Link
+                </Text>
+                <Input
+                  value={form.details?.fileLink || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      fileLink: text,
+                    })
+                  }
+                  placeholder="Paste a link to a file (optional)"
+                  placeholderTextColor={theme.textSecondary}
+                />
+              </>
+            )}
+            {form.type === 'exam' && (
+              <>
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Course/Subject
+                </Text>
+                <Input
+                  value={form.details?.course || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      course: text,
+                    })
+                  }
+                  placeholder="e.g. Physics"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Exam Type
+                </Text>
+                <Input
+                  value={form.details?.examType || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      examType: text,
+                    })
+                  }
+                  placeholder="Midterm, Final, Quiz, etc."
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Location
+                </Text>
+                <Input
+                  value={form.details?.location || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      location: text,
+                    })
+                  }
+                  placeholder="Room or online link (optional)"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                {/* Toggles for studyReminder and spacedRepetition can be added here */}
+              </>
+            )}
+            {form.type === 'lecture' && (
+              <>
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Course/Topic
+                </Text>
+                <Input
+                  value={form.details?.courseOrTopic || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      courseOrTopic: text,
+                    })
+                  }
+                  placeholder="e.g. Thermodynamics Week 2"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Lecturer
+                </Text>
+                <Input
+                  value={form.details?.lecturer || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      lecturer: text,
+                    })
+                  }
+                  placeholder="Name (optional)"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Location/Link
+                </Text>
+                <Input
+                  value={form.details?.locationOrLink || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      locationOrLink: text,
+                    })
+                  }
+                  placeholder="Room or Zoom link"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                {/* RepeatPatternSelector and end date picker can be added here */}
+              </>
+            )}
+            {form.type === 'program' && (
+              <>
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Program Title
+                </Text>
+                <Input
+                  value={form.details?.programTitle || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      programTitle: text,
+                    })
+                  }
+                  placeholder="e.g. AWS Cloud Bootcamp"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Link
+                </Text>
+                <Input
+                  value={form.details?.link || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      link: text,
+                    })
+                  }
+                  placeholder="Registration or info link (optional)"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                <Text
+                  style={{
+                    color: theme.text,
+                    fontWeight: '600',
+                    marginBottom: 6,
+                  }}>
+                  Organizer
+                </Text>
+                <Input
+                  value={form.details?.organizer || ''}
+                  onChangeText={(text: string) =>
+                    handleInputChange('details', {
+                      ...form.details,
+                      organizer: text,
+                    })
+                  }
+                  placeholder="e.g. Tech Society (optional)"
+                  placeholderTextColor={theme.textSecondary}
+                />
+                {/* Duration (start/end date) pickers can be added here */}
+              </>
+            )}
+            {/* Date and Time Picker */}
+            <DateTimePicker
+              value={form.dateTime}
+              onChange={newDateTime => {
+                setForm(prev => ({ ...prev, dateTime: newDateTime }));
+              }}
+              label="Date & Time"
+              onPickerModeChange={mode => setIsTimePickerOpen(mode === 'time')}
+            />
+            {/* Color Selector */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Color
+            </Text>
+            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+              {COLOR_OPTIONS.map(color => (
+                <TouchableOpacity
+                  key={color}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: getColorHex(color),
+                    marginRight: 10,
+                    borderWidth: form.color === color ? 2 : 0,
+                    borderColor:
+                      form.color === color ? theme.accent : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={() => handleInputChange('color', color)}
+                  accessibilityRole="button"
+                  accessibilityLabel={color}>
+                  {form.color === color && (
+                    <Ionicons name="checkmark" size={18} color={theme.text} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* Reminders */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Reminders
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginBottom: 8,
+              }}>
+              {REMINDER_OPTIONS.map(reminder => (
+                <TouchableOpacity
+                  key={reminder.value}
+                  style={{
+                    backgroundColor: form.reminders.includes(reminder.value)
+                      ? theme.accent
+                      : theme.input,
+                    borderRadius: 16,
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    marginRight: 8,
+                    marginBottom: 8,
+                    borderWidth: 1,
+                    borderColor: form.reminders.includes(reminder.value)
+                      ? theme.accent
+                      : theme.inputBorder,
+                  }}
+                  onPress={() => toggleReminder(reminder.value)}
+                  accessibilityRole="button"
+                  accessibilityLabel={reminder.label}>
+                  <Text
+                    style={{
+                      color: form.reminders.includes(reminder.value)
+                        ? theme.background
+                        : theme.textSecondary,
+                    }}>
+                    {reminder.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* Submit Button */}
+            <Button
+              title={isSubmitting ? 'Adding...' : 'Add Task'}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            />
+          </View>
+        </ScrollView>
+      </BottomModal>
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </>
   );
 };
@@ -636,4 +834,4 @@ const styles = StyleSheet.create({
   submitButton: {
     marginTop: SPACING.lg,
   },
-}); 
+});

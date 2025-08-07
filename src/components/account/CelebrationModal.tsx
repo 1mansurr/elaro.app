@@ -1,8 +1,22 @@
 import React from 'react';
-import { View, Text, Modal, Pressable, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  Pressable,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 
 interface CelebrationModalProps {
   visible: boolean;
@@ -51,8 +65,7 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <Animated.View style={[styles.overlay, { opacity: opacityAnim }]}>
         <Pressable style={styles.backdrop} onPress={onClose} />
         <Animated.View
@@ -61,44 +74,60 @@ export const CelebrationModal: React.FC<CelebrationModalProps> = ({
             {
               transform: [{ scale: scaleAnim }],
             },
-          ]}
-        >
+          ]}>
           <LinearGradient
             colors={['#667eea', '#764ba2']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
-            style={styles.gradient}
-          >
+            style={styles.gradient}>
             <View style={styles.content}>
               <View style={styles.iconContainer}>
                 <Text style={styles.emoji}>🎉</Text>
                 <Ionicons name="star" size={32} color={COLORS.white} />
               </View>
-              
+
               <Text style={styles.title}>Welcome to ODDITY!</Text>
-              <Text style={styles.successText}>You've successfully upgraded to premium. Enjoy premium features and full AI guide access!</Text>
-              
+              <Text style={styles.successText}>
+                You&apos;ve successfully upgraded to premium. Enjoy premium
+                features and full AI guide access!
+              </Text>
+
               <View style={styles.featuresList}>
                 <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-                  <Text style={styles.featureText}>More study sessions, tasks & events</Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={COLORS.white}
+                  />
+                  <Text style={styles.featureText}>
+                    More study sessions, tasks & events
+                  </Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
-                  <Text style={styles.featureText}>Advanced spaced repetition</Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={COLORS.white}
+                  />
+                  <Text style={styles.featureText}>
+                    Advanced spaced repetition
+                  </Text>
                 </View>
                 <View style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={20} color={COLORS.white} />
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={COLORS.white}
+                  />
                   <Text style={styles.featureText}>Full guide access</Text>
                 </View>
               </View>
-              
+
               <Pressable
                 style={styles.continueButton}
                 onPress={onClose}
                 accessibilityRole="button"
-                accessibilityLabel="Continue to app"
-              >
+                accessibilityLabel="Continue to app">
                 <Text style={styles.continueButtonText}>Continue</Text>
               </Pressable>
             </View>
@@ -187,4 +216,4 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.white,
   },
-}); 
+});

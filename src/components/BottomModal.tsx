@@ -11,7 +11,13 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface BottomModalProps {
@@ -38,29 +44,53 @@ export const BottomModal: React.FC<BottomModalProps> = ({
       visible={visible}
       animationType="slide"
       transparent
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity
           style={styles.backdrop}
           activeOpacity={1}
           onPress={onClose}
         />
-        <View style={[styles.modalContainer, { height: modalHeight, backgroundColor: theme.card, shadowColor: isDark ? '#000' : theme.input }]}>
+        <View
+          style={[
+            styles.modalContainer,
+            {
+              height: modalHeight,
+              backgroundColor: theme.card,
+              shadowColor: isDark ? '#000' : theme.input,
+            },
+          ]}>
           <SafeAreaView style={styles.safeTop}>
-            <View style={[styles.header, { backgroundColor: theme.card, shadowColor: isDark ? '#000' : theme.input }]}>
-              <View style={[styles.dragHandle, { backgroundColor: theme.inputBorder }]} />
+            <View
+              style={[
+                styles.header,
+                {
+                  backgroundColor: theme.card,
+                  shadowColor: isDark ? '#000' : theme.input,
+                },
+              ]}>
+              <View
+                style={[
+                  styles.dragHandle,
+                  { backgroundColor: theme.inputBorder },
+                ]}
+              />
               <View style={styles.titleRow}>
-                <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+                <Text style={[styles.title, { color: theme.text }]}>
+                  {title}
+                </Text>
                 <TouchableOpacity
                   onPress={onClose}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   style={styles.closeButton}
                   accessibilityRole="button"
                   accessibilityLabel="Close modal"
-                  accessibilityHint="Double tap to close this modal"
-                >
-                  <Ionicons name="close" size={24} color={theme.textSecondary} />
+                  accessibilityHint="Double tap to close this modal">
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme.textSecondary}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -69,8 +99,7 @@ export const BottomModal: React.FC<BottomModalProps> = ({
               contentContainerStyle={styles.contentContainer}
               showsVerticalScrollIndicator={false}
               bounces={false}
-              keyboardShouldPersistTaps="handled"
-            >
+              keyboardShouldPersistTaps="handled">
               {children}
             </ScrollView>
           </SafeAreaView>
@@ -145,4 +174,3 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
   },
 });
-

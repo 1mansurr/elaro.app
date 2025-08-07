@@ -14,7 +14,12 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
-import { SPACING, FONT_SIZES, BORDER_RADIUS, FONT_WEIGHTS } from '../constants/theme';
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  FONT_WEIGHTS,
+} from '../constants/theme';
 import { Button, Input } from '../components';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -23,7 +28,12 @@ const SPACED_REPETITION_SCHEDULE = {
   oddity: [0, 1, 3, 7, 14, 30, 60, 120, 180],
 };
 
-const AnimatedTouchable = ({ children, onPress, style, disabled = false }: {
+const AnimatedTouchable = ({
+  children,
+  onPress,
+  style,
+  disabled = false,
+}: {
   children: React.ReactNode;
   onPress: () => void;
   style?: any;
@@ -35,12 +45,20 @@ const AnimatedTouchable = ({ children, onPress, style, disabled = false }: {
     <Animated.View style={{ transform: [{ scale }] }}>
       <TouchableOpacity
         onPress={onPress}
-        onPressIn={() => !disabled && Animated.spring(scale, { toValue: 0.95, useNativeDriver: true }).start()}
-        onPressOut={() => !disabled && Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()}
+        onPressIn={() =>
+          !disabled &&
+          Animated.spring(scale, {
+            toValue: 0.95,
+            useNativeDriver: true,
+          }).start()
+        }
+        onPressOut={() =>
+          !disabled &&
+          Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start()
+        }
         style={style}
         disabled={disabled}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         {children}
       </TouchableOpacity>
     </Animated.View>
@@ -86,7 +104,7 @@ export default function AddStudyScreen() {
       useNativeDriver: true,
     }).start();
     // No setTimeout/setInterval in this effect, nothing to clean up here.
-  }, [useRepetition]);
+  }, [fadeAnim, useRepetition]);
 
   // TODO: If you add any setTimeout or setInterval in the future, clean them up here.
 
@@ -113,7 +131,9 @@ export default function AddStudyScreen() {
       color: selectedColor,
       useRepetition,
       reminders,
-      spacedRepetitionSchedule: useRepetition ? SPACED_REPETITION_SCHEDULE[isOddityUser ? 'oddity' : 'free'] : null,
+      spacedRepetitionSchedule: useRepetition
+        ? SPACED_REPETITION_SCHEDULE[isOddityUser ? 'oddity' : 'free']
+        : null,
     };
 
     console.log('Saved session:', session);
@@ -121,15 +141,18 @@ export default function AddStudyScreen() {
     Alert.alert('Success', '✅ Study session created', [
       { text: 'OK', onPress: () => navigation.goBack() },
     ]);
-    return () => { isMounted = false; };
+    return () => {
+      isMounted = false;
+    };
   };
 
-  const toggleReminder = (key: keyof typeof reminders) => setReminders(p => ({ ...p, [key]: !p[key] }));
+  const toggleReminder = (key: keyof typeof reminders) =>
+    setReminders(p => ({ ...p, [key]: !p[key] }));
   const reminderCount = Object.values(reminders).filter(Boolean).length;
 
   const styles = StyleSheet.create({
-    container: { 
-      flex: 1, 
+    container: {
+      flex: 1,
       backgroundColor: theme.background,
     },
     header: {
@@ -141,9 +164,9 @@ export default function AddStudyScreen() {
       borderBottomColor: theme.gray100,
       backgroundColor: theme.card,
     },
-    title: { 
-      fontSize: FONT_SIZES.lg, 
-      fontWeight: FONT_WEIGHTS.semibold as any, 
+    title: {
+      fontSize: FONT_SIZES.lg,
+      fontWeight: FONT_WEIGHTS.semibold as any,
       // color: COLORS.text,
     },
     saveBtn: {
@@ -153,19 +176,19 @@ export default function AddStudyScreen() {
       paddingVertical: SPACING.sm,
       borderRadius: BORDER_RADIUS.md,
     },
-    saveText: { 
+    saveText: {
       // color: COLORS.primary,
       color: theme.white,
       fontWeight: FONT_WEIGHTS.semibold as any,
       fontSize: FONT_SIZES.md,
     },
-    scroll: { 
-      padding: SPACING.lg, 
+    scroll: {
+      padding: SPACING.lg,
       gap: SPACING.md,
     },
-    colorRow: { 
-      flexDirection: 'row', 
-      gap: SPACING.sm, 
+    colorRow: {
+      flexDirection: 'row',
+      gap: SPACING.sm,
       marginBottom: SPACING.lg,
     },
     colorDot: {
@@ -177,34 +200,34 @@ export default function AddStudyScreen() {
       borderWidth: 1,
       borderColor: 'transparent',
     },
-    activeDot: { 
+    activeDot: {
       borderColor: theme.text,
     },
-    section: { 
+    section: {
       marginTop: SPACING.lg,
     },
-    sectionTitle: { 
-      fontSize: FONT_SIZES.md, 
-      fontWeight: FONT_WEIGHTS.semibold as any, 
+    sectionTitle: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: FONT_WEIGHTS.semibold as any,
       color: theme.text,
       marginBottom: SPACING.sm,
     },
-    label: { 
-      fontSize: FONT_SIZES.md, 
-      fontWeight: FONT_WEIGHTS.medium as any, 
+    label: {
+      fontSize: FONT_SIZES.md,
+      fontWeight: FONT_WEIGHTS.medium as any,
       color: theme.text,
     },
-    caption: { 
-      fontSize: FONT_SIZES.sm, 
+    caption: {
+      fontSize: FONT_SIZES.sm,
       color: theme.textSecondary,
       marginTop: SPACING.xs,
     },
-    fade: { 
+    fade: {
       marginTop: SPACING.sm,
     },
-    rowBetween: { 
-      flexDirection: 'row', 
-      alignItems: 'center', 
+    rowBetween: {
+      flexDirection: 'row',
+      alignItems: 'center',
       justifyContent: 'space-between',
     },
     reminderItem: {
@@ -213,17 +236,17 @@ export default function AddStudyScreen() {
       paddingVertical: SPACING.sm,
       gap: SPACING.sm,
     },
-    reminderText: { 
-      fontSize: FONT_SIZES.md, 
+    reminderText: {
+      fontSize: FONT_SIZES.md,
       color: theme.text,
     },
-    activeReminder: { 
+    activeReminder: {
       backgroundColor: theme.primary + '10',
-      borderRadius: BORDER_RADIUS.sm, 
+      borderRadius: BORDER_RADIUS.sm,
       paddingHorizontal: SPACING.sm,
     },
-    activeText: { 
-      fontWeight: FONT_WEIGHTS.semibold as any, 
+    activeText: {
+      fontWeight: FONT_WEIGHTS.semibold as any,
       color: theme.primary,
     },
   });
@@ -235,12 +258,19 @@ export default function AddStudyScreen() {
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.title, { color: theme.text }]}>New Study</Text>
-        <AnimatedTouchable onPress={handleSave} disabled={isSubmitting} style={styles.saveBtn}>
-          <Text style={[styles.saveText, { color: theme.primary }]}>{isSubmitting ? 'Saving...' : 'Save'}</Text>
+        <AnimatedTouchable
+          onPress={handleSave}
+          disabled={isSubmitting}
+          style={styles.saveBtn}>
+          <Text style={[styles.saveText, { color: theme.primary }]}>
+            {isSubmitting ? 'Saving...' : 'Save'}
+          </Text>
         </AnimatedTouchable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}>
         <Input
           label="Course"
           leftIcon="school"
@@ -276,9 +306,14 @@ export default function AddStudyScreen() {
             <TouchableOpacity
               key={key}
               onPress={() => setSelectedColor(key)}
-              style={[styles.colorDot, { backgroundColor: color }, selectedColor === key && styles.activeDot]}
-            >
-              {selectedColor === key && <Ionicons name="checkmark" size={14} color={theme.white} />}
+              style={[
+                styles.colorDot,
+                { backgroundColor: color },
+                selectedColor === key && styles.activeDot,
+              ]}>
+              {selectedColor === key && (
+                <Ionicons name="checkmark" size={14} color={theme.white} />
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -288,7 +323,9 @@ export default function AddStudyScreen() {
           <View style={styles.rowBetween}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>Enable Repetition</Text>
-              <Text style={styles.caption}>Boost retention with smart intervals</Text>
+              <Text style={styles.caption}>
+                Boost retention with smart intervals
+              </Text>
             </View>
             <Switch
               value={useRepetition}
@@ -311,22 +348,30 @@ export default function AddStudyScreen() {
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Reminders ({reminderCount})</Text>
-          {([
+          {[
             ['thirtyMin', '30 min before'] as const,
             ['twentyFourHr', '24 hrs before'] as const,
             ['oneWeek', '1 week before'] as const,
-          ]).map(([key, label]) => (
+          ].map(([key, label]) => (
             <TouchableOpacity
               key={key}
-              style={[styles.reminderItem, reminders[key] && styles.activeReminder]}
-              onPress={() => toggleReminder(key)}
-            >
+              style={[
+                styles.reminderItem,
+                reminders[key] && styles.activeReminder,
+              ]}
+              onPress={() => toggleReminder(key)}>
               <Ionicons
                 name={reminders[key] ? 'checkmark-circle' : 'ellipse-outline'}
                 size={20}
                 color={reminders[key] ? theme.primary : theme.gray}
               />
-              <Text style={[styles.reminderText, reminders[key] && styles.activeText]}>{label}</Text>
+              <Text
+                style={[
+                  styles.reminderText,
+                  reminders[key] && styles.activeText,
+                ]}>
+                {label}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -347,4 +392,4 @@ export default function AddStudyScreen() {
       )}
     </SafeAreaView>
   );
-} 
+}

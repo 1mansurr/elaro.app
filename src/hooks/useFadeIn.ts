@@ -4,7 +4,7 @@ import { Animated } from 'react-native';
 
 export const useFadeIn = (delay = 0, duration = 600) => {
   const animated = useRef(new Animated.Value(0)).current;
-  
+
   useEffect(() => {
     Animated.timing(animated, {
       toValue: 1,
@@ -12,7 +12,7 @@ export const useFadeIn = (delay = 0, duration = 600) => {
       delay,
       useNativeDriver: true,
     }).start();
-  }, [delay, duration]);
+  }, [animated, delay, duration]);
 
   return animated;
-}; 
+};

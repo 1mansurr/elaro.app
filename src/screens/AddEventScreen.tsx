@@ -11,7 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, FONT_WEIGHTS, SHADOWS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  FONT_WEIGHTS,
+  SHADOWS,
+} from '../constants/theme';
 import { useNavigation } from '@react-navigation/native';
 import { Input } from '../components';
 import { useTheme } from '../contexts/ThemeContext';
@@ -20,7 +27,7 @@ const EVENT_TYPES = ['assignment', 'exam', 'meeting', 'deadline'] as const;
 
 export default function AddEventScreen() {
   const [title, setTitle] = useState('');
-  const [type, setType] = useState<typeof EVENT_TYPES[number]>('assignment');
+  const [type, setType] = useState<(typeof EVENT_TYPES)[number]>('assignment');
   const [date, setDate] = useState(new Date());
   const [repeat, setRepeat] = useState(false);
   const [reminder, setReminder] = useState(false);
@@ -147,10 +154,14 @@ export default function AddEventScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.iconButton}>
           <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>New Task or Event</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          New Task or Event
+        </Text>
         <TouchableOpacity onPress={handleSave} style={styles.iconButton}>
           <Text style={[styles.saveText, { color: theme.primary }]}>Save</Text>
         </TouchableOpacity>
@@ -169,22 +180,25 @@ export default function AddEventScreen() {
         {/* Type */}
         <Text style={[styles.label, { color: theme.text }]}>Type</Text>
         <View style={styles.typeRow}>
-          {EVENT_TYPES.map((option) => (
+          {EVENT_TYPES.map(option => (
             <TouchableOpacity
               key={option}
               style={[
                 styles.typeOption,
-                type === option && { borderColor: theme.primary, backgroundColor: theme.primaryLight },
+                type === option && {
+                  borderColor: theme.primary,
+                  backgroundColor: theme.primaryLight,
+                },
               ]}
               onPress={() => setType(option)}
               accessibilityRole="button"
               accessibilityLabel={`Select ${option} type`}
-              accessibilityState={{ selected: type === option }}
-            >
-              <Text style={[
-                styles.typeText,
-                type === option && { color: theme.primary },
-              ]}>
+              accessibilityState={{ selected: type === option }}>
+              <Text
+                style={[
+                  styles.typeText,
+                  type === option && { color: theme.primary },
+                ]}>
                 {option}
               </Text>
             </TouchableOpacity>
@@ -218,7 +232,9 @@ export default function AddEventScreen() {
           <View style={styles.toggleRow}>
             <View style={styles.toggleContent}>
               <Text style={styles.toggleLabel}>Reminder</Text>
-              <Text style={styles.toggleCaption}>Get notified before event</Text>
+              <Text style={styles.toggleCaption}>
+                Get notified before event
+              </Text>
             </View>
             <Switch
               value={reminder}
@@ -245,4 +261,4 @@ export default function AddEventScreen() {
       )}
     </SafeAreaView>
   );
-} 
+}

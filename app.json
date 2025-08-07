@@ -11,9 +11,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#4A90E2"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.elaro.app",
@@ -35,9 +33,7 @@
       "bundler": "metro"
     },
     "scheme": "elaro",
-    "plugins": [
-      "expo-notifications"
-    ],
+    "plugins": ["expo-notifications"],
     "extra": {
       "FIREBASE_API_KEY": "AIzaSyBDJn__V1DtG_jAnwarXJULSvrUjDOialo",
       "FIREBASE_AUTH_DOMAIN": "elaro-c0a15.firebaseapp.com",

@@ -1,7 +1,12 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, GRADIENTS, BORDER_RADIUS, FONT_SIZES } from '../constants/theme';
+import {
+  COLORS,
+  GRADIENTS,
+  BORDER_RADIUS,
+  FONT_SIZES,
+} from '../constants/theme';
 
 interface SpacedRepetitionBadgeProps {
   type: 'basic' | 'advanced';
@@ -10,12 +15,12 @@ interface SpacedRepetitionBadgeProps {
 }
 
 const SpacedRepetitionBadge: React.FC<SpacedRepetitionBadgeProps> = ({
-  type, 
+  type,
   size = 'medium',
   style,
 }) => {
   const isAdvanced = type === 'advanced';
-  
+
   const sizeStyles =
     size === 'small'
       ? {
@@ -37,23 +42,21 @@ const SpacedRepetitionBadge: React.FC<SpacedRepetitionBadgeProps> = ({
     <View
       style={[
         styles.inner,
-      {
+        {
           backgroundColor: isAdvanced ? 'transparent' : COLORS.green100,
           borderRadius: sizeStyles.borderRadius,
           paddingHorizontal: sizeStyles.paddingHorizontal,
           paddingVertical: sizeStyles.paddingVertical,
         },
-      ]}
-    >
+      ]}>
       <Text
         style={[
-        styles.text,
-        {
+          styles.text,
+          {
             fontSize: sizeStyles.fontSize,
-          color: isAdvanced ? COLORS.white : COLORS.green600,
+            color: isAdvanced ? COLORS.white : COLORS.green600,
           },
-        ]}
-      >
+        ]}>
         {label}
       </Text>
     </View>
@@ -71,15 +74,13 @@ const SpacedRepetitionBadge: React.FC<SpacedRepetitionBadgeProps> = ({
         },
         style,
       ]}
-      accessibilityLabel="Advanced spaced repetition"
-    >
+      accessibilityLabel="Advanced spaced repetition">
       {badgeContent}
     </LinearGradient>
   ) : (
     <View
       style={[styles.container, style]}
-      accessibilityLabel="Basic spaced repetition"
-    >
+      accessibilityLabel="Basic spaced repetition">
       {badgeContent}
     </View>
   );
@@ -98,4 +99,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SpacedRepetitionBadge; 
+export default SpacedRepetitionBadge;

@@ -5,7 +5,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Card } from '../components/Card';
-import { SPACING, FONT_SIZES, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import {
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function SpacedRepetitionScreen() {
@@ -208,17 +213,21 @@ export default function SpacedRepetitionScreen() {
           colors={[theme.success, theme.green600]}
           style={styles.emptyIconGradient}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <Ionicons name="checkmark-done-circle" size={48} color={theme.white} />
+          end={{ x: 1, y: 1 }}>
+          <Ionicons
+            name="checkmark-done-circle"
+            size={48}
+            color={theme.white}
+          />
         </LinearGradient>
       </View>
-      
-      <Text style={styles.emptyTitle}>You're all caught up!</Text>
+
+      <Text style={styles.emptyTitle}>You&apos;re all caught up!</Text>
       <Text style={styles.emptySubtitle}>
-        No spaced repetition items to review right now. Great job staying on top of your studies!
+        No spaced repetition items to review right now. Great job staying on top
+        of your studies!
       </Text>
-      
+
       <View style={styles.emptyStats}>
         <View style={styles.statItem}>
           <Text style={styles.statNumber}>0</Text>
@@ -234,45 +243,48 @@ export default function SpacedRepetitionScreen() {
   );
 
   const renderItem = ({ item }: { item: any }) => (
-    <Pressable 
-      style={({ pressed }) => [
-        styles.card,
-        pressed && styles.cardPressed
-      ]}
+    <Pressable
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
       accessibilityRole="button"
-      accessibilityLabel={`Review ${item.title}`}
-    >
+      accessibilityLabel={`Review ${item.title}`}>
       <View style={styles.cardHeader}>
         <Text style={styles.cardTitle}>{item.title}</Text>
-        <View style={[
-          styles.difficultyBadge, 
-          item.difficulty === 'Easy' && styles.difficultyEasy,
-          item.difficulty === 'Medium' && styles.difficultyMedium,
-          item.difficulty === 'Hard' && styles.difficultyHard,
-        ]}>
+        <View
+          style={[
+            styles.difficultyBadge,
+            item.difficulty === 'Easy' && styles.difficultyEasy,
+            item.difficulty === 'Medium' && styles.difficultyMedium,
+            item.difficulty === 'Hard' && styles.difficultyHard,
+          ]}>
           <Text style={styles.difficultyText}>{item.difficulty}</Text>
         </View>
       </View>
-      
+
       <View style={styles.cardMeta}>
         <View style={styles.metaItem}>
           <Ionicons name="time-outline" size={16} color={theme.textSecondary} />
           <Text style={styles.metaText}>Due: {item.dueDate}</Text>
         </View>
         <View style={styles.metaItem}>
-          <Ionicons name="repeat-outline" size={16} color={theme.textSecondary} />
+          <Ionicons
+            name="repeat-outline"
+            size={16}
+            color={theme.textSecondary}
+          />
           <Text style={styles.metaText}>Interval: {item.interval}</Text>
         </View>
       </View>
-      
+
       <View style={styles.cardFooter}>
-        <Text style={styles.progressText}>Review {item.reviewCount} of {item.totalReviews}</Text>
+        <Text style={styles.progressText}>
+          Review {item.reviewCount} of {item.totalReviews}
+        </Text>
         <View style={styles.progressBar}>
-          <View 
+          <View
             style={[
-              styles.progressFill, 
-              { width: `${(item.reviewCount / item.totalReviews) * 100}%` }
-            ]} 
+              styles.progressFill,
+              { width: `${(item.reviewCount / item.totalReviews) * 100}%` },
+            ]}
           />
         </View>
       </View>
@@ -285,9 +297,11 @@ export default function SpacedRepetitionScreen() {
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <Text style={styles.screenTitle}>Spaced Repetition</Text>
-          <Text style={styles.screenSubtitle}>Your upcoming review sessions</Text>
+          <Text style={styles.screenSubtitle}>
+            Your upcoming review sessions
+          </Text>
         </View>
-        
+
         <View style={styles.headerStats}>
           <View style={styles.statBadge}>
             <Ionicons name="calendar-outline" size={16} color={theme.primary} />
@@ -299,7 +313,7 @@ export default function SpacedRepetitionScreen() {
       {/* Content */}
       <FlatList
         data={spacedItems}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={
           spacedItems.length === 0 ? styles.emptyList : styles.listContainer
         }
@@ -310,4 +324,4 @@ export default function SpacedRepetitionScreen() {
       />
     </SafeAreaView>
   );
-} 
+}

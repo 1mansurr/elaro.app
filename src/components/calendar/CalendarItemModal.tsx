@@ -1,8 +1,22 @@
 import React from 'react';
-import { View, Text, Modal, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, Feather } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 import { CalendarItem, EVENT_COLORS_DARKENED } from '../../constants/calendar';
 import { Button } from '../index';
 
@@ -31,24 +45,22 @@ export const CalendarItemModal: React.FC<CalendarItemModalProps> = ({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <LinearGradient
             colors={colors.gradient}
             style={styles.header}
             start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
+            end={{ x: 1, y: 1 }}>
             <View style={styles.headerContent}>
               <View style={styles.titleSection}>
                 <Text style={styles.title}>{item.title}</Text>
                 <View style={styles.timeSection}>
-                  <Ionicons 
-                    name={isAllDay ? "time-outline" : "time"} 
-                    size={20} 
-                    color={COLORS.white} 
+                  <Ionicons
+                    name={isAllDay ? 'time-outline' : 'time'}
+                    size={20}
+                    color={COLORS.white}
                   />
                   <Text style={styles.timeText}>
                     {isAllDay ? 'All Day' : item.time}
@@ -60,14 +72,15 @@ export const CalendarItemModal: React.FC<CalendarItemModalProps> = ({
                 style={styles.closeButton}
                 onPress={onClose}
                 accessibilityRole="button"
-                accessibilityLabel="Close modal"
-              >
+                accessibilityLabel="Close modal">
                 <Ionicons name="close" size={24} color={COLORS.white} />
               </TouchableOpacity>
             </View>
           </LinearGradient>
 
-          <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.content}
+            showsVerticalScrollIndicator={false}>
             {item.description && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Description</Text>
@@ -79,13 +92,21 @@ export const CalendarItemModal: React.FC<CalendarItemModalProps> = ({
               <Text style={styles.sectionTitle}>Details</Text>
               <View style={styles.detailsGrid}>
                 <View style={styles.detailItem}>
-                  <Ionicons name="calendar" size={16} color={COLORS.textSecondary} />
+                  <Ionicons
+                    name="calendar"
+                    size={16}
+                    color={COLORS.textSecondary}
+                  />
                   <Text style={styles.detailText}>Type: {item.type}</Text>
                 </View>
-                
+
                 {item.hasSpacedRepetition && (
                   <View style={styles.detailItem}>
-                    <Ionicons name="refresh" size={16} color={COLORS.textSecondary} />
+                    <Ionicons
+                      name="refresh"
+                      size={16}
+                      color={COLORS.textSecondary}
+                    />
                     <Text style={styles.detailText}>
                       Spaced Repetition: {item.srRemaining}/{item.srTotal}
                     </Text>
@@ -94,16 +115,24 @@ export const CalendarItemModal: React.FC<CalendarItemModalProps> = ({
 
                 {item.isRepeating && (
                   <View style={styles.detailItem}>
-                    <Feather name="repeat" size={16} color={COLORS.textSecondary} />
+                    <Feather
+                      name="repeat"
+                      size={16}
+                      color={COLORS.textSecondary}
+                    />
                     <Text style={styles.detailText}>{item.repeatPattern}</Text>
                   </View>
                 )}
 
                 <View style={styles.detailItem}>
-                  <Ionicons 
-                    name={item.completed ? "checkmark-circle" : "ellipse-outline"} 
-                    size={16} 
-                    color={item.completed ? COLORS.success : COLORS.textSecondary} 
+                  <Ionicons
+                    name={
+                      item.completed ? 'checkmark-circle' : 'ellipse-outline'
+                    }
+                    size={16}
+                    color={
+                      item.completed ? COLORS.success : COLORS.textSecondary
+                    }
                   />
                   <Text style={styles.detailText}>
                     Status: {item.completed ? 'Completed' : 'Pending'}
@@ -120,10 +149,10 @@ export const CalendarItemModal: React.FC<CalendarItemModalProps> = ({
               onPress={() => onToggleComplete(item)}
               style={styles.actionButton}
               icon={
-                <Ionicons 
-                  name={item.completed ? "refresh" : "checkmark"} 
-                  size={20} 
-                  color={COLORS.white} 
+                <Ionicons
+                  name={item.completed ? 'refresh' : 'checkmark'}
+                  size={20}
+                  color={COLORS.white}
                 />
               }
               iconPosition="left"
@@ -232,4 +261,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-}); 
+});

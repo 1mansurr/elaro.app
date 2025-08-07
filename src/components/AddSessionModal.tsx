@@ -16,10 +16,9 @@ import { BottomModal } from './BottomModal';
 import { Button } from './Button';
 import { AuthModal } from './AuthModal';
 import { useTheme } from '../contexts/ThemeContext';
-import { sessionService, srService } from '../services/supabase';
+import { sessionService, srService, supabase } from '../services/supabase';
 import { notificationService } from '../services/notifications';
 import { useAuth } from '../contexts/AuthContext';
-import { useSubscription } from '../hooks/useSubscription';
 import { AddSessionForm, ColorOption, ReminderTime } from '../types';
 import { Picker } from '@react-native-picker/picker';
 import { DateTimePicker } from './DateTimePicker';
@@ -30,7 +29,14 @@ interface AddSessionModalProps {
   onSuccess?: () => void;
 }
 
-const COLOR_OPTIONS: ColorOption[] = ['green', 'blue', 'purple', 'orange', 'yellow', 'pink'];
+const COLOR_OPTIONS: ColorOption[] = [
+  'green',
+  'blue',
+  'purple',
+  'orange',
+  'yellow',
+  'pink',
+];
 const REMINDER_OPTIONS: { value: ReminderTime; label: string }[] = [
   { value: '15min', label: '15 minutes before' },
   { value: '30min', label: '30 minutes before' },
@@ -40,7 +46,9 @@ const REMINDER_OPTIONS: { value: ReminderTime; label: string }[] = [
 
 // Locally override AddSessionForm type to allow string reminders
 // (ReminderTime | string)[]
-type AddSessionFormWithCustomReminders = Omit<AddSessionForm, 'reminders'> & { reminders: (ReminderTime | string)[] };
+type AddSessionFormWithCustomReminders = Omit<AddSessionForm, 'reminders'> & {
+  reminders: (ReminderTime | string)[];
+};
 
 export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   visible,
@@ -48,9 +56,8 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuth();
-  const { isSubscribed } = useSubscription();
   const [showAuthModal, setShowAuthModal] = useState(false);
-  
+
   const [form, setForm] = useState<AddSessionFormWithCustomReminders>({
     course: '',
     topic: '',
@@ -59,7 +66,7 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     spacedRepetition: false,
     reminders: [],
   });
-  
+
   // Remove any old custom calendar or time picker code and state
   // Only use the new DateTimePicker for date/time selection
   // Remove date and time state if not needed
@@ -84,7 +91,10 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     return fallback[color] || color;
   };
 
-  const handleInputChange = (field: keyof AddSessionFormWithCustomReminders, value: any) => {
+  const handleInputChange = (
+    field: keyof AddSessionFormWithCustomReminders,
+    value: any,
+  ) => {
     setForm(prev => ({ ...prev, [field]: value }));
   };
 
@@ -97,8 +107,6 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
     combined.setMilliseconds(0);
     setForm(prev => ({ ...prev, dateTime: combined }));
   }, [form.dateTime]);
-
-
 
   const validateForm = (): boolean => {
     if (!form.course.trim()) {
@@ -135,12 +143,16 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         date_time: form.dateTime.toISOString(),
         color: form.color,
         spaced_repetition_enabled: form.spacedRepetition,
-        reminders: form.reminders.filter(r => typeof r !== 'string') as ReminderTime[],
+        reminders: form.reminders.filter(
+          r => typeof r !== 'string',
+        ) as ReminderTime[],
         completed: false,
       });
 
       // Schedule reminders if any
-      const builtinReminders = form.reminders.filter(r => typeof r !== 'string') as ReminderTime[];
+      const builtinReminders = form.reminders.filter(
+        r => typeof r !== 'string',
+      ) as ReminderTime[];
       if (builtinReminders.length > 0) {
         await notificationService.scheduleItemReminders({
           itemId: session.id,
@@ -151,21 +163,23 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
         });
       }
 
-      // Schedule spaced repetition reminders if enabled
+      // Schedule spaced repetition reminders via Edge Function
       if (form.spacedRepetition) {
-        await notificationService.scheduleSRReminders({
-          sessionId: session.id,
-          sessionTitle: `${form.course}: ${form.topic}`,
-          studyDate: form.dateTime,
-          planType: isSubscribed ? 'oddity' : 'origin',
-          userId: user.id,
-        });
+        const { error: functionError } = await supabase.functions.invoke(
+          'schedule-reminders',
+          {
+            body: { session_id: session.id },
+          },
+        );
+        if (functionError) {
+          throw functionError;
+        }
       }
 
       Alert.alert('Success', 'Study session created successfully!');
       onSuccess?.();
       onClose();
-      
+
       // Reset form
       setForm({
         course: '',
@@ -200,122 +214,166 @@ export const AddSessionModal: React.FC<AddSessionModalProps> = ({
 
   return (
     <>
-    <BottomModal
-      visible={visible}
-      onClose={onClose}
-      title="Add Study Session"
-      height={0.6}
-    >
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 32 }} scrollEnabled={!isTimePickerOpen}>
-        <View style={{ width: Math.min(screenWidth * 0.96, 600), alignSelf: 'center' }}>
-        {/* Course Input */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Course *</Text>
-          <TextInput
-          style={{
-            backgroundColor: theme.input,
-            color: theme.text,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: theme.inputBorder,
-            marginBottom: 16,
-          }}
-            value={form.course}
-          onChangeText={text => handleInputChange('course', text)}
-            placeholder="e.g., Mathematics, Physics"
-          placeholderTextColor={theme.textSecondary}
-            accessibilityRole="text"
-            accessibilityLabel="Course name input"
-          />
-        {/* Topic Input */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Topic *</Text>
-          <TextInput
-          style={{
-            backgroundColor: theme.input,
-            color: theme.text,
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 16,
-            borderWidth: 1,
-            borderColor: theme.inputBorder,
-            marginBottom: 16,
-          }}
-            value={form.topic}
-          onChangeText={text => handleInputChange('topic', text)}
-            placeholder="e.g., Calculus Basics, Newton's Laws"
-          placeholderTextColor={theme.textSecondary}
-            accessibilityRole="text"
-            accessibilityLabel="Topic name input"
-          />
-        {/* Date and Time Picker */}
-        <DateTimePicker
-          value={form.dateTime}
-          onChange={(newDateTime) => {
-            setForm(prev => ({ ...prev, dateTime: newDateTime }));
-          }}
-          label="Date & Time"
-          onPickerModeChange={mode => setIsTimePickerOpen(mode === 'time')}
-        />
-        {/* Color Selection */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Color</Text>
-        <View style={{ flexDirection: 'row', marginBottom: 16 }}>
-            {COLOR_OPTIONS.map((color) => (
-              <TouchableOpacity
-                key={color}
+      <BottomModal
+        visible={visible}
+        onClose={onClose}
+        title="Add Study Session"
+        height={0.6}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 32 }}
+          scrollEnabled={!isTimePickerOpen}>
+          <View
+            style={{
+              width: Math.min(screenWidth * 0.96, 600),
+              alignSelf: 'center',
+            }}>
+            {/* Course Input */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Course *
+            </Text>
+            <TextInput
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
-                backgroundColor: getColorHex(color),
-                marginRight: 10,
-                borderWidth: form.color === color ? 2 : 0,
-                borderColor: form.color === color ? theme.accent : 'transparent',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-                onPress={() => handleInputChange('color', color)}
-                accessibilityRole="button"
-              accessibilityLabel={color}
-              >
-              {form.color === color && <Ionicons name="checkmark" size={18} color={theme.text} />}
-              </TouchableOpacity>
-            ))}
-        </View>
-        {/* Reminders */}
-        <Text style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>Reminders</Text>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-          {REMINDER_OPTIONS.map((reminder) => (
-            <TouchableOpacity
-              key={reminder.value}
-              style={{
-                backgroundColor: form.reminders.includes(reminder.value) ? theme.accent : theme.input,
-                borderRadius: 16,
-                paddingVertical: 6,
-                paddingHorizontal: 14,
-                marginRight: 8,
-                marginBottom: 8,
+                backgroundColor: theme.input,
+                color: theme.text,
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 16,
                 borderWidth: 1,
-                borderColor: form.reminders.includes(reminder.value) ? theme.accent : theme.inputBorder,
+                borderColor: theme.inputBorder,
+                marginBottom: 16,
               }}
-              onPress={() => handleInputChange('reminders', [...form.reminders, reminder.value])}
-              accessibilityRole="button"
-              accessibilityLabel={reminder.label}
-            >
-              <Text style={{ color: form.reminders.includes(reminder.value) ? theme.background : theme.textSecondary }}>{reminder.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        {/* Submit Button */}
-        <Button
-          title={isSubmitting ? 'Adding...' : 'Add Session'}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-        />
-        </View>
-      </ScrollView>
-    </BottomModal>
-    <AuthModal visible={showAuthModal} onClose={() => setShowAuthModal(false)} onAuthSuccess={handleAuthSuccess} />
+              value={form.course}
+              onChangeText={text => handleInputChange('course', text)}
+              placeholder="e.g., Mathematics, Physics"
+              placeholderTextColor={theme.textSecondary}
+              accessibilityRole="text"
+              accessibilityLabel="Course name input"
+            />
+            {/* Topic Input */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Topic *
+            </Text>
+            <TextInput
+              style={{
+                backgroundColor: theme.input,
+                color: theme.text,
+                borderRadius: 8,
+                padding: 12,
+                fontSize: 16,
+                borderWidth: 1,
+                borderColor: theme.inputBorder,
+                marginBottom: 16,
+              }}
+              value={form.topic}
+              onChangeText={text => handleInputChange('topic', text)}
+              placeholder="e.g., Calculus Basics, Newton's Laws"
+              placeholderTextColor={theme.textSecondary}
+              accessibilityRole="text"
+              accessibilityLabel="Topic name input"
+            />
+            {/* Date and Time Picker */}
+            <DateTimePicker
+              value={form.dateTime}
+              onChange={newDateTime => {
+                setForm(prev => ({ ...prev, dateTime: newDateTime }));
+              }}
+              label="Date & Time"
+              onPickerModeChange={mode => setIsTimePickerOpen(mode === 'time')}
+            />
+            {/* Color Selection */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Color
+            </Text>
+            <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+              {COLOR_OPTIONS.map(color => (
+                <TouchableOpacity
+                  key={color}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: 16,
+                    backgroundColor: getColorHex(color),
+                    marginRight: 10,
+                    borderWidth: form.color === color ? 2 : 0,
+                    borderColor:
+                      form.color === color ? theme.accent : 'transparent',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                  onPress={() => handleInputChange('color', color)}
+                  accessibilityRole="button"
+                  accessibilityLabel={color}>
+                  {form.color === color && (
+                    <Ionicons name="checkmark" size={18} color={theme.text} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* Reminders */}
+            <Text
+              style={{ color: theme.text, fontWeight: '600', marginBottom: 6 }}>
+              Reminders
+            </Text>
+            <View
+              style={{
+                flexDirection: 'row',
+                flexWrap: 'wrap',
+                marginBottom: 8,
+              }}>
+              {REMINDER_OPTIONS.map(reminder => (
+                <TouchableOpacity
+                  key={reminder.value}
+                  style={{
+                    backgroundColor: form.reminders.includes(reminder.value)
+                      ? theme.accent
+                      : theme.input,
+                    borderRadius: 16,
+                    paddingVertical: 6,
+                    paddingHorizontal: 14,
+                    marginRight: 8,
+                    marginBottom: 8,
+                    borderWidth: 1,
+                    borderColor: form.reminders.includes(reminder.value)
+                      ? theme.accent
+                      : theme.inputBorder,
+                  }}
+                  onPress={() =>
+                    handleInputChange('reminders', [
+                      ...form.reminders,
+                      reminder.value,
+                    ])
+                  }
+                  accessibilityRole="button"
+                  accessibilityLabel={reminder.label}>
+                  <Text
+                    style={{
+                      color: form.reminders.includes(reminder.value)
+                        ? theme.background
+                        : theme.textSecondary,
+                    }}>
+                    {reminder.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {/* Submit Button */}
+            <Button
+              title={isSubmitting ? 'Adding...' : 'Add Session'}
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+            />
+          </View>
+        </ScrollView>
+      </BottomModal>
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onAuthSuccess={handleAuthSuccess}
+      />
     </>
   );
 };

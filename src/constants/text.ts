@@ -1,10 +1,5 @@
 import { StyleSheet } from 'react-native';
-import {
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  FONT_FAMILIES,
-} from './theme';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, FONT_FAMILIES } from './theme';
 
 export const TEXT = StyleSheet.create({
   /* ---------------------------------- 🧠 HEADINGS ---------------------------------- */
@@ -152,4 +147,4 @@ export const TEXT = StyleSheet.create({
   disabled: {
     color: COLORS.textLight,
   },
-}); 
+});

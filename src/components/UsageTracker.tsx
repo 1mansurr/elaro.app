@@ -1,6 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle } from 'react-native';
-import { COLORS, PLAN_COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../constants/theme';
+import {
+  COLORS,
+  PLAN_COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '../constants/theme';
 
 interface UsageTrackerProps {
   plan: 'origin' | 'oddity';
@@ -11,9 +18,9 @@ interface UsageTrackerProps {
 }
 
 const UsageTracker: React.FC<UsageTrackerProps> = ({
-  plan, 
-  used, 
-  total = 14, 
+  plan,
+  used,
+  total = 14,
   showDetails = true,
   style,
 }) => {
@@ -37,24 +44,21 @@ const UsageTracker: React.FC<UsageTrackerProps> = ({
   return (
     <View
       style={[
-      styles.container,
-      {
+        styles.container,
+        {
           backgroundColor: bgColor,
           borderColor: borderColor,
         },
         style,
       ]}
       accessibilityRole="summary"
-      accessibilityLabel={mainText}
-    >
-      <Text style={[styles.mainText, { color: textColor }]}> 
-        {mainText}
-        </Text>
-        {showDetails && (
-        <Text style={[styles.detailText, { color: detailColor }]}> 
+      accessibilityLabel={mainText}>
+      <Text style={[styles.mainText, { color: textColor }]}>{mainText}</Text>
+      {showDetails && (
+        <Text style={[styles.detailText, { color: detailColor }]}>
           {detailText}
-          </Text>
-        )}
+        </Text>
+      )}
     </View>
   );
 };
@@ -76,4 +80,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default UsageTracker; 
+export default UsageTracker;

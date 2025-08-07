@@ -39,22 +39,14 @@ const ReminderBadge: React.FC<ReminderBadgeProps> = ({
 }) => {
   const config = variantStyles[variant];
 
-  const label =
-    count === 0 ? 'Complete' : `${count} left`;
+  const label = count === 0 ? 'Complete' : `${count} left`;
 
   return (
     <View
-      style={[
-        styles.badge,
-        { backgroundColor: config.backgroundColor },
-        style,
-      ]}
+      style={[styles.badge, { backgroundColor: config.backgroundColor }, style]}
       accessibilityRole="text"
-      accessibilityLabel={`Reminder: ${label}`}
-    >
-      <Text style={styles.text}>
-        {`${config.icon} ${label}`}
-      </Text>
+      accessibilityLabel={`Reminder: ${label}`}>
+      <Text style={styles.text}>{`${config.icon} ${label}`}</Text>
     </View>
   );
 };
@@ -73,4 +65,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ReminderBadge; 
+export default ReminderBadge;

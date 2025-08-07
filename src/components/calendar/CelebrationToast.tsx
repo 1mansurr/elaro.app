@@ -1,14 +1,24 @@
 import React from 'react';
 import { View, Text, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 
 interface CelebrationToastProps {
   visible: boolean;
   animation: Animated.Value;
 }
 
-export const CelebrationToast: React.FC<CelebrationToastProps> = ({ visible, animation }) => {
+export const CelebrationToast: React.FC<CelebrationToastProps> = ({
+  visible,
+  animation,
+}) => {
   if (!visible) return null;
 
   const scale = animation.interpolate({
@@ -29,8 +39,7 @@ export const CelebrationToast: React.FC<CelebrationToastProps> = ({ visible, ani
           transform: [{ scale }],
           opacity,
         },
-      ]}
-    >
+      ]}>
       <View style={styles.content}>
         <Ionicons name="checkmark-circle" size={24} color={COLORS.success} />
         <Text style={styles.text}>Task completed! 🎉</Text>
@@ -62,4 +71,4 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.text,
   },
-}); 
+});

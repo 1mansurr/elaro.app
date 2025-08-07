@@ -386,4 +386,3 @@ export const COMPONENTS = {
     shadow: SHADOWS.xl,
   },
 };
-

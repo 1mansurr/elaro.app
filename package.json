@@ -7,7 +7,13 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
+    "e2e:build:ios": "detox build --configuration ios.debug",
+    "e2e:test:ios": "detox test --configuration ios.debug",
+    "e2e:build:android": "detox build --configuration android.emu.debug",
+    "e2e:test:android": "detox test --configuration android.emu.debug"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
@@ -19,7 +25,9 @@
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/stack": "^7.4.2",
+    "@sentry/react-native": "^6.18.1",
     "@supabase/supabase-js": "^2.50.3",
+    "@types/react-native-vector-icons": "^6.4.18",
     "expo": "~53.0.17",
     "expo-av": "^15.1.7",
     "expo-blur": "^14.1.4",
@@ -49,14 +57,28 @@
     "react-native-screens": "^4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-uuid": "^2.0.3",
+    "react-native-vector-icons": "^10.3.0",
     "react-native-webview": "^13.13.5",
     "tailwindcss-react-native": "^1.7.10",
     "tinycolor2": "^1.6.0"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.0.10",
     "@types/tinycolor2": "^1.4.6",
-    "typescript": "~5.8.3"
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
+    "detox": "^20.40.2",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "globals": "^16.3.0",
+    "jest": "^30.0.5",
+    "jest-circus": "^30.0.5",
+    "prettier": "^3.6.2",
+    "typescript": "~5.8.3",
+    "typescript-eslint": "^8.38.0"
   },
   "private": true
 }

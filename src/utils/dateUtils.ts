@@ -43,7 +43,7 @@ export const isThisWeek = (date: Date | string): boolean => {
   startOfWeek.setDate(today.getDate() - today.getDay());
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(startOfWeek.getDate() + 6);
-  
+
   return d >= startOfWeek && d <= endOfWeek;
 };
 
@@ -69,28 +69,28 @@ export const addDays = (date: Date, days: number): Date => {
 
 export const getSpacedRepetitionDates = (
   sessionDate: Date,
-  days: number[]
+  days: number[],
 ): Date[] => {
   return days.map(day => addDays(sessionDate, day));
 };
 
 export const getRelativeDateString = (date: Date | string): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
-  
+
   if (isToday(d)) {
     return 'Today';
   }
-  
+
   if (isTomorrow(d)) {
     return 'Tomorrow';
   }
-  
+
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) {
     return 'Yesterday';
   }
-  
+
   return formatDate(d);
 };
 
@@ -105,12 +105,17 @@ export const getRelativeDateString = (date: Date | string): string => {
  *    - If deleted >=24h before dueAt: decrement (return true)
  *    - If deleted <24h before dueAt: do not decrement (return false)
  */
-export function shouldDecrementUsageOnDelete(task: { completed: boolean; date_time: string | Date }): boolean {
+export function shouldDecrementUsageOnDelete(task: {
+  completed: boolean;
+  date_time: string | Date;
+}): boolean {
   if (task.completed) return false;
-  const dueAt = typeof task.date_time === 'string' ? new Date(task.date_time) : task.date_time;
+  const dueAt =
+    typeof task.date_time === 'string'
+      ? new Date(task.date_time)
+      : task.date_time;
   const now = new Date();
   const msDiff = dueAt.getTime() - now.getTime();
   const hoursDiff = msDiff / (1000 * 60 * 60);
   return hoursDiff >= 24;
 }
-

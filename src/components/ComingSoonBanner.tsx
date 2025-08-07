@@ -2,7 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '../constants/theme';
 
 interface ComingSoonBannerProps {
   title?: string;
@@ -53,24 +59,18 @@ export const ComingSoonBanner: React.FC<ComingSoonBannerProps> = ({
   const BannerContent = () => (
     <View style={styles.content}>
       <View style={styles.iconContainer}>
-        <Ionicons 
-          name="sparkles" 
-          size={16} 
-          color={getTextColor()} 
-        />
+        <Ionicons name="sparkles" size={16} color={getTextColor()} />
       </View>
       <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: getTextColor() }]}>
-          {title}
-        </Text>
+        <Text style={[styles.title, { color: getTextColor() }]}>{title}</Text>
         <Text style={[styles.subtitle, { color: getSubtitleColor() }]}>
           {subtitle}
         </Text>
       </View>
-      <Ionicons 
-        name="chevron-forward" 
-        size={16} 
-        color={getTextColor()} 
+      <Ionicons
+        name="chevron-forward"
+        size={16}
+        color={getTextColor()}
         style={styles.chevron}
       />
     </View>
@@ -78,18 +78,16 @@ export const ComingSoonBanner: React.FC<ComingSoonBannerProps> = ({
 
   if (onPress) {
     return (
-      <Pressable 
-        style={[styles.container, style]} 
+      <Pressable
+        style={[styles.container, style]}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={title}
-      >
+        accessibilityLabel={title}>
         <LinearGradient
           colors={getGradientColors()}
           style={styles.gradient}
           start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
+          end={{ x: 1, y: 1 }}>
           <BannerContent />
         </LinearGradient>
       </Pressable>
@@ -102,8 +100,7 @@ export const ComingSoonBanner: React.FC<ComingSoonBannerProps> = ({
         colors={getGradientColors()}
         style={styles.gradient}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-      >
+        end={{ x: 1, y: 1 }}>
         <BannerContent />
       </LinearGradient>
     </View>
@@ -141,4 +138,4 @@ const styles = StyleSheet.create({
   chevron: {
     opacity: 0.7,
   },
-}); 
+});

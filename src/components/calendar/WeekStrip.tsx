@@ -1,7 +1,23 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../../constants/theme';
-import { CalendarItem, EVENT_COLORS, DAY_NAMES } from '../../constants/calendar';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '../../constants/theme';
+import {
+  CalendarItem,
+  EVENT_COLORS,
+  DAY_NAMES,
+} from '../../constants/calendar';
 
 interface WeekStripProps {
   weekDates: Date[];
@@ -18,12 +34,17 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
   scheduleData,
   viewMode,
 }) => (
-  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.weekStrip}>
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    style={styles.weekStrip}>
     {weekDates.map((date, index) => {
       const isSelected = date.toDateString() === selectedDate.toDateString();
       const isToday = date.toDateString() === new Date().toDateString();
-      const dayItems = scheduleData.filter(item => item.date === date.toDateString());
-      
+      const dayItems = scheduleData.filter(
+        item => item.date === date.toDateString(),
+      );
+
       return (
         <TouchableOpacity
           key={index}
@@ -35,25 +56,24 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
           onPress={() => onDatePress(date)}
           accessibilityRole="button"
           accessibilityLabel={`${DAY_NAMES[index]} ${date.getDate()}`}
-          accessibilityState={{ selected: isSelected }}
-        >
-          <Text style={[
-            styles.dayText,
-            isSelected && styles.selectedText,
-            isToday && styles.todayText,
-          ]}>
+          accessibilityState={{ selected: isSelected }}>
+          <Text
+            style={[
+              styles.dayText,
+              isSelected && styles.selectedText,
+              isToday && styles.todayText,
+            ]}>
             {DAY_NAMES[index]}
           </Text>
-          <Text style={[
-            styles.dateText,
-            isSelected && styles.selectedText,
-            isToday && styles.todayText,
-          ]}>
+          <Text
+            style={[
+              styles.dateText,
+              isSelected && styles.selectedText,
+              isToday && styles.todayText,
+            ]}>
             {date.getDate()}
           </Text>
-          {isToday && (
-            <View style={styles.todayDot} />
-          )}
+          {isToday && <View style={styles.todayDot} />}
           {viewMode === 'weekly' && dayItems.length > 0 && (
             <View style={styles.eventDots}>
               {dayItems.slice(0, 3).map((item, idx) => (
@@ -61,7 +81,7 @@ export const WeekStrip: React.FC<WeekStripProps> = ({
                   key={idx}
                   style={[
                     styles.eventDot,
-                    { backgroundColor: EVENT_COLORS[item.type].primary }
+                    { backgroundColor: EVENT_COLORS[item.type].primary },
                   ]}
                 />
               ))}
@@ -141,4 +161,4 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignSelf: 'center',
   },
-}); 
+});

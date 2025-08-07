@@ -124,4 +124,4 @@ export const performanceUtils = {
     const endTime = performance.now();
     return endTime - startTime;
   },
-}; 
+};

@@ -7,7 +7,10 @@ interface VideoPlaceholderProps {
   onReady: () => void;
 }
 
-const VideoPlaceholder: React.FC<VideoPlaceholderProps> = ({ isReady, onReady }) => {
+const VideoPlaceholder: React.FC<VideoPlaceholderProps> = ({
+  isReady,
+  onReady,
+}) => {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -35,7 +38,7 @@ const VideoPlaceholder: React.FC<VideoPlaceholderProps> = ({ isReady, onReady })
           duration: 1000,
           useNativeDriver: true,
         }),
-      ])
+      ]),
     );
 
     pulseAnimation.start();
@@ -50,16 +53,15 @@ const VideoPlaceholder: React.FC<VideoPlaceholderProps> = ({ isReady, onReady })
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           {/* Play Button */}
           <View style={styles.playButtonShadow}>
-            <Animated.View 
+            <Animated.View
               style={[
                 styles.playButton,
-                { transform: [{ scale: pulseAnim }] }
-              ]}
-            >
+                { transform: [{ scale: pulseAnim }] },
+              ]}>
               <View style={styles.playIcon} />
             </Animated.View>
           </View>
-          
+
           {/* Video Title */}
           <Text style={styles.videoTitle}>Welcome to ELARO</Text>
           <Text style={styles.videoSubtitle}>
@@ -196,4 +198,3 @@ const styles = StyleSheet.create({
 });
 
 export default VideoPlaceholder;
-

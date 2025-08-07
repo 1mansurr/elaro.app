@@ -63,8 +63,8 @@ const IconButton: React.FC<IconButtonProps> = ({
       (variant === 'primary'
         ? COLORS.white
         : variant === 'secondary'
-        ? COLORS.text
-        : COLORS.text);
+          ? COLORS.text
+          : COLORS.text);
 
   return (
     <TouchableOpacity
@@ -76,10 +76,13 @@ const IconButton: React.FC<IconButtonProps> = ({
       style={{ overflow: 'hidden' }}
       accessibilityRole={accessibilityRole}
       accessibilityLabel={accessibilityLabel}
-      accessibilityHint="Double tap to activate"
-    >
-      <Animated.View style={[containerStyle, { transform: [{ scale: scaleAnim }] }]}> 
-        {React.cloneElement(icon as React.ReactElement<any>, { size, color: resolvedColor })}
+      accessibilityHint="Double tap to activate">
+      <Animated.View
+        style={[containerStyle, { transform: [{ scale: scaleAnim }] }]}>
+        {React.cloneElement(icon as React.ReactElement<any>, {
+          size,
+          color: resolvedColor,
+        })}
       </Animated.View>
     </TouchableOpacity>
   );
@@ -109,4 +112,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default IconButton; 
+export default IconButton;

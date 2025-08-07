@@ -1,7 +1,14 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 import { getAvatarText } from '../../utils/getAvatarText';
 
 interface User {
@@ -25,16 +32,13 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.avatarContainer}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.avatar}
-        >
+        <LinearGradient colors={['#667eea', '#764ba2']} style={styles.avatar}>
           <Text style={styles.avatarText} numberOfLines={1}>
             {getAvatarText(user)}
           </Text>
         </LinearGradient>
       </View>
-      
+
       <View style={styles.profileDetailsColumn}>
         <Text style={styles.userName} numberOfLines={1}>
           {user?.name || 'Guest User'}
@@ -45,20 +49,18 @@ export const ProfileCard: React.FC<ProfileCardProps> = ({
             {user?.email}
           </Text>
         )}
-        
+
         {isGuestUser && (
           <Pressable
             style={styles.signUpButton}
             onPress={onSignUp}
             accessibilityRole="button"
-            accessibilityLabel="Sign Up"
-          >
+            accessibilityLabel="Sign Up">
             <LinearGradient
               colors={[COLORS.primary, COLORS.primaryDark]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
-              style={styles.signUpGradient}
-            >
+              style={styles.signUpGradient}>
               <Text style={styles.signUpButtonText} numberOfLines={1}>
                 Sign Up
               </Text>
@@ -123,4 +125,4 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.white,
   },
-}); 
+});

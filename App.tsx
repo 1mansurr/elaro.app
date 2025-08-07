@@ -1,4 +1,3 @@
-
 import React, { useCallback, useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
@@ -11,6 +10,12 @@ import { COLORS } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { useAuth } from './src/contexts/AuthContext';
 import { notificationService } from './src/services/notifications';
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://67aec2aa78b4d87e34a615d837360d08@o4509741415661568.ingest.de.sentry.io/4509741432766544',
+  tracesSampleRate: 1.0,
+});
 
 // Add global unhandled promise rejection logger for freeze/debugging
 if (typeof process !== 'undefined' && process.on) {
@@ -45,13 +50,14 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <View style={{ 
-          flex: 1, 
-          backgroundColor: COLORS.white, 
-          justifyContent: 'center', 
-          alignItems: 'center',
-          padding: 20
-        }}>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: COLORS.white,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: 20,
+          }}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           {/* You could add a more sophisticated error UI here */}
         </View>
@@ -63,7 +69,9 @@ class ErrorBoundary extends React.Component<
 }
 
 // App Initializer Component for handling async setup
-const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [appIsReady, setAppIsReady] = useState(false);
 
   useEffect(() => {
@@ -72,7 +80,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
         // Example: load fonts, user preferences, etc.
         // await Font.loadAsync({...})
         // await new Promise(resolve => setTimeout(resolve, 500)); // simulate loading
-        
+
         // Future async initialization can go here:
         // - Load custom fonts
         // - Initialize analytics
@@ -80,10 +88,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
         // - Load user preferences
         // - Initialize push notifications
         // - Check onboarding status
-        
+
         // For now, just a small delay to ensure smooth transition
         await new Promise(resolve => setTimeout(resolve, 100));
-        
       } catch (e) {
         console.warn('App initialization error:', e);
         // You could log this to your error tracking service
@@ -103,28 +110,32 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
   if (!appIsReady) {
     return (
-      <View style={{ 
-        flex: 1, 
-        backgroundColor: COLORS.white, 
-        justifyContent: 'center', 
-        alignItems: 'center' 
-      }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: COLORS.white,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <SafeAreaProvider onLayout={onLayoutRootView}>
-      {children}
-    </SafeAreaProvider>
+    <SafeAreaProvider onLayout={onLayoutRootView}>{children}</SafeAreaProvider>
   );
 };
 
 // StatusBar with theme support
 const ThemedStatusBar = () => {
   const { isDark } = useTheme();
-  return <StatusBar style={isDark ? 'light' : 'dark'} backgroundColor={isDark ? '#1C1C1E' : '#FFFFFF'} />;
+  return (
+    <StatusBar
+      style={isDark ? 'light' : 'dark'}
+      backgroundColor={isDark ? '#1C1C1E' : '#FFFFFF'}
+    />
+  );
 };
 
 // Main App Component
@@ -139,7 +150,7 @@ function AuthEffects() {
   return null;
 }
 
-export default function App() {
+function App() {
   return (
     <ErrorBoundary>
       <AppInitializer>
@@ -157,3 +168,4 @@ export default function App() {
   );
 }
 
+export default Sentry.wrap(App);

@@ -1,8 +1,22 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Switch } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  Switch,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BaseModal from './BaseModal';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+} from '../../constants/theme';
 import { DateTimePicker } from '../DateTimePicker';
 import { useAuth } from '../../contexts/AuthContext';
 import { AuthModal } from '../AuthModal';
@@ -54,7 +68,14 @@ interface AddTaskModalProps {
   activeCount?: number; // For Oddity plan
 }
 
-const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit, isOddity, weeklyCount = 0, activeCount = 0 }) => {
+const AddTaskModal: React.FC<AddTaskModalProps> = ({
+  visible,
+  onClose,
+  onSubmit,
+  isOddity,
+  weeklyCount = 0,
+  activeCount = 0,
+}) => {
   const { user } = useAuth();
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [type, setType] = useState('assignment');
@@ -68,7 +89,11 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
   const [repeatEndDate, setRepeatEndDate] = useState<Date | null>(null);
 
   const [showConfirm, setShowConfirm] = useState(false);
-  const [errors, setErrors] = useState<{ title?: string; date?: string; time?: string } >({});
+  const [errors, setErrors] = useState<{
+    title?: string;
+    date?: string;
+    time?: string;
+  }>({});
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showRepeatDropdown, setShowRepeatDropdown] = useState(false);
   const [limitModal, setLimitModal] = useState(false);
@@ -107,9 +132,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
     taskDate.setMinutes(time.getMinutes());
     taskDate.setSeconds(0);
     // Compose reminders
-    const allReminders = [
-      ...reminders,
-    ];
+    const allReminders = [...reminders];
     // Compose repeat
     let repeat: any = null;
     if (type === 'lecture' && repeatPattern !== 'none') {
@@ -155,17 +178,36 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
 
   return (
     <>
-      <BaseModal visible={visible} title="Add Task or Event" onClose={onClose} wide>
+      <BaseModal
+        visible={visible}
+        title="Add Task or Event"
+        onClose={onClose}
+        wide>
         <ScrollView contentContainerStyle={styles.form}>
           <Text style={styles.label}>Type</Text>
-          <TouchableOpacity style={styles.selector} onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
-            <Text style={styles.selectorText}>{TASK_TYPES.find(t => t.value === type)?.label}</Text>
-            <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+          <TouchableOpacity
+            style={styles.selector}
+            onPress={() => setShowTypeDropdown(!showTypeDropdown)}>
+            <Text style={styles.selectorText}>
+              {TASK_TYPES.find(t => t.value === type)?.label}
+            </Text>
+            <Ionicons
+              name="chevron-down"
+              size={16}
+              color={COLORS.textSecondary}
+            />
           </TouchableOpacity>
           {showTypeDropdown && (
             <View style={styles.dropdown}>
               {TASK_TYPES.map(t => (
-                <TouchableOpacity key={t.value} style={styles.dropdownItem} onPress={() => { setType(t.value); setSelectedColor(t.color); setShowTypeDropdown(false); }}>
+                <TouchableOpacity
+                  key={t.value}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setType(t.value);
+                    setSelectedColor(t.color);
+                    setShowTypeDropdown(false);
+                  }}>
                   <Text style={styles.dropdownText}>{t.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -184,10 +226,32 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
 
           {/* Apple-style Date & Time Picker */}
           <DateTimePicker
-            value={new Date(date.getFullYear(), date.getMonth(), date.getDate(), time.getHours(), time.getMinutes())}
-            onChange={(newDateTime) => {
-              setDate(new Date(newDateTime.getFullYear(), newDateTime.getMonth(), newDateTime.getDate()));
-              setTime(new Date(newDateTime.getFullYear(), newDateTime.getMonth(), newDateTime.getDate(), newDateTime.getHours(), newDateTime.getMinutes()));
+            value={
+              new Date(
+                date.getFullYear(),
+                date.getMonth(),
+                date.getDate(),
+                time.getHours(),
+                time.getMinutes(),
+              )
+            }
+            onChange={newDateTime => {
+              setDate(
+                new Date(
+                  newDateTime.getFullYear(),
+                  newDateTime.getMonth(),
+                  newDateTime.getDate(),
+                ),
+              );
+              setTime(
+                new Date(
+                  newDateTime.getFullYear(),
+                  newDateTime.getMonth(),
+                  newDateTime.getDate(),
+                  newDateTime.getHours(),
+                  newDateTime.getMinutes(),
+                ),
+              );
             }}
             label="Date & Time"
           />
@@ -198,9 +262,14 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
               <TouchableOpacity
                 key={key}
                 onPress={() => setSelectedColor(key)}
-                style={[styles.colorDot, { backgroundColor: color }, selectedColor === key && styles.activeDot]}
-              >
-                {selectedColor === key && <Ionicons name="checkmark" size={14} color="#fff" />}
+                style={[
+                  styles.colorDot,
+                  { backgroundColor: color },
+                  selectedColor === key && styles.activeDot,
+                ]}>
+                {selectedColor === key && (
+                  <Ionicons name="checkmark" size={14} color="#fff" />
+                )}
               </TouchableOpacity>
             ))}
           </View>
@@ -210,14 +279,24 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
             {REMINDER_OPTIONS.map(opt => (
               <TouchableOpacity
                 key={opt.value}
-                style={[styles.reminderBtn, reminders.includes(opt.value) && styles.reminderBtnActive]}
+                style={[
+                  styles.reminderBtn,
+                  reminders.includes(opt.value) && styles.reminderBtnActive,
+                ]}
                 onPress={() =>
-                  setReminders(reminders.includes(opt.value)
-                    ? reminders.filter(r => r !== opt.value)
-                    : [...reminders, opt.value])
-                }
-              >
-                <Text style={[styles.reminderText, reminders.includes(opt.value) && styles.reminderTextActive]}>{opt.label}</Text>
+                  setReminders(
+                    reminders.includes(opt.value)
+                      ? reminders.filter(r => r !== opt.value)
+                      : [...reminders, opt.value],
+                  )
+                }>
+                <Text
+                  style={[
+                    styles.reminderText,
+                    reminders.includes(opt.value) && styles.reminderTextActive,
+                  ]}>
+                  {opt.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -226,14 +305,28 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
           {type === 'lecture' && (
             <>
               <Text style={styles.label}>Repeat Pattern</Text>
-              <TouchableOpacity style={styles.selector} onPress={() => setShowRepeatDropdown(!showRepeatDropdown)}>
-                <Text style={styles.selectorText}>{REPEAT_PATTERNS.find(r => r.value === repeatPattern)?.label}</Text>
-                <Ionicons name="chevron-down" size={16} color={COLORS.textSecondary} />
+              <TouchableOpacity
+                style={styles.selector}
+                onPress={() => setShowRepeatDropdown(!showRepeatDropdown)}>
+                <Text style={styles.selectorText}>
+                  {REPEAT_PATTERNS.find(r => r.value === repeatPattern)?.label}
+                </Text>
+                <Ionicons
+                  name="chevron-down"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
               {showRepeatDropdown && (
                 <View style={styles.dropdown}>
                   {REPEAT_PATTERNS.filter(r => r.value !== 'none').map(r => (
-                    <TouchableOpacity key={r.value} style={styles.dropdownItem} onPress={() => { setRepeatPattern(r.value); setShowRepeatDropdown(false); }}>
+                    <TouchableOpacity
+                      key={r.value}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setRepeatPattern(r.value);
+                        setShowRepeatDropdown(false);
+                      }}>
                       <Text style={styles.dropdownText}>{r.label}</Text>
                     </TouchableOpacity>
                   ))}
@@ -244,27 +337,49 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
                   {WEEKDAYS.map(day => (
                     <TouchableOpacity
                       key={day.value}
-                      style={[styles.weekdayBtn, customDays.includes(day.value) && styles.weekdayBtnActive]}
+                      style={[
+                        styles.weekdayBtn,
+                        customDays.includes(day.value) &&
+                          styles.weekdayBtnActive,
+                      ]}
                       onPress={() =>
-                        setCustomDays(customDays.includes(day.value)
-                          ? customDays.filter(d => d !== day.value)
-                          : [...customDays, day.value])
-                      }
-                    >
-                      <Text style={[styles.weekdayText, customDays.includes(day.value) && styles.weekdayTextActive]}>{day.label}</Text>
+                        setCustomDays(
+                          customDays.includes(day.value)
+                            ? customDays.filter(d => d !== day.value)
+                            : [...customDays, day.value],
+                        )
+                      }>
+                      <Text
+                        style={[
+                          styles.weekdayText,
+                          customDays.includes(day.value) &&
+                            styles.weekdayTextActive,
+                        ]}>
+                        {day.label}
+                      </Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               )}
               <Text style={styles.label}>Repeat End Date (Optional)</Text>
-              <TouchableOpacity style={styles.selector} onPress={() => {
-                // For now, just set a default end date 30 days from now
-                const endDate = new Date();
-                endDate.setDate(endDate.getDate() + 30);
-                setRepeatEndDate(endDate);
-              }}>
-                <Text style={styles.selectorText}>{repeatEndDate ? repeatEndDate.toLocaleDateString() : 'Set End Date (30 days)'}</Text>
-                <Ionicons name="calendar" size={16} color={COLORS.textSecondary} />
+              <TouchableOpacity
+                style={styles.selector}
+                onPress={() => {
+                  // For now, just set a default end date 30 days from now
+                  const endDate = new Date();
+                  endDate.setDate(endDate.getDate() + 30);
+                  setRepeatEndDate(endDate);
+                }}>
+                <Text style={styles.selectorText}>
+                  {repeatEndDate
+                    ? repeatEndDate.toLocaleDateString()
+                    : 'Set End Date (30 days)'}
+                </Text>
+                <Ionicons
+                  name="calendar"
+                  size={16}
+                  color={COLORS.textSecondary}
+                />
               </TouchableOpacity>
             </>
           )}
@@ -275,9 +390,9 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
         </ScrollView>
       </BaseModal>
       {/* Auth Modal for sign-in gating */}
-      <AuthModal 
-        visible={showAuthModal} 
-        onClose={() => setShowAuthModal(false)} 
+      <AuthModal
+        visible={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
         onAuthSuccess={() => {
           setShowAuthModal(false);
           // Retry the submission after successful auth
@@ -285,7 +400,15 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
         }}
       />
       {/* Plan Limit Modal */}
-      <BaseModal visible={limitModal} title={isOddity ? 'You’ve got 35 active items.' : 'You’ve planned 14 things this week!'} onClose={handleDismiss} wide>
+      <BaseModal
+        visible={limitModal}
+        title={
+          isOddity
+            ? 'You’ve got 35 active items.'
+            : 'You’ve planned 14 things this week!'
+        }
+        onClose={handleDismiss}
+        wide>
         <View style={{ alignItems: 'center', padding: 24 }}>
           <Text style={{ fontSize: 18, color: COLORS.text, marginBottom: 16 }}>
             {isOddity
@@ -298,9 +421,15 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
         </View>
       </BaseModal>
       {/* Confirmation Modal */}
-      <BaseModal visible={showConfirm} title="Task Added!" onClose={handleDismiss} wide>
+      <BaseModal
+        visible={showConfirm}
+        title="Task Added!"
+        onClose={handleDismiss}
+        wide>
         <View style={{ alignItems: 'center', padding: 24 }}>
-          <Text style={{ fontSize: 18, color: COLORS.text, marginBottom: 16 }}>Your task was added successfully.</Text>
+          <Text style={{ fontSize: 18, color: COLORS.text, marginBottom: 16 }}>
+            Your task was added successfully.
+          </Text>
           <TouchableOpacity style={styles.dismissBtn} onPress={handleDismiss}>
             <Text style={styles.dismissText}>Dismiss</Text>
           </TouchableOpacity>
@@ -312,35 +441,115 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ visible, onClose, onSubmit,
 
 const styles = StyleSheet.create({
   form: { gap: 12, paddingBottom: 32 },
-  label: { fontSize: FONT_SIZES.sm, color: COLORS.text, fontWeight: '500', marginTop: 8 },
-  input: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, padding: 10, fontSize: FONT_SIZES.md, color: COLORS.text, backgroundColor: COLORS.card },
-  selector: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, padding: 10, marginBottom: 8, backgroundColor: COLORS.card },
+  label: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+    fontWeight: '500',
+    marginTop: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    padding: 10,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    backgroundColor: COLORS.card,
+  },
+  selector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    backgroundColor: COLORS.card,
+  },
   selectorText: { fontSize: FONT_SIZES.md, color: COLORS.text },
   colorRow: { flexDirection: 'row', marginVertical: 8 },
-  colorDot: { width: 28, height: 28, borderRadius: 14, marginRight: 10, alignItems: 'center', justifyContent: 'center' },
+  colorDot: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginRight: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   activeDot: { borderWidth: 2, borderColor: COLORS.primary },
   reminderRow: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 },
-  reminderBtn: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 14, marginRight: 8, marginBottom: 8, backgroundColor: COLORS.card },
+  reminderBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    marginRight: 8,
+    marginBottom: 8,
+    backgroundColor: COLORS.card,
+  },
   reminderBtnActive: { backgroundColor: COLORS.primary },
   reminderText: { color: COLORS.text, fontSize: 15 },
   reminderTextActive: { color: '#fff', fontWeight: '700' },
-  customReminderRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
-  addBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 10, alignItems: 'center', justifyContent: 'center' },
+  customReminderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  addBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addBtnText: { color: '#fff', fontWeight: '700', fontSize: 18 },
-  customReminderText: { color: COLORS.textSecondary, fontSize: 14, marginTop: 2 },
-  dropdown: { backgroundColor: COLORS.card, borderRadius: 8, borderWidth: 1, borderColor: COLORS.gray200, marginBottom: 8, marginTop: 2 },
+  customReminderText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    marginTop: 2,
+  },
+  dropdown: {
+    backgroundColor: COLORS.card,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    marginBottom: 8,
+    marginTop: 2,
+  },
   dropdownItem: { padding: 12 },
   dropdownText: { fontSize: 16, color: COLORS.text },
   weekdaysRow: { flexDirection: 'row', marginVertical: 8 },
-  weekdayBtn: { borderWidth: 1, borderColor: COLORS.gray200, borderRadius: 8, paddingVertical: 8, paddingHorizontal: 10, marginRight: 6, backgroundColor: COLORS.card },
+  weekdayBtn: {
+    borderWidth: 1,
+    borderColor: COLORS.gray200,
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    backgroundColor: COLORS.card,
+  },
   weekdayBtnActive: { backgroundColor: COLORS.primary },
   weekdayText: { color: COLORS.text, fontSize: 15 },
   weekdayTextActive: { color: '#fff', fontWeight: '700' },
-  doneBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 18 },
+  doneBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 14,
+    alignItems: 'center',
+    marginTop: 18,
+  },
   doneText: { color: '#fff', fontWeight: '700', fontSize: 16 },
   error: { color: COLORS.error, fontSize: 13, marginTop: 2 },
-  dismissBtn: { backgroundColor: COLORS.primary, borderRadius: 8, padding: 12, alignItems: 'center', marginTop: 8 },
+  dismissBtn: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    marginTop: 8,
+  },
   dismissText: { color: '#fff', fontWeight: '700', fontSize: 16 },
 });
 
-export default AddTaskModal; 
+export default AddTaskModal;

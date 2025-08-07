@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { Modal, View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from 'react-native';
 import { Feather } from '@expo/vector-icons';
 
 interface AddOptionModalProps {
@@ -23,32 +30,48 @@ export const AddOptionModal: React.FC<AddOptionModalProps> = ({
       visible={visible}
       animationType="slide"
       transparent
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           {/* X Close Button */}
-          <TouchableOpacity style={styles.closeButton} onPress={onClose} accessibilityLabel="Close add modal">
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={onClose}
+            accessibilityLabel="Close add modal">
             <Feather name="x" size={24} color="#888" />
           </TouchableOpacity>
           {/* Title and action buttons */}
-          <Text style={[styles.title, { textAlign: 'left', alignSelf: 'flex-start' }]}>What would you like to add?</Text>
-          <Text style={[styles.subtext, { textAlign: 'left', alignSelf: 'flex-start' }]}>Choose an option to get started</Text>
+          <Text
+            style={[
+              styles.title,
+              { textAlign: 'left', alignSelf: 'flex-start' },
+            ]}>
+            What would you like to add?
+          </Text>
+          <Text
+            style={[
+              styles.subtext,
+              { textAlign: 'left', alignSelf: 'flex-start' },
+            ]}>
+            Choose an option to get started
+          </Text>
           <TouchableOpacity
             style={styles.optionButton}
             onPress={onAddSession}
-            accessibilityLabel="Add Study Session"
-          >
+            accessibilityLabel="Add Study Session">
             <Text style={styles.optionText}>📚 Add Study Session</Text>
-            <Text style={styles.optionSubtext}>Plan your study time with spaced repetition</Text>
+            <Text style={styles.optionSubtext}>
+              Plan your study time with spaced repetition
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.optionButton}
             onPress={onAddEvent}
-            accessibilityLabel="Add Task or Event"
-          >
+            accessibilityLabel="Add Task or Event">
             <Text style={styles.optionText}>📝 Add Task or Event</Text>
-            <Text style={styles.optionSubtext}>Schedule assignments, exams, and more</Text>
+            <Text style={styles.optionSubtext}>
+              Schedule assignments, exams, and more
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -123,4 +146,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 2,
   },
-}); 
+});

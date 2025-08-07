@@ -59,7 +59,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       fadeAnim.setValue(0);
       scaleAnim.setValue(0.9);
     }
-  }, [visible]);
+  }, [visible, fadeAnim, scaleAnim]);
 
   const handleAuthSuccess = () => {
     setShowAuthScreen(false);
@@ -72,33 +72,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       visible={visible}
       transparent
       animationType="none"
-      onRequestClose={onClose}
-    >
-      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}> 
-        <Animated.View style={[styles.modal, {
-          backgroundColor: theme.card,
-          shadowColor: isDark ? '#000' : theme.accent,
-          transform: [{ scale: scaleAnim }],
-        }]}> 
+      onRequestClose={onClose}>
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Animated.View
+          style={[
+            styles.modal,
+            {
+              backgroundColor: theme.card,
+              shadowColor: isDark ? '#000' : theme.accent,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}>
           {/* Close Button */}
-          <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityRole="button" accessibilityLabel="Close sign in modal">
-              <Ionicons name="close" size={24} color={theme.text} />
-            </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.closeButton}
+            accessibilityRole="button"
+            accessibilityLabel="Close sign in modal">
+            <Ionicons name="close" size={24} color={theme.text} />
+          </TouchableOpacity>
 
           {/* Title */}
-            <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
 
           {/* Icon */}
-            <View style={styles.iconContainer}>
-              <Ionicons name="lock-closed" size={48} color={theme.accent} />
-            </View>
-            
+          <View style={styles.iconContainer}>
+            <Ionicons name="lock-closed" size={48} color={theme.accent} />
+          </View>
+
           {/* Message */}
-            <Text style={[styles.message, { color: theme.textSecondary }]}>{message}</Text>
-            
+          <Text style={[styles.message, { color: theme.textSecondary }]}>
+            {message}
+          </Text>
+
           {/* Benefits */}
-            <View style={styles.benefitsContainer}>
-              <Text style={[styles.benefitsTitle, { color: theme.text }]} >Sign in to unlock:</Text>
+          <View style={styles.benefitsContainer}>
+            <Text style={[styles.benefitsTitle, { color: theme.text }]}>
+              Sign in to unlock:
+            </Text>
             {[
               'Full AI prompts and learning tools',
               'Create and manage study sessions',
@@ -106,28 +117,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               'Sync across all your devices',
             ].map((text, index) => (
               <View key={index} style={styles.benefitItem}>
-                <Ionicons name="checkmark-circle" size={20} color={theme.success} />
-                <Text style={[styles.benefitText, { color: theme.textSecondary }]}>{text}</Text>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color={theme.success}
+                />
+                <Text
+                  style={[styles.benefitText, { color: theme.textSecondary }]}>
+                  {text}
+                </Text>
               </View>
             ))}
-            </View>
+          </View>
 
           {/* Sign In Button */}
-          <TouchableOpacity style={[styles.signInButton, { backgroundColor: theme.accent, shadowColor: theme.accent }]} onPress={() => setShowAuthScreen(true)} accessibilityRole="button" accessibilityLabel="Sign in or sign up">
-              <Text style={[styles.signInButtonText, { color: theme.text === '#FFFFFF' ? '#1C1C1E' : '#FFFFFF' }]}>Sign In / Sign Up</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.signInButton,
+              { backgroundColor: theme.accent, shadowColor: theme.accent },
+            ]}
+            onPress={() => setShowAuthScreen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Sign in or sign up">
+            <Text
+              style={[
+                styles.signInButtonText,
+                { color: theme.text === '#FFFFFF' ? '#1C1C1E' : '#FFFFFF' },
+              ]}>
+              Sign In / Sign Up
+            </Text>
+          </TouchableOpacity>
 
           {/* Cancel Button */}
-          <TouchableOpacity style={styles.cancelButton} onPress={onClose} accessibilityRole="button" accessibilityLabel="Maybe later">
-              <Text style={[styles.cancelButtonText, { color: theme.textSecondary }]}>Maybe Later</Text>
-            </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onClose}
+            accessibilityRole="button"
+            accessibilityLabel="Maybe later">
+            <Text
+              style={[styles.cancelButtonText, { color: theme.textSecondary }]}>
+              Maybe Later
+            </Text>
+          </TouchableOpacity>
         </Animated.View>
       </Animated.View>
 
       {/* Nested Auth Screen */}
-      <Modal visible={showAuthScreen} animationType="slide" presentationStyle="pageSheet">
-        <AuthScreen onClose={() => setShowAuthScreen(false)} onAuthSuccess={handleAuthSuccess} />
-        </Modal>
+      <Modal
+        visible={showAuthScreen}
+        animationType="slide"
+        presentationStyle="pageSheet">
+        <AuthScreen
+          onClose={() => setShowAuthScreen(false)}
+          onAuthSuccess={handleAuthSuccess}
+        />
+      </Modal>
     </Modal>
   );
 };
@@ -222,4 +266,4 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: FONT_SIZES.md,
   },
-}); 
+});

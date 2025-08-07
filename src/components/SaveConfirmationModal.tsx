@@ -8,7 +8,10 @@ interface SaveConfirmationModalProps {
   onClose: () => void;
 }
 
-export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({ visible, onClose }) => {
+export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({
+  visible,
+  onClose,
+}) => {
   const { theme } = useTheme();
 
   return (
@@ -16,11 +19,11 @@ export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({ vi
       animationType="fade"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.centeredView}>
         <View style={[styles.modalView, { backgroundColor: theme.background }]}>
-          <View style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
+          <View
+            style={[styles.iconContainer, { backgroundColor: theme.primary }]}>
             <Ionicons name="checkmark-sharp" size={40} color="white" />
           </View>
           <Text style={[styles.modalText, { color: theme.text }]}>Saved!</Text>
@@ -29,8 +32,7 @@ export const SaveConfirmationModal: React.FC<SaveConfirmationModalProps> = ({ vi
           </Text>
           <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.primary }]}
-            onPress={onClose}
-          >
+            onPress={onClose}>
             <Text style={styles.textStyle}>OK</Text>
           </TouchableOpacity>
         </View>
@@ -89,4 +91,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
   },
-}); 
+});

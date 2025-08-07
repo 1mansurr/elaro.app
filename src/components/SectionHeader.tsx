@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, AccessibilityRole } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ViewStyle,
+  AccessibilityRole,
+} from 'react-native';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '../constants/theme';
 
 interface SectionHeaderProps {
@@ -43,14 +49,15 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
     <View
       style={[styles.container, variantStyles.spacing, style]}
       accessibilityRole={accessibilityRole}
-      accessibilityLabel={accessibilityLabel || title}
-    >
+      accessibilityLabel={accessibilityLabel || title}>
       <View style={styles.titleRow}>
         {icon && <View style={styles.icon}>{icon}</View>}
         <Text style={[styles.titleBase, variantStyles.title]}>{title}</Text>
       </View>
       {subtitle && (
-        <Text style={[styles.subtitleBase, variantStyles.subtitle]}>{subtitle}</Text>
+        <Text style={[styles.subtitleBase, variantStyles.subtitle]}>
+          {subtitle}
+        </Text>
       )}
     </View>
   );
@@ -113,4 +120,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SectionHeader; 
+export default SectionHeader;

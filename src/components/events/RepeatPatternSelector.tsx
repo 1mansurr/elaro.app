@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../../constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../../constants/theme';
 
 const DAYS_OF_WEEK = [
   { short: 'M', long: 'Mon', full: 'Monday' },
@@ -16,7 +23,10 @@ const DAYS_OF_WEEK = [
 const PRESET_PATTERNS = [
   { label: 'MWF', days: ['Monday', 'Wednesday', 'Friday'] },
   { label: 'TTh', days: ['Tuesday', 'Thursday'] },
-  { label: 'Daily', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] },
+  {
+    label: 'Daily',
+    days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
+  },
   { label: 'Weekends', days: ['Saturday', 'Sunday'] },
 ];
 
@@ -36,29 +46,31 @@ export const RepeatPatternSelector: React.FC<RepeatPatternSelectorProps> = ({
   errors,
 }) => {
   const [showCustom, setShowCustom] = useState(false);
-  
-  const handlePresetSelect = (preset: typeof PRESET_PATTERNS[0]) => {
+
+  const handlePresetSelect = (preset: (typeof PRESET_PATTERNS)[0]) => {
     onDaysChange(preset.days);
     setShowCustom(false);
   };
-  
+
   const handleDayToggle = (day: string) => {
     const newDays = selectedDays.includes(day)
       ? selectedDays.filter(d => d !== day)
       : [...selectedDays, day];
     onDaysChange(newDays);
   };
-  
-  const isPresetSelected = (preset: typeof PRESET_PATTERNS[0]) => {
-    return JSON.stringify(selectedDays.sort()) === JSON.stringify(preset.days.sort());
+
+  const isPresetSelected = (preset: (typeof PRESET_PATTERNS)[0]) => {
+    return (
+      JSON.stringify(selectedDays.sort()) === JSON.stringify(preset.days.sort())
+    );
   };
-  
+
   return (
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Repeat Pattern</Text>
-      
+
       <View style={styles.presetGrid}>
-        {PRESET_PATTERNS.map((preset) => (
+        {PRESET_PATTERNS.map(preset => (
           <TouchableOpacity
             key={preset.label}
             style={[
@@ -68,42 +80,42 @@ export const RepeatPatternSelector: React.FC<RepeatPatternSelectorProps> = ({
             onPress={() => handlePresetSelect(preset)}
             accessibilityRole="button"
             accessibilityLabel={`Select ${preset.label} pattern`}
-            accessibilityState={{ selected: isPresetSelected(preset) }}
-          >
-            <Text style={[
-              styles.presetLabel,
-              isPresetSelected(preset) && styles.presetLabelSelected,
-            ]}>
+            accessibilityState={{ selected: isPresetSelected(preset) }}>
+            <Text
+              style={[
+                styles.presetLabel,
+                isPresetSelected(preset) && styles.presetLabelSelected,
+              ]}>
               {preset.label}
             </Text>
-            <Text style={[
-              styles.presetSubtext,
-              isPresetSelected(preset) && styles.presetSubtextSelected,
-            ]}>
+            <Text
+              style={[
+                styles.presetSubtext,
+                isPresetSelected(preset) && styles.presetSubtextSelected,
+              ]}>
               {preset.days.map(d => d.slice(0, 3)).join(', ')}
             </Text>
           </TouchableOpacity>
         ))}
       </View>
-      
+
       <TouchableOpacity
         style={styles.customButton}
         onPress={() => setShowCustom(!showCustom)}
         accessibilityRole="button"
-        accessibilityLabel="Toggle custom pattern selection"
-      >
-        <Ionicons 
-          name={showCustom ? "chevron-up" : "chevron-down"} 
-          size={16} 
-          color={COLORS.primary} 
+        accessibilityLabel="Toggle custom pattern selection">
+        <Ionicons
+          name={showCustom ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color={COLORS.primary}
         />
         <Text style={styles.customButtonText}>Custom pattern</Text>
       </TouchableOpacity>
-      
+
       {showCustom && (
         <View style={styles.customDaysContainer}>
           <View style={styles.daysGrid}>
-            {DAYS_OF_WEEK.map((day) => (
+            {DAYS_OF_WEEK.map(day => (
               <TouchableOpacity
                 key={day.full}
                 style={[
@@ -113,12 +125,15 @@ export const RepeatPatternSelector: React.FC<RepeatPatternSelectorProps> = ({
                 onPress={() => handleDayToggle(day.full)}
                 accessibilityRole="button"
                 accessibilityLabel={`Toggle ${day.full}`}
-                accessibilityState={{ selected: selectedDays.includes(day.full) }}
-              >
-                <Text style={[
-                  styles.dayButtonText,
-                  selectedDays.includes(day.full) && styles.dayButtonTextSelected,
-                ]}>
+                accessibilityState={{
+                  selected: selectedDays.includes(day.full),
+                }}>
+                <Text
+                  style={[
+                    styles.dayButtonText,
+                    selectedDays.includes(day.full) &&
+                      styles.dayButtonTextSelected,
+                  ]}>
                   {day.short}
                 </Text>
               </TouchableOpacity>
@@ -126,7 +141,7 @@ export const RepeatPatternSelector: React.FC<RepeatPatternSelectorProps> = ({
           </View>
         </View>
       )}
-      
+
       {errors?.repeatDays && (
         <Text style={styles.errorText}>{errors.repeatDays}</Text>
       )}
@@ -232,4 +247,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default RepeatPatternSelector; 
+export default RepeatPatternSelector;
