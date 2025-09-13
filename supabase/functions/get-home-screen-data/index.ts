@@ -1,0 +1,165 @@
+// FILE: supabase/functions/get-home-screen-data/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { corsHeaders } from '../_shared/cors.ts';
+
+const getSupabaseClient = (req: Request): SupabaseClient => {
+  return createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+    {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! }
+      }
+    }
+  );
+};
+
+// Helper to get the start of the current week (Sunday)
+const getStartOfWeek = () => {
+  const now = new Date();
+  const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
+  const diff = now.getDate() - day;
+  const startOfWeek = new Date(now.setDate(diff));
+  startOfWeek.setHours(0, 0, 0, 0);
+  return startOfWeek;
+};
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  try {
+    console.log('Function started');
+    const supabase = getSupabaseClient(req);
+    const { data: { user } } = await supabase.auth.getUser();
+    console.log('User authenticated:', user?.id);
+    if (!user) throw new Error('Unauthorized');
+
+    const now = new Date().toISOString();
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
+    // --- Run all queries in parallel ---
+    console.log('Starting database queries');
+    const [
+      { data: lectures, error: lecturesError },
+      { data: studySessions, error: studySessionsError },
+      { data: assignments, error: assignmentsError },
+    ] = await Promise.all([
+      // Fetch all upcoming lectures
+      supabase
+        .from('lectures')
+        .select('*, courses(course_name)')
+        .gt('lecture_date', now),
+      // Fetch all upcoming study sessions
+      supabase
+        .from('study_sessions')
+        .select('*, courses(course_name)')
+        .gt('session_date', now),
+      // Fetch all upcoming assignments
+      supabase
+        .from('assignments')
+        .select('*, courses(course_name)')
+        .gt('due_date', now),
+    ]);
+
+    console.log('Queries completed');
+    console.log('Lectures:', lectures?.length || 0, 'Study Sessions:', studySessions?.length || 0, 'Assignments:', assignments?.length || 0);
+    
+    if (lecturesError) {
+      console.error('Lectures error:', lecturesError);
+      throw lecturesError;
+    }
+    if (studySessionsError) {
+      console.error('Study sessions error:', studySessionsError);
+      throw studySessionsError;
+    }
+    if (assignmentsError) {
+      console.error('Assignments error:', assignmentsError);
+      throw assignmentsError;
+    }
+
+    // Calculate weekly task count manually
+    const startOfWeek = getStartOfWeek().toISOString();
+    const weeklyTaskCount = (lectures || []).filter(l => l.created_at >= startOfWeek).length +
+                           (studySessions || []).filter(s => s.created_at >= startOfWeek).length +
+                           (assignments || []).filter(a => a.created_at >= startOfWeek).length;
+
+    // --- Process the results ---
+    // 1. Find the single next upcoming task
+    const allTasks = [
+      ...(lectures || []).map(t => ({
+        ...t,
+        type: 'lecture',
+        date: t.lecture_date,
+        name: t.courses.course_name
+      })),
+      ...(studySessions || []).map(t => ({
+        ...t,
+        type: 'study_session',
+        date: t.session_date,
+        name: t.topic
+      })),
+      ...(assignments || []).map(t => ({
+        ...t,
+        type: 'assignment',
+        date: t.due_date,
+        name: t.title
+      })),
+    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const nextUpcomingTask = allTasks[0] || null;
+
+    // 2. Get today's overview counts
+    const todayOverview = {
+      lectures: (lectures || []).filter(t => 
+        new Date(t.lecture_date) >= todayStart && 
+        new Date(t.lecture_date) <= todayEnd
+      ).length,
+      study_sessions: (studySessions || []).filter(t => 
+        new Date(t.session_date) >= todayStart && 
+        new Date(t.session_date) <= todayEnd
+      ).length,
+      assignments: (assignments || []).filter(t => 
+        new Date(t.due_date) >= todayStart && 
+        new Date(t.due_date) <= todayEnd
+      ).length,
+      // You can add reminders/reviews here later
+      reviews: 0,
+    };
+
+    // --- Combine into a single response object ---
+    const responseData = {
+      nextUpcomingTask,
+      todayOverview,
+      weeklyTaskCount,
+    };
+
+    console.log('Response data:', JSON.stringify(responseData, null, 2));
+
+    return new Response(
+      JSON.stringify(responseData),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    );
+  } catch (error) {
+    console.error('Edge Function Error:', error);
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: error.toString(),
+        stack: error.stack 
+      }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+});

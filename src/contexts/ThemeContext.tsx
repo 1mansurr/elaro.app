@@ -221,7 +221,6 @@ interface ThemeContextProps {
 const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  console.log('ThemeProvider mounted');
   const systemColorScheme = useColorScheme();
   const [mode, setMode] = useState<'light' | 'dark' | 'system'>('system');
   const [colorScheme, setColorScheme] =
@@ -267,14 +266,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export const useTheme = () => {
-  console.log('useTheme called');
   const ctx = useContext(ThemeContext);
   if (!ctx) {
-    // Add a warning with stack trace for debugging
-    console.warn(
-      '[⚠️ useTheme] Called outside of ThemeProvider',
-      new Error().stack,
-    );
+    // Remove console.warn to prevent text rendering issues
     throw new Error('useTheme must be used within a ThemeProvider');
   }
   return ctx;

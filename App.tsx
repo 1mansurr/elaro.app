@@ -123,7 +123,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   }
 
   return (
-    <SafeAreaProvider onLayout={onLayoutRootView}>{children}</SafeAreaProvider>
+    <SafeAreaProvider onLayout={onLayoutRootView}>
+      {children}
+    </SafeAreaProvider>
   );
 };
 
@@ -152,19 +154,17 @@ function AuthEffects() {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <AppInitializer>
-        <ThemeProvider>
-          <AuthProvider>
-            <SoftLaunchProvider>
-              <ThemedStatusBar />
-              <AuthEffects /> {/* <-- use the hook here, inside the provider */}
-              <AppNavigator />
-            </SoftLaunchProvider>
-          </AuthProvider>
-        </ThemeProvider>
-      </AppInitializer>
-    </ErrorBoundary>
+    <AppInitializer>
+      <ThemeProvider>
+        <ThemedStatusBar />
+        <AuthProvider>
+          <SoftLaunchProvider>
+            <AuthEffects />
+            <AppNavigator />
+          </SoftLaunchProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </AppInitializer>
   );
 }
 

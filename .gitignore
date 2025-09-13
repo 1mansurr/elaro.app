@@ -36,5 +36,20 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
-/android
-/ios
+
+# Native build artifacts (but allow source folders)
+ios/build/
+ios/Pods/
+ios/*.xcworkspace/xcuserdata/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcodeproj/project.xcworkspace/xcuserdata/
+android/app/build/
+android/build/
+android/.gradle/
+android/gradle/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/app/debug.keystore
+android/app/release.keystore
+*.keystore

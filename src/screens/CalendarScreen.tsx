@@ -1,308 +1,150 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Modal,
-  TextInput,
-} from 'react-native';
-import { useTheme } from '../contexts/ThemeContext';
+// FILE: src/screens/CalendarScreen.tsx
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { View, StyleSheet, ActivityIndicator, Text, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
-import { Ionicons } from '@expo/vector-icons';
-import { WeekStrip } from '../components/calendar/WeekStrip';
-import { AuthPromptModal } from '../components/AuthPromptModal';
-import { SaveConfirmationModal } from '../components/SaveConfirmationModal';
+import { supabase } from '../services/supabase';
+import { Task, RootStackParamList } from '../types';
+import { WeekStrip, Timeline } from '../components';
+import { startOfWeek, isSameDay, format } from 'date-fns';
 
-type EventType = 'Assignment' | 'Test' | 'Event';
+type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
-function getWeekDates(date: Date): Date[] {
-  const startOfWeek = new Date(date);
-  startOfWeek.setDate(date.getDate() - startOfWeek.getDay()); // Sunday
-  startOfWeek.setHours(0, 0, 0, 0);
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(startOfWeek);
-    d.setDate(startOfWeek.getDate() + i);
-    return d;
-  });
-}
-
-const CalendarScreen = ({ navigation }: any) => {
-  const { theme } = useTheme();
-  const { user } = useAuth();
+const CalendarScreen = () => {
+  const navigation = useNavigation<CalendarScreenNavigationProp>();
+  const { session } = useAuth();
+  const isGuest = !session;
 
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [isAuthModalVisible, setAuthModalVisible] = useState(false);
-  const [isSaveConfirmVisible, setSaveConfirmVisible] = useState(false);
+  const [weekData, setWeekData] = useState<Record<string, Task[]>>({});
+  const [isLoading, setIsLoading] = useState(!isGuest);
+  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
 
-  // State for the form inside the modal
-  const [selectedType, setSelectedType] = useState<EventType>('Assignment');
-  const [title, setTitle] = useState('');
-  const [about, setAbout] = useState('');
-
-  const handleDateSelect = (date: Date) => {
-    setSelectedDate(date);
-  };
-
-  const handleSave = () => {
-    setModalVisible(false);
-    if (user) {
-      console.log('User is authenticated. Saving data...');
-      console.log({ type: selectedType, title, about, date: selectedDate });
-      setSaveConfirmVisible(true);
-    } else {
-      console.log('User is not authenticated. Showing auth prompt.');
-      setAuthModalVisible(true);
+  const fetchWeekData = useCallback(async (dateInWeek: Date) => {
+    if (isGuest) return;
+    
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('get-calendar-data-for-week', {
+        body: { date: dateInWeek.toISOString() },
+      });
+      
+      if (error) throw error;
+      setWeekData(data || {});
+    } catch (e) {
+      console.error("Failed to fetch week data:", e);
+    } finally {
+      setIsLoading(false);
     }
+  }, [isGuest]);
+
+  useEffect(() => {
+    fetchWeekData(currentWeekStart);
+  }, [fetchWeekData, currentWeekStart]);
+
+  const handleDateSelect = (newDate: Date) => {
+    if (isGuest) return; // Disable date selection for guests
+    
+    const newWeekStart = startOfWeek(newDate, { weekStartsOn: 1 });
+    if (!isSameDay(newWeekStart, currentWeekStart)) {
+      setCurrentWeekStart(newWeekStart);
+    }
+    setSelectedDate(newDate);
   };
 
-  const resetForm = () => {
-    setTitle('');
-    setAbout('');
-    setSelectedType('Assignment');
-  };
+  const tasksForSelectedDay = useMemo(() => {
+    if (isGuest) return [];
+    
+    const dateKey = format(selectedDate, 'yyyy-MM-dd');
+    const matchingKey = Object.keys(weekData).find(key => key.startsWith(dateKey));
+    return matchingKey ? weekData[matchingKey] : [];
+  }, [selectedDate, weekData, isGuest]);
 
-  const openAddModal = () => {
-    resetForm();
-    setModalVisible(true);
-  };
-
-  const renderTypeSelection = () => {
-    const types: EventType[] = ['Assignment', 'Test', 'Event'];
+  // Guest View
+  if (isGuest) {
     return (
-      <View style={styles.typeContainer}>
-        {types.map(type => (
-          <TouchableOpacity
-            key={type}
-            style={[
-              styles.typeButton,
-              { backgroundColor: theme.card },
-              selectedType === type && {
-                backgroundColor: theme.primary,
-                borderColor: theme.primary,
-              },
-            ]}
-            onPress={() => setSelectedType(type)}>
-            <Text
-              style={[
-                styles.typeButtonText,
-                { color: theme.text },
-                selectedType === type && { color: 'white' },
-              ]}>
-              {type}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-    );
-  };
-
-  const renderModalContent = () => (
-    <View style={[styles.modalContent, { backgroundColor: theme.background }]}>
-      <Text style={[styles.modalTitle, { color: theme.text }]}>
-        Add to Calendar
-      </Text>
-      {renderTypeSelection()}
-      <TextInput
-        style={[
-          styles.input,
-          {
-            color: theme.text,
-            borderColor: theme.textSecondary,
-            backgroundColor: theme.card,
-          },
-        ]}
-        placeholder="Title"
-        placeholderTextColor={theme.textSecondary}
-        value={title}
-        onChangeText={setTitle}
-      />
-      {selectedType === 'Assignment' && (
-        <TextInput
-          style={[
-            styles.input,
-            styles.textArea,
-            {
-              color: theme.text,
-              borderColor: theme.textSecondary,
-              backgroundColor: theme.card,
-            },
-          ]}
-          placeholder="About this assignment..."
-          placeholderTextColor={theme.textSecondary}
-          multiline
-          value={about}
-          onChangeText={setAbout}
+      <View style={styles.container}>
+        <WeekStrip 
+          selectedDate={selectedDate} 
+          onDateSelect={() => {}} // Disabled for guests
         />
-      )}
-      <TouchableOpacity
-        style={[styles.saveButton, { backgroundColor: theme.primary }]}
-        onPress={handleSave}>
-        <Text style={styles.saveButtonText}>Save</Text>
-      </TouchableOpacity>
-    </View>
-  );
-
-  return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: theme.background,
-            borderBottomColor: theme.border,
-          },
-        ]}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Calendar
-        </Text>
-        <View style={styles.headerIcons}>
-          <TouchableOpacity>
-            <Ionicons
-              name="search"
-              size={24}
-              color={theme.text}
-              style={styles.icon}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity>
-            <Ionicons
-              name="notifications-outline"
-              size={24}
-              color={theme.text}
-              style={styles.icon}
-            />
+        <View style={styles.guestTimelineContainer}>
+          <Text style={styles.guestText}>
+            Your schedule will appear here.
+          </Text>
+          <Text style={styles.guestSubText}>
+            Sign up to add lectures, assignments, and study sessions to your personal calendar.
+          </Text>
+          <TouchableOpacity
+            style={styles.signUpButton}
+            onPress={() => navigation.navigate('Auth', { mode: 'signup' })}
+          >
+            <Text style={styles.signUpButtonText}>Sign Up for Free</Text>
           </TouchableOpacity>
         </View>
       </View>
-      <WeekStrip
-        weekDates={getWeekDates(selectedDate)}
-        selectedDate={selectedDate}
-        onDatePress={handleDateSelect}
-        scheduleData={[]}
-        viewMode="daily"
+    );
+  }
+
+  // Authenticated View
+  return (
+    <View style={styles.container}>
+      <WeekStrip 
+        selectedDate={selectedDate} 
+        onDateSelect={handleDateSelect} 
       />
-      <ScrollView style={styles.scrollView}>
-        <Text
-          style={{
-            color: theme.textSecondary,
-            textAlign: 'center',
-            marginTop: 20,
-          }}>
-          Content for {selectedDate.toDateString()}
-        </Text>
-      </ScrollView>
-      <TouchableOpacity
-        style={[styles.addButton, { backgroundColor: theme.primary }]}
-        onPress={openAddModal}>
-        <Ionicons name="add" size={30} color="white" />
-      </TouchableOpacity>
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isModalVisible}
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalContainer}>{renderModalContent()}</View>
-      </Modal>
-      <AuthPromptModal
-        visible={isAuthModalVisible}
-        onClose={() => setAuthModalVisible(false)}
-        onSignIn={() => {
-          setAuthModalVisible(false);
-          navigation.navigate('SignIn');
-        }}
-        onSignUp={() => {
-          setAuthModalVisible(false);
-          navigation.navigate('SignUp');
-        }}
-        title="Save Your Progress"
-        message="Create an account or sign in to ensure your tasks and events are saved."
-      />
-      <SaveConfirmationModal
-        visible={isSaveConfirmVisible}
-        onClose={() => setSaveConfirmVisible(false)}
-      />
+      {isLoading ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      ) : (
+        <Timeline tasks={tasksForSelectedDay} />
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 50,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  headerTitle: { fontSize: 24, fontWeight: 'bold' },
-  headerIcons: { flexDirection: 'row' },
-  icon: { marginLeft: 16 },
-  scrollView: { flex: 1 },
-  addButton: {
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
-  },
-  modalContainer: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
-  modalContent: {
-    width: '90%',
-    padding: 20,
-    borderRadius: 20,
+  guestTimelineContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 30,
+    backgroundColor: '#f8f9fa',
   },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', marginBottom: 20 },
-  typeContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginBottom: 20,
+  guestText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#343a40',
+    textAlign: 'center',
+    marginBottom: 12,
   },
-  typeButton: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  typeButtonText: { fontWeight: 'bold' },
-  input: {
-    width: '100%',
-    height: 50,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    marginBottom: 15,
+  guestSubText: {
     fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 24,
   },
-  textArea: { height: 100, paddingTop: 15, textAlignVertical: 'top' },
-  saveButton: {
-    marginTop: 10,
-    paddingVertical: 15,
+  signUpButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
     paddingHorizontal: 30,
-    borderRadius: 25,
-    width: '100%',
+    borderRadius: 8,
   },
-  saveButtonText: {
-    color: 'white',
+  signUpButtonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-    textAlign: 'center',
   },
 });
 

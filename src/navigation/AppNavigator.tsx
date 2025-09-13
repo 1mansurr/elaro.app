@@ -6,52 +6,32 @@ import {
 } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, View } from 'react-native';
+import { Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 
 import { useAuth } from '../contexts/AuthContext';
-import { COLORS } from '../constants/theme';
 import { RootStackParamList, MainTabParamList } from '../types';
-import { featureGates } from '../config/featureGates';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
+import { AuthScreen } from '../screens/AuthScreen';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import AccountScreen from '../screens/AccountScreen';
-import { PushTestScreen } from '../screens/PushTestScreen';
-import AddStudyScreen from '../screens/AddStudyScreen';
-import AddEventScreen from '../screens/AddEventScreen';
-import AddTaskEventScreen from '../screens/AddTaskEventScreen';
-import SpacedRepetitionScreen from '../screens/SpacedRepetitionScreen';
-import ScheduleSR from '../screens/ScheduleSR';
-import { AuthScreenWrapper } from '../screens/AuthScreenWrapper';
-
-import { BottomTabBar } from '@react-navigation/bottom-tabs';
+import CoursesScreen from '../screens/CoursesScreen';
+import AddCourseModal from '../screens/modals/AddCourseModal';
+import EditCourseModal from '../screens/modals/EditCourseModal';
+import AddLectureModal from '../screens/modals/AddLectureModal';
+import AddStudySessionModal from '../screens/modals/AddStudySessionModal';
+import AddAssignmentModal from '../screens/modals/AddAssignmentModal';
+import CourseDetailScreen from '../screens/CourseDetailScreen';
+import ComingSoonScreen from '../screens/ComingSoonScreen';
+import RecycleBinScreen from '../screens/RecycleBinScreen';
 
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
-
-// Route grouping constants for better organization
-const AUTH_ROUTES = {
-  Launch: LaunchScreen,
-  Auth: AuthScreenWrapper,
-} as const;
-
-const MAIN_ROUTES = {
-  Main: null, // Will be handled by MainTabNavigator
-} as const;
-
-const FUNCTIONAL_ROUTES = {
-  PushTest: PushTestScreen,
-  AddStudy: AddStudyScreen,
-  AddEvent: AddEventScreen,
-  AddTaskEvent: AddTaskEventScreen,
-  SpacedRepetitionScreen: SpacedRepetitionScreen,
-  ScheduleSR: ScheduleSR,
-} as const;
 
 // Tab bar icon helper for cleaner code
 const getTabBarIcon = (
@@ -61,8 +41,6 @@ const getTabBarIcon = (
   switch (routeName) {
     case 'Home':
       return focused ? 'home' : 'home-outline';
-    case 'Calendar':
-      return focused ? 'calendar' : 'calendar-outline';
     case 'Account':
       return focused ? 'person' : 'person-outline';
     default:
@@ -126,21 +104,40 @@ const tabBarScreenOptions =
 const MainTabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const { session, user } = useAuth();
+  
+  const getFirstName = () => {
+    if (!session || !user?.name) {
+      return 'Account';
+    }
+    return user.name.split(' ')[0];
+  };
+  
   return (
     <Tab.Navigator screenOptions={tabBarScreenOptions(insets, theme)}>
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Calendar" component={CalendarScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen 
+        name="Account" 
+        component={AccountScreen}
+        options={{
+          tabBarLabel: getFirstName(),
+        }}
+      />
     </Tab.Navigator>
   );
 };
 
+// Auth Screen Wrapper
+const AuthScreenWrapper = ({ navigation }: any) => (
+  <AuthScreen 
+    onClose={() => navigation.goBack()} 
+    onAuthSuccess={() => navigation.navigate('Main')} 
+  />
+);
+
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
-
-  // Debug logs for navigation state
-  console.log('[AppNavigator] loading:', loading, '| session:', session);
 
   // Determine initial route based on auth state
   const getInitialRouteName = (): keyof RootStackParamList => {
@@ -154,30 +151,175 @@ export const AppNavigator: React.FC = () => {
         initialRouteName={getInitialRouteName()}>
         {/* Always show Launch screen */}
         <Stack.Screen name="Launch" component={LaunchScreen} />
+        {/* Auth screen */}
+        <Stack.Screen 
+          name="Auth" 
+          component={AuthScreenWrapper}
+          options={{
+            presentation: 'modal',
+          }}
+        />
         {/* Main app routes */}
         <Stack.Screen name="Main" component={MainTabNavigator} />
-        {/* Show other screens only when not loading */}
-        {!loading && (
-          <>
-            {/* Auth and onboarding routes */}
-            <Stack.Screen name="Auth" component={AuthScreenWrapper} />
-            {/* Functional screens */}
-            <Stack.Screen name="PushTest" component={PushTestScreen} />
-            <Stack.Screen name="AddStudy" component={AddStudyScreen} />
-            <Stack.Screen name="AddEvent" component={AddEventScreen} />
-            <Stack.Screen name="AddTaskEvent" component={AddTaskEventScreen} />
-            {/* Conditionally render LearningStyleScreen based on feature flag */}
-            {/* <Stack.Screen
-              name="LearningStyleScreen"
-              component={LearningStyleScreen}
-            /> */}
-            <Stack.Screen
-              name="SpacedRepetitionScreen"
-              component={SpacedRepetitionScreen}
-            />
-            <Stack.Screen name="ScheduleSR" component={ScheduleSR} />
-          </>
-        )}
+        {/* Course Management screens */}
+        <Stack.Screen 
+          name="Courses" 
+          component={CoursesScreen}
+          options={{
+            headerShown: true,
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen 
+          name="CourseDetail" 
+          component={CourseDetailScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Course Details',
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen 
+          name="Calendar" 
+          component={CalendarScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Calendar',
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen 
+          name="ComingSoon" 
+          component={ComingSoonScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Coming Soon',
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        <Stack.Screen 
+          name="RecycleBin" 
+          component={RecycleBinScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Recycle Bin',
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
+        
+        {/* Modal Screens */}
+        <Stack.Group>
+          <Stack.Screen 
+            name="AddCourseModal" 
+            component={AddCourseModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Add Course',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen 
+            name="EditCourseModal" 
+            component={EditCourseModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Edit Course',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen 
+            name="AddLectureModal" 
+            component={AddLectureModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Add Lecture',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen 
+            name="AddStudySessionModal" 
+            component={AddStudySessionModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Add Study Session',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+          <Stack.Screen 
+            name="AddAssignmentModal" 
+            component={AddAssignmentModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Add Assignment',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
+        </Stack.Group>
       </Stack.Navigator>
     </NavigationContainer>
   );

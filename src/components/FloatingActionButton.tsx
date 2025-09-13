@@ -1,98 +1,148 @@
-import React, { useRef } from 'react';
-import {
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  ViewStyle,
-  StyleProp,
-  Platform,
-} from 'react-native';
+// FILE: src/components/FloatingActionButton.tsx
+import React, { useState, useEffect, useRef } from 'react';
+import { View, StyleSheet, TouchableOpacity, Animated, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SHADOWS } from '../constants/theme';
 
-interface FloatingActionButtonProps {
+type Action = {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
   onPress: () => void;
-  icon?: keyof typeof Ionicons.glyphMap;
+  color?: string;
   size?: number;
-  bottom?: number;
-  right?: number;
-  left?: number;
-  style?: StyleProp<ViewStyle>;
-  accessibilityLabel?: string;
+};
+
+interface Props {
+  actions: Action[];
+  isOpen?: boolean; // Prop to control state from parent
+  onStateChange?: (state: { open: boolean }) => void; // Callback to notify parent of state change
 }
 
-export const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
-  onPress,
-  icon = 'add',
-  size = 56,
-  bottom = 24,
-  right,
-  left,
-  style,
-  accessibilityLabel = 'Floating Action Button',
-}) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const borderRadius = size / 2;
+const FloatingActionButton: React.FC<Props> = ({ actions, isOpen, onStateChange }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(isOpen || false);
+  const animation = useRef(new Animated.Value(0)).current;
 
-  const handlePressIn = () => {
-    Animated.spring(scale, {
-      toValue: 0.92,
+  useEffect(() => {
+    // Sync internal state if parent-controlled state changes
+    if (isOpen !== undefined && isOpen !== isMenuOpen) {
+      handleToggle();
+    }
+  }, [isOpen]);
+
+  const handleToggle = () => {
+    const toValue = isMenuOpen ? 0 : 1;
+    Animated.spring(animation, {
+      toValue,
+      friction: 5,
       useNativeDriver: true,
     }).start();
+    const newOpenState = !isMenuOpen;
+    setIsMenuOpen(newOpenState);
+    onStateChange?.({ open: newOpenState });
   };
 
-  const handlePressOut = () => {
-    Animated.spring(scale, {
-      toValue: 1,
-      useNativeDriver: true,
-    }).start();
+  const rotation = {
+    transform: [
+      {
+        rotate: animation.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', '45deg'],
+        }),
+      },
+    ],
   };
 
   return (
-    <Animated.View
-      style={[
-        styles.container,
-        {
-          bottom,
-          right,
-          left,
-          width: size,
-          height: size,
-          transform: [{ scale }],
-        },
-        style,
-      ]}>
-      <TouchableOpacity
-        activeOpacity={0.9}
-        onPress={onPress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        accessibilityRole="button"
-        accessibilityLabel={accessibilityLabel}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        style={[styles.button, { width: size, height: size, borderRadius }]}>
-        <LinearGradient
-          colors={[COLORS.primary, COLORS.secondary]}
-          start={{ x: 0.1, y: 0.1 }}
-          end={{ x: 0.9, y: 0.9 }}
-          style={[StyleSheet.absoluteFill, { borderRadius }]}
-        />
-        <Ionicons name={icon} size={size * 0.42} color={COLORS.white} />
+    <View style={styles.container}>
+      {isMenuOpen && (
+        <>
+          {actions.map((action, index) => {
+            const translation = animation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -(index + 1) * 60],
+            });
+            return (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.actionButton,
+                  {
+                    transform: [{ translateY: translation }],
+                  },
+                ]}
+              >
+                <TouchableOpacity
+                  style={styles.actionCircle}
+                  onPress={() => {
+                    handleToggle();
+                    action.onPress();
+                  }}
+                >
+                  <Ionicons name={action.icon} size={action.size || 24} color="white" />
+                </TouchableOpacity>
+                <Text style={styles.actionLabel} numberOfLines={1}>{action.label}</Text>
+              </Animated.View>
+            );
+          })}
+        </>
+      )}
+      <TouchableOpacity style={styles.menuButton} onPress={handleToggle}>
+        <Animated.View style={rotation}>
+          <Ionicons name={isMenuOpen ? "close" : "add"} size={30} color="white" />
+        </Animated.View>
       </TouchableOpacity>
-    </Animated.View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    zIndex: 1000,
-    elevation: Platform.OS === 'android' ? 10 : undefined,
-  },
-  button: {
+    bottom: 30,
+    right: 30,
     alignItems: 'center',
+  },
+  menuButton: {
+    backgroundColor: '#007AFF',
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     justifyContent: 'center',
-    ...SHADOWS.large,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  actionButton: {
+    position: 'absolute',
+    flexDirection: 'row-reverse',
+    alignItems: 'center',
+    right: 0,
+    minWidth: 200,
+  },
+  actionCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    backgroundColor: 'white',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+    marginLeft: 16,
+    color: '#333',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    whiteSpace: 'nowrap',
+    flexShrink: 0,
+    maxWidth: 150,
   },
 });
+
+export default FloatingActionButton;

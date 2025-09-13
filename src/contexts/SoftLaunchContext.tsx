@@ -70,7 +70,7 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
 
   // Do not block any features
   const blockPremiumFeature = (feature: string): boolean => {
-    return true;
+    return false;
   };
 
   const value: SoftLaunchContextType = {

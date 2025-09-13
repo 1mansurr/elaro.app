@@ -4,7 +4,7 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { ReminderTime, RepeatPattern } from '../types';
+// Removed ReminderTime and RepeatPattern imports as they were deleted
 import { analyticsService } from './supabase';
 import { supabase } from './supabase';
 
@@ -260,32 +260,7 @@ export const notificationService = {
     }
   },
 
-  async scheduleItemReminders({
-    itemId,
-    itemTitle,
-    itemType,
-    dateTime,
-    reminderTimes,
-  }: {
-    itemId: string;
-    itemTitle: string;
-    itemType: string;
-    dateTime: Date;
-    reminderTimes: ReminderTime[];
-  }) {
-    for (const reminderTime of reminderTimes) {
-      const triggerDate = this.calculateReminderTime(dateTime, reminderTime);
-      const reminderId = `${itemId}_${reminderTime}`;
-
-      await this.scheduleReminder({
-        id: reminderId,
-        title: `📌 Reminder: ${itemTitle}`,
-        body: `${itemType} ${this.getReminderTimeText(reminderTime)}`,
-        triggerDate,
-        data: { itemId, itemType, reminderTime },
-      });
-    }
-  },
+  // scheduleItemReminders removed - uses deleted ReminderTime type
 
   async cancelItemReminders(itemId: string) {
     const scheduledNotifications =
@@ -329,115 +304,21 @@ export const notificationService = {
     userId: string;
   }) {
     await this.cancelSRReminders(sessionId);
-    await this.scheduleSRReminders({
+    await this.rescheduleSRReminders({
       sessionId,
       sessionTitle,
-      studyDate: newDate,
+      newDate: newDate,
       planType,
       userId,
     });
   },
 
-  async scheduleRepeatingReminders({
-    itemId,
-    itemTitle,
-    startDate,
-    repeatPattern,
-    reminderTimes,
-    endDate,
-  }: {
-    itemId: string;
-    itemTitle: string;
-    startDate: Date;
-    repeatPattern: RepeatPattern;
-    reminderTimes: ReminderTime[];
-    endDate?: Date;
-  }) {
-    const occurrences = this.generateRepeatOccurrences(
-      startDate,
-      repeatPattern,
-      endDate,
-    );
-    for (let i = 0; i < occurrences.length; i++) {
-      const occurrence = occurrences[i];
-      const occurrenceId = `${itemId}_occurrence_${i}`;
-      await this.scheduleItemReminders({
-        itemId: occurrenceId,
-        itemTitle,
-        itemType: 'Lecture',
-        dateTime: occurrence,
-        reminderTimes,
-      });
-    }
-  },
-
-  generateRepeatOccurrences(
-    startDate: Date,
-    repeatPattern: RepeatPattern,
-    endDate?: Date,
-  ): Date[] {
-    const occurrences: Date[] = [];
-    const maxOccurrences = 52;
-    const finalEndDate =
-      endDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
-    let currentDate = new Date(startDate);
-
-    for (let i = 0; i < maxOccurrences && currentDate <= finalEndDate; i++) {
-      occurrences.push(new Date(currentDate));
-      if (repeatPattern.type === 'daily') {
-        currentDate.setDate(currentDate.getDate() + 1);
-      } else if (repeatPattern.type === 'weekly') {
-        currentDate.setDate(currentDate.getDate() + 7);
-      } else if (repeatPattern.type === 'custom' && repeatPattern.days) {
-        currentDate = this.getNextCustomDay(currentDate, repeatPattern.days);
-      }
-    }
-
-    return occurrences;
-  },
-
-  getNextCustomDay(currentDate: Date, days: number[]): Date {
-    const nextDate = new Date(currentDate);
-    nextDate.setDate(nextDate.getDate() + 1);
-    while (!days.includes(nextDate.getDay())) {
-      nextDate.setDate(nextDate.getDate() + 1);
-    }
-    return nextDate;
-  },
-
-  calculateReminderTime(dateTime: Date, reminderTime: ReminderTime): Date {
-    const triggerDate = new Date(dateTime);
-    switch (reminderTime) {
-      case '15min':
-        triggerDate.setMinutes(triggerDate.getMinutes() - 15);
-        break;
-      case '30min':
-        triggerDate.setMinutes(triggerDate.getMinutes() - 30);
-        break;
-      case '1hr':
-        triggerDate.setHours(triggerDate.getHours() - 1);
-        break;
-      case '24hr':
-        triggerDate.setHours(triggerDate.getHours() - 24);
-        break;
-    }
-    return triggerDate;
-  },
-
-  getReminderTimeText(reminderTime: ReminderTime): string {
-    switch (reminderTime) {
-      case '15min':
-        return '15 minutes before';
-      case '30min':
-        return '30 minutes before';
-      case '1hr':
-        return '1 hour before';
-      case '24hr':
-        return '24 hours before';
-      default:
-        return '';
-    }
-  },
+  // Functions using deleted types removed:
+  // - scheduleRepeatingReminders
+  // - generateRepeatOccurrences  
+  // - getNextCustomDay
+  // - calculateReminderTime
+  // - getReminderTimeText
 
   async getScheduledNotificationsCount(): Promise<number> {
     const notifications =

@@ -2,42 +2,47 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
-import { CommonActions } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import type { RootStackParamList } from '../types';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '../constants/theme';
 import { useTheme } from '../contexts/ThemeContext';
 
 const LaunchScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
 
   const logoScale = useRef(new Animated.Value(0.9)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.spring(logoScale, {
-        toValue: 1.15,
-        friction: 4,
-        tension: 100,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 1000,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // --- GUEST-FIRST DEVELOPMENT MODE ---
+    // Temporarily bypassing auth check to speed up UI development.
+    // The "Main" screen is always shown immediately.
+    navigation.navigate('Main');
+    // --- END OF GUEST-FIRST MODE ---
 
-    const timeout = setTimeout(() => {
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        }),
-      );
-    }, 3000);
+    // Original auth flow (commented out for guest-first development):
+    // Animated.parallel([
+    //   Animated.spring(logoScale, {
+    //     toValue: 1.15,
+    //     friction: 4,
+    //     tension: 100,
+    //     useNativeDriver: true,
+    //   }),
+    //   Animated.timing(fadeAnim, {
+    //     toValue: 1,
+    //     duration: 1000,
+    //     useNativeDriver: true,
+    //   }),
+    // ]).start();
 
-    return () => clearTimeout(timeout);
+    // const timeout = setTimeout(() => {
+    //   // Replace the current screen with the Main tab navigator
+    //   // so the user cannot go back to the launch screen.
+    //   navigation.navigate('Main');
+    // }, 2500); // 2.5 second delay for splash screen animation
+
+    // return () => clearTimeout(timeout);
   }, [fadeAnim, logoScale, navigation]);
 
   return (

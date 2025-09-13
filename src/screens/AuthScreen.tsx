@@ -13,6 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import {
@@ -37,7 +38,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
   const { theme } = useTheme();
 
   const styles = StyleSheet.create({
@@ -120,6 +121,37 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       textAlign: 'center',
       marginTop: SPACING.md,
     },
+    dividerContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: SPACING.md,
+    },
+    divider: {
+      flex: 1,
+      height: 1,
+      backgroundColor: '#e9ecef',
+    },
+    dividerText: {
+      marginHorizontal: SPACING.sm,
+      color: '#adb5bd',
+      fontSize: FONT_SIZES.sm,
+    },
+    oauthButton: {
+      width: '100%',
+      height: 50,
+      marginBottom: SPACING.sm,
+    },
+    googleButton: {
+      backgroundColor: '#4285F4',
+      borderRadius: BORDER_RADIUS.md,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    googleButtonText: {
+      color: '#fff',
+      fontSize: FONT_SIZES.md,
+      fontWeight: FONT_WEIGHTS.medium as any,
+    },
   });
 
   // Move AuthInput here so it can access styles
@@ -191,6 +223,40 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       }
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithGoogle();
+      if (error) {
+        Alert.alert('Google Sign-In Failed', error.message);
+      } else {
+        onAuthSuccess?.();
+        onClose();
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong with Google sign-in.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setLoading(true);
+    try {
+      const { error } = await signInWithApple();
+      if (error) {
+        Alert.alert('Apple Sign-In Failed', error.message);
+      } else {
+        onAuthSuccess?.();
+        onClose();
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong with Apple sign-in.');
     } finally {
       setLoading(false);
     }
@@ -314,6 +380,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                 </Text>
               )}
             </TouchableOpacity>
+
+            {/* OAuth Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>or</Text>
+              <View style={styles.divider} />
+            </View>
+
+            {/* Google Sign-In Button */}
+            <TouchableOpacity
+              style={[styles.oauthButton, styles.googleButton]}
+              onPress={handleGoogleSignIn}
+              disabled={loading}
+            >
+              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            </TouchableOpacity>
+
+            {/* Apple Sign-In Button */}
+            {appleAuth.isSupported && (
+              <AppleButton
+                buttonStyle={AppleButton.Style.BLACK}
+                buttonType={AppleButton.Type.SIGN_IN}
+                style={styles.oauthButton}
+                onPress={handleAppleSignIn}
+                disabled={loading}
+              />
+            )}
 
             <TouchableOpacity
               style={styles.switchButton}

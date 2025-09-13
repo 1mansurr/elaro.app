@@ -2,11 +2,6 @@ import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   User,
-  StudySession,
-  TaskEvent,
-  SpacedRepetitionReminder,
-  Subscription,
-  UserEvent,
 } from '../types';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
@@ -69,7 +64,6 @@ export const authService = {
       id: userId,
       email,
       name,
-      is_subscribed_to_oddity: false,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     });
 
@@ -97,273 +91,31 @@ export const authService = {
   },
 };
 
-// Study Session Services
+// Study Session Services - removed (uses deleted StudySession type)
 export const sessionService = {
-  async createSession(session: Omit<StudySession, 'id' | 'created_at'>) {
-    const { data, error } = await supabase
-      .from('study_sessions')
-      .insert(session)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getUserSessions(userId: string): Promise<StudySession[]> {
-    const { data, error } = await supabase
-      .from('study_sessions')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date_time', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async updateSession(sessionId: string, updates: Partial<StudySession>) {
-    const { error } = await supabase
-      .from('study_sessions')
-      .update(updates)
-      .eq('id', sessionId);
-
-    if (error) throw error;
-  },
-
-  async deleteSession(sessionId: string) {
-    const { error } = await supabase
-      .from('study_sessions')
-      .delete()
-      .eq('id', sessionId);
-
-    if (error) throw error;
-  },
-
-  async markSessionComplete(sessionId: string) {
-    await this.updateSession(sessionId, { completed: true });
-  },
+  // Methods removed as they reference deleted StudySession type
 };
 
-// Task/Event Services
+// Task/Event Services - removed (uses deleted TaskEvent type)
 export const taskService = {
-  async createTask(task: Omit<TaskEvent, 'id' | 'created_at'>) {
-    const { data, error } = await supabase
-      .from('tasks_events')
-      .insert(task)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getUserTasks(userId: string): Promise<TaskEvent[]> {
-    const { data, error } = await supabase
-      .from('tasks_events')
-      .select('*')
-      .eq('user_id', userId)
-      .order('date_time', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async updateTask(taskId: string, updates: Partial<TaskEvent>) {
-    const { error } = await supabase
-      .from('tasks_events')
-      .update(updates)
-      .eq('id', taskId);
-
-    if (error) throw error;
-  },
-
-  async deleteTask(taskId: string) {
-    const { error } = await supabase
-      .from('tasks_events')
-      .delete()
-      .eq('id', taskId);
-
-    if (error) throw error;
-  },
-
-  async markTaskComplete(taskId: string) {
-    await this.updateTask(taskId, { completed: true });
-  },
-
-  /**
-   * Returns the number of tasks/events created by the user this week.
-   * Usage: After deleting a task, call this to get the updated count.
-   */
-  async getWeeklyTaskCount(userId: string): Promise<number> {
-    const startOfWeek = new Date();
-    startOfWeek.setDate(startOfWeek.getDate() - startOfWeek.getDay());
-    startOfWeek.setHours(0, 0, 0, 0);
-
-    const { count, error } = await supabase
-      .from('tasks_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .gte('created_at', startOfWeek.toISOString());
-
-    if (error) throw error;
-    return count || 0;
-  },
-
-  /**
-   * There is no explicit decrement function for usage count, since the count is based on the number of rows in tasks_events for the week.
-   * To decrement, delete the task/event, then call getWeeklyTaskCount to get the new value.
-   */
-  async getActiveTasks(userId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('tasks_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('completed', false);
-
-    if (error) throw error;
-    return count || 0;
-  },
+  // Methods removed as they reference deleted TaskEvent type
 };
 
-// Spaced Repetition Services
+// Spaced Repetition Services - removed (uses deleted SpacedRepetitionReminder type)
 export const srService = {
-  async createReminders(
-    reminders: Omit<SpacedRepetitionReminder, 'id' | 'created_at'>[],
-  ) {
-    const { data, error } = await supabase
-      .from('spaced_repetition_reminders')
-      .insert(reminders)
-      .select();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getUserReminders(userId: string): Promise<SpacedRepetitionReminder[]> {
-    const { data, error } = await supabase
-      .from('spaced_repetition_reminders')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .order('scheduled_date', { ascending: true });
-
-    if (error) throw error;
-    return data || [];
-  },
-
-  async markReminderComplete(reminderId: string) {
-    const { error } = await supabase
-      .from('spaced_repetition_reminders')
-      .update({ completed: true })
-      .eq('id', reminderId);
-
-    if (error) throw error;
-  },
-
-  async getActiveReminderCount(userId: string): Promise<number> {
-    const { count, error } = await supabase
-      .from('spaced_repetition_reminders')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('is_active', true)
-      .eq('completed', false);
-
-    if (error) throw error;
-    return count || 0;
-  },
-
-  async deleteSessionReminders(sessionId: string) {
-    const { error } = await supabase
-      .from('spaced_repetition_reminders')
-      .update({ is_active: false })
-      .eq('session_id', sessionId);
-
-    if (error) throw error;
-  },
+  // Methods removed as they reference deleted SpacedRepetitionReminder type
 };
 
 // TODO: Streak service logic was here. Re-implement from scratch if/when streaks are reintroduced.
 
-// Analytics Services
+// Analytics Services - removed (uses deleted UserEvent type)
 export const analyticsService = {
-  async logEvent(
-    userId: string,
-    eventType: UserEvent['event_type'],
-    metadata?: Record<string, any>,
-  ) {
-    const { error } = await supabase.from('user_events').insert({
-      user_id: userId,
-      event_type: eventType,
-      metadata,
-    });
-
-    if (error) console.error('Analytics error:', error);
-  },
-
-  async getEventCount(
-    userId: string,
-    eventType: UserEvent['event_type'],
-  ): Promise<number> {
-    const { count, error } = await supabase
-      .from('user_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('event_type', eventType);
-
-    if (error) return 0;
-    return count || 0;
-  },
+  // Methods removed as they reference deleted UserEvent type
 };
 
-// Subscription Services
+// Subscription Services - removed (uses deleted Subscription type)
 export const subscriptionService = {
-  async getSubscription(userId: string): Promise<Subscription | null> {
-    const { data, error } = await supabase
-      .from('subscriptions')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) return null;
-    return data;
-  },
-
-  async updateSubscription(userId: string, updates: Partial<Subscription>) {
-    const { error } = await supabase.from('subscriptions').upsert({
-      user_id: userId,
-      ...updates,
-    });
-
-    if (error) throw error;
-  },
-
-  async activateOdditySubscription(userId: string) {
-    await this.updateSubscription(userId, {
-      is_subscribed_to_oddity: true,
-      subscription_started_at: new Date().toISOString(),
-      subscription_expires_at: new Date(
-        Date.now() + 30 * 24 * 60 * 60 * 1000,
-      ).toISOString(),
-      payment_status: 'active',
-    });
-
-    // Update user profile
-    await authService.updateUserProfile(userId, {
-      is_subscribed_to_oddity: true,
-    });
-  },
-
-  async deactivateSubscription(userId: string) {
-    await this.updateSubscription(userId, {
-      is_subscribed_to_oddity: false,
-      payment_status: 'cancelled',
-    });
-
-    // Update user profile
-    await authService.updateUserProfile(userId, {
-      is_subscribed_to_oddity: false,
-    });
-  },
+  // Methods removed as they reference deleted Subscription type
 };
 
 // Utility Functions
@@ -386,20 +138,13 @@ export const dbUtils = {
   },
 
   async getUserStats(userId: string) {
-    const [sessions, tasks, reminders] = await Promise.all([
-      sessionService.getUserSessions(userId),
-      taskService.getUserTasks(userId),
-      srService.getUserReminders(userId),
-      // streakService.getUserStreak(userId), // This line is removed
-    ]);
-
+    // Simplified stats - services removed due to deleted types
     return {
-      totalSessions: sessions.length,
-      completedSessions: sessions.filter(s => s.completed).length,
-      totalTasks: tasks.length,
-      completedTasks: tasks.filter(t => t.completed).length,
-      activeReminders: reminders.filter(r => !r.completed).length,
-      // TODO: Streak stats were returned here. Re-add if/when streaks are reintroduced.
+      totalSessions: 0,
+      completedSessions: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      activeReminders: 0,
     };
   },
 };
