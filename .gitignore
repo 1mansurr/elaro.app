@@ -1,7 +1,8 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Expo
 .expo/
@@ -9,7 +10,6 @@ dist/
 web-build/
 
 # Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -20,7 +20,7 @@ web-build/
 # Metro
 .metro-health-check*
 
-# debug
+# Debug
 npm-debug.*
 yarn-debug.*
 yarn-error.*
@@ -29,26 +29,66 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Local env files
 .env*.local
-.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# typescript
+# Typescript
 *.tsbuildinfo
 
-# Native build artifacts (but allow source folders)
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS generated files
+Thumbs.db
+
+# Expo Go
+.expo-shared/
+
+# Build artifacts
 ios/build/
-ios/Pods/
-ios/*.xcworkspace/xcuserdata/
-ios/*.xcodeproj/xcuserdata/
-ios/*.xcodeproj/project.xcworkspace/xcuserdata/
 android/app/build/
 android/build/
+
+# Pods
+ios/Pods/
+ios/Podfile.lock
+
+# Android
 android/.gradle/
+android/app/release/
+android/app/debug/
 android/gradle/
 android/gradlew
 android/gradlew.bat
 android/local.properties
-android/app/debug.keystore
-android/app/release.keystore
-*.keystore
+
+# Sensitive files
+.env
+google-services.json
+GoogleService-Info.plist
+AuthKey_*.p8
+
+# Logs
+logs/
+*.log
+
+# Coverage
+coverage/
+
+# Test results
+test-results/
+e2e/artifacts/
+
+# Detox
+e2e/artifacts/
