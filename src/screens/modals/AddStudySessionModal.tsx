@@ -2,11 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Switch, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Input, Button } from '../../components';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddStudySessionModal = () => {
   const navigation = useNavigation();
+  const { session } = useAuth();
+  const isGuest = !session;
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [selectedCourseName, setSelectedCourseName] = useState('');
@@ -34,6 +37,18 @@ const AddStudySessionModal = () => {
   };
 
   const handleSave = async () => {
+    if (isGuest) {
+      Alert.alert(
+        'Create an Account to Save',
+        'Sign up for free to save your activities and get reminders.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Up', onPress: () => navigation.navigate('AuthChooser') }
+        ]
+      );
+      return;
+    }
+
     if (!selectedCourse || !topic.trim()) {
       Alert.alert('Error', 'Please select a course and enter a topic.');
       return;

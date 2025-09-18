@@ -1,126 +1,104 @@
-// FILE: src/screens/HomeScreen.tsx
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, RefreshControl } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import React, { useRef, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { supabase } from '../services/supabase';
-import { RootStackParamList, Task } from '../types';
+
+import { RootStackParamList } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { FloatingActionButton, Button } from '../components';
+import { useData } from '../contexts/DataContext';
+import FloatingActionButton from '../components/FloatingActionButton';
+import { Button } from '../components';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '../constants/theme';
 import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 
-type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-interface OverviewData {
-  lectures: number;
-  study_sessions: number;
-  assignments: number;
-  reviews: number;
-}
+type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Home'>;
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { session } = useAuth();
+  const { homeData, loading: isDataLoading, fetchInitialData } = useData();
   const isGuest = !session;
-  const [homeData, setHomeData] = useState<{
-    nextUpcomingTask: Task | null;
-    todayOverview: OverviewData | null;
-    weeklyTaskCount: number;
-  } | null>(null);
-  const [isLoading, setIsLoading] = useState(!isGuest);
-  const [isFabOpen, setIsFabOpen] = useState(false); // State to control the FAB
-
-  const fetchData = useCallback(async () => {
-    if (isGuest) return;
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('get-home-screen-data');
-      if (error) throw error;
-      setHomeData(data);
-    } catch (e) {
-      console.error("Failed to load dashboard data:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [isGuest]);
-
-  useFocusEffect(useCallback(() => {
-    fetchData();
-  }, [fetchData]));
+  const [isFabOpen, setIsFabOpen] = useState(false);
+  const fabAnimation = useRef(new Animated.Value(0)).current;
 
   const promptSignUp = () => {
-    navigation.navigate('Auth', { 
-      onClose: () => navigation.goBack(),
-      mode: 'signup' 
-    });
+    navigation.navigate('AuthChooser');
   };
 
   const fabActions = [
     {
-      icon: 'book-outline' as keyof typeof import('@expo/vector-icons').Ionicons.glyphMap,
+      icon: 'book-outline' as any,
       label: 'Add Study Session',
-      onPress: isGuest ? promptSignUp : () => navigation.navigate('AddStudySessionModal')
+      onPress: () => navigation.navigate('AddStudySessionModal')
     },
     {
-      icon: 'document-text-outline' as keyof typeof import('@expo/vector-icons').Ionicons.glyphMap,
+      icon: 'document-text-outline' as any,
       label: 'Add Assignment',
-      onPress: isGuest ? promptSignUp : () => navigation.navigate('AddAssignmentModal')
+      onPress: () => navigation.navigate('AddAssignmentModal')
     },
     {
-      icon: 'school-outline' as keyof typeof import('@expo/vector-icons').Ionicons.glyphMap,
+      icon: 'school-outline' as any,
       label: 'Add Lecture',
-      onPress: isGuest ? promptSignUp : () => navigation.navigate('AddLectureModal')
+      onPress: () => navigation.navigate('AddLectureModal')
     },
   ];
 
-  if (isLoading && !isGuest) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 10 }}>Loading dashboard...</Text>
-      </View>
-    );
-  }
+  const backdropOpacity = fabAnimation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1], // Animate opacity to 1 to show the blur view
+  });
+
+  const handleFabStateChange = ({ isOpen }) => {
+    setIsFabOpen(isOpen);
+    Animated.spring(fabAnimation, {
+        toValue: isOpen ? 1 : 0,
+        friction: 7,
+        useNativeDriver: false,
+    }).start();
+  };
 
   return (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={fetchData} />
+          <RefreshControl refreshing={isDataLoading} onRefresh={fetchInitialData} />
         }
+        scrollEnabled={!isFabOpen}
       >
         <Text style={styles.title}>Let's Make Today Count</Text>
-        
         <NextTaskCard 
           task={isGuest ? null : (homeData?.nextUpcomingTask || null)} 
           isGuestMode={isGuest}
-          onAddActivity={() => setIsFabOpen(true)} // Correctly opens the FAB
+          onAddActivity={() => handleFabStateChange({ isOpen: true })}
         />
-        
         <TodayOverviewCard
-          overview={isGuest ? {
-            lectures: 0,
-            study_sessions: 0,
-            assignments: 0,
-            reviews: 0,
-          } : (homeData?.todayOverview || null)}
+          overview={isGuest ? null : (homeData?.todayOverview || null)}
           weeklyTaskCount={isGuest ? 0 : (homeData?.weeklyTaskCount || 0)}
         />
-        
         <Button
           title="View Full Calendar"
-          onPress={() => {
-            navigation.navigate('Calendar');
-          }}
+          onPress={() => navigation.navigate('Calendar')}
         />
       </ScrollView>
-      
+
+      {isFabOpen && (
+        <TouchableWithoutFeedback onPress={() => handleFabStateChange({ isOpen: false })}>
+          <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+            <BlurView
+              intensity={40}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      )}
+
       <FloatingActionButton 
         actions={fabActions}
-        isOpen={isFabOpen}
-        onStateChange={({ open }) => setIsFabOpen(open)}
+        onStateChange={handleFabStateChange}
       />
     </View>
   );
@@ -129,23 +107,26 @@ const HomeScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa'
+    backgroundColor: COLORS.background,
   },
   scrollContainer: {
-    padding: 20,
-    paddingBottom: 80
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    padding: SPACING.lg,
+    paddingBottom: 80,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#343a40',
-    marginBottom: 24
-  }
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.lg,
+  },
+  backdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 5,
+  },
 });
 
 export default HomeScreen;

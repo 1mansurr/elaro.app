@@ -7,26 +7,26 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F912390B970824AA4EAAB3D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD119BDC3241A032D260A514 /* ExpoModulesProvider.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		5DDACA1C00AEC63F98637407 /* libPods-Elaro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = B6F0564F5C1D5597007D7956 /* libPods-Elaro.a */; };
+		5BC49B1C225A1AE363FFF477 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 50FAFD1C860AAABF441A4FC2 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CED8B1A3A6CF40082713D754 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 2D546A4D3284C6A1193CB609 /* PrivacyInfo.xcprivacy */; };
-		E9A4AEBB3C3ECD9B5EE2332D /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAB52E8501474574028A29F6 /* ExpoModulesProvider.swift */; };
+		E5760F856D4D8ED0D06E4126 /* libPods-Elaro.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 93F0A09712BE951CD13E82F3 /* libPods-Elaro.a */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		0DEFF71CFB8F98F2F94A864E /* Pods-Elaro.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Elaro.release.xcconfig"; path = "Target Support Files/Pods-Elaro/Pods-Elaro.release.xcconfig"; sourceTree = "<group>"; };
 		13B07F961A680F5B00A75B9A /* Elaro.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Elaro.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Elaro/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Elaro/Info.plist; sourceTree = "<group>"; };
-		2D546A4D3284C6A1193CB609 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Elaro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		790EE94FE065FD1BCFF37FC3 /* Pods-Elaro.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Elaro.debug.xcconfig"; path = "Target Support Files/Pods-Elaro/Pods-Elaro.debug.xcconfig"; sourceTree = "<group>"; };
+		2E00E5B9C12286B180A0BEE8 /* Pods-Elaro.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Elaro.debug.xcconfig"; path = "Target Support Files/Pods-Elaro/Pods-Elaro.debug.xcconfig"; sourceTree = "<group>"; };
+		50FAFD1C860AAABF441A4FC2 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = Elaro/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		6172D3B2099EF0E306639ABF /* Pods-Elaro.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Elaro.release.xcconfig"; path = "Target Support Files/Pods-Elaro/Pods-Elaro.release.xcconfig"; sourceTree = "<group>"; };
+		93F0A09712BE951CD13E82F3 /* libPods-Elaro.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Elaro.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Elaro/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B6F0564F5C1D5597007D7956 /* libPods-Elaro.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Elaro.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		DAB52E8501474574028A29F6 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Elaro/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		CD119BDC3241A032D260A514 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Elaro/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Elaro/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Elaro-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Elaro-Bridging-Header.h"; path = "Elaro/Elaro-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,19 +37,21 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5DDACA1C00AEC63F98637407 /* libPods-Elaro.a in Frameworks */,
+				E5760F856D4D8ED0D06E4126 /* libPods-Elaro.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		0CBA6758A681A8045087D140 /* Elaro */ = {
+		0B6FC6B57BD7249CE5D18B37 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				DAB52E8501474574028A29F6 /* ExpoModulesProvider.swift */,
+				2E00E5B9C12286B180A0BEE8 /* Pods-Elaro.debug.xcconfig */,
+				6172D3B2099EF0E306639ABF /* Pods-Elaro.release.xcconfig */,
 			);
-			name = Elaro;
+			name = Pods;
+			path = Pods;
 			sourceTree = "<group>";
 		};
 		13B07FAE1A68108700A75B9A /* Elaro */ = {
@@ -61,7 +63,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				2D546A4D3284C6A1193CB609 /* PrivacyInfo.xcprivacy */,
+				50FAFD1C860AAABF441A4FC2 /* PrivacyInfo.xcprivacy */,
 			);
 			name = Elaro;
 			sourceTree = "<group>";
@@ -70,7 +72,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				B6F0564F5C1D5597007D7956 /* libPods-Elaro.a */,
+				93F0A09712BE951CD13E82F3 /* libPods-Elaro.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -89,8 +91,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				C65FFFF5E5D43B9A43DEECDF /* Pods */,
-				DDC2F202B144E38A6E0092B8 /* ExpoModulesProviders */,
+				0B6FC6B57BD7249CE5D18B37 /* Pods */,
+				E1F0AE1AE11C3585BCB24B8D /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,20 +116,18 @@
 			path = Elaro/Supporting;
 			sourceTree = "<group>";
 		};
-		C65FFFF5E5D43B9A43DEECDF /* Pods */ = {
+		DEB218F0A25CA3AE9D4CDBC5 /* Elaro */ = {
 			isa = PBXGroup;
 			children = (
-				790EE94FE065FD1BCFF37FC3 /* Pods-Elaro.debug.xcconfig */,
-				0DEFF71CFB8F98F2F94A864E /* Pods-Elaro.release.xcconfig */,
+				CD119BDC3241A032D260A514 /* ExpoModulesProvider.swift */,
 			);
-			name = Pods;
-			path = Pods;
+			name = Elaro;
 			sourceTree = "<group>";
 		};
-		DDC2F202B144E38A6E0092B8 /* ExpoModulesProviders */ = {
+		E1F0AE1AE11C3585BCB24B8D /* ExpoModulesProviders */ = {
 			isa = PBXGroup;
 			children = (
-				0CBA6758A681A8045087D140 /* Elaro */,
+				DEB218F0A25CA3AE9D4CDBC5 /* Elaro */,
 			);
 			name = ExpoModulesProviders;
 			sourceTree = "<group>";
@@ -140,13 +140,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Elaro" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				B947D25348AEBC865DD0EA2E /* [Expo] Configure project */,
+				30C318191599B38C06958AC7 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				CA2FBF139500DB127B37E325 /* [CP] Embed Pods Frameworks */,
+				3CD77C5CCD400DAB27AC7D8B /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -196,7 +196,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				CED8B1A3A6CF40082713D754 /* PrivacyInfo.xcprivacy in Resources */,
+				5BC49B1C225A1AE363FFF477 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -238,6 +238,43 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		30C318191599B38C06958AC7 /* [Expo] Configure project */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "[Expo] Configure project";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Elaro/expo-configure-project.sh\"\n";
+		};
+		3CD77C5CCD400DAB27AC7D8B /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Elaro/Pods-Elaro-frameworks.sh",
+				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Elaro/Pods-Elaro-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
@@ -326,43 +363,6 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Elaro/Pods-Elaro-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		B947D25348AEBC865DD0EA2E /* [Expo] Configure project */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "[Expo] Configure project";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# This script configures Expo modules and generates the modules provider file.\nbash -l -c \"./Pods/Target\\ Support\\ Files/Pods-Elaro/expo-configure-project.sh\"\n";
-		};
-		CA2FBF139500DB127B37E325 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Elaro/Pods-Elaro-frameworks.sh",
-				"${PODS_XCFRAMEWORKS_BUILD_DIR}/hermes-engine/Pre-built/hermes.framework/hermes",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/hermes.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Elaro/Pods-Elaro-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -371,7 +371,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				E9A4AEBB3C3ECD9B5EE2332D /* ExpoModulesProvider.swift in Sources */,
+				0F912390B970824AA4EAAB3D /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,7 +380,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 790EE94FE065FD1BCFF37FC3 /* Pods-Elaro.debug.xcconfig */;
+			baseConfigurationReference = 2E00E5B9C12286B180A0BEE8 /* Pods-Elaro.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
@@ -416,7 +416,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 0DEFF71CFB8F98F2F94A864E /* Pods-Elaro.release.xcconfig */;
+			baseConfigurationReference = 6172D3B2099EF0E306639ABF /* Pods-Elaro.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;

@@ -42,10 +42,7 @@ const AccountScreen = () => {
         </Text>
         <Button
           title="Sign Up for Free"
-          onPress={() => navigation.navigate('Auth', { 
-            onClose: () => navigation.goBack(),
-            mode: 'signup' 
-          })}
+          onPress={() => navigation.navigate('AuthChooser')}
         />
       </Card>
 

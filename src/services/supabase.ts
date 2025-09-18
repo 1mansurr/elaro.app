@@ -127,7 +127,6 @@ export const dbUtils = {
       .delete()
       .eq('user_id', userId);
     await supabase.from('user_events').delete().eq('user_id', userId);
-    await supabase.from('tasks_events').delete().eq('user_id', userId);
     await supabase.from('study_sessions').delete().eq('user_id', userId);
     await supabase.from('streaks').delete().eq('user_id', userId);
     await supabase.from('subscriptions').delete().eq('user_id', userId);

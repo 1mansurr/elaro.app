@@ -15,15 +15,6 @@ const getSupabaseClient = (req: Request): SupabaseClient => {
   );
 };
 
-// Helper to get the start of the current week (Sunday)
-const getStartOfWeek = () => {
-  const now = new Date();
-  const day = now.getDay(); // 0 = Sunday, 1 = Monday, ...
-  const diff = now.getDate() - day;
-  const startOfWeek = new Date(now.setDate(diff));
-  startOfWeek.setHours(0, 0, 0, 0);
-  return startOfWeek;
-};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -83,11 +74,14 @@ serve(async (req) => {
       throw assignmentsError;
     }
 
-    // Calculate weekly task count manually
-    const startOfWeek = getStartOfWeek().toISOString();
-    const weeklyTaskCount = (lectures || []).filter(l => l.created_at >= startOfWeek).length +
-                           (studySessions || []).filter(s => s.created_at >= startOfWeek).length +
-                           (assignments || []).filter(a => a.created_at >= startOfWeek).length;
+    // Calculate weekly task count using rolling 7-day window
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const oneWeekAgoISO = oneWeekAgo.toISOString();
+
+    const weeklyTaskCount = (lectures || []).filter(l => l.created_at >= oneWeekAgoISO).length +
+                           (studySessions || []).filter(s => s.created_at >= oneWeekAgoISO).length +
+                           (assignments || []).filter(a => a.created_at >= oneWeekAgoISO).length;
 
     // --- Process the results ---
     // 1. Find the single next upcoming task

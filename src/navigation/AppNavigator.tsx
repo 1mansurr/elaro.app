@@ -1,5 +1,4 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
 import {
   createStackNavigator,
   StackNavigationOptions,
@@ -15,7 +14,11 @@ import { RootStackParamList, MainTabParamList } from '../types';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
+import AuthChooserScreen from '../screens/auth/AuthChooserScreen';
 import { AuthScreen } from '../screens/AuthScreen';
+import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
+import OnboardingFormScreen from '../screens/onboarding/OnboardingFormScreen';
+import AddCourseOnboardingModal from '../screens/onboarding/AddCourseOnboardingModal';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import AccountScreen from '../screens/AccountScreen';
@@ -107,10 +110,22 @@ const MainTabNavigator: React.FC = () => {
   const { session, user } = useAuth();
   
   const getFirstName = () => {
-    if (!session || !user?.name) {
+    if (!session || !user) {
       return 'Account';
     }
-    return user.name.split(' ')[0];
+    
+    // Prioritize the new first_name field from user_metadata
+    if (user.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
+    }
+    
+    // Fallback for older users with only a 'name' field
+    if (user.user_metadata?.name) {
+      return user.user_metadata.name.split(' ')[0];
+    }
+    
+    // Default if no name is found
+    return 'Account';
   };
   
   return (
@@ -129,36 +144,40 @@ const MainTabNavigator: React.FC = () => {
 
 // Auth Screen Wrapper
 const AuthScreenWrapper = ({ navigation }: any) => (
-  <AuthScreen 
-    onClose={() => navigation.goBack()} 
-    onAuthSuccess={() => navigation.navigate('Main')} 
-  />
+  <AuthChooserScreen />
 );
 
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
 
-  // Determine initial route based on auth state
-  const getInitialRouteName = (): keyof RootStackParamList => {
-    return 'Launch';
-  };
-
   return (
-    <NavigationContainer>
-      <Stack.Navigator
-        screenOptions={sharedScreenOptions}
-        initialRouteName={getInitialRouteName()}>
-        {/* Always show Launch screen */}
-        <Stack.Screen name="Launch" component={LaunchScreen} />
+    <Stack.Navigator
+      screenOptions={sharedScreenOptions}>
+      {/* Always show Launch screen */}
+      <Stack.Screen name="Launch" component={LaunchScreen} />
+        {/* Auth chooser screen */}
+        <Stack.Screen 
+          name="AuthChooser" 
+          component={AuthChooserScreen}
+          options={{
+            presentation: 'modal',
+            headerShown: false,
+          }}
+        />
         {/* Auth screen */}
         <Stack.Screen 
           name="Auth" 
-          component={AuthScreenWrapper}
+          component={AuthScreen}
           options={{
             presentation: 'modal',
+            headerShown: false,
           }}
         />
+        {/* Welcome screen */}
+        <Stack.Screen name="Welcome" component={WelcomeScreen} />
+        {/* Onboarding form screen */}
+        <Stack.Screen name="OnboardingForm" component={OnboardingFormScreen} />
         {/* Main app routes */}
         <Stack.Screen name="Main" component={MainTabNavigator} />
         {/* Course Management screens */}
@@ -234,6 +253,23 @@ export const AppNavigator: React.FC = () => {
         
         {/* Modal Screens */}
         <Stack.Group>
+          <Stack.Screen 
+            name="AddCourseOnboardingModal" 
+            component={AddCourseOnboardingModal}
+            options={({ navigation }) => ({
+              presentation: 'modal',
+              headerShown: true,
+              headerTitle: 'Add Course',
+              headerLeft: () => (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={{ marginLeft: 16 }}
+                >
+                  <Ionicons name="close" size={24} color="#007AFF" />
+                </TouchableOpacity>
+              ),
+            })}
+          />
           <Stack.Screen 
             name="AddCourseModal" 
             component={AddCourseModal}
@@ -321,6 +357,5 @@ export const AppNavigator: React.FC = () => {
           />
         </Stack.Group>
       </Stack.Navigator>
-    </NavigationContainer>
   );
 };

@@ -4,6 +4,10 @@ import * as Google from 'expo-auth-session/providers/google';
 import { appleAuth } from '@invertase/react-native-apple-authentication';
 import { supabase, authService } from '../services/supabase';
 import { User } from '../types';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../types';
+// import { useData } from './DataContext'; // Removed to fix circular dependency
 
 interface AuthContextType {
   session: Session | null;
@@ -21,6 +25,8 @@ interface AuthContextType {
   signInWithApple: () => Promise<{ error: any }>;
 }
 
+type AuthNavProp = StackNavigationProp<RootStackParamList>;
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -37,6 +43,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation<AuthNavProp>();
+  // const { fetchInitialData } = useData(); // Removed to fix circular dependency
 
   // Set up Google Auth request
   const [request, response, promptAsync] = Google.useAuthRequest({
@@ -126,6 +134,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
         console.log('AuthContext: setUser after auth change', userProfile);
+        
+        // Navigation logic based on onboarding status
+        if (userProfile) {
+          if (userProfile.onboarding_completed) {
+            console.log('✅ User has completed onboarding, navigating to Main');
+            // fetchInitialData(); // Removed to fix circular dependency - will be called elsewhere
+            navigation.replace('Main');
+          } else {
+            // Pre-fill logic for social login users
+            let params = {};
+            const fullName = session.user?.user_metadata?.full_name;
+
+            if (fullName) {
+              const nameParts = fullName.split(' ');
+              const firstName = nameParts[0];
+              const lastName = nameParts.slice(1).join(' ');
+              params = { firstName, lastName };
+              console.log('🔤 Pre-filling names for social user:', { firstName, lastName });
+            }
+            
+            console.log('🆕 New user, navigating to Welcome for onboarding');
+            navigation.replace('Welcome', params);
+          }
+        }
       } else {
         setUser(null);
       }
@@ -134,7 +166,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [navigation]);
 
   const signIn = async (email: string, password: string) => {
     try {

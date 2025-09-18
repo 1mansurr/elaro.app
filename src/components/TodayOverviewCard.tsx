@@ -37,7 +37,7 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount }) => {
       
       <View style={styles.weeklyCountContainer}>
         <Text style={styles.weeklyCountText}>
-          {weeklyTaskCount} of 30 tasks used this week
+          {weeklyTaskCount} of 9 activities used this week
         </Text>
       </View>
     </View>

@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
+import { checkTaskLimit } from '../_shared/check-task-limit.ts';
 
 // Helper function to get an authenticated Supabase client
 const getSupabaseClient = (req: Request): SupabaseClient => {
@@ -25,6 +26,10 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
+    // Check unified task limit
+    const limitError = await checkTaskLimit(supabaseClient, user.id);
+    if (limitError) return limitError;
+
     const { course_id, topic, notes, session_date, has_spaced_repetition } = await req.json();
 
     if (!course_id || !topic || !session_date) {
@@ -37,7 +42,6 @@ serve(async (req) => {
       );
     }
 
-    // TODO: Add logic for weekly task limit (30 tasks total)
     const { data: newSession, error: sessionError } = await supabaseClient
       .from('study_sessions')
       .insert({

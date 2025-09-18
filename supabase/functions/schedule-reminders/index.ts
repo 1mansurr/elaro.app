@@ -81,7 +81,7 @@ serve(async (req: Request) => {
     }
 
     // --- MVP LIMIT LOGIC FOR REMINDERS ---
-    const REMINDER_LIMIT = 21;
+    const REMINDER_LIMIT = 6;
     const oneWeekAgo = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString();
     const { count: weeklyReminders, error: countError } = await supabaseClient
       .from('reminders')

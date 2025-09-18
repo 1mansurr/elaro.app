@@ -1,43 +1,44 @@
-// FILE: src/components/FloatingActionButton.tsx
-import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, Text } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import React, { useState, useRef } from 'react';
+import {
+  TouchableOpacity,
+  StyleSheet,
+  View,
+  Animated,
+  Text,
+} from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import { COLORS } from '../constants/theme';
 
-type Action = {
-  icon: keyof typeof Ionicons.glyphMap;
+interface Action {
   label: string;
+  icon: keyof typeof Ionicons.glyphMap;
   onPress: () => void;
-  color?: string;
   size?: number;
-};
-
-interface Props {
-  actions: Action[];
-  isOpen?: boolean; // Prop to control state from parent
-  onStateChange?: (state: { open: boolean }) => void; // Callback to notify parent of state change
+  color?: string;
+  backgroundColor?: string;
 }
 
-const FloatingActionButton: React.FC<Props> = ({ actions, isOpen, onStateChange }) => {
-  const [isMenuOpen, setIsMenuOpen] = useState(isOpen || false);
+interface FloatingActionButtonProps {
+  actions: Action[];
+  onStateChange?: (state: { isOpen: boolean; animation: Animated.Value }) => void;
+}
+
+const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ actions, onStateChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    // Sync internal state if parent-controlled state changes
-    if (isOpen !== undefined && isOpen !== isMenuOpen) {
-      handleToggle();
-    }
-  }, [isOpen]);
-
   const handleToggle = () => {
-    const toValue = isMenuOpen ? 0 : 1;
+    const toValue = isOpen ? 0 : 1;
     Animated.spring(animation, {
       toValue,
-      friction: 5,
-      useNativeDriver: true,
+      friction: 6,
+      useNativeDriver: false,
     }).start();
-    const newOpenState = !isMenuOpen;
-    setIsMenuOpen(newOpenState);
-    onStateChange?.({ open: newOpenState });
+    const newOpenState = !isOpen;
+    setIsOpen(newOpenState);
+    if (onStateChange) {
+      onStateChange({ isOpen: newOpenState, animation });
+    }
   };
 
   const rotation = {
@@ -53,41 +54,49 @@ const FloatingActionButton: React.FC<Props> = ({ actions, isOpen, onStateChange 
 
   return (
     <View style={styles.container}>
-      {isMenuOpen && (
-        <>
-          {actions.map((action, index) => {
-            const translation = animation.interpolate({
-              inputRange: [0, 1],
-              outputRange: [0, -(index + 1) * 60],
-            });
-            return (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.actionButton,
-                  {
-                    transform: [{ translateY: translation }],
-                  },
-                ]}
-              >
-                <TouchableOpacity
-                  style={styles.actionCircle}
-                  onPress={() => {
-                    handleToggle();
-                    action.onPress();
-                  }}
-                >
-                  <Ionicons name={action.icon} size={action.size || 24} color="white" />
-                </TouchableOpacity>
-                <Text style={styles.actionLabel} numberOfLines={1}>{action.label}</Text>
-              </Animated.View>
-            );
-          })}
-        </>
-      )}
-      <TouchableOpacity style={styles.menuButton} onPress={handleToggle}>
+      {actions.map((action, index) => {
+        const translation = animation.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, -(index + 1) * 65],
+        });
+        
+        const opacity = animation.interpolate({
+          inputRange: [0, 0.5, 1],
+          outputRange: [0, 0, 1],
+        });
+
+        return (
+          <Animated.View
+            key={index}
+            style={[
+              styles.actionContainer,
+              { 
+                transform: [{ translateY: translation }],
+                opacity: opacity,
+              },
+            ]}
+          >
+            <TouchableOpacity
+              style={[styles.actionItem, { backgroundColor: action.backgroundColor || COLORS.primary }]}
+              onPress={() => {
+                handleToggle();
+                action.onPress();
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name={action.icon} size={action.size || 24} color={action.color || 'white'} />
+              <Text style={styles.actionLabel}>{action.label}</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={handleToggle}
+        activeOpacity={0.8}
+      >
         <Animated.View style={rotation}>
-          <Ionicons name={isMenuOpen ? "close" : "add"} size={30} color="white" />
+          <Ionicons name="add" size={32} color="white" />
         </Animated.View>
       </TouchableOpacity>
     </View>
@@ -99,49 +108,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 30,
     right: 30,
-    alignItems: 'center',
+    alignItems: 'flex-end',
+    zIndex: 10, // Higher than backdrop
   },
-  menuButton: {
-    backgroundColor: '#007AFF',
+  fab: {
     width: 60,
     height: 60,
     borderRadius: 30,
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
+    elevation: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 2 },
+    marginTop: 10,
   },
-  actionButton: {
+  actionContainer: {
     position: 'absolute',
-    flexDirection: 'row-reverse',
-    alignItems: 'center',
     right: 0,
-    minWidth: 200,
   },
-  actionCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  actionItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-  },
-  actionLabel: {
-    backgroundColor: 'white',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 4,
-    marginLeft: 16,
-    color: '#333',
-    elevation: 2,
+    paddingLeft: 12,
+    paddingRight: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    elevation: 4,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowRadius: 2,
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
-    maxWidth: 150,
+    shadowOffset: { width: 0, height: 1 },
+    minWidth: 200,
+  },
+  actionLabel: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 12,
   },
 });
 

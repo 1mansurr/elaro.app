@@ -1,60 +1,34 @@
-import React, { useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Animated, StatusBar } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect } from 'react';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import type { StackNavigationProp } from '@react-navigation/stack';
-import type { RootStackParamList } from '../types';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS } from '../constants/theme';
-import { useTheme } from '../contexts/ThemeContext';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+import { useAuth } from '../contexts/AuthContext';
+import { RootStackParamList } from '../types';
+import { COLORS } from '../constants/theme';
+
+type LaunchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Launch'>;
 
 const LaunchScreen = () => {
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { theme } = useTheme();
-
-  const logoScale = useRef(new Animated.Value(0.9)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { loading } = useAuth();
+  const navigation = useNavigation<LaunchScreenNavigationProp>();
 
   useEffect(() => {
-    // --- GUEST-FIRST DEVELOPMENT MODE ---
-    // Temporarily bypassing auth check to speed up UI development.
-    // The "Main" screen is always shown immediately.
-    navigation.navigate('Main');
-    // --- END OF GUEST-FIRST MODE ---
-
-    // Original auth flow (commented out for guest-first development):
-    // Animated.parallel([
-    //   Animated.spring(logoScale, {
-    //     toValue: 1.15,
-    //     friction: 4,
-    //     tension: 100,
-    //     useNativeDriver: true,
-    //   }),
-    //   Animated.timing(fadeAnim, {
-    //     toValue: 1,
-    //     duration: 1000,
-    //     useNativeDriver: true,
-    //   }),
-    // ]).start();
-
-    // const timeout = setTimeout(() => {
-    //   // Replace the current screen with the Main tab navigator
-    //   // so the user cannot go back to the launch screen.
-    //   navigation.navigate('Main');
-    // }, 2500); // 2.5 second delay for splash screen animation
-
-    // return () => clearTimeout(timeout);
-  }, [fadeAnim, logoScale, navigation]);
+    // This effect runs when the `loading` state from AuthContext changes.
+    // `loading` is true while Supabase checks for a session, and false once it's done.
+    if (!loading) {
+      // Once the check is complete, navigate to the main app interface.
+      // This works for both logged-in users (who will have a session)
+      // and guest users (who won't). The rest of the app already handles
+      // the guest state UI.
+      navigation.replace('Main');
+    }
+  }, [loading, navigation]);
 
   return (
-    <LinearGradient
-      colors={[theme.primary, theme.accent || '#3a3a3a']}
-      style={styles.container}>
-      <StatusBar hidden />
-      <Animated.View
-        style={{ opacity: fadeAnim, transform: [{ scale: logoScale }] }}>
-        <Text style={[styles.logoText, { color: theme.white }]}>ELARO</Text>
-      </Animated.View>
-    </LinearGradient>
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color={COLORS.primary} />
+    </View>
   );
 };
 
@@ -63,21 +37,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 64,
-    fontWeight: '800',
-    textAlign: 'center',
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginVertical: 32,
-  },
-  subtitle: {
-    fontSize: FONT_SIZES.lg || 20, // fallback if lg is undefined
-    fontWeight: '500',
-    textAlign: 'center',
-    marginTop: 12,
-    opacity: 0.95,
+    backgroundColor: COLORS.background,
   },
 });
 

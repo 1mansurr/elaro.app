@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -12,197 +11,48 @@ import {
   ActivityIndicator,
   Linking,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { AppleButton, appleAuth } from '@invertase/react-native-apple-authentication';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
+import { Input, Button } from '../components';
 import {
   SPACING,
   FONT_SIZES,
   FONT_WEIGHTS,
   BORDER_RADIUS,
 } from '../constants/theme';
+import { RootStackParamList } from '../types';
+
+type AuthScreenNavProp = StackNavigationProp<RootStackParamList, 'Auth'>;
 
 interface AuthScreenProps {
-  onClose: () => void;
+  onClose?: () => void;
   onAuthSuccess?: () => void;
+  mode?: 'signup' | 'signin';
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   onClose,
   onAuthSuccess,
+  mode: initialMode = 'signup',
 }) => {
-  const [isSignUp, setIsSignUp] = useState(false);
+  const navigation = useNavigation<AuthScreenNavProp>();
+  const [mode, setMode] = useState(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const { signIn, signUp, signInWithGoogle, signInWithApple } = useAuth();
+  const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.primary,
-    },
-    gradient: {
-      flex: 1,
-      backgroundColor: theme.primary,
-    },
-    scrollContent: {
-      flexGrow: 1,
-      justifyContent: 'center',
-      padding: SPACING.lg,
-    },
-    header: {
-      alignItems: 'center',
-      marginBottom: SPACING.xl,
-    },
-    title: {
-      fontSize: FONT_SIZES.xxxl,
-      fontWeight: FONT_WEIGHTS.bold as any,
-      textAlign: 'center',
-      marginBottom: SPACING.xs,
-      color: theme.white,
-    },
-    form: {
-      backgroundColor: theme.white,
-      borderRadius: BORDER_RADIUS.xl,
-      padding: SPACING.lg,
-      elevation: 8,
-      shadowColor: theme.black,
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 6,
-    },
-    inputContainer: {
-      marginBottom: SPACING.md,
-    },
-    label: {
-      fontSize: FONT_SIZES.md,
-      fontWeight: FONT_WEIGHTS.medium as any,
-      color: theme.textPrimary,
-      marginBottom: SPACING.xs,
-    },
-    input: {
-      borderWidth: 1,
-      borderColor: theme.border,
-      borderRadius: BORDER_RADIUS.md,
-      paddingVertical: SPACING.sm,
-      paddingHorizontal: SPACING.md,
-      fontSize: FONT_SIZES.md,
-      backgroundColor: theme.white,
-      color: theme.textPrimary,
-    },
-    authButton: {
-      marginTop: SPACING.lg,
-      borderRadius: BORDER_RADIUS.md,
-      paddingVertical: SPACING.md,
-      alignItems: 'center',
-    },
-    authButtonDisabled: {
-      opacity: 0.6,
-    },
-    authButtonText: {
-      fontSize: FONT_SIZES.md,
-      fontWeight: FONT_WEIGHTS.bold as any,
-    },
-    switchButton: {
-      marginTop: SPACING.md,
-      alignItems: 'center',
-    },
-    switchButtonText: {
-      fontSize: FONT_SIZES.sm,
-      fontWeight: FONT_WEIGHTS.medium as any,
-    },
-    cancelText: {
-      fontSize: FONT_SIZES.sm,
-      textAlign: 'center',
-      marginTop: SPACING.md,
-    },
-    dividerContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginVertical: SPACING.md,
-    },
-    divider: {
-      flex: 1,
-      height: 1,
-      backgroundColor: '#e9ecef',
-    },
-    dividerText: {
-      marginHorizontal: SPACING.sm,
-      color: '#adb5bd',
-      fontSize: FONT_SIZES.sm,
-    },
-    oauthButton: {
-      width: '100%',
-      height: 50,
-      marginBottom: SPACING.sm,
-    },
-    googleButton: {
-      backgroundColor: '#4285F4',
-      borderRadius: BORDER_RADIUS.md,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    googleButtonText: {
-      color: '#fff',
-      fontSize: FONT_SIZES.md,
-      fontWeight: FONT_WEIGHTS.medium as any,
-    },
-  });
-
-  // Move AuthInput here so it can access styles
-  const AuthInput = ({
-    label,
-    value,
-    onChangeText,
-    placeholder,
-    secure = false,
-    keyboardType = 'default',
-    autoCapitalize = 'none',
-  }: {
-    label: string;
-    value: string;
-    onChangeText: (text: string) => void;
-    placeholder: string;
-    secure?: boolean;
-    keyboardType?: 'default' | 'email-address';
-    autoCapitalize?: 'none' | 'words';
-  }) => {
-    return (
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>{label}</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              color: theme.text,
-              backgroundColor: theme.input,
-              borderColor: theme.inputBorder,
-            },
-          ]}
-          value={value}
-          onChangeText={onChangeText}
-          placeholder={placeholder}
-          placeholderTextColor={theme.gray400}
-          secureTextEntry={secure}
-          keyboardType={keyboardType}
-          autoCapitalize={autoCapitalize}
-          autoCorrect={false}
-        />
-      </View>
-    );
-  };
-
   const handleAuth = async () => {
-    if (!email || !password || (isSignUp && !name)) {
+    if (!email || !password) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
-    if (isSignUp && !agreedToTerms) {
+    if (mode === 'signup' && !agreedToTerms) {
       Alert.alert(
         'Agreement Required',
         'You must agree to the Terms of Service and Privacy Policy to sign up.',
@@ -211,52 +61,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     }
     setLoading(true);
     try {
-      const { error } = isSignUp
-        ? await signUp(email, password, name)
+      const { error } = mode === 'signup'
+        ? await signUp(email, password)
         : await signIn(email, password);
 
       if (error) {
         Alert.alert('Authentication Failed', error.message);
       } else {
         onAuthSuccess?.();
-        onClose();
+        navigation.goBack();
       }
     } catch {
       Alert.alert('Error', 'Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    try {
-      const { error } = await signInWithGoogle();
-      if (error) {
-        Alert.alert('Google Sign-In Failed', error.message);
-      } else {
-        onAuthSuccess?.();
-        onClose();
-      }
-    } catch {
-      Alert.alert('Error', 'Something went wrong with Google sign-in.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAppleSignIn = async () => {
-    setLoading(true);
-    try {
-      const { error } = await signInWithApple();
-      if (error) {
-        Alert.alert('Apple Sign-In Failed', error.message);
-      } else {
-        onAuthSuccess?.();
-        onClose();
-      }
-    } catch {
-      Alert.alert('Error', 'Something went wrong with Apple sign-in.');
     } finally {
       setLoading(false);
     }
@@ -267,83 +83,65 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <View style={styles.gradient}>
+        <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="close" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled">
           <View style={styles.header}>
-            <Text style={styles.title}>Let&apos;s Save Your Journey</Text>
+            <Text style={styles.title}>
+              {mode === 'signup' ? 'Create Account' : 'Sign In with Email'}
+            </Text>
+            <Text style={styles.subtitle}>
+              {mode === 'signup' 
+                ? 'Start your journey to academic excellence.' 
+                : 'Welcome back! Sign in to continue your progress.'}
+            </Text>
           </View>
 
           <View style={styles.form}>
-            {isSignUp && (
-              <AuthInput
-                label="Name"
-                value={name}
-                onChangeText={setName}
-                placeholder="Enter your name"
-                autoCapitalize="words"
-              />
-            )}
-
-            <AuthInput
+            <Input
               label="Email"
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email"
               keyboardType="email-address"
+              autoCapitalize="none"
             />
 
-            <AuthInput
+            <Input
               label="Password"
               value={password}
               onChangeText={setPassword}
               placeholder="Enter your password"
-              secure
+              secureTextEntry
             />
 
             {/* Terms of Service and Privacy Policy Checkbox */}
-            {isSignUp && (
+            {mode === 'signup' && (
               <TouchableOpacity
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginBottom: 16,
-                }}
+                style={styles.termsContainer}
                 onPress={() => setAgreedToTerms(v => !v)}
                 activeOpacity={0.8}>
                 <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 6,
-                    borderWidth: 2,
-                    borderColor: agreedToTerms ? theme.primary : theme.gray300,
-                    backgroundColor: agreedToTerms
-                      ? theme.primary
-                      : theme.white,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginRight: 10,
-                  }}>
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: agreedToTerms ? theme.primary : theme.gray300,
+                      backgroundColor: agreedToTerms
+                        ? theme.primary
+                        : theme.white,
+                    },
+                  ]}>
                   {agreedToTerms && (
-                    <Text
-                      style={{
-                        color: theme.white,
-                        fontWeight: 'bold',
-                        fontSize: 16,
-                      }}>
-                      ✓
-                    </Text>
+                    <Text style={styles.checkmark}>✓</Text>
                   )}
                 </View>
-                <Text
-                  style={{ flex: 1, color: theme.textPrimary, fontSize: 14 }}>
+                <Text style={styles.termsText}>
                   I agree to the{' '}
                   <Text
-                    style={{
-                      color: theme.primary,
-                      textDecorationLine: 'underline',
-                    }}
+                    style={styles.linkText}
                     onPress={() =>
                       Linking.openURL('https://elarolearning.com/terms')
                     }>
@@ -351,10 +149,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   </Text>{' '}
                   and{' '}
                   <Text
-                    style={{
-                      color: theme.primary,
-                      textDecorationLine: 'underline',
-                    }}
+                    style={styles.linkText}
                     onPress={() =>
                       Linking.openURL('https://elarolearning.com/privacy')
                     }>
@@ -364,68 +159,135 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={[
-                styles.authButton,
-                loading && styles.authButtonDisabled,
-                { backgroundColor: theme.primary },
-              ]}
+            <Button
+              title={mode === 'signup' ? 'Sign Up' : 'Sign In'}
               onPress={handleAuth}
-              disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color={theme.white} />
-              ) : (
-                <Text style={[styles.authButtonText, { color: theme.white }]}>
-                  {isSignUp ? 'Sign Up' : 'Sign In'}
+              loading={loading}
+              style={styles.authButton}
+            />
+
+            <View style={styles.footer}>
+              <Text style={styles.footerText}>
+                {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
+              </Text>
+              <TouchableOpacity onPress={() => setMode(mode === 'signup' ? 'signin' : 'signup')}>
+                <Text style={styles.footerLink}>
+                  {mode === 'signup' ? 'Sign In' : 'Sign Up'}
                 </Text>
-              )}
-            </TouchableOpacity>
-
-            {/* OAuth Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.divider} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.divider} />
+              </TouchableOpacity>
             </View>
-
-            {/* Google Sign-In Button */}
-            <TouchableOpacity
-              style={[styles.oauthButton, styles.googleButton]}
-              onPress={handleGoogleSignIn}
-              disabled={loading}
-            >
-              <Text style={styles.googleButtonText}>Sign in with Google</Text>
-            </TouchableOpacity>
-
-            {/* Apple Sign-In Button */}
-            {appleAuth.isSupported && (
-              <AppleButton
-                buttonStyle={AppleButton.Style.BLACK}
-                buttonType={AppleButton.Type.SIGN_IN}
-                style={styles.oauthButton}
-                onPress={handleAppleSignIn}
-                disabled={loading}
-              />
-            )}
-
-            <TouchableOpacity
-              style={styles.switchButton}
-              onPress={() => setIsSignUp(!isSignUp)}>
-              <Text style={[styles.switchButtonText, { color: theme.primary }]}>
-                {isSignUp
-                  ? 'Already have an account? Sign In'
-                  : "Don't have an account? Sign Up"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={onClose}>
-              <Text style={[styles.cancelText, { color: theme.textSecondary }]}>
-                Maybe later
-              </Text>
-            </TouchableOpacity>
           </View>
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#2C5EFF',
+  },
+  gradient: {
+    flex: 1,
+    backgroundColor: '#2C5EFF',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: SPACING.lg,
+    right: SPACING.lg,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: SPACING.lg,
+    paddingTop: SPACING.xxl + 8, // Add extra padding to account for close button
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: SPACING.xxl,
+  },
+  title: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
+  },
+  subtitle: {
+    fontSize: FONT_SIZES.md,
+    color: '#E3F2FD',
+    textAlign: 'center',
+    maxWidth: '90%',
+  },
+  form: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.lg,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.sm,
+  },
+  checkmark: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  termsText: {
+    flex: 1,
+    color: '#666666',
+    fontSize: FONT_SIZES.sm,
+  },
+  linkText: {
+    color: '#2C5EFF',
+    textDecorationLine: 'underline',
+  },
+  authButton: {
+    marginTop: SPACING.sm,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: SPACING.lg,
+  },
+  footerText: {
+    fontSize: FONT_SIZES.md,
+    color: '#666666',
+  },
+  footerLink: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: '#2C5EFF',
+  },
+});
+
+export default AuthScreen;

@@ -1,16 +1,21 @@
 // FILE: src/screens/modals/AddAssignmentModal.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
+import { useAuth } from '../../contexts/AuthContext';
 import { Course } from '../../types';
 import { Input, Button } from '../../components';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddAssignmentModal = () => {
   const navigation = useNavigation();
+  const { session } = useAuth();
+  const isGuest = !session;
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [selectedCourseName, setSelectedCourseName] = useState('');
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [title, setTitle] = useState('');
   const [submissionMethod, setSubmissionMethod] = useState<'Online' | 'In-person' | null>(null);
   const [submissionLink, setSubmissionLink] = useState('');
@@ -20,16 +25,35 @@ const AddAssignmentModal = () => {
 
   useEffect(() => {
     const fetchCourses = async () => {
+      if (isGuest) return; // Don't fetch for guests
       const { data, error } = await supabase.from('courses').select('id, course_name');
       if (error) Alert.alert('Error', 'Could not fetch your courses.');
       else setCourses(data || []);
     };
     fetchCourses();
-  }, []);
+  }, [isGuest]);
+
+  const handleCourseSelect = (course) => {
+    setSelectedCourse(course.id);
+    setSelectedCourseName(course.course_name);
+    setShowCourseDropdown(false);
+  };
 
   const handleSave = async () => {
-    if (!selectedCourse || !title.trim() || !submissionMethod) {
-      Alert.alert('Error', 'Please select a course, enter a title, and choose a submission method.');
+    if (isGuest) {
+      Alert.alert(
+        'Create an Account to Save',
+        'Sign up for free to save your activities and get reminders.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign Up', onPress: () => navigation.navigate('AuthChooser') }
+        ]
+      );
+      return;
+    }
+
+    if (!title.trim() || !selectedCourse) {
+      Alert.alert('Error', 'Please select a course and enter a title.');
       return;
     }
 
@@ -58,21 +82,56 @@ const AddAssignmentModal = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Add Assignment</Text>
 
-      <Text style={styles.label}>Course</Text>
-      <View style={styles.pickerContainer}>
-        {courses.map(course => (
-          <TouchableOpacity
-            key={course.id}
-            style={[
-              styles.courseOption,
-              selectedCourse === course.id && styles.selectedCourse
-            ]}
-            onPress={() => setSelectedCourse(course.id)}
-          >
-            <Text>{course.course_name}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      <Text style={styles.label}>Course *</Text>
+      <TouchableOpacity
+        style={styles.courseInput}
+        onPress={() => setShowCourseDropdown(true)}
+      >
+        <Text style={[styles.courseInputText, !selectedCourseName && styles.placeholderText]}>
+          {selectedCourseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')}
+        </Text>
+        <Text style={styles.dropdownArrow}>▼</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={showCourseDropdown}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCourseDropdown(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCourseDropdown(false)}
+        >
+          <View style={styles.dropdownContainer}>
+            {courses.length === 0 ? (
+              <View style={styles.noCoursesContainer}>
+                <Text style={styles.noCoursesText}>You have no courses.</Text>
+                <TouchableOpacity
+                  style={styles.addCourseButton}
+                  onPress={() => {
+                    setShowCourseDropdown(false);
+                    navigation.navigate('AddCourseModal');
+                  }}
+                >
+                  <Text style={styles.addCourseButtonText}>Add a Course</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              courses.map(course => (
+                <TouchableOpacity
+                  key={course.id}
+                  style={styles.dropdownOption}
+                  onPress={() => handleCourseSelect(course)}
+                >
+                  <Text style={styles.dropdownOptionText}>{course.course_name}</Text>
+                </TouchableOpacity>
+              ))
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <Text style={styles.label}>Assignment Title</Text>
       <Input
@@ -160,19 +219,75 @@ const styles = StyleSheet.create({
     marginVertical: 10,
     color: '#333',
   },
-  pickerContainer: {
-    marginBottom: 10,
-  },
-  courseOption: {
+  courseInput: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 12,
     borderWidth: 1,
     borderColor: '#DDD',
     borderRadius: 8,
-    marginBottom: 8,
+    marginBottom: 15,
+    backgroundColor: '#FFF',
   },
-  selectedCourse: {
-    borderColor: '#007AFF',
-    backgroundColor: '#E6F2FF',
+  courseInputText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  placeholderText: {
+    color: '#999',
+  },
+  dropdownArrow: {
+    fontSize: 12,
+    color: '#666',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownContainer: {
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    margin: 20,
+    maxHeight: 300,
+    width: '80%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  dropdownOption: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  dropdownOptionText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  noCoursesContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noCoursesText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  addCourseButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  addCourseButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
   },
   methodContainer: {
     flexDirection: 'row',

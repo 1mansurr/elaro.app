@@ -8,8 +8,20 @@ export interface User {
   id: string;
   email: string;
   name?: string;
+  first_name?: string;
+  last_name?: string;
+  university?: string;
+  program?: string;
+  onboarding_completed: boolean;
   created_at: string;
   updated_at: string;
+  user_metadata?: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    university?: string;
+    program?: string;
+  };
 }
 
 export interface AuthContextType {
@@ -27,8 +39,12 @@ export interface AuthContextType {
 
 export type RootStackParamList = {
   Launch: undefined;
+  AuthChooser: undefined;
   Auth: { onClose: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
   Main: undefined;
+  Welcome: { firstName?: string; lastName?: string; } | undefined;
+  OnboardingForm: { newCourse?: { course_name: string; course_code: string; about_course: string; }; firstName?: string; lastName?: string; } | undefined;
+  AddCourseOnboardingModal: undefined;
   Courses: undefined;
   CourseDetail: { courseId: string };
   Calendar: undefined;
