@@ -18,7 +18,7 @@ interface AddOddityModalProps {
   onSuccess: () => void;
 }
 
-const PAYSTACK_PUBLIC_KEY = 'pk_live_xxxxx'; // TODO: Replace with your real key or import from config
+const PAYSTACK_PUBLIC_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY;
 const ODDITY_AMOUNT = 5; // GHS 5.00
 
 const AddOddityModal: React.FC<AddOddityModalProps> = ({

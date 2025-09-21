@@ -4,10 +4,12 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../services/supabase'; // Assuming supabase client is exported here
 import { Input, Button } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
 
 const AddCourseModal = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { fetchInitialData } = useData();
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [aboutCourse, setAboutCourse] = useState('');
@@ -45,9 +47,8 @@ const AddCourseModal = () => {
           Alert.alert('Error', `Failed to create course: ${error.message || 'Unknown error'}`);
         }
       } else {
-        console.log('Course created successfully:', data);
         Alert.alert('Success', 'Course created successfully!');
-        // TODO: Add logic to refresh the course list on the previous screen
+        await fetchInitialData(); // This will refresh the app's data.
         navigation.goBack();
       }
     } catch (error) {

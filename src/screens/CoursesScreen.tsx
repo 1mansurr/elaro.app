@@ -65,7 +65,6 @@ const CoursesScreen = () => {
             table: 'courses'
           },
           (payload) => {
-            console.log('Change received!', payload);
             // Re-fetch data to ensure consistency
             fetchAndSubscribeToCourses();
           }

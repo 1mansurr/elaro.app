@@ -23,7 +23,6 @@ const AuthChooserScreen = () => {
         // Use the correct async function from expo-apple-authentication
         const isAvailable = await AppleAuthentication.isAvailableAsync();
         setIsAppleAvailable(isAvailable);
-        console.log('--- APPLE SIGN-IN (EXPO) DEBUG ---', { isAvailable, platform: Platform.OS });
       } catch (error) {
         console.error("Error checking Apple availability:", error);
         setIsAppleAvailable(false);

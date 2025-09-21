@@ -28,6 +28,8 @@ import EditCourseModal from '../screens/modals/EditCourseModal';
 import AddLectureModal from '../screens/modals/AddLectureModal';
 import AddStudySessionModal from '../screens/modals/AddStudySessionModal';
 import AddAssignmentModal from '../screens/modals/AddAssignmentModal';
+import TaskDetailModal from '../screens/modals/TaskDetailModal';
+import SupportChatModal from '../screens/modals/SupportChatModal';
 import CourseDetailScreen from '../screens/CourseDetailScreen';
 import ComingSoonScreen from '../screens/ComingSoonScreen';
 import RecycleBinScreen from '../screens/RecycleBinScreen';
@@ -354,6 +356,20 @@ export const AppNavigator: React.FC = () => {
                 </TouchableOpacity>
               ),
             })}
+          />
+          <Stack.Screen
+            name="TaskDetailModal"
+            component={TaskDetailModal}
+            options={{
+              headerTitle: 'Task Details',
+            }}
+          />
+          <Stack.Screen
+            name="SupportChat"
+            component={SupportChatModal}
+            options={{
+              headerTitle: 'Contact Support',
+            }}
           />
         </Stack.Group>
       </Stack.Navigator>

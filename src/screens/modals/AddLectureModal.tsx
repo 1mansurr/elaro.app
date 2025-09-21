@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Mod
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
 import { Input, Button } from '../../components';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Assuming this is installed
 
 const AddLectureModal = () => {
   const navigation = useNavigation();
   const { session } = useAuth();
+  const { fetchInitialData } = useData();
   const isGuest = !session;
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
@@ -69,8 +71,7 @@ const AddLectureModal = () => {
         throw new Error(error.message);
       }
 
-      console.log('Lecture created successfully:', data);
-      // TODO: Refresh the calendar/home screen data
+      await fetchInitialData(); // This will refresh the app's data.
       navigation.goBack();
     } catch (error) {
       console.error('Failed to create lecture:', error);

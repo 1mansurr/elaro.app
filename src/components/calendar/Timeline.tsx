@@ -33,25 +33,23 @@ const Timeline: React.FC<Props> = ({ tasks }) => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.timelineContainer}>
-        {hours.map((hour) => (
-          <View key={hour} style={styles.hourSlot}>
-            <Text style={styles.hourText}>
-              {hour === 0 ? '12 AM' : 
-               hour < 12 ? `${hour} AM` : 
-               hour === 12 ? '12 PM' : 
-               `${hour - 12} PM`}
-            </Text>
+        {/* Always render the 24-hour slots to form the grid */}
+        {Array.from({ length: 24 }).map((_, i) => (
+          <View key={`hour-slot-${i}`} style={styles.hourSlot}>
+            <Text style={styles.hourText}>{`${i.toString().padStart(2, '0')}:00`}</Text>
             <View style={styles.hourLine} />
           </View>
         ))}
-        
-        {tasks.map((task) => (
-          <EventItem
-            key={task.id}
-            task={task}
-            position={calculatePosition(task)}
-          />
-        ))}
+
+        {/* Absolutely position the tasks over the grid */}
+        {tasks.map(task => {
+          const position = calculatePosition(task);
+          return (
+            <View key={task.id} style={[styles.eventContainer, position]}>
+              <EventItem task={task} position={position} />
+            </View>
+          );
+        })}
       </View>
     </ScrollView>
   );
@@ -64,10 +62,12 @@ const styles = StyleSheet.create({
   timelineContainer: {
     paddingTop: 10,
     paddingBottom: 10,
+    position: 'relative',
   },
   hourSlot: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    height: HOUR_HEIGHT,
   },
   hourText: {
     width: 70, // Increased width to match left position
@@ -80,6 +80,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 1,
     backgroundColor: '#e9ecef',
+  },
+  eventContainer: {
+    position: 'absolute',
   },
 });
 

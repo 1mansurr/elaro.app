@@ -8,6 +8,9 @@ import Constants from 'expo-constants';
 import { analyticsService } from './supabase';
 import { supabase } from './supabase';
 
+// Navigation reference for handling notification taps
+let navigationRef: any = null;
+
 /**
  * Save push token to Supabase user_devices table
  * @param userId string
@@ -29,8 +32,6 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   );
   if (error) {
     console.error('❌ Error saving push token to Supabase:', error);
-  } else {
-    console.log('✅ Push token saved to Supabase');
   }
 }
 
@@ -79,7 +80,6 @@ export async function sendTestPushNotification(
     });
     const data = await response.json();
     if (data.data && data.data.status === 'ok') {
-      console.log('✅ Test push notification sent successfully');
     } else {
       console.error('❌ Failed to send test push notification:', data);
     }
@@ -91,11 +91,15 @@ export async function sendTestPushNotification(
 }
 
 export const notificationService = {
+  // Set navigation reference for handling notification taps
+  setNavigationRef(ref: any) {
+    navigationRef = ref;
+  },
+
   // Initialize notifications
   async initialize(userId: string) {
     // Skip push notification setup in Expo Go to avoid warnings
     if (isExpoGo) {
-      console.log('📱 Running in Expo Go - skipping push notification setup');
       await this.setupNotificationChannels();
       this.setupNotificationListeners();
       return;
@@ -144,7 +148,6 @@ export const notificationService = {
 
     try {
       token = (await Notifications.getExpoPushTokenAsync()).data;
-      console.log('✅ Expo Push Token:', token);
 
       // Store token for future use
       await AsyncStorage.setItem('pushToken', token);
@@ -185,7 +188,6 @@ export const notificationService = {
   // Setup notification listeners
   setupNotificationListeners() {
     Notifications.addNotificationReceivedListener(notification => {
-      console.log('📨 Notification received:', notification);
     });
 
     Notifications.addNotificationResponseReceivedListener(response => {
@@ -196,9 +198,24 @@ export const notificationService = {
 
   // Handle notification tap
   handleNotificationTap(data: any) {
-    console.log('👆 Notification tapped:', data);
-    // TODO: Navigate to appropriate screen based on notification data
-    // This will be implemented when navigation is available in the notification context
+    if (!navigationRef) {
+      console.warn('Navigation reference not set in notificationService.');
+      return;
+    }
+
+    const { type, itemId } = data;
+
+    // Ensure type is one of the expected values before navigating
+    if (type === 'study_session' || type === 'lecture' || type === 'assignment') {
+      navigationRef.navigate('TaskDetailModal', {
+        taskId: itemId,
+        taskType: type,
+      });
+    } else {
+      // Fallback for other notification types
+      console.warn(`Unhandled notification type: ${type}. Navigating to Home.`);
+      navigationRef.navigate('Home');
+    }
   },
 
   async areNotificationsEnabled(): Promise<boolean> {
@@ -254,7 +271,6 @@ export const notificationService = {
           date: triggerDate.getTime(),
         },
       });
-      console.log('✅ Scheduled notification:', id, 'for', triggerDate);
     } catch (error) {
       console.error('❌ Failed to schedule notification:', error);
     }

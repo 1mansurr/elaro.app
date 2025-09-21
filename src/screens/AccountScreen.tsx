@@ -50,7 +50,12 @@ const AccountScreen = () => {
         <ListItem
           icon="help-circle-outline"
           label="How ELARO Works"
-          onPress={() => console.log('How ELARO Works')}
+          onPress={() => {}}
+        />
+        <ListItem
+          icon="mail-outline"
+          label="Contact Support"
+          onPress={() => navigation.navigate('SupportChat')}
         />
       </Card>
 
@@ -103,14 +108,9 @@ const AccountScreen = () => {
           onPress={() => navigation.navigate('ComingSoon')}
         />
         <ListItem
-          icon="bulb-outline"
-          label="Request a Feature"
-          onPress={() => navigation.navigate('ComingSoon')}
-        />
-        <ListItem
           icon="mail-outline"
           label="Contact Support"
-          onPress={() => navigation.navigate('ComingSoon')}
+          onPress={() => navigation.navigate('SupportChat')}
         />
       </Card>
 
@@ -143,7 +143,7 @@ const AccountScreen = () => {
         <ListItem
           icon="trash-outline"
           label="Delete Account"
-          onPress={() => console.log('Delete Account')}
+          onPress={() => {}}
           color="#FF3B30"
         />
       </Card>

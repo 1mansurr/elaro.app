@@ -100,8 +100,9 @@ module.exports = ({ config }) => {
     },
     // Development-specific configurations
     ...(isDevelopment && {
-      developmentClient: {
-        silentLaunch: true,
+      // Explicitly disable updates in development
+      updates: {
+        enabled: false,
       },
     }),
     // Production-specific configurations

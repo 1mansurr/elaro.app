@@ -23,7 +23,6 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
   const handlePress = () => {
     if (isGuestMode || !task) return;
     // Later, this can navigate to a unified task detail screen
-    console.log('Navigate to task:', task.id);
   };
 
   const renderContent = () => {

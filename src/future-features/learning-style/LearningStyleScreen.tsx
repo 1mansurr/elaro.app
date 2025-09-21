@@ -29,7 +29,6 @@ export default function LearningStyleScreen({
 
   const handleCopyPrompt = (prompt: string, type: string) => {
     // Copy to clipboard functionality
-    console.log('Copy prompt:', type, prompt);
     // You can implement actual clipboard functionality here
   };
 

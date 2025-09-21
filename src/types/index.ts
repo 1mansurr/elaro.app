@@ -55,6 +55,11 @@ export type RootStackParamList = {
   AddLectureModal: undefined;
   AddStudySessionModal: undefined;
   AddAssignmentModal: undefined;
+  TaskDetailModal: {
+    taskId: string;
+    taskType: 'study_session' | 'lecture' | 'assignment';
+  };
+  SupportChat: undefined;
 };
 
 export type MainTabParamList = {

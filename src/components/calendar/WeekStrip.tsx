@@ -64,7 +64,12 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   selectedDayContainer: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#2C5EFF',
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginHorizontal: 4,
+    alignItems: 'center',
   },
   dayName: {
     fontSize: 14,
@@ -77,7 +82,8 @@ const styles = StyleSheet.create({
     color: '#343a40',
   },
   selectedText: {
-    color: '#fff',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
   },
 });
 

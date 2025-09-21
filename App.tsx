@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -167,26 +167,40 @@ function AuthEffects() {
 
 function App() {
   const [isReady, setIsReady] = useState(false);
-  const [initialState, setInitialState] = useState();
+  // Navigation state persistence disabled for debugging
+  // const [initialState, setInitialState] = useState();
+  const navigationRef = useRef(null);
 
+  // useEffect(() => {
+  //   const restoreState = async () => {
+  //     try {
+  //       const savedStateString = await AsyncStorage.getItem(PERSISTENCE_KEY);
+  //       const state = savedStateString ? JSON.parse(savedStateString) : undefined;
+
+  //       if (state !== undefined) {
+  //         setInitialState(state);
+  //       }
+  //     } catch (e) {
+  //       console.error("Failed to load navigation state", e);
+  //     } finally {
+  //       setIsReady(true);
+  //     }
+  //   };
+
+  //   if (!isReady) {
+  //     restoreState();
+  //   }
+  // }, [isReady]);
+
+  // Simplified initialization without persistence
   useEffect(() => {
-    const restoreState = async () => {
-      try {
-        const savedStateString = await AsyncStorage.getItem(PERSISTENCE_KEY);
-        const state = savedStateString ? JSON.parse(savedStateString) : undefined;
+    setIsReady(true);
+  }, []);
 
-        if (state !== undefined) {
-          setInitialState(state);
-        }
-      } catch (e) {
-        console.error("Failed to load navigation state", e);
-      } finally {
-        setIsReady(true);
-      }
-    };
-
-    if (!isReady) {
-      restoreState();
+  // Set navigation reference in notification service when ready
+  useEffect(() => {
+    if (isReady && navigationRef.current) {
+      notificationService.setNavigationRef(navigationRef.current);
     }
   }, [isReady]);
 
@@ -199,8 +213,9 @@ function App() {
       <ThemeProvider>
         <ThemedStatusBar />
         <NavigationContainer
-          initialState={initialState}
-          onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))}
+          ref={navigationRef}
+          // initialState={initialState} // Disabled to prevent modal from reopening
+          // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
         >
           <AuthProvider>
             <DataProvider>

@@ -55,7 +55,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
       const userProfile = await authService.getUserProfile(userId);
-      console.log('AuthContext: fetched user profile', userProfile);
       return userProfile as User;
     } catch (error) {
       console.error('AuthContext: Error fetching user profile:', error);
@@ -68,7 +67,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             session.data.session.user.email || '',
           );
           const newProfile = await authService.getUserProfile(userId);
-          console.log('AuthContext: created new user profile', newProfile);
           return newProfile as User;
         }
       } catch (createError) {
@@ -82,7 +80,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (session?.user) {
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);
-      console.log('AuthContext: setUser in refreshUser', userProfile);
     }
   };
 
@@ -94,29 +91,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setSession(null);
         setUser(null);
         setLoading(false);
-        console.log('AuthContext: setLoading(false) after error');
         return;
       }
 
-      console.log(
-        '🔐 Initial session state:',
-        session ? 'Authenticated' : 'Not authenticated',
-      );
       if (session?.user) {
-        console.log('👤 User email:', session.user.email);
       }
 
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id).then(profile => {
           setUser(profile);
-          console.log('AuthContext: setUser after fetchUserProfile', profile);
           setLoading(false);
-          console.log('AuthContext: setLoading(false) after user fetch');
         });
       } else {
         setLoading(false);
-        console.log('AuthContext: setLoading(false) no session.user');
       }
     });
 
@@ -124,21 +112,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(
-        '🔄 Auth state change:',
-        event,
-        session ? 'Session present' : 'No session',
-      );
       setSession(session);
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
-        console.log('AuthContext: setUser after auth change', userProfile);
         
         // Navigation logic based on onboarding status
         if (userProfile) {
           if (userProfile.onboarding_completed) {
-            console.log('✅ User has completed onboarding, navigating to Main');
             // fetchInitialData(); // Removed to fix circular dependency - will be called elsewhere
             navigation.replace('Main');
           } else {
@@ -151,10 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               const firstName = nameParts[0];
               const lastName = nameParts.slice(1).join(' ');
               params = { firstName, lastName };
-              console.log('🔤 Pre-filling names for social user:', { firstName, lastName });
             }
-            
-            console.log('🆕 New user, navigating to Welcome for onboarding');
             navigation.replace('Welcome', params);
           }
         }
@@ -162,7 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(null);
       }
       setLoading(false);
-      console.log('AuthContext: setLoading(false) after auth change');
     });
 
     return () => subscription.unsubscribe();
@@ -180,7 +157,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return { error };
       }
 
-      console.log('✅ Sign in successful:', data.user?.email);
       return { error: null };
     } catch (error) {
       console.error('❌ Sign in error:', error);
@@ -203,9 +179,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // User profile will be created automatically by the database trigger
       // But we can also create it manually if needed
       if (data.user && !data.user.email_confirmed_at) {
-        console.log(
-          '📧 User signed up successfully. Please check email for confirmation.',
-        );
       }
 
       return { error: null };
@@ -220,8 +193,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('❌ Sign out error:', error);
-      } else {
-        console.log('✅ Sign out successful');
       }
     } catch (error) {
       console.error('❌ Sign out error:', error);
@@ -242,7 +213,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error("Supabase sign-in error:", error);
           return { error };
         } else {
-          console.log("Signed in with Google:", data);
           return { error: null };
         }
       }
