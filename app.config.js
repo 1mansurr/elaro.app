@@ -66,7 +66,16 @@ module.exports = ({ config }) => {
     },
     scheme: 'elaro',
     plugins: [
-      'expo-notifications',
+      [
+        'expo-notifications',
+        {
+          'icon': './assets/notification-icon.png',
+          'color': '#ffffff',
+          'sounds': [
+            // You can add custom sound files here if you have them
+          ]
+        }
+      ],
       'expo-build-properties',
       'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin
