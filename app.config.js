@@ -9,6 +9,7 @@ module.exports = ({ config }) => {
     ...config,
     name: 'Elaro',
     slug: 'elaro',
+    scheme: 'elaro',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -64,7 +65,6 @@ module.exports = ({ config }) => {
       favicon: './assets/favicon.png',
       bundler: 'metro'
     },
-    scheme: 'elaro',
     plugins: [
       [
         'expo-notifications',

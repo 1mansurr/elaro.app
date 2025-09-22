@@ -7,12 +7,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "development",
-      "ios": {
-        "capabilities": {
-          "pushNotifications": true
-        }
-      }
+      "channel": "development"
     },
     "preview": {
       "developmentClient": true,
