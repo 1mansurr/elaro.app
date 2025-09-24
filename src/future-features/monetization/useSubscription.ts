@@ -2,8 +2,24 @@ import { useEffect, useState, useCallback } from 'react';
 import { Alert, Linking } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSoftLaunch } from '../../contexts/SoftLaunchContext';
-import { paystackService, SUBSCRIPTION_PLANS } from '../../services/paystack';
+// import { paystackService, SUBSCRIPTION_PLANS } from '../../services/paystack';
 import { subscriptionService } from '../../services/supabase';
+
+// Temporary placeholders to prevent build errors
+const paystackService = {
+  openOddityPayment: (email: string) => {
+    console.warn('paystackService.openOddityPayment is not implemented');
+    return '';
+  },
+  handleSubscriptionSuccess: async (data: any) => {
+    console.warn('paystackService.handleSubscriptionSuccess is not implemented');
+    return { success: false };
+  },
+};
+
+const SUBSCRIPTION_PLANS = {
+  ODDITY: 'ODDITY_PLAN',
+};
 
 export const useSubscription = () => {
   const { user, refreshUser } = useAuth();

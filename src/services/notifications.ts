@@ -1,11 +1,9 @@
 import * as Notifications from 'expo-notifications';
-import { SchedulableTriggerInputTypes } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
-import { analyticsService } from './supabase';
 import { supabase } from './supabase';
 
 // Navigation reference for handling notification taps
@@ -267,8 +265,7 @@ export const notificationService = {
           sound: true,
         },
         trigger: {
-          type: SchedulableTriggerInputTypes.DATE,
-          date: triggerDate.getTime(),
+          date: triggerDate,
         },
       });
     } catch (error) {
@@ -320,13 +317,7 @@ export const notificationService = {
     userId: string;
   }) {
     await this.cancelSRReminders(sessionId);
-    await this.rescheduleSRReminders({
-      sessionId,
-      sessionTitle,
-      newDate: newDate,
-      planType,
-      userId,
-    });
+    // TODO: Implement the logic to schedule new reminders here instead of calling itself.
   },
 
   // Functions using deleted types removed:

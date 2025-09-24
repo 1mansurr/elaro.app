@@ -94,9 +94,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return;
       }
 
-      if (session?.user) {
-      }
-
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id).then(profile => {
@@ -133,6 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               const lastName = nameParts.slice(1).join(' ');
               params = { firstName, lastName };
             }
+            
             navigation.replace('Welcome', params);
           }
         }
