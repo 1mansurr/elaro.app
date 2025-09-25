@@ -11,6 +11,7 @@ import { DataProvider } from './src/contexts/DataContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import AnimatedSplashScreen from './src/screens/AnimatedSplashScreen';
 import { useAuth } from './src/contexts/AuthContext';
 import { useData } from './src/contexts/DataContext';
 import { notificationService } from './src/services/notifications';
@@ -80,6 +81,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [appIsReady, setAppIsReady] = useState(false);
+  const [isAnimationFinished, setAnimationFinished] = useState(false);
 
   useEffect(() => {
     const prepare = async () => {
@@ -111,24 +113,28 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
 
   const onLayoutRootView = useCallback(async () => {
     if (appIsReady) {
+      // Hide the native splash screen to reveal our animated splash screen
       await SplashScreen.hideAsync();
     }
   }, [appIsReady]);
 
   if (!appIsReady) {
+    // While the app is preparing (fonts, auth state), we show nothing.
+    // The native splash screen is still visible at this point.
+    return null;
+  }
+
+  // Once the app is ready, we decide whether to show the animation or the main app.
+  if (!isAnimationFinished) {
+    // If the app is ready but the animation isn't finished, show the animated splash screen.
     return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: COLORS.white,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
+      <AnimatedSplashScreen
+        onAnimationFinish={() => setAnimationFinished(true)}
+      />
     );
   }
 
+  // Once BOTH the app is ready AND the animation is finished, show the main navigator.
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       {children}

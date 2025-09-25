@@ -15,9 +15,7 @@ module.exports = ({ config }) => {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     splash: {
-      image: './assets/splash-icon.png',
-      resizeMode: 'contain',
-      backgroundColor: '#4A90E2'
+      backgroundColor: '#0A2540' // Dark, professional blue
     },
     assetBundlePatterns: ['**/*'],
     ios: {
