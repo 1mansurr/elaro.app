@@ -52,7 +52,9 @@ serve(async (req) => {
       // 3. Check for Significant Edits
       if (updates.course_id && updates.course_id !== originalLecture.course_id) isSignificantEdit = true;
       if (updates.title && getStringDifferencePercent(updates.title, originalLecture.title) > 50) isSignificantEdit = true;
-      if (updates.notes && getStringDifferencePercent(updates.notes, originalLecture.notes) > 70) isSignificantEdit = true;
+      
+      // Check for significant changes to the description field
+      if (updates.description && getStringDifferencePercent(updates.description, originalLecture.description || '') > 70) isSignificantEdit = true;
       
       const originalStartTime = new Date(originalLecture.start_time).getTime();
       const originalEndTime = new Date(originalLecture.end_time).getTime();
