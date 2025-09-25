@@ -1,7 +1,7 @@
 // FILE: src/screens/modals/AddAssignmentModal.tsx
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Course } from '../../types';
@@ -10,16 +10,21 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddAssignmentModal = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { session } = useAuth();
   const isGuest = !session;
+  
+  const taskToEdit = route.params?.taskToEdit;
+  const isEditMode = !!taskToEdit;
   const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
-  const [selectedCourseName, setSelectedCourseName] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState<string | null>(taskToEdit?.course_id || null);
+  const [selectedCourseName, setSelectedCourseName] = useState(taskToEdit?.courses?.course_name || '');
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-  const [title, setTitle] = useState('');
-  const [submissionMethod, setSubmissionMethod] = useState<'Online' | 'In-person' | null>(null);
-  const [submissionLink, setSubmissionLink] = useState('');
-  const [dueDate, setDueDate] = useState(new Date());
+  const [title, setTitle] = useState(taskToEdit?.name || '');
+  const [description, setDescription] = useState(taskToEdit?.description || '');
+  const [submissionMethod, setSubmissionMethod] = useState<'Online' | 'In-person' | null>(taskToEdit?.submission_method || null);
+  const [submissionLink, setSubmissionLink] = useState(taskToEdit?.submission_link || '');
+  const [dueDate, setDueDate] = useState(taskToEdit ? new Date(taskToEdit.due_date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,20 +64,44 @@ const AddAssignmentModal = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('create-assignment', {
-        body: {
-          course_id: selectedCourse,
-          title: title.trim(),
-          submission_method: submissionMethod,
-          submission_link: submissionMethod === 'Online' ? submissionLink.trim() : null,
-          due_date: dueDate.toISOString(),
-        },
-      });
+      if (isEditMode) {
+        // --- EDIT LOGIC ---
+        const { error } = await supabase.functions.invoke('update-assignment', {
+          body: {
+            assignmentId: taskToEdit.id,
+            updates: {
+              title: title.trim(),
+              description: description.trim(),
+              submission_method: submissionMethod,
+              submission_link: submissionMethod === 'Online' ? submissionLink.trim() : null,
+              due_date: dueDate.toISOString(),
+              // Note: We are not allowing course changes in this simplified version.
+            },
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+        Alert.alert('Success', 'Assignment updated successfully!');
+      } else {
+        // --- CREATE LOGIC ---
+        const { error } = await supabase.functions.invoke('create-assignment', {
+          body: {
+            course_id: selectedCourse,
+            title: title.trim(),
+            description: description.trim(),
+            submission_method: submissionMethod,
+            submission_link: submissionMethod === 'Online' ? submissionLink.trim() : null,
+            due_date: dueDate.toISOString(),
+          },
+        });
+
+        if (error) throw error;
+        Alert.alert('Success', 'Assignment created successfully!');
+      }
+
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save assignment.');
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'save'} assignment.`);
     } finally {
       setIsLoading(false);
     }
@@ -80,7 +109,7 @@ const AddAssignmentModal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Assignment</Text>
+      <Text style={styles.title}>{isEditMode ? "Edit Assignment" : "Add Assignment"}</Text>
 
       <Text style={styles.label}>Course *</Text>
       <TouchableOpacity
@@ -140,6 +169,15 @@ const AddAssignmentModal = () => {
         placeholder="Enter assignment title"
       />
 
+      <Text style={styles.label}>Description</Text>
+      <Input
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Enter assignment description (optional)"
+        multiline
+        numberOfLines={3}
+      />
+
       <Text style={styles.label}>Submission Method</Text>
       <View style={styles.methodContainer}>
         <TouchableOpacity
@@ -194,7 +232,7 @@ const AddAssignmentModal = () => {
       )}
 
       <Button
-        title={isLoading ? <ActivityIndicator color="white" /> : "Save Assignment"}
+        title={isLoading ? <ActivityIndicator color="white" /> : (isEditMode ? "Save Changes" : "Save Assignment")}
         onPress={handleSave}
         disabled={isLoading}
       />

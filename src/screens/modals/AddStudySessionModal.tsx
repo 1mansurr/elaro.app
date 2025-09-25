@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Switch, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { Input, Button } from '../../components';
@@ -8,17 +8,21 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddStudySessionModal = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { session } = useAuth();
   const isGuest = !session;
+  
+  const taskToEdit = route.params?.taskToEdit;
+  const isEditMode = !!taskToEdit;
   const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedCourseName, setSelectedCourseName] = useState('');
-  const [topic, setTopic] = useState('');
-  const [notes, setNotes] = useState('');
-  const [date, setDate] = useState(new Date());
+  const [selectedCourse, setSelectedCourse] = useState(taskToEdit?.course_id || null);
+  const [selectedCourseName, setSelectedCourseName] = useState(taskToEdit?.courses?.course_name || '');
+  const [topic, setTopic] = useState(taskToEdit?.name || '');
+  const [description, setDescription] = useState(taskToEdit?.description || '');
+  const [date, setDate] = useState(taskToEdit ? new Date(taskToEdit.session_date || taskToEdit.date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-  const [enableSpacedRepetition, setEnableSpacedRepetition] = useState(false);
+  const [enableSpacedRepetition, setEnableSpacedRepetition] = useState(taskToEdit?.has_spaced_repetition || false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -56,20 +60,42 @@ const AddStudySessionModal = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('create-study-session', {
-        body: {
-          course_id: selectedCourse,
-          topic: topic.trim(),
-          notes: notes.trim(),
-          session_date: date.toISOString(),
-          has_spaced_repetition: enableSpacedRepetition,
-        },
-      });
+      if (isEditMode) {
+        // --- EDIT LOGIC ---
+        const { error } = await supabase.functions.invoke('update-study-session', {
+          body: {
+            sessionId: taskToEdit.id,
+            updates: {
+              topic: topic.trim(),
+              description: description.trim(),
+              session_date: date.toISOString(),
+              has_spaced_repetition: enableSpacedRepetition,
+              // Note: We are not allowing course changes in this simplified version.
+            },
+          },
+        });
 
-      if (error) throw error;
+        if (error) throw error;
+        Alert.alert('Success', 'Study session updated successfully!');
+      } else {
+        // --- CREATE LOGIC ---
+        const { error } = await supabase.functions.invoke('create-study-session', {
+          body: {
+            course_id: selectedCourse,
+            topic: topic.trim(),
+            description: description.trim(),
+            session_date: date.toISOString(),
+            has_spaced_repetition: enableSpacedRepetition,
+          },
+        });
+
+        if (error) throw error;
+        Alert.alert('Success', 'Study session created successfully!');
+      }
+
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to save study session.');
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'save'} study session.`);
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +103,7 @@ const AddStudySessionModal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Study Session</Text>
+      <Text style={styles.title}>{isEditMode ? "Edit Study Session" : "Add Study Session"}</Text>
 
       <Text style={styles.label}>Course</Text>
       <TouchableOpacity
@@ -141,10 +167,10 @@ const AddStudySessionModal = () => {
         placeholder="What will you study?"
       />
 
-      <Text style={styles.label}>Notes (Optional)</Text>
+      <Text style={styles.label}>Description (Optional)</Text>
       <Input
-        value={notes}
-        onChangeText={setNotes}
+        value={description}
+        onChangeText={setDescription}
         placeholder="Additional notes..."
         multiline
         numberOfLines={3}
@@ -187,7 +213,7 @@ const AddStudySessionModal = () => {
       )}
 
       <Button
-        title={isLoading ? <ActivityIndicator color="white" /> : "Save Study Session"}
+        title={isLoading ? <ActivityIndicator color="white" /> : (isEditMode ? "Save Changes" : "Save Session")}
         onPress={handleSave}
         disabled={isLoading}
       />

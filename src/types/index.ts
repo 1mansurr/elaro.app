@@ -87,7 +87,11 @@ export interface Course {
 export type Task = {
   id: string;
   type: 'lecture' | 'study_session' | 'assignment';
-  date: string;
+  date: string; // This might be start_time now
+  start_time?: string;
+  end_time?: string; // Add this
+  description?: string; // Add this
+  status?: 'pending' | 'completed'; // Add this
   name: string;
   courses: { course_name: string };
   // Add other potential shared fields here

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
@@ -9,16 +9,23 @@ import DateTimePicker from '@react-native-community/datetimepicker'; // Assuming
 
 const AddLectureModal = () => {
   const navigation = useNavigation();
+  const route = useRoute();
   const { session } = useAuth();
   const { fetchInitialData } = useData();
   const isGuest = !session;
+  
+  const taskToEdit = route.params?.taskToEdit;
+  const isEditMode = !!taskToEdit;
   const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const [selectedCourseName, setSelectedCourseName] = useState('');
+  const [selectedCourse, setSelectedCourse] = useState(taskToEdit?.course_id || null);
+  const [selectedCourseName, setSelectedCourseName] = useState(taskToEdit?.courses?.course_name || '');
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-  const [lectureName, setLectureName] = useState('');
-  const [date, setDate] = useState(new Date());
+  const [lectureName, setLectureName] = useState(taskToEdit?.name || '');
+  const [description, setDescription] = useState(taskToEdit?.description || '');
+  const [date, setDate] = useState(taskToEdit ? new Date(taskToEdit.start_time) : new Date());
+  const [endTime, setEndTime] = useState(taskToEdit ? new Date(taskToEdit.end_time) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -58,24 +65,51 @@ const AddLectureModal = () => {
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('create-lecture', {
-        body: {
-          course_id: selectedCourse,
-          lecture_name: lectureName.trim(),
-          lecture_date: date.toISOString(),
-          // is_recurring and recurring_pattern can be added here if needed
-        },
-      });
+      if (isEditMode) {
+        // --- EDIT LOGIC ---
+        const { data, error } = await supabase.functions.invoke('update-lecture', {
+          body: {
+            lectureId: taskToEdit.id,
+            updates: {
+              lecture_name: lectureName.trim(),
+              description: description.trim(),
+              start_time: date.toISOString(),
+              end_time: endTime.toISOString(),
+              // Note: We are not allowing course changes in this simplified version.
+            },
+          },
+        });
 
-      if (error) {
-        throw new Error(error.message);
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        Alert.alert('Success', 'Lecture updated successfully!');
+      } else {
+        // --- CREATE LOGIC ---
+        const { data, error } = await supabase.functions.invoke('create-lecture', {
+          body: {
+            course_id: selectedCourse,
+            lecture_name: lectureName.trim(),
+            start_time: date.toISOString(),
+            end_time: endTime.toISOString(),
+            description: description.trim(),
+            // is_recurring and recurring_pattern can be added here if needed
+          },
+        });
+
+        if (error) {
+          throw new Error(error.message);
+        }
+
+        Alert.alert('Success', 'Lecture created successfully!');
       }
 
       await fetchInitialData(); // This will refresh the app's data.
       navigation.goBack();
     } catch (error) {
-      console.error('Failed to create lecture:', error);
-      Alert.alert('Error', 'Failed to save lecture. Please try again.');
+      console.error(`Failed to ${isEditMode ? 'update' : 'create'} lecture:`, error);
+      Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'save'} lecture. Please try again.`);
     } finally {
       setIsLoading(false);
     }
@@ -83,7 +117,7 @@ const AddLectureModal = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add New Lecture</Text>
+      <Text style={styles.title}>{isEditMode ? 'Edit Lecture' : 'Add New Lecture'}</Text>
 
       <Text style={styles.label}>Course *</Text>
       <TouchableOpacity
@@ -143,7 +177,16 @@ const AddLectureModal = () => {
         placeholder="Enter lecture name"
       />
 
-      <Text style={styles.label}>Date & Time</Text>
+      <Text style={styles.label}>Description</Text>
+      <Input
+        value={description}
+        onChangeText={setDescription}
+        placeholder="Enter lecture description (optional)"
+        multiline
+        numberOfLines={3}
+      />
+
+      <Text style={styles.label}>Start Time</Text>
       <TouchableOpacity
         onPress={() => setShowDatePicker(true)}
         style={styles.dateButton}
@@ -165,10 +208,35 @@ const AddLectureModal = () => {
         />
       )}
 
+      <Text style={styles.label}>End Time</Text>
+      <TouchableOpacity
+        onPress={() => setShowEndTimePicker(true)}
+        style={styles.dateButton}
+      >
+        <Text>{endTime.toLocaleString()}</Text>
+      </TouchableOpacity>
+
+      {showEndTimePicker && (
+        <DateTimePicker
+          value={endTime}
+          mode="datetime"
+          display="default"
+          onChange={(event, selectedDate) => {
+            setShowEndTimePicker(false);
+            if (selectedDate) {
+              setEndTime(selectedDate);
+            }
+          }}
+        />
+      )}
+
       {isLoading ? (
         <ActivityIndicator size="large" color="#007AFF" />
       ) : (
-        <Button title="Save Lecture" onPress={handleSaveLecture} />
+        <Button 
+          title={isEditMode ? "Save Changes" : "Save Lecture"} 
+          onPress={handleSaveLecture} 
+        />
       )}
     </View>
   );
