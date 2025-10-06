@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -27,7 +28,7 @@ serve(async (req) => {
     const limitError = await checkTaskLimit(supabaseClient, user.id);
     if (limitError) return limitError;
 
-    const { course_id, lecture_date, is_recurring, recurring_pattern } = await req.json();
+    const { course_id, lecture_date, is_recurring, recurring_pattern, lecture_name, description } = await req.json();
 
     if (!course_id || !lecture_date) {
       return new Response(
@@ -39,15 +40,37 @@ serve(async (req) => {
       );
     }
 
+    // Encryption key from environment
+    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
+    if (!ENCRYPTION_KEY) {
+      return new Response('Encryption key not configured.', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Encrypt sensitive fields if provided
+    const encryptedLectureName = typeof lecture_name === 'string' && lecture_name.length > 0
+      ? await encrypt(lecture_name, ENCRYPTION_KEY)
+      : null;
+    const encryptedDescription = typeof description === 'string' && description.length > 0
+      ? await encrypt(description, ENCRYPTION_KEY)
+      : null;
+
+    const insertPayload: Record<string, unknown> = {
+      user_id: user.id,
+      course_id,
+      lecture_date,
+      is_recurring,
+      recurring_pattern,
+    };
+
+    if (lecture_name !== undefined) insertPayload.lecture_name = encryptedLectureName;
+    if (description !== undefined) insertPayload.description = encryptedDescription;
+
     const { data: newLecture, error } = await supabaseClient
       .from('lectures')
-      .insert({
-        user_id: user.id,
-        course_id,
-        lecture_date,
-        is_recurring,
-        recurring_pattern,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

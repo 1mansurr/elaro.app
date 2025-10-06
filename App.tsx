@@ -8,6 +8,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
 import { DataProvider } from './src/contexts/DataContext';
+import { NotificationProvider, useNotification } from './src/contexts/NotificationContext';
+import { setNotificationTaskHandler } from './src/services/notifications';
+import TaskDetailSheet from './src/screens/modals/TaskDetailSheet';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
@@ -171,6 +174,57 @@ function AuthEffects() {
   return null;
 }
 
+// Component to handle notification context and TaskDetailSheet
+function NotificationHandler() {
+  const { taskToShow, setTaskToShow } = useNotification();
+  const { fetchInitialData } = useData();
+
+  // Set up the handler so the notification service can call our context function
+  useEffect(() => {
+    setNotificationTaskHandler(setTaskToShow);
+  }, [setTaskToShow]);
+
+  // Create handlers for the TaskDetailSheet
+  const handleCloseSheet = () => setTaskToShow(null);
+  
+  const handleEditTask = (task: any) => {
+    // Close the sheet first
+    setTaskToShow(null);
+    // Navigate to edit modal - this would need navigation ref
+    // For now, just close the sheet
+    console.log('Edit task:', task);
+  };
+
+  const handleCompleteTask = async (task: any) => {
+    // Handle task completion logic here
+    console.log('Complete task:', task);
+    // Refresh data after completion
+    await fetchInitialData();
+    // Close the sheet
+    setTaskToShow(null);
+  };
+
+  const handleDeleteTask = async (task: any) => {
+    // Handle task deletion logic here
+    console.log('Delete task:', task);
+    // Refresh data after deletion
+    await fetchInitialData();
+    // Close the sheet
+    setTaskToShow(null);
+  };
+
+  return (
+    <TaskDetailSheet
+      task={taskToShow}
+      isVisible={!!taskToShow}
+      onClose={handleCloseSheet}
+      onEdit={handleEditTask}
+      onComplete={handleCompleteTask}
+      onDelete={handleDeleteTask}
+    />
+  );
+}
+
 function App() {
   const [isReady, setIsReady] = useState(false);
   // Navigation state persistence disabled for debugging
@@ -226,8 +280,11 @@ function App() {
           <AuthProvider>
             <DataProvider>
               <SoftLaunchProvider>
-                <AuthEffects />
-                <AppNavigator />
+                <NotificationProvider>
+                  <AuthEffects />
+                  <AppNavigator />
+                  <NotificationHandler />
+                </NotificationProvider>
               </SoftLaunchProvider>
             </DataProvider>
           </AuthProvider>

@@ -73,12 +73,50 @@ export const authService = {
   async getUserProfile(userId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('users')
-      .select('*')
+      .select(`
+        *,
+        subscriptions (
+          subscription_tier,
+          subscription_status,
+          subscription_expires_at
+        )
+      `)
       .eq('id', userId)
       .single();
 
-    if (error) return null;
-    return data;
+    if (error) {
+      console.error('Error fetching user profile with subscription:', error);
+      return null;
+    }
+
+    if (!data) return null;
+
+    // Flatten subscription (array) into single record
+    const subscriptionData = Array.isArray((data as any).subscriptions)
+      ? (data as any).subscriptions[0]
+      : (data as any).subscriptions;
+
+    const userProfile: User = {
+      id: (data as any).id,
+      email: (data as any).email,
+      // legacy field retained if present
+      // @ts-ignore - backend may not return this anymore
+      is_subscribed_to_oddity: (data as any).is_subscribed_to_oddity,
+      // optional fields retained
+      // @ts-ignore - may exist in row
+      timezone: (data as any).timezone,
+      subscription_tier: subscriptionData?.subscription_tier ?? null,
+      // @ts-ignore - status added to type as optional
+      subscription_status: subscriptionData?.subscription_status ?? null,
+      subscription_expires_at: subscriptionData?.subscription_expires_at ?? null,
+      // timestamps if present
+      // @ts-ignore
+      created_at: (data as any).created_at,
+      // @ts-ignore
+      updated_at: (data as any).updated_at,
+    } as User;
+
+    return userProfile;
   },
 
   async updateUserProfile(userId: string, updates: Partial<User>) {

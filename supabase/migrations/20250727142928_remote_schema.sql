@@ -147,10 +147,13 @@ CREATE OR REPLACE FUNCTION public.handle_new_user()
  SECURITY DEFINER
 AS $function$
 BEGIN
+  -- First, insert into the public.users table as before
   INSERT INTO public.users (id, email)
   VALUES (NEW.id, NEW.email);
-  
-  -- TODO: Streaks table and related logic were here. Re-add if/when streaks are reintroduced.
+
+  -- Next, insert a new 7-day trial subscription for the user
+  INSERT INTO public.subscriptions (user_id, subscription_tier, subscription_status, subscription_expires_at)
+  VALUES (NEW.id, 'oddity', 'trialing', NOW() + INTERVAL '7 days');
   
   RETURN NEW;
 END;

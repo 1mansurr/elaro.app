@@ -6,20 +6,23 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  SafeAreaView,
+  ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import PaystackPayment from './PaystackPayment';
+import { SuccessModal } from './SubscriptionSuccessModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { subscriptionService } from '../../services/supabase';
+import { subscriptionService, supabase } from '../../services/supabase';
 import { useSubscription } from './useSubscription';
+import { ODDITY_AMOUNT, PAYSTACK_PUBLIC_KEY } from './constants';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 
 interface AddOddityModalProps {
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }
-
-const PAYSTACK_PUBLIC_KEY = process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY;
-const ODDITY_AMOUNT = 5; // GHS 5.00
 
 const AddOddityModal: React.FC<AddOddityModalProps> = ({
   visible,
@@ -28,6 +31,9 @@ const AddOddityModal: React.FC<AddOddityModalProps> = ({
 }) => {
   const { user, refreshUser } = useAuth();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [showPayment, setShowPayment] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
   const {
     isSubscribed,
     isProcessing: subscriptionProcessing,
@@ -36,222 +42,268 @@ const AddOddityModal: React.FC<AddOddityModalProps> = ({
 
   const handlePaymentSuccess = async (reference: string) => {
     setIsProcessing(true);
+    setShowPayment(false); // Hide the WebView
+
     try {
       if (!user) throw new Error('User not found');
-      // Optionally: verify with backend or Paystack API
-      await subscriptionService.activateOdditySubscription(user.id);
-      await refreshUser();
-      onSuccess();
-      onClose();
+
+      // Call our new verify-paystack-transaction Edge Function
+      const { data, error } = await supabase.functions.invoke('verify-paystack-transaction', {
+        body: { reference },
+      });
+
+      if (error) throw error;
+
+      if (data.verified) {
+        // Verification successful! Activate subscription and show success.
+        await subscriptionService.activateOdditySubscription(user.id);
+        await refreshUser();
+        setShowSuccess(true);
+        onSuccess();
+      } else {
+        // Verification failed. Show an error message.
+        Alert.alert(
+          'Payment Verification Failed', 
+          data.message || 'We could not confirm your payment. Please contact support.'
+        );
+      }
     } catch (err) {
+      console.error('Verification error:', err);
       Alert.alert(
-        'Subscription Error',
-        'Could not activate your subscription. Please contact support.',
+        'An Error Occurred', 
+        'Something went wrong while verifying your payment. Please contact support.'
       );
     } finally {
       setIsProcessing(false);
     }
   };
 
+  const handleUpgradePress = () => {
+    if (!user) {
+      Alert.alert(
+        'Sign In Required',
+        'Please sign in to upgrade to Oddity.',
+        [{ text: 'OK', onPress: onClose }]
+      );
+      return;
+    }
+    setIsPaying(true);
+    setShowPayment(true);
+  };
+
+  const handleClose = () => {
+    if (isPaying) {
+      setIsPaying(false);
+      setShowPayment(false);
+    } else {
+      onClose();
+    }
+  };
+
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+    onClose();
+  };
+
+  if (isPaying && user) {
+    return (
+      <PaystackPayment
+        email={user.email}
+        amount={ODDITY_AMOUNT}
+        publicKey={PAYSTACK_PUBLIC_KEY}
+        onSuccess={handlePaymentSuccess}
+        onCancel={handleClose}
+      />
+    );
+  }
+
   return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <TouchableOpacity
-            style={styles.xButton}
-            onPress={onClose}
-            accessibilityLabel="Close">
-            <Text style={styles.xButtonText}>×</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Become an Oddity</Text>
-          <Text style={styles.subtitle}>
-            Unlock more study sessions, full AI guide access, and premium
-            features for GHS 5.00/month.
-          </Text>
-          <View style={{ width: '100%', marginBottom: 16 }}>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-              <Text style={{ fontSize: 18, color: '#22c55e', marginRight: 8 }}>
-                ✔️
-              </Text>
-              <Text style={{ fontSize: 15, color: '#222' }}>
-                Up to 35 total tasks/events
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-              <Text style={{ fontSize: 18, color: '#22c55e', marginRight: 8 }}>
-                ✔️
-              </Text>
-              <Text style={{ fontSize: 15, color: '#222' }}>
-                Up to 75 spaced repetition reminders
-              </Text>
-            </View>
-            <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                marginBottom: 6,
-              }}>
-              <Text style={{ fontSize: 18, color: '#22c55e', marginRight: 8 }}>
-                ✔️
-              </Text>
-              <Text style={{ fontSize: 15, color: '#222' }}>
-                Full access to the AI Study Guide
-              </Text>
-            </View>
-          </View>
-          {user ? (
-            <>
-              <PaystackPayment
-                email={user.email}
-                amount={ODDITY_AMOUNT}
-                publicKey={PAYSTACK_PUBLIC_KEY}
-                onSuccess={handlePaymentSuccess}
-                onCancel={onClose}
-              />
-              {/* Cancel Subscription Button for Oddity users */}
-              {isSubscribed && (
-                <TouchableOpacity
-                  style={styles.cancelButton}
-                  disabled={subscriptionProcessing}
-                  onPress={() => {
-                    Alert.alert(
-                      'Cancel Subscription',
-                      'Are you sure you want to cancel your Oddity subscription? You will retain access until the end of your billing period.',
-                      [
-                        { text: 'No', style: 'cancel' },
-                        {
-                          text: 'Yes, Cancel',
-                          style: 'destructive',
-                          onPress: cancelOdditySubscription,
-                        },
-                      ],
-                    );
-                  }}>
-                  <Text style={styles.cancelButtonText}>
-                    {subscriptionProcessing
-                      ? 'Cancelling...'
-                      : 'Cancel Subscription'}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </>
-          ) : (
-            <>
-              <Text style={styles.guestMessage}>
-                Please sign up or log in to upgrade to Oddity and unlock premium
-                features.
-              </Text>
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        onRequestClose={onClose}>
+        <SafeAreaView style={styles.container}>
+          <ScrollView contentContainerStyle={styles.scrollContent}>
+            <View style={styles.header}>
+              <Text style={styles.headerTitle}>Become an Oddity</Text>
               <TouchableOpacity
-                style={styles.signupButton}
-                onPress={() => {
-                  onClose(); /* Optionally: trigger sign up modal/navigation here */
-                }}>
-                <Text style={styles.signupButtonText}>Sign Up or Log In</Text>
+                onPress={handleClose}
+                style={styles.closeButton}>
+                <Ionicons name="close" size={28} color={COLORS.text} />
               </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-    </Modal>
+            </View>
+
+            <View style={styles.content}>
+              <Text style={styles.mainTitle}>Unlock Your Full Potential</Text>
+              
+              {/* Benefits List */}
+              <View style={styles.benefitsContainer}>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="school-outline" size={24} color={COLORS.primary} />
+                  <Text style={styles.benefitText}>
+                    Organize all your classes (up to 9 courses)
+                  </Text>
+                </View>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="calendar-outline" size={24} color={COLORS.primary} />
+                  <Text style={styles.benefitText}>
+                    Plan your entire week (up to 30 tasks)
+                  </Text>
+                </View>
+                <View style={styles.benefitItem}>
+                  <Ionicons name="notifications-outline" size={24} color={COLORS.primary} />
+                  <Text style={styles.benefitText}>
+                    Never forget a thing (up to 30 reminders)
+                  </Text>
+                </View>
+              </View>
+
+              {/* Price Display */}
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceAmount}>{ODDITY_AMOUNT} GHS</Text>
+                <Text style={styles.pricePeriod}>/ week</Text>
+              </View>
+
+              <Text style={styles.trustText}>
+                Cancel anytime. Secure payment by Paystack.
+              </Text>
+            </View>
+          </ScrollView>
+          
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.ctaButton, (isProcessing || isPaying) && styles.ctaButtonDisabled]}
+              onPress={handleUpgradePress}
+              disabled={isProcessing || isPaying}>
+              <Text style={styles.ctaButtonText}>
+                {isProcessing ? 'Processing...' : isPaying ? 'Processing Payment...' : 'Become an Oddity'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+      </Modal>
+
+      <SuccessModal
+        visible={showSuccess}
+        onClose={handleSuccessClose}
+        title="Welcome to Oddity!"
+        subtitle="You now have access to all premium features. Start organizing your studies like never before!"
+      />
+    </>
   );
 };
 
 const styles = StyleSheet.create({
-  overlay: {
+  container: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: COLORS.background,
+  },
+  scrollContent: {
+    flexGrow: 1,
+  },
+  header: {
+    flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  container: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    width: '90%',
-    maxWidth: 400,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 16,
-    textAlign: 'center',
+  headerTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.textPrimary,
   },
   closeButton: {
-    marginTop: 16,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#eee',
+    position: 'absolute',
+    right: SPACING.lg,
+    padding: SPACING.sm,
   },
-  closeButtonText: {
-    color: '#333',
-    fontWeight: 'bold',
+  content: {
+    flex: 1,
+    padding: SPACING.xl,
+    alignItems: 'center',
   },
-  guestMessage: {
-    fontSize: 16,
-    color: '#555',
-    marginBottom: 16,
+  mainTitle: {
+    fontSize: FONT_SIZES.xxxl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    marginBottom: SPACING.xxl,
+  },
+  benefitsContainer: {
+    width: '100%',
+    marginBottom: SPACING.xxl,
+  },
+  benefitItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+  },
+  benefitText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textPrimary,
+    marginLeft: SPACING.md,
+    flex: 1,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: SPACING.lg,
+  },
+  priceAmount: {
+    fontSize: FONT_SIZES.xxxl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.primary,
+  },
+  pricePeriod: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.sm,
+  },
+  trustText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
-  signupButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    marginBottom: 12,
+  footer: {
+    padding: SPACING.xl,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+  },
+  ctaButton: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: SPACING.lg,
+    paddingHorizontal: SPACING.xl,
+    borderRadius: BORDER_RADIUS.lg,
     alignItems: 'center',
   },
-  signupButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 16,
+  ctaButtonDisabled: {
+    backgroundColor: COLORS.gray300,
   },
-  xButton: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    zIndex: 10,
-    backgroundColor: 'transparent',
-    padding: 8,
+  ctaButtonText: {
+    color: COLORS.white,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold as any,
   },
-  xButtonText: {
-    fontSize: 26,
-    color: '#888',
-    fontWeight: 'bold',
+  paymentContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-  cancelButton: {
-    marginTop: 16,
-    borderWidth: 1,
-    borderColor: '#ef4444',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  paymentHeader: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'transparent',
+    padding: SPACING.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  cancelButtonText: {
-    color: '#ef4444',
-    fontWeight: 'bold',
-    fontSize: 16,
+  paymentTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+    color: COLORS.textPrimary,
   },
 });
 

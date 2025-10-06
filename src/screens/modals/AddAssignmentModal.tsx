@@ -1,17 +1,23 @@
 // FILE: src/screens/modals/AddAssignmentModal.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
+import { subHours, subMinutes, startOfWeek, isAfter } from 'date-fns';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useData } from '../../contexts/DataContext';
+import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { Course } from '../../types';
-import { Input, Button } from '../../components';
+import { Input, Button, ReminderSelector } from '../../components';
+import { notificationService } from '../../services/notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddAssignmentModal = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
+  const dataContext = useData();
   const isGuest = !session;
   
   const taskToEdit = route.params?.taskToEdit;
@@ -27,6 +33,8 @@ const AddAssignmentModal = () => {
   const [dueDate, setDueDate] = useState(taskToEdit ? new Date(taskToEdit.due_date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedReminders, setSelectedReminders] = useState<number[]>([120]); // Default to 2 hours
+  const maxReminders = 2; // Assume free user
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -43,6 +51,8 @@ const AddAssignmentModal = () => {
     setSelectedCourseName(course.course_name);
     setShowCourseDropdown(false);
   };
+
+  const WEEKLY_TASK_LIMIT = 5;
 
   const handleSave = async () => {
     if (isGuest) {
@@ -62,9 +72,59 @@ const AddAssignmentModal = () => {
       return;
     }
 
+    // --- NEW SUBSCRIPTION CHECK LOGIC ---
+    const isOddity = user?.subscription_tier === 'oddity';
+    const tasksThisWeek = countTasksInCurrentWeek({
+      lectures: (dataContext as any).lectures,
+      assignments: (dataContext as any).assignments,
+      studySessions: (dataContext as any).studySessions,
+    });
+
+    if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
+      Alert.alert(
+        'Weekly Limit Reached',
+        `You've reached the ${WEEKLY_TASK_LIMIT}-task limit for this week on the free plan. Become an Oddity for unlimited tasks.`,
+        [
+          { text: 'Cancel' },
+          { text: 'Become an Oddity', onPress: () => navigation.navigate('AddOddityModal' as never) }
+        ]
+      );
+      return; // Stop the function here
+    }
+    // --- END OF NEW LOGIC ---
+
     setIsLoading(true);
     try {
       if (isEditMode) {
+        // --- NEW SUBSCRIPTION CHECK LOGIC FOR EDITING ---
+        const isOddity = user?.subscription_tier === 'oddity';
+        // We only count tasks if the task being edited was NOT created this week.
+        // This prevents a user from being locked out of editing a task they just created.
+        const taskBeingEdited = route.params?.taskToEdit;
+        const now = new Date();
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+        const isEditingTodaysTask = taskBeingEdited && isAfter(new Date(taskBeingEdited.created_at), weekStart);
+
+        if (!isEditingTodaysTask) { // Only check the limit if editing an older task
+            const tasksThisWeek = countTasksInCurrentWeek({
+              lectures: (dataContext as any).lectures,
+              assignments: (dataContext as any).assignments,
+              studySessions: (dataContext as any).studySessions,
+            });
+            if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
+              Alert.alert(
+                'Weekly Limit Reached',
+                `You've reached the ${WEEKLY_TASK_LIMIT}-task limit for this week on the free plan. To edit older tasks, please upgrade.`,
+                [
+                  { text: 'Cancel' },
+                  { text: 'Become an Oddity', onPress: () => navigation.navigate('AddOddityModal' as never) }
+                ]
+              );
+              return; // Stop the function here
+            }
+        }
+        // --- END OF NEW LOGIC ---
+
         // --- EDIT LOGIC ---
         const { error } = await supabase.functions.invoke('update-assignment', {
           body: {
@@ -84,7 +144,7 @@ const AddAssignmentModal = () => {
         Alert.alert('Success', 'Assignment updated successfully!');
       } else {
         // --- CREATE LOGIC ---
-        const { error } = await supabase.functions.invoke('create-assignment', {
+        const { data, error } = await supabase.functions.invoke('create-assignment', {
           body: {
             course_id: selectedCourse,
             title: title.trim(),
@@ -96,6 +156,40 @@ const AddAssignmentModal = () => {
         });
 
         if (error) throw error;
+
+        // Schedule reminders via backend system
+        if (selectedReminders.length > 0) {
+          const remindersToInsert = selectedReminders.map(reminderMinutes => {
+            const reminderTime = subMinutes(new Date(data.due_date), reminderMinutes);
+            return {
+              user_id: session.user.id,
+              push_token: 'placeholder',
+              title: 'Assignment Due Soon',
+              body: `Your assignment "${data.title}" is due soon.`,
+              send_at: reminderTime.toISOString(),
+              data: {
+                itemId: data.id,
+                taskType: 'assignment'
+              }
+            };
+          });
+
+          const { error: reminderError } = await supabase
+            .from('reminders')
+            .insert(remindersToInsert);
+
+          if (reminderError) {
+            console.error('Error saving reminders:', reminderError);
+          }
+        }
+
+        // Check if this is the user's first task ever created.
+        // We'll simulate this check for now. A real implementation would get this count from a context.
+        const isFirstTask = true; // Placeholder for: totalTaskCount === 0
+        if (isFirstTask) {
+          await notificationService.registerForPushNotifications(session.user.id);
+        }
+
         Alert.alert('Success', 'Assignment created successfully!');
       }
 
@@ -108,139 +202,167 @@ const AddAssignmentModal = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{isEditMode ? "Edit Assignment" : "Add Assignment"}</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.wrapper}
+    >
+      <TouchableWithoutFeedback onPress={() => navigation.goBack()}>
+        {/* Use BlurView for the backdrop */}
+        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+      </TouchableWithoutFeedback>
+      
+      <View style={styles.sheet}>
+        <Text style={styles.title}>{isEditMode ? "Edit Assignment" : "Add Assignment"}</Text>
 
-      <Text style={styles.label}>Course *</Text>
-      <TouchableOpacity
-        style={styles.courseInput}
-        onPress={() => setShowCourseDropdown(true)}
-      >
-        <Text style={[styles.courseInputText, !selectedCourseName && styles.placeholderText]}>
-          {selectedCourseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')}
-        </Text>
-        <Text style={styles.dropdownArrow}>▼</Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={showCourseDropdown}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowCourseDropdown(false)}
-      >
+        <Text style={styles.label}>Course *</Text>
         <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCourseDropdown(false)}
+          style={styles.courseInput}
+          onPress={() => setShowCourseDropdown(true)}
         >
-          <View style={styles.dropdownContainer}>
-            {courses.length === 0 ? (
-              <View style={styles.noCoursesContainer}>
-                <Text style={styles.noCoursesText}>You have no courses.</Text>
-                <TouchableOpacity
-                  style={styles.addCourseButton}
-                  onPress={() => {
-                    setShowCourseDropdown(false);
-                    navigation.navigate('AddCourseModal');
-                  }}
-                >
-                  <Text style={styles.addCourseButtonText}>Add a Course</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              courses.map(course => (
-                <TouchableOpacity
-                  key={course.id}
-                  style={styles.dropdownOption}
-                  onPress={() => handleCourseSelect(course)}
-                >
-                  <Text style={styles.dropdownOptionText}>{course.course_name}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
+          <Text style={[styles.courseInputText, !selectedCourseName && styles.placeholderText]}>
+            {selectedCourseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')}
+          </Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
         </TouchableOpacity>
-      </Modal>
 
-      <Text style={styles.label}>Assignment Title</Text>
-      <Input
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Enter assignment title"
-      />
-
-      <Text style={styles.label}>Description</Text>
-      <Input
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Enter assignment description (optional)"
-        multiline
-        numberOfLines={3}
-      />
-
-      <Text style={styles.label}>Submission Method</Text>
-      <View style={styles.methodContainer}>
-        <TouchableOpacity
-          style={[
-            styles.methodOption,
-            submissionMethod === 'Online' && styles.selectedMethod
-          ]}
-          onPress={() => setSubmissionMethod('Online')}
+        <Modal
+          visible={showCourseDropdown}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCourseDropdown(false)}
         >
-          <Text>Online</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[
-            styles.methodOption,
-            submissionMethod === 'In-person' && styles.selectedMethod
-          ]}
-          onPress={() => setSubmissionMethod('In-person')}
-        >
-          <Text>In-person</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowCourseDropdown(false)}
+          >
+            <View style={styles.dropdownContainer}>
+              {courses.length === 0 ? (
+                <View style={styles.noCoursesContainer}>
+                  <Text style={styles.noCoursesText}>You have no courses.</Text>
+                  <TouchableOpacity
+                    style={styles.addCourseButton}
+                    onPress={() => {
+                      setShowCourseDropdown(false);
+                      navigation.navigate('AddCourseModal');
+                    }}
+                  >
+                    <Text style={styles.addCourseButtonText}>Add a Course</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                courses.map(course => (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={styles.dropdownOption}
+                    onPress={() => handleCourseSelect(course)}
+                  >
+                    <Text style={styles.dropdownOptionText}>{course.course_name}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
-      {submissionMethod === 'Online' && (
-        <>
-          <Text style={styles.label}>Submission Link</Text>
-          <Input
-            value={submissionLink}
-            onChangeText={setSubmissionLink}
-            placeholder="Enter submission URL"
-          />
-        </>
-      )}
-
-      <Text style={styles.label}>Due Date & Time</Text>
-      <TouchableOpacity
-        onPress={() => setShowDatePicker(true)}
-        style={styles.dateButton}
-      >
-        <Text>{dueDate.toLocaleString()}</Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={dueDate}
-          mode="datetime"
-          display="default"
-          onChange={(event, d) => {
-            setShowDatePicker(false);
-            if(d) setDueDate(d);
-          }}
+        <Text style={styles.label}>Assignment Title</Text>
+        <Input
+          value={title}
+          onChangeText={setTitle}
+          placeholder="Enter assignment title"
         />
-      )}
 
-      <Button
-        title={isLoading ? <ActivityIndicator color="white" /> : (isEditMode ? "Save Changes" : "Save Assignment")}
-        onPress={handleSave}
-        disabled={isLoading}
-      />
-    </View>
+        <Text style={styles.label}>Description</Text>
+        <Input
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Enter assignment description (optional)"
+          multiline
+          numberOfLines={3}
+        />
+
+        <Text style={styles.label}>Submission Method</Text>
+        <View style={styles.methodContainer}>
+          <TouchableOpacity
+            style={[
+              styles.methodOption,
+              submissionMethod === 'Online' && styles.selectedMethod
+            ]}
+            onPress={() => setSubmissionMethod('Online')}
+          >
+            <Text>Online</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.methodOption,
+              submissionMethod === 'In-person' && styles.selectedMethod
+            ]}
+            onPress={() => setSubmissionMethod('In-person')}
+          >
+            <Text>In-person</Text>
+          </TouchableOpacity>
+        </View>
+
+        {submissionMethod === 'Online' && (
+          <>
+            <Text style={styles.label}>Submission Link</Text>
+            <Input
+              value={submissionLink}
+              onChangeText={setSubmissionLink}
+              placeholder="Enter submission URL"
+            />
+          </>
+        )}
+
+        <Text style={styles.label}>Due Date & Time</Text>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={styles.dateButton}
+        >
+          <Text>{dueDate.toLocaleString()}</Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={dueDate}
+            mode="datetime"
+            display="default"
+            onChange={(event, d) => {
+              setShowDatePicker(false);
+              if(d) setDueDate(d);
+            }}
+          />
+        )}
+
+        <ReminderSelector
+          selectedReminders={selectedReminders}
+          onSelectionChange={setSelectedReminders}
+          maxReminders={maxReminders}
+        />
+
+        <Button
+          title={isLoading ? <ActivityIndicator color="white" /> : (isEditMode ? "Save Changes" : "Save Assignment")}
+          onPress={handleSave}
+          disabled={isLoading}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: 'white',
+    height: '70%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingTop: 30,
+  },
   container: {
     flex: 1,
     padding: 20,

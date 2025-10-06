@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 
-const COURSE_LIMIT = 3;
+const COURSE_LIMIT = 2;
 
 serve(async (req) => {
   // This is needed if you're planning to invoke your function from a browser.

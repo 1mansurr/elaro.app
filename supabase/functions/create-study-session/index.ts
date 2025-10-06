@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
 // Helper function to get an authenticated Supabase client
 const getSupabaseClient = (req: Request): SupabaseClient => {
@@ -42,13 +43,26 @@ serve(async (req) => {
       );
     }
 
+    // Encryption key from environment
+    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
+    if (!ENCRYPTION_KEY) {
+      return new Response('Encryption key not configured.', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Encrypt sensitive fields
+    const encryptedTopic = await encrypt(topic, ENCRYPTION_KEY);
+    const encryptedDescription = notes ? await encrypt(notes, ENCRYPTION_KEY) : null;
+
     const { data: newSession, error: sessionError } = await supabaseClient
       .from('study_sessions')
       .insert({
         user_id: user.id,
         course_id,
-        topic,
-        notes,
+        topic: encryptedTopic,
+        notes: encryptedDescription,
         session_date,
         has_spaced_repetition,
       })

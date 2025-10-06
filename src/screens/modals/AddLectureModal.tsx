@@ -1,17 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { BlurView } from 'expo-blur';
+import { subMinutes } from 'date-fns';
+import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
-import { Input, Button } from '../../components';
+import { Input, Button, ReminderSelector } from '../../components';
+import { notificationService } from '../../services/notifications';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Assuming this is installed
 
 const AddLectureModal = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { session } = useAuth();
-  const { fetchInitialData } = useData();
+  const { session, user } = useAuth();
+  const dataContext = useData();
+  const { fetchInitialData } = dataContext;
   const isGuest = !session;
   
   const taskToEdit = route.params?.taskToEdit;
@@ -27,6 +32,8 @@ const AddLectureModal = () => {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedReminders, setSelectedReminders] = useState<number[]>([30]); // Default to 30 minutes
+  const maxReminders = 2; // This should come from a user context later
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -43,6 +50,8 @@ const AddLectureModal = () => {
     setSelectedCourseName(course.course_name);
     setShowCourseDropdown(false);
   };
+
+  const WEEKLY_TASK_LIMIT = 5;
 
   const handleSaveLecture = async () => {
     if (isGuest) {
@@ -61,6 +70,27 @@ const AddLectureModal = () => {
       Alert.alert('Error', 'Please select a course and enter a lecture name.');
       return;
     }
+
+    // --- NEW SUBSCRIPTION CHECK LOGIC ---
+    const isOddity = user?.subscription_tier === 'oddity';
+    const tasksThisWeek = countTasksInCurrentWeek({
+      lectures: (dataContext as any).lectures,
+      assignments: (dataContext as any).assignments,
+      studySessions: (dataContext as any).studySessions,
+    });
+
+    if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
+      Alert.alert(
+        'Weekly Limit Reached',
+        `You've reached the ${WEEKLY_TASK_LIMIT}-task limit for this week on the free plan. Become an Oddity for unlimited tasks.`,
+        [
+          { text: 'Cancel' },
+          { text: 'Become an Oddity', onPress: () => navigation.navigate('AddOddityModal' as never) }
+        ]
+      );
+      return; // Stop the function here
+    }
+    // --- END OF NEW LOGIC ---
 
     setIsLoading(true);
 
@@ -102,6 +132,40 @@ const AddLectureModal = () => {
           throw new Error(error.message);
         }
 
+        // Schedule reminders via backend system
+        if (selectedReminders.length > 0) {
+          const remindersToInsert = selectedReminders.map(reminderMinutes => {
+            const reminderTime = subMinutes(new Date(data.start_time), reminderMinutes);
+            return {
+              user_id: session.user.id,
+              push_token: 'placeholder', // The backend function will get the real token
+              title: 'Upcoming Lecture',
+              body: `Your lecture "${data.lecture_name}" is starting soon.`,
+              send_at: reminderTime.toISOString(),
+              data: {
+                itemId: data.id,
+                taskType: 'lecture'
+              }
+            };
+          });
+
+          const { error: reminderError } = await supabase
+            .from('reminders')
+            .insert(remindersToInsert);
+
+          if (reminderError) {
+            console.error('Error saving reminders:', reminderError);
+            // Optional: Show an alert to the user
+          }
+        }
+
+        // Check if this is the user's first task ever created.
+        // We'll simulate this check for now. A real implementation would get this count from a context.
+        const isFirstTask = true; // Placeholder for: totalTaskCount === 0
+        if (isFirstTask) {
+          await notificationService.registerForPushNotifications(session.user.id);
+        }
+
         Alert.alert('Success', 'Lecture created successfully!');
       }
 
@@ -116,134 +180,162 @@ const AddLectureModal = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>{isEditMode ? 'Edit Lecture' : 'Add New Lecture'}</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.wrapper}
+    >
+      <TouchableWithoutFeedback onPress={() => navigation.goBack()}>
+        {/* Use BlurView for the backdrop */}
+        <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
+      </TouchableWithoutFeedback>
+      
+      <View style={styles.sheet}>
+        <Text style={styles.title}>{isEditMode ? 'Edit Lecture' : 'Add New Lecture'}</Text>
 
-      <Text style={styles.label}>Course *</Text>
-      <TouchableOpacity
-        style={styles.courseInput}
-        onPress={() => setShowCourseDropdown(true)}
-      >
-        <Text style={[styles.courseInputText, !selectedCourseName && styles.placeholderText]}>
-          {selectedCourseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')}
-        </Text>
-        <Text style={styles.dropdownArrow}>▼</Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={showCourseDropdown}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowCourseDropdown(false)}
-      >
+        <Text style={styles.label}>Course *</Text>
         <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCourseDropdown(false)}
+          style={styles.courseInput}
+          onPress={() => setShowCourseDropdown(true)}
         >
-          <View style={styles.dropdownContainer}>
-            {courses.length === 0 ? (
-              <View style={styles.noCoursesContainer}>
-                <Text style={styles.noCoursesText}>You have no courses.</Text>
-                <TouchableOpacity
-                  style={styles.addCourseButton}
-                  onPress={() => {
-                    setShowCourseDropdown(false);
-                    navigation.navigate('AddCourseModal');
-                  }}
-                >
-                  <Text style={styles.addCourseButtonText}>Add a Course</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              courses.map(course => (
-                <TouchableOpacity
-                  key={course.id}
-                  style={styles.dropdownOption}
-                  onPress={() => handleCourseSelect(course)}
-                >
-                  <Text style={styles.dropdownOptionText}>{course.course_name}</Text>
-                </TouchableOpacity>
-              ))
-            )}
-          </View>
+          <Text style={[styles.courseInputText, !selectedCourseName && styles.placeholderText]}>
+            {selectedCourseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')}
+          </Text>
+          <Text style={styles.dropdownArrow}>▼</Text>
         </TouchableOpacity>
-      </Modal>
 
-      <Text style={styles.label}>Lecture Name *</Text>
-      <Input
-        value={lectureName}
-        onChangeText={setLectureName}
-        placeholder="Enter lecture name"
-      />
+        <Modal
+          visible={showCourseDropdown}
+          transparent={true}
+          animationType="fade"
+          onRequestClose={() => setShowCourseDropdown(false)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setShowCourseDropdown(false)}
+          >
+            <View style={styles.dropdownContainer}>
+              {courses.length === 0 ? (
+                <View style={styles.noCoursesContainer}>
+                  <Text style={styles.noCoursesText}>You have no courses.</Text>
+                  <TouchableOpacity
+                    style={styles.addCourseButton}
+                    onPress={() => {
+                      setShowCourseDropdown(false);
+                      navigation.navigate('AddCourseModal');
+                    }}
+                  >
+                    <Text style={styles.addCourseButtonText}>Add a Course</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                courses.map(course => (
+                  <TouchableOpacity
+                    key={course.id}
+                    style={styles.dropdownOption}
+                    onPress={() => handleCourseSelect(course)}
+                  >
+                    <Text style={styles.dropdownOptionText}>{course.course_name}</Text>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </TouchableOpacity>
+        </Modal>
 
-      <Text style={styles.label}>Description</Text>
-      <Input
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Enter lecture description (optional)"
-        multiline
-        numberOfLines={3}
-      />
-
-      <Text style={styles.label}>Start Time</Text>
-      <TouchableOpacity
-        onPress={() => setShowDatePicker(true)}
-        style={styles.dateButton}
-      >
-        <Text>{date.toLocaleString()}</Text>
-      </TouchableOpacity>
-
-      {showDatePicker && (
-        <DateTimePicker
-          value={date}
-          mode="datetime"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowDatePicker(false);
-            if (selectedDate) {
-              setDate(selectedDate);
-            }
-          }}
+        <Text style={styles.label}>Lecture Name *</Text>
+        <Input
+          value={lectureName}
+          onChangeText={setLectureName}
+          placeholder="Enter lecture name"
         />
-      )}
 
-      <Text style={styles.label}>End Time</Text>
-      <TouchableOpacity
-        onPress={() => setShowEndTimePicker(true)}
-        style={styles.dateButton}
-      >
-        <Text>{endTime.toLocaleString()}</Text>
-      </TouchableOpacity>
-
-      {showEndTimePicker && (
-        <DateTimePicker
-          value={endTime}
-          mode="datetime"
-          display="default"
-          onChange={(event, selectedDate) => {
-            setShowEndTimePicker(false);
-            if (selectedDate) {
-              setEndTime(selectedDate);
-            }
-          }}
+        <Text style={styles.label}>Description</Text>
+        <Input
+          value={description}
+          onChangeText={setDescription}
+          placeholder="Enter lecture description (optional)"
+          multiline
+          numberOfLines={3}
         />
-      )}
 
-      {isLoading ? (
-        <ActivityIndicator size="large" color="#007AFF" />
-      ) : (
-        <Button 
-          title={isEditMode ? "Save Changes" : "Save Lecture"} 
-          onPress={handleSaveLecture} 
+        <Text style={styles.label}>Start Time</Text>
+        <TouchableOpacity
+          onPress={() => setShowDatePicker(true)}
+          style={styles.dateButton}
+        >
+          <Text>{date.toLocaleString()}</Text>
+        </TouchableOpacity>
+
+        {showDatePicker && (
+          <DateTimePicker
+            value={date}
+            mode="datetime"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowDatePicker(false);
+              if (selectedDate) {
+                setDate(selectedDate);
+              }
+            }}
+          />
+        )}
+
+        <Text style={styles.label}>End Time</Text>
+        <TouchableOpacity
+          onPress={() => setShowEndTimePicker(true)}
+          style={styles.dateButton}
+        >
+          <Text>{endTime.toLocaleString()}</Text>
+        </TouchableOpacity>
+
+        {showEndTimePicker && (
+          <DateTimePicker
+            value={endTime}
+            mode="datetime"
+            display="default"
+            onChange={(event, selectedDate) => {
+              setShowEndTimePicker(false);
+              if (selectedDate) {
+                setEndTime(selectedDate);
+              }
+            }}
+          />
+        )}
+
+        <ReminderSelector
+          selectedReminders={selectedReminders}
+          onSelectionChange={setSelectedReminders}
+          maxReminders={maxReminders}
         />
-      )}
-    </View>
+
+        {isLoading ? (
+          <ActivityIndicator size="large" color="#007AFF" />
+        ) : (
+          <Button 
+            title={isEditMode ? "Save Changes" : "Save Lecture"} 
+            onPress={handleSaveLecture} 
+          />
+        )}
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 // Add extensive styling for a complete component
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    backgroundColor: 'white',
+    height: '70%',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingTop: 30,
+  },
   container: {
     flex: 1,
     padding: 20

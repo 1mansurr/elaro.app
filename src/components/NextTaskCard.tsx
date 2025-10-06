@@ -1,6 +1,7 @@
 // FILE: src/components/NextTaskCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Task } from '../types';
@@ -10,9 +11,10 @@ interface Props {
   task: Task | null;
   isGuestMode?: boolean;
   onAddActivity?: () => void;
+  onViewDetails?: (task: Task) => void; // Add this prop
 }
 
-const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivity }) => {
+const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivity, onViewDetails }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const getTaskTime = (dateString: string) => {
@@ -38,6 +40,14 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
             <Text style={styles.courseName}>{task.courses.course_name}</Text>
             <Text style={styles.time}>{getTaskTime(task.date)}</Text>
           </View>
+          
+          {/* View Details Button */}
+          {onViewDetails && (
+            <TouchableOpacity style={styles.viewDetailsButton} onPress={() => onViewDetails(task)}>
+              <Text style={styles.viewDetailsText}>View Details</Text>
+              <Ionicons name="chevron-forward" size={16} color="#2C5EFF" />
+            </TouchableOpacity>
+          )}
         </>
       );
     }
@@ -65,11 +75,11 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={handlePress} disabled={!task || isGuestMode}>
+    <View style={styles.card}>
       <Text style={styles.header}>What's Next</Text>
       
       {renderContent()}
-    </TouchableOpacity>
+    </View>
   );
 };
 
@@ -130,6 +140,17 @@ const styles = StyleSheet.create({
   guestContainer: {
     alignItems: 'center',
     paddingVertical: 10,
+  },
+  viewDetailsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    alignSelf: 'flex-start',
+  },
+  viewDetailsText: {
+    color: '#2C5EFF',
+    fontWeight: '600',
+    marginRight: 4,
   },
 });
 

@@ -2,6 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
+import { decrypt } from '../_shared/encryption.ts';
 
 const getSupabaseClient = (req: Request ): SupabaseClient => {
   return createClient(
@@ -88,30 +89,57 @@ serve(async (req) => {
     if (studySessionsError) throw studySessionsError;
     if (assignmentsError) throw assignmentsError;
 
-    // --- Process, normalize, and group the results ---
+    // Encryption key from environment for decryption
+    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
+    if (!ENCRYPTION_KEY) {
+      return new Response('Encryption key not configured.', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // --- Process and normalize results (without setting conflicting name fields) ---
     const allTasks = [
       ...(lectures || []).map(t => ({
         ...t,
         type: 'lecture',
         date: t.lecture_date,
-        name: t.courses.course_name
       })),
       ...(studySessions || []).map(t => ({
         ...t,
         type: 'study_session',
         date: t.session_date,
-        name: t.topic
       })),
       ...(assignments || []).map(t => ({
         ...t,
         type: 'assignment',
         date: t.due_date,
-        name: t.title
       })),
     ];
 
+    // Decrypt sensitive fields and standardize to { name, description }
+    async function decryptTask(task: any) {
+      const nameField = task.lecture_name || task.title || task.topic || '';
+      const descField = task.description ?? task.notes ?? null;
+
+      const decryptedName = nameField ? await decrypt(nameField, ENCRYPTION_KEY) : nameField;
+      const decryptedDescription = descField ? await decrypt(descField, ENCRYPTION_KEY) : null;
+
+      return {
+        ...task,
+        name: decryptedName,
+        description: decryptedDescription,
+        lecture_name: undefined,
+        title: undefined,
+        topic: undefined,
+        notes: undefined,
+      };
+    }
+
+    const decryptedTasks = await Promise.all(allTasks.map(decryptTask));
+
     // Group tasks by date
-    const groupedByDay = allTasks.reduce((acc, task) => {
+    const groupedByDay = decryptedTasks.reduce((acc: Record<string, any[]>, task: any) => {
       const taskDate = new Date(task.date).toISOString().split('T')[0]; // Get YYYY-MM-DD
       if (!acc[taskDate]) {
         acc[taskDate] = [];

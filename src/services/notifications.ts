@@ -9,6 +9,23 @@ import { supabase } from './supabase';
 // Navigation reference for handling notification taps
 let navigationRef: any = null;
 
+// Service locator pattern for accessing NotificationContext
+let _setTaskToShow: (task: any) => void;
+
+export function setNotificationTaskHandler(handler: (task: any) => void) {
+  _setTaskToShow = handler;
+}
+
+// Helper function to get table name from task type
+function getTableName(taskType: string): string {
+  switch (taskType) {
+    case 'lecture': return 'lectures';
+    case 'assignment': return 'assignments';
+    case 'study_session': return 'study_sessions';
+    default: throw new Error(`Unknown task type: ${taskType}`);
+  }
+}
+
 /**
  * Save push token to Supabase user_devices table
  * @param userId string
@@ -195,24 +212,35 @@ export const notificationService = {
   },
 
   // Handle notification tap
-  handleNotificationTap(data: any) {
-    if (!navigationRef) {
-      console.warn('Navigation reference not set in notificationService.');
+  async handleNotificationTap(data: any) {
+    const { itemId, taskType } = data;
+
+    if (!itemId || !taskType) {
+      console.warn('Missing itemId or taskType in notification data');
       return;
     }
 
-    const { type, itemId } = data;
+    try {
+      // Fetch the full task data from Supabase
+      const { data: task, error } = await supabase
+        .from(getTableName(taskType))
+        .select('*')
+        .eq('id', itemId)
+        .single();
 
-    // Ensure type is one of the expected values before navigating
-    if (type === 'study_session' || type === 'lecture' || type === 'assignment') {
-      navigationRef.navigate('TaskDetailModal', {
-        taskId: itemId,
-        taskType: type,
-      });
-    } else {
-      // Fallback for other notification types
-      console.warn(`Unhandled notification type: ${type}. Navigating to Home.`);
-      navigationRef.navigate('Home');
+      if (error || !task) {
+        console.error('Failed to fetch task for notification:', error);
+        return;
+      }
+
+      // Set the task in the NotificationContext
+      if (_setTaskToShow) {
+        _setTaskToShow(task);
+      } else {
+        console.warn('Notification task handler not set. Make sure NotificationProvider is properly initialized.');
+      }
+    } catch (error) {
+      console.error('Error handling notification tap:', error);
     }
   },
 

@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
 const getSupabaseClient = (req: Request): SupabaseClient => {
   return createClient(
@@ -30,7 +31,7 @@ serve(async (req) => {
     const limitError = await checkTaskLimit(supabase, user.id);
     if (limitError) return limitError;
 
-    const { course_id, title, submission_method, submission_link, due_date } = await req.json();
+    const { course_id, title, description, submission_method, submission_link, due_date } = await req.json();
 
     if (!course_id || !title || !due_date) {
       return new Response(
@@ -42,12 +43,26 @@ serve(async (req) => {
       );
     }
 
+    // Encryption key from environment
+    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
+    if (!ENCRYPTION_KEY) {
+      return new Response('Encryption key not configured.', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    // Encrypt sensitive fields
+    const encryptedTitle = await encrypt(title, ENCRYPTION_KEY);
+    const encryptedDescription = description ? await encrypt(description, ENCRYPTION_KEY) : null;
+
     const { data, error } = await supabase
       .from('assignments')
       .insert({
         user_id: user.id,
         course_id,
-        title,
+        title: encryptedTitle,
+        description: encryptedDescription,
         submission_method,
         submission_link,
         due_date,

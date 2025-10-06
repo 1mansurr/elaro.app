@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import * as AppleAuthentication from 'expo-apple-authentication'; // <-- CORRECT IMPORT
 import Ionicons from '@expo/vector-icons/Ionicons';
 
 import { RootStackParamList } from '../../types';
@@ -13,24 +12,7 @@ type AuthChooserNavProp = StackNavigationProp<RootStackParamList, 'AuthChooser'>
 
 const AuthChooserScreen = () => {
   const navigation = useNavigation<AuthChooserNavProp>();
-  const { signInWithGoogle, signInWithApple, loading } = useAuth();
-  
-  const [isAppleAvailable, setIsAppleAvailable] = useState(false);
-
-  useEffect(() => {
-    const checkAppleAvailability = async () => {
-      try {
-        // Use the correct async function from expo-apple-authentication
-        const isAvailable = await AppleAuthentication.isAvailableAsync();
-        setIsAppleAvailable(isAvailable);
-      } catch (error) {
-        console.error("Error checking Apple availability:", error);
-        setIsAppleAvailable(false);
-      }
-    };
-    
-    checkAppleAvailability();
-  }, []);
+  const { loading } = useAuth();
 
   const handleEmailContinue = () => {
     navigation.navigate('Auth');
@@ -47,32 +29,6 @@ const AuthChooserScreen = () => {
         <Text style={styles.subtitle}>Create an account to save your progress and unlock all features.</Text>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={[styles.oauthButton, styles.googleButton]}
-            onPress={signInWithGoogle}
-            disabled={loading}
-          >
-            <Ionicons name="logo-google" size={22} color="white" style={styles.buttonIcon} />
-            <Text style={styles.googleButtonText}>Continue with Google</Text>
-          </TouchableOpacity>
-
-          {/* Use the correct availability check and render the correct button component */}
-          {isAppleAvailable && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={BORDER_RADIUS.md}
-              style={styles.oauthButton}
-              onPress={signInWithApple}
-            />
-          )}
-
-          <View style={styles.separator}>
-            <View style={styles.line} />
-            <Text style={styles.separatorText}>or</Text>
-            <View style={styles.line} />
-          </View>
-
           <TouchableOpacity
             style={[styles.oauthButton, styles.emailButton]}
             onPress={handleEmailContinue}

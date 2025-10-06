@@ -29,7 +29,6 @@ import AddLectureModal from '../screens/modals/AddLectureModal';
 import AddStudySessionModal from '../screens/modals/AddStudySessionModal';
 import AddAssignmentModal from '../screens/modals/AddAssignmentModal';
 import TaskDetailModal from '../screens/modals/TaskDetailModal';
-import SupportChatModal from '../screens/modals/SupportChatModal';
 import CourseDetailScreen from '../screens/CourseDetailScreen';
 import ComingSoonScreen from '../screens/ComingSoonScreen';
 import RecycleBinScreen from '../screens/RecycleBinScreen';
@@ -309,53 +308,26 @@ export const AppNavigator: React.FC = () => {
           <Stack.Screen 
             name="AddLectureModal" 
             component={AddLectureModal}
-            options={({ navigation }) => ({
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Add Lecture',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
+            options={{
+              presentation: 'transparentModal',
+              headerShown: false, // We hide the default header as our modal is now custom
+            }}
           />
           <Stack.Screen 
             name="AddStudySessionModal" 
             component={AddStudySessionModal}
-            options={({ navigation }) => ({
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Add Study Session',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
+            options={{
+              presentation: 'transparentModal',
+              headerShown: false, // We hide the default header as our modal is now custom
+            }}
           />
           <Stack.Screen 
             name="AddAssignmentModal" 
             component={AddAssignmentModal}
-            options={({ navigation }) => ({
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Add Assignment',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
+            options={{
+              presentation: 'transparentModal',
+              headerShown: false, // We hide the default header as our modal is now custom
+            }}
           />
           <Stack.Screen
             name="TaskDetailModal"
@@ -365,11 +337,6 @@ export const AppNavigator: React.FC = () => {
             }}
           />
           <Stack.Screen
-            name="SupportChat"
-            component={SupportChatModal}
-            options={{
-              headerTitle: 'Contact Support',
-            }}
           />
         </Stack.Group>
       </Stack.Navigator>

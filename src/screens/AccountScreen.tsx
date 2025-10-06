@@ -16,8 +16,14 @@ const AccountScreen = () => {
   const { user, session, signOut } = useAuth();
   const isGuest = !session;
 
+  const TAWK_TO_URL = 'https://tawk.to/chat/685fb69800ff9419109c4db9/default';
+
   const handleOpenUrl = async (url: string) => {
     await WebBrowser.openBrowserAsync(url);
+  };
+
+  const handleContactSupport = () => {
+    WebBrowser.openBrowserAsync(TAWK_TO_URL);
   };
 
   const ListItem = ({ icon, label, onPress, color = '#343a40' }: { icon: any; label: string; onPress: () => void; color?: string }) => (
@@ -55,7 +61,7 @@ const AccountScreen = () => {
         <ListItem
           icon="mail-outline"
           label="Contact Support"
-          onPress={() => navigation.navigate('SupportChat')}
+          onPress={handleContactSupport}
         />
       </Card>
 
@@ -110,7 +116,7 @@ const AccountScreen = () => {
         <ListItem
           icon="mail-outline"
           label="Contact Support"
-          onPress={() => navigation.navigate('SupportChat')}
+          onPress={handleContactSupport}
         />
       </Card>
 

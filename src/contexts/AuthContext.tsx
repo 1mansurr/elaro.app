@@ -1,7 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import * as Google from 'expo-auth-session/providers/google';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
 import { supabase, authService } from '../services/supabase';
 import { User } from '../types';
 import { useNavigation } from '@react-navigation/native';
@@ -21,8 +19,6 @@ interface AuthContextType {
   ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  signInWithGoogle: () => Promise<{ error: any }>;
-  signInWithApple: () => Promise<{ error: any }>;
 }
 
 type AuthNavProp = StackNavigationProp<RootStackParamList>;
@@ -46,11 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const navigation = useNavigation<AuthNavProp>();
   // const { fetchInitialData } = useData(); // Removed to fix circular dependency
 
-  // Set up Google Auth request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: "304047164378-e45ushdl2io4cr9c4a7bbv1m6qvc3h0s.apps.googleusercontent.com",
-    webClientId: "304047164378-ps1apl5jd7pd5phmkruaq3i8rlkfq50k.apps.googleusercontent.com",
-  });
+  // Social providers removed; email-only auth
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
@@ -197,51 +189,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const result = await promptAsync();
-
-      if (result.type === "success" && result.authentication?.idToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: result.authentication.idToken,
-        });
-
-        if (error) {
-          console.error("Supabase sign-in error:", error);
-          return { error };
-        } else {
-          return { error: null };
-        }
-      }
-      return { error: new Error('Google sign-in was cancelled or failed') };
-    } catch (err) {
-      console.error("Google sign-in error:", err);
-      return { error: err };
-    }
-  };
-
-  const signInWithApple = async () => {
-    try {
-      const appleAuthRequestResponse = await appleAuth.performRequest({
-        requestedOperation: appleAuth.Operation.LOGIN,
-        requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
-      });
-      const { identityToken } = appleAuthRequestResponse;
-      if (identityToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
-          token: identityToken,
-        });
-        if (error) throw error;
-        return { error: null };
-      }
-      return { error: new Error('No identity token received') };
-    } catch (error) {
-      console.error('Apple Sign-In Error:', error);
-      return { error };
-    }
-  };
+  // Removed Google and Apple sign-in methods
 
   const value = {
     session,
@@ -251,8 +199,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     signUp,
     signOut,
     refreshUser,
-    signInWithGoogle,
-    signInWithApple,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

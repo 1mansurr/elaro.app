@@ -1,6 +1,6 @@
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-const WEEKLY_TASK_LIMIT = 9; // Renamed for clarity
+const WEEKLY_TASK_LIMIT = 5; // Renamed for clarity
 
 export async function checkTaskLimit(supabaseClient: SupabaseClient, userId: string ) {
   // NOTE: We are NOT including 'courses' in this limit.

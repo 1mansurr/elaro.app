@@ -6,10 +6,12 @@ import { Input, Button } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 
+const FREE_COURSE_LIMIT = 2;
+
 const AddCourseModal = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { fetchInitialData } = useData();
+  const { fetchInitialData, courses } = useData();
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [aboutCourse, setAboutCourse] = useState('');
@@ -27,6 +29,23 @@ const AddCourseModal = () => {
       return;
     }
 
+    // --- NEW SUBSCRIPTION CHECK LOGIC ---
+    const isOddity = user.subscription_tier === 'oddity';
+    const courseCount = Array.isArray(courses) ? courses.length : 0;
+
+    if (!isOddity && courseCount >= FREE_COURSE_LIMIT) {
+      Alert.alert(
+        'Free Limit Reached',
+        `You've reached the ${FREE_COURSE_LIMIT}-course limit for the free plan. Become an Oddity to add unlimited courses.`,
+        [
+          { text: 'Cancel' },
+          { text: 'Become an Oddity', onPress: () => navigation.navigate('AddOddityModal' as never) }
+        ]
+      );
+      return; // Stop the function here
+    }
+    // --- END OF NEW LOGIC ---
+
     setIsLoading(true);
 
     try {
@@ -40,12 +59,7 @@ const AddCourseModal = () => {
 
       if (error) {
         console.error('Supabase function error:', error);
-        // Handle specific limit error
-        if (error.message && error.message.includes('Course limit')) {
-          Alert.alert('Limit Reached', 'You have reached your 3-course limit for the free plan.');
-        } else {
-          Alert.alert('Error', `Failed to create course: ${error.message || 'Unknown error'}`);
-        }
+        Alert.alert('Error', `Failed to create course: ${error.message || 'Unknown error'}`);
       } else {
         Alert.alert('Success', 'Course created successfully!');
         await fetchInitialData(); // This will refresh the app's data.

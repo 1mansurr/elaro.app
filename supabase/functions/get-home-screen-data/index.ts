@@ -2,6 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
+import { decrypt } from '../_shared/encryption.ts';
 
 const getSupabaseClient = (req: Request): SupabaseClient => {
   return createClient(
@@ -126,9 +127,37 @@ serve(async (req) => {
       reviews: 0,
     };
 
+    // Decrypt the upcoming task if present
+    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
+    if (!ENCRYPTION_KEY) {
+      return new Response('Encryption key not configured.', {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      });
+    }
+
+    let decryptedTask = null as any;
+    if (nextUpcomingTask) {
+      const nameField = nextUpcomingTask.lecture_name || nextUpcomingTask.title || nextUpcomingTask.topic || '';
+      const descField = nextUpcomingTask.description ?? nextUpcomingTask.notes ?? null;
+
+      const decryptedName = nameField ? await decrypt(nameField, ENCRYPTION_KEY) : nameField;
+      const decryptedDescription = descField ? await decrypt(descField, ENCRYPTION_KEY) : null;
+
+      decryptedTask = {
+        ...nextUpcomingTask,
+        name: decryptedName,
+        description: decryptedDescription,
+        lecture_name: undefined,
+        title: undefined,
+        topic: undefined,
+        notes: undefined,
+      };
+    }
+
     // --- Combine into a single response object ---
     const responseData = {
-      nextUpcomingTask,
+      nextUpcomingTask: decryptedTask,
       todayOverview,
       weeklyTaskCount,
     };

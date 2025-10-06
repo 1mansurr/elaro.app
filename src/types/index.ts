@@ -13,6 +13,9 @@ export interface User {
   university?: string;
   program?: string;
   onboarding_completed: boolean;
+  subscription_tier: 'free' | 'oddity' | null;
+  subscription_status?: 'trialing' | 'active' | 'past_due' | 'canceled' | null;
+  subscription_expires_at: string | null;
   created_at: string;
   updated_at: string;
   user_metadata?: {
