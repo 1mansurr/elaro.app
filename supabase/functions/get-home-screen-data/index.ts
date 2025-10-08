@@ -3,6 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { decrypt } from '../_shared/encryption.ts';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 const getSupabaseClient = (req: Request): SupabaseClient => {
   return createClient(
@@ -28,6 +29,23 @@ serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     console.log('User authenticated:', user?.id);
     if (!user) throw new Error('Unauthorized');
+
+    // Apply rate limiting check
+    try {
+      await checkRateLimit(supabase, user.id, 'get-home-screen-data');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 429,
+          headers: corsHeaders,
+        });
+      }
+      console.error('An unexpected error occurred during rate limit check:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
 
     const now = new Date().toISOString();
     const todayStart = new Date();

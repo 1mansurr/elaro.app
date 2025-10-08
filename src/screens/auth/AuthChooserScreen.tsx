@@ -8,14 +8,18 @@ import { RootStackParamList } from '../../types';
 import { useAuth } from '../../contexts/AuthContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS } from '../../constants/theme';
 
-type AuthChooserNavProp = StackNavigationProp<RootStackParamList, 'AuthChooser'>;
+type AuthChooserNavProp = StackNavigationProp<RootStackParamList>;
 
 const AuthChooserScreen = () => {
   const navigation = useNavigation<AuthChooserNavProp>();
   const { loading } = useAuth();
 
   const handleEmailContinue = () => {
-    navigation.navigate('Auth');
+    navigation.navigate('Auth', { 
+      onClose: () => navigation.goBack(),
+      onAuthSuccess: undefined,
+      mode: 'signin'
+    });
   };
 
   return (

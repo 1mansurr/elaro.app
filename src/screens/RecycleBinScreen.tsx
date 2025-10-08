@@ -25,7 +25,9 @@ const RecycleBinScreen = () => {
     setIsLoading(false);
   }, []);
 
-  useFocusEffect(fetchDeletedItems);
+  useFocusEffect(() => {
+    fetchDeletedItems();
+  });
 
   const handleRestore = async (courseId: string) => {
     setActionLoading(courseId);

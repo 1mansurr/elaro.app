@@ -15,7 +15,8 @@ interface AuthContextType {
   signUp: (
     email: string,
     password: string,
-    name?: string,
+    firstName: string,
+    lastName?: string,
   ) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -154,11 +155,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const signUp = async (email: string, password: string, name?: string) => {
+  const signUp = async (email: string, password: string, firstName: string, lastName?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName || '',
+          },
+        },
       });
 
       if (error) {

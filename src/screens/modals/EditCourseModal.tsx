@@ -102,11 +102,18 @@ const EditCourseModal = () => {
         numberOfLines={4}
       />
 
-      <Button
-        title={isSaving ? <ActivityIndicator color="white" /> : "Save Changes"}
-        onPress={handleSave}
-        disabled={isSaving}
-      />
+      {isSaving ? (
+        <View style={styles.loadingButton}>
+          <ActivityIndicator color="white" />
+          <Text style={styles.loadingButtonText}>Saving...</Text>
+        </View>
+      ) : (
+        <Button
+          title="Save Changes"
+          onPress={handleSave}
+          disabled={isSaving}
+        />
+      )}
     </View>
   );
 };
@@ -120,6 +127,21 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  loadingButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingButtonText: {
+    color: 'white',
+    marginLeft: 8,
+    fontSize: 16,
+    fontWeight: '500',
   },
   title: {
     fontSize: 24,

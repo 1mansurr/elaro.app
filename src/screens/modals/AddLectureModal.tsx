@@ -1,34 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../types';
 import { BlurView } from 'expo-blur';
 import { subMinutes } from 'date-fns';
 import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
-import { useData } from '../../contexts/DataContext';
+import { useLectures, useAssignments, useStudySessions } from '../../hooks/useDataQueries'; // NEW
+import { useQueryClient } from '@tanstack/react-query'; // NEW
+import { Course } from '../../types';
 import { Input, Button, ReminderSelector } from '../../components';
 import { notificationService } from '../../services/notifications';
 import DateTimePicker from '@react-native-community/datetimepicker'; // Assuming this is installed
 
+type AddLectureModalRouteProp = RouteProp<RootStackParamList, 'AddLectureModal'>;
+type AddLectureModalNavigationProp = StackNavigationProp<RootStackParamList>;
+
 const AddLectureModal = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<AddLectureModalNavigationProp>();
+  const route = useRoute<AddLectureModalRouteProp>();
   const { session, user } = useAuth();
-  const dataContext = useData();
-  const { fetchInitialData } = dataContext;
+  const queryClient = useQueryClient(); // NEW
+
+  // NEW: Fetch all task types for the weekly limit check.
+  const { data: lectures } = useLectures();
+  const { data: assignments } = useAssignments();
+  const { data: studySessions } = useStudySessions();
+
   const isGuest = !session;
   
   const taskToEdit = route.params?.taskToEdit;
   const isEditMode = !!taskToEdit;
-  const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(taskToEdit?.course_id || null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState((taskToEdit as any)?.course_id || null);
   const [selectedCourseName, setSelectedCourseName] = useState(taskToEdit?.courses?.course_name || '');
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [lectureName, setLectureName] = useState(taskToEdit?.name || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
-  const [date, setDate] = useState(taskToEdit ? new Date(taskToEdit.start_time) : new Date());
-  const [endTime, setEndTime] = useState(taskToEdit ? new Date(taskToEdit.end_time) : new Date());
+  const [date, setDate] = useState(taskToEdit ? new Date(taskToEdit.start_time || '') : new Date());
+  const [endTime, setEndTime] = useState(taskToEdit ? new Date(taskToEdit.end_time || '') : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -40,12 +52,17 @@ const AddLectureModal = () => {
       if (isGuest) return; // Don't fetch for guests
       const { data, error } = await supabase.from('courses').select('id, course_name');
       if (error) Alert.alert('Error', 'Could not fetch your courses.');
-      else setCourses(data);
+      else setCourses((data || []).map(course => ({
+        ...course,
+        user_id: user?.id || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })) as Course[]);
     };
     fetchCourses();
   }, [isGuest]);
 
-  const handleCourseSelect = (course) => {
+  const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course.id);
     setSelectedCourseName(course.course_name);
     setShowCourseDropdown(false);
@@ -71,12 +88,13 @@ const AddLectureModal = () => {
       return;
     }
 
-    // --- NEW SUBSCRIPTION CHECK LOGIC ---
+    // --- SUBSCRIPTION CHECK LOGIC (now uses data from React Query) ---
     const isOddity = user?.subscription_tier === 'oddity';
+    // Pass the data from our hooks to the counter.
     const tasksThisWeek = countTasksInCurrentWeek({
-      lectures: (dataContext as any).lectures,
-      assignments: (dataContext as any).assignments,
-      studySessions: (dataContext as any).studySessions,
+      lectures: lectures || [],
+      assignments: assignments || [],
+      studySessions: studySessions || [],
     });
 
     if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
@@ -169,7 +187,10 @@ const AddLectureModal = () => {
         Alert.alert('Success', 'Lecture created successfully!');
       }
 
-      await fetchInitialData(); // This will refresh the app's data.
+      // NEW: Invalidate all relevant queries.
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] }); // Invalidate all to keep weekly count fresh
+      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
       navigation.goBack();
     } catch (error) {
       console.error(`Failed to ${isEditMode ? 'update' : 'create'} lecture:`, error);

@@ -60,7 +60,7 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
           </Text>
           <Button
             title="Add Your First Activity"
-            onPress={onAddActivity}
+            onPress={onAddActivity || (() => {})}
             style={{ marginTop: 16 }}
           />
         </View>

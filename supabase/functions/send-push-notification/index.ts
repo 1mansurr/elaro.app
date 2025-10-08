@@ -4,6 +4,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "@supabase/supabase-js";
 import Expo from "expo-server-sdk";
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 const expo = new Expo( );
 
@@ -66,6 +67,28 @@ serve(async (req) => {
   }
 
   const { userId, title, body, data } = await req.json();
+
+  // Apply rate limiting check for the user
+  const supabaseClient = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+  
+  try {
+    await checkRateLimit(supabaseClient, userId, 'send-push-notification');
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 429,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    console.error('An unexpected error occurred during rate limit check:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   if (!userId || !title || !body) {
     return new Response("Missing required parameters: userId, title, body", { status: 400 });

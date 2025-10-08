@@ -99,22 +99,25 @@ export const authService = {
     const userProfile: User = {
       id: (data as any).id,
       email: (data as any).email,
-      // legacy field retained if present
-      // @ts-ignore - backend may not return this anymore
-      is_subscribed_to_oddity: (data as any).is_subscribed_to_oddity,
-      // optional fields retained
-      // @ts-ignore - may exist in row
-      timezone: (data as any).timezone,
+      name: (data as any).name,
+      first_name: (data as any).first_name,
+      last_name: (data as any).last_name,
+      university: (data as any).university,
+      program: (data as any).program,
+      onboarding_completed: (data as any).onboarding_completed ?? false,
       subscription_tier: subscriptionData?.subscription_tier ?? null,
-      // @ts-ignore - status added to type as optional
       subscription_status: subscriptionData?.subscription_status ?? null,
       subscription_expires_at: subscriptionData?.subscription_expires_at ?? null,
-      // timestamps if present
-      // @ts-ignore
       created_at: (data as any).created_at,
-      // @ts-ignore
       updated_at: (data as any).updated_at,
-    } as User;
+      user_metadata: {
+        first_name: (data as any).first_name,
+        last_name: (data as any).last_name,
+        name: (data as any).name,
+        university: (data as any).university,
+        program: (data as any).program,
+      },
+    };
 
     return userProfile;
   },

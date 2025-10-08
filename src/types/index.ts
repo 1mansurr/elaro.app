@@ -46,18 +46,19 @@ export type RootStackParamList = {
   Auth: { onClose: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
   Main: undefined;
   Welcome: { firstName?: string; lastName?: string; } | undefined;
-  OnboardingForm: { newCourse?: { course_name: string; course_code: string; about_course: string; }; firstName?: string; lastName?: string; } | undefined;
-  AddCourseOnboardingModal: undefined;
+  OnboardingFlow: undefined;
   Courses: undefined;
   CourseDetail: { courseId: string };
   Calendar: undefined;
   ComingSoon: undefined;
   RecycleBin: undefined;
+  Profile: undefined;
+  AddCourseFlow: undefined;
   AddCourseModal: undefined;
   EditCourseModal: { courseId: string };
-  AddLectureModal: undefined;
-  AddStudySessionModal: undefined;
-  AddAssignmentModal: undefined;
+  AddLectureModal: { taskToEdit?: Task } | undefined;
+  AddStudySessionModal: { taskToEdit?: Task } | undefined;
+  AddAssignmentModal: { taskToEdit?: Task } | undefined;
   TaskDetailModal: {
     taskId: string;
     taskType: 'study_session' | 'lecture' | 'assignment';
@@ -78,9 +79,46 @@ export interface Course {
   id: string;
   course_name: string;
   course_code?: string;
+  about_course?: string;
   user_id: string;
   created_at: string;
   updated_at: string;
+  deleted_at?: string;
+}
+
+export interface Assignment {
+  id: string;
+  user_id: string;
+  course_id: string;
+  title: string;
+  description?: string;
+  submission_method?: string;
+  submission_link?: string;
+  due_date: string;
+  created_at: string;
+}
+
+export interface Lecture {
+  id: string;
+  user_id: string;
+  course_id: string;
+  lecture_date: string;
+  is_recurring: boolean;
+  recurring_pattern?: string;
+  lecture_name?: string;
+  description?: string;
+  created_at: string;
+}
+
+export interface StudySession {
+  id: string;
+  user_id: string;
+  course_id: string;
+  topic: string;
+  description?: string;
+  session_date: string;
+  has_spaced_repetition: boolean;
+  created_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -99,6 +137,31 @@ export type Task = {
   courses: { course_name: string };
   // Add other potential shared fields here
 };
+
+// ─────────────────────────────────────────────────────────────
+// 🏠 Home Screen Data Types
+// ─────────────────────────────────────────────────────────────
+
+export interface OverviewData {
+  lectures: number;
+  study_sessions: number;
+  assignments: number;
+  reviews: number;
+}
+
+export interface HomeScreenData {
+  nextUpcomingTask: Task | null;
+  todayOverview: OverviewData | null;
+  weeklyTaskCount: number;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📅 Calendar Data Types
+// ─────────────────────────────────────────────────────────────
+
+export interface CalendarData {
+  [date: string]: Task[];
+}
 
 // ─────────────────────────────────────────────────────────────
 // ❗ Error Types

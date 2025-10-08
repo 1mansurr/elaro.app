@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { initSentry, captureException } from '../_shared/sentry.ts';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 serve(async req => {
   // This is needed for browser-based invocations.
@@ -31,6 +32,23 @@ serve(async req => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 401,
+      });
+    }
+
+    // Apply rate limiting check
+    try {
+      await checkRateLimit(supabaseClient, user.id, 'get-streak-info');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 429,
+          headers: corsHeaders,
+        });
+      }
+      console.error('An unexpected error occurred during rate limit check:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: corsHeaders,
       });
     }
 

@@ -18,7 +18,7 @@ const AddCourseOnboardingModal = () => {
     }
 
     // Pass the new course data back to the OnboardingFormScreen
-    navigation.navigate('OnboardingForm', {
+    (navigation as any).navigate('OnboardingForm', {
       newCourse: {
         course_name: courseName.trim(),
         course_code: courseCode.trim(),

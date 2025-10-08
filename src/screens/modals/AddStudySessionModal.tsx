@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, ActivityIndicator, TouchableOpacity, Switch, Modal, KeyboardAvoidingView, Platform, TouchableWithoutFeedback } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../types';
 import { BlurView } from 'expo-blur';
 import { subMinutes, startOfWeek, isAfter } from 'date-fns';
-import { useData } from '../../contexts/DataContext';
+import { useLectures, useAssignments, useStudySessions } from '../../hooks/useDataQueries'; // NEW
+import { useQueryClient } from '@tanstack/react-query'; // NEW
+import { Course } from '../../types';
 import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { supabase } from '../../services/supabase';
 import { useAuth } from '../../contexts/AuthContext';
@@ -11,24 +15,33 @@ import { Input, Button, ReminderSelector } from '../../components';
 import { notificationService } from '../../services/notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
+type AddStudySessionModalRouteProp = RouteProp<RootStackParamList, 'AddStudySessionModal'>;
+type AddStudySessionModalNavigationProp = StackNavigationProp<RootStackParamList>;
+
 const AddStudySessionModal = () => {
-  const navigation = useNavigation();
-  const route = useRoute();
+  const navigation = useNavigation<AddStudySessionModalNavigationProp>();
+  const route = useRoute<AddStudySessionModalRouteProp>();
   const { session, user } = useAuth();
-  const dataContext = useData();
+  const queryClient = useQueryClient(); // NEW
+
+  // NEW: Fetch all task types for the weekly limit check.
+  const { data: lectures } = useLectures();
+  const { data: assignments } = useAssignments();
+  const { data: studySessions } = useStudySessions();
+
   const isGuest = !session;
   
   const taskToEdit = route.params?.taskToEdit;
   const isEditMode = !!taskToEdit;
-  const [courses, setCourses] = useState([]);
-  const [selectedCourse, setSelectedCourse] = useState(taskToEdit?.course_id || null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourse, setSelectedCourse] = useState((taskToEdit as any)?.course_id || null);
   const [selectedCourseName, setSelectedCourseName] = useState(taskToEdit?.courses?.course_name || '');
   const [topic, setTopic] = useState(taskToEdit?.name || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
-  const [date, setDate] = useState(taskToEdit ? new Date(taskToEdit.session_date || taskToEdit.date) : new Date());
+  const [date, setDate] = useState(taskToEdit ? new Date((taskToEdit as any).session_date || taskToEdit.date) : new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-  const [enableSpacedRepetition, setEnableSpacedRepetition] = useState(taskToEdit?.has_spaced_repetition || false);
+  const [enableSpacedRepetition, setEnableSpacedRepetition] = useState((taskToEdit as any)?.has_spaced_repetition || false);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedReminders, setSelectedReminders] = useState<number[]>([15]); // Default to 15 minutes
   const maxReminders = 2; // Assume free user
@@ -37,12 +50,17 @@ const AddStudySessionModal = () => {
     const fetchCourses = async () => {
       const { data, error } = await supabase.from('courses').select('id, course_name');
       if (error) Alert.alert('Error', 'Could not fetch your courses.');
-      else setCourses(data);
+      else setCourses((data || []).map(course => ({
+        ...course,
+        user_id: user?.id || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })) as Course[]);
     };
     fetchCourses();
   }, []);
 
-  const handleCourseSelect = (course) => {
+  const handleCourseSelect = (course: Course) => {
     setSelectedCourse(course.id);
     setSelectedCourseName(course.course_name);
     setShowCourseDropdown(false);
@@ -68,12 +86,13 @@ const AddStudySessionModal = () => {
       return;
     }
 
-    // --- NEW SUBSCRIPTION CHECK LOGIC ---
+    // --- SUBSCRIPTION CHECK LOGIC (now uses data from React Query) ---
     const isOddity = user?.subscription_tier === 'oddity';
+    // Pass the data from our hooks to the counter.
     const tasksThisWeek = countTasksInCurrentWeek({
-      lectures: (dataContext as any).lectures,
-      assignments: (dataContext as any).assignments,
-      studySessions: (dataContext as any).studySessions,
+      lectures: lectures || [],
+      assignments: assignments || [],
+      studySessions: studySessions || [],
     });
 
     if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
@@ -99,13 +118,13 @@ const AddStudySessionModal = () => {
         const taskBeingEdited = route.params?.taskToEdit;
         const now = new Date();
         const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-        const isEditingTodaysTask = taskBeingEdited && isAfter(new Date(taskBeingEdited.created_at), weekStart);
+        const isEditingTodaysTask = taskBeingEdited && isAfter(new Date((taskBeingEdited as any).created_at), weekStart);
 
         if (!isEditingTodaysTask) { // Only check the limit if editing an older task
             const tasksThisWeek = countTasksInCurrentWeek({
-              lectures: (dataContext as any).lectures,
-              assignments: (dataContext as any).assignments,
-              studySessions: (dataContext as any).studySessions,
+              lectures: lectures || [],
+              assignments: assignments || [],
+              studySessions: studySessions || [],
             });
             if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
               Alert.alert(
@@ -187,6 +206,10 @@ const AddStudySessionModal = () => {
         Alert.alert('Success', 'Study session created successfully!');
       }
 
+      // NEW: Invalidate all relevant queries.
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
       navigation.goBack();
     } catch (error) {
       Alert.alert('Error', `Failed to ${isEditMode ? 'update' : 'save'} study session.`);
@@ -321,11 +344,18 @@ const AddStudySessionModal = () => {
           </View>
         )}
 
-        <Button
-          title={isLoading ? <ActivityIndicator color="white" /> : (isEditMode ? "Save Changes" : "Save Session")}
-          onPress={handleSave}
-          disabled={isLoading}
-        />
+        {isLoading ? (
+          <View style={styles.loadingButton}>
+            <ActivityIndicator color="white" />
+            <Text style={styles.loadingButtonText}>Saving...</Text>
+          </View>
+        ) : (
+          <Button
+            title={isEditMode ? "Save Changes" : "Save Session"}
+            onPress={handleSave}
+            disabled={isLoading}
+          />
+        )}
       </View>
     </KeyboardAvoidingView>
   );
@@ -430,6 +460,21 @@ const styles = StyleSheet.create({
   },
   addCourseButtonText: {
     color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  loadingButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingButtonText: {
+    color: 'white',
+    marginLeft: 8,
     fontSize: 16,
     fontWeight: '500',
   },

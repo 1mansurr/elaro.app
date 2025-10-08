@@ -4,6 +4,7 @@ import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createSupabaseClient } from '../_shared/supabase-client.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
 import { corsHeaders } from '../_shared/cors.ts';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 function getStringDifferencePercent(str1: string, str2: string ): number {
   const longer = str1.length > str2.length ? str1 : str2;
@@ -25,6 +26,23 @@ serve(async (req) => {
 
     if (!user) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Apply rate limiting check
+    try {
+      await checkRateLimit(supabase, user.id, 'update-assignment');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 429,
+          headers: corsHeaders,
+        });
+      }
+      console.error('An unexpected error occurred during rate limit check:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: corsHeaders,
+      });
     }
 
     const { data: originalAssignment, error: fetchError } = await supabase

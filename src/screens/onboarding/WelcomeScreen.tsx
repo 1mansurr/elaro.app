@@ -16,10 +16,7 @@ const WelcomeScreen = () => {
 
   const handleContinue = () => {
     // Pass the name params along to the onboarding form
-    navigation.replace('OnboardingForm', {
-      firstName: route.params?.firstName,
-      lastName: route.params?.lastName,
-    });
+    navigation.replace('OnboardingFlow');
   };
 
   return (

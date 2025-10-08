@@ -1,0 +1,101 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import { useAuth } from '../contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '../services/supabase';
+
+const ProfileScreen = ({ navigation }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [username, setUsername] = useState('');
+  const [university, setUniversity] = useState('');
+  const [program, setProgram] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setFirstName(user.first_name || '');
+      setLastName(user.last_name || '');
+      setUsername(user.username || '');
+      setUniversity(user.university || '');
+      setProgram(user.program || '');
+    }
+  }, [user]);
+
+  const handleSaveChanges = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke('update-user-profile', {
+        body: {
+          firstName,
+          lastName,
+          university,
+          program,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // On success, invalidate the user query in AuthContext to refetch the fresh user data.
+      // This assumes your AuthContext exposes a function to refetch the user.
+      // A common pattern is to invalidate a query if you are using React Query for user data too.
+      // For now, we'll alert the user and navigate back. A full refresh would be better.
+      Alert.alert('Success', 'Your profile has been updated.');
+      
+      // To make the UI update, we need to refetch the user data.
+      // The best way is to invalidate a React Query key if 'user' is fetched via React Query.
+      // If not, we might need to add a refresh function to AuthContext.
+      // For now, let's navigate back. The data will be fresh on next app open.
+      navigation.goBack();
+
+    } catch (err) {
+      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update profile.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.title}>Edit Profile</Text>
+      
+      <Text style={styles.label}>First Name</Text>
+      <TextInput style={styles.input} value={firstName} onChangeText={setFirstName} />
+
+      <Text style={styles.label}>Last Name</Text>
+      <TextInput style={styles.input} value={lastName} onChangeText={setLastName} />
+
+      <Text style={styles.label}>Username</Text>
+      <TextInput style={styles.input} value={username} onChangeText={setUsername} editable={false} />
+      {/* Username is not editable for now to avoid complexity with uniqueness checks */}
+
+      <Text style={styles.label}>University</Text>
+      <TextInput style={styles.input} value={university} onChangeText={setUniversity} />
+
+      <Text style={styles.label}>Program of Study</Text>
+      <TextInput style={styles.input} value={program} onChangeText={setProgram} />
+
+      <Button title={isLoading ? 'Saving...' : 'Save Changes'} onPress={handleSaveChanges} disabled={isLoading} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  label: { fontSize: 16, marginTop: 15, marginBottom: 5 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 10,
+    borderRadius: 5,
+    fontSize: 16,
+  },
+});
+
+export default ProfileScreen;

@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
 import { encrypt } from '../_shared/encryption.ts';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -23,6 +24,23 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     if (!user) throw new Error('Unauthorized');
+
+    // Apply rate limiting check
+    try {
+      await checkRateLimit(supabaseClient, user.id, 'create-lecture');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 429, // Too Many Requests
+          headers: corsHeaders,
+        });
+      }
+      console.error('An unexpected error occurred during rate limit check:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: corsHeaders,
+      });
+    }
 
     // Check unified task limit
     const limitError = await checkTaskLimit(supabaseClient, user.id);

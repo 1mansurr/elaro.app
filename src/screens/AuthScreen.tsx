@@ -40,6 +40,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 }) => {
   const navigation = useNavigation<AuthScreenNavProp>();
   const [mode, setMode] = useState(initialMode);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,17 +54,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
-    if (mode === 'signup' && !agreedToTerms) {
-      Alert.alert(
-        'Agreement Required',
-        'You must agree to the Terms of Service and Privacy Policy to sign up.',
-      );
-      return;
+    if (mode === 'signup') {
+      if (!firstName.trim()) {
+        Alert.alert('First Name is required for sign up.');
+        return;
+      }
+      if (!agreedToTerms) {
+        Alert.alert(
+          'Agreement Required',
+          'You must agree to the Terms of Service and Privacy Policy to sign up.',
+        );
+        return;
+      }
     }
     setLoading(true);
     try {
       const { error } = mode === 'signup'
-        ? await signUp(email, password)
+        ? await signUp(email, password, firstName.trim(), lastName.trim())
         : await signIn(email, password);
 
       if (error) {
@@ -101,6 +109,27 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </View>
 
           <View style={styles.form}>
+            {mode === 'signup' && (
+              <>
+                <Input
+                  label="First Name"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  placeholder="Enter your first name"
+                  autoCapitalize="words"
+                  textContentType="givenName"
+                />
+                <Input
+                  label="Last Name (Optional)"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  placeholder="Enter your last name"
+                  autoCapitalize="words"
+                  textContentType="familyName"
+                />
+              </>
+            )}
+
             <Input
               label="Email"
               value={email}

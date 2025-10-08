@@ -6,7 +6,7 @@ import { Task } from '../../types';
 
 interface Props {
   task: Task;
-  position: { top: number; left: number; height: number; width: string };
+  position: { top: number; left: number; height: number; width: number };
   onPress: () => void;
 }
 

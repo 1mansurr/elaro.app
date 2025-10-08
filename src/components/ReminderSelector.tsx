@@ -67,7 +67,7 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
   return (
     <View style={styles.container}>
       {label && (
-        <Text style={[styles.label, error && styles.labelError]}>
+        <Text style={[styles.label, error ? styles.labelError : null]}>
           {label}
           {required && <Text style={styles.required}> *</Text>}
         </Text>
@@ -76,13 +76,13 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
       <TouchableOpacity 
         style={[
           styles.inputBox, 
-          error && styles.inputBoxError,
-          selectedReminders.length > 0 && styles.inputBoxSelected
+          error ? styles.inputBoxError : null,
+          selectedReminders.length > 0 ? styles.inputBoxSelected : null
         ]} 
         onPress={() => setModalVisible(true)}
       >
         <View style={styles.inputContent}>
-          <Text style={[styles.inputText, error && styles.inputTextError]}>
+          <Text style={[styles.inputText, error ? styles.inputTextError : null]}>
             {getDisplayText()}
           </Text>
           {selectedReminders.length > 0 && (

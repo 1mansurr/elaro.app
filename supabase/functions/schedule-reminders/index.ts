@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { handleCors, corsHeaders } from '../_shared/cors.ts';
 import { initSentry, captureException } from '../_shared/sentry.ts';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 // Function to add days to a date
 function addDays(date: Date, days: number): Date {
@@ -10,47 +11,6 @@ function addDays(date: Date, days: number): Date {
   return result;
 }
 
-// --- RATE LIMITING CONSTANTS ---
-const RATE_LIMIT_COUNT = 10; // Max 10 requests
-const RATE_LIMIT_INTERVAL_HOURS = 1; // per 1 hour
-
-// --- NEW RATE LIMITING LOGIC ---
-async function checkRateLimit(
-  supabaseClient: SupabaseClient,
-  userId: string,
-): Promise<void> {
-  const functionName = 'schedule-reminders';
-  const oneHourAgo = new Date();
-  oneHourAgo.setHours(oneHourAgo.getHours() - RATE_LIMIT_INTERVAL_HOURS);
-
-  // Check for recent requests
-  const { count, error: countError } = await supabaseClient
-    .from('function_request_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('function_name', functionName)
-    .gte('created_at', oneHourAgo.toISOString());
-
-  if (countError) {
-    throw new Error(`Rate limit check failed: ${countError.message}`);
-  }
-
-  if (count !== null && count >= RATE_LIMIT_COUNT) {
-    throw new Error('Too Many Requests');
-  }
-
-  // Log the current request
-  const { error: logError } = await supabaseClient
-    .from('function_request_logs')
-    .insert({
-      user_id: userId,
-      function_name: functionName,
-    });
-  if (logError) {
-    // Non-critical error, so we can just log it and continue
-    console.error('Failed to log function request:', logError.message);
-  }
-}
 
 serve(async (req: Request) => {
   initSentry();
@@ -105,21 +65,20 @@ serve(async (req: Request) => {
 
     // --- APPLY THE RATE LIMIT CHECK ---
     try {
-      await checkRateLimit(supabaseClient, user.id);
-    } catch (error: any) {
-      if (error && error.message === 'Too Many Requests') {
-        return new Response(
-          JSON.stringify({
-            error: 'Rate limit exceeded. Please try again later.',
-          }),
-          {
-            headers: corsHeaders,
-            status: 429,
-          },
-        );
+      await checkRateLimit(supabaseClient, user.id, 'schedule-reminders');
+    } catch (error) {
+      if (error instanceof RateLimitError) {
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 429, // Too Many Requests
+          headers: corsHeaders,
+        });
       }
-      captureException(error);
-      throw error;
+      // For other unexpected errors, you might want to log them or handle differently
+      console.error('An unexpected error occurred during rate limit check:', error);
+      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+        status: 500,
+        headers: corsHeaders,
+      });
     }
 
     const { session_id } = await req.json();

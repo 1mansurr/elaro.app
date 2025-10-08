@@ -38,7 +38,7 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onScroll }) => {
       top,
       left: 70, // Adjusted left position
       height: Math.max(height, 20), // Ensure a minimum height
-      width: '75%'
+      width: 200 // Fixed width in pixels
     };
   };
 

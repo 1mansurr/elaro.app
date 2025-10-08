@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
 import { DataProvider } from './src/contexts/DataContext';
@@ -16,7 +17,6 @@ import { COLORS } from './src/constants/theme';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import AnimatedSplashScreen from './src/screens/AnimatedSplashScreen';
 import { useAuth } from './src/contexts/AuthContext';
-import { useData } from './src/contexts/DataContext';
 import { notificationService } from './src/services/notifications';
 import * as Sentry from '@sentry/react-native';
 
@@ -38,6 +38,9 @@ SplashScreen.preventAutoHideAsync();
 
 // Navigation state persistence key
 const PERSISTENCE_KEY = 'NAVIGATION_STATE_V1';
+
+// Create a new instance of the QueryClient
+const queryClient = new QueryClient();
 
 // Error Boundary Component for catching unexpected errors
 class ErrorBoundary extends React.Component<
@@ -160,24 +163,19 @@ const ThemedStatusBar = () => {
 // Move this logic into a child component
 function AuthEffects() {
   const { user } = useAuth();
-  const { fetchInitialData } = useData();
   
   useEffect(() => {
     if (user && user.id) {
       notificationService.initialize(user.id);
-      // Fetch initial data when user is authenticated and has completed onboarding
-      if (user.onboarding_completed) {
-        fetchInitialData();
-      }
+      // Data fetching is now handled by React Query hooks in individual components
     }
-  }, [user, fetchInitialData]);
+  }, [user]);
   return null;
 }
 
 // Component to handle notification context and TaskDetailSheet
 function NotificationHandler() {
   const { taskToShow, setTaskToShow } = useNotification();
-  const { fetchInitialData } = useData();
 
   // Set up the handler so the notification service can call our context function
   useEffect(() => {
@@ -198,8 +196,7 @@ function NotificationHandler() {
   const handleCompleteTask = async (task: any) => {
     // Handle task completion logic here
     console.log('Complete task:', task);
-    // Refresh data after completion
-    await fetchInitialData();
+    // Data refresh is now handled by React Query in individual components
     // Close the sheet
     setTaskToShow(null);
   };
@@ -207,8 +204,7 @@ function NotificationHandler() {
   const handleDeleteTask = async (task: any) => {
     // Handle task deletion logic here
     console.log('Delete task:', task);
-    // Refresh data after deletion
-    await fetchInitialData();
+    // Data refresh is now handled by React Query in individual components
     // Close the sheet
     setTaskToShow(null);
   };
@@ -269,28 +265,30 @@ function App() {
   }
 
   return (
-    <AppInitializer>
-      <ThemeProvider>
-        <ThemedStatusBar />
-        <NavigationContainer
-          ref={navigationRef}
-          // initialState={initialState} // Disabled to prevent modal from reopening
-          // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
-        >
-          <AuthProvider>
-            <DataProvider>
-              <SoftLaunchProvider>
-                <NotificationProvider>
-                  <AuthEffects />
-                  <AppNavigator />
-                  <NotificationHandler />
-                </NotificationProvider>
-              </SoftLaunchProvider>
-            </DataProvider>
-          </AuthProvider>
-        </NavigationContainer>
-      </ThemeProvider>
-    </AppInitializer>
+    <QueryClientProvider client={queryClient}>
+      <AppInitializer>
+        <ThemeProvider>
+          <ThemedStatusBar />
+          <NavigationContainer
+            ref={navigationRef}
+            // initialState={initialState} // Disabled to prevent modal from reopening
+            // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
+          >
+            <AuthProvider>
+              <DataProvider>
+                <SoftLaunchProvider>
+                  <NotificationProvider>
+                    <AuthEffects />
+                    <AppNavigator />
+                    <NotificationHandler />
+                  </NotificationProvider>
+                </SoftLaunchProvider>
+              </DataProvider>
+            </AuthProvider>
+          </NavigationContainer>
+        </ThemeProvider>
+      </AppInitializer>
+    </QueryClientProvider>
   );
 }
 

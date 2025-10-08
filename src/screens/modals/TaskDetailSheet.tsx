@@ -11,9 +11,9 @@ interface TaskDetailSheetProps {
   task: Task | null;
   isVisible: boolean;
   onClose: () => void;
-  onEdit: () => void;
-  onComplete: () => void;
-  onDelete: () => void;
+  onEdit: (task: Task) => void;
+  onComplete: (task: Task) => Promise<void>;
+  onDelete: (task: Task) => Promise<void>;
 }
 
 const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({ task, isVisible, onClose, onEdit, onComplete, onDelete }) => {
@@ -27,7 +27,7 @@ const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({ task, isVisible, onCl
       <View style={styles.sheetContainer}>
         {/* Header with Edit and Close buttons */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onEdit} style={styles.iconButton}>
+          <TouchableOpacity onPress={() => onEdit(task)} style={styles.iconButton}>
             <Ionicons name="pencil-outline" size={24} color="#333" />
           </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={styles.iconButton}>
@@ -42,10 +42,10 @@ const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({ task, isVisible, onCl
 
         {/* Footer with action buttons */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.completeButton} onPress={onComplete}>
+          <TouchableOpacity style={styles.completeButton} onPress={() => onComplete(task)}>
             <Text style={styles.buttonText}>Mark as Complete</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={onDelete}>
+          <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(task)}>
             <Text style={styles.buttonText}>Delete</Text>
           </TouchableOpacity>
         </View>

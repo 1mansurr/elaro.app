@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
 interface Course {
   course_name: string;
@@ -22,26 +23,25 @@ serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Authentication failed' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
   }
 
-  // 3. Get the data from the request body
-  const { firstName, lastName, university, program, courses } = await req.json();
-
-  // 4. Update user metadata
-  const { error: updateError } = await supabaseClient.auth.admin.updateUserById(
-    user.id,
-    {
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-        university: university,
-        program: program,
-      },
+  // Apply rate limiting check
+  try {
+    await checkRateLimit(supabaseClient, user.id, 'complete-onboarding');
+  } catch (error) {
+    if (error instanceof RateLimitError) {
+      return new Response(JSON.stringify({ error: error.message }), {
+        status: 429,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
-  );
-
-  if (updateError) {
-    console.error('Error updating user:', updateError);
-    return new Response(JSON.stringify({ error: 'Failed to update user profile' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    console.error('An unexpected error occurred during rate limit check:', error);
+    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
+
+  // 3. Get the data from the request body
+  const { username, university, program, courses } = await req.json();
 
   // 5. Create the courses, if any
   if (courses && courses.length > 0) {
@@ -61,10 +61,15 @@ serve(async (req) => {
     }
   }
 
-  // 6. Update the onboarding status in public.users
+  // 4. Update the users table with username and onboarding status
   const { error: updateOnboardingError } = await supabaseClient
     .from('users')
-    .update({ onboarding_completed: true })
+    .update({ 
+      username: username,
+      onboarding_completed: true,
+      university: university,
+      program: program,
+    })
     .eq('id', user.id);
 
   if (updateOnboardingError) {

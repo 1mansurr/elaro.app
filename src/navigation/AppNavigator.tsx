@@ -11,17 +11,20 @@ import { useTheme } from '../contexts/ThemeContext';
 
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList, MainTabParamList } from '../types';
+import AddCourseNavigator from './AddCourseNavigator';
+import { AddCourseProvider } from '../contexts/AddCourseContext';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
 import AuthChooserScreen from '../screens/auth/AuthChooserScreen';
 import { AuthScreen } from '../screens/AuthScreen';
 import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
-import OnboardingFormScreen from '../screens/onboarding/OnboardingFormScreen';
-import AddCourseOnboardingModal from '../screens/onboarding/AddCourseOnboardingModal';
+import OnboardingNavigator from './OnboardingNavigator';
+import { OnboardingProvider } from '../contexts/OnboardingContext';
 import HomeScreen from '../screens/HomeScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 import AccountScreen from '../screens/AccountScreen';
+import ProfileScreen from '../screens/ProfileScreen';
 import CoursesScreen from '../screens/CoursesScreen';
 import AddCourseModal from '../screens/modals/AddCourseModal';
 import EditCourseModal from '../screens/modals/EditCourseModal';
@@ -115,14 +118,14 @@ const MainTabNavigator: React.FC = () => {
       return 'Account';
     }
     
-    // Prioritize the new first_name field from user_metadata
-    if (user.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
+    // Use the first_name from the users table (populated by our database trigger)
+    if (user.first_name) {
+      return user.first_name;
     }
     
-    // Fallback for older users with only a 'name' field
-    if (user.user_metadata?.name) {
-      return user.user_metadata.name.split(' ')[0];
+    // Fallback for older users - check user_metadata
+    if (user.user_metadata?.first_name) {
+      return user.user_metadata.first_name;
     }
     
     // Default if no name is found
@@ -142,6 +145,19 @@ const MainTabNavigator: React.FC = () => {
     </Tab.Navigator>
   );
 };
+
+// AddCourse Flow Wrapper with Provider
+const AddCourseFlow = () => (
+  <AddCourseProvider>
+    <AddCourseNavigator />
+  </AddCourseProvider>
+);
+
+const OnboardingFlow = () => (
+  <OnboardingProvider>
+    <OnboardingNavigator />
+  </OnboardingProvider>
+);
 
 // Auth Screen Wrapper
 const AuthScreenWrapper = ({ navigation }: any) => (
@@ -178,7 +194,7 @@ export const AppNavigator: React.FC = () => {
         {/* Welcome screen */}
         <Stack.Screen name="Welcome" component={WelcomeScreen} />
         {/* Onboarding form screen */}
-        <Stack.Screen name="OnboardingForm" component={OnboardingFormScreen} />
+        <Stack.Screen name="OnboardingFlow" component={OnboardingFlow} />
         {/* Main app routes */}
         <Stack.Screen name="Main" component={MainTabNavigator} />
         {/* Course Management screens */}
@@ -251,25 +267,30 @@ export const AppNavigator: React.FC = () => {
             },
           }}
         />
+        <Stack.Screen 
+          name="Profile" 
+          component={ProfileScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Edit Profile',
+            headerStyle: {
+              backgroundColor: '#FFFFFF',
+            },
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        />
         
         {/* Modal Screens */}
         <Stack.Group>
-          <Stack.Screen 
-            name="AddCourseOnboardingModal" 
-            component={AddCourseOnboardingModal}
-            options={({ navigation }) => ({
+          <Stack.Screen
+            name="AddCourseFlow"
+            component={AddCourseFlow}
+            options={{ 
               presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Add Course',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
+              headerShown: false 
+            }}
           />
           <Stack.Screen 
             name="AddCourseModal" 
@@ -335,8 +356,6 @@ export const AppNavigator: React.FC = () => {
             options={{
               headerTitle: 'Task Details',
             }}
-          />
-          <Stack.Screen
           />
         </Stack.Group>
       </Stack.Navigator>

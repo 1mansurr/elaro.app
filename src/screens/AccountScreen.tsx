@@ -100,9 +100,19 @@ const AccountScreen = () => {
           </View>
         </View>
         <Button
+          title="Edit Profile"
+          onPress={() => navigation.navigate('Profile')}
+          style={{ marginTop: 10 }}
+        />
+        <Button
           title="My Courses"
           onPress={() => navigation.navigate('Courses')}
-          style={{ marginTop: 20 }}
+          style={{ marginTop: 10 }}
+        />
+        <Button
+          title="Add a Course"
+          onPress={() => navigation.navigate('AddCourseFlow')}
+          style={{ marginTop: 10 }}
         />
       </Card>
 

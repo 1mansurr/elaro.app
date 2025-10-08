@@ -45,7 +45,7 @@ const CourseDetailScreen = () => {
               navigation.goBack();
             } catch (error) {
               Alert.alert('Error', 'Failed to delete the course.');
-              console.error('Delete Error:', error.message);
+              console.error('Delete Error:', error instanceof Error ? error.message : 'Unknown error');
               setIsLoading(false);
             }
           },

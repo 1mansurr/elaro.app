@@ -4,14 +4,16 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../../services/supabase'; // Assuming supabase client is exported here
 import { Input, Button } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
-import { useData } from '../../contexts/DataContext';
+import { useCourses } from '../../hooks/useDataQueries';
+import { useQueryClient } from '@tanstack/react-query';
 
 const FREE_COURSE_LIMIT = 2;
 
 const AddCourseModal = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { fetchInitialData, courses } = useData();
+  const { data: courses, isLoading: coursesLoading } = useCourses();
+  const queryClient = useQueryClient();
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [aboutCourse, setAboutCourse] = useState('');
@@ -31,7 +33,7 @@ const AddCourseModal = () => {
 
     // --- NEW SUBSCRIPTION CHECK LOGIC ---
     const isOddity = user.subscription_tier === 'oddity';
-    const courseCount = Array.isArray(courses) ? courses.length : 0;
+    const courseCount = courses?.length || 0;
 
     if (!isOddity && courseCount >= FREE_COURSE_LIMIT) {
       Alert.alert(
@@ -62,12 +64,13 @@ const AddCourseModal = () => {
         Alert.alert('Error', `Failed to create course: ${error.message || 'Unknown error'}`);
       } else {
         Alert.alert('Success', 'Course created successfully!');
-        await fetchInitialData(); // This will refresh the app's data.
+        // Invalidate the 'courses' query to trigger a refetch
+        await queryClient.invalidateQueries({ queryKey: ['courses'] });
         navigation.goBack();
       }
     } catch (error) {
       console.error('Failed to create course:', error);
-      Alert.alert('Error', `Failed to save course: ${error.message || 'Please try again.'}`);
+      Alert.alert('Error', `Failed to save course: ${error instanceof Error ? error.message : 'Please try again.'}`);
     } finally {
       setIsLoading(false);
     }
@@ -109,6 +112,7 @@ const AddCourseModal = () => {
               title="Save Course"
               onPress={handleSaveCourse}
               style={styles.buttonContainer}
+              disabled={coursesLoading}
             />
             <Button
               title="Cancel"
