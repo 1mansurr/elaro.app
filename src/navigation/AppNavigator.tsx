@@ -12,7 +12,13 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { RootStackParamList, MainTabParamList } from '../types';
 import AddCourseNavigator from './AddCourseNavigator';
+import AddLectureNavigator from './AddLectureNavigator';
+import AddAssignmentNavigator from './AddAssignmentNavigator';
+import AddStudySessionNavigator from './AddStudySessionNavigator';
 import { AddCourseProvider } from '../contexts/AddCourseContext';
+import { AddLectureProvider } from '../contexts/AddLectureContext';
+import { AddAssignmentProvider } from '../contexts/AddAssignmentContext';
+import { AddStudySessionProvider } from '../contexts/AddStudySessionContext';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
@@ -28,9 +34,6 @@ import ProfileScreen from '../screens/ProfileScreen';
 import CoursesScreen from '../screens/CoursesScreen';
 import AddCourseModal from '../screens/modals/AddCourseModal';
 import EditCourseModal from '../screens/modals/EditCourseModal';
-import AddLectureModal from '../screens/modals/AddLectureModal';
-import AddStudySessionModal from '../screens/modals/AddStudySessionModal';
-import AddAssignmentModal from '../screens/modals/AddAssignmentModal';
 import TaskDetailModal from '../screens/modals/TaskDetailModal';
 import CourseDetailScreen from '../screens/CourseDetailScreen';
 import ComingSoonScreen from '../screens/ComingSoonScreen';
@@ -151,6 +154,27 @@ const AddCourseFlow = () => (
   <AddCourseProvider>
     <AddCourseNavigator />
   </AddCourseProvider>
+);
+
+// AddLecture Flow Wrapper with Provider
+const AddLectureFlow = () => (
+  <AddLectureProvider>
+    <AddLectureNavigator />
+  </AddLectureProvider>
+);
+
+// AddAssignment Flow Wrapper with Provider
+const AddAssignmentFlow = () => (
+  <AddAssignmentProvider>
+    <AddAssignmentNavigator />
+  </AddAssignmentProvider>
+);
+
+// AddStudySession Flow Wrapper with Provider
+const AddStudySessionFlow = () => (
+  <AddStudySessionProvider>
+    <AddStudySessionNavigator />
+  </AddStudySessionProvider>
 );
 
 const OnboardingFlow = () => (
@@ -292,6 +316,30 @@ export const AppNavigator: React.FC = () => {
               headerShown: false 
             }}
           />
+          <Stack.Screen
+            name="AddLectureFlow"
+            component={AddLectureFlow}
+            options={{ 
+              presentation: 'modal',
+              headerShown: false 
+            }}
+          />
+          <Stack.Screen
+            name="AddAssignmentFlow"
+            component={AddAssignmentFlow}
+            options={{ 
+              presentation: 'modal',
+              headerShown: false 
+            }}
+          />
+          <Stack.Screen
+            name="AddStudySessionFlow"
+            component={AddStudySessionFlow}
+            options={{ 
+              presentation: 'modal',
+              headerShown: false 
+            }}
+          />
           <Stack.Screen 
             name="AddCourseModal" 
             component={AddCourseModal}
@@ -325,30 +373,6 @@ export const AppNavigator: React.FC = () => {
                 </TouchableOpacity>
               ),
             })}
-          />
-          <Stack.Screen 
-            name="AddLectureModal" 
-            component={AddLectureModal}
-            options={{
-              presentation: 'transparentModal',
-              headerShown: false, // We hide the default header as our modal is now custom
-            }}
-          />
-          <Stack.Screen 
-            name="AddStudySessionModal" 
-            component={AddStudySessionModal}
-            options={{
-              presentation: 'transparentModal',
-              headerShown: false, // We hide the default header as our modal is now custom
-            }}
-          />
-          <Stack.Screen 
-            name="AddAssignmentModal" 
-            component={AddAssignmentModal}
-            options={{
-              presentation: 'transparentModal',
-              headerShown: false, // We hide the default header as our modal is now custom
-            }}
           />
           <Stack.Screen
             name="TaskDetailModal"

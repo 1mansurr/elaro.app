@@ -38,17 +38,17 @@ const HomeScreen = () => {
     {
       icon: 'book-outline' as any,
       label: 'Add Study Session',
-      onPress: () => navigation.navigate('AddStudySessionModal')
+      onPress: () => navigation.navigate('AddStudySessionFlow')
     },
     {
       icon: 'document-text-outline' as any,
       label: 'Add Assignment',
-      onPress: () => navigation.navigate('AddAssignmentModal')
+      onPress: () => navigation.navigate('AddAssignmentFlow')
     },
     {
       icon: 'school-outline' as any,
       label: 'Add Lecture',
-      onPress: () => navigation.navigate('AddLectureModal')
+      onPress: () => navigation.navigate('AddLectureFlow')
     },
   ];
 
@@ -78,16 +78,16 @@ const HomeScreen = () => {
     if (!selectedTask) return;
     
     // Determine which modal to navigate to based on task type
-    let modalName: 'AddLectureModal' | 'AddAssignmentModal' | 'AddStudySessionModal';
+    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
-        modalName = 'AddLectureModal';
+        modalName = 'AddLectureFlow';
         break;
       case 'assignment':
-        modalName = 'AddAssignmentModal';
+        modalName = 'AddAssignmentFlow';
         break;
       case 'study_session':
-        modalName = 'AddStudySessionModal';
+        modalName = 'AddStudySessionFlow';
         break;
       default:
         Alert.alert('Error', 'Cannot edit this type of task.');

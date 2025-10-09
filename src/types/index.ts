@@ -54,11 +54,11 @@ export type RootStackParamList = {
   RecycleBin: undefined;
   Profile: undefined;
   AddCourseFlow: undefined;
+  AddLectureFlow: undefined;
+  AddAssignmentFlow: undefined;
+  AddStudySessionFlow: undefined;
   AddCourseModal: undefined;
   EditCourseModal: { courseId: string };
-  AddLectureModal: { taskToEdit?: Task } | undefined;
-  AddStudySessionModal: { taskToEdit?: Task } | undefined;
-  AddAssignmentModal: { taskToEdit?: Task } | undefined;
   TaskDetailModal: {
     taskId: string;
     taskType: 'study_session' | 'lecture' | 'assignment';

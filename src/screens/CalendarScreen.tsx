@@ -53,16 +53,16 @@ const CalendarScreen = () => {
     if (!selectedTask) return;
     
     // Determine which modal to navigate to based on task type
-    let modalName: 'AddLectureModal' | 'AddAssignmentModal' | 'AddStudySessionModal';
+    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
-        modalName = 'AddLectureModal';
+        modalName = 'AddLectureFlow';
         break;
       case 'assignment':
-        modalName = 'AddAssignmentModal';
+        modalName = 'AddAssignmentFlow';
         break;
       case 'study_session':
-        modalName = 'AddStudySessionModal';
+        modalName = 'AddStudySessionFlow';
         break;
       default:
         Alert.alert('Error', 'Cannot edit this type of task.');
