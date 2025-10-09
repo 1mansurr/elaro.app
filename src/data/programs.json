@@ -1,0 +1,1060 @@
+{
+  "categories": [
+    {
+      "id": "stem",
+      "name": "STEM — Science, Technology, Engineering & Math",
+      "subfields": [
+        {
+          "id": "computer_it",
+          "name": "Computer & Information Technology",
+          "programs": [
+            "BSc Computer Science",
+            "BSc Software Engineering / Software Development",
+            "BSc Computer Engineering",
+            "BSc Information Technology",
+            "BSc Information Systems",
+            "BSc Management Information Systems",
+            "BSc Cybersecurity & Digital Forensics",
+            "BSc Network Engineering & Telecommunications",
+            "BSc Cloud Computing & Virtualization",
+            "BSc Mobile & Pervasive Computing",
+            "BSc Human–Computer Interaction (UX/UI)",
+            "BSc Artificial Intelligence & Machine Learning",
+            "BSc Data Engineering",
+            "BSc Multimedia & Computer Graphics",
+            "BSc Game Design & Development",
+            "BSc Internet of Things & Embedded Systems"
+          ]
+        },
+        {
+          "id": "data_science",
+          "name": "Data Science & Analytics",
+          "programs": [
+            "BSc Data Science",
+            "BSc Data Analytics",
+            "BSc Business Analytics",
+            "BSc Quantitative Finance & Risk Management",
+            "BSc Statistics",
+            "BSc Biostatistics",
+            "BSc Actuarial Science",
+            "BSc Operations Research & Optimization",
+            "BSc Econometrics",
+            "BSc Computational Statistics"
+          ]
+        },
+        {
+          "id": "mathematics",
+          "name": "Mathematics",
+          "programs": [
+            "BSc Pure Mathematics",
+            "BSc Applied Mathematics",
+            "BSc Computational Mathematics / Numerical Analysis",
+            "BSc Mathematical Physics",
+            "BSc Financial Mathematics",
+            "BSc Mathematical Statistics",
+            "BSc Mathematical Logic & Foundations"
+          ]
+        },
+        {
+          "id": "engineering",
+          "name": "Engineering",
+          "subcategories": [
+            {
+              "id": "civil_environmental",
+              "name": "Civil & Environmental Engineering",
+              "programs": [
+                "BSc Civil Engineering",
+                "BSc Structural Engineering",
+                "BSc Environmental Engineering",
+                "BSc Transportation / Highway Engineering",
+                "BSc Water Resources & Hydraulic Engineering",
+                "BSc Geomatic (Surveying) Engineering"
+              ]
+            },
+            {
+              "id": "electrical_electronic",
+              "name": "Electrical & Electronic Engineering",
+              "programs": [
+                "BSc Electrical Engineering",
+                "BSc Electronics & Embedded Systems",
+                "BSc Telecommunications Engineering",
+                "BSc Power Systems & Energy Engineering",
+                "BSc Renewable Energy Systems"
+              ]
+            },
+            {
+              "id": "mechanical_industrial",
+              "name": "Mechanical & Industrial Engineering",
+              "programs": [
+                "BSc Mechanical Engineering",
+                "BSc Mechatronics & Robotics",
+                "BSc Industrial & Systems Engineering",
+                "BSc Automotive / Marine Engineering",
+                "BSc Manufacturing & Production Engineering",
+                "BSc Materials Science & Metallurgical Engineering"
+              ]
+            },
+            {
+              "id": "chemical_process",
+              "name": "Chemical & Process Engineering",
+              "programs": [
+                "BSc Chemical Engineering",
+                "BSc Petrochemical / Petroleum Engineering",
+                "BSc Process & Environmental Engineering",
+                "BSc Food Process Engineering",
+                "BSc Polymer & Plastics Engineering"
+              ]
+            },
+            {
+              "id": "mining_petroleum_geological",
+              "name": "Mining, Petroleum & Geological Engineering",
+              "programs": [
+                "BSc Mineral & Mining Engineering",
+                "BSc Petroleum & Gas Engineering",
+                "BSc Geological Engineering",
+                "BSc Petroleum Geoscience"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "built_environment",
+          "name": "Built Environment & Planning",
+          "programs": [
+            "BSc Architecture",
+            "BSc Building Technology & Construction",
+            "BSc Quantity Surveying & Construction Economics",
+            "BSc Estate Management",
+            "BSc Town & Regional Planning",
+            "BSc Landscape Architecture & Management",
+            "BSc Urban & Regional Development"
+          ]
+        },
+        {
+          "id": "physical_earth_sciences",
+          "name": "Physical & Earth Sciences",
+          "programs": [
+            "BSc Physics (General)",
+            "BSc Astrophysics & Space Science",
+            "BSc Nuclear & Particle Physics",
+            "BSc Chemistry (General)",
+            "BSc Organic Chemistry",
+            "BSc Inorganic Chemistry",
+            "BSc Physical & Theoretical Chemistry",
+            "BSc Analytical Chemistry",
+            "BSc Polymer Science",
+            "BSc Geology & Earth Science",
+            "BSc Geophysics",
+            "BSc Meteorology & Climate Science",
+            "BSc Oceanography & Marine Science",
+            "BSc Physical Geography"
+          ]
+        },
+        {
+          "id": "life_agricultural_environmental",
+          "name": "Life, Agricultural & Environmental Sciences",
+          "programs": [
+            "BSc Biology (General)",
+            "BSc Molecular Biology",
+            "BSc Genetics & Genomics",
+            "BSc Microbiology & Immunology",
+            "BSc Ecology & Conservation Biology",
+            "BSc Biochemistry",
+            "BSc Biotechnology & Bioengineering",
+            "BSc Environmental Science & Sustainability",
+            "BSc Agronomy & Crop Science",
+            "BSc Animal Science & Livestock Management",
+            "BSc Fisheries & Aquaculture",
+            "BSc Soil Science & Land Management",
+            "BSc Forestry & Wildlife Management",
+            "BSc Food Science & Technology",
+            "BSc Agro-processing & Post-Harvest Technology",
+            "BSc Agricultural Mechanisation & Irrigation"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "health_sciences",
+      "name": "Health Sciences & Medicine",
+      "subfields": [
+        {
+          "id": "medicine_clinical",
+          "name": "Medicine & Clinical Practice",
+          "programs": [
+            "MBChB / MD (Human Medicine)",
+            "BDS (Bachelor of Dental Surgery)",
+            "BSc Physician Assistant Studies (PA)",
+            "BSc Clinical Medicine & Community Health"
+          ]
+        },
+        {
+          "id": "nursing_midwifery",
+          "name": "Nursing & Midwifery",
+          "programs": [
+            "Diploma/ND in Registered Nursing",
+            "BSc Nursing (Generic)",
+            "BSc Nursing (Midwifery)",
+            "BSc Nursing (Mental Health)",
+            "BSc Nursing (Pediatric)",
+            "BSc Nursing (Critical Care)",
+            "BSc Nursing (Oncology)",
+            "BSc Nursing (Anaesthesia)"
+          ]
+        },
+        {
+          "id": "pharmacy",
+          "name": "Pharmacy & Pharmaceutical Sciences",
+          "programs": [
+            "BPharm (Bachelor of Pharmacy)",
+            "BSc Pharmaceutical Sciences",
+            "BSc Clinical Pharmacy",
+            "BSc Industrial Pharmacy & Pharmaceutics",
+            "BSc Pharmacology & Toxicology",
+            "BSc Clinical Research & Regulatory Affairs"
+          ]
+        },
+        {
+          "id": "dentistry",
+          "name": "Dentistry & Oral Health Sciences",
+          "programs": [
+            "BDS (Dental Surgery)",
+            "BSc Dental Therapy & Hygiene",
+            "BSc Orthodontic Technology",
+            "BSc Oral Implantology Technology"
+          ]
+        },
+        {
+          "id": "public_health",
+          "name": "Public Health & Health Policy",
+          "programs": [
+            "BSc Public Health",
+            "BSc Epidemiology & Biostatistics",
+            "BSc Health Policy, Planning & Management",
+            "BSc Environmental & Occupational Health",
+            "BSc Health Promotion & Social Behaviour Change",
+            "BSc Global Health & Development",
+            "BSc Health Economics & Financing"
+          ]
+        },
+        {
+          "id": "allied_health",
+          "name": "Allied Health Sciences",
+          "subcategories": [
+            {
+              "id": "laboratory_diagnostic",
+              "name": "Laboratory & Diagnostic Sciences",
+              "programs": [
+                "BSc Medical Laboratory Technology",
+                "BSc Medical Laboratory Science (Clinical Chemistry, Haematology, Microbiology, Immunology)",
+                "BSc Histotechnology & Cytotechnology"
+              ]
+            },
+            {
+              "id": "imaging_sonography",
+              "name": "Imaging & Sonography",
+              "programs": [
+                "BSc Radiography & Medical Imaging",
+                "BSc Diagnostic Medical Ultrasound (Sonography)",
+                "BSc Nuclear Medicine Technology"
+              ]
+            },
+            {
+              "id": "rehabilitation_therapy",
+              "name": "Rehabilitation & Therapy",
+              "programs": [
+                "BSc Physiotherapy",
+                "BSc Occupational Therapy",
+                "BSc Speech & Language Therapy",
+                "BSc Prosthetics & Orthotics",
+                "BSc Disability & Rehabilitation Studies"
+              ]
+            },
+            {
+              "id": "nutrition_lifestyle",
+              "name": "Nutrition & Lifestyle Medicine",
+              "programs": [
+                "BSc Nutrition & Dietetics",
+                "BSc Food Science & Technology (Clinical Nutrition)",
+                "BSc Sports & Exercise Science",
+                "BSc Wellness & Lifestyle Management"
+              ]
+            },
+            {
+              "id": "health_informatics",
+              "name": "Health Informatics & Technology",
+              "programs": [
+                "BSc Health Information Management",
+                "BSc Health Informatics & Digital Health",
+                "BSc Telemedicine & E-Health Systems",
+                "BSc Medical Coding & Clinical Data Management"
+              ]
+            },
+            {
+              "id": "traditional_alternative",
+              "name": "Traditional, Complementary & Alternative Medicine",
+              "programs": [
+                "BSc Herbal Medicine & Phytotherapy",
+                "Diploma in Traditional African Medicine",
+                "BSc Complementary & Integrative Medicine"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "veterinary",
+          "name": "Veterinary & Animal Health Sciences",
+          "programs": [
+            "Doctor of Veterinary Medicine (DVM)",
+            "BSc Veterinary Nursing & Animal Health",
+            "BSc Wildlife Health & Conservation Medicine",
+            "BSc Aquatic Animal Health & Fisheries Medicine"
+          ]
+        },
+        {
+          "id": "emergency_critical_care",
+          "name": "Emergency, Critical Care & Paramedic Sciences",
+          "programs": [
+            "Diploma/ND in Emergency Medical Technician (EMT)",
+            "BSc Paramedic Science",
+            "BSc Critical Care & Anaesthesia Technology",
+            "BSc Disaster & Emergency Management in Health"
+          ]
+        },
+        {
+          "id": "specialty_emerging",
+          "name": "Specialty & Emerging Health Programs",
+          "programs": [
+            "BSc Genomics & Molecular Medicine",
+            "BSc Biomedical Engineering (Healthcare Technology)",
+            "BSc Clinical Psychology & Counselling",
+            "BSc Neuroscience & Neuro-Rehabilitation",
+            "BSc Precision Medicine & Pharmacogenomics",
+            "BSc Gerontology & Geriatric Care",
+            "BSc Maternal & Child Health",
+            "BSc Community Oral Health",
+            "BSc Occupational Health Safety & Management"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "humanities",
+      "name": "Humanities – Arts, Letters & Cultural Studies",
+      "subfields": [
+        {
+          "id": "history",
+          "name": "History",
+          "programs": [
+            "BA History (General)",
+            "BA African History",
+            "BA European History",
+            "BA Asian & Middle Eastern History",
+            "BA Military & Diplomatic History",
+            "BA Oral & Public History",
+            "BA Museum & Heritage Studies",
+            "Diploma in Archival & Records Management"
+          ]
+        },
+        {
+          "id": "philosophy_ethics",
+          "name": "Philosophy & Ethics",
+          "programs": [
+            "BA Philosophy (Logic, Metaphysics, Epistemology)",
+            "BA Applied Ethics (Bioethics, Tech Ethics, Environmental Ethics)",
+            "BA Philosophy of Science & Mind",
+            "BA Philosophy & Public Policy",
+            "Certificate in Critical Thinking & Reasoning"
+          ]
+        },
+        {
+          "id": "literature_writing",
+          "name": "Literature, Writing & Rhetoric",
+          "programs": [
+            "BA English Literature (Medieval to Modern)",
+            "BA Comparative World Literature",
+            "BA Postcolonial & Diaspora Literature",
+            "BA African Oral Literature & Folklore",
+            "BA Creative Writing & Publishing Studies",
+            "BA Rhetoric, Composition & Writing Pedagogy",
+            "Diploma in Editing & Literary Translation"
+          ]
+        },
+        {
+          "id": "languages_linguistics",
+          "name": "Languages & Linguistics",
+          "programs": [
+            "BA French Studies / German Studies / Spanish Studies",
+            "BA Arabic & Islamic Language Studies",
+            "BA Mandarin Chinese Language & Culture",
+            "BA Applied Linguistics & TESOL",
+            "BA Sociolinguistics & Language Policy",
+            "BA Translation & Interpretation (Consec. & Simultaneous)",
+            "BA African Languages (Twi, Ewe, Ga, Hausa, Yoruba, Dagbani)",
+            "Certificate in Sign Language Interpretation"
+          ]
+        },
+        {
+          "id": "religious_theological",
+          "name": "Religious & Theological Studies",
+          "programs": [
+            "BA Comparative Religion (Christianity, Islam, African Traditional)",
+            "BA Theology & Biblical Studies",
+            "BA Islamic Studies & Qur'anic Exegesis",
+            "BA African Indigenous Religions & Rituals",
+            "MA/PG Diploma in Pastoral & Counselling Studies"
+          ]
+        },
+        {
+          "id": "classics_cultural_media",
+          "name": "Classics, Cultural & Media Studies",
+          "programs": [
+            "BA Classics (Greek & Latin Language, Mythology)",
+            "BA Cultural Studies & Critical Theory",
+            "BA Film, Media & Cultural Critique",
+            "BA Art History & Visual Culture",
+            "BA Performance Studies (Theatre, Dance, Ritual)",
+            "Certificate in Museum Curation & Heritage Management"
+          ]
+        },
+        {
+          "id": "journalism_communication",
+          "name": "Journalism, Communication & Media",
+          "programs": [
+            "BA Journalism & Mass Communication",
+            "BA Broadcast & Multimedia Journalism",
+            "BA Public Relations & Corporate Communication",
+            "BA Advertising & Brand Strategy",
+            "BA Digital & Social Media Communication",
+            "BA Film, Television & Radio Production",
+            "Diploma in Photojournalism & Visual Storytelling"
+          ]
+        },
+        {
+          "id": "interdisciplinary_emerging_humanities",
+          "name": "Interdisciplinary & Emerging Humanities",
+          "programs": [
+            "BA Digital Humanities & Textual Analysis",
+            "BA Environmental Humanities & Eco-Critical Studies",
+            "BA Gender, Sexuality & Queer Studies",
+            "BA Critical Race & Diaspora Studies",
+            "BA Peace, Conflict & Post-Conflict Studies",
+            "BA Sports, Culture & Society"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "social_sciences",
+      "name": "Social Sciences – Society, Behavior & Governance",
+      "subfields": [
+        {
+          "id": "psychology_behavioral",
+          "name": "Psychology & Behavioural Sciences",
+          "programs": [
+            "BSc Psychology (General)",
+            "BSc Clinical Psychology",
+            "BSc Counselling Psychology",
+            "BSc Developmental & Child Psychology",
+            "BSc Industrial & Organisational Psychology",
+            "BSc Cognitive Neuroscience & Neuropsychology",
+            "Diploma in Addiction & Rehabilitation Studies"
+          ]
+        },
+        {
+          "id": "sociology_social_policy",
+          "name": "Sociology, Social Policy & Welfare",
+          "programs": [
+            "BSc Sociology (General)",
+            "BSc Criminology & Criminal Justice",
+            "BSc Social Policy & Welfare Studies",
+            "BSc Migration, Refugee & Diaspora Studies",
+            "BSc Urban Sociology & Community Development",
+            "Certificate in Gender & Social Inclusion"
+          ]
+        },
+        {
+          "id": "political_science_governance",
+          "name": "Political Science, Governance & International Studies",
+          "programs": [
+            "BSc Political Science (Theory & Practice)",
+            "BSc International Relations & Diplomacy",
+            "BSc Public Policy, Administration & Governance",
+            "BSc Security, Intelligence & Counterterrorism Studies",
+            "BSc Peace, Conflict Resolution & Mediation",
+            "Diploma in Electoral Management & Political Campaigns"
+          ]
+        },
+        {
+          "id": "anthropology_archaeology",
+          "name": "Anthropology & Archaeology",
+          "programs": [
+            "BSc Cultural Anthropology",
+            "BSc Biological & Medical Anthropology",
+            "BSc Archaeology & Heritage Management",
+            "BSc Linguistic Anthropology",
+            "Certificate in Ethnographic Research Methods"
+          ]
+        },
+        {
+          "id": "economics_development",
+          "name": "Economics, Development & Demography",
+          "programs": [
+            "BSc Economics (Micro, Macro, Econometrics)",
+            "BSc Development Economics & Policy",
+            "BSc Agricultural & Rural Development",
+            "BSc Health Economics & Financing",
+            "BSc Demography & Population Studies",
+            "Diploma in Development Project Planning & Evaluation"
+          ]
+        },
+        {
+          "id": "geography_urban_environmental",
+          "name": "Geography, Urban & Environmental Studies",
+          "programs": [
+            "BSc Human Geography & Urban Planning",
+            "BSc Physical Geography & Geomorphology",
+            "BSc GIS, Remote Sensing & Cartography",
+            "BSc Environmental Management & Sustainability",
+            "Diploma in Disaster & Risk Management"
+          ]
+        },
+        {
+          "id": "social_work_community",
+          "name": "Social Work & Community Health",
+          "programs": [
+            "BSc Social Work (Clinical & Community)",
+            "BSc Community Development & Public Health",
+            "BSc Youth, Family & Child Welfare Studies",
+            "Certificate in NGO & Nonprofit Management"
+          ]
+        },
+        {
+          "id": "interdisciplinary_emerging_social",
+          "name": "Interdisciplinary & Emerging Social Sciences",
+          "programs": [
+            "BSc Data Journalism & Social Analytics",
+            "BSc Behavioural Economics & Policy Design",
+            "BSc Digital Society & Cyberculture Studies",
+            "BSc Human Rights, Advocacy & Social Justice"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "business_economics_law",
+      "name": "Business, Economics & Law",
+      "subfields": [
+        {
+          "id": "business_management",
+          "name": "Business & Management Sciences",
+          "programs": [
+            "BSc Business Administration (BBA)",
+            "BSc Entrepreneurship & Innovation Management",
+            "BSc International Business & Trade Policy",
+            "BSc Supply Chain, Logistics & Procurement Management",
+            "BSc Project & Programme Management",
+            "BSc Hospitality, Tourism & Events Management",
+            "Diploma in Family Business & SME Development"
+          ]
+        },
+        {
+          "id": "accounting_finance",
+          "name": "Accounting, Finance & Risk Management",
+          "programs": [
+            "BSc Accounting & Finance",
+            "BSc Banking, Finance & Investment Management",
+            "BSc Risk Management & Insurance",
+            "BSc Financial Engineering & Quantitative Finance",
+            "BSc Taxation & Fiscal Policy",
+            "Certificate in Forensic Accounting & Auditing"
+          ]
+        },
+        {
+          "id": "economics_policy",
+          "name": "Economics & Policy Analysis",
+          "programs": [
+            "BSc Economics (General, Applied, Development)",
+            "BSc Econometrics & Big Data Analytics",
+            "BSc Environmental & Resource Economics",
+            "BSc Health Economics & Policy",
+            "BSc Public Sector & Policy Economics",
+            "Diploma in Economic Modeling & Forecasting"
+          ]
+        },
+        {
+          "id": "hr_organizational",
+          "name": "Human Resource & Organisational Studies",
+          "programs": [
+            "BSc Human Resource Management & Organizational Development",
+            "BSc Leadership, Ethics & Corporate Governance",
+            "Diploma in Talent Acquisition & Performance Management"
+          ]
+        },
+        {
+          "id": "marketing_communication",
+          "name": "Marketing, Communication & Consumer Studies",
+          "programs": [
+            "BSc Marketing & Digital Marketing Strategy",
+            "BSc Advertising, Brand & Media Management",
+            "BSc Sales, Customer Relationship & Retail Management",
+            "BSc Market Research, Consumer Behaviour & Insights",
+            "Certificate in E-Commerce & Social Media Marketing"
+          ]
+        },
+        {
+          "id": "entrepreneurship_innovation",
+          "name": "Entrepreneurship, Innovation & Tech Commercialization",
+          "programs": [
+            "BSc Innovation Management & Technology Commercialization",
+            "BSc Social Entrepreneurship & Impact Investing",
+            "Certificate in Startup Development & Venture Creation"
+          ]
+        },
+        {
+          "id": "law_legal",
+          "name": "Law & Legal Studies",
+          "programs": [
+            "LLB (General Law)",
+            "BSc Legal Studies & Paralegal Practice",
+            "BSc International Law & Humanitarian Studies",
+            "BSc Business Law, Compliance & Regulatory Affairs",
+            "BSc Dispute Resolution, Mediation & Arbitration",
+            "Diploma in Legal Drafting & Contract Management"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "creative_arts_media_design",
+      "name": "Creative Arts, Media & Design",
+      "subfields": [
+        {
+          "id": "fine_art_studio",
+          "name": "Fine Art & Studio Practices",
+          "programs": [
+            "BA Fine Art (Painting, Sculpture, Printmaking)",
+            "BA Ceramics & Glass Arts",
+            "BA Textile & Fibre Arts",
+            "Certificate in Art Therapy & Community Arts"
+          ]
+        },
+        {
+          "id": "visual_communication",
+          "name": "Visual Communication & Graphic Design",
+          "programs": [
+            "BA Graphic Design & Visual Communication",
+            "BA Digital Illustration & Typographic Design",
+            "BA UX/UI & Interaction Design",
+            "Certificate in Motion Graphics & Visual Effects"
+          ]
+        },
+        {
+          "id": "music_sound",
+          "name": "Music & Sound Arts",
+          "programs": [
+            "BA Music Performance (Voice, Instrumental)",
+            "BA Music Composition & Theory",
+            "BA Ethnomusicology & African Music",
+            "Diploma in Sound Engineering & Audio Production",
+            "Certificate in Music Technology & Electronic Music"
+          ]
+        },
+        {
+          "id": "performing_arts",
+          "name": "Performing Arts & Theatre",
+          "programs": [
+            "BA Theatre Performance & Acting",
+            "BA Directing & Stage Management",
+            "BA Dance Performance & Choreography",
+            "Certificate in Theatre Design (Set/Costume/Lighting)"
+          ]
+        },
+        {
+          "id": "fashion_textile",
+          "name": "Fashion & Textile Design",
+          "programs": [
+            "BA Fashion Design & Merchandising",
+            "BA Textile Design & Surface Pattern",
+            "Diploma in Costume Design & Fashion Illustration",
+            "Certificate in Sustainable Fashion & Ethical Textiles"
+          ]
+        },
+        {
+          "id": "architecture_interior",
+          "name": "Architecture & Interior Design",
+          "programs": [
+            "BSc Architecture",
+            "BA Interior & Spatial Design",
+            "Certificate in Furniture & Product Design"
+          ]
+        },
+        {
+          "id": "film_media_broadcasting",
+          "name": "Film, Media & Broadcasting",
+          "programs": [
+            "BA Film & Television Production",
+            "BA Screenwriting & Story Development",
+            "BA Cinematography & Editing",
+            "BA Radio & Podcast Production",
+            "Diploma in Documentary Filmmaking"
+          ]
+        },
+        {
+          "id": "animation_game_interactive",
+          "name": "Animation, Game & Interactive Media",
+          "programs": [
+            "BA Animation & Motion Arts",
+            "BA Game Design & Development",
+            "BA 3D Modelling & Visual Effects",
+            "Certificate in Virtual/Augmented Reality Development"
+          ]
+        },
+        {
+          "id": "photography_imaging",
+          "name": "Photography & Imaging",
+          "programs": [
+            "BA Photography & Photojournalism",
+            "Diploma in Digital Photography & Darkroom Techniques",
+            "Certificate in Commercial & Fashion Photography"
+          ]
+        },
+        {
+          "id": "media_communication_cultural",
+          "name": "Media, Communication & Cultural Studies",
+          "programs": [
+            "BA Journalism & Mass Communication",
+            "BA Digital & Social Media Studies",
+            "BA Public Relations & Advertising",
+            "BA Film & Media Criticism",
+            "BA Cultural & Media Industries"
+          ]
+        },
+        {
+          "id": "creative_writing_publishing",
+          "name": "Creative Writing & Publishing",
+          "programs": [
+            "BA Creative Writing (Fiction, Poetry, Nonfiction)",
+            "BA Publishing Studies & Editorial Practice",
+            "Certificate in Scriptwriting & Dramatic Writing"
+          ]
+        },
+        {
+          "id": "other_creative_arts",
+          "name": "Other Creative Arts",
+          "programs": [
+            "BA Museum Curation & Heritage Management",
+            "Certificate in Arts Entrepreneurship & Cultural Policy"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "education_information_science",
+      "name": "Education & Information Science",
+      "subfields": [
+        {
+          "id": "early_childhood_primary",
+          "name": "Early Childhood & Primary Education",
+          "programs": [
+            "BEd Early Childhood Education",
+            "BEd Primary Education",
+            "Diploma in Preschool & Nursery Education",
+            "Certificate in Child Development & Play Therapy"
+          ]
+        },
+        {
+          "id": "secondary_subject_specialist",
+          "name": "Secondary & Subject-Specialist Education",
+          "programs": [
+            "BEd Secondary Education",
+            "Post-Basic Diploma in Technical & Vocational Education",
+            "Certificate in STEM Teaching Methods"
+          ]
+        },
+        {
+          "id": "special_needs_inclusive",
+          "name": "Special Needs & Inclusive Education",
+          "programs": [
+            "BEd Special Needs Education",
+            "Diploma in Inclusive Classroom Strategies",
+            "Certificate in Assistive Technology for Learning"
+          ]
+        },
+        {
+          "id": "educational_psychology_counselling",
+          "name": "Educational Psychology & Counselling",
+          "programs": [
+            "BEd Educational Psychology",
+            "Diploma in School Counselling & Guidance",
+            "Certificate in Learning Assessment & Remediation"
+          ]
+        },
+        {
+          "id": "curriculum_instruction_assessment",
+          "name": "Curriculum, Instruction & Assessment",
+          "programs": [
+            "MEd/PGDip Curriculum & Instructional Design",
+            "Diploma in Educational Measurement & Evaluation",
+            "Certificate in Instructional Technology & E-Learning"
+          ]
+        },
+        {
+          "id": "educational_leadership_administration",
+          "name": "Educational Leadership & Administration",
+          "programs": [
+            "MEd/PGDip Educational Administration & Policy",
+            "Diploma in School Leadership & Management",
+            "Certificate in Quality Assurance in Education"
+          ]
+        },
+        {
+          "id": "adult_continuing_distance",
+          "name": "Adult, Continuing & Distance Education",
+          "programs": [
+            "BEd Adult & Continuing Education",
+            "Diploma in Distance Learning Facilitation",
+            "Certificate in Lifelong Learning & Community Education"
+          ]
+        },
+        {
+          "id": "library_archives_information",
+          "name": "Library, Archives & Information Science",
+          "programs": [
+            "BA/BSc Library & Information Science",
+            "Diploma in Archival Management & Records Preservation",
+            "Certificate in Digital Libraries & Knowledge Management"
+          ]
+        },
+        {
+          "id": "educational_technology_media",
+          "name": "Educational Technology & Media",
+          "programs": [
+            "BEd Educational Technology & Media Production",
+            "Certificate in Instructional Systems Technology",
+            "Diploma in Multimedia in Education & Training"
+          ]
+        },
+        {
+          "id": "other_education_info_science",
+          "name": "Other Education & Info Science",
+          "programs": [
+            "BA/BSc Museum Education & Public History",
+            "Certificate in Information Governance & Data Stewardship"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "agriculture_environment_sustainability",
+      "name": "Agriculture, Environment & Sustainability",
+      "subfields": [
+        {
+          "id": "agricultural_production",
+          "name": "Agricultural Production & Management",
+          "programs": [
+            "BSc Agronomy & Crop Science",
+            "BSc Horticulture & Floriculture",
+            "BSc Animal Science & Livestock Management",
+            "BSc Poultry Science & Production",
+            "Diploma in Farm Management & Extension Services"
+          ]
+        },
+        {
+          "id": "agricultural_engineering",
+          "name": "Agricultural Engineering & Mechanisation",
+          "programs": [
+            "BSc Agricultural Engineering",
+            "BSc Irrigation & Drainage Engineering",
+            "Diploma in Agricultural Mechanisation & Equipment"
+          ]
+        },
+        {
+          "id": "soil_plant_pest",
+          "name": "Soil, Plant & Pest Sciences",
+          "programs": [
+            "BSc Soil Science & Land Management",
+            "BSc Plant Protection & Pest Management",
+            "BSc Crop Protection & Weed Science",
+            "Certificate in Integrated Pest Management"
+          ]
+        },
+        {
+          "id": "food_science_post_harvest",
+          "name": "Food Science & Post-Harvest Technology",
+          "programs": [
+            "BSc Food Science & Technology",
+            "Diploma in Post-Harvest Loss Reduction",
+            "Certificate in Food Safety & Quality Assurance"
+          ]
+        },
+        {
+          "id": "agribusiness_economics",
+          "name": "Agri-Business, Economics & Marketing",
+          "programs": [
+            "BSc Agribusiness Management",
+            "BSc Agricultural Economics & Policy",
+            "Diploma in Agro-Marketing & Supply Chain",
+            "Certificate in Rural Finance & Microcredit"
+          ]
+        },
+        {
+          "id": "forestry_wildlife_conservation",
+          "name": "Forestry, Wildlife & Conservation",
+          "programs": [
+            "BSc Forestry & Wildlife Management",
+            "BSc Conservation Biology & Ecology",
+            "Diploma in Forest Resource Management",
+            "Certificate in Biodiversity & Ecosystem Services"
+          ]
+        },
+        {
+          "id": "fisheries_aquaculture_marine",
+          "name": "Fisheries, Aquaculture & Marine Sciences",
+          "programs": [
+            "BSc Fisheries & Aquaculture",
+            "BSc Aquatic Resource Management",
+            "Diploma in Fish Processing & Quality Control",
+            "Certificate in Coastal Zone Management"
+          ]
+        },
+        {
+          "id": "environmental_science_sustainability",
+          "name": "Environmental Science & Sustainability",
+          "programs": [
+            "BSc Environmental Science & Management",
+            "BSc Climate Change & Carbon Management",
+            "BSc Renewable Energy & Sustainable Development",
+            "Certificate in Environmental Impact Assessment"
+          ]
+        },
+        {
+          "id": "natural_resource_gis",
+          "name": "Natural Resource & GIS Applications",
+          "programs": [
+            "BSc Natural Resource Management",
+            "BSc GIS & Remote Sensing for Environment",
+            "Diploma in Watershed & Land-Use Planning"
+          ]
+        },
+        {
+          "id": "other_agriculture_environment",
+          "name": "Other Agriculture & Environment",
+          "programs": [
+            "BSc Agroforestry & Permaculture",
+            "Certificate in Organic Farming & Agro-ecology"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "security_defense_public_services",
+      "name": "Security, Defense & Public Services",
+      "subfields": [
+        {
+          "id": "defense_strategic_security",
+          "name": "Defense, Strategic & Security Studies",
+          "programs": [
+            "BA/BSc Defense & Strategic Studies",
+            "BA/BSc Security & Intelligence Studies",
+            "Certificate in Counterterrorism & Homeland Security",
+            "Diploma in Strategic Leadership & Policy"
+          ]
+        },
+        {
+          "id": "peace_conflict_humanitarian",
+          "name": "Peace, Conflict & Humanitarian Studies",
+          "programs": [
+            "BA/BSc Peace & Conflict Resolution",
+            "BA/BSc Humanitarian & Refugee Studies",
+            "Certificate in Mediation & Dispute Resolution"
+          ]
+        },
+        {
+          "id": "public_administration_governance",
+          "name": "Public Administration & Governance",
+          "programs": [
+            "BSc Public Administration & Management",
+            "BSc Public Policy & Development",
+            "Diploma in Local Government & Decentralization",
+            "Certificate in Public Financial Management"
+          ]
+        },
+        {
+          "id": "emergency_disaster_risk",
+          "name": "Emergency, Disaster & Risk Management",
+          "programs": [
+            "BSc Disaster Management & Emergency Services",
+            "Diploma in Fire Safety & Rescue Operations",
+            "Certificate in Community & Health Emergency Response"
+          ]
+        },
+        {
+          "id": "law_enforcement_forensics",
+          "name": "Law Enforcement & Forensics",
+          "programs": [
+            "BA/BSc Criminal Justice & Policing Studies",
+            "Diploma in Forensic Science & Crime Scene Investigation",
+            "Certificate in Cybercrime & Digital Forensics"
+          ]
+        },
+        {
+          "id": "security_technology_cybersecurity",
+          "name": "Security Technology & Cybersecurity",
+          "programs": [
+            "BSc Cybersecurity & Information Assurance",
+            "Diploma in Network Defense & Ethical Hacking",
+            "Certificate in Security Systems & Surveillance"
+          ]
+        },
+        {
+          "id": "corrections_rehabilitation",
+          "name": "Corrections, Rehabilitation & Social Services",
+          "programs": [
+            "BSc Corrections & Rehabilitation Studies",
+            "Diploma in Probation & Parole Administration",
+            "Certificate in Community Corrections & Reintegration"
+          ]
+        },
+        {
+          "id": "other_public_services",
+          "name": "Other Public Services",
+          "programs": [
+            "BSc Fire Science & Safety Management",
+            "Certificate in Public Health Emergency Preparedness"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "general_interdisciplinary",
+      "name": "General & Interdisciplinary Studies",
+      "subfields": [
+        {
+          "id": "general_studies",
+          "name": "General & Interdisciplinary Studies",
+          "programs": [
+            "Liberal Arts",
+            "Interdisciplinary Science / Arts",
+            "General Studies / Foundation Programs",
+            "Open University / Distance Learning",
+            "Undeclared / Not Sure Yet"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "other",
+      "name": "Other",
+      "subfields": [
+        {
+          "id": "other_programs",
+          "name": "Other Programs",
+          "programs": [
+            "Other (please specify)"
+          ]
+        }
+      ]
+    }
+  ]
+}

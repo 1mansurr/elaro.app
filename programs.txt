@@ -1,0 +1,807 @@
+# Fields of Study
+
+## 🎓 Final Field of Study Breakdown (for dropdown menus)
+
+This version is optimized for usability — categories are intuitive, subfields are practical, and fringe cases are handled.
+
+---
+
+### 1. **STEM — Science, Technology, Engineering & Math**
+
+**Subfields:**
+
+## 1. Computer & Information Technology
+
+- BSc Computer Science
+- BSc Software Engineering / Software Development
+- BSc Computer Engineering
+- BSc Information Technology
+- BSc Information Systems
+- BSc Management Information Systems
+- BSc Cybersecurity & Digital Forensics
+- BSc Network Engineering & Telecommunications
+- BSc Cloud Computing & Virtualization
+- BSc Mobile & Pervasive Computing
+- BSc Human–Computer Interaction (UX/UI)
+- BSc Artificial Intelligence & Machine Learning
+- BSc Data Engineering
+- BSc Multimedia & Computer Graphics
+- BSc Game Design & Development
+- BSc Internet of Things & Embedded Systems
+
+---
+
+## 2. Data Science & Analytics
+
+- BSc Data Science
+- BSc Data Analytics
+- BSc Business Analytics
+- BSc Quantitative Finance & Risk Management
+- BSc Statistics
+- BSc Biostatistics
+- BSc Actuarial Science
+- BSc Operations Research & Optimization
+- BSc Econometrics
+- BSc Computational Statistics
+
+---
+
+## 3. Mathematics
+
+- BSc Pure Mathematics
+- BSc Applied Mathematics
+- BSc Computational Mathematics / Numerical Analysis
+- BSc Mathematical Physics
+- BSc Financial Mathematics
+- BSc Mathematical Statistics
+- BSc Mathematical Logic & Foundations
+
+---
+
+## 4. Engineering
+
+### 4.1 Civil & Environmental Engineering
+
+- BSc Civil Engineering
+- BSc Structural Engineering
+- BSc Environmental Engineering
+- BSc Transportation / Highway Engineering
+- BSc Water Resources & Hydraulic Engineering
+- BSc Geomatic (Surveying) Engineering
+
+### 4.2 Electrical & Electronic Engineering
+
+- BSc Electrical Engineering
+- BSc Electronics & Embedded Systems
+- BSc Telecommunications Engineering
+- BSc Power Systems & Energy Engineering
+- BSc Renewable Energy Systems
+
+### 4.3 Mechanical & Industrial Engineering
+
+- BSc Mechanical Engineering
+- BSc Mechatronics & Robotics
+- BSc Industrial & Systems Engineering
+- BSc Automotive / Marine Engineering
+- BSc Manufacturing & Production Engineering
+- BSc Materials Science & Metallurgical Engineering
+
+### 4.4 Chemical & Process Engineering
+
+- BSc Chemical Engineering
+- BSc Petrochemical / Petroleum Engineering
+- BSc Process & Environmental Engineering
+- BSc Food Process Engineering
+- BSc Polymer & Plastics Engineering
+
+### 4.5 Mining, Petroleum & Geological Engineering
+
+- BSc Mineral & Mining Engineering
+- BSc Petroleum & Gas Engineering
+- BSc Geological Engineering
+- BSc Petroleum Geoscience
+
+---
+
+## 5. Built Environment & Planning
+
+- BSc Architecture
+- BSc Building Technology & Construction
+- BSc Quantity Surveying & Construction Economics
+- BSc Estate Management
+- BSc Town & Regional Planning
+- BSc Landscape Architecture & Management
+- BSc Urban & Regional Development
+
+---
+
+## 6. Physical & Earth Sciences
+
+- BSc Physics (General)
+- BSc Astrophysics & Space Science
+- BSc Nuclear & Particle Physics
+- BSc Chemistry (General)
+    - Organic Chemistry
+    - Inorganic Chemistry
+    - Physical & Theoretical Chemistry
+    - Analytical Chemistry
+    - Polymer Science
+- BSc Geology & Earth Science
+- BSc Geophysics
+- BSc Meteorology & Climate Science
+- BSc Oceanography & Marine Science
+- BSc Physical Geography
+
+---
+
+## 7. Life, Agricultural & Environmental Sciences
+
+- BSc Biology (General)
+    - Molecular Biology
+    - Genetics & Genomics
+    - Microbiology & Immunology
+    - Ecology & Conservation Biology
+- BSc Biochemistry
+- BSc Biotechnology & Bioengineering
+- BSc Environmental Science & Sustainability
+- BSc Agronomy & Crop Science
+- BSc Animal Science & Livestock Management
+- BSc Fisheries & Aquaculture
+- BSc Soil Science & Land Management
+- BSc Forestry & Wildlife Management
+- BSc Food Science & Technology
+- BSc Agro-processing & Post-Harvest Technology
+- BSc Agricultural Mechanisation & Irrigation
+- **Other**
+
+**Subfield:**
+
+Other (please specify) — *free text input*
+
+---
+
+### **2. Health Sciences & Medicine**
+
+**Subfields:**
+
+## 1. Medicine & Clinical Practice
+
+- MBChB / MD (Human Medicine)
+- BDS (Bachelor of Dental Surgery)
+- BSc Physician Assistant Studies (PA)
+- BSc Clinical Medicine & Community Health
+
+## 2. Nursing & Midwifery
+
+- Diploma/ND in Registered Nursing
+- BSc Nursing (Generic)
+- BSc Nursing ( Midwifery)
+- BSc Nursing ( Mental Health)
+- BSc Nursing ( Pediatric)
+- BSc Nursing ( Critical Care)
+- BSc Nursing ( Oncology)
+- BSc Nursing (  Anaesthesia )
+
+## 3. Pharmacy & Pharmaceutical Sciences
+
+- BPharm (Bachelor of Pharmacy)
+- BSc Pharmaceutical Sciences
+- BSc Clinical Pharmacy
+- BSc Industrial Pharmacy & Pharmaceutics
+- BSc Pharmacology & Toxicology
+- BSc Clinical Research & Regulatory Affairs
+
+## 4. Dentistry & Oral Health Sciences
+
+- BDS (Dental Surgery)
+- BSc Dental Therapy & Hygiene
+- BSc Orthodontic Technology
+- BSc Oral Implantology Technology
+
+## 5. Public Health & Health Policy
+
+- BSc Public Health
+- BSc Epidemiology & Biostatistics
+- BSc Health Policy, Planning & Management
+- BSc Environmental & Occupational Health
+- BSc Health Promotion & Social Behaviour Change
+- BSc Global Health & Development
+- BSc Health Economics & Financing
+
+## 6. Allied Health Sciences
+
+### 6.1 Laboratory & Diagnostic Sciences
+
+- BSc Medical Laboratory Technology
+- BSc Medical Laboratory Science (Clinical Chemistry, Haematology, Microbiology, Immunology)
+- BSc Histotechnology & Cytotechnology
+
+### 6.2 Imaging & Sonography
+
+- BSc Radiography & Medical Imaging
+- BSc Diagnostic Medical Ultrasound (Sonography)
+- BSc Nuclear Medicine Technology
+
+### 6.3 Rehabilitation & Therapy
+
+- BSc Physiotherapy
+- BSc Occupational Therapy
+- BSc Speech & Language Therapy
+- BSc Prosthetics & Orthotics
+- BSc Disability & Rehabilitation Studies
+
+### 6.4 Nutrition & Lifestyle Medicine
+
+- BSc Nutrition & Dietetics
+- BSc Food Science & Technology (Clinical Nutrition)
+- BSc Sports & Exercise Science
+- BSc Wellness & Lifestyle Management
+
+### 6.5 Health Informatics & Technology
+
+- BSc Health Information Management
+- BSc Health Informatics & Digital Health
+- BSc Telemedicine & E-Health Systems
+- BSc Medical Coding & Clinical Data Management
+
+### 6.6 Traditional, Complementary & Alternative Medicine
+
+- BSc Herbal Medicine & Phytotherapy
+- Diploma in Traditional African Medicine
+- BSc Complementary & Integrative Medicine
+
+## 7. Veterinary & Animal Health Sciences
+
+- Doctor of Veterinary Medicine (DVM)
+- BSc Veterinary Nursing & Animal Health
+- BSc Wildlife Health & Conservation Medicine
+- BSc Aquatic Animal Health & Fisheries Medicine
+
+## 8. Emergency, Critical Care & Paramedic Sciences
+
+- Diploma/ND in Emergency Medical Technician (EMT)
+- BSc Paramedic Science
+- BSc Critical Care & Anaesthesia Technology
+- BSc Disaster & Emergency Management in Health
+
+## 9. Specialty & Emerging Health Programs
+
+- BSc Genomics & Molecular Medicine
+- BSc Biomedical Engineering (Healthcare Technology)
+- BSc Clinical Psychology & Counselling
+- BSc Neuroscience & Neuro-Rehabilitation
+- BSc Precision Medicine & Pharmacogenomics
+- BSc Gerontology & Geriatric Care
+- BSc Maternal & Child Health
+- BSc Community Oral Health
+- BSc Occupational Health Safety & Management
+- **Other**
+
+**Subfield:**
+
+Other (please specify) — *free text input*
+
+---
+
+## 3. Humanities – Arts, Letters & Cultural Studies
+
+**History**
+
+- BA History (General)
+- BA African History
+- BA European History
+- BA Asian & Middle Eastern History
+- BA Military & Diplomatic History
+- BA Oral & Public History
+- BA Museum & Heritage Studies
+- Diploma in Archival & Records Management
+
+**Philosophy & Ethics**
+
+- BA Philosophy (Logic, Metaphysics, Epistemology)
+- BA Applied Ethics (Bioethics, Tech Ethics, Environmental Ethics)
+- BA Philosophy of Science & Mind
+- BA Philosophy & Public Policy
+- Certificate in Critical Thinking & Reasoning
+
+**Literature, Writing & Rhetoric**
+
+- BA English Literature (Medieval to Modern)
+- BA Comparative World Literature
+- BA Postcolonial & Diaspora Literature
+- BA African Oral Literature & Folklore
+- BA Creative Writing & Publishing Studies
+- BA Rhetoric, Composition & Writing Pedagogy
+- Diploma in Editing & Literary Translation
+
+**Languages & Linguistics**
+
+- BA French Studies / German Studies / Spanish Studies
+- BA Arabic & Islamic Language Studies
+- BA Mandarin Chinese Language & Culture
+- BA Applied Linguistics & TESOL
+- BA Sociolinguistics & Language Policy
+- BA Translation & Interpretation (Consec. & Simultaneous)
+- BA African Languages (Twi, Ewe, Ga, Hausa, Yoruba, Dagbani)
+- Certificate in Sign Language Interpretation
+
+**Religious & Theological Studies**
+
+- BA Comparative Religion (Christianity, Islam, African Traditional)
+- BA Theology & Biblical Studies
+- BA Islamic Studies & Qur’anic Exegesis
+- BA African Indigenous Religions & Rituals
+- MA/PG Diploma in Pastoral & Counselling Studies
+
+**Classics, Cultural & Media Studies**
+
+- BA Classics (Greek & Latin Language, Mythology)
+- BA Cultural Studies & Critical Theory
+- BA Film, Media & Cultural Critique
+- BA Art History & Visual Culture
+- BA Performance Studies (Theatre, Dance, Ritual)
+- Certificate in Museum Curation & Heritage Management
+
+**Journalism, Communication & Media**
+
+- BA Journalism & Mass Communication
+- BA Broadcast & Multimedia Journalism
+- BA Public Relations & Corporate Communication
+- BA Advertising & Brand Strategy
+- BA Digital & Social Media Communication
+- BA Film, Television & Radio Production
+- Diploma in Photojournalism & Visual Storytelling
+
+**Interdisciplinary & Emerging Humanities**
+
+- BA Digital Humanities & Textual Analysis
+- BA Environmental Humanities & Eco-Critical Studies
+- BA Gender, Sexuality & Queer Studies
+- BA Critical Race & Diaspora Studies
+- BA Peace, Conflict & Post-Conflict Studies
+- BA Sports, Culture & Society
+- Other (please specify) — *free text input*
+
+---
+
+## 4. Social Sciences – Society, Behavior & Governance
+
+**Psychology & Behavioural Sciences**
+
+- BSc Psychology (General)
+- BSc Clinical Psychology
+- BSc Counselling Psychology
+- BSc Developmental & Child Psychology
+- BSc Industrial & Organisational Psychology
+- BSc Cognitive Neuroscience & Neuropsychology
+- Diploma in Addiction & Rehabilitation Studies
+
+**Sociology, Social Policy & Welfare**
+
+- BSc Sociology (General)
+- BSc Criminology & Criminal Justice
+- BSc Social Policy & Welfare Studies
+- BSc Migration, Refugee & Diaspora Studies
+- BSc Urban Sociology & Community Development
+- Certificate in Gender & Social Inclusion
+
+**Political Science, Governance & International Studies**
+
+- BSc Political Science (Theory & Practice)
+- BSc International Relations & Diplomacy
+- BSc Public Policy, Administration & Governance
+- BSc Security, Intelligence & Counterterrorism Studies
+- BSc Peace, Conflict Resolution & Mediation
+- Diploma in Electoral Management & Political Campaigns
+
+**Anthropology & Archaeology**
+
+- BSc Cultural Anthropology
+- BSc Biological & Medical Anthropology
+- BSc Archaeology & Heritage Management
+- BSc Linguistic Anthropology
+- Certificate in Ethnographic Research Methods
+
+**Economics, Development & Demography**
+
+- BSc Economics (Micro, Macro, Econometrics)
+- BSc Development Economics & Policy
+- BSc Agricultural & Rural Development
+- BSc Health Economics & Financing
+- BSc Demography & Population Studies
+- Diploma in Development Project Planning & Evaluation
+
+**Geography, Urban & Environmental Studies**
+
+- BSc Human Geography & Urban Planning
+- BSc Physical Geography & Geomorphology
+- BSc GIS, Remote Sensing & Cartography
+- BSc Environmental Management & Sustainability
+- Diploma in Disaster & Risk Management
+
+**Social Work & Community Health**
+
+- BSc Social Work (Clinical & Community)
+- BSc Community Development & Public Health
+- BSc Youth, Family & Child Welfare Studies
+- Certificate in NGO & Nonprofit Management
+
+**Interdisciplinary & Emerging Social Sciences**
+
+- BSc Data Journalism & Social Analytics
+- BSc Behavioural Economics & Policy Design
+- BSc Digital Society & Cyberculture Studies
+- BSc Human Rights, Advocacy & Social Justice
+- Other (please specify) — *free text input*
+
+---
+
+## 5. Business, Economics & Law
+
+### Business & Management Sciences
+
+- BSc Business Administration (BBA)
+    - Majors: Finance, Marketing, HR, Operations, IT Management, Entrepreneurship
+- BSc Entrepreneurship & Innovation Management
+- BSc International Business & Trade Policy
+- BSc Supply Chain, Logistics & Procurement Management
+- BSc Project & Programme Management
+- BSc Hospitality, Tourism & Events Management
+- Diploma in Family Business & SME Development
+
+### Accounting, Finance & Risk Management
+
+- BSc Accounting & Finance
+- BSc Banking, Finance & Investment Management
+- BSc Risk Management & Insurance
+- BSc Financial Engineering & Quantitative Finance
+- BSc Taxation & Fiscal Policy
+- Certificate in Forensic Accounting & Auditing
+
+### Economics & Policy Analysis
+
+- BSc Economics (General, Applied, Development)
+- BSc Econometrics & Big Data Analytics
+- BSc Environmental & Resource Economics
+- BSc Health Economics & Policy
+- BSc Public Sector & Policy Economics
+- Diploma in Economic Modeling & Forecasting
+
+### Human Resource & Organisational Studies
+
+- BSc Human Resource Management & Organizational Development
+- BSc Leadership, Ethics & Corporate Governance
+- Diploma in Talent Acquisition & Performance Management
+
+### Marketing, Communication & Consumer Studies
+
+- BSc Marketing & Digital Marketing Strategy
+- BSc Advertising, Brand & Media Management
+- BSc Sales, Customer Relationship & Retail Management
+- BSc Market Research, Consumer Behaviour & Insights
+- Certificate in E-Commerce & Social Media Marketing
+
+### Entrepreneurship, Innovation & Tech Commercialization
+
+- BSc Innovation Management & Technology Commercialization
+- BSc Social Entrepreneurship & Impact Investing
+- Certificate in Startup Development & Venture Creation
+
+### Law & Legal Studies
+
+- LLB (General Law)
+    - Concentrations: Corporate/Commercial Law, Criminal Law, Environmental Law, Intellectual Property, Human Rights
+- BSc Legal Studies & Paralegal Practice
+- BSc International Law & Humanitarian Studies
+- BSc Business Law, Compliance & Regulatory Affairs
+- BSc Dispute Resolution, Mediation & Arbitration
+- Diploma in Legal Drafting & Contract Management
+
+---
+
+## 6. Creative Arts, Media & Design
+
+**Fine Art & Studio Practices**
+
+- BA Fine Art (Painting, Sculpture, Printmaking)
+- BA Ceramics & Glass Arts
+- BA Textile & Fibre Arts
+- Certificate in Art Therapy & Community Arts
+
+**Visual Communication & Graphic Design**
+
+- BA Graphic Design & Visual Communication
+- BA Digital Illustration & Typographic Design
+- BA UX/UI & Interaction Design
+- Certificate in Motion Graphics & Visual Effects
+
+**Music & Sound Arts**
+
+- BA Music Performance (Voice, Instrumental)
+- BA Music Composition & Theory
+- BA Ethnomusicology & African Music
+- Diploma in Sound Engineering & Audio Production
+- Certificate in Music Technology & Electronic Music
+
+**Performing Arts & Theatre**
+
+- BA Theatre Performance & Acting
+- BA Directing & Stage Management
+- BA Dance Performance & Choreography
+- Certificate in Theatre Design (Set/Costume/Lighting)
+
+**Fashion & Textile Design**
+
+- BA Fashion Design & Merchandising
+- BA Textile Design & Surface Pattern
+- Diploma in Costume Design & Fashion Illustration
+- Certificate in Sustainable Fashion & Ethical Textiles
+
+**Architecture & Interior Design**
+
+- BSc Architecture (see “Built Environment”)
+- BA Interior & Spatial Design
+- Certificate in Furniture & Product Design
+
+**Film, Media & Broadcasting**
+
+- BA Film & Television Production
+- BA Screenwriting & Story Development
+- BA Cinematography & Editing
+- BA Radio & Podcast Production
+- Diploma in Documentary Filmmaking
+
+**Animation, Game & Interactive Media**
+
+- BA Animation & Motion Arts
+- BA Game Design & Development
+- BA 3D Modelling & Visual Effects
+- Certificate in Virtual/Augmented Reality Development
+
+**Photography & Imaging**
+
+- BA Photography & Photojournalism
+- Diploma in Digital Photography & Darkroom Techniques
+- Certificate in Commercial & Fashion Photography
+
+**Media, Communication & Cultural Studies**
+
+- BA Journalism & Mass Communication
+- BA Digital & Social Media Studies
+- BA Public Relations & Advertising
+- BA Film & Media Criticism
+- BA Cultural & Media Industries
+
+**Creative Writing & Publishing**
+
+- BA Creative Writing (Fiction, Poetry, Nonfiction)
+- BA Publishing Studies & Editorial Practice
+- Certificate in Scriptwriting & Dramatic Writing
+
+**Other Creative Arts**
+
+- BA Museum Curation & Heritage Management
+- Certificate in Arts Entrepreneurship & Cultural Policy
+- Other (please specify) — *free text input*
+
+---
+
+## 7. Education & Information Science
+
+**Early Childhood & Primary Education**
+
+- BEd Early Childhood Education
+- BEd Primary Education
+- Diploma in Preschool & Nursery Education
+- Certificate in Child Development & Play Therapy
+
+**Secondary & Subject-Specialist Education**
+
+- BEd Secondary Education
+- Post-Basic Diploma in Technical & Vocational Education
+- Certificate in STEM Teaching Methods
+
+**Special Needs & Inclusive Education**
+
+- BEd Special Needs Education
+- Diploma in Inclusive Classroom Strategies
+- Certificate in Assistive Technology for Learning
+
+**Educational Psychology & Counselling**
+
+- BEd Educational Psychology
+- Diploma in School Counselling & Guidance
+- Certificate in Learning Assessment & Remediation
+
+**Curriculum, Instruction & Assessment**
+
+- MEd/PGDip Curriculum & Instructional Design
+- Diploma in Educational Measurement & Evaluation
+- Certificate in Instructional Technology & E-Learning
+
+**Educational Leadership & Administration**
+
+- MEd/PGDip Educational Administration & Policy
+- Diploma in School Leadership & Management
+- Certificate in Quality Assurance in Education
+
+**Adult, Continuing & Distance Education**
+
+- BEd Adult & Continuing Education
+- Diploma in Distance Learning Facilitation
+- Certificate in Lifelong Learning & Community Education
+
+**Library, Archives & Information Science**
+
+- BA/BSc Library & Information Science
+- Diploma in Archival Management & Records Preservation
+- Certificate in Digital Libraries & Knowledge Management
+
+**Educational Technology & Media**
+
+- BEd Educational Technology & Media Production
+- Certificate in Instructional Systems Technology
+- Diploma in Multimedia in Education & Training
+
+**Other Education & Info Science**
+
+- BA/BSc Museum Education & Public History
+- Certificate in Information Governance & Data Stewardship
+- Other (please specify) — *free text input*
+
+---
+
+## 8. Agriculture, Environment & Sustainability
+
+**Agricultural Production & Management**
+
+- BSc Agronomy & Crop Science
+- BSc Horticulture & Floriculture
+- BSc Animal Science & Livestock Management
+- BSc Poultry Science & Production
+- Diploma in Farm Management & Extension Services
+
+**Agricultural Engineering & Mechanisation**
+
+- BSc Agricultural Engineering
+- BSc Irrigation & Drainage Engineering
+- Diploma in Agricultural Mechanisation & Equipment
+
+**Soil, Plant & Pest Sciences**
+
+- BSc Soil Science & Land Management
+- BSc Plant Protection & Pest Management
+- BSc Crop Protection & Weed Science
+- Certificate in Integrated Pest Management
+
+**Food Science & Post-Harvest Technology**
+
+- BSc Food Science & Technology
+- Diploma in Post-Harvest Loss Reduction
+- Certificate in Food Safety & Quality Assurance
+
+**Agri-Business, Economics & Marketing**
+
+- BSc Agribusiness Management
+- BSc Agricultural Economics & Policy
+- Diploma in Agro-Marketing & Supply Chain
+- Certificate in Rural Finance & Microcredit
+
+**Forestry, Wildlife & Conservation**
+
+- BSc Forestry & Wildlife Management
+- BSc Conservation Biology & Ecology
+- Diploma in Forest Resource Management
+- Certificate in Biodiversity & Ecosystem Services
+
+**Fisheries, Aquaculture & Marine Sciences**
+
+- BSc Fisheries & Aquaculture
+- BSc Aquatic Resource Management
+- Diploma in Fish Processing & Quality Control
+- Certificate in Coastal Zone Management
+
+**Environmental Science & Sustainability**
+
+- BSc Environmental Science & Management
+- BSc Climate Change & Carbon Management
+- BSc Renewable Energy & Sustainable Development
+- Certificate in Environmental Impact Assessment
+
+**Natural Resource & GIS Applications**
+
+- BSc Natural Resource Management
+- BSc GIS & Remote Sensing for Environment
+- Diploma in Watershed & Land-Use Planning
+
+**Other Agriculture & Environment**
+
+- BSc Agroforestry & Permaculture
+- Certificate in Organic Farming & Agro-ecology
+- Other (please specify) — *free text input*
+
+---
+
+## 9. Security, Defense & Public Services
+
+**Defense, Strategic & Security Studies**
+
+- BA/BSc Defense & Strategic Studies
+- BA/BSc Security & Intelligence Studies
+- Certificate in Counterterrorism & Homeland Security
+- Diploma in Strategic Leadership & Policy
+
+**Peace, Conflict & Humanitarian Studies**
+
+- BA/BSc Peace & Conflict Resolution
+- BA/BSc Humanitarian & Refugee Studies
+- Certificate in Mediation & Dispute Resolution
+
+**Public Administration & Governance**
+
+- BSc Public Administration & Management
+- BSc Public Policy & Development
+- Diploma in Local Government & Decentralization
+- Certificate in Public Financial Management
+
+**Emergency, Disaster & Risk Management**
+
+- BSc Disaster Management & Emergency Services
+- Diploma in Fire Safety & Rescue Operations
+- Certificate in Community & Health Emergency Response
+
+**Law Enforcement & Forensics**
+
+- BA/BSc Criminal Justice & Policing Studies
+- Diploma in Forensic Science & Crime Scene Investigation
+- Certificate in Cybercrime & Digital Forensics
+
+**Security Technology & Cybersecurity**
+
+- BSc Cybersecurity & Information Assurance
+- Diploma in Network Defense & Ethical Hacking
+- Certificate in Security Systems & Surveillance
+
+**Corrections, Rehabilitation & Social Services**
+
+- BSc Corrections & Rehabilitation Studies
+- Diploma in Probation & Parole Administration
+- Certificate in Community Corrections & Reintegration
+
+**Other Public Services**
+
+- BSc Fire Science & Safety Management
+- Certificate in Public Health Emergency Preparedness
+- Other (please specify) — *free text input*
+- **Other**
+
+**Subfield:**
+
+Other (please specify) — *free text input*
+
+---
+
+### 10. **General & Interdisciplinary Studies**
+
+**Subfields:**
+
+- Liberal Arts
+- Interdisciplinary Science / Arts
+- General Studies / Foundation Programs
+- Open University / Distance Learning
+- Undeclared / Not Sure Yet
+- **Other**
+
+**Subfield:**
+
+Other (please specify) — *free text input*
+
+---
+
+### 11. **Other**
+
+**Subfield:**
+
+- Other (please specify) — *free text input*
+
+---
