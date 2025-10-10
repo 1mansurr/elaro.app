@@ -91,19 +91,14 @@ const RemindersScreen = () => {
       const { data, error } = await supabase.functions.invoke('create-lecture', {
         body: {
           course_id: lectureData.course.id,
-          // Use lecture name from context, fallback to auto-generated if empty.
-          lecture_name: lectureData.lectureName || `${lectureData.course.course_name} Lecture`,
-          // Map startTime to the lecture_date field the backend expects.
-          lecture_date: lectureData.startTime.toISOString(),
-          // Include end_time for lecture duration.
+          // Auto-generate the lecture name from the course name.
+          lecture_name: `${lectureData.course.course_name} Lecture`,
+          // Auto-generate a simple description.
+          description: `A lecture for the course: ${lectureData.course.course_name}.`,
+          start_time: lectureData.startTime.toISOString(),
           end_time: lectureData.endTime.toISOString(),
-          // Pass the recurrence information.
           is_recurring: lectureData.recurrence !== 'none',
-          recurring_pattern: lectureData.recurrence !== 'none' ? lectureData.recurrence : undefined,
-          // Use description from context, fallback to auto-generated if empty.
-          description: lectureData.description || `Lecture for ${lectureData.course.course_name}`,
-          // Include reminders array for backend processing.
-          reminders: reminders,
+          recurring_pattern: lectureData.recurrence,
         },
       });
 
