@@ -35,12 +35,6 @@
     "scheme": "elaro",
     "plugins": ["expo-notifications"],
     "extra": {
-      "FIREBASE_API_KEY": "AIzaSyBDJn__V1DtG_jAnwarXJULSvrUjDOialo",
-      "FIREBASE_AUTH_DOMAIN": "elaro-c0a15.firebaseapp.com",
-      "FIREBASE_PROJECT_ID": "elaro-c0a15",
-      "FIREBASE_STORAGE_BUCKET": "elaro-c0a15.firebasestorage.app",
-      "FIREBASE_MESSAGING_SENDER_ID": "1008960716833",
-      "FIREBASE_APP_ID": "1:1008960716833:web:95d91efecf316ef8732360",
       "eas": {
         "projectId": "1dd584f5-6522-4df5-ad51-076b07b3d09c"
       }

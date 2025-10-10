@@ -1,10 +1,16 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
 import { supabase } from '../../services/supabase';
 import { debounce } from '../../utils/debounce'; // Assuming debounce utility exists
+import { OnboardingStackParamList } from '../../navigation/OnboardingNavigator';
 
-const OnboardingUsernameScreen = ({ navigation }) => {
+type ScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'OnboardingUsername'>;
+
+const OnboardingUsernameScreen = () => {
+  const navigation = useNavigation<ScreenNavigationProp>();
   const { onboardingData, updateOnboardingData } = useOnboarding();
   
   const [username, setUsername] = useState(onboardingData.username || '');

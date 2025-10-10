@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { Course } from '../types';
+import { CreationFlowProvider, useCreationFlow } from './CreationFlowContext';
 
 export type SubmissionMethod = 'Online' | 'In-person' | null;
 
-// Define the shape of our assignment data
+// 1. Define the specific data structure for this flow
 export interface AddAssignmentData {
   course: Course | null;
   title: string;
@@ -14,18 +15,8 @@ export interface AddAssignmentData {
   reminders: number[];
 }
 
-// Define the shape of the context value
-interface AddAssignmentContextType {
-  assignmentData: AddAssignmentData;
-  updateAssignmentData: (updates: Partial<AddAssignmentData>) => void;
-  resetAssignmentData: () => void;
-}
-
-// Create the context
-const AddAssignmentContext = createContext<AddAssignmentContextType | undefined>(undefined);
-
-// Define the initial state
-const initialState: AddAssignmentData = {
+// 2. Define the initial state for this flow
+const initialAssignmentData: AddAssignmentData = {
   course: null,
   title: '',
   description: '',
@@ -35,36 +26,19 @@ const initialState: AddAssignmentData = {
   reminders: [120], // Default to a 2-hour reminder
 };
 
-// Create the provider component
-export const AddAssignmentProvider = ({ children }: { children: ReactNode }) => {
-  const [assignmentData, setAssignmentData] = useState<AddAssignmentData>(initialState);
+// 3. Create the specific provider for this flow
+export const AddAssignmentProvider = ({ children }: { children: ReactNode }) => (
+  <CreationFlowProvider initialState={initialAssignmentData}>
+    {children}
+  </CreationFlowProvider>
+);
 
-  const updateAssignmentData = (updates: Partial<AddAssignmentData>) => {
-    setAssignmentData(prevData => ({ ...prevData, ...updates }));
-  };
-
-  const resetAssignmentData = () => {
-    setAssignmentData(initialState);
-  };
-
-  const value = {
-    assignmentData,
-    updateAssignmentData,
-    resetAssignmentData,
-  };
-
-  return (
-    <AddAssignmentContext.Provider value={value}>
-      {children}
-    </AddAssignmentContext.Provider>
-  );
-};
-
-// Create the custom hook to use the context
+// 4. Create the specific hook for this flow
 export const useAddAssignment = () => {
-  const context = useContext(AddAssignmentContext);
-  if (context === undefined) {
-    throw new Error('useAddAssignment must be used within an AddAssignmentProvider');
-  }
-  return context;
+  const { data, updateData, resetData } = useCreationFlow<AddAssignmentData>();
+  return {
+    assignmentData: data,
+    updateAssignmentData: updateData,
+    resetAssignmentData: resetData,
+  };
 };

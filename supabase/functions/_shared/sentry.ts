@@ -1,4 +1,4 @@
-import * as Sentry from 'sentry';
+import * as Sentry from 'https://esm.sh/@sentry/deno@7.77.0';
 
 export function initSentry() {
   Sentry.init({

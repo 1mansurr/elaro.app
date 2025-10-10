@@ -1,6 +1,6 @@
 // FILE: supabase/functions/create-assignment/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
 import { encrypt } from '../_shared/encryption.ts';
@@ -24,9 +24,13 @@ serve(async (req) => {
   }
 
   try {
+    console.log('--- Create Assignment Function Invoked ---');
+    
     const supabase = getSupabaseClient(req);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Unauthorized');
+    
+    console.log(`Authenticated user: ${user.id}`);
 
     // Apply rate limiting check
     try {
@@ -49,7 +53,9 @@ serve(async (req) => {
     const limitError = await checkTaskLimit(supabase, user.id);
     if (limitError) return limitError;
 
-    const { course_id, title, description, submission_method, submission_link, due_date } = await req.json();
+    const { course_id, title, description, submission_method, submission_link, due_date, reminders } = await req.json();
+    
+    console.log('Received payload:', { course_id, title, due_date, reminders: reminders?.length || 0 });
 
     if (!course_id || !title || !due_date) {
       return new Response(
@@ -74,6 +80,8 @@ serve(async (req) => {
     const encryptedTitle = await encrypt(title, ENCRYPTION_KEY);
     const encryptedDescription = description ? await encrypt(description, ENCRYPTION_KEY) : null;
 
+    console.log(`Attempting to insert assignment for user: ${user.id}`);
+
     const { data, error } = await supabase
       .from('assignments')
       .insert({
@@ -88,8 +96,46 @@ serve(async (req) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting assignment:', error.message);
+      throw error;
+    } else {
+      console.log(`Successfully created assignment with ID: ${data.id}`);
+    }
 
+    // Create reminders if provided
+    if (data && reminders && reminders.length > 0) {
+      console.log(`Creating ${reminders.length} reminders for assignment ID: ${data.id}`);
+      const dueDate = new Date(due_date);
+      const remindersToInsert = reminders.map((reminderMinutes: number) => {
+        const reminderTime = new Date(dueDate.getTime() - reminderMinutes * 60000);
+        return {
+          user_id: user.id,
+          assignment_id: data.id,
+          reminder_time: reminderTime.toISOString(),
+          reminder_type: 'assignment',
+          // The following fields are for compatibility or can be derived.
+          reminder_date: reminderTime.toISOString(),
+          day_number: Math.ceil(reminderMinutes / (24 * 60)),
+          completed: false,
+        };
+      });
+
+      const { error: reminderError } = await supabase
+        .from('reminders')
+        .insert(remindersToInsert);
+
+      if (reminderError) {
+        // Log the error, but don't fail the whole request since the assignment was created.
+        // The user can add reminders manually later.
+        console.error('Failed to create reminders for assignment:', data.id, reminderError);
+      } else {
+        console.log('Successfully created reminders.');
+      }
+    }
+
+    console.log('--- Create Assignment Function Finished ---');
+    
     return new Response(
       JSON.stringify(data),
       {
@@ -98,8 +144,13 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error('--- Create Assignment Function Error ---');
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('--- End Error ---');
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

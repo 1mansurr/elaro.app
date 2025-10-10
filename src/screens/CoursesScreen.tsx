@@ -1,9 +1,9 @@
 // FILE: src/screens/CoursesScreen.tsx
-import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import React, { useLayoutEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { supabase } from '../services/supabase';
+import { useCourses } from '../hooks/useDataQueries';
 import { RootStackParamList, Course } from '../types';
 
 // Define the navigation prop type for this screen
@@ -11,9 +11,7 @@ type CoursesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: courses, isLoading, isError, error } = useCourses();
 
   // Set up the header buttons
   useLayoutEffect(() => {
@@ -30,55 +28,6 @@ const CoursesScreen = () => {
     });
   }, [navigation]);
 
-  // Fetch courses and listen for real-time changes
-  useEffect(() => {
-    const fetchAndSubscribeToCourses = async () => {
-      setIsLoading(true);
-      setError(null);
-
-      // Initial fetch
-      const { data, error: fetchError } = await supabase
-        .from('courses')
-        .select('*')
-        .is('deleted_at', null) // Only fetch active courses
-        .order('created_at', { ascending: false });
-
-      if (fetchError) {
-        setError('Failed to fetch courses. Please try again.');
-        Alert.alert('Error', 'Could not load your courses.');
-        console.error('Fetch Error:', fetchError.message);
-        setIsLoading(false);
-        return;
-      }
-
-      setCourses(data || []);
-      setIsLoading(false);
-
-      // Set up real-time subscription
-      const channel = supabase
-        .channel('public:courses')
-        .on(
-          'postgres_changes',
-          {
-            event: '*',
-            schema: 'public',
-            table: 'courses'
-          },
-          (payload) => {
-            // Re-fetch data to ensure consistency
-            fetchAndSubscribeToCourses();
-          }
-        )
-        .subscribe();
-
-      // Cleanup subscription on component unmount
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    };
-
-    fetchAndSubscribeToCourses();
-  }, []);
 
   // Render item for the FlatList
   const renderCourse = ({ item }: { item: Course }) => (
@@ -103,17 +52,19 @@ const CoursesScreen = () => {
     );
   }
 
-  if (error) {
+  if (isError) {
     return (
       <View style={styles.centered}>
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={styles.errorText}>
+          Error fetching courses: {error instanceof Error ? error.message : 'Unknown error'}
+        </Text>
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      {courses.length === 0 ? (
+      {!courses || courses.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.emptyText}>You haven't added any courses yet.</Text>
           <TouchableOpacity

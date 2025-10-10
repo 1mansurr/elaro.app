@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
@@ -34,7 +34,7 @@ const HomeScreen = () => {
     navigation.navigate('AuthChooser');
   };
 
-  const fabActions = [
+  const fabActions = useMemo(() => [
     {
       icon: 'book-outline' as any,
       label: 'Add Study Session',
@@ -50,7 +50,7 @@ const HomeScreen = () => {
       label: 'Add Lecture',
       onPress: () => navigation.navigate('AddLectureFlow')
     },
-  ];
+  ], [navigation]);
 
   const backdropOpacity = fabAnimation.interpolate({
     inputRange: [0, 1],
@@ -95,7 +95,7 @@ const HomeScreen = () => {
     }
     
     handleCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, { taskToEdit: selectedTask });
+    (navigation as any).navigate(modalName, { taskToEdit: selectedTask });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {

@@ -1,23 +1,29 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import { supabase, authService } from '../services/supabase';
+import { supabase, authService as supabaseAuthService } from '../services/supabase';
+import { authService } from '../services/authService';
 import { User } from '../types';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../types';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface SignUpCredentials extends LoginCredentials {
+  firstName: string;
+  lastName: string;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (
-    email: string,
-    password: string,
-    firstName: string,
-    lastName?: string,
-  ) => Promise<{ error: any }>;
+  signIn: (credentials: LoginCredentials) => Promise<{ error: any }>;
+  signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -47,19 +53,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
-      const userProfile = await authService.getUserProfile(userId);
+      const userProfile = await supabaseAuthService.getUserProfile(userId);
       return userProfile as User;
     } catch (error) {
       console.error('AuthContext: Error fetching user profile:', error);
       // If user profile doesn't exist, create it
       try {
-        const session = await supabase.auth.getSession();
-        if (session.data.session?.user) {
-          await authService.createUserProfile(
-            session.data.session.user.id,
-            session.data.session.user.email || '',
+        const session = await authService.getSession();
+        if (session?.user) {
+          await supabaseAuthService.createUserProfile(
+            session.user.id,
+            session.user.email || '',
           );
-          const newProfile = await authService.getUserProfile(userId);
+          const newProfile = await supabaseAuthService.getUserProfile(userId);
           return newProfile as User;
         }
       } catch (createError) {
@@ -78,15 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('❌ Error getting initial session:', error);
-        setSession(null);
-        setUser(null);
-        setLoading(false);
-        return;
-      }
-
+    authService.getSession().then((session) => {
       setSession(session);
       if (session?.user) {
         fetchUserProfile(session.user.id).then(profile => {
@@ -96,12 +94,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } else {
         setLoading(false);
       }
+    }).catch((error) => {
+      console.error('❌ Error getting initial session:', error);
+      setSession(null);
+      setUser(null);
+      setLoading(false);
     });
 
     // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const subscription = authService.onAuthChange(async (event, session) => {
       setSession(session);
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
@@ -136,18 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => subscription.unsubscribe();
   }, [navigation]);
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (credentials: LoginCredentials) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        console.error('❌ Sign in error:', error);
-        return { error };
-      }
-
+      await authService.login(credentials);
       return { error: null };
     } catch (error) {
       console.error('❌ Sign in error:', error);
@@ -155,29 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  const signUp = async (email: string, password: string, firstName: string, lastName?: string) => {
+  const signUp = async (credentials: SignUpCredentials) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName || '',
-          },
-        },
-      });
-
-      if (error) {
-        console.error('❌ Sign up error:', error);
-        return { error };
-      }
-
-      // User profile will be created automatically by the database trigger
-      // But we can also create it manually if needed
-      if (data.user && !data.user.email_confirmed_at) {
-      }
-
+      await authService.signUp(credentials);
       return { error: null };
     } catch (error) {
       console.error('❌ Sign up error:', error);
@@ -187,10 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ Sign out error:', error);
-      }
+      await authService.signOut();
     } catch (error) {
       console.error('❌ Sign out error:', error);
     }

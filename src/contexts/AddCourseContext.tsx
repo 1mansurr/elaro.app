@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
+import { CreationFlowProvider, useCreationFlow } from './CreationFlowContext';
 
-// Define the shape of our course and lecture data
+// 1. Define the specific data structure for this flow
 export interface AddCourseData {
   courseName: string;
   courseDescription: string;
@@ -10,18 +11,8 @@ export interface AddCourseData {
   reminders: number[];
 }
 
-// Define the shape of the context value
-interface AddCourseContextType {
-  courseData: AddCourseData;
-  updateCourseData: (updates: Partial<AddCourseData>) => void;
-  resetCourseData: () => void;
-}
-
-// Create the context
-const AddCourseContext = createContext<AddCourseContextType | undefined>(undefined);
-
-// Define the initial state
-const initialState: AddCourseData = {
+// 2. Define the initial state for this flow
+const initialCourseData: AddCourseData = {
   courseName: '',
   courseDescription: '',
   startTime: null,
@@ -30,36 +21,19 @@ const initialState: AddCourseData = {
   reminders: [30], // Default to a 30-minute reminder
 };
 
-// Create the provider component
-export const AddCourseProvider = ({ children }: { children: ReactNode }) => {
-  const [courseData, setCourseData] = useState<AddCourseData>(initialState);
+// 3. Create the specific provider for this flow
+export const AddCourseProvider = ({ children }: { children: ReactNode }) => (
+  <CreationFlowProvider initialState={initialCourseData}>
+    {children}
+  </CreationFlowProvider>
+);
 
-  const updateCourseData = (updates: Partial<AddCourseData>) => {
-    setCourseData(prevData => ({ ...prevData, ...updates }));
-  };
-
-  const resetCourseData = () => {
-    setCourseData(initialState);
-  };
-
-  const value = {
-    courseData,
-    updateCourseData,
-    resetCourseData,
-  };
-
-  return (
-    <AddCourseContext.Provider value={value}>
-      {children}
-    </AddCourseContext.Provider>
-  );
-};
-
-// Create the custom hook to use the context
+// 4. Create the specific hook for this flow
 export const useAddCourse = () => {
-  const context = useContext(AddCourseContext);
-  if (context === undefined) {
-    throw new Error('useAddCourse must be used within an AddCourseProvider');
-  }
-  return context;
+  const { data, updateData, resetData } = useCreationFlow<AddCourseData>();
+  return {
+    courseData: data,
+    updateCourseData: updateData,
+    resetCourseData: resetData,
+  };
 };

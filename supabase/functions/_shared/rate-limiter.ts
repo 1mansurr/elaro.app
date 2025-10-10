@@ -1,7 +1,7 @@
 // FILE: supabase/functions/_shared/rate-limiter.ts
 // ACTION: Create a new shared utility for rate limiting Edge Functions.
 
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const RATE_LIMIT_COUNT = 20; // Max 20 requests
 const RATE_LIMIT_INTERVAL_MINUTES = 1; // per 1 minute

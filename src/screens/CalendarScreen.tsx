@@ -70,7 +70,7 @@ const CalendarScreen = () => {
     }
     
     handleCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, { taskToEdit: selectedTask });
+    (navigation as any).navigate(modalName, { taskToEdit: selectedTask });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {

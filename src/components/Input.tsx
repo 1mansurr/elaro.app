@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -108,7 +108,7 @@ export const Input: React.FC<InputProps> = ({
     props.onChangeText?.(text);
   };
 
-  const getSizeStyles = () => {
+  const sizeStyles = useMemo(() => {
     switch (size) {
       case 'small':
         return {
@@ -129,9 +129,9 @@ export const Input: React.FC<InputProps> = ({
           paddingHorizontal: SPACING.md,
         };
     }
-  };
+  }, [size]);
 
-  const getVariantStyles = () => {
+  const variantStyles = useMemo(() => {
     switch (variant) {
       case 'outlined':
         return {
@@ -160,10 +160,7 @@ export const Input: React.FC<InputProps> = ({
               : theme.inputBorder,
         };
     }
-  };
-
-  const sizeStyles = getSizeStyles();
-  const variantStyles = getVariantStyles();
+  }, [variant, error, theme.destructive, theme.accent, theme.inputBorder, isFocused, theme.input, isDark]);
 
   const inputStyle = [
     styles.input,
@@ -379,3 +376,5 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
   },
 });
+
+export default React.memo(Input);

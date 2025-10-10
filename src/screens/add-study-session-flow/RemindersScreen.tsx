@@ -5,12 +5,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AddStudySessionStackParamList } from '../../navigation/AddStudySessionNavigator';
 import { useAddStudySession } from '../../contexts/AddStudySessionContext';
 import { Button, ReminderSelector } from '../../components';
-import { supabase } from '../../services/supabase';
+import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLectures, useAssignments, useStudySessions } from '../../hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
-import { subMinutes } from 'date-fns';
-import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { notificationService } from '../../services/notifications';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'Reminders'>;
@@ -23,10 +20,6 @@ const RemindersScreen = () => {
   
   const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch all task types for the weekly limit check
-  const { data: lectures } = useLectures();
-  const { data: assignments } = useAssignments();
-  const { data: studySessions } = useStudySessions();
 
   const isGuest = !session;
   const maxReminders = 2; // This should come from a user context later
@@ -59,72 +52,20 @@ const RemindersScreen = () => {
       return;
     }
 
-    // --- SUBSCRIPTION CHECK LOGIC ---
-    const isOddity = user?.subscription_tier === 'oddity';
-    const tasksThisWeek = countTasksInCurrentWeek({
-      lectures: lectures || [],
-      assignments: assignments || [],
-      studySessions: studySessions || [],
-    });
-
-    const WEEKLY_TASK_LIMIT = 5;
-    if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
-      Alert.alert(
-        'Weekly Limit Reached',
-        `You've reached the ${WEEKLY_TASK_LIMIT}-task limit for this week on the free plan. Become an Oddity for unlimited tasks.`,
-        [
-          { text: 'Cancel' },
-          { text: 'Become an Oddity', onPress: () => {
-            Alert.alert('Become an Oddity', 'Please use the main menu to upgrade your subscription.');
-          }}
-        ]
-      );
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Create the study session
-      const { data, error } = await supabase.functions.invoke('create-study-session', {
-        body: {
-          course_id: sessionData.course.id,
-          topic: sessionData.topic.trim(),
-          description: sessionData.description.trim(),
-          session_date: sessionData.sessionDate.toISOString(),
-          has_spaced_repetition: sessionData.hasSpacedRepetition,
-        },
+      // Create the study session using the new API layer
+      const newStudySession = await api.mutations.studySessions.create({
+        course_id: sessionData.course.id,
+        topic: sessionData.topic.trim(),
+        notes: sessionData.description.trim(),
+        session_date: sessionData.sessionDate.toISOString(),
+        has_spaced_repetition: sessionData.hasSpacedRepetition,
+        reminders: reminders, // Pass the array of immediate reminder minutes
       });
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      // Schedule reminders if any
-      if (reminders.length > 0 && session?.user) {
-        // Create immediate reminders with the correct, current database schema.
-        const remindersToInsert = reminders.map(reminderMinutes => {
-          const reminderTime = subMinutes(sessionData.sessionDate!, reminderMinutes);
-          return {
-            user_id: session.user.id,
-            session_id: data.id, // FIX: Use the ID of the study session we just created.
-            reminder_time: reminderTime.toISOString(), // FIX: Use the correct 'reminder_time' column.
-            reminder_type: 'study_session', // FIX: Set the correct type for this reminder.
-            // The following fields are for compatibility or can be derived.
-            reminder_date: reminderTime.toISOString(), // For compatibility with older logic if any.
-            day_number: Math.ceil(reminderMinutes / (24 * 60)), // Approximate day number.
-            completed: false,
-          };
-        });
-
-        const { error: reminderError } = await supabase
-          .from('reminders')
-          .insert(remindersToInsert);
-
-        if (reminderError) {
-          console.error('Error saving reminders:', reminderError);
-        }
-      }
+      // Immediate reminders are now handled by the backend create-study-session function
 
       // Check if this is the user's first task ever created
       const isFirstTask = true; // Placeholder for: totalTaskCount === 0
@@ -148,7 +89,8 @@ const RemindersScreen = () => {
       ]);
     } catch (error) {
       console.error('Failed to create study session:', error);
-      Alert.alert('Error', 'Failed to save study session. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save study session. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

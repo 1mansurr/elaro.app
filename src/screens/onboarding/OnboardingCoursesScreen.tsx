@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, Button, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { Button } from '../../components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useOnboarding } from '../../contexts/OnboardingContext';
@@ -78,7 +79,7 @@ const OnboardingCoursesScreen = () => {
       )}
 
       <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={handleBack} color="#888" />
+        <Button title="Back" onPress={handleBack} variant="outline" />
         <Button 
           title="Add a Course" 
           onPress={() => navigation.getParent()?.navigate('AddCourseFlow')}

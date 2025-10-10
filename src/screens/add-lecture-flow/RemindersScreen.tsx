@@ -5,12 +5,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AddLectureStackParamList } from '../../navigation/AddLectureNavigator';
 import { useAddLecture } from '../../contexts/AddLectureContext';
 import { Button, ReminderSelector } from '../../components';
-import { supabase } from '../../services/supabase';
+import { api } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
-import { useLectures, useAssignments, useStudySessions } from '../../hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { subMinutes } from 'date-fns';
-import { countTasksInCurrentWeek } from '../../utils/taskUtils';
 import { notificationService } from '../../services/notifications';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddLectureStackParamList, 'Reminders'>;
@@ -23,10 +21,6 @@ const RemindersScreen = () => {
   
   const [isLoading, setIsLoading] = useState(false);
   
-  // Fetch all task types for the weekly limit check
-  const { data: lectures } = useLectures();
-  const { data: assignments } = useAssignments();
-  const { data: studySessions } = useStudySessions();
 
   const isGuest = !session;
   const maxReminders = 2; // This should come from a user context later
@@ -60,51 +54,22 @@ const RemindersScreen = () => {
       return;
     }
 
-    // --- SUBSCRIPTION CHECK LOGIC ---
-    const isOddity = user?.subscription_tier === 'oddity';
-    const tasksThisWeek = countTasksInCurrentWeek({
-      lectures: lectures || [],
-      assignments: assignments || [],
-      studySessions: studySessions || [],
-    });
-
-    const WEEKLY_TASK_LIMIT = 5;
-    if (!isOddity && tasksThisWeek >= WEEKLY_TASK_LIMIT) {
-      Alert.alert(
-        'Weekly Limit Reached',
-        `You've reached the ${WEEKLY_TASK_LIMIT}-task limit for this week on the free plan. Become an Oddity for unlimited tasks.`,
-        [
-          { text: 'Cancel' },
-          { text: 'Become an Oddity', onPress: () => {
-            // Navigate to subscription
-            Alert.alert('Become an Oddity', 'Please use the main menu to upgrade your subscription.');
-          }}
-        ]
-      );
-      return;
-    }
-
     setIsLoading(true);
 
     try {
-      // Create the lecture
-      const { data, error } = await supabase.functions.invoke('create-lecture', {
-        body: {
-          course_id: lectureData.course.id,
-          // Auto-generate the lecture name from the course name.
-          lecture_name: `${lectureData.course.course_name} Lecture`,
-          // Auto-generate a simple description.
-          description: `A lecture for the course: ${lectureData.course.course_name}.`,
-          start_time: lectureData.startTime.toISOString(),
-          end_time: lectureData.endTime.toISOString(),
-          is_recurring: lectureData.recurrence !== 'none',
-          recurring_pattern: lectureData.recurrence,
-        },
+      // Create the lecture using the new API layer
+      const newLecture = await api.mutations.lectures.create({
+        course_id: lectureData.course.id,
+        // Auto-generate the lecture name from the course name.
+        lecture_name: `${lectureData.course.course_name} Lecture`,
+        // Auto-generate a simple description.
+        description: `A lecture for the course: ${lectureData.course.course_name}.`,
+        start_time: lectureData.startTime.toISOString(),
+        end_time: lectureData.endTime.toISOString(),
+        is_recurring: lectureData.recurrence !== 'none',
+        recurring_pattern: lectureData.recurrence,
+        reminders: reminders, // Pass the array of reminder minutes
       });
-
-      if (error) {
-        throw new Error(error.message);
-      }
 
       // Reminders are now handled by the backend create-lecture function
 
@@ -130,7 +95,8 @@ const RemindersScreen = () => {
       ]);
     } catch (error) {
       console.error('Failed to create lecture:', error);
-      Alert.alert('Error', 'Failed to save lecture. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save lecture. Please try again.';
+      Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
     }

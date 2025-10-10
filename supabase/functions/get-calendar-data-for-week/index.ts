@@ -1,6 +1,6 @@
 // FILE: supabase/functions/get-calendar-data-for-week/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { decrypt } from '../_shared/encryption.ts';
 import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
@@ -140,8 +140,8 @@ serve(async (req) => {
       const nameField = task.lecture_name || task.title || task.topic || '';
       const descField = task.description ?? task.notes ?? null;
 
-      const decryptedName = nameField ? await decrypt(nameField, ENCRYPTION_KEY) : nameField;
-      const decryptedDescription = descField ? await decrypt(descField, ENCRYPTION_KEY) : null;
+      const decryptedName = nameField ? await decrypt(nameField as string, ENCRYPTION_KEY!) : nameField;
+      const decryptedDescription = descField ? await decrypt(descField as string, ENCRYPTION_KEY!) : null;
 
       return {
         ...task,
@@ -180,7 +180,7 @@ serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

@@ -75,20 +75,23 @@ const SearchableSelector: React.FC<Props> = ({
       ) : (
         <SelectDropdown
           data={['Other', ...data]} // Add "Other" to the top of the list
-          onSelect={(selectedItem) => handleSelect(selectedItem)}
+          onSelect={(selectedItem: string) => handleSelect(selectedItem)}
           defaultValue={internalValue}
-          buttonTextAfterSelection={(selectedItem) => selectedItem}
-          rowTextForSelection={(item) => item}
-          buttonStyle={styles.dropdownButton}
-          buttonTextStyle={styles.dropdownButtonText}
-          renderDropdownIcon={() => <Ionicons name="chevron-down" size={24} color="#888" />}
-          dropdownStyle={styles.dropdown}
-          rowStyle={styles.dropdownRow}
-          rowTextStyle={styles.dropdownRowText}
           search
-          searchInputStyle={styles.searchInput}
           searchPlaceHolder={searchPlaceholder}
-          defaultButtonText={placeholder}
+          renderButton={(selectedItem, isOpened) => (
+            <View style={styles.dropdownButton}>
+              <Text style={styles.dropdownButtonText}>
+                {selectedItem || placeholder}
+              </Text>
+              <Ionicons name="chevron-down" size={24} color="#888" />
+            </View>
+          )}
+          renderItem={(item, index, isSelected) => (
+            <View style={[styles.dropdownRow, isSelected && { backgroundColor: '#f0f0f0' }]}>
+              <Text style={styles.dropdownRowText}>{item}</Text>
+            </View>
+          )}
         />
       )}
     </View>

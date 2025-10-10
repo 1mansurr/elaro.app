@@ -2,10 +2,13 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 
-// ===== CONFIGURATION - Replace these values as needed =====
-const TEAM_ID = '9V6PYB626C';                    // Your Apple Developer Team ID
-const KEY_ID = '3QA9D5KH57';                     // The Key ID from Apple Developer portal
-const CLIENT_ID = 'com.elaro.app.signin';        // Your Services ID
+// Load environment variables
+require('dotenv').config();
+
+// ===== CONFIGURATION - Load from environment variables =====
+const TEAM_ID = process.env.APPLE_TEAM_ID;                    // Your Apple Developer Team ID
+const KEY_ID = process.env.APPLE_KEY_ID;                     // The Key ID from Apple Developer portal
+const CLIENT_ID = process.env.APPLE_CLIENT_ID;        // Your Services ID
 const PRIVATE_KEY_PATH = '/Users/new/Desktop/Biz/ELARO/AuthKey_3QA9D5KH57.p8'; // Path to your .p8 private key file
 // =========================================================
 

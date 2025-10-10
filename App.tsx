@@ -8,7 +8,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './src/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
-import { DataProvider } from './src/contexts/DataContext';
 import { NotificationProvider, useNotification } from './src/contexts/NotificationContext';
 import { setNotificationTaskHandler } from './src/services/notifications';
 import TaskDetailSheet from './src/screens/modals/TaskDetailSheet';
@@ -275,15 +274,13 @@ function App() {
             // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
           >
             <AuthProvider>
-              <DataProvider>
-                <SoftLaunchProvider>
-                  <NotificationProvider>
-                    <AuthEffects />
-                    <AppNavigator />
-                    <NotificationHandler />
-                  </NotificationProvider>
-                </SoftLaunchProvider>
-              </DataProvider>
+              <SoftLaunchProvider>
+                <NotificationProvider>
+                  <AuthEffects />
+                  <AppNavigator />
+                  <NotificationHandler />
+                </NotificationProvider>
+              </SoftLaunchProvider>
             </AuthProvider>
           </NavigationContainer>
         </ThemeProvider>

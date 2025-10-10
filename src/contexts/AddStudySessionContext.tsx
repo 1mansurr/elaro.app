@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { ReactNode } from 'react';
 import { Course } from '../types';
+import { CreationFlowProvider, useCreationFlow } from './CreationFlowContext';
 
-// Define the shape of our study session data
+// 1. Define the specific data structure for this flow
 export interface AddStudySessionData {
   course: Course | null;
   topic: string;
@@ -11,18 +12,8 @@ export interface AddStudySessionData {
   reminders: number[];
 }
 
-// Define the shape of the context value
-interface AddStudySessionContextType {
-  sessionData: AddStudySessionData;
-  updateSessionData: (updates: Partial<AddStudySessionData>) => void;
-  resetSessionData: () => void;
-}
-
-// Create the context
-const AddStudySessionContext = createContext<AddStudySessionContextType | undefined>(undefined);
-
-// Define the initial state
-const initialState: AddStudySessionData = {
+// 2. Define the initial state for this flow
+const initialStudySessionData: AddStudySessionData = {
   course: null,
   topic: '',
   description: '',
@@ -31,36 +22,19 @@ const initialState: AddStudySessionData = {
   reminders: [15], // Default to a 15-minute reminder
 };
 
-// Create the provider component
-export const AddStudySessionProvider = ({ children }: { children: ReactNode }) => {
-  const [sessionData, setSessionData] = useState<AddStudySessionData>(initialState);
+// 3. Create the specific provider for this flow
+export const AddStudySessionProvider = ({ children }: { children: ReactNode }) => (
+  <CreationFlowProvider initialState={initialStudySessionData}>
+    {children}
+  </CreationFlowProvider>
+);
 
-  const updateSessionData = (updates: Partial<AddStudySessionData>) => {
-    setSessionData(prevData => ({ ...prevData, ...updates }));
-  };
-
-  const resetSessionData = () => {
-    setSessionData(initialState);
-  };
-
-  const value = {
-    sessionData,
-    updateSessionData,
-    resetSessionData,
-  };
-
-  return (
-    <AddStudySessionContext.Provider value={value}>
-      {children}
-    </AddStudySessionContext.Provider>
-  );
-};
-
-// Create the custom hook to use the context
+// 4. Create the specific hook for this flow
 export const useAddStudySession = () => {
-  const context = useContext(AddStudySessionContext);
-  if (context === undefined) {
-    throw new Error('useAddStudySession must be used within an AddStudySessionProvider');
-  }
-  return context;
+  const { data, updateData, resetData } = useCreationFlow<AddStudySessionData>();
+  return {
+    sessionData: data,
+    updateSessionData: updateData,
+    resetSessionData: resetData,
+  };
 };

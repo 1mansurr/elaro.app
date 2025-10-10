@@ -1,6 +1,6 @@
 // FILE: supabase/functions/get-home-screen-data/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { decrypt } from '../_shared/encryption.ts';
 import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
@@ -193,9 +193,9 @@ serve(async (req) => {
     console.error('Edge Function Error:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        details: error.toString(),
-        stack: error.stack 
+        error: error instanceof Error ? error.message : 'Internal server error',
+        details: error instanceof Error ? error.toString() : String(error),
+        stack: error instanceof Error ? error.stack : undefined
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

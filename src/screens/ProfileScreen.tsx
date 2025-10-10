@@ -1,14 +1,20 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../services/supabase';
 import { SearchableSelector } from '../components';
+import { MainTabParamList } from '../types';
 
 // Import the data files
 import countriesData from '../data/countries.json';
 
-const ProfileScreen = ({ navigation }) => {
+type ScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Account'>;
+
+const ProfileScreen = () => {
+  const navigation = useNavigation<ScreenNavigationProp>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
 

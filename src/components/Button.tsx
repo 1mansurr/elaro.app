@@ -259,3 +259,5 @@ const styles = StyleSheet.create({
     gap: SPACING.xs,
   },
 });
+
+export default React.memo(Button);

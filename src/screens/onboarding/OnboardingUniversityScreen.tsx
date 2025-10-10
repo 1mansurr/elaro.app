@@ -36,7 +36,7 @@ const OnboardingUniversityScreen = () => {
   const programData = useMemo(() => {
     return programsData.categories.flatMap(category => 
       category.subfields.flatMap(subfield => subfield.programs)
-    ).sort();
+    ).filter((program): program is string => program !== undefined).sort();
   }, []);
 
   // Extract country names for the selector

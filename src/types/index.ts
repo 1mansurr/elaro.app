@@ -79,48 +79,48 @@ export type MainTabParamList = {
 
 export interface Course {
   id: string;
-  course_name: string;
-  course_code?: string;
-  about_course?: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-  deleted_at?: string;
+  courseName: string;
+  courseCode?: string;
+  aboutCourse?: string;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface Assignment {
   id: string;
-  user_id: string;
-  course_id: string;
+  userId: string;
+  courseId: string;
   title: string;
   description?: string;
-  submission_method?: string;
-  submission_link?: string;
-  due_date: string;
-  created_at: string;
+  submissionMethod?: string;
+  submissionLink?: string;
+  dueDate: string;
+  createdAt: string;
 }
 
 export interface Lecture {
   id: string;
-  user_id: string;
-  course_id: string;
-  lecture_date: string;
-  is_recurring: boolean;
-  recurring_pattern?: string;
-  lecture_name?: string;
+  userId: string;
+  courseId: string;
+  lectureDate: string;
+  isRecurring: boolean;
+  recurringPattern?: string;
+  lectureName?: string;
   description?: string;
-  created_at: string;
+  createdAt: string;
 }
 
 export interface StudySession {
   id: string;
-  user_id: string;
-  course_id: string;
+  userId: string;
+  courseId: string;
   topic: string;
   description?: string;
-  session_date: string;
-  has_spaced_repetition: boolean;
-  created_at: string;
+  sessionDate: string;
+  hasSpacedRepetition: boolean;
+  createdAt: string;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -131,12 +131,12 @@ export type Task = {
   id: string;
   type: 'lecture' | 'study_session' | 'assignment';
   date: string; // This might be start_time now
-  start_time?: string;
-  end_time?: string; // Add this
+  startTime?: string;
+  endTime?: string; // Add this
   description?: string; // Add this
   status?: 'pending' | 'completed'; // Add this
   name: string;
-  courses: { course_name: string };
+  courses: { courseName: string };
   // Add other potential shared fields here
 };
 
@@ -146,7 +146,7 @@ export type Task = {
 
 export interface OverviewData {
   lectures: number;
-  study_sessions: number;
+  studySessions: number;
   assignments: number;
   reviews: number;
 }

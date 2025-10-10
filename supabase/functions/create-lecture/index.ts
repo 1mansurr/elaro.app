@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkTaskLimit } from '../_shared/check-task-limit.ts';
 import { encrypt } from '../_shared/encryption.ts';
@@ -11,6 +11,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('--- Create Lecture Function Invoked ---');
+    
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -24,6 +26,8 @@ serve(async (req) => {
     const { data: { user } } = await supabaseClient.auth.getUser();
 
     if (!user) throw new Error('Unauthorized');
+    
+    console.log(`Authenticated user: ${user.id}`);
 
     // Apply rate limiting check
     try {
@@ -56,6 +60,8 @@ serve(async (req) => {
       description,
       reminders
     } = await req.json();
+    
+    console.log('Received payload:', { course_id, start_time, end_time, is_recurring });
 
     if (!course_id || !start_time) {
       return new Response(
@@ -97,16 +103,24 @@ serve(async (req) => {
       recurring_pattern,
     };
 
+    console.log(`Attempting to insert lecture for user: ${user.id}`);
+
     const { data: newLecture, error } = await supabaseClient
       .from('lectures')
       .insert(insertPayload)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error inserting lecture:', error.message);
+      throw error;
+    } else {
+      console.log(`Successfully created lecture with ID: ${newLecture.id}`);
+    }
 
     // Create reminders if provided
     if (reminders && Array.isArray(reminders) && reminders.length > 0) {
+      console.log(`Creating ${reminders.length} reminders for lecture ID: ${newLecture.id}`);
       const lectureStartTime = new Date(start_time);
       const remindersToInsert = reminders.map((reminderMinutes: number) => {
         const reminderTime = new Date(lectureStartTime.getTime() - (reminderMinutes * 60 * 1000));
@@ -124,11 +138,15 @@ serve(async (req) => {
         .insert(remindersToInsert);
 
       if (reminderError) {
-        console.error('Error creating reminders:', reminderError);
+        console.error('Failed to create reminders:', reminderError.message);
         // Don't fail the entire request if reminders fail
+      } else {
+        console.log('Successfully created reminders.');
       }
     }
 
+    console.log('--- Create Lecture Function Finished ---');
+    
     return new Response(
       JSON.stringify(newLecture),
       {
@@ -137,8 +155,13 @@ serve(async (req) => {
       }
     );
   } catch (error) {
+    console.error('--- Create Lecture Function Error ---');
+    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error('--- End Error ---');
+    
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 500,

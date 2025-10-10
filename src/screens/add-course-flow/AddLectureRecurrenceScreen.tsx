@@ -7,7 +7,7 @@ import { AddCourseStackParamList } from '../../navigation/AddCourseNavigator';
 
 type ScreenNavigationProp = StackNavigationProp<AddCourseStackParamList, 'AddLectureRecurrence'>;
 
-const RecurrenceOptions: AddCourseData['recurrence'][] = ['weekly', 'bi-weekly'];
+const RecurrenceOptions: ('weekly' | 'bi-weekly')[] = ['weekly', 'bi-weekly'];
 
 const AddLectureRecurrenceScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();

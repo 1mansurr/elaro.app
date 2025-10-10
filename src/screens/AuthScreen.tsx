@@ -70,8 +70,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setLoading(true);
     try {
       const { error } = mode === 'signup'
-        ? await signUp(email, password, firstName.trim(), lastName.trim())
-        : await signIn(email, password);
+        ? await signUp({ 
+            email, 
+            password, 
+            firstName: firstName.trim(), 
+            lastName: lastName.trim() 
+          })
+        : await signIn({ email, password });
 
       if (error) {
         Alert.alert('Authentication Failed', error.message);

@@ -19,6 +19,7 @@ import { AddCourseProvider } from '../contexts/AddCourseContext';
 import { AddLectureProvider } from '../contexts/AddLectureContext';
 import { AddAssignmentProvider } from '../contexts/AddAssignmentContext';
 import { AddStudySessionProvider } from '../contexts/AddStudySessionContext';
+import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
 
 // Screens
 import LaunchScreen from '../screens/LaunchScreen';
@@ -42,6 +43,7 @@ import RecycleBinScreen from '../screens/RecycleBinScreen';
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
+
 
 // Tab bar icon helper for cleaner code
 const getTabBarIcon = (
@@ -165,9 +167,11 @@ const AddLectureFlow = () => (
 
 // AddAssignment Flow Wrapper with Provider
 const AddAssignmentFlow = () => (
-  <AddAssignmentProvider>
-    <AddAssignmentNavigator />
-  </AddAssignmentProvider>
+  <FeatureErrorBoundary featureName="the Assignment Creation flow">
+    <AddAssignmentProvider>
+      <AddAssignmentNavigator />
+    </AddAssignmentProvider>
+  </FeatureErrorBoundary>
 );
 
 // AddStudySession Flow Wrapper with Provider
@@ -188,200 +192,213 @@ const AuthScreenWrapper = ({ navigation }: any) => (
   <AuthChooserScreen />
 );
 
+// Screen configuration objects for better organization
+const authScreens = {
+  Launch: { component: LaunchScreen },
+  AuthChooser: { 
+    component: AuthChooserScreen,
+    options: {
+      presentation: 'modal',
+      headerShown: false,
+    }
+  },
+  Auth: { 
+    component: AuthScreen,
+    options: {
+      presentation: 'modal',
+      headerShown: false,
+    }
+  },
+  Welcome: { component: WelcomeScreen },
+  OnboardingFlow: { component: OnboardingFlow },
+};
+
+const mainScreens = {
+  Main: { component: MainTabNavigator },
+  Courses: { 
+    component: CoursesScreen,
+    options: {
+      headerShown: true,
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  CourseDetail: { 
+    component: CourseDetailScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Course Details',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  Calendar: { 
+    component: CalendarScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Calendar',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  ComingSoon: { 
+    component: ComingSoonScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Coming Soon',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  RecycleBin: { 
+    component: RecycleBinScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Recycle Bin',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  Profile: { 
+    component: ProfileScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Edit Profile',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+};
+
+const modalFlows = {
+  AddCourseFlow: { 
+    component: AddCourseFlow,
+    options: { 
+      presentation: 'modal',
+      headerShown: false 
+    }
+  },
+  AddLectureFlow: { 
+    component: AddLectureFlow,
+    options: { 
+      presentation: 'modal',
+      headerShown: false 
+    }
+  },
+  AddAssignmentFlow: { 
+    component: AddAssignmentFlow,
+    options: { 
+      presentation: 'modal',
+      headerShown: false 
+    }
+  },
+  AddStudySessionFlow: { 
+    component: AddStudySessionFlow,
+    options: { 
+      presentation: 'modal',
+      headerShown: false 
+    }
+  },
+  AddCourseModal: { 
+    component: AddCourseModal,
+    options: ({ navigation }: any) => ({
+      presentation: 'modal',
+      headerShown: true,
+      headerTitle: 'Add Course',
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginLeft: 16 }}
+        >
+          <Ionicons name="close" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    })
+  },
+  EditCourseModal: { 
+    component: EditCourseModal,
+    options: ({ navigation }: any) => ({
+      presentation: 'modal',
+      headerShown: true,
+      headerTitle: 'Edit Course',
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{ marginLeft: 16 }}
+        >
+          <Ionicons name="close" size={24} color="#007AFF" />
+        </TouchableOpacity>
+      ),
+    })
+  },
+  TaskDetailModal: { 
+    component: TaskDetailModal,
+    options: {
+      headerTitle: 'Task Details',
+    }
+  },
+};
+
+// Helper function to render screens from a config object
+const renderScreens = (screens: Record<string, { component: React.ComponentType<any>; options?: any }>) => {
+  return Object.entries(screens).map(([name, config]) => (
+    <Stack.Screen 
+      key={name} 
+      name={name as any} 
+      component={config.component} 
+      options={config.options}
+    />
+  ));
+};
+
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
 
   return (
-    <Stack.Navigator
-      screenOptions={sharedScreenOptions}>
+    <Stack.Navigator screenOptions={sharedScreenOptions}>
       {/* Always show Launch screen */}
       <Stack.Screen name="Launch" component={LaunchScreen} />
-        {/* Auth chooser screen */}
-        <Stack.Screen 
-          name="AuthChooser" 
-          component={AuthChooserScreen}
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        {/* Auth screen */}
-        <Stack.Screen 
-          name="Auth" 
-          component={AuthScreen}
-          options={{
-            presentation: 'modal',
-            headerShown: false,
-          }}
-        />
-        {/* Welcome screen */}
-        <Stack.Screen name="Welcome" component={WelcomeScreen} />
-        {/* Onboarding form screen */}
-        <Stack.Screen name="OnboardingFlow" component={OnboardingFlow} />
-        {/* Main app routes */}
-        <Stack.Screen name="Main" component={MainTabNavigator} />
-        {/* Course Management screens */}
-        <Stack.Screen 
-          name="Courses" 
-          component={CoursesScreen}
-          options={{
-            headerShown: true,
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="CourseDetail" 
-          component={CourseDetailScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Course Details',
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="Calendar" 
-          component={CalendarScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Calendar',
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="ComingSoon" 
-          component={ComingSoonScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Coming Soon',
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="RecycleBin" 
-          component={RecycleBinScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Recycle Bin',
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        <Stack.Screen 
-          name="Profile" 
-          component={ProfileScreen}
-          options={{
-            headerShown: true,
-            headerTitle: 'Edit Profile',
-            headerStyle: {
-              backgroundColor: '#FFFFFF',
-            },
-            headerTitleStyle: {
-              fontWeight: 'bold',
-            },
-          }}
-        />
-        
-        {/* Modal Screens */}
-        <Stack.Group>
-          <Stack.Screen
-            name="AddCourseFlow"
-            component={AddCourseFlow}
-            options={{ 
-              presentation: 'modal',
-              headerShown: false 
-            }}
-          />
-          <Stack.Screen
-            name="AddLectureFlow"
-            component={AddLectureFlow}
-            options={{ 
-              presentation: 'modal',
-              headerShown: false 
-            }}
-          />
-          <Stack.Screen
-            name="AddAssignmentFlow"
-            component={AddAssignmentFlow}
-            options={{ 
-              presentation: 'modal',
-              headerShown: false 
-            }}
-          />
-          <Stack.Screen
-            name="AddStudySessionFlow"
-            component={AddStudySessionFlow}
-            options={{ 
-              presentation: 'modal',
-              headerShown: false 
-            }}
-          />
-          <Stack.Screen 
-            name="AddCourseModal" 
-            component={AddCourseModal}
-            options={({ navigation }) => ({
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Add Course',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen 
-            name="EditCourseModal" 
-            component={EditCourseModal}
-            options={({ navigation }) => ({
-              presentation: 'modal',
-              headerShown: true,
-              headerTitle: 'Edit Course',
-              headerLeft: () => (
-                <TouchableOpacity
-                  onPress={() => navigation.goBack()}
-                  style={{ marginLeft: 16 }}
-                >
-                  <Ionicons name="close" size={24} color="#007AFF" />
-                </TouchableOpacity>
-              ),
-            })}
-          />
-          <Stack.Screen
-            name="TaskDetailModal"
-            component={TaskDetailModal}
-            options={{
-              headerTitle: 'Task Details',
-            }}
-          />
-        </Stack.Group>
-      </Stack.Navigator>
+      
+      {/* Render screens based on authentication state */}
+      {session ? (
+        <>
+          {/* Main app screens */}
+          {renderScreens(mainScreens)}
+          
+          {/* Modal flows */}
+          <Stack.Group>
+            {renderScreens(modalFlows)}
+          </Stack.Group>
+        </>
+      ) : (
+        /* Auth screens */
+        renderScreens(authScreens)
+      )}
+    </Stack.Navigator>
   );
 };
