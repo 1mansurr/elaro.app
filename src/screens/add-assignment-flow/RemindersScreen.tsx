@@ -103,18 +103,18 @@ const RemindersScreen = () => {
 
       // Schedule reminders if any
       if (reminders.length > 0 && session?.user) {
+        // Create reminders with the correct, current database schema.
         const remindersToInsert = reminders.map(reminderMinutes => {
           const reminderTime = subMinutes(assignmentData.dueDate!, reminderMinutes);
           return {
             user_id: session.user.id,
-            push_token: 'placeholder', // The backend function will get the real token
-            title: 'Assignment Due Soon',
-            body: `Your assignment "${assignmentData.title.trim()}" is due soon.`,
-            send_at: reminderTime.toISOString(),
-            data: {
-              itemId: data.id,
-              taskType: 'assignment'
-            }
+            assignment_id: data.id, // FIX: Use the ID of the assignment we just created.
+            reminder_time: reminderTime.toISOString(), // FIX: Use the correct 'reminder_time' column.
+            reminder_type: 'assignment', // FIX: Set the correct type for this reminder.
+            // The following fields are for compatibility or can be derived.
+            reminder_date: reminderTime.toISOString(), // For compatibility with older logic if any.
+            day_number: Math.ceil(reminderMinutes / (24 * 60)), // Approximate day number.
+            completed: false,
           };
         });
 
