@@ -1,171 +1,90 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { CreateLectureSchema } from '../_shared/schemas/lecture.ts';
 import { encrypt } from '../_shared/encryption.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+// The core business logic for creating a lecture
+async function handleCreateLecture(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const {
+    course_id,
+    lecture_name,
+    start_time,
+    end_time,
+    description,
+    is_recurring,
+    recurring_pattern,
+    reminders,
+  } = body;
+
+  console.log(`Verifying ownership for user: ${user.id}, course: ${course_id}`);
+
+  // SECURITY: Verify the user owns the course they are adding a lecture to.
+  const { data: course, error: courseError } = await supabaseClient
+    .from('courses')
+    .select('id')
+    .eq('id', course_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (courseError || !course) {
+    throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
   }
 
-  try {
-    console.log('--- Create Lecture Function Invoked ---');
-    
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! }
-        }
-      }
-    );
+  const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+  if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+  const [encryptedLectureName, encryptedDescription] = await Promise.all([
+    encrypt(lecture_name, encryptionKey),
+    description ? encrypt(description, encryptionKey) : null,
+  ]);
 
-    if (!user) throw new Error('Unauthorized');
-    
-    console.log(`Authenticated user: ${user.id}`);
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabaseClient, user.id, 'create-lecture');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429, // Too Many Requests
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-    // Check unified task limit
-    const limitError = await checkTaskLimit(supabaseClient, user.id);
-    if (limitError) return limitError;
-
-    const {
-      course_id,
-      lecture_name,
-      start_time, // Changed from lecture_date
-      end_time,
-      is_recurring,
-      recurring_pattern,
-      description,
-      reminders
-    } = await req.json();
-    
-    console.log('Received payload:', { course_id, start_time, end_time, is_recurring });
-
-    if (!course_id || !start_time) {
-      return new Response(
-        JSON.stringify({ error: 'Course ID and start time are required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    // Encryption key from environment
-    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
-    if (!ENCRYPTION_KEY) {
-      return new Response('Encryption key not configured.', {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    // Encrypt sensitive fields if provided
-    const encryptedLectureName = typeof lecture_name === 'string' && lecture_name.length > 0
-      ? await encrypt(lecture_name, ENCRYPTION_KEY)
-      : null;
-    const encryptedDescription = typeof description === 'string' && description.length > 0
-      ? await encrypt(description, ENCRYPTION_KEY)
-      : null;
-
-    const insertPayload: Record<string, unknown> = {
+  const { data: newLecture, error: insertError } = await supabaseClient
+    .from('lectures')
+    .insert({
       user_id: user.id,
       course_id,
-      lecture_name: encryptedLectureName, // Use the new column
+      lecture_name: encryptedLectureName,
       description: encryptedDescription,
-      start_time,                         // Use the new column
-      end_time,                           // Use the existing column
-      // Map start_time to lecture_date for compatibility with existing code
-      lecture_date: start_time,
-      is_recurring,
-      recurring_pattern,
-    };
+      start_time,
+      end_time: end_time || null,
+      lecture_date: start_time, // For backward compatibility
+      is_recurring: is_recurring || false,
+      recurring_pattern: recurring_pattern || null,
+    })
+    .select('id')
+    .single();
 
-    console.log(`Attempting to insert lecture for user: ${user.id}`);
+  if (insertError) throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
+  console.log(`Successfully created lecture with ID: ${newLecture.id}`);
 
-    const { data: newLecture, error } = await supabaseClient
-      .from('lectures')
-      .insert(insertPayload)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error inserting lecture:', error.message);
-      throw error;
+  // Reminder creation logic
+  if (reminders && reminders.length > 0) {
+    const lectureStartTime = new Date(start_time);
+    const remindersToInsert = reminders.map((mins: number) => ({
+      user_id: user.id,
+      lecture_id: newLecture.id,
+      reminder_time: new Date(lectureStartTime.getTime() - mins * 60000).toISOString(),
+      reminder_type: 'lecture',
+    }));
+    
+    const { error: reminderError } = await supabaseClient.from('reminders').insert(remindersToInsert);
+    if (reminderError) {
+      console.error('Failed to create reminders for lecture:', newLecture.id, reminderError);
     } else {
-      console.log(`Successfully created lecture with ID: ${newLecture.id}`);
+      console.log(`Successfully created ${reminders.length} reminders.`);
     }
-
-    // Create reminders if provided
-    if (reminders && Array.isArray(reminders) && reminders.length > 0) {
-      console.log(`Creating ${reminders.length} reminders for lecture ID: ${newLecture.id}`);
-      const lectureStartTime = new Date(start_time);
-      const remindersToInsert = reminders.map((reminderMinutes: number) => {
-        const reminderTime = new Date(lectureStartTime.getTime() - (reminderMinutes * 60 * 1000));
-        return {
-          user_id: user.id,
-          lecture_id: newLecture.id,
-          reminder_time: reminderTime.toISOString(),
-          reminder_type: 'lecture',
-          completed: false,
-        };
-      });
-
-      const { error: reminderError } = await supabaseClient
-        .from('reminders')
-        .insert(remindersToInsert);
-
-      if (reminderError) {
-        console.error('Failed to create reminders:', reminderError.message);
-        // Don't fail the entire request if reminders fail
-      } else {
-        console.log('Successfully created reminders.');
-      }
-    }
-
-    console.log('--- Create Lecture Function Finished ---');
-    
-    return new Response(
-      JSON.stringify(newLecture),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      }
-    );
-  } catch (error) {
-    console.error('--- Create Lecture Function Error ---');
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('--- End Error ---');
-    
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
   }
-});
+
+  return newLecture;
+}
+
+// Wrap the business logic with our secure, generic handler
+serve(createAuthenticatedHandler(
+  handleCreateLecture,
+  {
+    rateLimitName: 'create-lecture',
+    checkTaskLimit: true,
+    schema: CreateLectureSchema,
+  }
+));

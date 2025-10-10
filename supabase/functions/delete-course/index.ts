@@ -1,85 +1,39 @@
-// FILE: supabase/functions/delete-course/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { DeleteCourseSchema } from '../_shared/schemas/course.ts';
 
-// Helper to get an authenticated Supabase client
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
-  );
-};
+async function handleDeleteCourse({ user, supabaseClient, body }: AuthenticatedRequest) {
+  const { course_id } = body;
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Verifying ownership for user: ${user.id}, course: ${course_id}`);
+
+  // SECURITY: Verify ownership before deleting
+  const { error: checkError } = await supabaseClient
+    .from('courses')
+    .select('id')
+    .eq('id', course_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError) throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
+
+  // Perform the soft delete by setting the deleted_at timestamp
+  const { error: deleteError } = await supabaseClient
+    .from('courses')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', course_id);
+
+  if (deleteError) throw new AppError(deleteError.message, 500, 'DB_DELETE_ERROR');
+  
+  console.log(`Soft deleted course with ID: ${course_id} for user: ${user.id}`);
+  
+  return { success: true, message: 'Course deleted successfully.' };
+}
+
+serve(createAuthenticatedHandler(
+  handleDeleteCourse,
+  {
+    rateLimitName: 'delete-course',
+    schema: DeleteCourseSchema,
   }
-
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabase, user.id, 'delete-course');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-    const { courseId } = await req.json();
-
-    if (!courseId) {
-      return new Response(
-        JSON.stringify({ error: 'courseId is required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    // RLS policy will enforce that the user can only delete their own course.
-    // Perform soft delete by setting deleted_at timestamp
-    const { error: updateError } = await supabase
-      .from('courses')
-      .update({ deleted_at: new Date().toISOString() })
-      .eq('id', courseId)
-      .eq('user_id', user.id); // Double-check ownership for security
-
-    if (updateError) throw updateError;
-
-    return new Response(
-      JSON.stringify({ message: 'Course moved to recycle bin successfully.' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
-  }
-});
+));

@@ -1,54 +1,66 @@
-// FILE: supabase/functions/_shared/rate-limiter.ts
-// ACTION: Create a new shared utility for rate limiting Edge Functions.
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+// Rate limiting configuration
+const RATE_LIMITS = {
+  'create-assignment': { requests: 10, window: 60 }, // 10 requests per minute
+  'create-lecture': { requests: 10, window: 60 },
+  'create-study-session': { requests: 10, window: 60 },
+  'create-course': { requests: 5, window: 60 },
+  'send-notification': { requests: 20, window: 60 },
+  'default': { requests: 5, window: 60 },
+};
 
-const RATE_LIMIT_COUNT = 20; // Max 20 requests
-const RATE_LIMIT_INTERVAL_MINUTES = 1; // per 1 minute
-
-class RateLimitError extends Error {
-  constructor(message = 'Too many requests. Please try again later.' ) {
+// Rate limit error class
+export class RateLimitError extends Error {
+  constructor(message: string) {
     super(message);
     this.name = 'RateLimitError';
   }
 }
 
+// Check rate limit for a user
 export async function checkRateLimit(
   supabaseClient: SupabaseClient,
   userId: string,
-  functionName: string
-) {
-  // Log the current request
-  const { error: logError } = await supabaseClient
-    .from('function_request_logs')
-    .insert({ user_id: userId, function_name: functionName });
+  actionName: string
+): Promise<void> {
+  const config = RATE_LIMITS[actionName as keyof typeof RATE_LIMITS] || RATE_LIMITS.default;
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - config.window * 1000);
 
-  if (logError) {
-    console.error(`[${functionName}] Error logging request for rate limiting:`, logError);
-    // Fail open: If logging fails, we don't block the request, but we log the error.
-    return;
-  }
-
-  // Check the number of requests in the last interval
-  const intervalStart = new Date(Date.now() - RATE_LIMIT_INTERVAL_MINUTES * 60 * 1000).toISOString();
-
-  const { count, error: countError } = await supabaseClient
-    .from('function_request_logs')
-    .select('*', { count: 'exact', head: true })
+  // Get recent requests for this user and action
+  const { data: recentRequests, error } = await supabaseClient
+    .from('rate_limits')
+    .select('*')
     .eq('user_id', userId)
-    .eq('function_name', functionName)
-    .gte('created_at', intervalStart);
+    .eq('action', actionName)
+    .gte('created_at', windowStart.toISOString());
 
-  if (countError) {
-    console.error(`[${functionName}] Error counting requests for rate limiting:`, countError);
-    // Fail open: If counting fails, we don't block the request.
+  if (error) {
+    console.error('Rate limit check error:', error);
+    // If we can't check rate limits, we'll be permissive to avoid blocking legitimate requests
     return;
   }
 
-  if (count !== null && count > RATE_LIMIT_COUNT) {
-    throw new RateLimitError(`Rate limit exceeded for function: ${functionName}`);
+  // Check if user has exceeded the limit
+  if (recentRequests && recentRequests.length >= config.requests) {
+    throw new RateLimitError(
+      `Rate limit exceeded. Maximum ${config.requests} requests per ${config.window} seconds.`
+    );
   }
-}
 
-// Re-export the error for easy catching in functions
-export { RateLimitError };
+  // Record this request
+  await supabaseClient
+    .from('rate_limits')
+    .insert({
+      user_id: userId,
+      action: actionName,
+      created_at: now.toISOString(),
+    });
+
+  // Clean up old rate limit records (older than the window)
+  await supabaseClient
+    .from('rate_limits')
+    .delete()
+    .lt('created_at', windowStart.toISOString());
+}

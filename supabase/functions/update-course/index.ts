@@ -1,89 +1,54 @@
-// FILE: supabase/functions/update-course/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { UpdateCourseSchema } from '../_shared/schemas/course.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
-  );
-};
+async function handleUpdateCourse({ user, supabaseClient, body }: AuthenticatedRequest) {
+  const { course_id, ...updates } = body;
+  const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+  if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Verifying ownership for user: ${user.id}, course: ${course_id}`);
+
+  // SECURITY: Verify ownership before updating
+  const { error: checkError } = await supabaseClient
+    .from('courses')
+    .select('id')
+    .eq('id', course_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError) throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
+
+  // Encrypt fields if they are being updated
+  const encryptedUpdates = { ...updates };
+  if (updates.course_name) {
+    encryptedUpdates.course_name = await encrypt(updates.course_name, encryptionKey);
+  }
+  if (updates.about_course) {
+    encryptedUpdates.about_course = await encrypt(updates.about_course, encryptionKey);
   }
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
+  const { data, error: updateError } = await supabaseClient
+    .from('courses')
+    .update({
+      ...encryptedUpdates,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', course_id)
+    .select()
+    .single();
 
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabase, user.id, 'update-course');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
+  if (updateError) throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
+  
+  console.log(`Successfully updated course with ID: ${course_id}`);
+  return data;
+}
 
-    const { courseId, course_name, course_code, about_course } = await req.json();
-
-    if (!courseId || !course_name) {
-      return new Response(
-        JSON.stringify({ error: 'courseId and course_name are required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('courses')
-      .update({
-        course_name,
-        course_code,
-        about_course,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', courseId)
-      .eq('user_id', user.id) // Ensure user owns the course
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify(data),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
+serve(createAuthenticatedHandler(
+  handleUpdateCourse,
+  {
+    rateLimitName: 'update-course',
+    schema: UpdateCourseSchema,
   }
-});
+));

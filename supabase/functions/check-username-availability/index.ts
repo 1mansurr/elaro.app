@@ -1,53 +1,34 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { CheckUsernameSchema } from '../_shared/schemas/user.ts';
 
-serve(async (req ) => {
-  // This function is public and does not require authentication,
-  // as it's used during the onboarding process before a user might be fully logged in.
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!
-  );
+async function handleCheckUsername({ user, supabaseClient, body }: AuthenticatedRequest) {
+  const { username } = body;
 
-  // Handle preflight OPTIONS request
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Checking username availability for: ${username}`);
+
+  const { data, error } = await supabaseClient
+    .from('users')
+    .select('id')
+    .eq('username', username)
+    .neq('id', user.id); // Exclude the current user from the check
+
+  if (error) {
+    throw new AppError(error.message, 500, 'DB_CHECK_ERROR');
   }
 
-  try {
-    const { username } = await req.json();
+  const isAvailable = data.length === 0;
+  
+  console.log(`Username "${username}" is ${isAvailable ? 'available' : 'taken'}.`);
+  
+  return { isAvailable };
+}
 
-    if (!username) {
-      return new Response(JSON.stringify({ error: 'Username is required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Check if the username exists in the users table.
-    // We convert both to lowercase to ensure case-insensitive uniqueness.
-    const { count, error } = await supabaseClient
-      .from('users')
-      .select('username', { count: 'exact', head: true })
-      .ilike('username', username);
-
-    if (error) {
-      throw error;
-    }
-
-    const isAvailable = count === 0;
-
-    return new Response(JSON.stringify({ isAvailable }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Error checking username availability:', error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+serve(createAuthenticatedHandler(
+  handleCheckUsername,
+  {
+    rateLimitName: 'check-username',
+    schema: CheckUsernameSchema,
+    // No task limit check needed for this operation
   }
-});
+));

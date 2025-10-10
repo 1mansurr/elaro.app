@@ -1,44 +1,39 @@
-// Create this new Edge Function to handle securely deleting a lecture.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { DeleteLectureSchema } from '../_shared/schemas/lecture.ts';
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createSupabaseClient } from '../_shared/supabase-client.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+async function handleDeleteLecture({ user, supabaseClient, body }: AuthenticatedRequest) {
+  const { lecture_id } = body;
 
-serve(async (req ) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Verifying ownership for user: ${user.id}, lecture: ${lecture_id}`);
+
+  // SECURITY: Verify ownership before deleting
+  const { error: checkError } = await supabaseClient
+    .from('lectures')
+    .select('id')
+    .eq('id', lecture_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError) throw new AppError('Lecture not found or access denied.', 404, 'NOT_FOUND');
+
+  // Perform soft delete
+  const { error: deleteError } = await supabaseClient
+    .from('lectures')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', lecture_id);
+
+  if (deleteError) throw new AppError(deleteError.message, 500, 'DB_DELETE_ERROR');
+  
+  console.log(`Soft deleted lecture with ID: ${lecture_id} for user: ${user.id}`);
+  
+  return { success: true, message: 'Lecture deleted successfully.' };
+}
+
+serve(createAuthenticatedHandler(
+  handleDeleteLecture,
+  {
+    rateLimitName: 'delete-lecture',
+    schema: DeleteLectureSchema,
   }
-
-  try {
-    const supabase = createSupabaseClient(req);
-    const { lectureId } = await req.json();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Delete the lecture, ensuring the user_id matches.
-    // RLS policies will also enforce this, but it's good practice to be explicit.
-    const { error } = await supabase
-      .from('lectures')
-      .delete()
-      .eq('id', lectureId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      throw new Error(`Failed to delete lecture: ${error.message}`);
-    }
-
-    return new Response(JSON.stringify({ message: 'Lecture deleted successfully' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
+));

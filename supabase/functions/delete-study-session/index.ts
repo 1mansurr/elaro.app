@@ -1,61 +1,39 @@
-// Create this new Edge Function to handle securely deleting a study session.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { DeleteStudySessionSchema } from '../_shared/schemas/studySession.ts';
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createSupabaseClient } from '../_shared/supabase-client.ts';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+async function handleDeleteStudySession({ user, supabaseClient, body }: AuthenticatedRequest) {
+  const { session_id } = body;
 
-serve(async (req ) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Verifying ownership for user: ${user.id}, session: ${session_id}`);
+
+  // SECURITY: Verify ownership before deleting
+  const { error: checkError } = await supabaseClient
+    .from('study_sessions')
+    .select('id')
+    .eq('id', session_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError) throw new AppError('Study session not found or access denied.', 404, 'NOT_FOUND');
+
+  // Perform soft delete
+  const { error: deleteError } = await supabaseClient
+    .from('study_sessions')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', session_id);
+
+  if (deleteError) throw new AppError(deleteError.message, 500, 'DB_DELETE_ERROR');
+  
+  console.log(`Soft deleted study session with ID: ${session_id} for user: ${user.id}`);
+  
+  return { success: true, message: 'Study session deleted successfully.' };
+}
+
+serve(createAuthenticatedHandler(
+  handleDeleteStudySession,
+  {
+    rateLimitName: 'delete-study-session',
+    schema: DeleteStudySessionSchema,
   }
-
-  try {
-    const supabase = createSupabaseClient(req);
-    const { sessionId } = await req.json();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabase, user.id, 'delete-study-session');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-    // Delete the study session, ensuring the user_id matches.
-    const { error } = await supabase
-      .from('study_sessions')
-      .delete()
-      .eq('id', sessionId)
-      .eq('user_id', user.id);
-
-    if (error) {
-      throw new Error(`Failed to delete study session: ${error.message}`);
-    }
-
-    return new Response(JSON.stringify({ message: 'Study session deleted successfully' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
+));

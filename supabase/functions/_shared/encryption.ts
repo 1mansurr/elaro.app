@@ -1,75 +1,89 @@
-// FILE: supabase/functions/_shared/encryption.ts
-// Create this new shared file. It will contain the core crypto logic.
+// Simple encryption utility for sensitive data
+export async function encrypt(text: string, key?: string): Promise<string> {
+  if (!key) {
+    console.warn('No encryption key provided, returning original text');
+    return text;
+  }
 
-const encoder = new TextEncoder();
-const decoder = new TextDecoder();
-
-// Helper function to derive a cryptographic key from our master key string
-async function getKey(secretKey: string): Promise<CryptoKey> {
-  const keyMaterial = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secretKey.slice(0, 32)), // Use the first 32 chars for a 256-bit key
-    { name: "PBKDF2" },
-    false,
-    ["deriveKey"]
-  );
-  return crypto.subtle.deriveKey(
-    {
-      name: "PBKDF2",
-      salt: encoder.encode("elaro-salt"), // A static salt is acceptable here
-      iterations: 100000,
-      hash: "SHA-256",
-    },
-    keyMaterial,
-    { name: "AES-GCM", length: 256 },
-    true,
-    ["encrypt", "decrypt"]
-  );
-}
-
-export async function encrypt(text: string, secretKey: string): Promise<string> {
-  if (!text) return text;
-  const key = await getKey(secretKey);
-  const iv = crypto.getRandomValues(new Uint8Array(12)); // Initialization Vector
-  const encodedText = encoder.encode(text);
-
-  const encryptedData = await crypto.subtle.encrypt(
-    { name: "AES-GCM", iv: iv },
-    key,
-    encodedText
-  );
-
-  // Combine IV and encrypted data and convert to a base64 string for storage
-  const combined = new Uint8Array(iv.length + encryptedData.byteLength);
-  combined.set(iv, 0);
-  combined.set(new Uint8Array(encryptedData), iv.length);
-  
-  // TypeScript in Deno can be strict about apply's args; coerce safely
-  return btoa(String.fromCharCode.apply(null, Array.from(combined) as unknown as number[]));
-}
-
-export async function decrypt(encryptedText: string, secretKey: string): Promise<string> {
-  if (!encryptedText) return encryptedText;
   try {
-    const key = await getKey(secretKey);
-    const combined = new Uint8Array(atob(encryptedText).split('').map(c => c.charCodeAt(0)));
+    // Convert text and key to Uint8Array
+    const textEncoder = new TextEncoder();
+    const keyEncoder = new TextEncoder();
     
-    const iv = combined.slice(0, 12);
-    const data = combined.slice(12);
+    const data = textEncoder.encode(text);
+    const keyData = keyEncoder.encode(key.substring(0, 32)); // Use first 32 bytes of key
+    
+    // Import the key for encryption
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-GCM' },
+      false,
+      ['encrypt']
+    );
 
-    const decryptedData = await crypto.subtle.decrypt(
-      { name: "AES-GCM", iv: iv },
-      key,
+    // Generate a random IV
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+
+    // Encrypt the data
+    const encrypted = await crypto.subtle.encrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
       data
     );
 
-    return decoder.decode(decryptedData);
+    // Combine IV and encrypted data
+    const result = new Uint8Array(iv.length + encrypted.byteLength);
+    result.set(iv);
+    result.set(new Uint8Array(encrypted), iv.length);
+
+    // Return base64 encoded result
+    return btoa(String.fromCharCode(...result));
   } catch (error) {
-    console.error("Decryption failed:", error);
-    // If decryption fails, return a placeholder or the encrypted text itself
-    // to prevent the app from crashing.
-    return "[Decryption Failed]";
+    console.error('Encryption error:', error);
+    throw new Error('Failed to encrypt data');
   }
 }
 
+export async function decrypt(encryptedText: string, key?: string): Promise<string> {
+  if (!key) {
+    console.warn('No encryption key provided, returning original text');
+    return encryptedText;
+  }
 
+  try {
+    // Convert base64 back to Uint8Array
+    const encryptedData = Uint8Array.from(atob(encryptedText), c => c.charCodeAt(0));
+    
+    // Extract IV (first 12 bytes) and encrypted data
+    const iv = encryptedData.slice(0, 12);
+    const encrypted = encryptedData.slice(12);
+    
+    // Convert key to Uint8Array
+    const keyEncoder = new TextEncoder();
+    const keyData = keyEncoder.encode(key.substring(0, 32));
+    
+    // Import the key for decryption
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      keyData,
+      { name: 'AES-GCM' },
+      false,
+      ['decrypt']
+    );
+
+    // Decrypt the data
+    const decrypted = await crypto.subtle.decrypt(
+      { name: 'AES-GCM', iv },
+      cryptoKey,
+      encrypted
+    );
+
+    // Convert back to string
+    const textDecoder = new TextDecoder();
+    return textDecoder.decode(decrypted);
+  } catch (error) {
+    console.error('Decryption error:', error);
+    throw new Error('Failed to decrypt data');
+  }
+}

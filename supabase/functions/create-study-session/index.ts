@@ -1,154 +1,108 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { CreateStudySessionSchema } from '../_shared/schemas/studySession.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
-// Helper function to get an authenticated Supabase client
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
-  );
-};
+// The core business logic for creating a study session
+async function handleCreateStudySession(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const {
+    course_id,
+    topic,
+    notes,
+    session_date,
+    has_spaced_repetition,
+    reminders,
+  } = body;
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  console.log(`Verifying ownership for user: ${user.id}, course: ${course_id}`);
+
+  // SECURITY: Verify course ownership
+  const { data: course, error: courseError } = await supabaseClient
+    .from('courses')
+    .select('id')
+    .eq('id', course_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (courseError || !course) {
+    throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
   }
 
-  try {
-    console.log('--- Create Study Session Function Invoked ---');
-    
-    const supabaseClient = getSupabaseClient(req);
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-    
-    console.log(`Authenticated user: ${user.id}`);
+  const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+  if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
 
-    // Check unified task limit
-    const limitError = await checkTaskLimit(supabaseClient, user.id);
-    if (limitError) return limitError;
+  const [encryptedTopic, encryptedNotes] = await Promise.all([
+    encrypt(topic, encryptionKey),
+    notes ? encrypt(notes, encryptionKey) : null,
+  ]);
 
-    const { course_id, topic, notes, session_date, has_spaced_repetition, reminders } = await req.json();
-    
-    console.log('Received payload:', { course_id, topic, session_date, has_spaced_repetition, reminders: reminders?.length || 0 });
+  const { data: newSession, error: insertError } = await supabaseClient
+    .from('study_sessions')
+    .insert({
+      user_id: user.id,
+      course_id,
+      topic: encryptedTopic,
+      notes: encryptedNotes,
+      session_date,
+      has_spaced_repetition,
+    })
+    .select('id, topic, session_date')
+    .single();
 
-    if (!course_id || !topic || !session_date) {
-      return new Response(
-        JSON.stringify({ error: 'Course, topic, and date are required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
+  if (insertError) throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
+  console.log(`Successfully created study session with ID: ${newSession.id}`);
+
+  // Spaced Repetition Reminder Logic
+  if (has_spaced_repetition) {
+    console.log(`Scheduling spaced repetition reminders for session ID: ${newSession.id}`);
+    const { error: reminderError } = await supabaseClient.functions.invoke('schedule-reminders', {
+      body: {
+        session_id: newSession.id,
+        session_date: newSession.session_date,
+      },
+    });
+
+    if (reminderError) {
+      // Log the error but don't fail the whole request, as the session was still created
+      console.error('Failed to schedule reminders:', reminderError.message);
     }
+  }
 
-    // Encryption key from environment
-    const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
-    if (!ENCRYPTION_KEY) {
-      return new Response('Encryption key not configured.', {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
-    }
-
-    // Encrypt sensitive fields
-    const encryptedTopic = await encrypt(topic, ENCRYPTION_KEY);
-    const encryptedDescription = notes ? await encrypt(notes, ENCRYPTION_KEY) : null;
-
-    console.log(`Attempting to insert study session for user: ${user.id}`);
-
-    const { data: newSession, error: sessionError } = await supabaseClient
-      .from('study_sessions')
-      .insert({
+  // Immediate Reminder Logic
+  if (reminders && reminders.length > 0) {
+    console.log(`Creating ${reminders.length} immediate reminders for session ID: ${newSession.id}`);
+    const sessionDate = new Date(session_date);
+    const remindersToInsert = reminders.map((mins: number) => {
+      const reminderTime = new Date(sessionDate.getTime() - mins * 60000);
+      return {
         user_id: user.id,
-        course_id,
-        topic: encryptedTopic,
-        notes: encryptedDescription,
-        session_date,
-        has_spaced_repetition,
-      })
-      .select()
-      .single();
-
-    if (sessionError) {
-      console.error('Error inserting study session:', sessionError.message);
-      throw sessionError;
+        session_id: newSession.id,
+        reminder_time: reminderTime.toISOString(),
+        reminder_type: 'study_session',
+        reminder_date: reminderTime.toISOString(),
+        day_number: Math.ceil(mins / (24 * 60)),
+        completed: false,
+      };
+    });
+    
+    const { error: reminderError } = await supabaseClient.from('reminders').insert(remindersToInsert);
+    if (reminderError) {
+      console.error('Failed to create immediate reminders for session:', newSession.id, reminderError);
     } else {
-      console.log(`Successfully created study session with ID: ${newSession.id}`);
+      console.log('Successfully created immediate reminders.');
     }
-
-    // If spaced repetition is enabled, invoke the schedule-reminders function
-    if (has_spaced_repetition) {
-      console.log(`Scheduling spaced repetition reminders for session ID: ${newSession.id}`);
-      const { error: reminderError } = await supabaseClient.functions.invoke('schedule-reminders', {
-        body: {
-          session_id: newSession.id,
-          session_date: newSession.session_date,
-        },
-      });
-
-      if (reminderError) {
-        // Log the error but don't fail the whole request, as the session was still created
-        console.error('Failed to schedule reminders:', reminderError.message);
-      }
-    }
-
-    // Create immediate reminders if provided
-    if (newSession && reminders && reminders.length > 0) {
-      console.log(`Creating ${reminders.length} immediate reminders for session ID: ${newSession.id}`);
-      const sessionDate = new Date(session_date);
-      const remindersToInsert = reminders.map((reminderMinutes: number) => {
-        const reminderTime = new Date(sessionDate.getTime() - reminderMinutes * 60000);
-        return {
-          user_id: user.id,
-          session_id: newSession.id, // Note: The column is session_id, not study_session_id
-          reminder_time: reminderTime.toISOString(),
-          reminder_type: 'study_session',
-          reminder_date: reminderTime.toISOString(),
-          day_number: Math.ceil(reminderMinutes / (24 * 60)),
-          completed: false,
-        };
-      });
-
-      const { error: immediateReminderError } = await supabaseClient
-        .from('reminders')
-        .insert(remindersToInsert);
-
-      if (immediateReminderError) {
-        console.error('Failed to create immediate reminders:', immediateReminderError.message);
-      } else {
-        console.log('Successfully created immediate reminders.');
-      }
-    }
-
-    console.log('--- Create Study Session Function Finished ---');
-    
-    return new Response(
-      JSON.stringify(newSession),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
-      }
-    );
-  } catch (error) {
-    console.error('--- Create Study Session Function Error ---');
-    console.error('Error details:', error instanceof Error ? error.message : 'Unknown error');
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
-    console.error('--- End Error ---');
-    
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
-    );
   }
-});
+
+  return newSession;
+}
+
+// Wrap the business logic with our secure, generic handler
+serve(createAuthenticatedHandler(
+  handleCreateStudySession,
+  {
+    rateLimitName: 'create-study-session',
+    checkTaskLimit: true,
+    schema: CreateStudySessionSchema,
+  }
+));
