@@ -22,12 +22,12 @@ const OnboardingCoursesScreen = () => {
     setIsLoading(true);
     try {
       // The username, university, and program come from the onboarding context
-      const { username, university, program } = onboardingData;
+      const { username, country, university, program } = onboardingData;
       // The courses now come from our React Query hook
       const finalCourses = courses || [];
 
       const { error } = await supabase.functions.invoke('complete-onboarding', {
-        body: { username, university, program, courses: finalCourses },
+        body: { username, country, university, program, courses: finalCourses },
       });
 
       if (error) {

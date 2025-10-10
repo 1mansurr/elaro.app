@@ -10,6 +10,8 @@ export interface User {
   name?: string;
   first_name?: string;
   last_name?: string;
+  username?: string;
+  country?: string;
   university?: string;
   program?: string;
   onboarding_completed: boolean;

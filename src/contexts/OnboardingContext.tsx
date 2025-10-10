@@ -4,6 +4,7 @@ import { Course } from '../types'; // Assuming Course type is available
 // Define the shape of our onboarding data
 interface OnboardingData {
   username: string;
+  country: string;
   university: string;
   program: string;
   courses: Course[];
@@ -22,6 +23,7 @@ const OnboardingContext = createContext<OnboardingContextType | undefined>(undef
 // Define the initial state
 const initialState: OnboardingData = {
   username: '',
+  country: '',
   university: '',
   program: '',
   courses: [],

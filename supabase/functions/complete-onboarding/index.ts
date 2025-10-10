@@ -41,7 +41,7 @@ serve(async (req) => {
   }
 
   // 3. Get the data from the request body
-  const { username, university, program, courses } = await req.json();
+  const { username, university, program, country, courses } = await req.json();
 
   // 5. Create the courses, if any
   if (courses && courses.length > 0) {
@@ -69,6 +69,7 @@ serve(async (req) => {
       onboarding_completed: true,
       university: university,
       program: program,
+      country: country,
     })
     .eq('id', user.id);
 

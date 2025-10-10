@@ -18,7 +18,7 @@ const OnboardingUniversityScreen = () => {
   const { onboardingData, updateOnboardingData } = useOnboarding();
 
   // Update state management for the new selectors
-  const [selectedCountry, setSelectedCountry] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(onboardingData.country || '');
   const [university, setUniversity] = useState(onboardingData.university || '');
   const [program, setProgram] = useState(onboardingData.program || '');
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -51,13 +51,21 @@ const OnboardingUniversityScreen = () => {
       return;
     }
     // Program is optional, so no validation needed for it.
-    updateOnboardingData({ university: university.trim(), program: program.trim() });
+    updateOnboardingData({
+      country: selectedCountry,
+      university: university.trim(),
+      program: program.trim(),
+    });
     navigation.navigate('OnboardingCourses');
   };
   
   const handleBack = () => {
     // Save current state before going back
-    updateOnboardingData({ university, program });
+    updateOnboardingData({
+      country: selectedCountry,
+      university,
+      program,
+    });
     navigation.goBack();
   };
 

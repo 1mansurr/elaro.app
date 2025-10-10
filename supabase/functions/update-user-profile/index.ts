@@ -22,7 +22,7 @@ serve(async (req ) => {
   }
 
   try {
-    const { firstName, lastName, university, program } = await req.json();
+    const { firstName, lastName, university, program, country } = await req.json();
 
     // We are not allowing username changes for now.
     const updates = {
@@ -30,6 +30,7 @@ serve(async (req ) => {
       last_name: lastName,
       university: university,
       program: program,
+      country: country,
       updated_at: new Date().toISOString(), // Manually update the timestamp
     };
 

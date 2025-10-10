@@ -46,11 +46,20 @@ serve(async (req) => {
     const limitError = await checkTaskLimit(supabaseClient, user.id);
     if (limitError) return limitError;
 
-    const { course_id, lecture_date, is_recurring, recurring_pattern, lecture_name, description } = await req.json();
+    const {
+      course_id,
+      lecture_name,
+      start_time, // Changed from lecture_date
+      end_time,
+      is_recurring,
+      recurring_pattern,
+      description,
+      reminders
+    } = await req.json();
 
-    if (!course_id || !lecture_date) {
+    if (!course_id || !start_time) {
       return new Response(
-        JSON.stringify({ error: 'Course ID and lecture date are required.' }),
+        JSON.stringify({ error: 'Course ID and start time are required.' }),
         {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400,
@@ -78,13 +87,15 @@ serve(async (req) => {
     const insertPayload: Record<string, unknown> = {
       user_id: user.id,
       course_id,
-      lecture_date,
+      lecture_name: encryptedLectureName, // Use the new column
+      description: encryptedDescription,
+      start_time,                         // Use the new column
+      end_time,                           // Use the existing column
+      // Map start_time to lecture_date for compatibility with existing code
+      lecture_date: start_time,
       is_recurring,
       recurring_pattern,
     };
-
-    if (lecture_name !== undefined) insertPayload.lecture_name = encryptedLectureName;
-    if (description !== undefined) insertPayload.description = encryptedDescription;
 
     const { data: newLecture, error } = await supabaseClient
       .from('lectures')
@@ -93,6 +104,30 @@ serve(async (req) => {
       .single();
 
     if (error) throw error;
+
+    // Create reminders if provided
+    if (reminders && Array.isArray(reminders) && reminders.length > 0) {
+      const lectureStartTime = new Date(start_time);
+      const remindersToInsert = reminders.map((reminderMinutes: number) => {
+        const reminderTime = new Date(lectureStartTime.getTime() - (reminderMinutes * 60 * 1000));
+        return {
+          user_id: user.id,
+          lecture_id: newLecture.id,
+          reminder_time: reminderTime.toISOString(),
+          reminder_type: 'lecture',
+          completed: false,
+        };
+      });
+
+      const { error: reminderError } = await supabaseClient
+        .from('reminders')
+        .insert(remindersToInsert);
+
+      if (reminderError) {
+        console.error('Error creating reminders:', reminderError);
+        // Don't fail the entire request if reminders fail
+      }
+    }
 
     return new Response(
       JSON.stringify(newLecture),

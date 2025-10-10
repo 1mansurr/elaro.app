@@ -4,6 +4,8 @@ import { Course } from '../types';
 // Define the shape of our lecture data
 export interface AddLectureData {
   course: Course | null;
+  lectureName: string;
+  description: string;
   startTime: Date | null;
   endTime: Date | null;
   recurrence: 'none' | 'weekly' | 'bi-weekly'; // RE-ADDED THIS FIELD
@@ -23,6 +25,8 @@ const AddLectureContext = createContext<AddLectureContextType | undefined>(undef
 // Define the initial state
 const initialState: AddLectureData = {
   course: null,
+  lectureName: '',
+  description: '',
   startTime: null,
   endTime: null,
   recurrence: 'none', // RE-ADDED THIS FIELD with its default

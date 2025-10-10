@@ -17,7 +17,7 @@ type RemindersScreenNavigationProp = StackNavigationProp<AddLectureStackParamLis
 
 const RemindersScreen = () => {
   const navigation = useNavigation<RemindersScreenNavigationProp>();
-  const { lectureData, resetLectureData } = useAddLecture();
+  const { lectureData, updateLectureData, resetLectureData } = useAddLecture();
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
   
@@ -91,12 +91,19 @@ const RemindersScreen = () => {
       const { data, error } = await supabase.functions.invoke('create-lecture', {
         body: {
           course_id: lectureData.course.id,
-          lecture_name: `${lectureData.course.course_name} Lecture`, // Use course name as lecture name
-          start_time: lectureData.startTime.toISOString(),
+          // Use lecture name from context, fallback to auto-generated if empty.
+          lecture_name: lectureData.lectureName || `${lectureData.course.course_name} Lecture`,
+          // Map startTime to the lecture_date field the backend expects.
+          lecture_date: lectureData.startTime.toISOString(),
+          // Include end_time for lecture duration.
           end_time: lectureData.endTime.toISOString(),
-          description: `Lecture for ${lectureData.course.course_name}`,
+          // Pass the recurrence information.
           is_recurring: lectureData.recurrence !== 'none',
-          recurring_pattern: lectureData.recurrence,
+          recurring_pattern: lectureData.recurrence !== 'none' ? lectureData.recurrence : undefined,
+          // Use description from context, fallback to auto-generated if empty.
+          description: lectureData.description || `Lecture for ${lectureData.course.course_name}`,
+          // Include reminders array for backend processing.
+          reminders: reminders,
         },
       });
 
@@ -104,31 +111,7 @@ const RemindersScreen = () => {
         throw new Error(error.message);
       }
 
-      // Schedule reminders if any
-      if (reminders.length > 0 && session?.user) {
-        const remindersToInsert = reminders.map(reminderMinutes => {
-          const reminderTime = subMinutes(lectureData.startTime!, reminderMinutes);
-          return {
-            user_id: session.user.id,
-            push_token: 'placeholder', // The backend function will get the real token
-            title: 'Upcoming Lecture',
-            body: `Your lecture "${lectureData.course!.course_name}" is starting soon.`,
-            send_at: reminderTime.toISOString(),
-            data: {
-              itemId: data.id,
-              taskType: 'lecture'
-            }
-          };
-        });
-
-        const { error: reminderError } = await supabase
-          .from('reminders')
-          .insert(remindersToInsert);
-
-        if (reminderError) {
-          console.error('Error saving reminders:', reminderError);
-        }
-      }
+      // Reminders are now handled by the backend create-lecture function
 
       // Check if this is the user's first task ever created
       const isFirstTask = true; // Placeholder for: totalTaskCount === 0
@@ -159,8 +142,8 @@ const RemindersScreen = () => {
   };
 
   const handleReminderChange = (reminders: number[]) => {
-    // Update the context with new reminders
-    // We'll handle this in the create function
+    // Update the context with the new reminders array.
+    updateLectureData({ reminders });
   };
 
   const handleCreateLecture = async () => {

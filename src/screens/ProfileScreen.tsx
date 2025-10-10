@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, Text, TextInput, Button, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../services/supabase';
+import { SearchableSelector } from '../components';
+
+// Import the data files
+import countriesData from '../data/countries.json';
 
 const ProfileScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -13,7 +17,13 @@ const ProfileScreen = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [university, setUniversity] = useState('');
   const [program, setProgram] = useState('');
+  const [country, setCountry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Extract country names for the selector
+  const countryData = useMemo(() => {
+    return countriesData.countries.map(c => c.name).sort();
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -22,6 +32,7 @@ const ProfileScreen = ({ navigation }) => {
       setUsername(user.username || '');
       setUniversity(user.university || '');
       setProgram(user.program || '');
+      setCountry(user.country || '');
     }
   }, [user]);
 
@@ -34,6 +45,7 @@ const ProfileScreen = ({ navigation }) => {
           lastName,
           university,
           program,
+          country,
         },
       });
 
@@ -61,7 +73,7 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Edit Profile</Text>
       
       <Text style={styles.label}>First Name</Text>
@@ -74,6 +86,15 @@ const ProfileScreen = ({ navigation }) => {
       <TextInput style={styles.input} value={username} onChangeText={setUsername} editable={false} />
       {/* Username is not editable for now to avoid complexity with uniqueness checks */}
 
+      <SearchableSelector
+        label="Country"
+        data={countryData}
+        selectedValue={country}
+        onValueChange={setCountry}
+        placeholder="Select your country..."
+        searchPlaceholder="Search for your country"
+      />
+
       <Text style={styles.label}>University</Text>
       <TextInput style={styles.input} value={university} onChangeText={setUniversity} />
 
@@ -81,12 +102,12 @@ const ProfileScreen = ({ navigation }) => {
       <TextInput style={styles.input} value={program} onChangeText={setProgram} />
 
       <Button title={isLoading ? 'Saving...' : 'Save Changes'} onPress={handleSaveChanges} disabled={isLoading} />
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flexGrow: 1, padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
   label: { fontSize: 16, marginTop: 15, marginBottom: 5 },
   input: {
