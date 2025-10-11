@@ -14,6 +14,7 @@ export interface User {
   country?: string;
   university?: string;
   program?: string;
+  role: 'user' | 'admin';
   onboarding_completed: boolean;
   subscription_tier: 'free' | 'oddity' | null;
   subscription_status?: 'trialing' | 'active' | 'past_due' | 'canceled' | null;
@@ -66,6 +67,8 @@ export type RootStackParamList = {
     taskType: 'study_session' | 'lecture' | 'assignment';
   };
   SupportChat: undefined;
+  MFAEnrollmentScreen: undefined;
+  MFAVerificationScreen: { factorId: string };
 };
 
 export type MainTabParamList = {

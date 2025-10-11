@@ -39,6 +39,7 @@ import TaskDetailModal from '../screens/modals/TaskDetailModal';
 import CourseDetailScreen from '../screens/CourseDetailScreen';
 import ComingSoonScreen from '../screens/ComingSoonScreen';
 import RecycleBinScreen from '../screens/RecycleBinScreen';
+import { MFAEnrollmentScreen, MFAVerificationScreen } from '../screens/mfa';
 
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();
@@ -271,6 +272,32 @@ const mainScreens = {
     options: {
       headerShown: true,
       headerTitle: 'Recycle Bin',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  MFAEnrollmentScreen: { 
+    component: MFAEnrollmentScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Enable MFA',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
+  MFAVerificationScreen: { 
+    component: MFAVerificationScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Verify Your Identity',
       headerStyle: {
         backgroundColor: '#FFFFFF',
       },

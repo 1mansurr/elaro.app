@@ -22,7 +22,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (credentials: LoginCredentials) => Promise<{ error: any }>;
+  signIn: (credentials: LoginCredentials) => Promise<{ error: any; requiresMFA?: boolean; factors?: any[] }>;
   signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -139,10 +139,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signIn = async (credentials: LoginCredentials) => {
     try {
-      await authService.login(credentials);
+      const result = await authService.login(credentials);
+      
+      // Check if MFA is required
+      try {
+        const aal = await authService.mfa.getAAL();
+        if (aal.currentLevel === 'aal2') {
+          // Get available MFA factors
+          const mfaStatus = await authService.mfa.getStatus();
+          return { 
+            error: null, 
+            requiresMFA: true, 
+            factors: mfaStatus.factors 
+          };
+        }
+      } catch (mfaError) {
+        // MFA might not be enabled or configured
+        console.log('MFA check failed:', mfaError);
+      }
+      
       return { error: null };
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Sign in error:', error);
+      
+      // Check if this is an MFA-related error
+      if (error.message?.includes('MFA') || error.message?.includes('aal2')) {
+        try {
+          const mfaStatus = await authService.mfa.getStatus();
+          return { 
+            error: null, 
+            requiresMFA: true, 
+            factors: mfaStatus.factors 
+          };
+        } catch (mfaError) {
+          // If we can't get MFA status, return the original error
+          return { error };
+        }
+      }
+      
       return { error };
     }
   };

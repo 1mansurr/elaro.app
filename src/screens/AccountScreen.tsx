@@ -8,6 +8,14 @@ import { RootStackParamList } from '../types';
 import { Card, Button } from '../components';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
+import { authService } from '../services/authService';
+
+// Import the AppError class
+class AppError extends Error {
+  constructor(message: string, public status: number, public code: string) {
+    super(message);
+  }
+}
 
 type AccountScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
@@ -24,6 +32,33 @@ const AccountScreen = () => {
 
   const handleContactSupport = () => {
     WebBrowser.openBrowserAsync(TAWK_TO_URL);
+  };
+
+  const handleGlobalSignOut = () => {
+    Alert.alert(
+      'Log Out From All Devices',
+      'Are you sure? This will log you out of your ELARO account on all browsers and devices.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Log Out Everywhere',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await authService.signOutFromAllDevices();
+              // The onAuthStateChange listener in AuthContext will handle navigation.
+            } catch (error) {
+              const message = error instanceof AppError ? error.message : 'Failed to log out from all devices.';
+              Alert.alert('Error', message);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleEnableMfa = () => {
+    navigation.navigate('MFAEnrollmentScreen');
   };
 
   const ListItem = ({ icon, label, onPress, color = '#343a40' }: { icon: any; label: string; onPress: () => void; color?: string }) => (
@@ -82,6 +117,17 @@ const AccountScreen = () => {
 
   const renderAuthenticatedView = () => (
     <ScrollView style={styles.container}>
+      {/* Admin Card - Only visible to admin users */}
+      {user?.role === 'admin' && (
+        <Card title="Admin">
+          <ListItem
+            icon="grid-outline"
+            label="Admin Dashboard"
+            onPress={() => Alert.alert('Coming Soon', 'The Admin Dashboard is under construction.')}
+          />
+        </Card>
+      )}
+
       {/* Profile Card */}
       <Card title="Profile">
         <View style={styles.profileHeader}>
@@ -113,6 +159,15 @@ const AccountScreen = () => {
           title="Add a Course"
           onPress={() => navigation.navigate('AddCourseFlow')}
           style={{ marginTop: 10 }}
+        />
+      </Card>
+
+      {/* Security Card */}
+      <Card title="Security">
+        <ListItem
+          icon="shield-outline"
+          label="Enable Multi-Factor Authentication"
+          onPress={handleEnableMfa}
         />
       </Card>
 
@@ -155,6 +210,12 @@ const AccountScreen = () => {
           icon="log-out-outline"
           label="Log Out"
           onPress={handleLogout}
+        />
+        <ListItem
+          icon="exit-outline"
+          label="Log Out From All Devices"
+          onPress={handleGlobalSignOut}
+          color="#FF3B30"
         />
         <ListItem
           icon="trash-outline"
