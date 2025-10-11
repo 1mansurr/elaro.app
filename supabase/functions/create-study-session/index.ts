@@ -60,6 +60,7 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
       body: {
         session_id: newSession.id,
         session_date: newSession.session_date,
+        topic: topic, // Pass the original, unencrypted topic
       },
     });
 
@@ -80,7 +81,6 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
         session_id: newSession.id,
         reminder_time: reminderTime.toISOString(),
         reminder_type: 'study_session',
-        reminder_date: reminderTime.toISOString(),
         day_number: Math.ceil(mins / (24 * 60)),
         completed: false,
       };

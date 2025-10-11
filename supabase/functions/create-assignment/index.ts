@@ -74,7 +74,6 @@ serve(createAuthenticatedHandler(
         assignment_id: newAssignment.id,
         reminder_time: new Date(dueDate.getTime() - mins * 60000).toISOString(),
         reminder_type: 'assignment',
-        reminder_date: new Date(dueDate.getTime() - mins * 60000).toISOString(),
         day_number: Math.ceil(mins / (24 * 60)),
         completed: false,
       }));
