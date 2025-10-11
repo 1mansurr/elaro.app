@@ -2,12 +2,12 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Import the screens we'll create
-import SelectCourseScreen from '../screens/add-assignment-flow/SelectCourseScreen';
-import AssignmentTitleScreen from '../screens/add-assignment-flow/AssignmentTitleScreen';
-import AssignmentDescriptionScreen from '../screens/add-assignment-flow/AssignmentDescriptionScreen';
-import DueDateScreen from '../screens/add-assignment-flow/DueDateScreen';
-import SubmissionMethodScreen from '../screens/add-assignment-flow/SubmissionMethodScreen';
-import RemindersScreen from '../screens/add-assignment-flow/RemindersScreen';
+import SelectCourseScreen from '@/features/assignments/screens/add-flow/SelectCourseScreen';
+import AssignmentTitleScreen from '@/features/assignments/screens/add-flow/AssignmentTitleScreen';
+import AssignmentDescriptionScreen from '@/features/assignments/screens/add-flow/AssignmentDescriptionScreen';
+import DueDateScreen from '@/features/assignments/screens/add-flow/DueDateScreen';
+import SubmissionMethodScreen from '@/features/assignments/screens/add-flow/SubmissionMethodScreen';
+import RemindersScreen from '@/features/assignments/screens/add-flow/AssignmentRemindersScreen';
 
 export type AddAssignmentStackParamList = {
   SelectCourse: undefined;

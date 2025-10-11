@@ -3,11 +3,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 // We will create these screen components in the next steps.
 // For now, we can use placeholder components.
-import AddCourseNameScreen from '../screens/add-course-flow/AddCourseNameScreen';
-import AddCourseDescriptionScreen from '../screens/add-course-flow/AddCourseDescriptionScreen';
-import AddLectureDateTimeScreen from '../screens/add-course-flow/AddLectureDateTimeScreen';
-import AddLectureRecurrenceScreen from '../screens/add-course-flow/AddLectureRecurrenceScreen';
-import AddLectureRemindersScreen from '../screens/add-course-flow/AddLectureRemindersScreen';
+import { 
+  AddCourseNameScreen, 
+  AddCourseDescriptionScreen, 
+  AddLectureDateTimeScreen, 
+  AddLectureRecurrenceScreen, 
+  AddLectureRemindersScreen 
+} from '@/features/courses/screens';
 
 export type AddCourseStackParamList = {
   AddCourseName: undefined;

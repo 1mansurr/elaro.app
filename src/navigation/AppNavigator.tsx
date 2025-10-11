@@ -9,37 +9,34 @@ import { Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { RootStackParamList, MainTabParamList } from '../types';
 import AddCourseNavigator from './AddCourseNavigator';
 import AddLectureNavigator from './AddLectureNavigator';
 import AddAssignmentNavigator from './AddAssignmentNavigator';
 import AddStudySessionNavigator from './AddStudySessionNavigator';
-import { AddCourseProvider } from '../contexts/AddCourseContext';
-import { AddLectureProvider } from '../contexts/AddLectureContext';
-import { AddAssignmentProvider } from '../contexts/AddAssignmentContext';
-import { AddStudySessionProvider } from '../contexts/AddStudySessionContext';
-import FeatureErrorBoundary from '../components/FeatureErrorBoundary';
+import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
+import { AddLectureProvider } from '@/features/lectures/contexts/AddLectureContext';
+import { AddAssignmentProvider } from '@/features/assignments/contexts/AddAssignmentContext';
+import { AddStudySessionProvider } from '@/features/studySessions/contexts/AddStudySessionContext';
+import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 
 // Screens
-import LaunchScreen from '../screens/LaunchScreen';
-import AuthChooserScreen from '../screens/auth/AuthChooserScreen';
-import { AuthScreen } from '../screens/AuthScreen';
-import WelcomeScreen from '../screens/onboarding/WelcomeScreen';
+import LaunchScreen from '@/shared/screens/LaunchScreen';
+import AuthChooserScreen from '@/features/auth/screens/AuthChooserScreen';
+import { AuthScreen } from '@/features/auth/screens/AuthScreen';
+import WelcomeScreen from '@/features/onboarding/screens/WelcomeScreen';
 import OnboardingNavigator from './OnboardingNavigator';
 import { OnboardingProvider } from '../contexts/OnboardingContext';
-import HomeScreen from '../screens/HomeScreen';
-import CalendarScreen from '../screens/CalendarScreen';
-import AccountScreen from '../screens/AccountScreen';
-import ProfileScreen from '../screens/ProfileScreen';
-import CoursesScreen from '../screens/CoursesScreen';
-import AddCourseModal from '../screens/modals/AddCourseModal';
-import EditCourseModal from '../screens/modals/EditCourseModal';
-import TaskDetailModal from '../screens/modals/TaskDetailModal';
-import CourseDetailScreen from '../screens/CourseDetailScreen';
-import ComingSoonScreen from '../screens/ComingSoonScreen';
-import RecycleBinScreen from '../screens/RecycleBinScreen';
-import { MFAEnrollmentScreen, MFAVerificationScreen } from '../screens/mfa';
+import HomeScreen from '@/features/dashboard/screens/HomeScreen';
+import { CalendarScreen } from '@/features/calendar';
+import AccountScreen from '@/features/user-profile/screens/AccountScreen';
+import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
+import { CoursesScreen, AddCourseModal, EditCourseModal, CourseDetailScreen } from '@/features/courses/screens';
+import TaskDetailModal from '@/shared/components/TaskDetailModal';
+import ComingSoonScreen from '@/shared/screens/ComingSoonScreen';
+import RecycleBinScreen from '@/features/data-management/screens/RecycleBinScreen';
+import { MFAEnrollmentScreen, MFAVerificationScreen } from '@/features/auth/screens';
 
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();

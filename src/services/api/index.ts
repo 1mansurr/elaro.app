@@ -1,13 +1,13 @@
-import { coursesApi } from './queries/courses';
-import { assignmentsApi } from './queries/assignments';
-import { lecturesApi } from './queries/lectures';
-import { studySessionsApi } from './queries/studySessions';
+import { coursesApi } from '@/features/courses/services/queries';
+import { assignmentsApi } from '@/features/assignments/services/queries';
+import { lecturesApi } from '@/features/lectures/services/queries';
+import { studySessionsApi } from '@/features/studySessions/services/queries';
 import { homeScreenApi } from './queries/homeScreen';
 import { calendarApi } from './queries/calendar';
 import { notificationPreferencesApi } from './queries/notificationPreferences';
-import { assignmentsApiMutations } from './mutations/assignments';
-import { lecturesApiMutations } from './mutations/lectures';
-import { studySessionsApiMutations } from './mutations/studySessions';
+import { assignmentsApiMutations } from '@/features/assignments/services/mutations';
+import { lecturesApiMutations } from '@/features/lectures/services/mutations';
+import { studySessionsApiMutations } from '@/features/studySessions/services/mutations';
 import { notificationPreferencesApiMutations } from './mutations/notificationPreferences';
 
 export const api = {

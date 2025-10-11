@@ -104,6 +104,7 @@ export const authService = {
       last_name: (data as any).last_name,
       university: (data as any).university,
       program: (data as any).program,
+      role: (data as any).role ?? 'user', // Default to 'user' role
       onboarding_completed: (data as any).onboarding_completed ?? false,
       subscription_tier: subscriptionData?.subscription_tier ?? null,
       subscription_status: subscriptionData?.subscription_status ?? null,

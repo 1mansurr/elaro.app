@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { api } from '../services/api';
-import { Course, Assignment, Lecture, StudySession, HomeScreenData, CalendarData } from '../types';
+import { api } from '@/services/api';
+import { Course, Assignment, Lecture, StudySession, HomeScreenData, CalendarData } from '@/types';
 
 export const useCourses = () => {
   return useQuery<Course[], Error>({

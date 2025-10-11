@@ -2,11 +2,11 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Import the screens we'll create
-import SelectCourseScreen from '../screens/add-study-session-flow/SelectCourseScreen';
-import StudyTopicScreen from '../screens/add-study-session-flow/StudyTopicScreen';
-import SessionDateScreen from '../screens/add-study-session-flow/SessionDateScreen';
-import SpacedRepetitionScreen from '../screens/add-study-session-flow/SpacedRepetitionScreen';
-import RemindersScreen from '../screens/add-study-session-flow/RemindersScreen';
+import SelectCourseScreen from '@/features/studySessions/screens/add-flow/StudySessionSelectCourseScreen';
+import StudyTopicScreen from '@/features/studySessions/screens/add-flow/StudyTopicScreen';
+import SessionDateScreen from '@/features/studySessions/screens/add-flow/SessionDateScreen';
+import SpacedRepetitionScreen from '@/features/studySessions/screens/add-flow/SpacedRepetitionScreen';
+import RemindersScreen from '@/features/studySessions/screens/add-flow/StudySessionRemindersScreen';
 
 export type AddStudySessionStackParamList = {
   SelectCourse: undefined;

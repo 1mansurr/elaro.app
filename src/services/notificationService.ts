@@ -69,7 +69,7 @@ const notificationService = {
       if (!projectId) {
         // Fallback: try to get from legacy config structure
         const legacyProjectId = Constants.expoConfig?.extra?.eas?.projectId || 
-                               Constants.manifest?.extra?.eas?.projectId;
+                               (Constants.manifest as any)?.extra?.eas?.projectId;
         
         if (!legacyProjectId) {
           throw new Error('EAS project ID not found in app config. Make sure your app.config.js includes the eas.projectId.');
@@ -174,14 +174,16 @@ const notificationService = {
     trigger?: Notifications.NotificationTriggerInput;
   }): Promise<string> {
     try {
-      const notificationId = await Notifications.scheduleNotificationAsync({
+      const request: Notifications.NotificationRequestInput = {
         content: {
           title: notification.title,
           body: notification.body,
           data: notification.data || {},
         },
-        trigger: notification.trigger,
-      });
+        trigger: notification.trigger || null, // Use null as default trigger
+      };
+      
+      const notificationId = await Notifications.scheduleNotificationAsync(request);
       
       console.log(`Local notification scheduled with ID: ${notificationId}`);
       return notificationId;

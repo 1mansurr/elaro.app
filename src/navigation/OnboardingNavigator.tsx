@@ -1,8 +1,8 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import OnboardingUsernameScreen from '../screens/onboarding/OnboardingUsernameScreen';
-import OnboardingUniversityScreen from '../screens/onboarding/OnboardingUniversityScreen';
-import OnboardingCoursesScreen from '../screens/onboarding/OnboardingCoursesScreen';
+import OnboardingUsernameScreen from '@/features/onboarding/screens/OnboardingUsernameScreen';
+import OnboardingUniversityScreen from '@/features/onboarding/screens/OnboardingUniversityScreen';
+import OnboardingCoursesScreen from '@/features/onboarding/screens/OnboardingCoursesScreen';
 
 export type OnboardingStackParamList = {
   OnboardingUsername: undefined;

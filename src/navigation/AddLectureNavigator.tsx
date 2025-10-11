@@ -2,10 +2,10 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
 // Import the screens we'll create
-import SelectCourseScreen from '../screens/add-lecture-flow/SelectCourseScreen';
-import DateTimeScreen from '../screens/add-lecture-flow/DateTimeScreen';
-import RecurrenceScreen from '../screens/add-lecture-flow/RecurrenceScreen';
-import RemindersScreen from '../screens/add-lecture-flow/RemindersScreen';
+import SelectCourseScreen from '@/features/lectures/screens/add-flow/LectureSelectCourseScreen';
+import DateTimeScreen from '@/features/lectures/screens/add-flow/LectureDateTimeScreen';
+import RecurrenceScreen from '@/features/lectures/screens/add-flow/LectureRecurrenceScreen';
+import RemindersScreen from '@/features/lectures/screens/add-flow/LectureRemindersScreen';
 
 export type AddLectureStackParamList = {
   SelectCourse: undefined;

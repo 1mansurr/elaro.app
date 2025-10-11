@@ -1,5 +1,5 @@
-import { supabase } from '../../supabase';
-import { HomeScreenData } from '../../../types';
+import { supabase } from '@/services/supabase';
+import { HomeScreenData } from '@/types';
 import { handleApiError } from '../errors';
 
 export const homeScreenApi = {
