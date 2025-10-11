@@ -244,6 +244,11 @@ export const notificationService = {
     }
   },
 
+  /**
+   * @deprecated This function is deprecated. Use the `useNotificationPreferences` hook instead.
+   * This function reads from AsyncStorage which is no longer the source of truth.
+   * Use the new notification preferences system backed by the database.
+   */
   async areNotificationsEnabled(): Promise<boolean> {
     const settings = await AsyncStorage.getItem('notificationSettings');
     if (!settings) return true;
@@ -252,6 +257,11 @@ export const notificationService = {
     return parsed.enabled !== false;
   },
 
+  /**
+   * @deprecated This function is deprecated. Use the `useNotificationPreferences` hook instead.
+   * This function writes to AsyncStorage which is no longer the source of truth.
+   * Use the new notification preferences system backed by the database.
+   */
   async setNotificationsEnabled(enabled: boolean) {
     await AsyncStorage.setItem(
       'notificationSettings',

@@ -94,7 +94,7 @@ module.exports = ({ config }) => {
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
       // Paystack configuration
       EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY: process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      EXPO_PUBLIC_PAYSTACK_SECRET_KEY: process.env.EXPO_PUBLIC_PAYSTACK_SECRET_KEY,
+      // Note: PAYSTACK_SECRET_KEY should NOT be exposed to the client - it's only used server-side
       EXPO_PUBLIC_PAYSTACK_PLAN_CODE: process.env.EXPO_PUBLIC_PAYSTACK_PLAN_CODE,
       // App configuration
       EXPO_PUBLIC_APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'Elaro',

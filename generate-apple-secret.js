@@ -9,7 +9,7 @@ require('dotenv').config();
 const TEAM_ID = process.env.APPLE_TEAM_ID;                    // Your Apple Developer Team ID
 const KEY_ID = process.env.APPLE_KEY_ID;                     // The Key ID from Apple Developer portal
 const CLIENT_ID = process.env.APPLE_CLIENT_ID;        // Your Services ID
-const PRIVATE_KEY_PATH = '/Users/new/Desktop/Biz/ELARO/AuthKey_3QA9D5KH57.p8'; // Path to your .p8 private key file
+const PRIVATE_KEY_PATH = process.env.APPLE_PRIVATE_KEY_PATH || '/Users/new/Desktop/Biz/ELARO/AuthKey_3QA9D5KH57.p8'; // Path to your .p8 private key file
 // =========================================================
 
 async function generateAppleClientSecret() {

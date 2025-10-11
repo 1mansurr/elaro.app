@@ -6,6 +6,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '../contexts/AuthContext'; // Corrected path
 import { RootStackParamList } from '../types';
 import { Card, Button } from '../components';
+import { NotificationSettings } from '../components/settings/NotificationSettings';
 import { Ionicons } from '@expo/vector-icons';
 import * as WebBrowser from 'expo-web-browser';
 import { authService } from '../services/authService';
@@ -169,6 +170,11 @@ const AccountScreen = () => {
           label="Enable Multi-Factor Authentication"
           onPress={handleEnableMfa}
         />
+      </Card>
+
+      {/* Notifications Card */}
+      <Card title="Notifications">
+        <NotificationSettings />
       </Card>
 
       {/* Support Card */}

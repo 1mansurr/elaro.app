@@ -8,3 +8,6 @@ export { default as ReminderSelector } from './ReminderSelector';
 export { default as InfoModal } from './InfoModal';
 export { default as SearchableSelector } from './SearchableSelector';
 export { default as FeatureErrorBoundary } from './FeatureErrorBoundary';
+export { NotificationSettings } from './settings/NotificationSettings';
+export { NotificationSetup, NotificationSettingsButton } from './NotificationSetup';
+export { HealthStatusIndicator, HealthStatusBadge } from './HealthStatusIndicator';

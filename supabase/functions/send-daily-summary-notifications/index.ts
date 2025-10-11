@@ -7,13 +7,18 @@ import { sendPushNotification } from '../_shared/send-push-notification.ts';
 async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
   console.log('--- Starting Daily Summary Notifications Job ---');
 
-  // 1. Get all users who have morning summaries enabled and have a push token
+  // 1. Get all users who have morning summaries enabled from the new preferences table
   const { data: users, error: usersError } = await supabaseAdminClient
-    .from('users')
+    .from('notification_preferences')
     .select(`
-      id,
-      timezone,
-      user_devices ( push_token )
+      user_id,
+      user:users (
+        id,
+        timezone,
+        user_devices (
+          push_token
+        )
+      )
     `)
     .eq('morning_summary_enabled', true);
 
@@ -22,8 +27,8 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
   }
 
   if (!users || users.length === 0) {
-    console.log('No users with morning summaries enabled. Exiting.');
-    return { success: true, message: 'No users to notify.' };
+    console.log('No users with morning summaries enabled.');
+    return { success: true, processedUsers: 0 };
   }
 
   console.log(`Found ${users.length} users to notify.`);
@@ -32,7 +37,9 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
   let successCount = 0;
   let failureCount = 0;
 
-  for (const user of users) {
+  for (const pref of users) {
+    const user = pref.user; // The user object is now nested
+    if (!user) continue;
     try {
       if (!user.user_devices || user.user_devices.length === 0) {
         continue; // Skip user if they have no registered devices
@@ -73,7 +80,7 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
       message += parts.join(', ') + '.';
 
       // 6. Send the push notification
-      await sendPushNotification(pushTokens, "Here's your daily summary!", message);
+      const result = await sendPushNotification(supabaseAdminClient, pushTokens, "Here's your daily summary!", message);
       successCount++;
     } catch (error) {
       console.error(`Failed to process daily summary for user ${user.id}:`, error.message);

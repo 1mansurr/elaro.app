@@ -30,6 +30,17 @@ export interface User {
   };
 }
 
+export interface NotificationPreferences {
+  user_id: string;
+  reminders_enabled: boolean;
+  srs_reminders_enabled: boolean;
+  assignment_reminders_enabled: boolean;
+  lecture_reminders_enabled: boolean;
+  morning_summary_enabled: boolean;
+  evening_capture_enabled: boolean;
+  updated_at: string;
+}
+
 export interface AuthContextType {
   user: User | null;
   isLoading: boolean;
