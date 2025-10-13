@@ -4,6 +4,7 @@ import { CreationFlowProvider, useCreationFlow } from '@/contexts/CreationFlowCo
 // 1. Define the specific data structure for this flow
 export interface AddCourseData {
   courseName: string;
+  courseCode: string;
   courseDescription: string;
   startTime: Date | null;
   endTime: Date | null;
@@ -14,6 +15,7 @@ export interface AddCourseData {
 // 2. Define the initial state for this flow
 const initialCourseData: AddCourseData = {
   courseName: '',
+  courseCode: '',
   courseDescription: '',
   startTime: null,
   endTime: null,

@@ -23,7 +23,6 @@ import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 
 // Screens
 import LaunchScreen from '@/shared/screens/LaunchScreen';
-import AuthChooserScreen from '@/features/auth/screens/AuthChooserScreen';
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
 import WelcomeScreen from '@/features/onboarding/screens/WelcomeScreen';
 import OnboardingNavigator from './OnboardingNavigator';
@@ -32,11 +31,11 @@ import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import { CalendarScreen } from '@/features/calendar';
 import AccountScreen from '@/features/user-profile/screens/AccountScreen';
 import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
-import { CoursesScreen, AddCourseModal, EditCourseModal, CourseDetailScreen } from '@/features/courses/screens';
+import { CoursesScreen, EditCourseModal, CourseDetailScreen } from '@/features/courses/screens';
 import TaskDetailModal from '@/shared/components/TaskDetailModal';
-import ComingSoonScreen from '@/shared/screens/ComingSoonScreen';
 import RecycleBinScreen from '@/features/data-management/screens/RecycleBinScreen';
 import { MFAEnrollmentScreen, MFAVerificationScreen } from '@/features/auth/screens';
+import { InAppBrowserScreen } from '@/shared/screens';
 
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();
@@ -185,21 +184,10 @@ const OnboardingFlow = () => (
   </OnboardingProvider>
 );
 
-// Auth Screen Wrapper
-const AuthScreenWrapper = ({ navigation }: any) => (
-  <AuthChooserScreen />
-);
 
 // Screen configuration objects for better organization
 const authScreens = {
   Launch: { component: LaunchScreen },
-  AuthChooser: { 
-    component: AuthChooserScreen,
-    options: {
-      presentation: 'modal',
-      headerShown: false,
-    }
-  },
   Auth: { 
     component: AuthScreen,
     options: {
@@ -243,19 +231,6 @@ const mainScreens = {
     options: {
       headerShown: true,
       headerTitle: 'Calendar',
-      headerStyle: {
-        backgroundColor: '#FFFFFF',
-      },
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-    }
-  },
-  ComingSoon: { 
-    component: ComingSoonScreen,
-    options: {
-      headerShown: true,
-      headerTitle: 'Coming Soon',
       headerStyle: {
         backgroundColor: '#FFFFFF',
       },
@@ -347,22 +322,6 @@ const modalFlows = {
       headerShown: false 
     }
   },
-  AddCourseModal: { 
-    component: AddCourseModal,
-    options: ({ navigation }: any) => ({
-      presentation: 'modal',
-      headerShown: true,
-      headerTitle: 'Add Course',
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{ marginLeft: 16 }}
-        >
-          <Ionicons name="close" size={24} color="#007AFF" />
-        </TouchableOpacity>
-      ),
-    })
-  },
   EditCourseModal: { 
     component: EditCourseModal,
     options: ({ navigation }: any) => ({
@@ -383,6 +342,13 @@ const modalFlows = {
     component: TaskDetailModal,
     options: {
       headerTitle: 'Task Details',
+    }
+  },
+  InAppBrowserScreen: { 
+    component: InAppBrowserScreen,
+    options: { 
+      presentation: 'modal',
+      headerShown: false 
     }
   },
 };

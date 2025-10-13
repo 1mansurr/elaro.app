@@ -1,74 +1,81 @@
-// FILE: src/screens/RecycleBinScreen.tsx
-import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { useDeletedItems } from '@/hooks/useDeletedItems';
+import { DeletedItemCard } from '../components/DeletedItemCard';
 import { supabase } from '@/services/supabase';
-import { Course } from '@/types';
 
 const RecycleBinScreen = () => {
-  const [deletedCourses, setDeletedCourses] = useState<Course[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [actionLoading, setActionLoading] = useState<string | null>(null); // To show loading on a specific item
+  const { items, isLoading, fetchAllDeletedItems } = useDeletedItems();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  const fetchDeletedItems = useCallback(async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    fetchAllDeletedItems();
+  }, [fetchAllDeletedItems]);
+
+  const handleRestore = async (itemId: string, itemType: string) => {
+    setActionLoading(itemId);
+    const functionName = `restore-${itemType.replace('_', '-')}`;
     
-    const { data, error } = await supabase
-      .from('courses')
-      .select('*')
-      .not('deleted_at', 'is', null)
-      .order('deleted_at', { ascending: false });
-
-    if (error) console.error('Error fetching deleted courses:', error);
-    else setDeletedCourses(data || []);
+    // Map item type to the correct parameter name expected by backend
+    const getParameterName = (type: string) => {
+      switch (type) {
+        case 'course': return 'courseId';
+        case 'assignment': return 'assignmentId';
+        case 'lecture': return 'lectureId';
+        case 'study_session': return 'studySessionId';
+        default: return 'id';
+      }
+    };
     
-    setIsLoading(false);
-  }, []);
-
-  useFocusEffect(() => {
-    fetchDeletedItems();
-  });
-
-  const handleRestore = async (courseId: string) => {
-    setActionLoading(courseId);
-    
-    const { error } = await supabase.functions.invoke('restore-course', {
-      body: { courseId },
+    const parameterName = getParameterName(itemType);
+    const { error } = await supabase.functions.invoke(functionName, { 
+      body: { [parameterName]: itemId } 
     });
-
-    if (error) {
-      Alert.alert('Error', 'Failed to restore course.');
-    } else {
-      // Refresh the list after restoring
-      fetchDeletedItems();
-    }
     
+    if (error) {
+      Alert.alert('Error', `Failed to restore ${itemType}.`);
+    } else {
+      Alert.alert('Success', `${itemType.replace('_', ' ')} restored.`);
+      fetchAllDeletedItems(); // Refresh list
+    }
     setActionLoading(null);
   };
 
-  const handleDeletePermanently = async (courseId: string) => {
+  const handleDeletePermanently = (itemId: string, itemType: string) => {
     Alert.alert(
       'Delete Permanently',
-      'This action is irreversible. Are you sure you want to permanently delete this course?',
+      'This action is irreversible. Are you sure?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            setActionLoading(courseId);
+            setActionLoading(itemId);
+            const functionName = `delete-${itemType.replace('_', '-')}-permanently`;
             
-            const { error } = await supabase.functions.invoke('delete-course-permanently', {
-              body: { courseId },
+            // Map item type to the correct parameter name expected by backend
+            const getParameterName = (type: string) => {
+              switch (type) {
+                case 'course': return 'courseId';
+                case 'assignment': return 'assignmentId';
+                case 'lecture': return 'lectureId';
+                case 'study_session': return 'studySessionId';
+                default: return 'id';
+              }
+            };
+            
+            const parameterName = getParameterName(itemType);
+            const { error } = await supabase.functions.invoke(functionName, { 
+              body: { [parameterName]: itemId } 
             });
-
-            if (error) {
-              Alert.alert('Error', 'Failed to permanently delete course.');
-            } else {
-              // Refresh the list after deleting
-              fetchDeletedItems();
-            }
             
+            if (error) {
+              Alert.alert('Error', `Failed to permanently delete ${itemType}.`);
+            } else {
+              Alert.alert('Success', `${itemType.replace('_', ' ')} permanently deleted.`);
+              fetchAllDeletedItems(); // Refresh list
+            }
             setActionLoading(null);
           },
         },
@@ -76,125 +83,34 @@ const RecycleBinScreen = () => {
     );
   };
 
-  const renderItem = ({ item }: { item: Course }) => (
-    <View style={styles.itemContainer}>
-      <Text style={styles.itemName}>{item.courseName}</Text>
-      <Text style={styles.itemDate}>
-        Deleted on: {new Date(item.deletedAt!).toLocaleDateString()}
-      </Text>
-      
-      <View style={styles.actionsContainer}>
-        {actionLoading === item.id ? (
-          <ActivityIndicator size="small" color="#007AFF" />
-        ) : (
-          <>
-            <TouchableOpacity
-              style={styles.restoreButton}
-              onPress={() => handleRestore(item.id)}
-            >
-              <Text style={styles.buttonText}>Restore</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => handleDeletePermanently(item.id)}
-            >
-              <Text style={styles.buttonText}>Delete</Text>
-            </TouchableOpacity>
-          </>
-        )}
-      </View>
-    </View>
-  );
-
   if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-      </View>
-    );
+    return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
+  }
+
+  if (items.length === 0) {
+    return <View style={styles.centered}><Text>Your trash can is empty.</Text></View>;
   }
 
   return (
-    <View style={styles.container}>
-      {deletedCourses.length === 0 ? (
-        <View style={styles.centered}>
-          <Text style={styles.emptyText}>Your recycle bin is empty.</Text>
-        </View>
-      ) : (
-        <FlatList
-          data={deletedCourses}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
+    <FlatList
+      data={items}
+      keyExtractor={(item) => `${item.type}-${item.id}`}
+      renderItem={({ item }) => (
+        <DeletedItemCard
+          item={item}
+          onRestore={handleRestore}
+          onDeletePermanently={handleDeletePermanently}
+          isActionLoading={actionLoading === item.id}
         />
       )}
-    </View>
+      contentContainerStyle={styles.list}
+    />
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  listContainer: {
-    padding: 20,
-  },
-  itemContainer: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  itemName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#343a40',
-  },
-  itemDate: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-  },
-  emptyText: {
-    fontSize: 16,
-    color: '#6c757d',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-  },
-  restoreButton: {
-    backgroundColor: '#007AFF',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  deleteButton: {
-    backgroundColor: '#FF3B30',
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  list: { flexGrow: 1 },
 });
 
 export default RecycleBinScreen;

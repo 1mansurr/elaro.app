@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import { CreateCourseAndLectureSchema } from '../_shared/schemas/courseAndLecture.ts';
 
 // Main function to handle the request
 serve(async (req ) => {
@@ -25,13 +26,25 @@ serve(async (req ) => {
     // Apply rate limiting
     await checkRateLimit(supabaseClient, user.id, 'create-course-and-lecture');
 
-    const { courseName, courseDescription, startTime, endTime, recurrence, reminders } = await req.json();
+    const body = await req.json();
+    
+    // 1. Validate the input
+    const {
+      courseName,
+      courseCode,
+      courseDescription,
+      startTime,
+      endTime,
+      recurrence,
+      reminders,
+    } = CreateCourseAndLectureSchema.parse(body);
 
     // --- Start Database Transaction ---
     // We'll call a PostgreSQL function to handle the transaction.
     const { data, error } = await supabaseClient.rpc('create_course_and_lectures_transaction', {
       p_user_id: user.id,
       p_course_name: courseName,
+      p_course_code: courseCode,
       p_course_description: courseDescription,
       p_start_time: startTime,
       p_end_time: endTime,

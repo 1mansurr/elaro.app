@@ -190,7 +190,7 @@ const CalendarScreen = () => {
           </Text>
           <TouchableOpacity
             style={styles.signUpButton}
-            onPress={() => navigation.navigate('AuthChooser')}
+            onPress={() => navigation.navigate('Auth', { mode: 'signup' })}
           >
             <Text style={styles.signUpButtonText}>Sign Up for Free</Text>
           </TouchableOpacity>

@@ -46,10 +46,37 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [emailError, setEmailError] = useState('');
+  const [passwordStrength, setPasswordStrength] = useState(0);
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
+  const validateEmail = (text: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (text && !emailRegex.test(text)) {
+      setEmailError('Please enter a valid email address.');
+    } else {
+      setEmailError('');
+    }
+    setEmail(text);
+  };
+
+  const checkPasswordStrength = (text: string) => {
+    let strength = 0;
+    if (text.length >= 8) strength++;
+    if (text.match(/[a-z]/)) strength++;
+    if (text.match(/[A-Z]/)) strength++;
+    if (text.match(/[0-9]/)) strength++;
+    if (text.match(/[^a-zA-Z0-9]/)) strength++; // Special character
+    setPasswordStrength(strength);
+    setPassword(text);
+  };
+
   const handleAuth = async () => {
+    if (emailError) {
+      Alert.alert('Invalid Email', 'Please correct the email address before proceeding.');
+      return;
+    }
     if (!email || !password) {
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
@@ -138,19 +165,35 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <Input
               label="Email"
               value={email}
-              onChangeText={setEmail}
+              onChangeText={validateEmail}
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
+              error={emailError}
             />
 
             <Input
               label="Password"
               value={password}
-              onChangeText={setPassword}
+              onChangeText={checkPasswordStrength}
               placeholder="Enter your password"
               secureTextEntry
             />
+
+            {/* Password Strength Indicator */}
+            {mode === 'signup' && password.length > 0 && (
+              <View style={styles.strengthContainer}>
+                <View 
+                  style={[
+                    styles.strengthBar, 
+                    { 
+                      width: `${passwordStrength * 20}%`, 
+                      backgroundColor: ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][passwordStrength - 1] || '#E0E0E0' 
+                    }
+                  ]} 
+                />
+              </View>
+            )}
 
             {/* Terms of Service and Privacy Policy Checkbox */}
             {mode === 'signup' && (
@@ -194,7 +237,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             )}
 
             <Button
-              title={mode === 'signup' ? 'Sign Up' : 'Sign In'}
+              title={mode === 'signup' ? 'Create Account' : 'Sign In'}
               onPress={handleAuth}
               loading={loading}
               style={styles.authButton}
@@ -321,6 +364,18 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold as any,
     color: '#2C5EFF',
+  },
+  strengthContainer: {
+    height: 5,
+    width: '100%',
+    backgroundColor: '#E0E0E0',
+    borderRadius: 5,
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  strengthBar: {
+    height: '100%',
+    borderRadius: 5,
   },
 });
 

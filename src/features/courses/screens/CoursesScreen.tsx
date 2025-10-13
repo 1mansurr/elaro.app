@@ -19,7 +19,7 @@ const CoursesScreen = () => {
       headerTitle: 'My Courses',
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => navigation.navigate('AddCourseModal')}
+          onPress={() => navigation.navigate('AddCourseFlow')}
           style={{ marginRight: 16 }}
         >
           <Text style={styles.headerButton}>Add</Text>
@@ -68,7 +68,7 @@ const CoursesScreen = () => {
         <View style={styles.centered}>
           <Text style={styles.emptyText}>You haven&apos;t added any courses yet.</Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate('AddCourseModal')}
+            onPress={() => navigation.navigate('AddCourseFlow')}
             style={styles.addButton}
           >
             <Text style={styles.addButtonText}>Add Your First Course</Text>

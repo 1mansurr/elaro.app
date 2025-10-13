@@ -2,7 +2,14 @@
 
 A modern, intelligent study planning app designed to help students build better study habits and achieve their academic goals through spaced repetition, AI-powered guidance, and personalized learning experiences.
 
-## 🎨 UI/UX Improvements (Latest Update)
+## 🎨 UI/UX Improvements & Architecture Updates
+
+### Recent Architectural Refactoring
+
+- **Feature-Based Architecture**: Migrated from component-based to feature-based organization
+- **Modular Code Structure**: Each feature is self-contained with its own components, hooks, and services
+- **Improved Maintainability**: Better separation of concerns and reduced coupling
+- **Enhanced Developer Experience**: Clear guidelines for adding new features
 
 ### Enhanced Design System
 
@@ -82,18 +89,72 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### Project Structure
 
+This project follows a feature-based architecture to promote modularity and scalability. Core features are encapsulated within their own directories, and shared, reusable code is centralized.
+
 ```
 src/
-├── components/          # Reusable UI components
-├── screens/            # Screen components
-├── navigation/         # Navigation configuration
-├── contexts/           # React Context providers
-├── hooks/              # Custom React hooks
-├── services/           # API and external services
-├── constants/          # Design system and constants
-├── types/              # TypeScript type definitions
-└── utils/              # Utility functions
+├── features/           # Feature-based modules
+│   ├── auth/           # Authentication (login, signup, MFA)
+│   ├── assignments/    # Assignment management
+│   ├── courses/        # Course management
+│   ├── dashboard/      # Home screen and dashboard widgets
+│   ├── lectures/       # Lecture scheduling and management
+│   ├── studySessions/  # Study session planning and tracking
+│   ├── notifications/  # Push notifications and reminders
+│   ├── onboarding/     # User onboarding flow
+│   ├── user-profile/   # User profile and account management
+│   └── calendar/       # Calendar view and scheduling
+│
+├── shared/             # Code shared across multiple features
+│   ├── components/     # Reusable UI components (Button, Card, etc.)
+│   ├── hooks/          # Global custom hooks
+│   ├── services/       # Global services (e.g., API client)
+│   ├── utils/          # Global utility functions
+│   └── screens/        # Reusable screens (e.g., LaunchScreen)
+│
+├── navigation/         # App navigation configuration (React Navigation)
+│
+├── types/              # Global TypeScript type definitions
+│
+├── contexts/           # Global contexts (Theme, Auth, etc.)
+│
+└── services/           # Root-level services (e.g., Supabase client)
 ```
+
+## 📋 Development Guidelines
+
+To maintain consistency and modularity, please follow these guidelines when adding new features.
+
+### Adding a New Feature
+
+1. **Create a Feature Directory**: All new features should reside in their own directory within `src/features/`.
+   ```bash
+   mkdir src/features/your-new-feature
+   ```
+
+2. **Follow the Standard Structure**: Inside your new feature directory, group files by their type.
+   ```
+   src/features/your-new-feature/
+   ├── components/    # Components used only by this feature
+   ├── hooks/         # Hooks used only by this feature
+   ├── screens/       # Screens for this feature's user flow
+   ├── services/      # Service calls specific to this feature
+   └── index.ts       # Main export file for the feature
+   ```
+
+3. **Use Shared Code**: If a component, hook, or utility is needed by more than one feature, place it in the `src/shared/` directory instead of duplicating it.
+
+4. **Update Navigation**: Add any new screens to the appropriate navigator in the `src/navigation/` directory.
+
+5. **Export Properly**: Always export your feature's public API through the `index.ts` file in your feature directory.
+
+### Code Organization Best Practices
+
+- **Feature Isolation**: Keep feature-specific code within the feature directory
+- **Shared Resources**: Place reusable code in `src/shared/`
+- **Type Safety**: Define TypeScript types in `src/types/` for global types, or within the feature for feature-specific types
+- **Context Usage**: Use React Context for state that needs to be shared across multiple components
+- **Service Layer**: Implement API calls and business logic in service files
 
 ## 🎯 Core Features
 
@@ -125,12 +186,26 @@ src/
 - Study method recommendations
 - Progress-based guidance
 
+### Multi-Factor Authentication (MFA)
+
+- TOTP-based two-factor authentication
+- QR code enrollment for authenticator apps
+- Enhanced security for user accounts
+- Backup codes and recovery options
+
+### Task Limits & Premium Features
+
+- Weekly task creation limits for free users
+- Premium subscription for unlimited access
+- Frontend validation to prevent exceeding limits
+- Clear upgrade prompts and messaging
+
 ### Analytics & Insights
 
 - Study session analytics
 - Completion rates and trends
-- Streak tracking and motivation
 - Performance insights
+- User engagement metrics
 
 ## 🎨 Design System
 
@@ -170,7 +245,7 @@ src/
 - TypeScript for type safety
 - ESLint for code quality
 - Prettier for formatting
-- Component-based architecture
+- Feature-based architecture with shared components
 
 ### Testing
 
@@ -203,22 +278,40 @@ src/
 
 ## 🚀 Deployment
 
-### Expo Build
+This project uses [Expo Application Services (EAS) Build](https://docs.expo.dev/build/introduction/) to create production builds for iOS and Android.
 
-```bash
-# Build for iOS
-expo build:ios
+### Prerequisites
 
-# Build for Android
-expo build:android
-```
+- Ensure you have the EAS CLI installed: `npm install -g eas-cli`
+- Log in to your Expo account: `eas login`
+
+### Build Commands
+
+The following commands are configured in `package.json`:
+
+- **Build for iOS:**
+  ```bash
+  npm run build:ios
+  ```
+
+- **Build for Android:**
+  ```bash
+  npm run build:android
+  ```
+
+- **Build for both platforms:**
+  ```bash
+  npm run build:all
+  ```
+
+> **Note:** The legacy `expo build` commands are deprecated and should not be used.
 
 ### App Store Deployment
 
-1. Configure app.json with proper metadata
-2. Build production version
-3. Submit to App Store Connect
-4. Configure TestFlight for beta testing
+1. Configure `app.json` and `eas.json` with proper metadata
+2. Build production version using EAS Build
+3. Submit to App Store Connect (iOS) or Play Console (Android)
+4. Configure TestFlight for beta testing (iOS) or Internal Testing (Android)
 
 ## 🤝 Contributing
 
@@ -230,11 +323,13 @@ expo build:android
 
 ### Development Guidelines
 
-- Follow the existing code style
+- Follow the existing code style and feature-based architecture
 - Add TypeScript types for new features
-- Include accessibility features
-- Test on both iOS and Android
-- Update documentation as needed
+- Include accessibility features and proper contrast ratios
+- Test on both iOS and Android platforms
+- Update documentation and README as needed
+- Use the established shared components and design system
+- Follow the feature isolation principles outlined above
 
 ## 📄 License
 

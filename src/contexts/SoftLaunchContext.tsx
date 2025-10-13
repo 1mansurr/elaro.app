@@ -1,11 +1,25 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { Alert } from 'react-native';
 
+const defaultFeatureFlags = {
+  isFeatureFlaggingEnabled: false, // This master switch replaces 'isSoftLaunch'
+  premiumFeatures: {
+    aiStudyGuide: { enabled: true, block: false },
+    advancedSpacedRepetition: { enabled: true, block: false },
+    premiumAnalytics: { enabled: true, block: false },
+    unlimitedTasks: { enabled: true, block: false },
+    prioritySupport: { enabled: true, block: false },
+    learningStyleDiscovery: { enabled: true, block: false },
+  },
+  // We can add more feature flags here in the future, e.g.:
+  // newOnboardingFlow: { enabled: false }
+};
+
 interface SoftLaunchContextType {
-  isSoftLaunch: boolean;
+  featureFlags: typeof defaultFeatureFlags;
   showComingSoonModal: (feature?: string) => void;
   showComingSoonToast: (message: string) => void;
-  blockPremiumFeature: (feature: string) => boolean;
+  blockPremiumFeature: (featureName: keyof typeof defaultFeatureFlags.premiumFeatures) => boolean;
   getComingSoonMessage: (feature: string) => string;
 }
 
@@ -28,8 +42,16 @@ interface SoftLaunchProviderProps {
 export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
   children,
 }) => {
-  // Soft launch disabled, all features enabled
-  const [isSoftLaunch] = useState(false);
+  const [featureFlags, setFeatureFlags] = useState(defaultFeatureFlags);
+
+  // In the future, we will add a useEffect here to fetch flags from a remote service.
+  // useEffect(() => {
+  //   const fetchRemoteFlags = async () => {
+  //     const remoteFlags = await myRemoteConfigService.getFlags();
+  //     setFeatureFlags(remoteFlags);
+  //   };
+  //   fetchRemoteFlags();
+  // }, []);
 
   const getComingSoonMessage = (feature: string): string => {
     const messages = {
@@ -68,13 +90,26 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
     Alert.alert('Coming Soon', message, [{ text: 'OK' }]);
   };
 
-  // Do not block any features
-  const blockPremiumFeature = (feature: string): boolean => {
+  const blockPremiumFeature = (featureName: keyof typeof defaultFeatureFlags.premiumFeatures): boolean => {
+    // If the whole system is disabled, never block anything.
+    if (!featureFlags.isFeatureFlaggingEnabled) {
+      return false;
+    }
+
+    const feature = featureFlags.premiumFeatures[featureName];
+    
+    // If the feature exists in our config and is set to be blocked, block it.
+    if (feature && feature.block) {
+      showComingSoonModal(featureName);
+      return true;
+    }
+
+    // Otherwise, do not block it.
     return false;
   };
 
   const value: SoftLaunchContextType = {
-    isSoftLaunch,
+    featureFlags,
     showComingSoonModal,
     showComingSoonToast,
     blockPremiumFeature,

@@ -76,12 +76,12 @@ The function exports the following data in JSON format:
 
 ## Tables Exported
 
-- **users**: All user profiles and account information
-- **courses**: All courses created by users
-- **assignments**: All assignments across all users
-- **lectures**: All lectures and their schedules
-- **studySessions**: All study sessions and their details
-- **reminders**: All reminder notifications
+- **users**: All user profiles and account information (including subscription status, university, program)
+- **courses**: All courses created by users (with soft delete support)
+- **assignments**: All assignments across all users (with due dates and submission methods)
+- **lectures**: All lectures and their schedules (including recurring patterns)
+- **studySessions**: All study sessions and their details (with spaced repetition settings)
+- **reminders**: All reminder notifications (including processed status)
 
 ## Error Handling
 
@@ -96,9 +96,24 @@ The function returns appropriate HTTP status codes:
 
 - **Data Migration**: Export all data before switching backend providers
 - **Backup**: Create full database backups
-- **Analytics**: Analyze user data patterns
-- **Compliance**: Export data for regulatory requirements
+- **Analytics**: Analyze user data patterns and usage statistics
+- **Compliance**: Export data for regulatory requirements (GDPR, etc.)
 - **Testing**: Use real data for testing new features
+- **User Support**: Access user data for support purposes
+- **Business Intelligence**: Generate reports on user engagement and feature usage
+
+## Data Included
+
+The export includes all current ELARO features and data:
+
+- **User Management**: Profile information, subscription status, university/program details
+- **Course Management**: All courses with metadata and soft delete information
+- **Assignment Tracking**: Due dates, submission methods, descriptions
+- **Lecture Scheduling**: Recurring patterns, dates, and descriptions
+- **Study Sessions**: Topics, spaced repetition settings, session dates
+- **Notification System**: All reminder notifications and processing status
+- **Multi-Factor Authentication**: MFA enrollment data (if applicable)
+- **Task Limits**: Weekly task creation tracking for free users
 
 ## Security Considerations
 
@@ -106,6 +121,7 @@ The function returns appropriate HTTP status codes:
 - Consider rate limiting if you plan to use this frequently
 - Monitor function logs for unauthorized access attempts
 - Store exported data securely as it contains sensitive user information
+- Export data may include personal information (names, emails, university details)
 
 ## Troubleshooting
 

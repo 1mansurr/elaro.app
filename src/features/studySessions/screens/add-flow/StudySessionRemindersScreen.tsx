@@ -9,6 +9,7 @@ import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
+import { useWeeklyTaskCount, useTotalTaskCount } from '@/hooks';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'Reminders'>;
 
@@ -17,6 +18,8 @@ const RemindersScreen = () => {
   const { sessionData, resetSessionData } = useAddStudySession();
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
+  const { limitReached, weeklyTaskCount, WEEKLY_TASK_LIMIT, isLoading: isTaskLimitLoading } = useWeeklyTaskCount();
+  const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
   
   const [isLoading, setIsLoading] = useState(false);
   
@@ -68,8 +71,7 @@ const RemindersScreen = () => {
       // Immediate reminders are now handled by the backend create-study-session function
 
       // Check if this is the user's first task ever created
-      const isFirstTask = true; // Placeholder for: totalTaskCount === 0
-      if (isFirstTask && session?.user) {
+      if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
         await notificationService.registerForPushNotifications(session.user.id);
       }
 
@@ -195,13 +197,25 @@ const RemindersScreen = () => {
           </TouchableOpacity>
           
           <View style={styles.createButtonContainer}>
-            {isLoading ? (
-              <ActivityIndicator size="large" color="#007AFF" />
+            {limitReached ? (
+              <View style={styles.limitReachedContainer}>
+                <Text style={styles.limitReachedText}>
+                  You have reached your weekly limit of {WEEKLY_TASK_LIMIT} new tasks.
+                </Text>
+                <Text style={styles.upgradeText}>
+                  Upgrade to a premium plan for unlimited tasks.
+                </Text>
+              </View>
             ) : (
-              <Button 
-                title="Create Study Session" 
-                onPress={handleCreateStudySession}
-              />
+              isLoading ? (
+                <ActivityIndicator size="large" color="#007AFF" />
+              ) : (
+                <Button 
+                  title={isTaskLimitLoading ? 'Loading...' : 'Create Study Session'} 
+                  onPress={handleCreateStudySession}
+                  disabled={isTaskLimitLoading}
+                />
+              )
             )}
           </View>
         </View>
@@ -334,6 +348,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 24,
+  },
+  limitReachedContainer: {
+    alignItems: 'center',
+    padding: 16,
+  },
+  limitReachedText: {
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  upgradeText: {
+    color: '#8E8E93',
+    textAlign: 'center',
+    fontSize: 14,
   },
 });
 

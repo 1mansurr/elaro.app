@@ -3,7 +3,6 @@ export { default as CoursesScreen } from './CoursesScreen';
 export { default as CourseDetailScreen } from './CourseDetailScreen';
 
 // Course modals
-export { default as AddCourseModal } from './AddCourseModal';
 export { default as EditCourseModal } from './EditCourseModal';
 
 // Course creation flow screens

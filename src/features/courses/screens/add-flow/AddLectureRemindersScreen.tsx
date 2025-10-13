@@ -33,7 +33,15 @@ const AddLectureRemindersScreen = () => {
 
     // We need to use a function form of update to get the most recent state
     // before calling the backend, as the state update above is async.
-    const finalPayload = { ...courseData, reminders: selectedReminders };
+    const finalPayload = {
+      courseName: courseData.courseName,
+      courseCode: courseData.courseCode,
+      courseDescription: courseData.courseDescription,
+      startTime: courseData.startTime?.toISOString(),
+      endTime: courseData.endTime?.toISOString(),
+      recurrence: courseData.recurrence,
+      reminders: selectedReminders,
+    };
 
     try {
       // We will create this new, combined Edge Function in the next step.

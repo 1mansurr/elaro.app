@@ -31,7 +31,7 @@ const HomeScreen = () => {
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   const promptSignUp = () => {
-    navigation.navigate('AuthChooser');
+    navigation.navigate('Auth', { mode: 'signup' });
   };
 
   const fabActions = useMemo(() => [
@@ -176,7 +176,32 @@ const HomeScreen = () => {
   const shouldShowBanner = trialDaysRemaining !== null && trialDaysRemaining <= 3;
 
   const handleSubscribePress = () => {
-    navigation.navigate('AddOddityModal' as any);
+    Alert.alert(
+      'Unlock Premium Access',
+      'As an early user, you can unlock all premium features for free. Would you like to upgrade your account?',
+      [
+        { text: 'Not Now', style: 'cancel' },
+        {
+          text: 'Upgrade for Free',
+          onPress: async () => {
+            try {
+              const { error } = await supabase.functions.invoke('grant-premium-access');
+              if (error) throw new Error(error.message);
+
+              // Invalidate user data to refresh their subscription status and unlock features.
+              queryClient.invalidateQueries({ queryKey: ['user'] });
+              queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }); // Also refresh home screen data
+
+              Alert.alert('Success!', 'You now have access to all premium features.');
+
+            } catch (error: any) {
+              Alert.alert('Error', 'Could not complete the upgrade. Please try again.');
+              console.error('Free upgrade error:', error);
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Handle loading and error states

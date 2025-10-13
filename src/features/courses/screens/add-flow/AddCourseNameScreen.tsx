@@ -16,13 +16,17 @@ const AddCourseNameScreen = () => {
   const { courseData, updateCourseData } = useAddCourse();
 
   const [courseName, setCourseName] = useState(courseData.courseName || '');
+  const [courseCode, setCourseCode] = useState(courseData.courseCode || '');
 
   const handleNext = () => {
     if (!courseName.trim()) {
       Alert.alert('Course name is required.');
       return;
     }
-    updateCourseData({ courseName: courseName.trim() });
+    updateCourseData({ 
+      courseName: courseName.trim(),
+      courseCode: courseCode.trim()
+    });
     navigation.navigate('AddCourseDescription');
   };
 
@@ -44,6 +48,15 @@ const AddCourseNameScreen = () => {
         autoCapitalize="words"
       />
 
+      <Text style={styles.label}>Course Code (Optional)</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="e.g., PSY 101"
+        value={courseCode}
+        onChangeText={setCourseCode}
+        autoCapitalize="characters"
+      />
+
       <View style={styles.buttonContainer}>
         <Button title="Cancel" onPress={handleCancel} color="#888" />
         <Button title="Next" onPress={handleNext} />
@@ -55,6 +68,7 @@ const AddCourseNameScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
+  label: { fontSize: 16, fontWeight: '600', marginTop: 20, marginBottom: 8 },
   input: { borderWidth: 1, borderColor: '#ccc', padding: 15, borderRadius: 8, fontSize: 18 },
   buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
 });
