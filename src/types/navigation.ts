@@ -3,7 +3,7 @@
 
 export type RootStackParamList = {
   Launch: undefined;
-  Auth: { onClose: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
+  Auth: { onClose?: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
   Main: undefined;
   Welcome: { firstName?: string; lastName?: string; } | undefined;
   OnboardingFlow: undefined;

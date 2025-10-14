@@ -129,13 +129,17 @@ export const ScheduleRemindersSchema = z.object({
 
 ## 🎯 Key Features
 
-### **1. Spaced Repetition System**
-Implements the core SRS functionality with predefined intervals:
+### **1. Tiered Spaced Repetition System**
+Implements the core SRS functionality with tier-specific intervals:
 
 ```typescript
-const SPACED_REPETITION_INTERVALS = [1, 7, 14, 30, 60]; // in days
+// Free Tier: 3 intervals (1, 3, 7 days) - 15 reminders/month limit
+// Oddity Tier: 8 intervals (1, 3, 7, 14, 30, 60, 120, 180 days) - 112 reminders/month limit
 
-const remindersToInsert = SPACED_REPETITION_INTERVALS.map(days => {
+const FREE_TIER_INTERVALS = [1, 3, 7]; // in days
+const ODDITY_TIER_INTERVALS = [1, 3, 7, 14, 30, 60, 120, 180]; // in days
+
+const remindersToInsert = intervals.map(days => {
   const reminderDate = new Date(sessionDate);
   reminderDate.setDate(sessionDate.getDate() + days);
   return {

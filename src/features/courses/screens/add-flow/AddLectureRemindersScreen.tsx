@@ -4,6 +4,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { supabase } from '@/services/supabase';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { GuestAuthModal } from '@/shared/components';
+import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 
 const ReminderOptions = [
   { label: '10 mins before', value: 10 },
@@ -16,14 +19,82 @@ const AddLectureRemindersScreen = () => {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { courseData, updateCourseData, resetCourseData } = useAddCourse();
+  const { user, isGuest } = useAuth();
 
   const [selectedReminders, setSelectedReminders] = useState<number[]>(courseData.reminders);
   const [isLoading, setIsLoading] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
   const toggleReminder = (value: number) => {
     setSelectedReminders(prev => 
       prev.includes(value) ? prev.filter(r => r !== value) : [...prev, value]
     );
+  };
+
+  // Add auto-save function
+  const autoCreateTask = async () => {
+    try {
+      const pendingTask = await getPendingTask();
+      if (!pendingTask || pendingTask.taskType !== 'course') return;
+
+      const { taskData } = pendingTask;
+      
+      if (!taskData.courseName?.trim()) {
+        Alert.alert('Error', 'Missing required information for the saved course.');
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Create the course using the existing API
+      const { error } = await supabase.functions.invoke('create-course-and-lecture', {
+        body: taskData,
+      });
+
+      if (error) throw new Error(error.message);
+
+      // Clear pending data
+      await clearPendingTask();
+
+      // Invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['courses'] });
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
+
+      Alert.alert('Success!', `${taskData.courseName} has been saved successfully!`, [
+        {
+          text: 'OK',
+          onPress: () => {
+            resetCourseData();
+            navigation.getParent()?.goBack();
+          }
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Failed to auto-create course:', error);
+      Alert.alert('Error', 'Failed to save your course. Please try creating it again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Add modal handlers
+  const handleGuestSignUp = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signup',
+      onAuthSuccess: autoCreateTask
+    });
+  };
+
+  const handleGuestSignIn = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signin',
+      onAuthSuccess: autoCreateTask
+    });
   };
 
   const handleFinish = async () => {
@@ -42,6 +113,15 @@ const AddLectureRemindersScreen = () => {
       recurrence: courseData.recurrence,
       reminders: selectedReminders,
     };
+
+    // Check if guest user
+    if (isGuest) {
+      // Save current task data before showing modal
+      await savePendingTask(finalPayload, 'course');
+      setShowGuestAuthModal(true);
+      setIsLoading(false);
+      return;
+    }
 
     try {
       // We will create this new, combined Edge Function in the next step.
@@ -106,6 +186,14 @@ const AddLectureRemindersScreen = () => {
           <Button title="Finish Setup" onPress={handleFinish} />
         )}
       </View>
+
+      <GuestAuthModal
+        isVisible={showGuestAuthModal}
+        onClose={() => setShowGuestAuthModal(false)}
+        onSignUp={handleGuestSignUp}
+        onSignIn={handleGuestSignIn}
+        actionType="Course"
+      />
     </View>
   );
 };

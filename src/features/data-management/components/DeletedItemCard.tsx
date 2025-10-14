@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Course, Assignment, Lecture, StudySession } from '@/types';
 
-type Item = (Course | Assignment | Lecture | StudySession) & { type: string };
+type Item = (Course | Assignment | Lecture | StudySession) & { type: string; deleted_at: string };
 
 interface DeletedItemCardProps {
   item: Item;

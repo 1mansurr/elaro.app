@@ -94,10 +94,10 @@ const RecycleBinScreen = () => {
   return (
     <FlatList
       data={items}
-      keyExtractor={(item) => `${item.type}-${item.id}`}
+      keyExtractor={(item, index) => `${(item as any).type || 'unknown'}-${item.id || index}`}
       renderItem={({ item }) => (
         <DeletedItemCard
-          item={item}
+          item={item as any}
           onRestore={handleRestore}
           onDeletePermanently={handleDeletePermanently}
           isActionLoading={actionLoading === item.id}

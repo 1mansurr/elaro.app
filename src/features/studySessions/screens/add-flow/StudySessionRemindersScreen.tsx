@@ -4,12 +4,13 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddStudySessionStackParamList } from '@/navigation/AddStudySessionNavigator';
 import { useAddStudySession } from '@/features/studySessions/contexts/AddStudySessionContext';
-import { Button, ReminderSelector } from '@/shared/components';
+import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useWeeklyTaskCount, useTotalTaskCount } from '@/hooks';
+import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'Reminders'>;
 
@@ -22,6 +23,7 @@ const RemindersScreen = () => {
   const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   
 
   const isGuest = !session;
@@ -35,18 +37,88 @@ const RemindersScreen = () => {
     await createStudySession([]); // Create study session with no reminders
   };
 
+  const handleCloseGuestAuthModal = () => {
+    setShowGuestAuthModal(false);
+  };
+
+  // Add auto-save function
+  const autoCreateTask = async () => {
+    try {
+      const pendingTask = await getPendingTask();
+      if (!pendingTask || pendingTask.taskType !== 'study_session') return;
+
+      const { taskData } = pendingTask;
+      
+      if (!taskData.course || !taskData.topic.trim() || !taskData.sessionDate) {
+        Alert.alert('Error', 'Missing required information for the saved task.');
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Create the study session using the new API layer
+      const newStudySession = await api.mutations.studySessions.create({
+        course_id: taskData.course.id,
+        topic: taskData.topic.trim(),
+        notes: taskData.description.trim(),
+        session_date: taskData.sessionDate.toISOString(),
+        has_spaced_repetition: taskData.hasSpacedRepetition,
+        reminders: taskData.reminders,
+      });
+
+      // Clear pending data
+      await clearPendingTask();
+
+      // Invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
+
+      Alert.alert('Success!', 'Your study session has been saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            resetSessionData();
+            navigation.getParent()?.goBack();
+          }
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Failed to auto-create study session:', error);
+      Alert.alert('Error', 'Failed to save your study session. Please try creating it again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuestSignUp = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signup',
+      onAuthSuccess: autoCreateTask
+    });
+  };
+
+  const handleGuestSignIn = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signin',
+      onAuthSuccess: autoCreateTask
+    });
+  };
+
   const createStudySession = async (reminders: number[]) => {
     if (isGuest) {
-      Alert.alert(
-        'Create an Account to Save',
-        'Sign up for free to save your activities and get reminders.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign Up', onPress: () => {
-            Alert.alert('Sign Up', 'Please use the main menu to create an account.');
-          }}
-        ]
+      // Save current task data before showing modal
+      await savePendingTask(
+        { 
+          ...sessionData, 
+          reminders 
+        }, 
+        'study_session'
       );
+      setShowGuestAuthModal(true);
       return;
     }
 
@@ -220,6 +292,14 @@ const RemindersScreen = () => {
           </View>
         </View>
       </View>
+
+      <GuestAuthModal
+        isVisible={showGuestAuthModal}
+        onClose={handleCloseGuestAuthModal}
+        onSignUp={handleGuestSignUp}
+        onSignIn={handleGuestSignIn}
+        actionType="Study Session"
+      />
     </View>
   );
 };

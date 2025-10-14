@@ -3,7 +3,10 @@ import { createClient } from '@supabase/supabase-js';
 import { corsHeaders } from '../_shared/cors.ts';
 import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
 
-const COURSE_LIMIT = 2;
+const COURSE_LIMITS: { [key: string]: number } = {
+  free: 2,
+  oddity: 7,
+};
 
 serveWithSentry(async (req) => {
   // This is needed if you're planning to invoke your function from a browser.
@@ -62,26 +65,53 @@ serveWithSentry(async (req) => {
     );
   }
 
-  // --- MVP LIMIT LOGIC ---
+  // --- TIER-SPECIFIC LIMIT LOGIC ---
+  // Get the user's subscription tier to apply the correct limit
+  const { data: userProfile, error: profileError } = await supabaseClient
+    .from('users')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError) {
+    return new Response(
+      JSON.stringify({ error: 'Failed to retrieve user profile.' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
+  }
+
+  const userTier = userProfile?.subscription_tier || 'free';
+  const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
+
+  // Check if the user has reached their course limit
   const { count, error: countError } = await supabaseClient
     .from('courses')
     .select('*', { count: 'exact', head: true })
     .eq('user_id', user.id);
 
   if (countError) {
-    throw countError;
+    return new Response(
+      JSON.stringify({ error: 'Failed to count existing courses.' }),
+      {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    );
   }
 
-  if (count !== null && count >= COURSE_LIMIT) {
+  if (count !== null && count >= courseLimit) {
     return new Response(
-      JSON.stringify({ error: `Course limit of ${COURSE_LIMIT} reached.` }),
+      JSON.stringify({ error: `You have reached the course limit of ${courseLimit} for the '${userTier}' plan.` }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 403, // Forbidden
       }
     );
   }
-  // --- END OF MVP LIMIT LOGIC ---
+  // --- END OF TIER-SPECIFIC LIMIT LOGIC ---
 
   const { data: newCourse, error: insertError } = await supabaseClient
     .from('courses')

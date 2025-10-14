@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
 import { Button } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
@@ -8,16 +8,50 @@ import { useCourses } from '@/hooks/useDataQueries';
 import { supabase } from '@/services/supabase';
 import { Alert } from 'react-native';
 import { RootStackParamList } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 
 type OnboardingCoursesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const OnboardingCoursesScreen = () => {
   const navigation = useNavigation<OnboardingCoursesScreenNavigationProp>();
   const { onboardingData } = useOnboarding();
+  const queryClient = useQueryClient();
   
   // Get courses directly from React Query
   const { data: courses, isLoading: coursesLoading } = useCourses();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check for pending course on component mount
+  useEffect(() => {
+    const checkPendingCourse = async () => {
+      const pendingTask = await getPendingTask();
+      if (pendingTask && pendingTask.taskType === 'course') {
+        // Auto-create the course
+        try {
+          const { error } = await supabase.functions.invoke('create-course-and-lecture', {
+            body: pendingTask.taskData,
+          });
+
+          if (error) throw new Error(error.message);
+
+          // Clear pending data
+          await clearPendingTask();
+
+          // Invalidate queries to refresh the courses list
+          await queryClient.invalidateQueries({ queryKey: ['courses'] });
+          await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+
+          Alert.alert('Welcome!', `Your course "${pendingTask.taskData.courseName}" has been automatically created!`);
+        } catch (error) {
+          console.error('Failed to auto-create course:', error);
+          Alert.alert('Error', 'Failed to create your saved course. You can add it manually.');
+        }
+      }
+    };
+
+    checkPendingCourse();
+  }, []);
 
   const handleFinish = async () => {
     setIsLoading(true);

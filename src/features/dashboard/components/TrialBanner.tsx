@@ -23,12 +23,15 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscri
         <Text style={styles.message}>{message}</Text>
         <Text style={styles.subtitle}>Subscribe to keep your Oddity access.</Text>
       </View>
-      <TouchableOpacity
-        onPress={onPressSubscribe}
-        style={styles.button}
-      >
-        <Text style={styles.buttonText}>Subscribe</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <Text style={styles.priceText}>$1.957 / month</Text>
+        <TouchableOpacity
+          onPress={onPressSubscribe}
+          style={styles.button}
+        >
+          <Text style={styles.buttonText}>Subscribe Now</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -56,6 +59,16 @@ const styles = StyleSheet.create({
   subtitle: {
     color: '#a16207', // text-yellow-700
     fontSize: 14, // text-sm
+  },
+  buttonContainer: {
+    alignItems: 'center',
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#78350f',
+    marginBottom: 8,
+    textAlign: 'center',
   },
   button: {
     backgroundColor: '#fbbf24', // bg-yellow-400

@@ -8,3 +8,4 @@ export { default as SearchableSelector } from './SearchableSelector';
 export { default as FeatureErrorBoundary } from './FeatureErrorBoundary';
 export { default as TaskDetailModal } from './TaskDetailModal';
 export { default as TaskDetailSheet } from './TaskDetailSheet';
+export { default as GuestAuthModal } from './GuestAuthModal';

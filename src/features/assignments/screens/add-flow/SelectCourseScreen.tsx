@@ -77,6 +77,16 @@ const SelectCourseScreen = () => {
     Alert.alert('Add Course', 'Please use the main menu to add a course first.');
   };
 
+  const handleGuestSignUp = () => {
+    (navigation as any).navigate('Auth', { 
+      mode: 'signup',
+      onAuthSuccess: () => {
+        // After successful auth, user will have courses and can continue
+        // The screen will automatically refresh and show course selection
+      }
+    });
+  };
+
   if (isGuest) {
     return (
       <View style={styles.container}>
@@ -91,9 +101,7 @@ const SelectCourseScreen = () => {
           </Text>
           <Button 
             title="Sign Up" 
-            onPress={() => {
-              Alert.alert('Sign Up', 'Please use the main menu to create an account.');
-            }} 
+            onPress={handleGuestSignUp}
           />
         </View>
       </View>

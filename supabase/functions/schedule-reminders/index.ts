@@ -27,17 +27,46 @@ async function handleScheduleReminders({ user, supabaseClient, body }: Authentic
     throw new AppError('Study session not found or access denied.', 404, 'NOT_FOUND');
   }
 
-  // Step 1: Fetch the default SRS schedule from the database.
+  // --- START: NEW SRS LIMIT CHECK ---
+  // Check if the user is allowed to create more SRS reminders based on their monthly limit.
+  const { data: canCreate, error: rpcError } = await supabaseClient
+    .rpc('can_create_srs_reminders', { p_user_id: user.id });
+
+  if (rpcError) {
+    throw new AppError('Failed to check SRS reminder limit.', 500, 'DB_ERROR');
+  }
+
+  if (canCreate === false) {
+    throw new AppError('You have reached your monthly limit for Spaced Repetition reminders.', 403, 'LIMIT_REACHED');
+  }
+  // --- END: NEW SRS LIMIT CHECK ---
+
+  // Step 1: Get the user's subscription tier
+  const { data: userProfile, error: profileError } = await supabaseClient
+    .from('users')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single();
+
+  if (profileError) {
+    throw new AppError('Failed to retrieve user profile.', 500, 'DB_ERROR');
+  }
+
+  const userTier = userProfile?.subscription_tier || 'free';
+
+  // Step 2: Fetch the appropriate SRS schedule based on user tier
   const { data: schedule, error: scheduleError } = await supabaseClient
     .from('srs_schedules')
     .select('intervals, name')
-    .eq('is_default', true)
+    .eq('tier_restriction', userTier)
     .single();
 
   if (scheduleError || !schedule) {
-    console.error('Default SRS schedule not found. Falling back to hardcoded intervals.', scheduleError);
-    // As a fallback, use the hardcoded intervals to ensure reminders are still created.
-    const fallbackSchedule = { intervals: [1, 7, 14, 30, 60], name: 'Default (Fallback)' };
+    console.error(`SRS schedule not found for tier: ${userTier}. Falling back to hardcoded intervals.`, scheduleError);
+    // As a fallback, use tier-specific hardcoded intervals
+    const fallbackSchedule = userTier === 'free' 
+      ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
+      : { intervals: [1, 3, 7, 14, 30, 60, 120, 180], name: 'Oddity Tier (Fallback)' };
     schedule = fallbackSchedule;
   }
 

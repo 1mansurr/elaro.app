@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/services/supabase';
+
+const COURSE_LIMITS: { [key: string]: number } = {
+  free: 2,
+  oddity: 7,
+};
 
 // Define the navigation prop type for this screen
 type AddCourseNameScreenNavigationProp = StackNavigationProp<
@@ -14,15 +22,69 @@ type AddCourseNameScreenNavigationProp = StackNavigationProp<
 const AddCourseNameScreen = () => {
   const navigation = useNavigation<AddCourseNameScreenNavigationProp>();
   const { courseData, updateCourseData } = useAddCourse();
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const [courseName, setCourseName] = useState(courseData.courseName || '');
   const [courseCode, setCourseCode] = useState(courseData.courseCode || '');
+  const [courseCount, setCourseCount] = useState(0);
+
+  // Check course count on component mount
+  useEffect(() => {
+    const checkCourseCount = async () => {
+      if (!user?.id) return;
+      
+      const { count, error } = await supabase
+        .from('courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+
+      if (!error && count !== null) {
+        setCourseCount(count);
+      }
+    };
+
+    checkCourseCount();
+  }, [user?.id]);
 
   const handleNext = () => {
     if (!courseName.trim()) {
       Alert.alert('Course name is required.');
       return;
     }
+
+    // Check course limits before proceeding
+    const userTier = user?.subscription_tier || 'free';
+    const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
+
+    if (courseCount >= courseLimit) {
+      Alert.alert(
+        'Course Limit Reached',
+        `You have reached the limit of ${courseLimit} courses for the 'free' plan. Upgrade to Oddity for just $1.957/month to add more courses.`,
+        [
+          { text: 'OK', style: 'cancel' },
+          // The "Become an Oddity" button for the free upgrade flow can remain if desired,
+          // but it will only be relevant for 'free' users.
+          ...(userTier === 'free' ? [{
+            text: 'Become an Oddity',
+            onPress: async () => {
+              // This should trigger the free upgrade flow
+              try {
+                const { error } = await supabase.functions.invoke('grant-premium-access');
+                if (error) throw error;
+                await queryClient.invalidateQueries({ queryKey: ['user'] });
+                await queryClient.invalidateQueries({ queryKey: ['courses'] });
+                Alert.alert('Success!', 'You now have access to all premium features.');
+              } catch (e) {
+                Alert.alert('Error', 'Could not complete the upgrade.');
+              }
+            },
+          }] : [])
+        ]
+      );
+      return;
+    }
+
     updateCourseData({ 
       courseName: courseName.trim(),
       courseCode: courseCode.trim()

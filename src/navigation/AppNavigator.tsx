@@ -190,7 +190,7 @@ const authScreens = {
   Auth: { 
     component: AuthScreen,
     options: {
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false,
     }
   },
@@ -296,35 +296,35 @@ const modalFlows = {
   AddCourseFlow: { 
     component: AddCourseFlow,
     options: { 
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false 
     }
   },
   AddLectureFlow: { 
     component: AddLectureFlow,
     options: { 
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false 
     }
   },
   AddAssignmentFlow: { 
     component: AddAssignmentFlow,
     options: { 
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false 
     }
   },
   AddStudySessionFlow: { 
     component: AddStudySessionFlow,
     options: { 
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false 
     }
   },
   EditCourseModal: { 
     component: EditCourseModal,
     options: ({ navigation }: any) => ({
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: true,
       headerTitle: 'Edit Course',
       headerLeft: () => (
@@ -346,7 +346,7 @@ const modalFlows = {
   InAppBrowserScreen: { 
     component: InAppBrowserScreen,
     options: { 
-      presentation: 'modal',
+      presentation: 'modal' as const,
       headerShown: false 
     }
   },
@@ -359,7 +359,7 @@ const renderScreens = (screens: Record<string, { component: React.ComponentType<
       key={name} 
       name={name as any} 
       component={config.component} 
-      options={config.options}
+      options={config.options || {}}
     />
   ));
 };
@@ -381,7 +381,7 @@ export const AppNavigator: React.FC = () => {
         name="InAppBrowserScreen" 
         component={InAppBrowserScreen}
         options={{ 
-          presentation: 'modal',
+          presentation: 'modal' as const,
           headerShown: false 
         }}
       />
@@ -397,28 +397,28 @@ export const AppNavigator: React.FC = () => {
                 key={name} 
                 name={name as any} 
                 component={config.component} 
-                options={config.options}
+                options={(config as any).options || {}}
               />
             ))}
-          
-          {/* Modal flows (excluding InAppBrowserScreen since it's always available) */}
-          <Stack.Group>
-            {Object.entries(modalFlows)
-              .filter(([name]) => name !== 'InAppBrowserScreen')
-              .map(([name, config]) => (
-                <Stack.Screen 
-                  key={name} 
-                  name={name as any} 
-                  component={config.component} 
-                  options={config.options}
-                />
-              ))}
-          </Stack.Group>
         </>
       ) : (
         /* Auth screens */
         renderScreens(authScreens)
       )}
+      
+      {/* Modal flows available to both guest and authenticated users */}
+      <Stack.Group>
+        {Object.entries(modalFlows)
+          .filter(([name]) => name !== 'InAppBrowserScreen')
+          .map(([name, config]) => (
+            <Stack.Screen 
+              key={name} 
+              name={name as any} 
+              component={config.component} 
+              options={(config as any).options}
+            />
+          ))}
+      </Stack.Group>
     </Stack.Navigator>
   );
 };

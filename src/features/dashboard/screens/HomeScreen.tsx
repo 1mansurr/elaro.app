@@ -66,6 +66,7 @@ const HomeScreen = () => {
     }).start();
   };
 
+
   const handleViewDetails = (task: Task) => {
     setSelectedTask(task);
   };
@@ -295,6 +296,7 @@ const HomeScreen = () => {
         onComplete={handleCompleteTask}
         onDelete={handleDeleteTask}
       />
+
     </View>
   );
 };

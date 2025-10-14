@@ -12,7 +12,7 @@ interface OverviewData {
 interface Props {
   overview: OverviewData | null;
   weeklyTaskCount: number;
-  subscriptionTier: 'free' | 'oddity' | 'anomaly' | null;
+  subscriptionTier: 'free' | 'oddity' | null;
 }
 
 const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) => (
@@ -23,6 +23,29 @@ const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) 
 );
 
 const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount, subscriptionTier }) => {
+  const TASK_LIMITS = {
+    free: 15,
+    oddity: 70,
+  };
+
+  let limitText;
+  if (subscriptionTier === 'free') {
+    limitText = (
+      <Text style={styles.limitText}>
+        of <Text style={styles.bold}>{TASK_LIMITS.free}</Text> activities used this month
+      </Text>
+    );
+  } else if (subscriptionTier === 'oddity') {
+    limitText = (
+      <Text style={styles.limitText}>
+        of <Text style={styles.bold}>{TASK_LIMITS.oddity}</Text> activities used this month
+      </Text>
+    );
+  } else {
+    // Fallback for any other case (e.g., null, or future tiers)
+    limitText = <Text style={styles.limitText}>activities used this month</Text>;
+  }
+
   return (
     <View style={styles.card}>
       <Text style={styles.header}>Today&apos;s Overview</Text>
@@ -37,15 +60,10 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount, subscri
       <View style={styles.divider} />
       
       <View style={styles.weeklyCountContainer}>
-        {subscriptionTier === 'free' ? (
-          <Text style={styles.weeklyCountText}>
-            <Text style={{ fontWeight: 'bold' }}>{weeklyTaskCount}</Text> of 5 activities used this week
-          </Text>
-        ) : (
-          <Text style={styles.weeklyCountText}>
-            <Text style={{ fontWeight: 'bold' }}>{weeklyTaskCount}</Text> activities this week (unlimited)
-          </Text>
-        )}
+        <Text style={styles.weeklyCountText}>
+          <Text style={styles.bold}>{weeklyTaskCount} </Text>
+          {limitText}
+        </Text>
       </View>
     </View>
   );
@@ -106,6 +124,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#495057',
     fontStyle: 'italic',
+  },
+  limitText: {
+    color: '#6D6D72', // A slightly lighter color for the non-bold part
+  },
+  bold: {
+    fontWeight: 'bold',
   },
 });
 

@@ -4,13 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddLectureStackParamList } from '@/navigation/AddLectureNavigator';
 import { useAddLecture } from '@/features/lectures/contexts/AddLectureContext';
-import { Button, ReminderSelector } from '@/shared/components';
+import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { subMinutes } from 'date-fns';
 import { notificationService } from '@/services/notifications';
 import { useWeeklyTaskCount, useTotalTaskCount } from '@/hooks';
+import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddLectureStackParamList, 'Reminders'>;
 
@@ -23,6 +24,7 @@ const RemindersScreen = () => {
   const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
   
   const [isLoading, setIsLoading] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   
 
   const isGuest = !session;
@@ -36,19 +38,90 @@ const RemindersScreen = () => {
     await createLecture([]); // Create lecture with no reminders
   };
 
+  const handleCloseGuestAuthModal = () => {
+    setShowGuestAuthModal(false);
+  };
+
+  // Add auto-save function
+  const autoCreateTask = async () => {
+    try {
+      const pendingTask = await getPendingTask();
+      if (!pendingTask || pendingTask.taskType !== 'lecture') return;
+
+      const { taskData } = pendingTask;
+      
+      if (!taskData.course || !taskData.startTime || !taskData.endTime) {
+        Alert.alert('Error', 'Missing required information for the saved task.');
+        return;
+      }
+
+      setIsLoading(true);
+
+      // Create the lecture using the new API layer
+      const newLecture = await api.mutations.lectures.create({
+        course_id: taskData.course.id,
+        lecture_name: `${taskData.course.courseName} Lecture`,
+        description: `A lecture for the course: ${taskData.course.courseName}.`,
+        start_time: taskData.startTime.toISOString(),
+        end_time: taskData.endTime.toISOString(),
+        is_recurring: taskData.recurrence !== 'none',
+        recurring_pattern: taskData.recurrence,
+        reminders: taskData.reminders,
+      });
+
+      // Clear pending data
+      await clearPendingTask();
+
+      // Invalidate queries
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
+      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
+
+      Alert.alert('Success!', 'Your lecture has been saved successfully!', [
+        {
+          text: 'OK',
+          onPress: () => {
+            resetLectureData();
+            navigation.getParent()?.goBack();
+          }
+        }
+      ]);
+
+    } catch (error) {
+      console.error('Failed to auto-create lecture:', error);
+      Alert.alert('Error', 'Failed to save your lecture. Please try creating it again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGuestSignUp = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signup',
+      onAuthSuccess: autoCreateTask
+    });
+  };
+
+  const handleGuestSignIn = async () => {
+    setShowGuestAuthModal(false);
+    (navigation as any).navigate('Auth', { 
+      mode: 'signin',
+      onAuthSuccess: autoCreateTask
+    });
+  };
+
   const createLecture = async (reminders: number[]) => {
     if (isGuest) {
-      Alert.alert(
-        'Create an Account to Save',
-        'Sign up for free to save your activities and get reminders.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign Up', onPress: () => {
-            // Navigate to auth
-            Alert.alert('Sign Up', 'Please use the main menu to create an account.');
-          }}
-        ]
+      // Save current task data before showing modal
+      await savePendingTask(
+        { 
+          ...lectureData, 
+          reminders 
+        }, 
+        'lecture'
       );
+      setShowGuestAuthModal(true);
       return;
     }
 
@@ -217,6 +290,14 @@ const RemindersScreen = () => {
           </View>
         </View>
       </View>
+
+      <GuestAuthModal
+        isVisible={showGuestAuthModal}
+        onClose={handleCloseGuestAuthModal}
+        onSignUp={handleGuestSignUp}
+        onSignIn={handleGuestSignIn}
+        actionType="Lecture"
+      />
     </View>
   );
 };

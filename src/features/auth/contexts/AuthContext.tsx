@@ -5,6 +5,7 @@ import { authService } from '@/features/auth/services/authService';
 import { User, RootStackParamList } from '@/types';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { getPendingTask } from '@/utils/taskPersistence';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 
 interface LoginCredentials {
@@ -21,6 +22,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isGuest: boolean;
   signIn: (credentials: LoginCredentials) => Promise<{ error: any; requiresMFA?: boolean; factors?: any[] }>;
   signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -106,6 +108,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
+
+        // --- START: NEW TRIAL LOGIC ---
+        if (userProfile && userProfile.subscription_tier === 'free' && userProfile.subscription_expires_at === null) {
+          console.log('New free user detected. Attempting to start trial...');
+          try {
+            const { error } = await supabase.functions.invoke('start-user-trial');
+            if (error) {
+              console.error('Failed to start user trial:', error.message);
+            } else {
+              console.log('Trial started successfully. Refreshing user profile...');
+              // Refresh the user profile to get the new subscription status
+              const refreshedUserProfile = await fetchUserProfile(session.user.id);
+              setUser(refreshedUserProfile);
+            }
+          } catch (e) {
+            console.error('An unexpected error occurred while starting trial:', e);
+          }
+        }
+        // --- END: NEW TRIAL LOGIC ---
         
         // Navigation logic based on onboarding status
         if (userProfile) {
@@ -113,6 +134,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             // fetchInitialData(); // Removed to fix circular dependency - will be called elsewhere
             navigation.replace('Main');
           } else {
+            // Check for pending course before starting onboarding
+            const pendingTask = await getPendingTask();
+            
             // Pre-fill logic for social login users
             let params = {};
             const fullName = session.user?.user_metadata?.full_name;
@@ -124,7 +148,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               params = { firstName, lastName };
             }
             
-            navigation.replace('Welcome', params);
+            // If there's a pending course, skip to onboarding flow
+            if (pendingTask && pendingTask.taskType === 'course') {
+              navigation.replace('OnboardingFlow');
+            } else {
+              navigation.replace('Welcome', params);
+            }
           }
         }
       } else {
@@ -204,6 +233,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     session,
     user,
     loading,
+    isGuest: !session,
     signIn,
     signUp,
     signOut,
