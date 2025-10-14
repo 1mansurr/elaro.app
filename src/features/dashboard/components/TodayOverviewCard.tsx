@@ -12,6 +12,7 @@ interface OverviewData {
 interface Props {
   overview: OverviewData | null;
   weeklyTaskCount: number;
+  subscriptionTier: 'free' | 'oddity' | 'anomaly' | null;
 }
 
 const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) => (
@@ -21,7 +22,7 @@ const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) 
   </View>
 );
 
-const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount }) => {
+const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount, subscriptionTier }) => {
   return (
     <View style={styles.card}>
       <Text style={styles.header}>Today&apos;s Overview</Text>
@@ -36,9 +37,15 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount }) => {
       <View style={styles.divider} />
       
       <View style={styles.weeklyCountContainer}>
-        <Text style={styles.weeklyCountText}>
-          {weeklyTaskCount} of 9 activities used this week
-        </Text>
+        {subscriptionTier === 'free' ? (
+          <Text style={styles.weeklyCountText}>
+            <Text style={{ fontWeight: 'bold' }}>{weeklyTaskCount}</Text> of 5 activities used this week
+          </Text>
+        ) : (
+          <Text style={styles.weeklyCountText}>
+            <Text style={{ fontWeight: 'bold' }}>{weeklyTaskCount}</Text> activities this week (unlimited)
+          </Text>
+        )}
       </View>
     </View>
   );
@@ -89,8 +96,11 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   weeklyCountContainer: {
-    alignItems: 'center',
+    marginTop: 16,
     paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5EA',
+    alignItems: 'center',
   },
   weeklyCountText: {
     fontSize: 14,

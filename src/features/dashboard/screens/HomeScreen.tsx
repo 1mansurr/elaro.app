@@ -23,9 +23,9 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { session, user } = useAuth();
-  const { data: homeData, isLoading, isError, error } = useHomeScreenData();
-  const queryClient = useQueryClient();
   const isGuest = !session;
+  const { data: homeData, isLoading, isError, error } = useHomeScreenData(!isGuest);
+  const queryClient = useQueryClient();
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const fabAnimation = useRef(new Animated.Value(0)).current;
@@ -204,8 +204,8 @@ const HomeScreen = () => {
     );
   };
 
-  // Handle loading and error states
-  if (isLoading) {
+  // Handle loading and error states (only for authenticated users)
+  if (!isGuest && isLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
@@ -215,7 +215,7 @@ const HomeScreen = () => {
     );
   }
 
-  if (isError) {
+  if (!isGuest && isError) {
     return (
       <View style={styles.container}>
         <View style={styles.errorContainer}>
@@ -237,10 +237,12 @@ const HomeScreen = () => {
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
-          <RefreshControl 
-            refreshing={isLoading} 
-            onRefresh={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
-          />
+          !isGuest ? (
+            <RefreshControl 
+              refreshing={isLoading} 
+              onRefresh={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
+            />
+          ) : undefined
         }
         scrollEnabled={!isFabOpen}
       >
@@ -260,6 +262,7 @@ const HomeScreen = () => {
         <TodayOverviewCard
           overview={isGuest ? null : (homeData?.todayOverview || null)}
           weeklyTaskCount={isGuest ? 0 : (homeData?.weeklyTaskCount || 0)}
+          subscriptionTier={user?.subscription_tier || 'free'}
         />
         <Button
           title="View Full Calendar"

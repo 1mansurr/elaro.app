@@ -8,11 +8,39 @@
 -- 3. Set 'SUPABASE_URL' in Supabase Dashboard -> Project Settings -> Vault
 
 -- Step 1: Unschedule all existing cron jobs to ensure clean slate
-SELECT cron.unschedule('process-due-reminders-job');
-SELECT cron.unschedule('send-daily-summary-notifications');
-SELECT cron.unschedule('send-evening-capture-notifications');
-SELECT cron.unschedule('daily-reminder-cleanup');
-SELECT cron.unschedule('cleanup-old-reminders');
+-- Use DO blocks to handle cases where jobs might not exist
+DO $$
+BEGIN
+  BEGIN
+    PERFORM cron.unschedule('process-due-reminders-job');
+  EXCEPTION WHEN OTHERS THEN
+    -- Job doesn't exist, continue
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('send-daily-summary-notifications');
+  EXCEPTION WHEN OTHERS THEN
+    -- Job doesn't exist, continue
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('send-evening-capture-notifications');
+  EXCEPTION WHEN OTHERS THEN
+    -- Job doesn't exist, continue
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('daily-reminder-cleanup');
+  EXCEPTION WHEN OTHERS THEN
+    -- Job doesn't exist, continue
+  END;
+  
+  BEGIN
+    PERFORM cron.unschedule('cleanup-old-reminders');
+  EXCEPTION WHEN OTHERS THEN
+    -- Job doesn't exist, continue
+  END;
+END $$;
 
 -- Step 2: Reschedule 'process-due-reminders' job securely
 -- This job runs every minute and is idempotent (no auth needed)
@@ -65,5 +93,4 @@ SELECT cron.schedule(
   $$
 );
 
--- Add comment to document the security improvement
-COMMENT ON TABLE cron.job IS 'All cron jobs updated to use Supabase Vault secrets management. No hardcoded URLs or tokens in version control.';
+-- All cron jobs updated to use Supabase Vault secrets management. No hardcoded URLs or tokens in version control.

@@ -17,11 +17,11 @@ CREATE POLICY "Users can view courses based on their role"
 ON public.courses
 FOR SELECT
 USING (
-  -- Regular users can only see their own active courses.
-  (auth.uid() = user_id AND deleted_at IS NULL)
+  -- Regular users can only see their own courses.
+  auth.uid() = user_id
   OR
-  -- Users with the 'admin' role can see ALL active courses.
-  ((SELECT role FROM public.users WHERE id = auth.uid()) = 'admin' AND deleted_at IS NULL)
+  -- Users with the 'admin' role can see ALL courses.
+  (SELECT role FROM public.users WHERE id = auth.uid()) = 'admin'
 );
 
 -- Note: The INSERT, UPDATE, and DELETE policies should remain unchanged for now,

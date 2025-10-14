@@ -1,6 +1,6 @@
 // FILE: src/screens/AccountScreen.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, Button, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, Pressable } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -9,6 +9,7 @@ import { Card, Button } from '@/shared/components';
 import { NotificationSettings } from '@/features/notifications/components/NotificationSettings';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/features/auth/services/authService';
+import { supabase } from '@/services/supabase';
 
 // Import the AppError class
 class AppError extends Error {
@@ -25,14 +26,33 @@ const AccountScreen = () => {
   const isGuest = !session;
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
+  const [isSupportChatLoading, setIsSupportChatLoading] = useState(false);
 
-  const TAWK_TO_URL = 'https://tawk.to/chat/685fb69800ff9419109c4db9/default';
+  const handleContactSupport = async () => {
+    setIsSupportChatLoading(true);
+    try {
+      // Call the new backend function
+      const { data, error } = await supabase.functions.invoke('get-secure-chat-link');
 
-  const handleContactSupport = () => {
-    navigation.navigate('InAppBrowserScreen', {
-      url: TAWK_TO_URL,
-      title: 'Support Chat'
-    });
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      if (data && data.secureUrl) {
+        // Open the secure URL in our in-app browser
+        navigation.navigate('InAppBrowserScreen', {
+          url: data.secureUrl,
+          title: 'Support Chat'
+        });
+      } else {
+        throw new Error('Could not retrieve the secure chat link.');
+      }
+
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Could not open support chat. Please try again later.');
+    } finally {
+      setIsSupportChatLoading(false);
+    }
   };
 
   const handleGlobalSignOut = () => {
@@ -157,11 +177,6 @@ const AccountScreen = () => {
             url: 'https://myelaro.com/how-it-works',
             title: 'How ELARO Works'
           })}
-        />
-        <ListItem
-          icon="mail-outline"
-          label="Contact Support"
-          onPress={handleContactSupport}
         />
       </Card>
 
@@ -298,6 +313,8 @@ const AccountScreen = () => {
           icon="mail-outline"
           label="Contact Support"
           onPress={handleContactSupport}
+          disabled={isSupportChatLoading}
+          rightContent={isSupportChatLoading ? <ActivityIndicator size="small" /> : undefined}
         />
       </Card>
 

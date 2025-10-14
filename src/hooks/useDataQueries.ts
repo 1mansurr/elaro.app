@@ -30,10 +30,11 @@ export const useStudySessions = () => {
   });
 };
 
-export const useHomeScreenData = () => {
+export const useHomeScreenData = (enabled: boolean = true) => {
   return useQuery<HomeScreenData | null, Error>({
     queryKey: ['homeScreenData'],
     queryFn: api.homeScreen.getData,
+    enabled,
   });
 };
 

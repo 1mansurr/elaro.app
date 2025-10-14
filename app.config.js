@@ -39,7 +39,7 @@ module.exports = ({ config }) => {
       ...config.android,
       package: 'com.elaro.app',
       versionCode: parseInt(process.env.EXPO_PUBLIC_ANDROID_VERSION_CODE || '1'),
-      googleServicesFile: './google-services.json',
+      // googleServicesFile: './google-services.json', // Commented out - file not found
       compileSdkVersion: 35,
       targetSdkVersion: 35,
       adaptiveIcon: {

@@ -187,7 +187,6 @@ const OnboardingFlow = () => (
 
 // Screen configuration objects for better organization
 const authScreens = {
-  Launch: { component: LaunchScreen },
   Auth: { 
     component: AuthScreen,
     options: {
@@ -374,15 +373,46 @@ export const AppNavigator: React.FC = () => {
       {/* Always show Launch screen */}
       <Stack.Screen name="Launch" component={LaunchScreen} />
       
+      {/* Always show Main screen - it will handle authentication state internally */}
+      <Stack.Screen name="Main" component={MainTabNavigator} />
+      
+      {/* Always show InAppBrowserScreen - needed for both authenticated and guest users */}
+      <Stack.Screen 
+        name="InAppBrowserScreen" 
+        component={InAppBrowserScreen}
+        options={{ 
+          presentation: 'modal',
+          headerShown: false 
+        }}
+      />
+      
       {/* Render screens based on authentication state */}
       {session ? (
         <>
-          {/* Main app screens */}
-          {renderScreens(mainScreens)}
+          {/* Main app screens (excluding Main since it's always available) */}
+          {Object.entries(mainScreens)
+            .filter(([name]) => name !== 'Main')
+            .map(([name, config]) => (
+              <Stack.Screen 
+                key={name} 
+                name={name as any} 
+                component={config.component} 
+                options={config.options}
+              />
+            ))}
           
-          {/* Modal flows */}
+          {/* Modal flows (excluding InAppBrowserScreen since it's always available) */}
           <Stack.Group>
-            {renderScreens(modalFlows)}
+            {Object.entries(modalFlows)
+              .filter(([name]) => name !== 'InAppBrowserScreen')
+              .map(([name, config]) => (
+                <Stack.Screen 
+                  key={name} 
+                  name={name as any} 
+                  component={config.component} 
+                  options={config.options}
+                />
+              ))}
           </Stack.Group>
         </>
       ) : (
