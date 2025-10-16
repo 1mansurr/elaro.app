@@ -60,7 +60,7 @@ const AddCourseNameScreen = () => {
     if (courseCount >= courseLimit) {
       Alert.alert(
         'Course Limit Reached',
-        `You have reached the limit of ${courseLimit} courses for the 'free' plan. Upgrade to Oddity for just $1.957/month to add more courses.`,
+        `You have reached the limit of ${courseLimit} courses for the 'free' plan. Upgrade to Oddity for just $1.99/month to add more courses.`,
         [
           { text: 'OK', style: 'cancel' },
           // The "Become an Oddity" button for the free upgrade flow can remain if desired,

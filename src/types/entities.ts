@@ -20,6 +20,10 @@ export interface User {
   subscription_tier: 'free' | 'oddity' | null;
   subscription_status?: 'trialing' | 'active' | 'past_due' | 'canceled' | null;
   subscription_expires_at: string | null;
+  account_status: 'active' | 'deleted' | 'suspended';
+  deleted_at: string | null;
+  deletion_scheduled_at: string | null;
+  suspension_end_date: string | null;
   created_at: string;
   updated_at: string;
   user_metadata?: {
@@ -132,7 +136,7 @@ export interface OverviewData {
 export interface HomeScreenData {
   nextUpcomingTask: Task | null;
   todayOverview: OverviewData | null;
-  weeklyTaskCount: number;
+  monthlyTaskCount: number;
 }
 
 // ─────────────────────────────────────────────────────────────

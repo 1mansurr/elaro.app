@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { useScreenTracking } from '../hooks/useScreenTracking';
 
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { RootStackParamList, MainTabParamList } from '../types';
@@ -367,6 +368,9 @@ const renderScreens = (screens: Record<string, { component: React.ComponentType<
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
+  
+  // Enable automatic screen tracking
+  useScreenTracking();
 
   return (
     <Stack.Navigator screenOptions={sharedScreenOptions}>

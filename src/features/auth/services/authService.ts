@@ -91,19 +91,33 @@ export const authService = {
     if (error) throw new AppError(error.message, 500, 'GLOBAL_SIGNOUT_ERROR');
   },
 
-  // Method to delete the current user's account
-  deleteAccount: async (): Promise<void> => {
+  // Method to delete the current user's account (soft delete with 7-day retention)
+  deleteAccount: async (reason?: string): Promise<void> => {
     try {
-      // Get the current user to get their ID
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError) throw new AppError(userError.message, 401, 'USER_FETCH_ERROR');
-      if (!user) throw new AppError('No authenticated user found', 401, 'NO_USER_ERROR');
-
-      // Call the existing deleteUserAccount function from dbUtils
-      await dbUtils.deleteUserAccount(user.id);
+      const { data, error } = await supabase.functions.invoke('soft-delete-account', {
+        body: { reason: reason || 'User requested account deletion' }
+      });
+      
+      if (error) throw new AppError(error.message, 500, 'SOFT_DELETE_ERROR');
+      
+      // Sign out locally after successful soft delete
+      await supabase.auth.signOut();
     } catch (error) {
       console.error('Error in authService.deleteAccount:', error);
-      // Re-throw the error to be handled by the UI component
+      throw error;
+    }
+  },
+
+  // Method to restore a soft-deleted account
+  restoreAccount: async (): Promise<any> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('restore-account');
+      
+      if (error) throw new AppError(error.message, 500, 'RESTORE_ERROR');
+      
+      return data;
+    } catch (error) {
+      console.error('Error in authService.restoreAccount:', error);
       throw error;
     }
   },

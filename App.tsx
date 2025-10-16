@@ -6,10 +6,15 @@ import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import Constants from 'expo-constants';
 import { AuthProvider } from './src/features/auth/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
 import { NotificationProvider, useNotification } from './src/contexts/NotificationContext';
 import { setNotificationTaskHandler } from './src/services/notifications';
+import { revenueCatService } from './src/services/revenueCat';
+import { mixpanelService } from './src/services/mixpanel';
+import { AnalyticsEvents } from './src/services/analyticsEvents';
+import { Platform } from 'react-native';
 import TaskDetailSheet from './src/shared/components/TaskDetailSheet';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
@@ -91,19 +96,30 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const prepare = async () => {
       try {
-        // Example: load fonts, user preferences, etc.
-        // await Font.loadAsync({...})
-        // await new Promise(resolve => setTimeout(resolve, 500)); // simulate loading
+        // Initialize RevenueCat
+        const revenueCatApiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
+        if (revenueCatApiKey) {
+          const initSuccess = await revenueCatService.initialize(revenueCatApiKey);
+          
+          // Verify RevenueCat setup only if initialization succeeded
+          if (initSuccess) {
+            const { verifyRevenueCatSetup } = await import('./src/config/verifyRevenuecat');
+            await verifyRevenueCatSetup();
+          } else {
+            console.warn('⚠️ RevenueCat initialization failed. Skipping verification.');
+          }
+        } else {
+          console.warn('⚠️ RevenueCat API key not found in environment variables');
+        }
 
         // Future async initialization can go here:
         // - Load custom fonts
-        // - Initialize analytics
         // - Check for app updates
         // - Load user preferences
         // - Initialize push notifications
         // - Check onboarding status
 
-        // For now, just a small delay to ensure smooth transition
+        // Small delay to ensure smooth transition
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (e) {
         console.warn('App initialization error:', e);
@@ -166,6 +182,17 @@ function AuthEffects() {
   useEffect(() => {
     if (user && user.id) {
       notificationService.initialize(user.id);
+      // Initialize Mixpanel with user ID
+      mixpanelService.identifyUser(user.id);
+      
+      // Track user login
+      mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+        user_id: user.id,
+        subscription_tier: user.subscription_tier || 'free',
+        onboarding_completed: user.onboarding_completed || false,
+        timestamp: new Date().toISOString(),
+      });
+      
       // Data fetching is now handled by React Query hooks in individual components
     }
   }, [user]);
@@ -249,7 +276,43 @@ function App() {
 
   // Simplified initialization without persistence
   useEffect(() => {
-    setIsReady(true);
+    const initializeApp = async () => {
+      try {
+        console.log('🚀 Starting app initialization...');
+        
+        // Initialize Mixpanel with your project token
+        const projectToken = 'e3ac54f448ea19920f62c8b4d928f83e';
+        console.log('📱 About to initialize Mixpanel...');
+        await mixpanelService.initialize(projectToken, true); // Enable consent for testing
+        
+        console.log('⏳ Waiting 2 seconds before tracking events...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Track app launch
+        console.log('📊 Tracking app launch event...');
+        mixpanelService.track(AnalyticsEvents.APP_OPENED, {
+          platform: Platform.OS,
+          timestamp: new Date().toISOString(),
+          app_version: '1.0.0',
+        });
+        
+        // Add a test event to verify connection
+        console.log('🧪 Tracking test event...');
+        mixpanelService.track('Mixpanel Test Event', {
+          test: true,
+          message: 'This is a test event to verify Mixpanel connection',
+          timestamp: new Date().toISOString(),
+        });
+        
+        console.log('✅ Mixpanel initialization and tracking complete!');
+      } catch (error) {
+        console.error('❌ Failed to initialize Mixpanel:', error);
+      }
+      
+      setIsReady(true);
+    };
+
+    initializeApp();
   }, []);
 
   // Set navigation reference in notification service when ready

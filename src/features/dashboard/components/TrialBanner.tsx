@@ -21,15 +21,14 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscri
       <Ionicons name="warning-outline" size={24} color="#f59e0b" />
       <View style={styles.content}>
         <Text style={styles.message}>{message}</Text>
-        <Text style={styles.subtitle}>Subscribe to keep your Oddity access.</Text>
       </View>
       <View style={styles.buttonContainer}>
-        <Text style={styles.priceText}>$1.957 / month</Text>
+        <Text style={styles.priceText}>$1.99 / month</Text>
         <TouchableOpacity
           onPress={onPressSubscribe}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>Subscribe Now</Text>
+          <Text style={styles.buttonText}>Join Oddity</Text>
         </TouchableOpacity>
       </View>
     </View>

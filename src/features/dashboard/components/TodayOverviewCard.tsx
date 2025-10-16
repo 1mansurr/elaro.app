@@ -11,7 +11,7 @@ interface OverviewData {
 
 interface Props {
   overview: OverviewData | null;
-  weeklyTaskCount: number;
+  monthlyTaskCount: number;
   subscriptionTier: 'free' | 'oddity' | null;
 }
 
@@ -22,7 +22,7 @@ const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) 
   </View>
 );
 
-const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount, subscriptionTier }) => {
+const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscriptionTier }) => {
   const TASK_LIMITS = {
     free: 15,
     oddity: 70,
@@ -59,9 +59,9 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, weeklyTaskCount, subscri
       
       <View style={styles.divider} />
       
-      <View style={styles.weeklyCountContainer}>
-        <Text style={styles.weeklyCountText}>
-          <Text style={styles.bold}>{weeklyTaskCount} </Text>
+      <View style={styles.monthlyCountContainer}>
+        <Text style={styles.monthlyCountText}>
+          <Text style={styles.bold}>{monthlyTaskCount} </Text>
           {limitText}
         </Text>
       </View>
@@ -113,14 +113,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#e9ecef',
     marginVertical: 8,
   },
-  weeklyCountContainer: {
+  monthlyCountContainer: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5EA',
     alignItems: 'center',
   },
-  weeklyCountText: {
+  monthlyCountText: {
     fontSize: 14,
     color: '#495057',
     fontStyle: 'italic',

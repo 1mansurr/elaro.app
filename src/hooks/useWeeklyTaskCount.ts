@@ -2,36 +2,53 @@ import { useMemo } from 'react';
 import { useAssignments, useLectures, useStudySessions } from './useDataQueries';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 
-const WEEKLY_TASK_LIMIT = 5;
+const MONTHLY_TASK_LIMITS = {
+  free: 15,
+  oddity: 70,
+};
 
-export const useWeeklyTaskCount = () => {
+export const useMonthlyTaskCount = () => {
   const { user } = useAuth();
   const { data: assignments = [], isLoading: isLoadingAssignments } = useAssignments();
   const { data: lectures = [], isLoading: isLoadingLectures } = useLectures();
   const { data: studySessions = [], isLoading: isLoadingStudySessions } = useStudySessions();
 
-  const weeklyTaskCount = useMemo(() => {
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const monthlyTaskCount = useMemo(() => {
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
     const filterTasksByDate = (tasks: Array<{ createdAt: string }>) =>
-      tasks.filter(task => new Date(task.createdAt) >= oneWeekAgo).length;
+      tasks.filter(task => new Date(task.createdAt) >= oneMonthAgo).length;
 
-    const weeklyAssignments = filterTasksByDate(assignments);
-    const weeklyLectures = filterTasksByDate(lectures);
-    const weeklyStudySessions = filterTasksByDate(studySessions);
+    const monthlyAssignments = filterTasksByDate(assignments);
+    const monthlyLectures = filterTasksByDate(lectures);
+    const monthlyStudySessions = filterTasksByDate(studySessions);
 
-    return weeklyAssignments + weeklyLectures + weeklyStudySessions;
+    return monthlyAssignments + monthlyLectures + monthlyStudySessions;
   }, [assignments, lectures, studySessions]);
 
-  const isPremium = user?.subscription_tier !== 'free';
-  const limitReached = !isPremium && weeklyTaskCount >= WEEKLY_TASK_LIMIT;
+  const userTier = user?.subscription_tier || 'free';
+  const monthlyLimit = MONTHLY_TASK_LIMITS[userTier] || MONTHLY_TASK_LIMITS.free;
+  const isPremium = userTier !== 'free';
+  const limitReached = !isPremium && monthlyTaskCount >= monthlyLimit;
 
   return {
-    weeklyTaskCount,
-    WEEKLY_TASK_LIMIT,
+    monthlyTaskCount,
+    monthlyLimit,
     isPremium,
     limitReached,
     isLoading: isLoadingAssignments || isLoadingLectures || isLoadingStudySessions,
+  };
+};
+
+// Keep the old hook for backward compatibility during transition
+export const useWeeklyTaskCount = () => {
+  const monthlyData = useMonthlyTaskCount();
+  return {
+    weeklyTaskCount: monthlyData.monthlyTaskCount,
+    WEEKLY_TASK_LIMIT: monthlyData.monthlyLimit,
+    isPremium: monthlyData.isPremium,
+    limitReached: monthlyData.limitReached,
+    isLoading: monthlyData.isLoading,
   };
 };

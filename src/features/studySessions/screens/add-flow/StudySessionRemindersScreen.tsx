@@ -9,7 +9,8 @@ import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
-import { useWeeklyTaskCount, useTotalTaskCount } from '@/hooks';
+import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
+import { useTotalTaskCount } from '@/hooks';
 import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'Reminders'>;
@@ -19,7 +20,7 @@ const RemindersScreen = () => {
   const { sessionData, resetSessionData } = useAddStudySession();
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
-  const { limitReached, weeklyTaskCount, WEEKLY_TASK_LIMIT, isLoading: isTaskLimitLoading } = useWeeklyTaskCount();
+  const { limitReached, monthlyTaskCount, monthlyLimit, isLoading: isTaskLimitLoading } = useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
   
   const [isLoading, setIsLoading] = useState(false);
@@ -272,7 +273,7 @@ const RemindersScreen = () => {
             {limitReached ? (
               <View style={styles.limitReachedContainer}>
                 <Text style={styles.limitReachedText}>
-                  You have reached your weekly limit of {WEEKLY_TASK_LIMIT} new tasks.
+                  You have reached your monthly limit of {monthlyLimit} new tasks.
                 </Text>
                 <Text style={styles.upgradeText}>
                   Upgrade to a premium plan for unlimited tasks.

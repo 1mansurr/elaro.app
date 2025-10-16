@@ -166,60 +166,74 @@ export function createScheduledHandler(
   };
 }
 
-// Helper function for signature verification
-async function verifyWebhookSignature(
-  body: string, 
-  signature: string, 
-  secretKey: string
-): Promise<boolean> {
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    enc.encode(secretKey),
-    { name: 'HMAC', hash: 'SHA-512' },
-    false,
-    ['sign'],
-  );
-  const sigBuffer = await crypto.subtle.sign('HMAC', key, enc.encode(body));
-  const hash = Array.from(new Uint8Array(sigBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  return hash === signature;
+// Constant-time string comparison to prevent timing attacks
+async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+  if (a.length !== b.length) {
+    return false;
+  }
+  
+  const encoder = new TextEncoder();
+  const aBytes = encoder.encode(a);
+  const bBytes = encoder.encode(b);
+  
+  let result = 0;
+  for (let i = 0; i < aBytes.length; i++) {
+    result |= aBytes[i] ^ bBytes[i];
+  }
+  
+  return result === 0;
 }
 
-// Webhook-specific handler
+// Webhook-specific handler for services that use Authorization header (e.g., RevenueCat)
 export function createWebhookHandler(
   handler: (supabaseAdmin: SupabaseClient, payload: any, eventType: string) => Promise<Response | any>,
-  options: { secretKeyEnvVar: string; signatureHeader: string; }
+  options: { secretKeyEnvVar: string; headerName: string; }
 ) {
   return async (req: Request): Promise<Response> => {
     try {
-      const secretKey = Deno.env.get(options.secretKeyEnvVar);
-      const signature = req.headers.get(options.signatureHeader);
+      // Get the expected authorization header value from environment variables
+      const expectedAuthHeader = Deno.env.get(options.secretKeyEnvVar);
       
-      if (!secretKey || !signature) {
+      // Get the authorization header from the incoming request
+      const receivedAuthHeader = req.headers.get(options.headerName);
+      
+      // Validate that both are present
+      if (!expectedAuthHeader || !receivedAuthHeader) {
+        console.error('❌ Webhook authentication failed: Missing authorization header or secret');
         throw new AppError('Webhook not configured correctly.', 500, 'WEBHOOK_CONFIG_ERROR');
       }
 
-      const requestBody = await req.text();
-      const isValid = await verifyWebhookSignature(requestBody, signature, secretKey);
+      // Securely compare the authorization headers using constant-time comparison
+      // This prevents timing attacks
+      const isValid = await constantTimeCompare(receivedAuthHeader, expectedAuthHeader);
       
       if (!isValid) {
-        throw new AppError('Invalid webhook signature.', 401, 'WEBHOOK_SIGNATURE_ERROR');
+        console.error('❌ Webhook authentication failed: Invalid authorization header');
+        throw new AppError('Invalid webhook authorization.', 401, 'WEBHOOK_AUTH_ERROR');
       }
 
-      const payload = JSON.parse(requestBody);
-      const eventType = payload.event;
+      console.log('✅ Webhook authorization verified successfully');
 
+      // Parse the request body
+      const requestBody = await req.text();
+      const payload = JSON.parse(requestBody);
+      const eventType = payload.event?.type || 'UNKNOWN';
+
+      // Create Supabase admin client for database operations
       const supabaseAdmin = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
       );
 
+      // Call the main handler function with the parsed payload
       const result = await handler(supabaseAdmin, payload, eventType);
 
+      // Return the result as JSON response
       if (result instanceof Response) return result;
-      return new Response(JSON.stringify(result), { status: 200 });
+      return new Response(JSON.stringify(result), { 
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
 
     } catch (error) {
       return handleError(error);

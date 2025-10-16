@@ -15,7 +15,7 @@ module.exports = ({ config }) => {
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     splash: {
-      backgroundColor: '#0A2540' // Dark, professional blue
+      backgroundColor: '#2C5EFF' // App primary blue - matches brand color
     },
     assetBundlePatterns: ['**/*'],
     ios: {
@@ -92,10 +92,9 @@ module.exports = ({ config }) => {
       // Supabase configuration
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
-      // Paystack configuration
-      EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY: process.env.EXPO_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      // Note: PAYSTACK_SECRET_KEY should NOT be exposed to the client - it's only used server-side
-      EXPO_PUBLIC_PAYSTACK_PLAN_CODE: process.env.EXPO_PUBLIC_PAYSTACK_PLAN_CODE,
+      // RevenueCat configuration
+      EXPO_PUBLIC_REVENUECAT_APPLE_KEY: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY,
+      // Note: RevenueCat secret keys should NOT be exposed to the client - they're only used server-side
       // App configuration
       EXPO_PUBLIC_APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'Elaro',
       EXPO_PUBLIC_APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',

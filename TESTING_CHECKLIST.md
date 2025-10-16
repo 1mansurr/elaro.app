@@ -453,7 +453,7 @@ Use this checklist to verify the soft launch implementation is working as intend
 ### 2. Account Screen
 
 - [ ] Banner at the top says: "🚀 ELARO Oddity is launching soon!"
-- [ ] Plan card shows "🚀 Coming Soon" and "GHS 5/month – Next Week"
+- [ ] Plan card shows "🚀 Coming Soon" and "$1.99/month – Next Week"
 - [ ] Upgrade/Subscribe button is disabled or shows "Coming Soon" modal
 - [ ] No payment modal or Paystack flow is triggered
 

@@ -10,6 +10,7 @@ import TrialBanner from '../components/TrialBanner';
 import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
+import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 import { Button } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -17,6 +18,8 @@ import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { supabase } from '@/services/supabase';
+import { mixpanelService } from '@/services/mixpanel';
+import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -25,12 +28,19 @@ const HomeScreen = () => {
   const { session, user } = useAuth();
   const isGuest = !session;
   const { data: homeData, isLoading, isError, error } = useHomeScreenData(!isGuest);
+  const { monthlyTaskCount } = useMonthlyTaskCount();
   const queryClient = useQueryClient();
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   const promptSignUp = () => {
+    mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
+      source: 'home_screen',
+      user_type: isGuest ? 'guest' : 'authenticated',
+      prompt_context: 'home_screen_access',
+      timestamp: new Date().toISOString(),
+    });
     navigation.navigate('Auth', { mode: 'signup' });
   };
 
@@ -38,17 +48,41 @@ const HomeScreen = () => {
     {
       icon: 'book-outline' as any,
       label: 'Add Study Session',
-      onPress: () => navigation.navigate('AddStudySessionFlow')
+      onPress: () => {
+        mixpanelService.track(AnalyticsEvents.STUDY_SESSION_CREATED, {
+          task_type: 'study_session',
+          source: 'home_screen_fab',
+          creation_method: 'manual',
+          timestamp: new Date().toISOString(),
+        });
+        navigation.navigate('AddStudySessionFlow');
+      }
     },
     {
       icon: 'document-text-outline' as any,
       label: 'Add Assignment',
-      onPress: () => navigation.navigate('AddAssignmentFlow')
+      onPress: () => {
+        mixpanelService.track(AnalyticsEvents.ASSIGNMENT_CREATED, {
+          task_type: 'assignment',
+          source: 'home_screen_fab',
+          creation_method: 'manual',
+          timestamp: new Date().toISOString(),
+        });
+        navigation.navigate('AddAssignmentFlow');
+      }
     },
     {
       icon: 'school-outline' as any,
       label: 'Add Lecture',
-      onPress: () => navigation.navigate('AddLectureFlow')
+      onPress: () => {
+        mixpanelService.track(AnalyticsEvents.LECTURE_CREATED, {
+          task_type: 'lecture',
+          source: 'home_screen_fab',
+          creation_method: 'manual',
+          timestamp: new Date().toISOString(),
+        });
+        navigation.navigate('AddLectureFlow');
+      }
     },
   ], [navigation]);
 
@@ -68,6 +102,13 @@ const HomeScreen = () => {
 
 
   const handleViewDetails = (task: Task) => {
+    mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
+      task_id: task.id,
+      task_type: task.type,
+      task_title: task.title,
+      source: 'home_screen',
+      timestamp: new Date().toISOString(),
+    });
     setSelectedTask(task);
   };
 
@@ -77,6 +118,13 @@ const HomeScreen = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
+    
+    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED, {
+      task_id: selectedTask.id,
+      task_type: selectedTask.type,
+      task_title: selectedTask.title,
+      source: 'task_detail_sheet',
+    });
     
     // Determine which modal to navigate to based on task type
     let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
@@ -114,14 +162,35 @@ const HomeScreen = () => {
       });
 
       if (error) {
+        mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED, {
+          task_id: selectedTask.id,
+          task_type: selectedTask.type,
+          error: error.message,
+          source: 'task_detail_sheet',
+        });
         Alert.alert('Error', 'Could not mark task as complete.');
       } else {
+        // Track successful task completion
+        mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED, {
+          task_id: selectedTask.id,
+          task_type: selectedTask.type,
+          task_title: selectedTask.title,
+          completion_time: new Date().toISOString(),
+          source: 'task_detail_sheet',
+        });
+        
         // Refresh home screen data using React Query
         await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
         Alert.alert('Success', 'Task marked as complete!');
       }
     } catch (error) {
       console.error('Error completing task:', error);
+      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED, {
+        task_id: selectedTask.id,
+        task_type: selectedTask.type,
+        error: error.message,
+        source: 'task_detail_sheet',
+      });
       Alert.alert('Error', 'Could not mark task as complete.');
     }
     handleCloseSheet();
@@ -262,7 +331,7 @@ const HomeScreen = () => {
         />
         <TodayOverviewCard
           overview={isGuest ? null : (homeData?.todayOverview || null)}
-          weeklyTaskCount={isGuest ? 0 : (homeData?.weeklyTaskCount || 0)}
+          monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
           subscriptionTier={user?.subscription_tier || 'free'}
         />
         <Button

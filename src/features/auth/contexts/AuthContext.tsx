@@ -1,11 +1,14 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
+import { Alert } from 'react-native';
 import { supabase, authService as supabaseAuthService } from '@/services/supabase';
 import { authService } from '@/features/auth/services/authService';
 import { User, RootStackParamList } from '@/types';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { getPendingTask } from '@/utils/taskPersistence';
+import { mixpanelService } from '@/services/mixpanel';
+import { AnalyticsEvents } from '@/services/analyticsEvents';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 
 interface LoginCredentials {
@@ -55,6 +58,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
       const userProfile = await supabaseAuthService.getUserProfile(userId);
+      
+      if (!userProfile) {
+        return null;
+      }
+      
+      // Check if account is in deleted status
+      if (userProfile.account_status === 'deleted') {
+        // Check if restoration is still possible
+        if (userProfile.deletion_scheduled_at) {
+          const deletionDate = new Date(userProfile.deletion_scheduled_at);
+          const now = new Date();
+          
+          if (now <= deletionDate) {
+            // Show restoration option to user
+            Alert.alert(
+              'Account Deleted',
+              'Your account was deleted but can still be restored. Would you like to restore it?',
+              [
+                { text: 'No', style: 'cancel', onPress: () => authService.signOut() },
+                { 
+                  text: 'Restore', 
+                  onPress: async () => {
+                    try {
+                      await authService.restoreAccount();
+                      // Refresh user profile after restoration
+                      const restoredProfile = await supabaseAuthService.getUserProfile(userId);
+                      setUser(restoredProfile as User);
+                    } catch (error) {
+                      console.error('Error restoring account:', error);
+                      Alert.alert('Restoration Failed', 'Could not restore your account. Please contact support.');
+                      await authService.signOut();
+                    }
+                  }
+                }
+              ]
+            );
+            return null; // Don't set user as logged in
+          } else {
+            // Restoration period expired
+            Alert.alert(
+              'Account Permanently Deleted',
+              'Your account has been permanently deleted and cannot be restored.'
+            );
+            await authService.signOut();
+            return null;
+          }
+        }
+      }
+      
+      // Check if account is suspended
+      if (userProfile.account_status === 'suspended') {
+        // Check if suspension has expired
+        if (userProfile.suspension_end_date) {
+          const endDate = new Date(userProfile.suspension_end_date);
+          const now = new Date();
+          
+          if (now > endDate) {
+            // Suspension expired, auto-unsuspend
+            try {
+              // Note: This would typically be handled by a cron job, but we can handle it here as a fallback
+              console.log('Suspension expired, but auto-unsuspend should be handled by cron job');
+            } catch (error) {
+              console.error('Error auto-unsuspending account:', error);
+            }
+          }
+        }
+        
+        // Account is still suspended
+        Alert.alert(
+          'Account Suspended',
+          'Your account has been suspended. Please contact support for assistance.'
+        );
+        await authService.signOut();
+        return null;
+      }
+      
       return userProfile as User;
     } catch (error) {
       console.error('AuthContext: Error fetching user profile:', error);
@@ -109,6 +188,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
 
+        // Identify user in Mixpanel and set user properties
+        if (userProfile) {
+          mixpanelService.identifyUser(userProfile.id);
+          mixpanelService.setUserProperties({
+            subscription_tier: userProfile.subscription_tier,
+            onboarding_completed: userProfile.onboarding_completed,
+            created_at: userProfile.created_at,
+            university: userProfile.university,
+            program: userProfile.program,
+          });
+          
+          // Track login event
+          mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+            subscription_tier: userProfile.subscription_tier,
+            onboarding_completed: userProfile.onboarding_completed,
+            login_method: 'email',
+          });
+        }
+
         // --- START: NEW TRIAL LOGIC ---
         if (userProfile && userProfile.subscription_tier === 'free' && userProfile.subscription_expires_at === null) {
           console.log('New free user detected. Attempting to start trial...');
@@ -121,6 +219,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               // Refresh the user profile to get the new subscription status
               const refreshedUserProfile = await fetchUserProfile(session.user.id);
               setUser(refreshedUserProfile);
+              
+              // Track trial start
+              mixpanelService.track(AnalyticsEvents.TRIAL_STARTED, {
+                trial_type: 'free_trial',
+                trial_duration: 7,
+              });
             }
           } catch (e) {
             console.error('An unexpected error occurred while starting trial:', e);
@@ -157,6 +261,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
       } else {
+        // Track logout event
+        mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+          logout_reason: 'manual',
+        });
         setUser(null);
       }
       setLoading(false);
@@ -212,15 +320,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const signUp = async (credentials: SignUpCredentials) => {
     try {
       await authService.signUp(credentials);
+      
+      // Track sign up event
+      mixpanelService.track(AnalyticsEvents.USER_SIGNED_UP, {
+        signup_method: 'email',
+        has_first_name: !!credentials.firstName,
+        has_last_name: !!credentials.lastName,
+      });
+      
       return { error: null };
     } catch (error) {
       console.error('❌ Sign up error:', error);
+      
+      // Track failed sign up
+      mixpanelService.track(AnalyticsEvents.ERROR_OCCURRED, {
+        error_type: 'signup_failed',
+        error_message: error.message,
+      });
+      
       return { error };
     }
   };
 
   const signOut = async () => {
     try {
+      // Track logout event before signing out
+      mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+        logout_reason: 'manual',
+      });
+      
       await authService.signOut();
     } catch (error) {
       console.error('❌ Sign out error:', error);

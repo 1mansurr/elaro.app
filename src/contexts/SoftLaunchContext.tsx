@@ -79,7 +79,7 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
     const message = getComingSoonMessage(feature);
     Alert.alert(
       '🚀 Become An Oddity',
-      `${message}\n\nFull Oddity access launches next week (GHS 5/month). Stay tuned!`,
+      `${message}\n\nFull Oddity access launches next week ($1.99/month). Stay tuned!`,
       [{ text: 'Got it!', style: 'default' }],
     );
   };

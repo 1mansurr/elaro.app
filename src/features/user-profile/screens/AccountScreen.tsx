@@ -7,6 +7,7 @@ import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { RootStackParamList } from '@/types';
 import { Card, Button } from '@/shared/components';
 import { NotificationSettings } from '@/features/notifications/components/NotificationSettings';
+import { AnalyticsToggle } from '@/features/settings/components/AnalyticsToggle';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '@/features/auth/services/authService';
 import { supabase } from '@/services/supabase';
@@ -86,29 +87,30 @@ const AccountScreen = () => {
     // First confirmation dialog
     Alert.alert(
       'Delete Account',
-      'Are you sure you want to permanently delete your account and all your data? This action cannot be undone.',
+      'Your account will be deleted but can be restored within 7 days by logging in again. After 7 days, it will be permanently deleted.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Delete Account',
           style: 'destructive',
           onPress: () => {
             // Second, final confirmation dialog
             Alert.alert(
               'Final Confirmation',
-              'This is your final confirmation. Pressing "Permanently Delete" will erase your account immediately.',
+              'Are you sure you want to delete your account? You have 7 days to restore it by logging in again.',
               [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                  text: 'Permanently Delete',
+                  text: 'Delete Account',
                   style: 'destructive',
                   onPress: async () => {
                     setIsDeleting(true);
                     try {
-                      await authService.deleteAccount();
-                      // After backend deletion is successful, call the existing signOut from AuthContext
-                      await signOut();
-                      Alert.alert('Account Deleted', 'Your account has been successfully deleted.');
+                      await authService.deleteAccount('User requested account deletion from settings');
+                      Alert.alert(
+                        'Account Deletion Initiated', 
+                        'Your account has been deleted but can be restored within 7 days by logging in again.'
+                      );
                     } catch (error: any) {
                       Alert.alert('Deletion Failed', error.message || 'An unexpected error occurred. Please try again.');
                     } finally {
@@ -297,6 +299,11 @@ const AccountScreen = () => {
       {/* Notifications Card */}
       <Card title="Notifications">
         <NotificationSettings />
+      </Card>
+
+      {/* Privacy & Analytics Card */}
+      <Card title="Privacy & Analytics">
+        <AnalyticsToggle />
       </Card>
 
       {/* Support Card */}

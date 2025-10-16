@@ -33,7 +33,7 @@ This document outlines the comprehensive soft launch implementation that disable
 
 - **Soft Launch Banner**: Added prominent banner at the top of Account screen
 - **Plan Card**: Updated to show "🚀 Coming Soon" instead of "Upgrade to Oddity"
-- **Price Display**: Shows "GHS 5/month – Next Week" to set expectations
+- **Price Display**: Shows "$1.99/month – Next Week" to set expectations
 
 ### 5. 💡 Onboarding Checklist Reminder
 
