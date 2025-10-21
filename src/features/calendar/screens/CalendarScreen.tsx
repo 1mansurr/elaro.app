@@ -1,20 +1,25 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, FlatList, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { Calendar, DateData } from 'react-native-calendars';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { useCalendarData } from '@/hooks/useDataQueries';
+import { useCalendarData, useCalendarMonthData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Task, RootStackParamList } from '@/types';
 import { WeekStrip, Timeline } from '../components';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { QueryStateWrapper } from '@/shared/components';
-import { supabase } from '@/services/supabase';
-import { startOfWeek, isSameDay, format, addDays, subDays } from 'date-fns';
+import { startOfWeek, isSameDay, format, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useDeleteTask, useCompleteTask, useRestoreTask } from '@/hooks/useTaskMutations';
+import { useToast } from '@/contexts/ToastContext';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { Ionicons } from '@expo/vector-icons';
 
 type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type ViewMode = 'month' | 'agenda';
 
 const CalendarScreen = () => {
   const navigation = useNavigation<CalendarScreenNavigationProp>();
@@ -23,14 +28,35 @@ const CalendarScreen = () => {
   const isGuest = !session;
 
   const { offerings, purchasePackage } = useRevenueCat();
-
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const { data: calendarData, isLoading, isError, error, refetch, isRefetching } = useCalendarData(currentDate);
   
+  // Mutations for task actions
+  const deleteTaskMutation = useDeleteTask();
+  const completeTaskMutation = useCompleteTask();
+  const restoreTaskMutation = useRestoreTask();
+  const { showToast } = useToast();
+
+  // View mode state
+  const [viewMode, setViewMode] = useState<ViewMode>('agenda');
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const scrollLock = useRef({ top: false, bottom: false });
+
+  // Fetch data based on view mode
+  const currentMonth = selectedDate.getMonth();
+  const currentYear = selectedDate.getFullYear();
+  
+  const { data: weekCalendarData, isLoading: isLoadingWeek, isError: isErrorWeek, error: errorWeek, refetch: refetchWeek, isRefetching: isRefetchingWeek } = useCalendarData(currentDate);
+  const { data: monthCalendarData, isLoading: isLoadingMonth, isError: isErrorMonth, error: errorMonth, refetch: refetchMonth, isRefetching: isRefetchingMonth } = useCalendarMonthData(currentYear, currentMonth);
+
+  // Select appropriate data based on view mode
+  const calendarData = viewMode === 'month' ? monthCalendarData : weekCalendarData;
+  const isLoading = viewMode === 'month' ? isLoadingMonth : isLoadingWeek;
+  const isError = viewMode === 'month' ? isErrorMonth : isErrorWeek;
+  const error = viewMode === 'month' ? errorMonth : errorWeek;
+  const refetch = viewMode === 'month' ? refetchMonth : refetchWeek;
+  const isRefetching = viewMode === 'month' ? isRefetchingMonth : isRefetchingWeek;
 
   const handleDateSelect = useCallback((newDate: Date) => {
     if (isGuest) return;
@@ -42,6 +68,18 @@ const CalendarScreen = () => {
     }
     setSelectedDate(newDate);
   }, [isGuest, currentWeekStart]);
+
+  const handleMonthDayPress = useCallback((day: DateData) => {
+    const newDate = new Date(day.year, day.month - 1, day.day);
+    setSelectedDate(newDate);
+  }, []);
+
+  const handleMonthChange = useCallback((months: DateData[]) => {
+    if (months.length > 0) {
+      const newDate = new Date(months[0].year, months[0].month - 1, 1);
+      setSelectedDate(newDate);
+    }
+  }, []);
 
   const handleTaskPress = useCallback((task: Task) => {
     setSelectedTask(task);
@@ -75,12 +113,59 @@ const CalendarScreen = () => {
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
-    // Implementation omitted for brevity
-  }, []);
+    if (!selectedTask) return;
+    
+    try {
+      await completeTaskMutation.mutateAsync({
+        taskId: selectedTask.id,
+        taskType: selectedTask.type,
+        taskTitle: selectedTask.name || selectedTask.title,
+      });
+      
+      Alert.alert('Success', 'Task marked as complete!');
+      handleCloseSheet();
+    } catch (error) {
+      console.error('Error completing task:', error);
+    }
+  }, [selectedTask, completeTaskMutation, handleCloseSheet]);
 
   const handleDeleteTask = useCallback(async () => {
-    // Implementation omitted for brevity
-  }, []);
+    if (!selectedTask) return;
+    
+    handleCloseSheet();
+    
+    const taskInfo = {
+      id: selectedTask.id,
+      type: selectedTask.type,
+      title: selectedTask.name || selectedTask.title,
+    };
+    
+    try {
+      await deleteTaskMutation.mutateAsync({
+        taskId: taskInfo.id,
+        taskType: taskInfo.type,
+        taskTitle: taskInfo.title,
+      });
+      
+      showToast({
+        message: `${taskInfo.title} moved to Recycle Bin`,
+        onUndo: async () => {
+          try {
+            await restoreTaskMutation.mutateAsync({
+              taskId: taskInfo.id,
+              taskType: taskInfo.type,
+              taskTitle: taskInfo.title,
+            });
+          } catch (error) {
+            console.error('Error restoring task:', error);
+          }
+        },
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  }, [selectedTask, deleteTaskMutation, restoreTaskMutation, showToast, handleCloseSheet]);
 
   const handleScroll = useCallback((event: any) => {
     const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
@@ -109,10 +194,10 @@ const CalendarScreen = () => {
 
     const allTasks = Object.values(calendarData).flat();
     
-    const limits = {
-      assignments: 15,
-      lectures: 15,
-      study_sessions: 15,
+    const limits: Record<string, number> = {
+      assignment: 15,
+      lecture: 15,
+      study_session: 15,
     };
 
     const tasksByType = {
@@ -140,13 +225,55 @@ const CalendarScreen = () => {
     return tasksOnDay;
   }, [selectedDate, tasksWithLockState, isGuest]);
 
+  // Generate marked dates for month view
+  const markedDates = useMemo(() => {
+    if (viewMode !== 'month' || !calendarData) return {};
+
+    const marked: any = {};
+    const allTasks = Object.values(calendarData).flat();
+
+    allTasks.forEach(task => {
+      const dateKey = format(new Date(task.date), 'yyyy-MM-dd');
+      if (!marked[dateKey]) {
+        marked[dateKey] = {
+          marked: true,
+          dots: [],
+        };
+      }
+      
+      // Add color-coded dots based on task type
+      const dotColor = 
+        task.type === 'lecture' ? COLORS.primary :
+        task.type === 'assignment' ? '#FF9500' :
+        '#34C759'; // study_session
+      
+      if (marked[dateKey].dots.length < 3) {
+        marked[dateKey].dots.push({ color: dotColor });
+      }
+    });
+
+    // Mark selected date
+    const selectedKey = format(selectedDate, 'yyyy-MM-dd');
+    if (marked[selectedKey]) {
+      marked[selectedKey].selected = true;
+      marked[selectedKey].selectedColor = COLORS.primary;
+    } else {
+      marked[selectedKey] = {
+        selected: true,
+        selectedColor: COLORS.primary,
+      };
+    }
+
+    return marked;
+  }, [viewMode, calendarData, selectedDate]);
+
   const handleUpgrade = useCallback(async () => {
     if (!offerings?.current) {
       Alert.alert('Error', 'Subscription offerings are not available at the moment.');
       return;
     }
     try {
-      const oddityPackage = offerings.current.availablePackages.find(pkg => pkg.identifier === 'oddity_monthly');
+      const oddityPackage = offerings.current.availablePackages.find((pkg: any) => pkg.identifier === 'oddity_monthly');
       if (!oddityPackage) {
         Alert.alert('Error', 'The Oddity plan is not available.');
         return;
@@ -154,10 +281,13 @@ const CalendarScreen = () => {
       await purchasePackage(oddityPackage);
       Alert.alert('Success!', 'You have successfully become an Oddity. Your locked content is now accessible.');
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-    } catch (error) {
+      await queryClient.invalidateQueries({ queryKey: ['calendarMonthData'] });
+    } catch (error: any) {
       console.error('Upgrade error:', error);
-      if (!error.userCancelled) {
-        Alert.alert('Error', 'Failed to complete the process. Please try again.');
+      if (!error?.userCancelled) {
+        const errorTitle = getErrorTitle(error);
+        const errorMessage = mapErrorCodeToMessage(error);
+        Alert.alert(errorTitle, errorMessage);
       }
     }
   }, [offerings, purchasePackage, queryClient]);
@@ -175,9 +305,66 @@ const CalendarScreen = () => {
     );
   }, [handleUpgrade]);
 
+  const renderTaskItem = useCallback(({ item }: { item: Task }) => {
+    const taskTime = format(new Date(item.date), 'h:mm a');
+    const isLocked = item.isLocked;
+    
+    return (
+      <TouchableOpacity
+        style={[styles.taskItem, isLocked && styles.taskItemLocked]}
+        onPress={() => isLocked ? handleLockedTaskPress(item) : handleTaskPress(item)}
+      >
+        <View style={styles.taskItemContent}>
+          <View style={[styles.taskTypeBadge, { backgroundColor: getTaskColor(item.type) }]}>
+            <Text style={styles.taskTypeBadgeText}>
+              {item.type === 'study_session' ? 'Study' : item.type}
+            </Text>
+          </View>
+          <View style={styles.taskItemDetails}>
+            <Text style={[styles.taskItemTitle, isLocked && styles.taskItemTitleLocked]} numberOfLines={2}>
+              {item.name || item.title}
+            </Text>
+            <Text style={styles.taskItemTime}>{taskTime}</Text>
+            {item.courses && (
+              <Text style={styles.taskItemCourse} numberOfLines={1}>
+                {item.courses.courseName}
+              </Text>
+            )}
+          </View>
+          {isLocked && (
+            <Ionicons name="lock-closed" size={20} color={COLORS.gray} />
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  }, [handleTaskPress, handleLockedTaskPress]);
+
+  const getTaskColor = (type: string) => {
+    switch (type) {
+      case 'lecture':
+        return COLORS.primary;
+      case 'assignment':
+        return '#FF9500';
+      case 'study_session':
+        return '#34C759';
+      default:
+        return COLORS.gray;
+    }
+  };
+
   if (isGuest) {
-    // Guest view implementation
-    return <View><Text>Guest View</Text></View>;
+    return (
+      <View style={styles.guestContainer}>
+        <Ionicons name="calendar-outline" size={64} color={COLORS.gray} />
+        <Text style={styles.guestText}>Sign in to view your calendar</Text>
+        <TouchableOpacity
+          style={styles.guestButton}
+          onPress={() => navigation.navigate('Auth', { mode: 'signin' } as any)}
+        >
+          <Text style={styles.guestButtonText}>Sign In</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -190,21 +377,105 @@ const CalendarScreen = () => {
       isRefetching={isRefetching}
       onRefresh={refetch}
       emptyTitle="No tasks scheduled"
-      emptyMessage="You don't have any tasks scheduled for this week. Add a lecture, assignment, or study session to get started!"
+      emptyMessage={`You don't have any tasks scheduled for this ${viewMode === 'month' ? 'month' : 'week'}. Add a lecture, assignment, or study session to get started!`}
       emptyIcon="calendar-outline"
     >
       <View style={styles.container}>
-        <WeekStrip 
-          selectedDate={selectedDate} 
-          onDateSelect={handleDateSelect} 
-        />
-        
-        <Timeline 
-          tasks={tasksForSelectedDay} 
-          onTaskPress={handleTaskPress}
-          onLockedTaskPress={handleLockedTaskPress}
-          onScroll={handleScroll}
-        />
+        {/* View Switcher */}
+        <View style={styles.viewSwitcher}>
+          <TouchableOpacity
+            style={[styles.viewButton, viewMode === 'month' && styles.viewButtonActive]}
+            onPress={() => setViewMode('month')}
+          >
+            <Ionicons
+              name="calendar"
+              size={20}
+              color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
+            />
+            <Text style={[styles.viewButtonText, viewMode === 'month' && styles.viewButtonTextActive]}>
+              Month
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.viewButton, viewMode === 'agenda' && styles.viewButtonActive]}
+            onPress={() => setViewMode('agenda')}
+          >
+            <Ionicons
+              name="list"
+              size={20}
+              color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
+            />
+            <Text style={[styles.viewButtonText, viewMode === 'agenda' && styles.viewButtonTextActive]}>
+              Agenda
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Month View */}
+        {viewMode === 'month' && (
+          <View style={styles.monthViewContainer}>
+            <Calendar
+              current={selectedDate.toISOString()}
+              onDayPress={handleMonthDayPress}
+              onVisibleMonthsChange={handleMonthChange}
+              markedDates={markedDates}
+              markingType="multi-dot"
+              theme={{
+                backgroundColor: COLORS.background,
+                calendarBackground: COLORS.background,
+                textSectionTitleColor: COLORS.gray,
+                selectedDayBackgroundColor: COLORS.primary,
+                selectedDayTextColor: COLORS.background,
+                todayTextColor: COLORS.primary,
+                dayTextColor: COLORS.text,
+                textDisabledColor: COLORS.lightGray,
+                monthTextColor: COLORS.text,
+                textMonthFontWeight: 'bold',
+                textDayFontSize: FONT_SIZES.md,
+                textMonthFontSize: FONT_SIZES.lg,
+                textDayHeaderFontSize: FONT_SIZES.sm,
+              }}
+            />
+
+            {/* Task List for Selected Date */}
+            <View style={styles.selectedDateContainer}>
+              <Text style={styles.selectedDateTitle}>
+                {format(selectedDate, 'EEEE, MMMM d')}
+              </Text>
+              {tasksForSelectedDay.length === 0 ? (
+                <View style={styles.noTasksContainer}>
+                  <Text style={styles.noTasksText}>No tasks for this day</Text>
+                </View>
+              ) : (
+                <FlatList
+                  data={tasksForSelectedDay}
+                  renderItem={renderTaskItem}
+                  keyExtractor={(item) => item.id}
+                  contentContainerStyle={styles.taskList}
+                  showsVerticalScrollIndicator={false}
+                />
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Agenda View */}
+        {viewMode === 'agenda' && (
+          <>
+            <WeekStrip 
+              selectedDate={selectedDate} 
+              onDateSelect={handleDateSelect} 
+            />
+            
+            <Timeline 
+              tasks={tasksForSelectedDay} 
+              onTaskPress={handleTaskPress}
+              onLockedTaskPress={handleLockedTaskPress}
+              onScroll={handleScroll}
+            />
+          </>
+        )}
         
         <TaskDetailSheet
           task={selectedTask}
@@ -223,6 +494,140 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  viewSwitcher: {
+    flexDirection: 'row',
+    padding: SPACING.sm,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: SPACING.sm,
+  },
+  viewButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: 8,
+    backgroundColor: '#F8F9FA',
+    gap: SPACING.xs,
+  },
+  viewButtonActive: {
+    backgroundColor: '#F0F5FF',
+  },
+  viewButtonText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium as any,
+    color: COLORS.gray,
+  },
+  viewButtonTextActive: {
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+  },
+  monthViewContainer: {
+    flex: 1,
+  },
+  selectedDateContainer: {
+    flex: 1,
+    padding: SPACING.md,
+  },
+  selectedDateTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.text,
+    marginBottom: SPACING.md,
+  },
+  taskList: {
+    paddingBottom: SPACING.lg,
+  },
+  taskItem: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  taskItemLocked: {
+    opacity: 0.6,
+  },
+  taskItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  taskTypeBadge: {
+    paddingHorizontal: SPACING.xs,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  taskTypeBadgeText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.background,
+    textTransform: 'capitalize',
+  },
+  taskItemDetails: {
+    flex: 1,
+  },
+  taskItemTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  taskItemTitleLocked: {
+    color: COLORS.gray,
+  },
+  taskItemTime: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+    marginBottom: 2,
+  },
+  taskItemCourse: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+  },
+  noTasksContainer: {
+    padding: SPACING.xl,
+    alignItems: 'center',
+  },
+  noTasksText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.gray,
+    textAlign: 'center',
+  },
+  guestContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    padding: SPACING.xl,
+  },
+  guestText: {
+    fontSize: FONT_SIZES.lg,
+    color: COLORS.gray,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.lg,
+    textAlign: 'center',
+  },
+  guestButton: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: 12,
+  },
+  guestButtonText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+    color: COLORS.background,
   },
 });
 

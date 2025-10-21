@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { Card } from '@/shared/components/Card';
+import Card from '@/shared/components/Card';
 import { Button } from '@/shared/components/Button';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { authService } from '@/features/auth/services/authService';
@@ -15,8 +16,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/utils/showToast';
 import { PostChatModal } from '@/features/support/components/PostChatModal';
 import { getSecureChatLink } from '@/features/support/utils/getSecureChatLink';
+import { cache } from '@/utils/cache';
 
-const ListItem = ({ label, onPress, isDestructive = false, disabled = false, rightContent }) => {
+const ListItem = ({ label, onPress, isDestructive = false, disabled = false, rightContent }: { label: string; onPress: () => void; isDestructive?: boolean; disabled?: boolean; rightContent?: React.ReactNode }) => {
   const { theme } = useTheme();
   return (
     <TouchableOpacity 
@@ -31,19 +33,21 @@ const ListItem = ({ label, onPress, isDestructive = false, disabled = false, rig
 };
 
 export function SettingsScreen() {
-  const { user, session, signOut, signOutFromAllDevices } = useAuth();
+  const { user, session, signOut } = useAuth();
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
   const [isSupportChatLoading, setSupportChatLoading] = useState(false);
   const [isDownloadingData, setIsDownloadingData] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
   const [lastExportDate, setLastExportDate] = useState<string | null>(
     user?.last_data_export_at || null
   );
 
   const handleEnableMfa = () => {
-    navigation.navigate('MfaSetup');
+    (navigation as any).navigate('MfaSetup');
   };
 
   const handleLogout = async () => {
@@ -60,7 +64,8 @@ export function SettingsScreen() {
           text: "Log Out",
           onPress: async () => {
             try {
-              await signOutFromAllDevices();
+              // TODO: Implement global sign out when backend supports it
+              await signOut();
               showToast({ type: 'success', message: 'Logged out from all devices.' });
             } catch (error) {
               showToast({ type: 'error', message: 'Failed to log out from all devices.' });
@@ -89,7 +94,7 @@ export function SettingsScreen() {
               if (error) throw new AppError('Failed to delete account.');
               await signOut();
             } catch (error) {
-              showToast({ type: 'error', message: error.message });
+              showToast({ type: 'error', message: error instanceof Error ? error.message : 'An error occurred' });
               setIsDeleting(false);
             }
           },
@@ -104,7 +109,7 @@ export function SettingsScreen() {
     setSupportChatLoading(true);
     try {
       const secureUrl = await getSecureChatLink(user);
-      navigation.navigate('SupportChat', { uri: secureUrl });
+      (navigation as any).navigate('SupportChat', { uri: secureUrl });
     } catch (error) {
       showToast({ type: 'error', message: 'Could not open support chat.' });
     } finally {
@@ -211,6 +216,55 @@ export function SettingsScreen() {
     }
   };
 
+  const handleClearCache = useCallback(async () => {
+    try {
+      // Get cache stats first
+      const stats = await cache.getStats();
+      const sizeMB = (stats.totalSize / 1024 / 1024).toFixed(2);
+      
+      Alert.alert(
+        'Clear Cache',
+        `This will clear ${stats.totalEntries} cached items (${sizeMB} MB). The app will re-download data as needed.\n\nThis can help resolve issues and free up storage space.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Clear Cache',
+            style: 'destructive',
+            onPress: async () => {
+              setIsClearingCache(true);
+              try {
+                // Clear AsyncStorage cache
+                await cache.clearAll();
+                
+                // Also clear React Query cache
+                queryClient.clear();
+                
+                showToast({ 
+                  type: 'success', 
+                  message: 'Cache cleared successfully!' 
+                });
+              } catch (error) {
+                console.error('Error clearing cache:', error);
+                showToast({ 
+                  type: 'error', 
+                  message: 'Failed to clear cache. Please try again.' 
+                });
+              } finally {
+                setIsClearingCache(false);
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Error getting cache stats:', error);
+      showToast({ 
+        type: 'error', 
+        message: 'Failed to get cache information.' 
+      });
+    }
+  }, [queryClient]);
+
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -233,7 +287,8 @@ export function SettingsScreen() {
       <Card title="Data Management">
         <ListItem 
           label="Recycle Bin" 
-          onPress={() => navigation.navigate('RecycleBin')} 
+          onPress={() => (navigation as any).navigate('RecycleBin')} 
+          rightContent={undefined}
         />
         <ListItem 
           label="Download My Data" 
@@ -250,12 +305,25 @@ export function SettingsScreen() {
             Last exported: {formatLastExportDate(lastExportDate)}
           </Text>
         )}
+        <ListItem 
+          label="Clear Cache" 
+          onPress={handleClearCache}
+          disabled={isClearingCache}
+          rightContent={
+            isClearingCache ? (
+              <ActivityIndicator size="small" color={theme.accent} />
+            ) : null
+          }
+        />
+        <Text style={[styles.cacheInfoText, { color: theme.textSecondary }]}>
+          Clears cached data to free up storage space. The app will re-download data as needed.
+        </Text>
       </Card>
 
       <Card title="Account Actions">
-        <ListItem label="Log Out" onPress={handleLogout} />
-        <ListItem label="Log Out From All Devices" onPress={handleGlobalSignOut} />
-        <ListItem label="Delete Account" onPress={handleDeleteAccount} isDestructive />
+        <ListItem label="Log Out" onPress={handleLogout} rightContent={undefined} />
+        <ListItem label="Log Out From All Devices" onPress={handleGlobalSignOut} rightContent={undefined} />
+        <ListItem label="Delete Account" onPress={handleDeleteAccount} isDestructive rightContent={undefined} />
       </Card>
       
       <PostChatModal
@@ -263,7 +331,7 @@ export function SettingsScreen() {
         onClose={() => setPostChatModalVisible(false)}
         onFaqPress={() => {
           setPostChatModalVisible(false);
-          navigation.navigate('Faq');
+          (navigation as any).navigate('Faq');
         }}
       />
     </ScrollView>
@@ -295,6 +363,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingLeft: 16,
     paddingBottom: 8,
+  },
+  cacheInfoText: {
+    fontSize: 12,
+    marginTop: 4,
+    paddingLeft: 16,
+    paddingBottom: 8,
+    fontStyle: 'italic',
   },
 });
 

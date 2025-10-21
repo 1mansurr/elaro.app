@@ -7,6 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { SearchableSelector } from '@/shared/components';
 import { MainTabParamList } from '@/types';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 // Import the data files
 import countriesData from '@/data/countries.json';
@@ -72,7 +73,9 @@ const ProfileScreen = () => {
       navigation.goBack();
 
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to update profile.');
+      const errorTitle = getErrorTitle(err);
+      const errorMessage = mapErrorCodeToMessage(err);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }

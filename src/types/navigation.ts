@@ -6,7 +6,6 @@ export type RootStackParamList = {
   Login: undefined;
   Auth: { onClose?: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
   Main: undefined;
-  Welcome: { firstName?: string; lastName?: string; } | undefined;
   OnboardingFlow: undefined;
   Courses: undefined;
   CourseDetail: { courseId: string };

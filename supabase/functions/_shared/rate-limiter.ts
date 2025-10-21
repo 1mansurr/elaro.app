@@ -26,12 +26,19 @@ export class RateLimitError extends Error {
   }
 }
 
+// Rate limit info returned to caller
+export interface RateLimitInfo {
+  limit: number;
+  remaining: number;
+  reset: number; // Unix timestamp
+}
+
 // Check rate limit for a user
 export async function checkRateLimit(
   supabaseClient: SupabaseClient,
   userId: string,
   actionName: string
-): Promise<void> {
+): Promise<RateLimitInfo> {
   const config = RATE_LIMITS[actionName as keyof typeof RATE_LIMITS] || RATE_LIMITS.default;
   const now = new Date();
   const windowStart = new Date(now.getTime() - config.window * 1000);
@@ -49,11 +56,19 @@ export async function checkRateLimit(
       console.error('Rate limit check error:', error);
       // If we can't check rate limits, we'll be permissive to avoid blocking legitimate requests
       console.warn('Rate limit check failed, allowing request to proceed');
-      return;
+      return {
+        limit: config.requests,
+        remaining: config.requests,
+        reset: Math.ceil((now.getTime() + config.window * 1000) / 1000),
+      };
     }
 
+    const requestCount = recentRequests?.length || 0;
+    const remaining = Math.max(0, config.requests - requestCount);
+    const resetTime = Math.ceil((windowStart.getTime() + config.window * 1000) / 1000);
+
     // Check if user has exceeded the limit
-    if (recentRequests && recentRequests.length >= config.requests) {
+    if (requestCount >= config.requests) {
       const oldestRequest = recentRequests[recentRequests.length - 1];
       const oldestRequestTime = new Date(oldestRequest.created_at);
       const retryAfter = Math.ceil((oldestRequestTime.getTime() + config.window * 1000 - now.getTime()) / 1000);
@@ -78,6 +93,12 @@ export async function checkRateLimit(
       // Don't throw - this is non-critical
     }
 
+    return {
+      limit: config.requests,
+      remaining,
+      reset: resetTime,
+    };
+
   } catch (error) {
     // Re-throw RateLimitError
     if (error instanceof RateLimitError) {
@@ -85,6 +106,12 @@ export async function checkRateLimit(
     }
     // Log unexpected errors but don't block the request
     console.error('Unexpected error in rate limit check:', error);
+    // Return default info if there's an unexpected error
+    return {
+      limit: config.requests,
+      remaining: config.requests,
+      reset: Math.ceil((now.getTime() + config.window * 1000) / 1000),
+    };
   }
 }
 

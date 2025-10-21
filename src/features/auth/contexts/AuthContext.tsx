@@ -8,6 +8,15 @@ import { getPendingTask } from '@/utils/taskPersistence';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { isSessionExpired, clearLastActiveTimestamp, updateLastActiveTimestamp } from '@/utils/sessionTimeout';
+import { cache } from '@/utils/cache';
+import { 
+  checkAccountLockout, 
+  recordFailedAttempt, 
+  recordSuccessfulLogin, 
+  getLockoutMessage,
+  resetFailedAttempts 
+} from '@/utils/authLockout';
+import { Platform } from 'react-native';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 // import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
@@ -56,11 +65,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
+      // Try to get from cache first for instant load
+      const cacheKey = `user_profile:${userId}`;
+      const cachedProfile = await cache.get<User>(cacheKey);
+      
+      if (cachedProfile) {
+        console.log('📱 Using cached user profile');
+        // Set cached data immediately for instant UI
+        setUser(cachedProfile);
+        
+        // Still fetch fresh data in background to stay up-to-date
+        supabaseAuthService.getUserProfile(userId).then(async freshProfile => {
+          if (freshProfile && JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)) {
+            console.log('🔄 Updating user profile from server');
+            setUser(freshProfile as User);
+            await cache.setLong(cacheKey, freshProfile);
+          }
+        }).catch(err => {
+          console.error('Background profile fetch failed:', err);
+          // Keep using cached data
+        });
+        
+        return cachedProfile;
+      }
+
+      // No cache - fetch from server
+      console.log('🌐 Fetching user profile from server');
       const userProfile = await supabaseAuthService.getUserProfile(userId);
       
       if (!userProfile) {
         return null;
       }
+      
+      // Cache the profile (24 hours) for future use
+      await cache.setLong(cacheKey, userProfile);
       
       // Check if account is in deleted status
       if (userProfile.account_status === 'deleted') {
@@ -286,10 +324,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signIn = async (credentials: LoginCredentials) => {
     try {
+      // Check if account is locked
+      const lockoutStatus = await checkAccountLockout(credentials.email);
+      if (lockoutStatus.isLocked && lockoutStatus.minutesRemaining) {
+        const lockoutMessage = getLockoutMessage(lockoutStatus.minutesRemaining);
+        Alert.alert('Account Locked', lockoutMessage);
+        return { error: { message: lockoutMessage } };
+      }
+      
       const result = await authService.login(credentials);
       
       // Set the initial last active timestamp on successful login
       await updateLastActiveTimestamp();
+      
+      // Record successful login with device info
+      if (result?.user?.id) {
+        await recordSuccessfulLogin(result.user.id, 'email', {
+          platform: Platform.OS,
+          version: Platform.Version?.toString(),
+        });
+        
+        // Reset failed attempts on successful login
+        await resetFailedAttempts(credentials.email);
+      }
       
       // Check if MFA is required
       try {
@@ -311,6 +368,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       return { error: null };
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
+      
+      // Record failed login attempt
+      if (credentials.email && error.message) {
+        await recordFailedAttempt(credentials.email, error.message);
+      }
       
       // Check if this is an MFA-related error
       if (error.message?.includes('MFA') || error.message?.includes('aal2')) {
@@ -349,7 +411,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Track failed sign up
       mixpanelService.track(AnalyticsEvents.ERROR_OCCURRED, {
         error_type: 'signup_failed',
-        error_message: error.message,
+        error_message: error instanceof Error ? error.message : 'Unknown error',
       });
       
       return { error };
@@ -362,6 +424,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
         logout_reason: 'manual',
       });
+      
+      // Clear all cached data on logout
+      await cache.clearAll();
       
       // Clear the last active timestamp
       await clearLastActiveTimestamp();

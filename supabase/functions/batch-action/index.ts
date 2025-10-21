@@ -1,0 +1,171 @@
+// FILE: supabase/functions/batch-action/index.ts
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createAuthenticatedHandler, AppError, AuthenticatedRequest } from '../_shared/function-handler.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+
+// Define the schema for batch operations
+const BatchItemSchema = z.object({
+  id: z.string().uuid(),
+  type: z.enum(['assignment', 'lecture', 'study_session', 'course']),
+});
+
+const BatchActionSchema = z.object({
+  action: z.enum(['RESTORE', 'DELETE_PERMANENTLY']),
+  items: z.array(BatchItemSchema).min(1).max(100), // Limit to 100 items per batch
+});
+
+type BatchItem = z.infer<typeof BatchItemSchema>;
+type BatchAction = z.infer<typeof BatchActionSchema>;
+
+// Define table mappings
+const TABLE_NAMES: Record<string, string> = {
+  'assignment': 'assignments',
+  'lecture': 'lectures',
+  'study_session': 'study_sessions',
+  'course': 'courses',
+};
+
+serve(
+  createAuthenticatedHandler(
+    async (req: AuthenticatedRequest) => {
+      const { action, items } = req.body as BatchAction;
+      const { user, supabaseClient } = req;
+
+      console.log(`📦 Batch ${action} operation requested for ${items.length} items`);
+
+      // Group items by type for efficient batch operations
+      const itemsByType = items.reduce((acc, item) => {
+        if (!acc[item.type]) {
+          acc[item.type] = [];
+        }
+        acc[item.type].push(item.id);
+        return acc;
+      }, {} as Record<string, string[]>);
+
+      // Track results
+      const results = {
+        success: [] as Array<{ id: string; type: string }>,
+        failed: [] as Array<{ id: string; type: string; error: string }>,
+      };
+
+      // Process each type in parallel
+      const operations = Object.entries(itemsByType).map(async ([type, ids]) => {
+        const tableName = TABLE_NAMES[type];
+        if (!tableName) {
+          console.error(`❌ Unknown item type: ${type}`);
+          ids.forEach(id => {
+            results.failed.push({ id, type, error: 'Unknown item type' });
+          });
+          return;
+        }
+
+        try {
+          console.log(`  Processing ${ids.length} ${type}(s)...`);
+
+          if (action === 'RESTORE') {
+            // Restore items by setting deleted_at to null
+            const { error, data } = await supabaseClient
+              .from(tableName)
+              .update({ deleted_at: null })
+              .in('id', ids)
+              .eq('user_id', user.id)
+              .select('id');
+
+            if (error) throw error;
+
+            // Track successful operations
+            const restoredIds = data?.map(item => item.id) || [];
+            restoredIds.forEach(id => {
+              results.success.push({ id, type });
+            });
+
+            // Track any that weren't restored (might not belong to user)
+            const notRestored = ids.filter(id => !restoredIds.includes(id));
+            notRestored.forEach(id => {
+              results.failed.push({ 
+                id, 
+                type, 
+                error: 'Item not found or already restored' 
+              });
+            });
+
+            console.log(`  ✅ Restored ${restoredIds.length} ${type}(s)`);
+          } else if (action === 'DELETE_PERMANENTLY') {
+            // Permanently delete items
+            const { error, count } = await supabaseClient
+              .from(tableName)
+              .delete()
+              .in('id', ids)
+              .eq('user_id', user.id);
+
+            if (error) throw error;
+
+            // Since delete doesn't return data, assume success for all
+            ids.forEach(id => {
+              results.success.push({ id, type });
+            });
+
+            console.log(`  ✅ Deleted ${count || ids.length} ${type}(s) permanently`);
+          }
+        } catch (error) {
+          console.error(`❌ Error processing ${type}:`, error);
+          // Mark all items of this type as failed
+          ids.forEach(id => {
+            results.failed.push({ 
+              id, 
+              type, 
+              error: error instanceof Error ? error.message : 'Unknown error' 
+            });
+          });
+        }
+      });
+
+      // Wait for all operations to complete
+      await Promise.all(operations);
+
+      // Determine overall status
+      const allSucceeded = results.failed.length === 0;
+      const allFailed = results.success.length === 0;
+
+      let message: string;
+      let statusCode: number;
+
+      if (allSucceeded) {
+        message = `Successfully ${action === 'RESTORE' ? 'restored' : 'deleted'} ${results.success.length} item(s)`;
+        statusCode = 200;
+      } else if (allFailed) {
+        message = `Failed to process any items`;
+        statusCode = 500;
+      } else {
+        message = `Partially completed: ${results.success.length} succeeded, ${results.failed.length} failed`;
+        statusCode = 207; // Multi-Status
+      }
+
+      console.log(`📦 Batch operation complete: ${message}`);
+
+      return new Response(
+        JSON.stringify({
+          message,
+          results: {
+            total: items.length,
+            succeeded: results.success.length,
+            failed: results.failed.length,
+            details: {
+              success: results.success,
+              failed: results.failed,
+            },
+          },
+        }),
+        {
+          status: statusCode,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    },
+    {
+      rateLimitName: 'batch-action',
+      schema: BatchActionSchema,
+    }
+  )
+);
+

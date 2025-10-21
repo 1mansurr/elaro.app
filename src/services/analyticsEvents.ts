@@ -1,6 +1,7 @@
 export const AnalyticsEvents = {
   // User Lifecycle
   USER_SIGNED_UP: 'User Signed Up',
+  SIGN_UP_PROMPTED: 'Sign Up Prompted',
   USER_ONBOARDING_COMPLETED: 'Onboarding Completed',
   USER_LOGGED_IN: 'User Logged In',
   USER_LOGGED_OUT: 'User Logged Out',
@@ -18,6 +19,9 @@ export const AnalyticsEvents = {
   STUDY_SESSION_COMPLETED: 'Study Session Completed',
   STUDY_SESSION_SKIPPED: 'Study Session Skipped',
   SPACED_REPETITION_ENABLED: 'Spaced Repetition Enabled',
+
+  // Task Management
+  TASK_DETAILS_VIEWED: 'Task Details Viewed',
 
   // Subscription & Payments
   SUBSCRIPTION_STARTED: 'Subscription Started',

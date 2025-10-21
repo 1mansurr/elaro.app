@@ -7,6 +7,7 @@ export interface NotificationResult {
   sentCount: number;
   failureCount: number;
   invalidTokens: string[];
+  ticketIds: string[];
 }
 
 export async function sendPushNotification(
@@ -14,11 +15,17 @@ export async function sendPushNotification(
   pushTokens: string[],
   title: string,
   body: string,
-  data?: object
+  data?: object,
+  options?: {
+    priority?: 'default' | 'normal' | 'high';
+    categoryId?: string;
+    badge?: number;
+  }
  ): Promise<NotificationResult> {
   const expo = new Expo();
   const messages = [];
   const invalidTokens: string[] = [];
+  const ticketIds: string[] = [];
   let sentCount = 0;
   let failureCount = 0;
 
@@ -34,6 +41,9 @@ export async function sendPushNotification(
       title,
       body,
       data,
+      priority: options?.priority || 'high',
+      categoryId: options?.categoryId,
+      badge: options?.badge,
     });
   }
 
@@ -42,25 +52,28 @@ export async function sendPushNotification(
     if (invalidTokens.length > 0) {
       await cleanupInvalidTokens(supabaseAdmin, invalidTokens);
     }
-    return { success: true, sentCount: 0, failureCount: 0, invalidTokens };
+    return { success: true, sentCount: 0, failureCount: 0, invalidTokens, ticketIds: [] };
   }
 
   const chunks = expo.chunkPushNotifications(messages);
 
   try {
     for (const chunk of chunks) {
-      const receipts = await expo.sendPushNotificationsAsync(chunk);
-      console.log('Sent notification chunk, received receipts:', receipts);
+      const tickets = await expo.sendPushNotificationsAsync(chunk);
+      console.log('Sent notification chunk, received tickets:', tickets);
 
-      receipts.forEach((receipt, index) => {
+      tickets.forEach((ticket, index) => {
         const originalMessage = chunk[index];
-        if (receipt.status === 'ok') {
+        
+        if (ticket.status === 'ok') {
           sentCount++;
-        } else if (receipt.status === 'error') {
+          ticketIds.push(ticket.id);
+        } else if (ticket.status === 'error') {
           failureCount++;
-          console.error(`Error sending notification to ${originalMessage.to}: ${receipt.message}`);
-          if (receipt.details?.error === 'DeviceNotRegistered') {
-            // This token is invalid and should be removed.
+          console.error(`Error sending notification to ${originalMessage.to}: ${ticket.message}`);
+          
+          if (ticket.details?.error === 'DeviceNotRegistered') {
+            // This token is invalid and should be removed
             invalidTokens.push(originalMessage.to as string);
           }
         }
@@ -68,11 +81,11 @@ export async function sendPushNotification(
     }
   } catch (error) {
     console.error('Critical error sending push notification chunk:', error);
-    // In case of a total failure, we can't know which tokens are bad, so we return a total failure.
-    return { success: false, sentCount: 0, failureCount: messages.length, invalidTokens: [] };
+    // In case of a total failure, we can't know which tokens are bad, so we return a total failure
+    return { success: false, sentCount: 0, failureCount: messages.length, invalidTokens: [], ticketIds: [] };
   }
 
-  // After processing all chunks, clean up the invalid tokens from the database.
+  // After processing all chunks, clean up the invalid tokens from the database
   if (invalidTokens.length > 0) {
     await cleanupInvalidTokens(supabaseAdmin, invalidTokens);
   }
@@ -82,6 +95,7 @@ export async function sendPushNotification(
     sentCount,
     failureCount,
     invalidTokens,
+    ticketIds,
   };
 }
 

@@ -74,24 +74,57 @@ async function handleScheduleReminders({ user, supabaseClient, body }: Authentic
   const sessionDate = new Date(session_date);
   const JITTER_MINUTES = 30; // We'll add +/- 30 minutes of jitter
 
-  // Step 2: Use the fetched intervals to create reminders.
-  const remindersToInsert = intervals.map(days => {
-    const baseReminderDate = new Date(sessionDate);
-    baseReminderDate.setDate(sessionDate.getDate() + days);
-    
-    // Apply jitter to the calculated reminder date
-    const finalReminderDate = addJitter(baseReminderDate, JITTER_MINUTES);
+  // Get optimal hour for reminders based on user patterns
+  const { data: optimalHour } = await supabaseClient
+    .rpc('get_optimal_reminder_hour', {
+      p_user_id: user.id,
+      p_reminder_type: 'spaced_repetition',
+    });
+
+  const preferredHour = optimalHour || 10; // Default to 10 AM if no data
+
+  // Step 2: Use the fetched intervals to create reminders with timezone awareness
+  const remindersToInsert = await Promise.all(intervals.map(async (days) => {
+    // Use timezone-aware scheduling function
+    const { data: timezoneAwareTime, error: tzError } = await supabaseClient
+      .rpc('schedule_reminder_in_user_timezone', {
+        p_user_id: user.id,
+        p_base_time: sessionDate.toISOString(),
+        p_days_offset: days,
+        p_hour: preferredHour,
+      });
+
+    if (tzError) {
+      console.error('Timezone conversion failed, using UTC:', tzError);
+      // Fallback to original logic
+      const baseReminderDate = new Date(sessionDate);
+      baseReminderDate.setDate(sessionDate.getDate() + days);
+      return {
+        user_id: user.id,
+        session_id: session_id,
+        reminder_time: addJitter(baseReminderDate, JITTER_MINUTES).toISOString(),
+        reminder_type: 'spaced_repetition',
+        title: `Spaced Repetition: Review "${topic}"`,
+        body: `It's time to review your study session on "${topic}" to strengthen your memory.`,
+        completed: false,
+        priority: 'medium',
+      };
+    }
+
+    // Apply jitter to the timezone-adjusted time
+    const finalReminderDate = addJitter(new Date(timezoneAwareTime), JITTER_MINUTES);
 
     return {
       user_id: user.id,
-      session_id: session_id, // Link to the study session
-      reminder_time: finalReminderDate.toISOString(), // Use the jittered date
+      session_id: session_id,
+      reminder_time: finalReminderDate.toISOString(),
       reminder_type: 'spaced_repetition',
-      title: `Spaced Repetition: Review "${topic}"`, // Use the topic from the payload
-      body: `It's time to review your study session on "${topic}" to strengthen your memory.`, // Add a helpful body
+      title: `Spaced Repetition: Review "${topic}"`,
+      body: `It's time to review your study session on "${topic}" to strengthen your memory.`,
       completed: false,
+      priority: 'medium',
     };
-  });
+  }));
 
   const { error: insertError } = await supabaseClient
     .from('reminders')

@@ -10,7 +10,7 @@ import { PostChatModal } from '@/features/support/components/PostChatModal';
 import { getSecureChatLink } from '@/features/support/utils/getSecureChatLink';
 import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
 
-const ListItem = ({ label, onPress, isDestructive = false }) => {
+const ListItem = ({ label, onPress, isDestructive = false }: { label: string; onPress: () => void; isDestructive?: boolean }) => {
   const { theme } = useTheme();
   return (
     <TouchableOpacity 
@@ -49,7 +49,7 @@ export function AccountScreen() {
     setSupportChatLoading(true);
     try {
       const secureUrl = await getSecureChatLink(user);
-      navigation.navigate('SupportChat', { uri: secureUrl });
+      (navigation as any).navigate('SupportChat', { uri: secureUrl });
     } catch (error) {
       showToast({ type: 'error', message: 'Could not open support chat.' });
     } finally {
@@ -65,14 +65,14 @@ export function AccountScreen() {
           <Text style={[styles.guestSubtitle, { color: theme.textSecondary }]}>
             Log in or create an account to manage your academic life.
           </Text>
-          <Button title="Login or Sign Up" onPress={() => navigation.navigate('Auth')} />
+          <Button title="Login or Sign Up" onPress={() => (navigation as any).navigate('Auth')} />
         </View>
       </Card>
 
       <Card title="Support">
         <ListItem 
           label="How ELARO Works" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
           })} 
@@ -82,14 +82,14 @@ export function AccountScreen() {
       <Card title="Legal">
         <ListItem 
           label="Terms of Service" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/terms',
             title: 'Terms of Service'
           })} 
         />
         <ListItem 
           label="Privacy Policy" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
           })} 
@@ -102,18 +102,18 @@ export function AccountScreen() {
     <ScrollView style={styles.container}>
       {user?.role === 'admin' && (
         <Card title="Admin">
-          <Button title="Admin Dashboard" onPress={() => navigation.navigate('AdminDashboard')} />
+          <Button title="Admin Dashboard" onPress={() => (navigation as any).navigate('AdminDashboard')} />
         </Card>
       )}
 
       <Card title="Profile">
         <View style={styles.profileInfo}>
-          <Text style={[styles.profileName, { color: theme.text }]}>{user?.user_metadata.first_name} {user?.user_metadata.last_name}</Text>
+          <Text style={[styles.profileName, { color: theme.text }]}>{user?.user_metadata?.first_name} {user?.user_metadata?.last_name}</Text>
           <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
         </View>
-        <Button title="View Profile" onPress={() => navigation.navigate('UserProfile')} />
-        <Button title="My Courses" onPress={() => navigation.navigate('CourseList')} />
-        <Button title="Add a Course" onPress={() => navigation.navigate('AddCourseFlow')} />
+        <Button title="View Profile" onPress={() => (navigation as any).navigate('UserProfile')} />
+        <Button title="My Courses" onPress={() => (navigation as any).navigate('CourseList')} />
+        <Button title="Add a Course" onPress={() => (navigation as any).navigate('AddCourseFlow')} />
       </Card>
 
       <Card title="Subscription">
@@ -123,7 +123,7 @@ export function AccountScreen() {
       <Card title="Support">
         <ListItem 
           label="How ELARO Works" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
           })} 
@@ -134,14 +134,14 @@ export function AccountScreen() {
       <Card title="Legal">
         <ListItem 
           label="Terms of Service" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/terms',
             title: 'Terms of Service'
           })} 
         />
         <ListItem 
           label="Privacy Policy" 
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
           })} 
@@ -149,7 +149,7 @@ export function AccountScreen() {
       </Card>
 
       <Card title="Settings">
-        <ListItem label="Settings" onPress={() => navigation.navigate('Settings')} />
+        <ListItem label="Settings" onPress={() => (navigation as any).navigate('Settings')} />
       </Card>
 
       <PostChatModal
@@ -157,7 +157,7 @@ export function AccountScreen() {
         onClose={() => setPostChatModalVisible(false)}
         onFaqPress={() => {
           setPostChatModalVisible(false);
-          navigation.navigate('Faq');
+          (navigation as any).navigate('Faq');
         }}
       />
     </ScrollView>

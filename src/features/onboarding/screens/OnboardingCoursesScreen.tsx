@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
-import { Button } from '@/shared/components';
+import React, { useState, useEffect, useCallback, memo } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { Button, QueryStateWrapper } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useOnboarding } from '@/contexts/OnboardingContext';
@@ -10,18 +10,30 @@ import { Alert } from 'react-native';
 import { RootStackParamList } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type OnboardingCoursesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+
+// Memoized course item component
+const CourseItem = memo<{ item: any }>(({ item }) => (
+  <View style={styles.courseItem}>
+    <Text style={styles.courseName}>{item.course_name}</Text>
+    {item.course_code && <Text style={styles.courseCode}>{item.course_code}</Text>}
+  </View>
+));
 
 const OnboardingCoursesScreen = () => {
   const navigation = useNavigation<OnboardingCoursesScreenNavigationProp>();
   const { onboardingData } = useOnboarding();
   const queryClient = useQueryClient();
   
-  // Get courses directly from React Query
-  const { data: courses, isLoading: coursesLoading } = useCourses();
+  // Get courses directly from React Query with full result object
+  const { data, isLoading: coursesLoading, isError, error, refetch } = useCourses();
   const [isLoading, setIsLoading] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
+  
+  // Flatten all pages into a single array for onboarding (should only be a few courses)
+  const courses = data?.pages.flatMap(page => page.courses) ?? [];
 
   // Check for pending course on component mount
   useEffect(() => {
@@ -46,7 +58,9 @@ const OnboardingCoursesScreen = () => {
           Alert.alert('Welcome!', `Your course "${pendingTask.taskData.courseName}" has been automatically created!`);
         } catch (error) {
           console.error('Failed to auto-create course:', error);
-          Alert.alert('Error', 'Failed to create your saved course. You can add it manually.');
+          const errorTitle = getErrorTitle(error);
+          const errorMessage = mapErrorCodeToMessage(error);
+          Alert.alert(errorTitle, `${errorMessage} You can add the course manually.`);
         }
       }
     };
@@ -54,13 +68,13 @@ const OnboardingCoursesScreen = () => {
     checkPendingCourse();
   }, []);
 
-  const handleFinish = async () => {
+  const handleFinish = async (skipCourses = false) => {
     setIsLoading(true);
     try {
       // The username, university, and program come from the onboarding context
       const { username, country, university, program, dateOfBirth, hasParentalConsent } = onboardingData;
-      // The courses now come from our React Query hook
-      const finalCourses = courses || [];
+      // The courses now come from our React Query hook, or empty array if skipping
+      const finalCourses = skipCourses ? [] : (courses || []);
 
       const { error } = await supabase.functions.invoke('complete-onboarding', {
         body: { username, country, university, program, courses: finalCourses, dateOfBirth, hasParentalConsent, marketingOptIn },
@@ -70,49 +84,60 @@ const OnboardingCoursesScreen = () => {
         throw error;
       }
 
-      Alert.alert('Setup Complete!', 'Your profile has been saved successfully.');
+      const message = skipCourses 
+        ? 'Your profile has been saved! You can add courses anytime from the home screen.'
+        : 'Your profile has been saved successfully.';
+      Alert.alert('Setup Complete!', message);
       navigation.replace('Main');
 
     } catch (error: any) {
       console.error('Onboarding completion error:', error);
-      Alert.alert('Error', `There was a problem saving your profile: ${error.message || 'Please try again.'}`);
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSkip = () => {
+    handleFinish(true);
   };
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const renderCourseItem = ({ item }: { item: any }) => (
-    <View style={styles.courseItem}>
-      <Text style={styles.courseName}>{item.course_name}</Text>
-      {item.course_code && <Text style={styles.courseCode}>{item.course_code}</Text>}
-    </View>
+  const renderCourseItem = useCallback(
+    ({ item }: { item: any }) => <CourseItem item={item} />,
+    []
   );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Add your first courses</Text>
+      <Text style={styles.title}>Add Your First Courses</Text>
       <Text style={styles.subtitle}>
-        Get a head start by adding up to 3 courses now. You can always add more later.
+        Get a head start by adding up to 3 courses now, or skip this step and add them later from the home screen.
       </Text>
       
-      {coursesLoading ? (
-        <ActivityIndicator size="large" style={styles.loading} />
-      ) : (
+      <QueryStateWrapper
+        isLoading={coursesLoading}
+        isError={isError}
+        error={error}
+        data={courses}
+        refetch={refetch}
+        emptyTitle="No courses yet"
+        emptyMessage="Start by adding your first course using the button below."
+        emptyIcon="school-outline"
+      >
         <FlatList
           style={styles.list}
           data={courses || []}
           renderItem={renderCourseItem}
           keyExtractor={(item, index) => index.toString()}
-          ListEmptyComponent={
-            <Text style={styles.noCoursesText}>No courses added yet.</Text>
-          }
           scrollEnabled={false}
         />
-      )}
+      </QueryStateWrapper>
 
       {/* Marketing Opt-In Section */}
       <View style={styles.marketingSection}>
@@ -135,16 +160,23 @@ const OnboardingCoursesScreen = () => {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={handleBack} variant="outline" />
+      <View style={styles.actionButtonsContainer}>
         <Button 
           title="Add a Course" 
           onPress={() => navigation.getParent()?.navigate('AddCourseFlow')}
           disabled={(courses?.length || 0) >= 3 || coursesLoading}
         />
+      </View>
+
+      <View style={styles.buttonContainer}>
         <Button 
-          title="Finish Setup" 
-          onPress={handleFinish}
+          title="Back" 
+          onPress={handleBack} 
+          variant="outline" 
+        />
+        <Button 
+          title={(courses?.length || 0) > 0 ? "Finish Setup" : "Skip for Now"}
+          onPress={() => (courses?.length || 0) > 0 ? handleFinish(false) : handleSkip()}
           loading={isLoading}
         />
       </View>
@@ -156,7 +188,6 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
   subtitle: { fontSize: 16, textAlign: 'center', color: 'gray', marginBottom: 30 },
-  loading: { marginVertical: 40 },
   list: { marginBottom: 20 },
   courseItem: {
     backgroundColor: '#f8f9fa',
@@ -175,12 +206,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 4,
-  },
-  noCoursesText: {
-    textAlign: 'center',
-    color: '#666',
-    fontStyle: 'italic',
-    marginTop: 40,
   },
   marketingSection: {
     marginTop: 20,
@@ -229,10 +254,14 @@ const styles = StyleSheet.create({
     marginTop: 4,
     lineHeight: 18,
   },
+  actionButtonsContainer: {
+    marginTop: 20,
+    marginBottom: 10,
+  },
   buttonContainer: { 
     flexDirection: 'row', 
     justifyContent: 'space-between', 
-    marginTop: 20,
+    marginTop: 10,
     gap: 10,
   },
 });

@@ -5,5 +5,5 @@ export { useDeletedItemsQuery } from './useDeletedItemsQuery';
 export { useCourseDetail } from './useCourseDetail';
 export { useTotalTaskCount } from './useTotalTaskCount';
 export { useTheme } from './useTheme';
-export { useCompleteTask, useDeleteTask } from './useTaskMutations';
+export { useCompleteTask, useDeleteTask, useRestoreTask } from './useTaskMutations';
 export { useDebounce } from './useDebounce';

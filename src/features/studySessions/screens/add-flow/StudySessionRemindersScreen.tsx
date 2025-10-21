@@ -7,11 +7,13 @@ import { useAddStudySession } from '@/features/studySessions/contexts/AddStudySe
 import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useTotalTaskCount } from '@/hooks';
 import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'Reminders'>;
 
@@ -19,6 +21,7 @@ const RemindersScreen = () => {
   const navigation = useNavigation<RemindersScreenNavigationProp>();
   const { sessionData, resetSessionData } = useAddStudySession();
   const { session, user } = useAuth();
+  const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
   const { limitReached, monthlyTaskCount, monthlyLimit, isLoading: isTaskLimitLoading } = useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
@@ -57,7 +60,7 @@ const RemindersScreen = () => {
 
       setIsLoading(true);
 
-      // Create the study session using the new API layer
+      // Create the study session using the new API layer with offline support
       const newStudySession = await api.mutations.studySessions.create({
         course_id: taskData.course.id,
         topic: taskData.topic.trim(),
@@ -65,7 +68,7 @@ const RemindersScreen = () => {
         session_date: taskData.sessionDate.toISOString(),
         has_spaced_repetition: taskData.hasSpacedRepetition,
         reminders: taskData.reminders,
-      });
+      }, isOnline, user?.id || '');
 
       // Clear pending data
       await clearPendingTask();
@@ -87,7 +90,9 @@ const RemindersScreen = () => {
 
     } catch (error) {
       console.error('Failed to auto-create study session:', error);
-      Alert.alert('Error', 'Failed to save your study session. Please try creating it again.');
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -131,7 +136,7 @@ const RemindersScreen = () => {
     setIsLoading(true);
 
     try {
-      // Create the study session using the new API layer
+      // Create the study session using the new API layer with offline support
       const newStudySession = await api.mutations.studySessions.create({
         course_id: sessionData.course.id,
         topic: sessionData.topic.trim(),
@@ -139,7 +144,7 @@ const RemindersScreen = () => {
         session_date: sessionData.sessionDate.toISOString(),
         has_spaced_repetition: sessionData.hasSpacedRepetition,
         reminders: reminders, // Pass the array of immediate reminder minutes
-      });
+      }, isOnline, user?.id || '');
 
       // Immediate reminders are now handled by the backend create-study-session function
 
@@ -164,8 +169,9 @@ const RemindersScreen = () => {
       ]);
     } catch (error) {
       console.error('Failed to create study session:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save study session. Please try again.';
-      Alert.alert('Error', errorMessage);
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }

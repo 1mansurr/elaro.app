@@ -11,10 +11,12 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Factor } from '@supabase/supabase-js';
 import MFAVerificationScreen from './MFAVerificationScreen';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 interface EnhancedAuthScreenProps {
   onClose?: () => void;
@@ -156,7 +158,9 @@ export default function EnhancedAuthScreen({
         }
       }
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Something went wrong. Please try again.');
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setLoading(false);
     }

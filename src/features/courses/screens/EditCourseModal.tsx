@@ -1,10 +1,14 @@
 // FILE: src/features/courses/screens/EditCourseModal.tsx
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
-import { Input, Button } from '@/shared/components';
+import { Input, Button, QueryStateWrapper } from '@/shared/components';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useNetwork } from '@/contexts/NetworkContext';
+import { coursesApiMutations } from '@/features/courses/services/mutations';
+import { useCourseDetail } from '@/hooks/useCourseDetail';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type EditCourseModalRouteProp = RouteProp<RootStackParamList, 'EditCourseModal'>;
 
@@ -12,33 +16,25 @@ const EditCourseModal = () => {
   const navigation = useNavigation();
   const route = useRoute<EditCourseModalRouteProp>();
   const { courseId } = route.params;
+  const { user } = useAuth();
+  const { isOnline } = useNetwork();
+  
+  // Fetch course details using React Query
+  const { data: courseData, isLoading, isError, error, refetch } = useCourseDetail(courseId);
+  
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [aboutCourse, setAboutCourse] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Update form fields when course data is loaded
   useEffect(() => {
-    const fetchCourse = async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', courseId)
-        .single();
-
-      if (error) {
-        Alert.alert('Error', 'Could not fetch course details.');
-        navigation.goBack();
-      } else {
-        setCourseName(data.course_name);
-        setCourseCode(data.course_code || '');
-        setAboutCourse(data.about_course || '');
-      }
-      setIsLoading(false);
-    };
-
-    fetchCourse();
-  }, [courseId, navigation]);
+    if (courseData) {
+      setCourseName(courseData.course_name);
+      setCourseCode(courseData.course_code || '');
+      setAboutCourse(courseData.about_course || '');
+    }
+  }, [courseData]);
 
   const handleSave = async () => {
     if (!courseName.trim()) {
@@ -46,75 +42,80 @@ const EditCourseModal = () => {
       return;
     }
 
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated.');
+      return;
+    }
+
     setIsSaving(true);
     try {
-      const { error } = await supabase.functions.invoke('update-course', {
-        body: {
-          courseId,
+      // Use the offline-aware mutation service
+      await coursesApiMutations.update(
+        courseId,
+        {
           course_name: courseName.trim(),
           course_code: courseCode.trim(),
           about_course: aboutCourse.trim(),
         },
-      });
+        isOnline,
+        user.id
+      );
 
-      if (error) throw error;
       navigation.goBack();
     } catch (error) {
-      Alert.alert('Error', 'Failed to update the course.');
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsSaving(false);
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 10 }}>Loading course details...</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Edit Course</Text>
+    <QueryStateWrapper
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      data={courseData}
+      refetch={refetch}
+      emptyTitle="Course Not Found"
+      emptyMessage="The course you're trying to edit could not be found."
+      emptyIcon="alert-circle-outline"
+    >
+      <View style={styles.container}>
+        <Text style={styles.title}>Edit Course</Text>
 
-      <Text style={styles.label}>Course Name</Text>
-      <Input
-        value={courseName}
-        onChangeText={setCourseName}
-        placeholder="Enter course name"
-      />
+        <Text style={styles.label}>Course Name</Text>
+        <Input
+          value={courseName}
+          onChangeText={setCourseName}
+          placeholder="Enter course name"
+        />
 
-      <Text style={styles.label}>Course Code (Optional)</Text>
-      <Input
-        value={courseCode}
-        onChangeText={setCourseCode}
-        placeholder="e.g., CS101, MATH201"
-      />
+        <Text style={styles.label}>Course Code (Optional)</Text>
+        <Input
+          value={courseCode}
+          onChangeText={setCourseCode}
+          placeholder="e.g., CS101, MATH201"
+        />
 
-      <Text style={styles.label}>About this course (Optional)</Text>
-      <Input
-        value={aboutCourse}
-        onChangeText={setAboutCourse}
-        placeholder="Describe what this course is about..."
-        multiline
-        numberOfLines={4}
-      />
+        <Text style={styles.label}>About this course (Optional)</Text>
+        <Input
+          value={aboutCourse}
+          onChangeText={setAboutCourse}
+          placeholder="Describe what this course is about..."
+          multiline
+          numberOfLines={4}
+        />
 
-      {isSaving ? (
-        <View style={styles.loadingButton}>
-          <ActivityIndicator color="white" />
-          <Text style={styles.loadingButtonText}>Saving...</Text>
-        </View>
-      ) : (
         <Button
           title="Save Changes"
           onPress={handleSave}
           disabled={isSaving}
+          loading={isSaving}
         />
-      )}
-    </View>
+      </View>
+    </QueryStateWrapper>
   );
 };
 
@@ -122,26 +123,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingButtonText: {
-    color: 'white',
-    marginLeft: 8,
-    fontSize: 16,
-    fontWeight: '500',
   },
   title: {
     fontSize: 24,

@@ -71,7 +71,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
     <View
       style={[
         {
-          width,
+          width: width as any,
           height,
           borderRadius,
           backgroundColor: baseColor,

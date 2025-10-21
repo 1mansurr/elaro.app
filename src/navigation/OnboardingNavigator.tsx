@@ -1,30 +1,50 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import OnboardingUsernameScreen from '@/features/onboarding/screens/OnboardingUsernameScreen';
-import OnboardingUniversityScreen from '@/features/onboarding/screens/OnboardingUniversityScreen';
-import AgeConsentScreen from '@/features/onboarding/screens/AgeConsentScreen';
+import NewWelcomeScreen from '@/features/onboarding/screens/NewWelcomeScreen';
+import ProfileSetupScreen from '@/features/onboarding/screens/ProfileSetupScreen';
 import OnboardingCoursesScreen from '@/features/onboarding/screens/OnboardingCoursesScreen';
+import { ProgressHeader } from '@/shared/components';
 
 export type OnboardingStackParamList = {
-  AgeConsent: undefined;
-  OnboardingUsername: undefined;
-  OnboardingUniversity: undefined;
-  OnboardingCourses: undefined;
+  Welcome: undefined;
+  ProfileSetup: undefined;
+  CourseSetup: undefined;
 };
 
 const Stack = createStackNavigator<OnboardingStackParamList>();
+
+const TOTAL_STEPS = 3;
 
 const OnboardingNavigator = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false, // We will have custom headers in each screen
+        headerShown: true,
+        headerTitle: '',
+        headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="AgeConsent" component={AgeConsentScreen} />
-      <Stack.Screen name="OnboardingUsername" component={OnboardingUsernameScreen} />
-      <Stack.Screen name="OnboardingUniversity" component={OnboardingUniversityScreen} />
-      <Stack.Screen name="OnboardingCourses" component={OnboardingCoursesScreen} />
+      <Stack.Screen 
+        name="Welcome" 
+        component={NewWelcomeScreen}
+        options={{
+          header: () => <ProgressHeader currentStep={1} totalSteps={TOTAL_STEPS} />,
+        }}
+      />
+      <Stack.Screen 
+        name="ProfileSetup" 
+        component={ProfileSetupScreen}
+        options={{
+          header: () => <ProgressHeader currentStep={2} totalSteps={TOTAL_STEPS} />,
+        }}
+      />
+      <Stack.Screen 
+        name="CourseSetup" 
+        component={OnboardingCoursesScreen}
+        options={{
+          header: () => <ProgressHeader currentStep={3} totalSteps={TOTAL_STEPS} />,
+        }}
+      />
     </Stack.Navigator>
   );
 };

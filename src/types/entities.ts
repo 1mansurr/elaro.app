@@ -15,6 +15,7 @@ export interface User {
   country?: string;
   university?: string;
   program?: string;
+  timezone?: string;
   role: 'user' | 'admin';
   onboarding_completed: boolean;
   subscription_tier: 'free' | 'oddity' | null;
@@ -25,6 +26,8 @@ export interface User {
   deletion_scheduled_at: string | null;
   suspension_end_date: string | null;
   last_data_export_at?: string | null;
+  failed_login_attempts?: number;
+  locked_until?: string | null;
   created_at: string;
   updated_at: string;
   user_metadata?: {
@@ -44,6 +47,11 @@ export interface NotificationPreferences {
   lecture_reminders_enabled: boolean;
   morning_summary_enabled: boolean;
   evening_capture_enabled: boolean;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+  preferred_morning_time?: string;
+  preferred_evening_time?: string;
+  weekend_notifications_enabled?: boolean;
   updated_at: string;
 }
 
@@ -103,7 +111,13 @@ export interface StudySession {
   description?: string;
   sessionDate: string;
   hasSpacedRepetition: boolean;
+  difficulty_rating?: number | null;
+  confidence_level?: number | null;
+  time_spent_minutes?: number | null;
+  last_reviewed_at?: string | null;
+  review_count?: number;
   createdAt: string;
+  deletedAt?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -119,6 +133,7 @@ export type Task = {
   description?: string;
   status?: 'pending' | 'completed';
   name: string;
+  title?: string; // Alias for name, used in some components
   courses: { courseName: string };
   isLocked?: boolean; // NEW: Indicates if task is locked due to subscription limits
 };
@@ -146,6 +161,75 @@ export interface HomeScreenData {
 
 export interface CalendarData {
   [date: string]: Task[];
+}
+
+// ─────────────────────────────────────────────────────────────
+// 🔔 Reminder & Notification Types
+// ─────────────────────────────────────────────────────────────
+
+export interface Reminder {
+  id: string;
+  user_id: string;
+  session_id?: string | null;
+  assignment_id?: string | null;
+  lecture_id?: string | null;
+  reminder_time: string;
+  reminder_type: 'study_session' | 'lecture' | 'assignment' | 'spaced_repetition';
+  title?: string | null;
+  body?: string | null;
+  completed: boolean;
+  priority?: 'low' | 'medium' | 'high' | 'urgent';
+  sent_at?: string | null;
+  opened_at?: string | null;
+  dismissed_at?: string | null;
+  action_taken?: string | null;
+  snoozed_until?: string | null;
+  processed_at?: string | null;
+  created_at: string;
+}
+
+export interface SRSPerformance {
+  id: string;
+  user_id: string;
+  session_id: string;
+  reminder_id?: string | null;
+  review_date: string;
+  quality_rating: number; // 0-5
+  response_time_seconds?: number | null;
+  ease_factor: number;
+  interval_days: number;
+  next_interval_days?: number | null;
+  repetition_number: number;
+  created_at: string;
+}
+
+export interface ReminderAnalytics {
+  id: string;
+  user_id: string;
+  reminder_id?: string | null;
+  reminder_type: string;
+  scheduled_time: string;
+  sent_time?: string | null;
+  opened: boolean;
+  time_to_action?: number | null;
+  action_taken?: string | null;
+  effectiveness_score?: number | null;
+  hour_of_day?: number | null;
+  day_of_week?: number | null;
+  created_at: string;
+}
+
+export interface LoginHistory {
+  id: string;
+  user_id: string;
+  success: boolean;
+  method: string;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  device_info?: any;
+  location?: string | null;
+  session_id?: string | null;
+  created_at: string;
 }
 
 // ─────────────────────────────────────────────────────────────

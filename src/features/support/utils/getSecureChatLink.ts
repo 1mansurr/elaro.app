@@ -1,5 +1,5 @@
 import { supabase } from '@/services/supabase';
-import { User } from '@supabase/supabase-js';
+import { User } from '@/types/entities';
 
 export async function getSecureChatLink(user: User): Promise<string> {
   try {

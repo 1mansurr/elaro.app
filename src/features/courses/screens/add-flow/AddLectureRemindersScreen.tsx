@@ -7,6 +7,7 @@ import { supabase } from '@/services/supabase';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { GuestAuthModal } from '@/shared/components';
 import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 const ReminderOptions = [
   { label: '10 mins before', value: 10 },
@@ -74,7 +75,9 @@ const AddLectureRemindersScreen = () => {
 
     } catch (error) {
       console.error('Failed to auto-create course:', error);
-      Alert.alert('Error', 'Failed to save your course. Please try creating it again.');
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +146,9 @@ const AddLectureRemindersScreen = () => {
       navigation.getParent()?.goBack(); // Close the entire modal flow
 
     } catch (err) {
-      Alert.alert('Error', err instanceof Error ? err.message : 'Failed to create course.');
+      const errorTitle = getErrorTitle(err);
+      const errorMessage = mapErrorCodeToMessage(err);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }

@@ -98,12 +98,34 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
 
   console.log(`Found ${dueReminders.length} due reminders to process (filtered by user preferences).`);
 
-  // Step 2: Process each reminder and send notifications.
+  // Step 2: Filter out reminders in quiet hours
+  const remindersToProcess: DueReminder[] = [];
+  const remindersInQuietHours: string[] = [];
+
+  for (const reminder of dueReminders) {
+    // Check if reminder is in user's quiet hours
+    const { data: inQuietHours } = await supabaseAdmin
+      .rpc('is_in_quiet_hours', {
+        p_user_id: reminder.user_id,
+        p_check_time: now,
+      });
+
+    if (inQuietHours) {
+      console.log(`Reminder ${reminder.id} is in quiet hours, skipping for now`);
+      remindersInQuietHours.push(reminder.id);
+    } else {
+      remindersToProcess.push(reminder);
+    }
+  }
+
+  console.log(`Processing ${remindersToProcess.length} reminders (${remindersInQuietHours.length} in quiet hours)`);
+
+  // Step 3: Process each reminder and send notifications.
   const remindersToMarkComplete: string[] = [];
   let totalSuccessCount = 0;
   let totalFailureCount = 0;
 
-  for (const reminder of dueReminders) {
+  for (const reminder of remindersToProcess) {
     const pushTokens = reminder.user?.user_devices?.map((d) => d.push_token).filter(Boolean) || [];
     
     if (pushTokens.length > 0) {
@@ -116,6 +138,16 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
       const itemId = reminder.session_id || reminder.assignment_id || reminder.lecture_id;
       const taskType = reminder.reminder_type === 'spaced_repetition' ? 'study_session' : reminder.reminder_type;
       
+      // Determine category and priority based on reminder type
+      const categoryMap: Record<string, string> = {
+        'assignment': 'assignment',
+        'lecture': 'lecture',
+        'spaced_repetition': 'srs_review',
+        'study_session': 'srs_review',
+      };
+      
+      const category = categoryMap[reminder.reminder_type] || undefined;
+      
       const result = await sendPushNotification(
         supabaseAdmin,
         pushTokens,
@@ -126,6 +158,10 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
           url: deepLinkUrl,
           itemId: itemId,
           taskType: taskType,
+        },
+        {
+          priority: 'high',
+          categoryId: category,
         }
       );
 
@@ -145,11 +181,15 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
 
   console.log(`Attempted to send notifications. Successes: ${totalSuccessCount}, Failures: ${totalFailureCount}`);
 
-  // Step 3: Mark the processed reminders as complete in a single bulk update.
+  // Step 4: Mark the processed reminders as complete and record sent time
   if (remindersToMarkComplete.length > 0) {
     const { error: updateError } = await supabaseAdmin
       .from('reminders')
-      .update({ completed: true, processed_at: new Date().toISOString() }) // Also record when it was processed
+      .update({ 
+        completed: true, 
+        processed_at: new Date().toISOString(),
+        sent_at: new Date().toISOString(),
+      })
       .in('id', remindersToMarkComplete);
 
     if (updateError) {

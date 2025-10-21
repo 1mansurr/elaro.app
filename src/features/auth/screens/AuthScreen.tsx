@@ -24,6 +24,7 @@ import {
   BORDER_RADIUS,
 } from '@/constants/theme';
 import { RootStackParamList } from '@/types';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type AuthScreenNavProp = StackNavigationProp<RootStackParamList, 'Auth'>;
 
@@ -158,7 +159,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         navigation.goBack();
       }
     } catch (err) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      const errorTitle = getErrorTitle(err);
+      const errorMessage = mapErrorCodeToMessage(err);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setLoading(false);
     }

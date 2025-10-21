@@ -2,9 +2,11 @@ import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-
 import { User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { corsHeaders } from './cors.ts';
-import { checkRateLimit, RateLimitError } from './rate-limiter.ts';
+import { checkRateLimit, RateLimitError, RateLimitInfo } from './rate-limiter.ts';
 import { checkTaskLimit } from './check-task-limit.ts';
 import { createMetricsCollector } from './metrics.ts';
+import { addVersionHeaders, validateApiVersion, getRequestedVersion } from './versioning.ts';
+import { checkIdempotency, cacheIdempotency } from './idempotency.ts';
 
 // Define custom, structured application errors
 export class AppError extends Error {
@@ -34,6 +36,13 @@ function handleError(error: unknown): Response {
     timestamp: new Date().toISOString(),
   });
 
+  // Base headers with versioning
+  const baseHeaders = {
+    ...corsHeaders,
+    ...addVersionHeaders(),
+    'Content-Type': 'application/json',
+  };
+
   if (error instanceof AppError) {
     const response: any = { error: error.message, code: error.code };
     if (error.details) {
@@ -41,22 +50,19 @@ function handleError(error: unknown): Response {
     }
     return new Response(JSON.stringify(response), {
       status: error.statusCode,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: baseHeaders,
     });
   }
   
   if (error instanceof RateLimitError) {
     const response: any = { 
       error: 'Too Many Requests',
-      message: error.message 
+      message: error.message,
+      code: 'RATE_LIMIT_EXCEEDED',
     };
     
     // Add Retry-After header if available
-    const headers: Record<string, string> = { 
-      ...corsHeaders, 
-      'Content-Type': 'application/json' 
-    };
-    
+    const headers = { ...baseHeaders };
     if (error.retryAfter) {
       headers['Retry-After'] = error.retryAfter.toString();
     }
@@ -68,9 +74,12 @@ function handleError(error: unknown): Response {
   }
 
   // Generic fallback for unexpected errors
-  return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
+  return new Response(JSON.stringify({ 
+    error: 'Internal Server Error',
+    code: 'INTERNAL_ERROR',
+  }), {
     status: 500,
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    headers: baseHeaders,
   });
 }
 
@@ -92,6 +101,12 @@ export function createAuthenticatedHandler(
     }
 
     try {
+      // 0. Check API version
+      const requestedVersion = getRequestedVersion(req);
+      if (!validateApiVersion(requestedVersion)) {
+        throw new AppError(`Unsupported API version: ${requestedVersion}`, 400, 'UNSUPPORTED_VERSION');
+      }
+
       // 1. Authenticate user
       const supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
@@ -103,10 +118,29 @@ export function createAuthenticatedHandler(
         throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
       }
 
-      // 2. Rate limit
-      await checkRateLimit(supabaseClient, user.id, options.rateLimitName);
+      // 2. Check idempotency key (for POST/PUT/DELETE operations)
+      const idempotencyKey = req.headers.get('Idempotency-Key');
+      if (idempotencyKey && (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE')) {
+        const idempotencyResult = await checkIdempotency(supabaseClient, user.id, idempotencyKey);
+        if (idempotencyResult.cached) {
+          console.log(`♻️ Returning cached response for idempotency key`);
+          const responseHeaders = {
+            ...corsHeaders,
+            ...addVersionHeaders(),
+            'X-Idempotency-Cached': 'true',
+            'Content-Type': 'application/json',
+          };
+          return new Response(JSON.stringify(idempotencyResult.response), {
+            headers: responseHeaders,
+            status: 200,
+          });
+        }
+      }
 
-      // 3. Check task limit if enabled
+      // 3. Rate limit and capture limit info
+      const rateLimitInfo = await checkRateLimit(supabaseClient, user.id, options.rateLimitName);
+
+      // 4. Check task limit if enabled
       if (options.checkTaskLimit) {
         const limitError = await checkTaskLimit(supabaseClient, user.id);
         if (limitError) {
@@ -114,7 +148,7 @@ export function createAuthenticatedHandler(
         }
       }
 
-      // 4. Parse body and validate with Zod schema if provided
+      // 5. Parse body and validate with Zod schema if provided
       let body = await req.json();
       if (options.schema) {
         const validationResult = options.schema.safeParse(body);
@@ -124,10 +158,26 @@ export function createAuthenticatedHandler(
         body = validationResult.data; // Use the parsed (and potentially transformed) data
       }
 
-      // 5. Execute the specific business logic
+      // 6. Log structured request (for debugging and monitoring)
+      console.log(JSON.stringify({
+        type: 'request',
+        function: options.rateLimitName,
+        user_id: user.id,
+        method: req.method,
+        has_idempotency_key: !!idempotencyKey,
+        api_version: requestedVersion,
+        timestamp: new Date().toISOString(),
+      }));
+
+      // Execute the specific business logic
       const result = await handler({ ...req, user, supabaseClient, body });
 
-      // 6. Record metrics for successful request
+      // 7. Cache response for idempotency if key was provided
+      if (idempotencyKey && (req.method === 'POST' || req.method === 'PUT' || req.method === 'DELETE')) {
+        await cacheIdempotency(supabaseClient, user.id, idempotencyKey, result);
+      }
+
+      // 8. Record metrics for successful request
       metrics.incrementRequest();
       
       // Determine status code
@@ -138,18 +188,37 @@ export function createAuthenticatedHandler(
       
       metrics.incrementStatusCode(statusCode);
 
-      // 7. Return success response
+      // Log structured response
+      console.log(JSON.stringify({
+        type: 'response',
+        function: options.rateLimitName,
+        user_id: user.id,
+        status: statusCode,
+        rate_limit_remaining: rateLimitInfo.remaining,
+        timestamp: new Date().toISOString(),
+      }));
+
+      // 9. Return success response with rate limit and version headers
+      const responseHeaders = {
+        ...corsHeaders,
+        ...addVersionHeaders(),
+        'X-RateLimit-Limit': rateLimitInfo.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitInfo.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitInfo.reset.toString(),
+        'Content-Type': 'application/json',
+      };
+      
       // If the handler already returned a Response object, use it. Otherwise, stringify the result.
       if (result instanceof Response) {
         return result;
       }
       return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: responseHeaders,
         status: 200,
       });
 
     } catch (error) {
-      // 8. Record error metrics
+      // 10. Record error metrics
       if (error instanceof AppError) {
         metrics.recordError('AppError', error.message);
         metrics.incrementStatusCode(error.statusCode);

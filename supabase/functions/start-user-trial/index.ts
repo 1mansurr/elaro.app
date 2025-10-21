@@ -29,6 +29,7 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
       .from('users')
       .update({
         subscription_tier: 'oddity',
+        subscription_status: 'trialing',
         subscription_expires_at: trialEndDate.toISOString(),
       })
       .eq('id', user.id);

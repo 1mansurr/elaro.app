@@ -10,7 +10,11 @@ import Constants from 'expo-constants';
 import { AuthProvider } from './src/features/auth/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
 import { NotificationProvider, useNotification } from './src/contexts/NotificationContext';
+import { NetworkProvider } from './src/contexts/NetworkContext';
+import { ToastProvider } from './src/contexts/ToastContext';
 import { setNotificationTaskHandler } from './src/services/notifications';
+import { OfflineBanner } from './src/shared/components/OfflineBanner';
+import { SyncIndicator } from './src/shared/components/SyncIndicator';
 import { revenueCatService } from './src/services/revenueCat';
 import { mixpanelService } from './src/services/mixpanel';
 import { AnalyticsEvents } from './src/services/analyticsEvents';
@@ -22,10 +26,15 @@ import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import AnimatedSplashScreen from './src/shared/screens/AnimatedSplashScreen';
 import { useAuth } from './src/features/auth/contexts/AuthContext';
 import { notificationService } from './src/services/notifications';
+import notificationServiceNew from './src/services/notificationService';
+import { handleNotificationAction, trackNotificationOpened } from './src/utils/notificationActions';
+import { promptForUpdateIfNeeded } from './src/utils/apiVersionCheck';
 import { GracePeriodChecker } from './src/components/GracePeriodChecker';
 import * as Sentry from '@sentry/react-native';
+import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
 import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
+import { syncManager } from './src/services/syncManager';
 
 Sentry.init({
   dsn: Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN,
@@ -33,19 +42,30 @@ Sentry.init({
   enabled: !!Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN, // Only enable if DSN exists
 });
 
-// Add global unhandled promise rejection logger for freeze/debugging
+// Global unhandled promise rejection handler
+// Send to Sentry for monitoring in production
 if (typeof process !== 'undefined' && process.on) {
   process.on('unhandledRejection', (reason, promise) => {
-    console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('Unhandled Promise Rejection:', reason);
+    
+    // Send to Sentry in production
+    if (Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN) {
+      Sentry.captureException(reason, {
+        tags: { type: 'unhandled_promise_rejection' },
+        extra: { promise: String(promise) },
+      });
+    }
   });
-  // TODO: Remove or improve this logger for production use
 }
 
 // Prevent auto-hide of splash until we're ready
 SplashScreen.preventAutoHideAsync();
 
 // Navigation state persistence key
+// Increment version number if navigation structure changes significantly
+// This will clear old saved states that might be incompatible
 const PERSISTENCE_KEY = 'NAVIGATION_STATE_V1';
+const APP_VERSION = '1.0.0'; // Update this when making breaking navigation changes
 
 // Create a new instance of the QueryClient with optimized default options
 const queryClient = new QueryClient({
@@ -70,36 +90,52 @@ const queryClient = new QueryClient({
 });
 
 // Component to integrate React Query with Error Boundary
-const AppWithErrorBoundary: React.FC = () => {
+const AppWithErrorBoundary: React.FC<{ initialNavigationState?: any }> = ({ initialNavigationState }) => {
   const { reset } = useQueryErrorResetBoundary();
 
   return (
     <ErrorBoundary onReset={reset}>
-      <AppInitializer>
-        <ThemeProvider>
-          <ThemedStatusBar />
-          <NavigationContainer
-            ref={navigationRef}
-            onStateChange={async () => {
-              // Update last active timestamp whenever user navigates
-              await updateLastActiveTimestamp();
-            }}
-            // initialState={initialState} // Disabled to prevent modal from reopening
-            // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
-          >
-            <AuthProvider>
-              <GracePeriodChecker />
-              <SoftLaunchProvider>
-                <NotificationProvider>
-                  <AuthEffects />
-                  <AppNavigator />
-                  <NotificationHandler />
-                </NotificationProvider>
-              </SoftLaunchProvider>
-            </AuthProvider>
-          </NavigationContainer>
-        </ThemeProvider>
-      </AppInitializer>
+      <NetworkProvider>
+        <AppInitializer>
+          <ThemeProvider>
+            <ThemedStatusBar />
+            <NavigationContainer
+              ref={navigationRef}
+              initialState={initialNavigationState}
+              onStateChange={async (state) => {
+                // Update last active timestamp whenever user navigates
+                await updateLastActiveTimestamp();
+                
+                // Save navigation state to AsyncStorage
+                if (state) {
+                  try {
+                    await AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state));
+                    await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
+                  } catch (error) {
+                    console.error('Failed to save navigation state:', error);
+                  }
+                }
+              }}
+            >
+              <AuthProvider>
+                <GracePeriodChecker />
+                <SoftLaunchProvider>
+                  <NotificationProvider>
+                    <ToastProvider>
+                      <AuthEffects />
+                      {/* Offline Support UI Indicators */}
+                      <OfflineBanner />
+                      <SyncIndicator />
+                      <AppNavigator />
+                      <NotificationHandler />
+                    </ToastProvider>
+                  </NotificationProvider>
+                </SoftLaunchProvider>
+              </AuthProvider>
+            </NavigationContainer>
+          </ThemeProvider>
+        </AppInitializer>
+      </NetworkProvider>
     </ErrorBoundary>
   );
 };
@@ -129,6 +165,11 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
         } else {
           console.warn('⚠️ RevenueCat API key not found in environment variables');
         }
+
+        // Initialize Sync Manager for offline support
+        console.log('🔄 Initializing Sync Manager...');
+        await syncManager.start();
+        console.log('✅ Sync Manager initialized');
 
         // Future async initialization can go here:
         // - Load custom fonts
@@ -198,10 +239,16 @@ function AuthEffects() {
   const { user } = useAuth();
   
   useEffect(() => {
-    if (user && user.id) {
-      notificationService.initialize(user.id);
-      // Initialize Mixpanel with user ID
-      mixpanelService.identifyUser(user.id);
+    const setupNotifications = async () => {
+      if (user && user.id) {
+        notificationService.initialize(user.id);
+        
+        // Setup notification categories and channels
+        await notificationServiceNew.setupNotificationCategories();
+        await notificationServiceNew.setupAndroidChannels();
+        
+        // Initialize Mixpanel with user ID
+        mixpanelService.identifyUser(user.id);
       
       // Track user login
       mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
@@ -211,9 +258,13 @@ function AuthEffects() {
         timestamp: new Date().toISOString(),
       });
       
-      // Data fetching is now handled by React Query hooks in individual components
-    }
+        // Data fetching is now handled by React Query hooks in individual components
+      }
+    };
+    
+    setupNotifications();
   }, [user]);
+  
   return null;
 }
 
@@ -225,6 +276,26 @@ function NotificationHandler() {
   useEffect(() => {
     setNotificationTaskHandler(setTaskToShow);
   }, [setTaskToShow]);
+
+  // Setup notification action listener
+  useEffect(() => {
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const actionIdentifier = response.actionIdentifier;
+      
+      // Track notification opened
+      const reminderId = response.notification.request.content.data?.reminderId as string | undefined;
+      if (reminderId) {
+        trackNotificationOpened(response.notification.request.identifier, reminderId);
+      }
+      
+      // Handle action if present
+      if (actionIdentifier && actionIdentifier !== Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        handleNotificationAction(actionIdentifier, response.notification);
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   // Create handlers for the TaskDetailSheet
   const handleCloseSheet = () => setTaskToShow(null);
@@ -270,31 +341,8 @@ const navigationRef = useRef(null);
 
 function App() {
   const [isReady, setIsReady] = useState(false);
-  // Navigation state persistence disabled for debugging
-  // const [initialState, setInitialState] = useState();
+  const [initialNavigationState, setInitialNavigationState] = useState();
 
-  // useEffect(() => {
-  //   const restoreState = async () => {
-  //     try {
-  //       const savedStateString = await AsyncStorage.getItem(PERSISTENCE_KEY);
-  //       const state = savedStateString ? JSON.parse(savedStateString) : undefined;
-
-  //       if (state !== undefined) {
-  //         setInitialState(state);
-  //       }
-  //     } catch (e) {
-  //       console.error("Failed to load navigation state", e);
-  //     } finally {
-  //       setIsReady(true);
-  //     }
-  //   };
-
-  //   if (!isReady) {
-  //     restoreState();
-  //   }
-  // }, [isReady]);
-
-  // Simplified initialization without persistence
   useEffect(() => {
     const initializeApp = async () => {
       try {
@@ -304,36 +352,87 @@ function App() {
         const projectToken = Constants.expoConfig?.extra?.EXPO_PUBLIC_MIXPANEL_TOKEN;
         if (!projectToken) {
           console.warn('⚠️ Mixpanel token not found in environment variables');
-          return;
+        } else {
+          console.log('📱 About to initialize Mixpanel...');
+          await mixpanelService.initialize(projectToken, true); // Enable consent for testing
+          
+          console.log('⏳ Waiting 2 seconds before tracking events...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Track app launch
+          console.log('📊 Tracking app launch event...');
+          mixpanelService.track(AnalyticsEvents.APP_OPENED, {
+            platform: Platform.OS,
+            timestamp: new Date().toISOString(),
+            app_version: '1.0.0',
+          });
+          
+          // Add a test event to verify connection
+          console.log('🧪 Tracking test event...');
+          mixpanelService.track('Mixpanel Test Event', {
+            test: true,
+            message: 'This is a test event to verify Mixpanel connection',
+            timestamp: new Date().toISOString(),
+          });
+          
+          console.log('✅ Mixpanel initialization and tracking complete!');
         }
-        console.log('📱 About to initialize Mixpanel...');
-        await mixpanelService.initialize(projectToken, true); // Enable consent for testing
         
-        console.log('⏳ Waiting 2 seconds before tracking events...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Check API version compatibility
+        console.log('🔍 Checking API version compatibility...');
+        try {
+          await promptForUpdateIfNeeded();
+          console.log('✅ API version check complete');
+        } catch (error) {
+          console.warn('⚠️ API version check failed:', error);
+          // Don't block app startup if version check fails
+        }
         
-        // Track app launch
-        console.log('📊 Tracking app launch event...');
-        mixpanelService.track(AnalyticsEvents.APP_OPENED, {
-          platform: Platform.OS,
-          timestamp: new Date().toISOString(),
-          app_version: '1.0.0',
-        });
+        // Restore navigation state from AsyncStorage
+        console.log('📍 Restoring navigation state...');
+        try {
+          const savedStateString = await AsyncStorage.getItem(PERSISTENCE_KEY);
+          const savedVersion = await AsyncStorage.getItem('APP_VERSION');
+          
+          if (savedStateString) {
+            // Check if the saved state is from the current app version
+            if (savedVersion !== APP_VERSION) {
+              console.log(`⚠️ Navigation state version mismatch (saved: ${savedVersion}, current: ${APP_VERSION}). Clearing old state.`);
+              await AsyncStorage.removeItem(PERSISTENCE_KEY);
+              await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
+            } else {
+              const state = JSON.parse(savedStateString);
+              
+              // Validate that the state has the expected structure
+              if (state && typeof state === 'object' && state.routes) {
+                console.log('✅ Navigation state restored');
+                setInitialNavigationState(state);
+              } else {
+                console.warn('⚠️ Invalid navigation state structure. Starting fresh.');
+                await AsyncStorage.removeItem(PERSISTENCE_KEY);
+              }
+            }
+          } else {
+            console.log('ℹ️ No saved navigation state found');
+            // Save current version for future checks
+            await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
+          }
+        } catch (error) {
+          console.error('❌ Failed to restore navigation state:', error);
+          // Clear potentially corrupted state
+          try {
+            await AsyncStorage.removeItem(PERSISTENCE_KEY);
+          } catch (clearError) {
+            console.error('Failed to clear corrupted state:', clearError);
+          }
+          // Continue without restored state - app will start fresh
+        }
         
-        // Add a test event to verify connection
-        console.log('🧪 Tracking test event...');
-        mixpanelService.track('Mixpanel Test Event', {
-          test: true,
-          message: 'This is a test event to verify Mixpanel connection',
-          timestamp: new Date().toISOString(),
-        });
-        
-        console.log('✅ Mixpanel initialization and tracking complete!');
       } catch (error) {
-        console.error('❌ Failed to initialize Mixpanel:', error);
+        console.error('❌ Failed to initialize app:', error);
+      } finally {
+        setIsReady(true);
       }
-      
-      setIsReady(true);
     };
 
     initializeApp();
@@ -347,12 +446,16 @@ function App() {
   }, [isReady]);
 
   if (!isReady) {
-    return <ActivityIndicator style={{ flex: 1 }} />;
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background }}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
   }
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppWithErrorBoundary />
+      <AppWithErrorBoundary initialNavigationState={initialNavigationState} />
     </QueryClientProvider>
   );
 }

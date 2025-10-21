@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   createStackNavigator,
   StackNavigationOptions,
 } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, TouchableOpacity } from 'react-native';
+import { Platform, TouchableOpacity, View, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinkingOptions } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
@@ -13,38 +13,51 @@ import { useScreenTracking } from '../hooks/useScreenTracking';
 
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { RootStackParamList, MainTabParamList } from '../types';
-import AddCourseNavigator from './AddCourseNavigator';
-import AddLectureNavigator from './AddLectureNavigator';
-import AddAssignmentNavigator from './AddAssignmentNavigator';
-import AddStudySessionNavigator from './AddStudySessionNavigator';
 import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
 import { AddLectureProvider } from '@/features/lectures/contexts/AddLectureContext';
-import { AddAssignmentProvider } from '@/features/assignments/contexts/AddAssignmentContext';
 import { AddStudySessionProvider } from '@/features/studySessions/contexts/AddStudySessionContext';
+import { OnboardingProvider } from '../contexts/OnboardingContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { AuthNavigationHandler } from '@/components/AuthNavigationHandler';
 
-// Screens
+// Critical screens - loaded immediately (NOT lazy loaded)
 import LaunchScreen from '@/shared/screens/LaunchScreen';
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
-import WelcomeScreen from '@/features/onboarding/screens/WelcomeScreen';
-import OnboardingNavigator from './OnboardingNavigator';
-import { OnboardingProvider } from '../contexts/OnboardingContext';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
-import { CalendarScreen } from '@/features/calendar';
 import { AccountScreen } from '@/features/user-profile/screens/AccountScreen';
-import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
-import { SettingsScreen } from '@/features/user-profile/screens';
-import { CoursesScreen, EditCourseModal, CourseDetailScreen } from '@/features/courses/screens';
-import TaskDetailModal from '@/shared/components/TaskDetailModal';
-import RecycleBinScreen from '@/features/data-management/screens/RecycleBinScreen';
-import { MFAEnrollmentScreen, MFAVerificationScreen } from '@/features/auth/screens';
-import { InAppBrowserScreen } from '@/shared/screens';
+
+// Lazy-loaded screens - loaded on demand
+const CalendarScreen = lazy(() => import('@/features/calendar').then(module => ({ default: module.CalendarScreen })));
+const ProfileScreen = lazy(() => import('@/features/user-profile/screens/ProfileScreen'));
+const SettingsScreen = lazy(() => import('@/features/user-profile/screens').then(module => ({ default: module.SettingsScreen })));
+const CoursesScreen = lazy(() => import('@/features/courses/screens').then(module => ({ default: module.CoursesScreen })));
+const EditCourseModal = lazy(() => import('@/features/courses/screens').then(module => ({ default: module.EditCourseModal })));
+const CourseDetailScreen = lazy(() => import('@/features/courses/screens').then(module => ({ default: module.CourseDetailScreen })));
+const TaskDetailModal = lazy(() => import('@/shared/components/TaskDetailModal'));
+const RecycleBinScreen = lazy(() => import('@/features/data-management/screens/RecycleBinScreen'));
+const MFAEnrollmentScreen = lazy(() => import('@/features/auth/screens').then(module => ({ default: module.MFAEnrollmentScreen })));
+const MFAVerificationScreen = lazy(() => import('@/features/auth/screens').then(module => ({ default: module.MFAVerificationScreen })));
+const InAppBrowserScreen = lazy(() => import('@/shared/screens').then(module => ({ default: module.InAppBrowserScreen })));
+
+// Lazy-loaded navigators
+const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
+const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
+const AddLectureNavigator = lazy(() => import('./AddLectureNavigator'));
+const AddStudySessionNavigator = lazy(() => import('./AddStudySessionNavigator'));
+
+// Lazy-loaded single screens for simplified flows
+const AddAssignmentScreen = lazy(() => import('@/features/assignments/screens/AddAssignmentScreen'));
 
 // Navigators
 const Stack = createStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
+// Loading fallback component
+const LoadingFallback = () => (
+  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' }}>
+    <ActivityIndicator size="large" color="#007AFF" />
+  </View>
+);
 
 // Tab bar icon helper for cleaner code
 const getTabBarIcon = (
@@ -152,46 +165,53 @@ const MainTabNavigator: React.FC = () => {
   );
 };
 
-// AddCourse Flow Wrapper with Provider
+// AddCourse Flow Wrapper with Provider (lazy loaded)
 const AddCourseFlow = () => (
-  <AddCourseProvider>
-    <AddCourseNavigator />
-  </AddCourseProvider>
+  <Suspense fallback={<LoadingFallback />}>
+    <AddCourseProvider>
+      <AddCourseNavigator />
+    </AddCourseProvider>
+  </Suspense>
 );
 
-// AddLecture Flow Wrapper with Provider
+// AddLecture Flow Wrapper with Provider (lazy loaded)
 const AddLectureFlow = () => (
-  <AddLectureProvider>
-    <AddLectureNavigator />
-  </AddLectureProvider>
+  <Suspense fallback={<LoadingFallback />}>
+    <AddLectureProvider>
+      <AddLectureNavigator />
+    </AddLectureProvider>
+  </Suspense>
 );
 
-// AddAssignment Flow Wrapper with Provider
+// AddAssignment Flow - Single screen modal (lazy loaded)
 const AddAssignmentFlow = () => (
-  <FeatureErrorBoundary featureName="the Assignment Creation flow">
-    <AddAssignmentProvider>
-      <AddAssignmentNavigator />
-    </AddAssignmentProvider>
-  </FeatureErrorBoundary>
+  <Suspense fallback={<LoadingFallback />}>
+    <FeatureErrorBoundary featureName="the Assignment Creation flow">
+      <AddAssignmentScreen />
+    </FeatureErrorBoundary>
+  </Suspense>
 );
 
-// AddStudySession Flow Wrapper with Provider
+// AddStudySession Flow Wrapper with Provider (lazy loaded)
 const AddStudySessionFlow = () => (
-  <AddStudySessionProvider>
-    <AddStudySessionNavigator />
-  </AddStudySessionProvider>
+  <Suspense fallback={<LoadingFallback />}>
+    <AddStudySessionProvider>
+      <AddStudySessionNavigator />
+    </AddStudySessionProvider>
+  </Suspense>
 );
 
 const OnboardingFlow = () => (
-  <OnboardingProvider>
-    <OnboardingNavigator />
-  </OnboardingProvider>
+  <Suspense fallback={<LoadingFallback />}>
+    <OnboardingProvider>
+      <OnboardingNavigator />
+    </OnboardingProvider>
+  </Suspense>
 );
 
 
 // Screen configuration objects for better organization
 const authScreens = {
-  Welcome: { component: WelcomeScreen },
   OnboardingFlow: { component: OnboardingFlow },
 };
 
@@ -429,70 +449,72 @@ export const AppNavigator: React.FC = () => {
       {/* Handle navigation based on auth state changes */}
       <AuthNavigationHandler />
       
-      <Stack.Navigator 
-        screenOptions={sharedScreenOptions}
-        linking={linking}
-      >
-        {/* Always show Launch screen */}
-        <Stack.Screen name="Launch" component={LaunchScreen} />
-      
-      {/* Always show Main screen - it will handle authentication state internally */}
-      <Stack.Screen name="Main" component={MainTabNavigator} />
-      
-      {/* Always show InAppBrowserScreen - needed for both authenticated and guest users */}
-      <Stack.Screen 
-        name="InAppBrowserScreen" 
-        component={InAppBrowserScreen}
-        options={{ 
-          presentation: 'modal' as const,
-          headerShown: false 
-        }}
-      />
-      
-      {/* Render screens based on authentication state */}
-      {session ? (
-        <>
-          {/* Main app screens (excluding Main since it's always available) */}
-          {Object.entries(mainScreens)
-            .filter(([name]) => name !== 'Main')
+      {/* Wrap the entire navigator with Suspense for lazy-loaded screens */}
+      <Suspense fallback={<LoadingFallback />}>
+        <Stack.Navigator 
+          screenOptions={sharedScreenOptions}
+        >
+          {/* Always show Launch screen */}
+          <Stack.Screen name="Launch" component={LaunchScreen} />
+        
+        {/* Always show Main screen - it will handle authentication state internally */}
+        <Stack.Screen name="Main" component={MainTabNavigator} />
+        
+        {/* Always show InAppBrowserScreen - needed for both authenticated and guest users */}
+        <Stack.Screen 
+          name="InAppBrowserScreen" 
+          component={InAppBrowserScreen}
+          options={{ 
+            presentation: 'modal' as const,
+            headerShown: false 
+          }}
+        />
+        
+        {/* Render screens based on authentication state */}
+        {session ? (
+          <>
+            {/* Main app screens (excluding Main since it's always available) */}
+            {Object.entries(mainScreens)
+              .filter(([name]) => name !== 'Main')
+              .map(([name, config]) => (
+                <Stack.Screen 
+                  key={name} 
+                  name={name as any} 
+                  component={config.component} 
+                  options={(config as any).options || {}}
+                />
+              ))}
+          </>
+        ) : (
+          /* Auth screens */
+          renderScreens(authScreens)
+        )}
+        
+        {/* Modal flows available to both guest and authenticated users */}
+        <Stack.Group>
+          {/* Auth screen - available to both authenticated and guest users */}
+          <Stack.Screen 
+            name="Auth"
+            component={AuthScreen}
+            options={{
+              presentation: 'modal' as const,
+              headerShown: false,
+            }}
+          />
+          
+          {Object.entries(modalFlows)
+            .filter(([name]) => name !== 'InAppBrowserScreen')
             .map(([name, config]) => (
               <Stack.Screen 
                 key={name} 
                 name={name as any} 
                 component={config.component} 
-                options={(config as any).options || {}}
+                options={(config as any).options}
               />
             ))}
-        </>
-      ) : (
-        /* Auth screens */
-        renderScreens(authScreens)
-      )}
-      
-      {/* Modal flows available to both guest and authenticated users */}
-      <Stack.Group>
-        {/* Auth screen - available to both authenticated and guest users */}
-        <Stack.Screen 
-          name="Auth"
-          component={AuthScreen}
-          options={{
-            presentation: 'modal' as const,
-            headerShown: false,
-          }}
-        />
-        
-        {Object.entries(modalFlows)
-          .filter(([name]) => name !== 'InAppBrowserScreen')
-          .map(([name, config]) => (
-            <Stack.Screen 
-              key={name} 
-              name={name as any} 
-              component={config.component} 
-              options={(config as any).options}
-            />
-          ))}
-      </Stack.Group>
-    </Stack.Navigator>
+        </Stack.Group>
+      </Stack.Navigator>
+      </Suspense>
     </>
   );
 };

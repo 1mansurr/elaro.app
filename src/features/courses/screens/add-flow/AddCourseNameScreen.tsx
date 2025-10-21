@@ -7,6 +7,7 @@ import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 const COURSE_LIMITS: { [key: string]: number } = {
   free: 2,
@@ -76,7 +77,9 @@ const AddCourseNameScreen = () => {
                 await queryClient.invalidateQueries({ queryKey: ['courses'] });
                 Alert.alert('Success!', 'You now have access to all premium features.');
               } catch (e) {
-                Alert.alert('Error', 'Could not complete the upgrade.');
+                const errorTitle = getErrorTitle(e);
+                const errorMessage = mapErrorCodeToMessage(e);
+                Alert.alert(errorTitle, errorMessage);
               }
             },
           }] : [])

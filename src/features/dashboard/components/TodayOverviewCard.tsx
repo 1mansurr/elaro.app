@@ -48,16 +48,26 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscr
 
   return (
     <View style={styles.card}>
-      <Text style={styles.header}>Today&apos;s Overview</Text>
+      <Text style={styles.header}>Today at a Glance</Text>
       
-      <View style={styles.statsGrid}>
-        <StatItem label="Lectures" count={overview?.lectures || 0} />
-        <StatItem label="Study Sessions" count={overview?.studySessions || 0} />
-        <StatItem label="Assignments" count={overview?.assignments || 0} />
-        <StatItem label="Reviews" count={overview?.reviews || 0} />
+      <View style={styles.statsRow}>
+        <View style={styles.statCompact}>
+          <Text style={styles.statCountCompact}>{overview?.lectures || 0}</Text>
+          <Text style={styles.statLabelCompact}>Lectures</Text>
+        </View>
+        <View style={styles.statCompact}>
+          <Text style={styles.statCountCompact}>{overview?.studySessions || 0}</Text>
+          <Text style={styles.statLabelCompact}>Study</Text>
+        </View>
+        <View style={styles.statCompact}>
+          <Text style={styles.statCountCompact}>{overview?.assignments || 0}</Text>
+          <Text style={styles.statLabelCompact}>Assignments</Text>
+        </View>
+        <View style={styles.statCompact}>
+          <Text style={styles.statCountCompact}>{overview?.reviews || 0}</Text>
+          <Text style={styles.statLabelCompact}>Reviews</Text>
+        </View>
       </View>
-      
-      <View style={styles.divider} />
       
       <View style={styles.monthlyCountContainer}>
         <Text style={styles.monthlyCountText}>
@@ -71,65 +81,60 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscr
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: '#E8E8ED',
   },
   header: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6c757d',
-    marginBottom: 20,
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statItem: {
-    width: '48%',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  statCount: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#343a40',
-  },
-  statLabel: {
     fontSize: 14,
-    color: '#6c757d',
-    marginTop: 4,
-    textAlign: 'center',
+    fontWeight: '600',
+    color: '#8E8E93',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  divider: {
-    height: 1,
-    backgroundColor: '#e9ecef',
-    marginVertical: 8,
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  statCompact: {
+    alignItems: 'center',
+  },
+  statCountCompact: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  statLabelCompact: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginTop: 2,
   },
   monthlyCountContainer: {
-    marginTop: 16,
-    paddingTop: 16,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: '#E5E5EA',
+    borderTopColor: '#E8E8ED',
     alignItems: 'center',
   },
   monthlyCountText: {
-    fontSize: 14,
-    color: '#495057',
-    fontStyle: 'italic',
+    fontSize: 12,
+    color: '#8E8E93',
   },
   limitText: {
-    color: '#6D6D72', // A slightly lighter color for the non-bold part
+    color: '#8E8E93',
   },
   bold: {
     fontWeight: 'bold',
+    color: '#1A1A1A',
   },
 });
 

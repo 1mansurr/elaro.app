@@ -216,6 +216,18 @@ export const TASK_EVENTS = {
     },
   },
   
+  // Task restoration (undo delete)
+  TASK_RESTORED: {
+    name: 'Task Restored',
+    properties: {
+      task_id: 'string',
+      task_type: 'string',
+      task_title: 'string',
+      restore_source: 'string', // 'undo_toast', 'recycle_bin', etc.
+      offline_mode: 'boolean',
+    },
+  },
+  
   // Task viewing
   TASK_DETAILS_VIEWED: {
     name: 'Task Details Viewed',

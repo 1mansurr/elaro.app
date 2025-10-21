@@ -247,6 +247,142 @@ const notificationService = {
       return 0;
     }
   },
+
+  /**
+   * Sets up notification categories with actions for interactive notifications.
+   * Should be called once during app initialization.
+   */
+  async setupNotificationCategories(): Promise<void> {
+    try {
+      // Assignment category with complete and snooze actions
+      await Notifications.setNotificationCategoryAsync('assignment', [
+        {
+          identifier: 'complete',
+          buttonTitle: '✓ Complete',
+          options: {
+            opensAppToForeground: false,
+          },
+        },
+        {
+          identifier: 'snooze',
+          buttonTitle: 'Snooze 1h',
+          options: {
+            opensAppToForeground: false,
+          },
+        },
+      ]);
+
+      // SRS review category
+      await Notifications.setNotificationCategoryAsync('srs_review', [
+        {
+          identifier: 'review_now',
+          buttonTitle: '🧠 Review Now',
+          options: {
+            opensAppToForeground: true,
+          },
+        },
+        {
+          identifier: 'snooze',
+          buttonTitle: 'Later',
+          options: {
+            opensAppToForeground: false,
+          },
+        },
+      ]);
+
+      // Lecture category
+      await Notifications.setNotificationCategoryAsync('lecture', [
+        {
+          identifier: 'view_details',
+          buttonTitle: 'View Details',
+          options: {
+            opensAppToForeground: true,
+          },
+        },
+        {
+          identifier: 'dismiss',
+          buttonTitle: 'Dismiss',
+          options: {
+            opensAppToForeground: false,
+          },
+        },
+      ]);
+
+      // Daily summary category
+      await Notifications.setNotificationCategoryAsync('daily_summary', [
+        {
+          identifier: 'view_tasks',
+          buttonTitle: 'View Tasks',
+          options: {
+            opensAppToForeground: true,
+          },
+        },
+      ]);
+
+      console.log('✅ Notification categories set up successfully');
+    } catch (error) {
+      console.error('Error setting up notification categories:', error);
+    }
+  },
+
+  /**
+   * Sets up Android notification channels for grouping
+   */
+  async setupAndroidChannels(): Promise<void> {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      // Create channel groups
+      await Notifications.setNotificationChannelGroupAsync('tasks', {
+        name: 'Tasks & Assignments',
+        description: 'Notifications about your tasks and assignments',
+      });
+
+      await Notifications.setNotificationChannelGroupAsync('learning', {
+        name: 'Learning & Reviews',
+        description: 'Spaced repetition and study session reminders',
+      });
+
+      // Create channels
+      await Notifications.setNotificationChannelAsync('assignments', {
+        name: 'Assignments',
+        description: 'Assignment due date reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        groupId: 'tasks',
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF6B6B',
+      });
+
+      await Notifications.setNotificationChannelAsync('lectures', {
+        name: 'Lectures',
+        description: 'Lecture schedule reminders',
+        importance: Notifications.AndroidImportance.HIGH,
+        groupId: 'tasks',
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#4ECDC4',
+      });
+
+      await Notifications.setNotificationChannelAsync('srs', {
+        name: 'Spaced Repetition',
+        description: 'Review reminders for better learning',
+        importance: Notifications.AndroidImportance.DEFAULT,
+        groupId: 'learning',
+        vibrationPattern: [0, 250],
+        lightColor: '#95E1D3',
+      });
+
+      await Notifications.setNotificationChannelAsync('summaries', {
+        name: 'Daily Summaries',
+        description: 'Your daily task summaries',
+        importance: Notifications.AndroidImportance.LOW,
+        groupId: 'learning',
+      });
+
+      console.log('✅ Android notification channels set up successfully');
+    } catch (error) {
+      console.error('Error setting up Android channels:', error);
+    }
+  },
 };
 
 export default notificationService;

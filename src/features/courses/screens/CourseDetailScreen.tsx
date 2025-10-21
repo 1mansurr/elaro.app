@@ -7,6 +7,10 @@ import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { QueryStateWrapper } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useNetwork } from '@/contexts/NetworkContext';
+import { coursesApiMutations } from '@/features/courses/services/mutations';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 // Define the route prop type for this screen
 type CourseDetailScreenRouteProp = RouteProp<RootStackParamList, 'CourseDetail'>;
@@ -16,6 +20,8 @@ const CourseDetailScreen = () => {
   const route = useRoute<CourseDetailScreenRouteProp>();
   const navigation = useNavigation<CourseDetailScreenNavigationProp>();
   const { courseId } = route.params;
+  const { user } = useAuth();
+  const { isOnline } = useNetwork();
   const { data: course, isLoading, isError, error, refetch, isRefetching } = useCourseDetail(courseId);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -32,20 +38,22 @@ const CourseDetailScreen = () => {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
+            if (!user?.id) {
+              Alert.alert('Error', 'User not authenticated.');
+              return;
+            }
+
             setIsDeleting(true);
             try {
-              const { error: deleteError } = await supabase.functions.invoke('delete-course', {
-                body: {
-                  courseId,
-                },
-              });
-
-              if (deleteError) throw deleteError;
+              // Use the offline-aware mutation service
+              await coursesApiMutations.delete(courseId, isOnline, user.id);
 
               Alert.alert('Success', 'Course deleted successfully.');
               navigation.goBack();
             } catch (error) {
-              Alert.alert('Error', 'Failed to delete the course.');
+              const errorTitle = getErrorTitle(error);
+              const errorMessage = mapErrorCodeToMessage(error);
+              Alert.alert(errorTitle, errorMessage);
               console.error('Delete Error:', error instanceof Error ? error.message : 'Unknown error');
             } finally {
               setIsDeleting(false);

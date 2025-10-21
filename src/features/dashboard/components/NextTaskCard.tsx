@@ -1,11 +1,12 @@
 // FILE: src/components/NextTaskCard.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { memo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Task } from '@/types';
 import { Button } from '@/shared/components';
+import { isTempId } from '@/utils/uuid';
 
 interface Props {
   task: Task | null;
@@ -29,11 +30,23 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
 
   const renderContent = () => {
     if (task) {
+      const isPendingSync = isTempId(task.id);
+      
       return (
         <>
-          <Text style={styles.taskType}>
-            {task.type.replace('_', ' ')}
-          </Text>
+          <View style={styles.typeRow}>
+            <Text style={styles.taskType}>
+              {task.type.replace('_', ' ')}
+            </Text>
+            {/* Pending Sync Indicator */}
+            {isPendingSync && (
+              <View style={styles.pendingBadge}>
+                <Ionicons name="cloud-upload-outline" size={14} color="#FF9500" />
+                <Text style={styles.pendingText}>Pending Sync</Text>
+              </View>
+            )}
+          </View>
+          
           <Text style={styles.taskName}>{task.name}</Text>
           
           <View style={styles.footer}>
@@ -86,56 +99,82 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 24,
-    marginBottom: 20,
+    borderRadius: 20,
+    padding: 32,
+    marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 10,
+    borderWidth: 2,
+    borderColor: '#F0F0F5',
   },
   header: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6c757d',
-    marginBottom: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#007AFF',
+    marginBottom: 20,
+    letterSpacing: 0.5,
+  },
+  typeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   taskType: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#007AFF',
     textTransform: 'uppercase',
-    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3E0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+  },
+  pendingText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FF9500',
   },
   taskName: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#343a40',
-    marginBottom: 16,
+    color: '#1A1A1A',
+    marginBottom: 20,
+    lineHeight: 36,
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    paddingTop: 16,
+    borderTopWidth: 2,
+    borderTopColor: '#E8E8ED',
+    paddingTop: 20,
+    marginTop: 4,
   },
   courseName: {
-    fontSize: 16,
-    color: '#495057',
-  },
-  time: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#343a40',
-  },
-  noTaskText: {
     fontSize: 18,
     color: '#495057',
+    fontWeight: '600',
+  },
+  time: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#007AFF',
+  },
+  noTaskText: {
+    fontSize: 20,
+    color: '#495057',
     textAlign: 'center',
-    paddingVertical: 20,
+    paddingVertical: 24,
   },
   guestContainer: {
     alignItems: 'center',
@@ -144,14 +183,19 @@ const styles = StyleSheet.create({
   viewDetailsButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 16,
     alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#F0F5FF',
+    borderRadius: 10,
   },
   viewDetailsText: {
-    color: '#2C5EFF',
-    fontWeight: '600',
+    color: '#007AFF',
+    fontWeight: '700',
     marginRight: 4,
+    fontSize: 16,
   },
 });
 
-export default NextTaskCard;
+export default memo(NextTaskCard);

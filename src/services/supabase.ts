@@ -63,7 +63,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
   global: {
-    fetch: fetchWithTimeout,
+    fetch: fetchWithTimeout as unknown as typeof fetch,
   },
 });
 
@@ -148,6 +148,10 @@ export const authService = {
       subscription_tier: (data as any).subscription_tier ?? null,
       subscription_status: (data as any).subscription_status ?? null,
       subscription_expires_at: (data as any).subscription_expires_at ?? null,
+      account_status: (data as any).account_status ?? 'active',
+      deleted_at: (data as any).deleted_at ?? null,
+      deletion_scheduled_at: (data as any).deletion_scheduled_at ?? null,
+      suspension_end_date: (data as any).suspension_end_date ?? null,
       created_at: (data as any).created_at,
       updated_at: (data as any).updated_at,
       user_metadata: {

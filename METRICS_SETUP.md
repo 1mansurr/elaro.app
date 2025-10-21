@@ -10,7 +10,7 @@ Your Edge Functions are now instrumented with metrics collection using StatsD. T
 
 **Recommended: Datadog (Free Tier)**
 
-Sign up at [Datadog.com](https://www.datadoghq.com/free-datadog-trial/)
+Sign up at [Datadog.com](https://www.datadoghq.com/free-datadog-trial/ )
 
 After signing up:
 1. Go to **Organization Settings** → **API Keys**

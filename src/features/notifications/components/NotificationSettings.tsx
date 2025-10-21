@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, Switch, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Switch, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 import { useTheme } from '@/contexts/ThemeContext';
+import { QueryStateWrapper } from '@/shared/components';
 
 interface ListItemProps {
   icon: string;
@@ -62,33 +63,23 @@ export const NotificationSettings: React.FC = () => {
   const { preferences, isLoading, isError, updatePreferences, isUpdating } = useNotificationPreferences();
   const { theme } = useTheme();
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={theme.accent} />
-        <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
-          Loading notification settings...
-        </Text>
-      </View>
-    );
-  }
-
-  if (isError || !preferences) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={[styles.errorText, { color: theme.destructive }]}>
-          Could not load notification settings.
-        </Text>
-      </View>
-    );
-  }
-
   const handleToggle = (key: keyof typeof preferences, value: boolean) => {
-    updatePreferences({ [key]: value });
+    if (preferences) {
+      updatePreferences({ [key]: value });
+    }
   };
 
   return (
-    <View style={styles.container}>
+    <QueryStateWrapper
+      isLoading={isLoading}
+      isError={isError}
+      error={new Error('Could not load notification settings')}
+      data={preferences}
+      emptyTitle="No Settings Available"
+      emptyMessage="Unable to load notification preferences."
+      emptyIcon="settings-outline"
+    >
+      <View style={styles.container}>
       {/* Master Reminders Toggle */}
       <ListItem
         label="Enable All Reminders"
@@ -183,30 +174,13 @@ export const NotificationSettings: React.FC = () => {
         }
       />
     </View>
+    </QueryStateWrapper>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 20,
-  },
-  loadingText: {
-    marginLeft: 12,
-    fontSize: 14,
-  },
-  errorContainer: {
-    paddingVertical: 20,
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 14,
-    textAlign: 'center',
   },
   listItem: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import { supabase } from '@/services/supabase';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { Course } from '@/types';
 import { Button } from '@/shared/components';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type SelectCourseScreenNavigationProp = StackNavigationProp<AddStudySessionStackParamList, 'SelectCourse'>;
 
@@ -31,7 +32,9 @@ const SelectCourseScreen = () => {
         const { data, error } = await supabase.from('courses').select('id, course_name, course_code, about_course');
         
         if (error) {
-          Alert.alert('Error', 'Could not fetch your courses.');
+          const errorTitle = getErrorTitle(error);
+          const errorMessage = mapErrorCodeToMessage(error);
+          Alert.alert(errorTitle, errorMessage);
           return;
         }
         

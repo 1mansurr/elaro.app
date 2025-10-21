@@ -89,6 +89,7 @@ async function handleRevenueCatWebhook(
           .from('users')
           .update({
             subscription_tier: subscriptionTier,
+            subscription_status: subscriptionTier === 'oddity' ? 'active' : null,
             subscription_expires_at: expirationDate?.toISOString() || null,
             updated_at: new Date().toISOString(),
           })
@@ -112,10 +113,18 @@ async function handleRevenueCatWebhook(
       case 'BILLING_ISSUE':
         console.log(`⚠️ Processing ${eventType} for user ${app_user_id}`);
 
+        // Determine appropriate subscription_status based on event type
+        const subscriptionStatus = eventType === 'BILLING_ISSUE' 
+          ? 'past_due' 
+          : eventType === 'CANCELLATION' 
+            ? 'canceled' 
+            : 'expired';
+
         const { error: cancelError } = await supabaseAdmin
           .from('users')
           .update({
             subscription_tier: 'free',
+            subscription_status: subscriptionStatus,
             subscription_expires_at: null,
             updated_at: new Date().toISOString(),
           })

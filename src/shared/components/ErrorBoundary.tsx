@@ -1,6 +1,7 @@
 import React, { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { DevSettings } from 'react-native';
+import * as Sentry from '@sentry/react-native';
 import { COLORS, SPACING } from '@/constants/theme';
 
 interface Props {
@@ -28,8 +29,14 @@ class ErrorBoundary extends Component<Props, State> {
     // Log the error to console
     console.error('Global Error Boundary caught an error:', error, errorInfo);
     
-    // You can also send this to your error tracking service (Sentry, etc.)
-    // Sentry.captureException(error, { contexts: { react: { componentStack: errorInfo.componentStack } } });
+    // Send to Sentry for error tracking
+    Sentry.captureException(error, { 
+      contexts: { 
+        react: { 
+          componentStack: errorInfo.componentStack 
+        } 
+      } 
+    });
   }
 
   handleRestart = () => {

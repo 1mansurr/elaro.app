@@ -7,12 +7,14 @@ import { useAddLecture } from '@/features/lectures/contexts/AddLectureContext';
 import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { subMinutes } from 'date-fns';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useTotalTaskCount } from '@/hooks';
 import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type RemindersScreenNavigationProp = StackNavigationProp<AddLectureStackParamList, 'Reminders'>;
 
@@ -20,6 +22,7 @@ const RemindersScreen = () => {
   const navigation = useNavigation<RemindersScreenNavigationProp>();
   const { lectureData, updateLectureData, resetLectureData } = useAddLecture();
   const { session, user } = useAuth();
+  const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
   const { limitReached, monthlyTaskCount, monthlyLimit, isLoading: isTaskLimitLoading } = useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
@@ -58,7 +61,7 @@ const RemindersScreen = () => {
 
       setIsLoading(true);
 
-      // Create the lecture using the new API layer
+      // Create the lecture using the new API layer with offline support
       const newLecture = await api.mutations.lectures.create({
         course_id: taskData.course.id,
         lecture_name: `${taskData.course.courseName} Lecture`,
@@ -68,7 +71,7 @@ const RemindersScreen = () => {
         is_recurring: taskData.recurrence !== 'none',
         recurring_pattern: taskData.recurrence,
         reminders: taskData.reminders,
-      });
+      }, isOnline, user?.id || '');
 
       // Clear pending data
       await clearPendingTask();
@@ -90,7 +93,9 @@ const RemindersScreen = () => {
 
     } catch (error) {
       console.error('Failed to auto-create lecture:', error);
-      Alert.alert('Error', 'Failed to save your lecture. Please try creating it again.');
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -134,7 +139,7 @@ const RemindersScreen = () => {
     setIsLoading(true);
 
     try {
-      // Create the lecture using the new API layer
+      // Create the lecture using the new API layer with offline support
       const newLecture = await api.mutations.lectures.create({
         course_id: lectureData.course.id,
         // Auto-generate the lecture name from the course name.
@@ -146,7 +151,7 @@ const RemindersScreen = () => {
         is_recurring: lectureData.recurrence !== 'none',
         recurring_pattern: lectureData.recurrence,
         reminders: reminders, // Pass the array of reminder minutes
-      });
+      }, isOnline, user?.id || '');
 
       // Reminders are now handled by the backend create-lecture function
 
@@ -171,9 +176,10 @@ const RemindersScreen = () => {
       ]);
     } catch (error) {
       console.error('Failed to create lecture:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save lecture. Please try again.';
-      Alert.alert('Error', errorMessage);
-    } finally {
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
+    } finally{
       setIsLoading(false);
     }
   };

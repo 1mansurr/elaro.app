@@ -91,9 +91,6 @@ CREATE TRIGGER on_auth_user_created
   FOR EACH ROW
   EXECUTE FUNCTION public.handle_new_user();
 
--- Add comment to the trigger
-COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'Automatically creates user profile and preferences when a new user signs up';
-
 -- Step 4: Verify the trigger was created correctly
 -- This will show in the migration output
 DO $$

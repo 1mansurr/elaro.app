@@ -12,20 +12,32 @@ import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
-import { useCompleteTask, useDeleteTask } from '@/hooks';
+import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 import { Button, QueryStateWrapper } from '@/shared/components';
+import { useToast } from '@/contexts/ToastContext';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
+import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
+import { HomeScreenEmptyState } from '../components/HomeScreenEmptyState';
 import { supabase } from '@/services/supabase';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { TASK_EVENTS } from '@/utils/analyticsEvents';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+
+// Helper function to get greeting based on time of day
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+};
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -42,6 +54,8 @@ const HomeScreen = () => {
   // Optimistic mutation hooks
   const completeTaskMutation = useCompleteTask();
   const deleteTaskMutation = useDeleteTask();
+  const restoreTaskMutation = useRestoreTask();
+  const { showToast } = useToast();
 
   const promptSignUp = () => {
     mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
@@ -110,7 +124,7 @@ const HomeScreen = () => {
   };
 
 
-  const handleViewDetails = (task: Task) => {
+  const handleViewDetails = useCallback((task: Task) => {
     mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
       task_id: task.id,
       task_type: task.type,
@@ -119,7 +133,7 @@ const HomeScreen = () => {
       timestamp: new Date().toISOString(),
     });
     setSelectedTask(task);
-  };
+  }, []);
 
   const handleCloseSheet = useCallback(() => {
     setSelectedTask(null);
@@ -164,7 +178,7 @@ const HomeScreen = () => {
       await completeTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
-        taskTitle: selectedTask.title,
+        taskTitle: selectedTask.title || selectedTask.name,
       });
       
       // Show success message
@@ -177,39 +191,70 @@ const HomeScreen = () => {
     handleCloseSheet();
   }, [selectedTask, completeTaskMutation, handleCloseSheet]);
 
+  // Handle swipe-to-complete for next task card
+  const handleSwipeComplete = useCallback(async () => {
+    const nextTask = homeData?.nextUpcomingTask;
+    if (!nextTask || isGuest) return;
+    
+    try {
+      await completeTaskMutation.mutateAsync({
+        taskId: nextTask.id,
+        taskType: nextTask.type,
+        taskTitle: nextTask.title || nextTask.name,
+      });
+      
+      // Show success toast
+      showToast({
+        message: `${nextTask.name} completed! 🎉`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error completing task via swipe:', error);
+    }
+  }, [homeData?.nextUpcomingTask, completeTaskMutation, showToast, isGuest]);
+
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
     
-    Alert.alert(
-      'Delete Task',
-      'Are you sure you want to delete this task?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              // The mutation handles optimistic updates automatically
-              await deleteTaskMutation.mutateAsync({
-                taskId: selectedTask.id,
-                taskType: selectedTask.type,
-                taskTitle: selectedTask.title,
-              });
-              
-              // Show success message
-              Alert.alert('Success', 'Task deleted successfully!');
-            } catch (error) {
-              // Error is already handled by the mutation hook
-              console.error('Error deleting task:', error);
-            }
-            
-            handleCloseSheet();
-          },
+    // Close the sheet first
+    handleCloseSheet();
+    
+    // Store task info for undo
+    const taskInfo = {
+      id: selectedTask.id,
+      type: selectedTask.type,
+      title: selectedTask.title || selectedTask.name,
+    };
+    
+    try {
+      // Delete the task (optimistic update)
+      await deleteTaskMutation.mutateAsync({
+        taskId: taskInfo.id,
+        taskType: taskInfo.type,
+        taskTitle: taskInfo.title,
+      });
+      
+      // Show undo toast
+      showToast({
+        message: `${taskInfo.title} moved to Recycle Bin`,
+        onUndo: async () => {
+          try {
+            await restoreTaskMutation.mutateAsync({
+              taskId: taskInfo.id,
+              taskType: taskInfo.type,
+              taskTitle: taskInfo.title,
+            });
+          } catch (error) {
+            console.error('Error restoring task:', error);
+          }
         },
-      ]
-    );
-  }, [selectedTask, deleteTaskMutation, handleCloseSheet]);
+        duration: 5000, // 5 seconds to undo
+      });
+    } catch (error) {
+      // Error is already handled by the mutation hook
+      console.error('Error deleting task:', error);
+    }
+  }, [selectedTask, deleteTaskMutation, restoreTaskMutation, showToast, handleCloseSheet]);
 
   // Trial banner logic
   const getTrialDaysRemaining = () => {
@@ -283,13 +328,25 @@ const HomeScreen = () => {
               Alert.alert('Success!', 'You now have access to all premium features.');
 
             } catch (error: any) {
-              Alert.alert('Error', 'Could not complete the upgrade. Please try again.');
+              const errorTitle = getErrorTitle(error);
+              const errorMessage = mapErrorCodeToMessage(error);
+              Alert.alert(errorTitle, errorMessage);
               console.error('Free upgrade error:', error);
             }
           },
         },
       ]
     );
+  };
+
+  // Get personalized title
+  const getPersonalizedTitle = () => {
+    if (isGuest) {
+      return "Let's Make Today Count";
+    }
+    
+    const name = user?.username || user?.first_name || 'there';
+    return `${getGreeting()}, ${name}!`;
   };
 
   // Wrap content with QueryStateWrapper for authenticated users
@@ -314,13 +371,18 @@ const HomeScreen = () => {
             onDismiss={handleDismissBanner}
           />
         )}
-        <Text style={styles.title}>Let&apos;s Make Today Count</Text>
-        <NextTaskCard 
-          task={isGuest ? null : (homeData?.nextUpcomingTask || null)} 
-          isGuestMode={isGuest}
-          onAddActivity={() => handleFabStateChange({ isOpen: true })}
-          onViewDetails={handleViewDetails}
-        />
+        <Text style={styles.title}>{getPersonalizedTitle()}</Text>
+        <SwipeableTaskCard
+          onSwipeComplete={handleSwipeComplete}
+          enabled={!isGuest && !!homeData?.nextUpcomingTask}
+        >
+          <NextTaskCard 
+            task={isGuest ? null : (homeData?.nextUpcomingTask || null)} 
+            isGuestMode={isGuest}
+            onAddActivity={() => handleFabStateChange({ isOpen: true })}
+            onViewDetails={handleViewDetails}
+          />
+        </SwipeableTaskCard>
         <TodayOverviewCard
           overview={isGuest ? null : (homeData?.todayOverview || null)}
           monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
@@ -372,9 +434,9 @@ const HomeScreen = () => {
         refetch={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
         isRefetching={isRefetching}
         onRefresh={refetch}
-        emptyTitle="No activities yet"
-        emptyMessage="Start by adding your first lecture, assignment, or study session!"
-        emptyIcon="calendar-outline"
+        emptyStateComponent={
+          <HomeScreenEmptyState onAddActivity={() => handleFabStateChange({ isOpen: true })} />
+        }
         skeletonComponent={<TaskCardSkeleton />}
         skeletonCount={3}
       >

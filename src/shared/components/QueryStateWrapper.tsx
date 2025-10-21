@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import { mapErrorCodeToMessage, getErrorTitle, isRecoverableError } from '@/utils/errorMapping';
 
 interface QueryStateWrapperProps {
   isLoading: boolean;
@@ -16,8 +17,9 @@ interface QueryStateWrapperProps {
   emptyTitle?: string;
   emptyMessage?: string;
   emptyIcon?: keyof typeof Ionicons.glyphMap;
-  skeletonComponent?: React.ReactElement; // NEW: Optional skeleton component
-  skeletonCount?: number; // NEW: Number of skeleton items to show (default: 5)
+  emptyStateComponent?: React.ReactElement; // NEW: Optional custom empty state component
+  skeletonComponent?: React.ReactElement; // Optional skeleton component
+  skeletonCount?: number; // Number of skeleton items to show (default: 5)
 }
 
 /**
@@ -55,6 +57,7 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
   emptyTitle = "No data found",
   emptyMessage = "There's nothing to show here yet.",
   emptyIcon = "document-outline",
+  emptyStateComponent,
   skeletonComponent,
   skeletonCount = 5,
 }) => {
@@ -88,6 +91,10 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
 
   // Error State
   if (isError) {
+    const errorTitle = getErrorTitle(error);
+    const errorMessage = mapErrorCodeToMessage(error);
+    const canRetry = isRecoverableError(error);
+    
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <Ionicons 
@@ -96,12 +103,12 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
           color={theme.destructive} 
         />
         <Text style={[styles.errorTitle, { color: theme.text }]}>
-          Something went wrong
+          {errorTitle}
         </Text>
         <Text style={[styles.errorMessage, { color: theme.textSecondary }]}>
-          {error?.message || 'An unexpected error occurred'}
+          {errorMessage}
         </Text>
-        {refetch && (
+        {refetch && canRetry && (
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: theme.accent }]}
             onPress={() => refetch()}
@@ -120,6 +127,29 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
   const isEmpty = data === null || data === undefined || (Array.isArray(data) && data.length === 0);
   
   if (isEmpty) {
+    // If custom empty state component is provided, use it
+    if (emptyStateComponent) {
+      if (onRefresh) {
+        return (
+          <ScrollView
+            style={{ flex: 1, backgroundColor: theme.background }}
+            contentContainerStyle={{ flexGrow: 1 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={onRefresh}
+                tintColor={theme.accent}
+                colors={[theme.accent]}
+              />
+            }
+          >
+            {emptyStateComponent}
+          </ScrollView>
+        );
+      }
+      return <View style={{ flex: 1, backgroundColor: theme.background }}>{emptyStateComponent}</View>;
+    }
+
     // Wrap empty state in ScrollView if pull-to-refresh is enabled
     if (onRefresh) {
       return (

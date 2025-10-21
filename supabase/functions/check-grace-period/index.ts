@@ -2,6 +2,8 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createScheduledHandler } from '../_shared/function-handler.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { sendPushNotification } from '../_shared/send-push-notification.ts';
+import { retryFetch } from '../_shared/retry.ts';
+import { circuitBreakers } from '../_shared/circuit-breaker.ts';
 
 async function handleGracePeriodCheck(supabaseAdmin: any) {
   console.log('🔍 Checking for users in grace period...');
@@ -16,33 +18,47 @@ async function handleGracePeriodCheck(supabaseAdmin: any) {
 
     let notifiedCount = 0;
     for (const user of activeUsers) {
-      const revenueCatApiKey = Deno.env.get('REVENUECAT_API_KEY');
-      const response = await fetch(`https://api.revenuecat.com/v1/subscribers/${user.id}`, {
-        headers: { 'Authorization': `Bearer ${revenueCatApiKey}` },
-      });
+      try {
+        const revenueCatApiKey = Deno.env.get('REVENUECAT_API_KEY');
+        
+        // Use circuit breaker + retry for resilient external API call
+        const response = await circuitBreakers.revenueCat.execute(async () => {
+          return await retryFetch(
+            `https://api.revenuecat.com/v1/subscribers/${user.id}`,
+            {
+              headers: { 'Authorization': `Bearer ${revenueCatApiKey}` },
+            },
+            3,  // max 3 retries
+            10000  // 10 second timeout
+          );
+        });
 
-      if (!response.ok) {
-        console.error(`Failed to fetch RevenueCat data for user ${user.id}`);
-        continue;
-      }
+        if (!response.ok) {
+          console.error(`Failed to fetch RevenueCat data for user ${user.id}: ${response.status}`);
+          continue;
+        }
 
       const rcData = await response.json();
       const oddityEntitlement = rcData?.subscriber?.entitlements?.oddity;
 
-      if (oddityEntitlement?.is_in_grace_period) {
-        const { data: devices } = await supabaseAdmin.from('user_devices').select('push_token').eq('user_id', user.id);
-        if (devices && devices.length > 0) {
-          const tokens = devices.map(d => d.push_token).filter(Boolean);
-          const expirationDate = new Date(oddityEntitlement.expires_date).toLocaleDateString();
-          await sendPushNotification(
-            supabaseAdmin,
-            tokens,
-            '⚠️ Payment Issue',
-            `Your ELARO subscription payment failed. Please update your payment method by ${expirationDate} to keep your Oddity access.`,
-            { type: 'grace_period_warning', userId: user.id }
-          );
-          notifiedCount++;
+        if (oddityEntitlement?.is_in_grace_period) {
+          const { data: devices } = await supabaseAdmin.from('user_devices').select('push_token').eq('user_id', user.id);
+          if (devices && devices.length > 0) {
+            const tokens = devices.map(d => d.push_token).filter(Boolean);
+            const expirationDate = new Date(oddityEntitlement.expires_date).toLocaleDateString();
+            await sendPushNotification(
+              supabaseAdmin,
+              tokens,
+              '⚠️ Payment Issue',
+              `Your ELARO subscription payment failed. Please update your payment method by ${expirationDate} to keep your Oddity access.`,
+              { type: 'grace_period_warning', userId: user.id }
+            );
+            notifiedCount++;
+          }
         }
+      } catch (userError) {
+        // Log error for this user but continue with others
+        console.error(`Error processing user ${user.id}:`, userError);
       }
     }
     return { success: true, message: `Grace period check completed. Notified ${notifiedCount} users.` };
