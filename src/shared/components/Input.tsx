@@ -62,17 +62,23 @@ export const Input: React.FC<InputProps> = ({
 
   useEffect(() => {
     if (animated) {
-      Animated.timing(focusAnim, {
+      const animation = Animated.timing(focusAnim, {
         toValue: isFocused ? 1 : 0,
         duration: ANIMATIONS.duration.fast,
         useNativeDriver: true,
-      }).start();
+      });
+      
+      animation.start();
+      
+      return () => {
+        animation.stop();
+      };
     }
   }, [isFocused, animated, focusAnim]);
 
   useEffect(() => {
     if (animated && error) {
-      Animated.sequence([
+      const animation = Animated.sequence([
         Animated.timing(shakeAnim, {
           toValue: 10,
           duration: 100,
@@ -88,7 +94,13 @@ export const Input: React.FC<InputProps> = ({
           duration: 100,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]);
+      
+      animation.start();
+      
+      return () => {
+        animation.stop();
+      };
     }
   }, [error, animated, shakeAnim]);
 

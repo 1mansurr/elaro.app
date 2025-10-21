@@ -1,16 +1,13 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { useDeletedItems } from '@/hooks/useDeletedItems';
+import React, { useState } from 'react';
+import { FlatList, StyleSheet, Alert } from 'react-native';
+import { useDeletedItemsQuery } from '@/hooks/useDeletedItemsQuery';
+import { QueryStateWrapper } from '@/shared/components';
 import { DeletedItemCard } from '../components/DeletedItemCard';
 import { supabase } from '@/services/supabase';
 
 const RecycleBinScreen = () => {
-  const { items, isLoading, fetchAllDeletedItems } = useDeletedItems();
+  const { data: items, isLoading, isError, error, refetch, isRefetching } = useDeletedItemsQuery();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchAllDeletedItems();
-  }, [fetchAllDeletedItems]);
 
   const handleRestore = async (itemId: string, itemType: string) => {
     setActionLoading(itemId);
@@ -36,7 +33,7 @@ const RecycleBinScreen = () => {
       Alert.alert('Error', `Failed to restore ${itemType}.`);
     } else {
       Alert.alert('Success', `${itemType.replace('_', ' ')} restored.`);
-      fetchAllDeletedItems(); // Refresh list
+      await refetch(); // Refresh list
     }
     setActionLoading(null);
   };
@@ -74,7 +71,7 @@ const RecycleBinScreen = () => {
               Alert.alert('Error', `Failed to permanently delete ${itemType}.`);
             } else {
               Alert.alert('Success', `${itemType.replace('_', ' ')} permanently deleted.`);
-              fetchAllDeletedItems(); // Refresh list
+              await refetch(); // Refresh list
             }
             setActionLoading(null);
           },
@@ -83,28 +80,33 @@ const RecycleBinScreen = () => {
     );
   };
 
-  if (isLoading) {
-    return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
-  }
-
-  if (items.length === 0) {
-    return <View style={styles.centered}><Text>Your trash can is empty.</Text></View>;
-  }
-
   return (
-    <FlatList
+    <QueryStateWrapper
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
       data={items}
-      keyExtractor={(item, index) => `${(item as any).type || 'unknown'}-${item.id || index}`}
-      renderItem={({ item }) => (
-        <DeletedItemCard
-          item={item as any}
-          onRestore={handleRestore}
-          onDeletePermanently={handleDeletePermanently}
-          isActionLoading={actionLoading === item.id}
-        />
-      )}
-      contentContainerStyle={styles.list}
-    />
+      refetch={refetch}
+      isRefetching={isRefetching}
+      onRefresh={refetch}
+      emptyTitle="Trash can is empty"
+      emptyMessage="Deleted items will appear here. Items are automatically deleted after 30 days."
+      emptyIcon="trash-outline"
+    >
+      <FlatList
+        data={items}
+        keyExtractor={(item, index) => `${(item as any).type || 'unknown'}-${item.id || index}`}
+        renderItem={({ item }) => (
+          <DeletedItemCard
+            item={item as any}
+            onRestore={handleRestore}
+            onDeletePermanently={handleDeletePermanently}
+            isActionLoading={actionLoading === item.id}
+          />
+        )}
+        contentContainerStyle={styles.list}
+      />
+    </QueryStateWrapper>
   );
 };
 

@@ -50,20 +50,20 @@ export const AnalyticsToggle: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surface }]}>
+    <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: theme.colors.text }]}>
+        <Text style={[styles.title, { color: theme.text }]}>
           Share Usage Analytics
         </Text>
-        <Text style={[styles.description, { color: theme.colors.textSecondary }]}>
+        <Text style={[styles.description, { color: theme.textSecondary }]}>
           Help us improve the app by sharing anonymous usage data. No personal information is collected.
         </Text>
       </View>
       <Switch
         value={isEnabled}
         onValueChange={handleToggle}
-        trackColor={{ false: theme.colors.border, true: theme.colors.primary }}
-        thumbColor={isEnabled ? theme.colors.surface : theme.colors.border}
+        trackColor={{ false: theme.border, true: theme.primary }}
+        thumbColor={isEnabled ? theme.surface : theme.border}
       />
     </View>
   );

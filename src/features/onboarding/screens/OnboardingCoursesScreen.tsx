@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity, ScrollView } from 'react-native';
 import { Button } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -21,6 +21,7 @@ const OnboardingCoursesScreen = () => {
   // Get courses directly from React Query
   const { data: courses, isLoading: coursesLoading } = useCourses();
   const [isLoading, setIsLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   // Check for pending course on component mount
   useEffect(() => {
@@ -57,12 +58,12 @@ const OnboardingCoursesScreen = () => {
     setIsLoading(true);
     try {
       // The username, university, and program come from the onboarding context
-      const { username, country, university, program } = onboardingData;
+      const { username, country, university, program, dateOfBirth, hasParentalConsent } = onboardingData;
       // The courses now come from our React Query hook
       const finalCourses = courses || [];
 
       const { error } = await supabase.functions.invoke('complete-onboarding', {
-        body: { username, country, university, program, courses: finalCourses },
+        body: { username, country, university, program, courses: finalCourses, dateOfBirth, hasParentalConsent, marketingOptIn },
       });
 
       if (error) {
@@ -92,7 +93,7 @@ const OnboardingCoursesScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Add your first courses</Text>
       <Text style={styles.subtitle}>
         Get a head start by adding up to 3 courses now. You can always add more later.
@@ -109,8 +110,30 @@ const OnboardingCoursesScreen = () => {
           ListEmptyComponent={
             <Text style={styles.noCoursesText}>No courses added yet.</Text>
           }
+          scrollEnabled={false}
         />
       )}
+
+      {/* Marketing Opt-In Section */}
+      <View style={styles.marketingSection}>
+        <TouchableOpacity
+          style={styles.checkboxContainer}
+          onPress={() => setMarketingOptIn(!marketingOptIn)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
+            {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
+          </View>
+          <View style={styles.checkboxTextContainer}>
+            <Text style={styles.checkboxLabel}>
+              Yes, send me helpful tips, new feature announcements, and special offers from ELARO.
+            </Text>
+            <Text style={styles.checkboxSubtext}>
+              You can change this anytime in your Settings.
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.buttonContainer}>
         <Button title="Back" onPress={handleBack} variant="outline" />
@@ -125,16 +148,16 @@ const OnboardingCoursesScreen = () => {
           loading={isLoading}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
+  container: { flexGrow: 1, padding: 20, backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
   subtitle: { fontSize: 16, textAlign: 'center', color: 'gray', marginBottom: 30 },
   loading: { marginVertical: 40 },
-  list: { flex: 1, marginBottom: 20 },
+  list: { marginBottom: 20 },
   courseItem: {
     backgroundColor: '#f8f9fa',
     padding: 15,
@@ -158,6 +181,53 @@ const styles = StyleSheet.create({
     color: '#666',
     fontStyle: 'italic',
     marginTop: 40,
+  },
+  marketingSection: {
+    marginTop: 20,
+    marginBottom: 20,
+    padding: 16,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: '#007AFF',
+    marginRight: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: '#007AFF',
+  },
+  checkmark: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  checkboxTextContainer: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: 15,
+    color: '#1a1a1a',
+    lineHeight: 22,
+  },
+  checkboxSubtext: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 4,
+    lineHeight: 18,
   },
   buttonContainer: { 
     flexDirection: 'row', 

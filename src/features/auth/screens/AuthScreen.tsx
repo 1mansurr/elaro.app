@@ -48,6 +48,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [emailError, setEmailError] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
@@ -72,6 +73,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setPassword(text);
   };
 
+  // Password validation checks
+  const passwordChecks = {
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecialChar: /[^a-zA-Z0-9]/.test(password),
+  };
+
+  // Check if password meets all requirements
+  const isPasswordValid = () => {
+    return password.length >= 8 &&
+           passwordChecks.hasLowercase &&
+           passwordChecks.hasUppercase &&
+           passwordChecks.hasNumber &&
+           passwordChecks.hasSpecialChar;
+  };
+
   const handleAuth = async () => {
     if (emailError) {
       Alert.alert('Invalid Email', 'Please correct the email address before proceeding.');
@@ -93,6 +111,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         );
         return;
       }
+      
+      // Check if password meets all requirements
+      if (!isPasswordValid()) {
+        Alert.alert(
+          'Password Requirements Not Met',
+          'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)'
+        );
+        return;
+      }
     }
     setLoading(true);
     try {
@@ -106,12 +133,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         : await signIn({ email, password });
 
       if (error) {
-        Alert.alert('Authentication Failed', error.message);
+        // Enhanced error handling for password-related errors
+        let errorMessage = error.message;
+        let errorTitle = 'Authentication Failed';
+        
+        // Check for various password-related error messages
+        if (errorMessage.includes('Password should contain') || 
+            errorMessage.includes('password') && errorMessage.includes('weak') ||
+            errorMessage.includes('Password is too weak') ||
+            errorMessage.includes('password strength')) {
+          errorTitle = 'Password Requirements Not Met';
+          errorMessage = 'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
+        } else if (errorMessage.includes('User already registered')) {
+          errorTitle = 'Account Already Exists';
+          errorMessage = 'An account with this email already exists. Please sign in instead.';
+        } else if (errorMessage.includes('Invalid login credentials')) {
+          errorTitle = 'Invalid Credentials';
+          errorMessage = 'The email or password you entered is incorrect. Please try again.';
+        }
+        
+        Alert.alert(errorTitle, errorMessage);
       } else {
         onAuthSuccess?.();
         navigation.goBack();
       }
-    } catch {
+    } catch (err) {
       Alert.alert('Error', 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -177,8 +223,69 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               value={password}
               onChangeText={checkPasswordStrength}
               placeholder="Enter your password"
-              secureTextEntry
+              secureTextEntry={!showPassword}
+              rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+              onRightIconPress={() => setShowPassword(!showPassword)}
             />
+
+            {/* Password Requirements Checklist */}
+            {mode === 'signup' && password.length > 0 && (
+              <View style={styles.passwordRequirements}>
+                <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasLowercase ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasLowercase ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[
+                    styles.requirementText,
+                    { color: passwordChecks.hasLowercase ? "#34C759" : "#FF3B30" }
+                  ]}>
+                    At least one lowercase letter (a-z)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasUppercase ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasUppercase ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[
+                    styles.requirementText,
+                    { color: passwordChecks.hasUppercase ? "#34C759" : "#FF3B30" }
+                  ]}>
+                    At least one uppercase letter (A-Z)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasNumber ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasNumber ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[
+                    styles.requirementText,
+                    { color: passwordChecks.hasNumber ? "#34C759" : "#FF3B30" }
+                  ]}>
+                    At least one number (0-9)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasSpecialChar ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[
+                    styles.requirementText,
+                    { color: passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30" }
+                  ]}>
+                    At least one special character (!@#$%...)
+                  </Text>
+                </View>
+              </View>
+            )}
 
             {/* Password Strength Indicator */}
             {mode === 'signup' && password.length > 0 && (
@@ -240,6 +347,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               title={mode === 'signup' ? 'Create Account' : 'Sign In'}
               onPress={handleAuth}
               loading={loading}
+              disabled={mode === 'signup' && !isPasswordValid()}
               style={styles.authButton}
             />
 
@@ -376,6 +484,29 @@ const styles = StyleSheet.create({
   strengthBar: {
     height: '100%',
     borderRadius: 5,
+  },
+  passwordRequirements: {
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.sm,
+    padding: SPACING.md,
+    backgroundColor: '#F8F9FA',
+    borderRadius: BORDER_RADIUS.md,
+  },
+  passwordRequirementsTitle: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+    color: '#333333',
+    marginBottom: SPACING.sm,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SPACING.xs,
+  },
+  requirementText: {
+    fontSize: FONT_SIZES.sm,
+    marginLeft: SPACING.xs,
+    flex: 1,
   },
 });
 

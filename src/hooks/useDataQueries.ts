@@ -2,10 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import { Course, Assignment, Lecture, StudySession, HomeScreenData, CalendarData } from '@/types';
 
-export const useCourses = () => {
+export const useCourses = (searchQuery?: string) => {
   return useQuery<Course[], Error>({
-    queryKey: ['courses'],
-    queryFn: api.courses.getAll,
+    queryKey: ['courses', searchQuery || ''], // Include searchQuery in the query key
+    queryFn: () => api.courses.getAll(searchQuery),
   });
 };
 

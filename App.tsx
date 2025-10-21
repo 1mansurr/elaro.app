@@ -5,7 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, QueryCache, useQueryErrorResetBoundary } from '@tanstack/react-query';
 import Constants from 'expo-constants';
 import { AuthProvider } from './src/features/auth/contexts/AuthContext';
 import { SoftLaunchProvider } from './src/contexts/SoftLaunchContext';
@@ -22,11 +22,15 @@ import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import AnimatedSplashScreen from './src/shared/screens/AnimatedSplashScreen';
 import { useAuth } from './src/features/auth/contexts/AuthContext';
 import { notificationService } from './src/services/notifications';
+import { GracePeriodChecker } from './src/components/GracePeriodChecker';
 import * as Sentry from '@sentry/react-native';
+import ErrorBoundary from './src/shared/components/ErrorBoundary';
+import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 
 Sentry.init({
-  dsn: 'https://67aec2aa78b4d87e34a615d837360d08@o4509741415661568.ingest.de.sentry.io/4509741432766544',
+  dsn: Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN,
   tracesSampleRate: 1.0,
+  enabled: !!Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN, // Only enable if DSN exists
 });
 
 // Add global unhandled promise rejection logger for freeze/debugging
@@ -43,48 +47,62 @@ SplashScreen.preventAutoHideAsync();
 // Navigation state persistence key
 const PERSISTENCE_KEY = 'NAVIGATION_STATE_V1';
 
-// Create a new instance of the QueryClient
-const queryClient = new QueryClient();
+// Create a new instance of the QueryClient with optimized default options
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 60 * 5, // 5 minutes - data stays fresh for 5 minutes
+      retry: 3, // Retry failed requests up to 3 times
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus (mobile doesn't need this)
+      refetchOnReconnect: true, // Refetch when internet reconnects
+      refetchOnMount: true, // Always refetch when component mounts
+    },
+  },
+  queryCache: new QueryCache({
+    onError: (error, query) => {
+      // Log React Query errors
+      console.error('React Query error:', error, query);
+      // You can also send this to Sentry or other error tracking services
+      // Sentry.captureException(error, { tags: { queryKey: query.queryKey } });
+    },
+  }),
+});
 
-// Error Boundary Component for catching unexpected errors
-class ErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean; error?: Error }
-> {
-  constructor(props: { children: React.ReactNode }) {
-    super(props);
-    this.state = { hasError: false };
-  }
+// Component to integrate React Query with Error Boundary
+const AppWithErrorBoundary: React.FC = () => {
+  const { reset } = useQueryErrorResetBoundary();
 
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('App Error Boundary caught an error:', error, errorInfo);
-    // Here you could send error to analytics service
-  }
-
-  render() {
-    if (this.state.hasError) {
-      return (
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: COLORS.white,
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 20,
-          }}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          {/* You could add a more sophisticated error UI here */}
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
+  return (
+    <ErrorBoundary onReset={reset}>
+      <AppInitializer>
+        <ThemeProvider>
+          <ThemedStatusBar />
+          <NavigationContainer
+            ref={navigationRef}
+            onStateChange={async () => {
+              // Update last active timestamp whenever user navigates
+              await updateLastActiveTimestamp();
+            }}
+            // initialState={initialState} // Disabled to prevent modal from reopening
+            // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
+          >
+            <AuthProvider>
+              <GracePeriodChecker />
+              <SoftLaunchProvider>
+                <NotificationProvider>
+                  <AuthEffects />
+                  <AppNavigator />
+                  <NotificationHandler />
+                </NotificationProvider>
+              </SoftLaunchProvider>
+            </AuthProvider>
+          </NavigationContainer>
+        </ThemeProvider>
+      </AppInitializer>
+    </ErrorBoundary>
+  );
+};
 
 // App Initializer Component for handling async setup
 const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
@@ -247,11 +265,13 @@ function NotificationHandler() {
   );
 }
 
+// Navigation ref needs to be accessible
+const navigationRef = useRef(null);
+
 function App() {
   const [isReady, setIsReady] = useState(false);
   // Navigation state persistence disabled for debugging
   // const [initialState, setInitialState] = useState();
-  const navigationRef = useRef(null);
 
   // useEffect(() => {
   //   const restoreState = async () => {
@@ -281,7 +301,11 @@ function App() {
         console.log('🚀 Starting app initialization...');
         
         // Initialize Mixpanel with your project token
-        const projectToken = 'e3ac54f448ea19920f62c8b4d928f83e';
+        const projectToken = Constants.expoConfig?.extra?.EXPO_PUBLIC_MIXPANEL_TOKEN;
+        if (!projectToken) {
+          console.warn('⚠️ Mixpanel token not found in environment variables');
+          return;
+        }
         console.log('📱 About to initialize Mixpanel...');
         await mixpanelService.initialize(projectToken, true); // Enable consent for testing
         
@@ -328,26 +352,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AppInitializer>
-        <ThemeProvider>
-          <ThemedStatusBar />
-          <NavigationContainer
-            ref={navigationRef}
-            // initialState={initialState} // Disabled to prevent modal from reopening
-            // onStateChange={(state) => AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state))} // Temporarily disabled for debugging
-          >
-            <AuthProvider>
-              <SoftLaunchProvider>
-                <NotificationProvider>
-                  <AuthEffects />
-                  <AppNavigator />
-                  <NotificationHandler />
-                </NotificationProvider>
-              </SoftLaunchProvider>
-            </AuthProvider>
-          </NavigationContainer>
-        </ThemeProvider>
-      </AppInitializer>
+      <AppWithErrorBoundary />
     </QueryClientProvider>
   );
 }

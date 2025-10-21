@@ -34,6 +34,8 @@ export default function EnhancedAuthScreen({
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState(0);
+  const [showPassword, setShowPassword] = useState(false);
   
   // MFA state
   const [showMFAVerification, setShowMFAVerification] = useState(false);
@@ -42,6 +44,33 @@ export default function EnhancedAuthScreen({
   
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
+
+  // Password validation functions
+  const checkPasswordStrength = (text: string) => {
+    let strength = 0;
+    if (text.length >= 8) strength++;
+    if (text.match(/[a-z]/)) strength++;
+    if (text.match(/[A-Z]/)) strength++;
+    if (text.match(/[0-9]/)) strength++;
+    if (text.match(/[^a-zA-Z0-9]/)) strength++;
+    setPasswordStrength(strength);
+    setPassword(text);
+  };
+
+  const passwordChecks = {
+    hasLowercase: /[a-z]/.test(password),
+    hasUppercase: /[A-Z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecialChar: /[^a-zA-Z0-9]/.test(password),
+  };
+
+  const isPasswordValid = () => {
+    return password.length >= 8 &&
+           passwordChecks.hasLowercase &&
+           passwordChecks.hasUppercase &&
+           passwordChecks.hasNumber &&
+           passwordChecks.hasSpecialChar;
+  };
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -61,6 +90,15 @@ export default function EnhancedAuthScreen({
         );
         return;
       }
+      
+      // Check if password meets all requirements
+      if (!isPasswordValid()) {
+        Alert.alert(
+          'Password Requirements Not Met',
+          'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)'
+        );
+        return;
+      }
     }
     
     setLoading(true);
@@ -74,7 +112,22 @@ export default function EnhancedAuthScreen({
         });
         
         if (error) {
-          Alert.alert('Authentication Failed', error.message);
+          // Enhanced error handling
+          let errorMessage = error.message;
+          let errorTitle = 'Authentication Failed';
+          
+          if (errorMessage.includes('Password should contain') || 
+              errorMessage.includes('password') && errorMessage.includes('weak') ||
+              errorMessage.includes('Password is too weak') ||
+              errorMessage.includes('password strength')) {
+            errorTitle = 'Password Requirements Not Met';
+            errorMessage = 'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
+          } else if (errorMessage.includes('User already registered')) {
+            errorTitle = 'Account Already Exists';
+            errorMessage = 'An account with this email already exists. Please sign in instead.';
+          }
+          
+          Alert.alert(errorTitle, errorMessage);
         } else {
           onAuthSuccess?.();
         }
@@ -83,7 +136,15 @@ export default function EnhancedAuthScreen({
         const result = await signIn({ email, password });
         
         if (result.error) {
-          Alert.alert('Authentication Failed', result.error.message);
+          let errorMessage = result.error.message;
+          let errorTitle = 'Authentication Failed';
+          
+          if (errorMessage.includes('Invalid login credentials')) {
+            errorTitle = 'Invalid Credentials';
+            errorMessage = 'The email or password you entered is incorrect. Please try again.';
+          }
+          
+          Alert.alert(errorTitle, errorMessage);
         } else if (result.requiresMFA && result.factors) {
           // Store credentials and show MFA verification
           setLoginCredentials({ email, password });
@@ -190,16 +251,100 @@ export default function EnhancedAuthScreen({
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password *</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="Enter your password"
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.passwordInputContainer}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={checkPasswordStrength}
+                placeholder="Enter your password"
+                secureTextEntry={!showPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <TouchableOpacity
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeIcon}
+              >
+                <Ionicons 
+                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+            </View>
           </View>
+
+          {/* Password Requirements Checklist */}
+          {currentMode === 'signup' && password.length > 0 && (
+            <>
+              <View style={styles.passwordRequirements}>
+                <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={password.length >= 8 ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={password.length >= 8 ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[styles.requirementText, { color: password.length >= 8 ? "#34C759" : "#FF3B30" }]}>
+                    At least 8 characters
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasLowercase ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasLowercase ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[styles.requirementText, { color: passwordChecks.hasLowercase ? "#34C759" : "#FF3B30" }]}>
+                    At least one lowercase letter (a-z)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasUppercase ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasUppercase ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[styles.requirementText, { color: passwordChecks.hasUppercase ? "#34C759" : "#FF3B30" }]}>
+                    At least one uppercase letter (A-Z)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasNumber ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasNumber ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[styles.requirementText, { color: passwordChecks.hasNumber ? "#34C759" : "#FF3B30" }]}>
+                    At least one number (0-9)
+                  </Text>
+                </View>
+                <View style={styles.requirementItem}>
+                  <Ionicons 
+                    name={passwordChecks.hasSpecialChar ? "checkmark-circle" : "close-circle"} 
+                    size={16} 
+                    color={passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30"} 
+                  />
+                  <Text style={[styles.requirementText, { color: passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30" }]}>
+                    At least one special character (!@#$%...)
+                  </Text>
+                </View>
+              </View>
+
+              {/* Password Strength Bar */}
+              <View style={styles.strengthContainer}>
+                <View 
+                  style={[
+                    styles.strengthBar, 
+                    { 
+                      width: `${passwordStrength * 20}%`, 
+                      backgroundColor: ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][passwordStrength - 1] || '#E0E0E0' 
+                    }
+                  ]} 
+                />
+              </View>
+            </>
+          )}
 
           {currentMode === 'signup' && (
             <View style={styles.termsContainer}>
@@ -221,9 +366,12 @@ export default function EnhancedAuthScreen({
           )}
 
           <TouchableOpacity
-            style={[styles.authButton, loading && styles.disabledButton]}
+            style={[
+              styles.authButton, 
+              (loading || (currentMode === 'signup' && !isPasswordValid())) && styles.disabledButton
+            ]}
             onPress={handleAuth}
-            disabled={loading}
+            disabled={loading || (currentMode === 'signup' && !isPasswordValid())}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
@@ -305,6 +453,59 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     fontSize: 16,
     color: '#333',
+  },
+  passwordInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e1e5e9',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#333',
+  },
+  eyeIcon: {
+    padding: 8,
+  },
+  strengthContainer: {
+    height: 5,
+    width: '100%',
+    backgroundColor: '#E0E0E0',
+    borderRadius: 5,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  strengthBar: {
+    height: '100%',
+    borderRadius: 5,
+  },
+  passwordRequirements: {
+    marginTop: 8,
+    marginBottom: 8,
+    padding: 12,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+  },
+  passwordRequirementsTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 8,
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  requirementText: {
+    fontSize: 13,
+    marginLeft: 8,
+    flex: 1,
   },
   termsContainer: {
     marginBottom: 24,

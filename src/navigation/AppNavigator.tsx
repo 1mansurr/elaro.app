@@ -7,6 +7,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { Platform, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinkingOptions } from '@react-navigation/native';
 import { useTheme } from '../contexts/ThemeContext';
 import { useScreenTracking } from '../hooks/useScreenTracking';
 
@@ -21,6 +22,7 @@ import { AddLectureProvider } from '@/features/lectures/contexts/AddLectureConte
 import { AddAssignmentProvider } from '@/features/assignments/contexts/AddAssignmentContext';
 import { AddStudySessionProvider } from '@/features/studySessions/contexts/AddStudySessionContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
+import { AuthNavigationHandler } from '@/components/AuthNavigationHandler';
 
 // Screens
 import LaunchScreen from '@/shared/screens/LaunchScreen';
@@ -30,8 +32,9 @@ import OnboardingNavigator from './OnboardingNavigator';
 import { OnboardingProvider } from '../contexts/OnboardingContext';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import { CalendarScreen } from '@/features/calendar';
-import AccountScreen from '@/features/user-profile/screens/AccountScreen';
+import { AccountScreen } from '@/features/user-profile/screens/AccountScreen';
 import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
+import { SettingsScreen } from '@/features/user-profile/screens';
 import { CoursesScreen, EditCourseModal, CourseDetailScreen } from '@/features/courses/screens';
 import TaskDetailModal from '@/shared/components/TaskDetailModal';
 import RecycleBinScreen from '@/features/data-management/screens/RecycleBinScreen';
@@ -188,13 +191,6 @@ const OnboardingFlow = () => (
 
 // Screen configuration objects for better organization
 const authScreens = {
-  Auth: { 
-    component: AuthScreen,
-    options: {
-      presentation: 'modal' as const,
-      headerShown: false,
-    }
-  },
   Welcome: { component: WelcomeScreen },
   OnboardingFlow: { component: OnboardingFlow },
 };
@@ -291,6 +287,19 @@ const mainScreens = {
       },
     }
   },
+  Settings: { 
+    component: SettingsScreen,
+    options: {
+      headerShown: true,
+      headerTitle: 'Settings',
+      headerStyle: {
+        backgroundColor: '#FFFFFF',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }
+  },
 };
 
 const modalFlows = {
@@ -365,6 +374,49 @@ const renderScreens = (screens: Record<string, { component: React.ComponentType<
   ));
 };
 
+// Deep linking configuration
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['elaro://', 'https://elaro.app'],
+  config: {
+    screens: {
+      Main: {
+        screens: {
+          Home: 'home',
+          Account: 'account',
+        },
+      },
+      Courses: 'courses',
+      CourseDetail: 'course/:courseId',
+      Calendar: 'calendar',
+      RecycleBin: 'recycle-bin',
+      Profile: 'profile',
+      Settings: 'settings',
+      TaskDetailModal: {
+        path: ':taskType/:taskId',
+        parse: {
+          taskId: (taskId: string) => taskId,
+          taskType: (taskType: string) => {
+            // Map URL-friendly names to internal task types
+            const typeMap: Record<string, 'study_session' | 'lecture' | 'assignment'> = {
+              'study-session': 'study_session',
+              'assignment': 'assignment',
+              'lecture': 'lecture',
+            };
+            return typeMap[taskType] || taskType;
+          },
+        },
+      },
+      AddCourseFlow: 'add/course',
+      AddLectureFlow: 'add/lecture',
+      AddAssignmentFlow: 'add/assignment',
+      AddStudySessionFlow: 'add/study-session',
+      MFAEnrollmentScreen: 'mfa/enroll',
+      MFAVerificationScreen: 'mfa/verify',
+      InAppBrowserScreen: 'browser',
+    },
+  },
+};
+
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
@@ -373,9 +425,16 @@ export const AppNavigator: React.FC = () => {
   useScreenTracking();
 
   return (
-    <Stack.Navigator screenOptions={sharedScreenOptions}>
-      {/* Always show Launch screen */}
-      <Stack.Screen name="Launch" component={LaunchScreen} />
+    <>
+      {/* Handle navigation based on auth state changes */}
+      <AuthNavigationHandler />
+      
+      <Stack.Navigator 
+        screenOptions={sharedScreenOptions}
+        linking={linking}
+      >
+        {/* Always show Launch screen */}
+        <Stack.Screen name="Launch" component={LaunchScreen} />
       
       {/* Always show Main screen - it will handle authentication state internally */}
       <Stack.Screen name="Main" component={MainTabNavigator} />
@@ -412,6 +471,16 @@ export const AppNavigator: React.FC = () => {
       
       {/* Modal flows available to both guest and authenticated users */}
       <Stack.Group>
+        {/* Auth screen - available to both authenticated and guest users */}
+        <Stack.Screen 
+          name="Auth"
+          component={AuthScreen}
+          options={{
+            presentation: 'modal' as const,
+            headerShown: false,
+          }}
+        />
+        
         {Object.entries(modalFlows)
           .filter(([name]) => name !== 'InAppBrowserScreen')
           .map(([name, config]) => (
@@ -424,5 +493,6 @@ export const AppNavigator: React.FC = () => {
           ))}
       </Stack.Group>
     </Stack.Navigator>
+    </>
   );
 };

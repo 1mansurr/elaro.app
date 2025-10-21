@@ -1,44 +1,40 @@
-// FILE: src/components/Calendar/Timeline.tsx
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Task } from '@/types';
 import EventItem from './EventItem';
 
-const HOUR_HEIGHT = 80; // Increased height for better spacing
+const HOUR_HEIGHT = 80;
 
 interface Props {
   tasks: Task[];
   onTaskPress: (task: Task) => void;
+  onLockedTaskPress?: (task: Task) => void;
   onScroll: (event: any) => void;
 }
 
-const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onScroll }) => {
-  const hours = Array.from({ length: 24 }, (_, i) => i); // 0 to 23
+const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onScroll }) => {
+  const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const calculatePosition = (task: Task) => {
-    // Ensure task.date or a similar property exists and is valid
     const startTime = new Date(task.startTime || task.date);
     const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
     const top = (startMinutes / 60) * HOUR_HEIGHT;
 
-    let durationMinutes = 60; // Default duration
-
-    // Check if the task is a lecture and has a valid end_time
+    let durationMinutes = 60;
     if (task.type === 'lecture' && task.endTime) {
       const endTime = new Date(task.endTime);
-      // Calculate duration only if end time is after start time
       if (endTime > startTime) {
         durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
       }
     }
 
-    const height = (durationMinutes / 60) * HOUR_HEIGHT - 2; // -2 for margin
+    const height = (durationMinutes / 60) * HOUR_HEIGHT - 2;
 
     return {
       top,
-      left: 70, // Adjusted left position
-      height: Math.max(height, 20), // Ensure a minimum height
-      width: 200 // Fixed width in pixels
+      left: 70,
+      height: Math.max(height, 20),
+      width: 200
     };
   };
 
@@ -46,26 +42,33 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onScroll }) => {
     <ScrollView 
       style={styles.container}
       onScroll={onScroll}
-      scrollEventThrottle={16} // Important for smooth scroll event handling
+      scrollEventThrottle={16}
     >
       <View style={styles.timelineContainer}>
-        {/* Always render the 24-hour slots to form the grid */}
-        {Array.from({ length: 24 }).map((_, i) => (
+        {hours.map((_, i) => (
           <View key={`hour-slot-${i}`} style={styles.hourSlot}>
             <Text style={styles.hourText}>{`${i.toString().padStart(2, '0')}:00`}</Text>
             <View style={styles.hourLine} />
           </View>
         ))}
 
-        {/* Absolutely position the tasks over the grid */}
         {tasks.map(task => {
           const position = calculatePosition(task);
+          const isLocked = task.isLocked || false;
+          
           return (
             <View key={task.id} style={[styles.eventContainer, position]}>
               <EventItem
                 task={task}
                 position={position}
-                onPress={() => onTaskPress(task)}
+                isLocked={isLocked}
+                onPress={() => {
+                  if (isLocked && onLockedTaskPress) {
+                    onLockedTaskPress(task);
+                  } else {
+                    onTaskPress(task);
+                  }
+                }}
               />
             </View>
           );
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
     height: HOUR_HEIGHT,
   },
   hourText: {
-    width: 70, // Increased width to match left position
+    width: 70,
     textAlign: 'center',
     fontSize: 12,
     color: '#6c757d',

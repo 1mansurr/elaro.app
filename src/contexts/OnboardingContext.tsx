@@ -8,6 +8,9 @@ interface OnboardingData {
   university: string;
   program: string;
   courses: Course[];
+  dateOfBirth: string;
+  hasParentalConsent: boolean;
+  marketingOptIn: boolean;
 }
 
 // Define the shape of the context value
@@ -27,6 +30,9 @@ const initialState: OnboardingData = {
   university: '',
   program: '',
   courses: [],
+  dateOfBirth: '',
+  hasParentalConsent: false,
+  marketingOptIn: false,
 };
 
 // Create the provider component

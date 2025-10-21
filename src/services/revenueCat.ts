@@ -1,8 +1,7 @@
 import Purchases, { 
   PurchasesOffering, 
   PurchasesPackage, 
-  CustomerInfo,
-  PurchasesError 
+  CustomerInfo
 } from 'react-native-purchases';
 
 export const revenueCatService = {
@@ -54,14 +53,11 @@ export const revenueCatService = {
       const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
       console.log('Purchase successful:', customerInfo);
       return customerInfo;
-    } catch (error) {
-      if (error instanceof PurchasesError) {
-        if (error.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') {
-          throw new Error('Purchase was cancelled by user');
-        }
-        throw new Error(`Purchase failed: ${error.message}`);
+    } catch (error: any) {
+      if (error.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') {
+        throw new Error('Purchase was cancelled by user');
       }
-      throw error;
+      throw new Error(`Purchase failed: ${error.message || 'Unknown error'}`);
     }
   },
 
@@ -125,7 +121,8 @@ export const revenueCatService = {
    */
   isInTrial: (customerInfo: CustomerInfo): boolean => {
     const oddityEntitlement = customerInfo.entitlements.active['oddity'];
-    return oddityEntitlement?.isInIntroOfferPeriod || false;
+    // Check if the property exists before accessing it
+    return (oddityEntitlement as any)?.isInIntroOfferPeriod || false;
   },
 
   /**
@@ -153,6 +150,33 @@ export const revenueCatService = {
       console.error('Error logging out RevenueCat user:', error);
       throw error;
     }
+  },
+
+  /**
+   * Check if user is in grace period (payment failed but still has access)
+   */
+  isInGracePeriod: (customerInfo: CustomerInfo): boolean => {
+    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+    if (!oddityEntitlement) return false;
+    // Check if the property exists before accessing it
+    return (oddityEntitlement as any)?.isInGracePeriod || false;
+  },
+
+  /**
+   * Check if subscription will renew
+   */
+  willRenew: (customerInfo: CustomerInfo): boolean => {
+    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+    return oddityEntitlement?.willRenew ?? true;
+  },
+
+  /**
+   * Get grace period expiration date
+   */
+  getGracePeriodExpiration: (customerInfo: CustomerInfo): string | null => {
+    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+    if (!oddityEntitlement) return null;
+    return oddityEntitlement.expirationDate;
   }
 };
 

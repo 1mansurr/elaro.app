@@ -79,8 +79,20 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
       if (studySessionCount > 0) parts.push(`${studySessionCount} study session${studySessionCount > 1 ? 's' : ''}`);
       message += parts.join(', ') + '.';
 
-      // 6. Send the push notification
-      const result = await sendPushNotification(supabaseAdminClient, pushTokens, "Here's your daily summary!", message);
+      // 6. Send the push notification with deep link to home
+      const result = await sendPushNotification(
+        supabaseAdminClient, 
+        pushTokens, 
+        "Here's your daily summary!", 
+        message,
+        {
+          url: 'elaro://home',
+          summaryType: 'daily',
+          lectureCount,
+          assignmentCount,
+          studySessionCount,
+        }
+      );
       successCount++;
     } catch (error) {
       console.error(`Failed to process daily summary for user ${user.id}:`, error.message);

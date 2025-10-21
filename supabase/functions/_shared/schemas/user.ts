@@ -25,4 +25,7 @@ export const CompleteOnboardingSchema = z.object({
   program: z.string().max(200, 'Program name too long').optional(),
   country: z.string().max(100, 'Country name too long').optional(),
   courses: z.array(OnboardingCourseSchema).optional(),
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format'),
+  hasParentalConsent: z.boolean(),
+  marketingOptIn: z.boolean(),
 });

@@ -74,6 +74,24 @@ npx expo start
 ```
 EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+EXPO_PUBLIC_SENTRY_DSN=your_sentry_dsn
+EXPO_PUBLIC_MIXPANEL_TOKEN=your_mixpanel_token
+```
+
+### Database Setup
+
+For database setup instructions, see [DATABASE_SETUP.md](DATABASE_SETUP.md).
+
+**Quick Start:**
+```bash
+# Install Supabase CLI
+npm install -g supabase
+
+# Link to project
+supabase link --project-ref YOUR_PROJECT_REF
+
+# Apply migrations
+supabase db reset
 ```
 
 ## 🏗️ Architecture

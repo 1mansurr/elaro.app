@@ -95,6 +95,10 @@ module.exports = ({ config }) => {
       // RevenueCat configuration
       EXPO_PUBLIC_REVENUECAT_APPLE_KEY: process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY,
       // Note: RevenueCat secret keys should NOT be exposed to the client - they're only used server-side
+      // Sentry configuration
+      EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      // Mixpanel configuration
+      EXPO_PUBLIC_MIXPANEL_TOKEN: process.env.EXPO_PUBLIC_MIXPANEL_TOKEN,
       // App configuration
       EXPO_PUBLIC_APP_NAME: process.env.EXPO_PUBLIC_APP_NAME || 'Elaro',
       EXPO_PUBLIC_APP_VERSION: process.env.EXPO_PUBLIC_APP_VERSION || '1.0.0',

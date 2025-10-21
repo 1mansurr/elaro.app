@@ -1,24 +1,15 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { createAuthenticatedHandler, AppError } from '../_shared/function-handler.ts';
+import { CreateAssignmentSchema } from '../_shared/schemas/assignment.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
 const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
 
-// Define the validation schema
-const CreateAssignmentSchema = z.object({
-  course_id: z.string().uuid(),
-  title: z.string().min(1, { message: "Title is required." }).max(200),
-  description: z.string().max(5000).optional(),
-  due_date: z.string().datetime(),
-  submission_method: z.enum(['online', 'in-person']).optional(),
-  submission_link: z.string().url().optional().or(z.literal('')),
-  reminders: z.array(z.number().int().positive()).optional(),
-});
-
 serve(createAuthenticatedHandler(
   async ({ user, supabaseClient, body }) => {
-    // 1. Get data from the request body
+    // Validation is now handled automatically by the handler using CreateAssignmentSchema
+    
+    // 1. Get validated data from the request body
     const {
       course_id,
       title,
@@ -42,9 +33,7 @@ serve(createAuthenticatedHandler(
       throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
     }
 
-    // 3. Validation is now handled automatically by Zod schema
-
-    // 4. Core Business Logic
+    // 3. Core Business Logic
     const encryptedTitle = await encrypt(title, encryptionKey);
     const encryptedDescription = description ? await encrypt(description, encryptionKey) : null;
 
@@ -66,7 +55,7 @@ serve(createAuthenticatedHandler(
       throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
     }
 
-    // 5. Reminder creation logic
+    // 4. Reminder creation logic
     if (newAssignment && reminders && reminders.length > 0) {
       const dueDate = new Date(due_date);
       const remindersToInsert = reminders.map((mins: number) => ({
@@ -85,7 +74,7 @@ serve(createAuthenticatedHandler(
       }
     }
 
-    // 6. Return the result
+    // 5. Return the result
     return newAssignment;
   },
   { 

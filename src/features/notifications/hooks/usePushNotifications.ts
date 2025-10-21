@@ -86,7 +86,17 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     try {
       const data = response.notification.request.content.data;
       
-      // Handle different types of notifications
+      // Check if a deep link URL is provided
+      if (data?.url) {
+        console.log('Notification tapped with deep link:', data.url);
+        
+        // The notificationService will handle the navigation
+        // Just log for debugging
+        console.log('Deep link will be handled by notificationService');
+        return;
+      }
+      
+      // Fallback to old behavior for notifications without deep links
       if (data?.taskId && data?.taskType) {
         // This is a task-related notification
         console.log('Notification tapped for task:', data.taskId, data.taskType);

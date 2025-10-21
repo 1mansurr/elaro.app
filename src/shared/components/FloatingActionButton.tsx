@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   TouchableOpacity,
   StyleSheet,
@@ -26,20 +26,40 @@ interface FloatingActionButtonProps {
 const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ actions, onStateChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
   const handleToggle = () => {
     const toValue = isOpen ? 0 : 1;
-    Animated.spring(animation, {
+    
+    // Stop any ongoing animation before starting a new one
+    if (animationRef.current) {
+      animationRef.current.stop();
+    }
+    
+    const newAnimation = Animated.spring(animation, {
       toValue,
       friction: 6,
       useNativeDriver: false,
-    }).start();
+    });
+    
+    animationRef.current = newAnimation;
+    newAnimation.start();
+    
     const newOpenState = !isOpen;
     setIsOpen(newOpenState);
     if (onStateChange) {
       onStateChange({ isOpen: newOpenState, animation });
     }
   };
+
+  // Cleanup animation on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+    };
+  }, []);
 
   const rotation = {
     transform: [

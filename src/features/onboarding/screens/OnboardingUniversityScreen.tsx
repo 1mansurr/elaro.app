@@ -66,7 +66,7 @@ const OnboardingUniversityScreen = () => {
       university,
       program,
     });
-    navigation.goBack();
+    navigation.navigate('OnboardingUsername');
   };
 
   // Replace the old JSX with the new layout using SearchableSelector

@@ -9,6 +9,9 @@ interface DueReminder {
   title: string;
   body: string;
   reminder_type: string;
+  session_id?: string;
+  assignment_id?: string;
+  lecture_id?: string;
   user?: {
     user_devices?: Array<{
       push_token: string;
@@ -20,6 +23,26 @@ interface DueReminder {
       lecture_reminders_enabled: boolean;
     };
   };
+}
+
+// Helper function to generate deep link URLs for reminders
+function generateDeepLinkUrl(reminder: DueReminder): string {
+  // Map reminder_type to URL path segments
+  const typeMap: Record<string, string> = {
+    'assignment': 'assignment',
+    'lecture': 'lecture',
+    'study_session': 'study-session',
+    'spaced_repetition': 'study-session', // SRS reminders link to study sessions
+  };
+
+  const urlType = typeMap[reminder.reminder_type] || 'task';
+  const itemId = reminder.session_id || reminder.assignment_id || reminder.lecture_id;
+  
+  if (!itemId) {
+    return 'elaro://home'; // Fallback to home if no ID
+  }
+
+  return `elaro://${urlType}/${itemId}`;
 }
 
 async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
@@ -36,6 +59,9 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
       title,
       body,
       reminder_type,
+      session_id,
+      assignment_id,
+      lecture_id,
       user:users (
         user_devices (
           push_token
@@ -85,12 +111,22 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
       const title = reminder.title || 'Reminder';
       const body = reminder.body || 'You have a new reminder from ELARO.';
       
+      // Generate deep link URL for the reminder
+      const deepLinkUrl = generateDeepLinkUrl(reminder);
+      const itemId = reminder.session_id || reminder.assignment_id || reminder.lecture_id;
+      const taskType = reminder.reminder_type === 'spaced_repetition' ? 'study_session' : reminder.reminder_type;
+      
       const result = await sendPushNotification(
         supabaseAdmin,
         pushTokens,
         title,
         body,
-        { reminderId: reminder.id }
+        { 
+          reminderId: reminder.id,
+          url: deepLinkUrl,
+          itemId: itemId,
+          taskType: taskType,
+        }
       );
 
       // Only mark the reminder as complete if the notification was successfully sent.

@@ -24,6 +24,7 @@ export interface User {
   deleted_at: string | null;
   deletion_scheduled_at: string | null;
   suspension_end_date: string | null;
+  last_data_export_at?: string | null;
   created_at: string;
   updated_at: string;
   user_metadata?: {
@@ -112,14 +113,14 @@ export interface StudySession {
 export type Task = {
   id: string;
   type: 'lecture' | 'study_session' | 'assignment';
-  date: string; // This might be start_time now
+  date: string;
   startTime?: string;
-  endTime?: string; // Add this
-  description?: string; // Add this
-  status?: 'pending' | 'completed'; // Add this
+  endTime?: string;
+  description?: string;
+  status?: 'pending' | 'completed';
   name: string;
   courses: { courseName: string };
-  // Add other potential shared fields here
+  isLocked?: boolean; // NEW: Indicates if task is locked due to subscription limits
 };
 
 // ─────────────────────────────────────────────────────────────

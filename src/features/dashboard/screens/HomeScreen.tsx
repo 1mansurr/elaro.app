@@ -1,8 +1,9 @@
-import React, { useRef, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -11,15 +12,18 @@ import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
+import { useCompleteTask, useDeleteTask } from '@/hooks';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
-import { Button } from '@/shared/components';
+import { Button, QueryStateWrapper } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
+import TaskCardSkeleton from '../components/TaskCardSkeleton';
 import { supabase } from '@/services/supabase';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
+import { TASK_EVENTS } from '@/utils/analyticsEvents';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -27,12 +31,17 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { session, user } = useAuth();
   const isGuest = !session;
-  const { data: homeData, isLoading, isError, error } = useHomeScreenData(!isGuest);
+  const { data: homeData, isLoading, isError, error, refetch, isRefetching } = useHomeScreenData(!isGuest);
   const { monthlyTaskCount } = useMonthlyTaskCount();
   const queryClient = useQueryClient();
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
+
+  // Optimistic mutation hooks
+  const completeTaskMutation = useCompleteTask();
+  const deleteTaskMutation = useDeleteTask();
 
   const promptSignUp = () => {
     mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
@@ -151,50 +160,22 @@ const HomeScreen = () => {
     if (!selectedTask) return;
     
     try {
-      // This is a simplified example. We'd call a generic 'update-task' function.
-      // For now, we assume the task type and call the specific function.
-      const functionName = `update-${selectedTask.type}`;
-      const { error } = await supabase.functions.invoke(functionName, {
-        body: {
-          [`${selectedTask.type}Id`]: selectedTask.id,
-          updates: { status: 'completed' }, // Assuming a 'status' field exists
-        },
+      // The mutation handles optimistic updates automatically
+      await completeTaskMutation.mutateAsync({
+        taskId: selectedTask.id,
+        taskType: selectedTask.type,
+        taskTitle: selectedTask.title,
       });
-
-      if (error) {
-        mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED, {
-          task_id: selectedTask.id,
-          task_type: selectedTask.type,
-          error: error.message,
-          source: 'task_detail_sheet',
-        });
-        Alert.alert('Error', 'Could not mark task as complete.');
-      } else {
-        // Track successful task completion
-        mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED, {
-          task_id: selectedTask.id,
-          task_type: selectedTask.type,
-          task_title: selectedTask.title,
-          completion_time: new Date().toISOString(),
-          source: 'task_detail_sheet',
-        });
-        
-        // Refresh home screen data using React Query
-        await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-        Alert.alert('Success', 'Task marked as complete!');
-      }
+      
+      // Show success message
+      Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
+      // Error is already handled by the mutation hook
       console.error('Error completing task:', error);
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED, {
-        task_id: selectedTask.id,
-        task_type: selectedTask.type,
-        error: error.message,
-        source: 'task_detail_sheet',
-      });
-      Alert.alert('Error', 'Could not mark task as complete.');
     }
+    
     handleCloseSheet();
-  }, [selectedTask, queryClient, handleCloseSheet]);
+  }, [selectedTask, completeTaskMutation, handleCloseSheet]);
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
@@ -209,28 +190,26 @@ const HomeScreen = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const functionName = `delete-${selectedTask.type}`;
-              const { error } = await supabase.functions.invoke(functionName, {
-                body: { [`${selectedTask.type}Id`]: selectedTask.id },
+              // The mutation handles optimistic updates automatically
+              await deleteTaskMutation.mutateAsync({
+                taskId: selectedTask.id,
+                taskType: selectedTask.type,
+                taskTitle: selectedTask.title,
               });
-
-              if (error) {
-                Alert.alert('Error', 'Could not delete task.');
-              } else {
-                // Refresh home screen data using React Query
-                await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-                Alert.alert('Success', 'Task deleted successfully!');
-              }
+              
+              // Show success message
+              Alert.alert('Success', 'Task deleted successfully!');
             } catch (error) {
+              // Error is already handled by the mutation hook
               console.error('Error deleting task:', error);
-              Alert.alert('Error', 'Could not delete task.');
             }
+            
             handleCloseSheet();
           },
         },
       ]
     );
-  }, [selectedTask, queryClient, handleCloseSheet]);
+  }, [selectedTask, deleteTaskMutation, handleCloseSheet]);
 
   // Trial banner logic
   const getTrialDaysRemaining = () => {
@@ -243,7 +222,46 @@ const HomeScreen = () => {
   };
 
   const trialDaysRemaining = getTrialDaysRemaining();
-  const shouldShowBanner = trialDaysRemaining !== null && trialDaysRemaining <= 3;
+  const shouldShowBanner = trialDaysRemaining !== null && trialDaysRemaining <= 3 && !isBannerDismissed;
+
+  // Check AsyncStorage for banner dismissal state
+  useEffect(() => {
+    let isMounted = true;
+    
+    const checkBannerDismissal = async () => {
+      if (!user?.id || trialDaysRemaining === null) {
+        if (isMounted) setIsBannerDismissed(false);
+        return;
+      }
+
+      try {
+        const storageKey = `@trial_banner_dismissed_${user.id}_${trialDaysRemaining}`;
+        const dismissed = await AsyncStorage.getItem(storageKey);
+        if (isMounted) setIsBannerDismissed(dismissed === 'true');
+      } catch (error) {
+        console.error('Error checking banner dismissal state:', error);
+        if (isMounted) setIsBannerDismissed(false);
+      }
+    };
+
+    checkBannerDismissal();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.id, trialDaysRemaining]);
+
+  const handleDismissBanner = async () => {
+    if (!user?.id || trialDaysRemaining === null) return;
+
+    try {
+      const storageKey = `@trial_banner_dismissed_${user.id}_${trialDaysRemaining}`;
+      await AsyncStorage.setItem(storageKey, 'true');
+      setIsBannerDismissed(true);
+    } catch (error) {
+      console.error('Error saving banner dismissal state:', error);
+    }
+  };
 
   const handleSubscribePress = () => {
     Alert.alert(
@@ -274,35 +292,8 @@ const HomeScreen = () => {
     );
   };
 
-  // Handle loading and error states (only for authenticated users)
-  if (!isGuest && isLoading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
-      </View>
-    );
-  }
-
-  if (!isGuest && isError) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load data</Text>
-          <Text style={styles.errorSubtext}>
-            {error instanceof Error ? error.message : 'An unexpected error occurred'}
-          </Text>
-          <Button
-            title="Retry"
-            onPress={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
-          />
-        </View>
-      </View>
-    );
-  }
-
-  return (
+  // Wrap content with QueryStateWrapper for authenticated users
+  const content = (
     <View style={styles.container}>
       <ScrollView
         style={styles.scrollContainer}
@@ -320,6 +311,7 @@ const HomeScreen = () => {
           <TrialBanner
             daysRemaining={trialDaysRemaining as number}
             onPressSubscribe={handleSubscribePress}
+            onDismiss={handleDismissBanner}
           />
         )}
         <Text style={styles.title}>Let&apos;s Make Today Count</Text>
@@ -368,6 +360,31 @@ const HomeScreen = () => {
 
     </View>
   );
+
+  // For authenticated users, wrap with QueryStateWrapper
+  if (!isGuest) {
+    return (
+      <QueryStateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        data={homeData}
+        refetch={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
+        isRefetching={isRefetching}
+        onRefresh={refetch}
+        emptyTitle="No activities yet"
+        emptyMessage="Start by adding your first lecture, assignment, or study session!"
+        emptyIcon="calendar-outline"
+        skeletonComponent={<TaskCardSkeleton />}
+        skeletonCount={3}
+      >
+        {content}
+      </QueryStateWrapper>
+    );
+  }
+
+  // For guest users, return content directly
+  return content;
 };
 
 const styles = StyleSheet.create({

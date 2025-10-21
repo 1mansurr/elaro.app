@@ -7,12 +7,63 @@ import {
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
+/**
+ * Custom fetch wrapper that enforces a timeout on all requests.
+ * Uses AbortController to cancel requests that exceed the timeout duration.
+ * 
+ * @param url - The URL to fetch
+ * @param options - Fetch options (same as native fetch)
+ * @param timeoutMs - Timeout duration in milliseconds (default: 15000ms / 15 seconds)
+ * @returns Promise<Response> - The fetch response
+ * @throws Error - If the request times out
+ */
+const fetchWithTimeout = async (
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = 15000
+): Promise<Response> => {
+  // Create an AbortController for this request
+  const controller = new AbortController();
+  
+  // Set up a timeout that will abort the request
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    // Make the fetch request with the abort signal
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    
+    // Clear the timeout if the request completes successfully
+    clearTimeout(timeoutId);
+    
+    return response;
+  } catch (error: any) {
+    // Clear the timeout on error
+    clearTimeout(timeoutId);
+    
+    // Check if the error is due to timeout
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout: The server did not respond within ${timeoutMs}ms`);
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+  },
+  global: {
+    fetch: fetchWithTimeout,
   },
 });
 
@@ -73,28 +124,16 @@ export const authService = {
   async getUserProfile(userId: string): Promise<User | null> {
     const { data, error } = await supabase
       .from('users')
-      .select(`
-        *,
-        subscriptions (
-          subscription_tier,
-          subscription_status,
-          subscription_expires_at
-        )
-      `)
+      .select('*')
       .eq('id', userId)
       .single();
 
     if (error) {
-      console.error('Error fetching user profile with subscription:', error);
+      console.error('Error fetching user profile:', error);
       return null;
     }
 
     if (!data) return null;
-
-    // Flatten subscription (array) into single record
-    const subscriptionData = Array.isArray((data as any).subscriptions)
-      ? (data as any).subscriptions[0]
-      : (data as any).subscriptions;
 
     const userProfile: User = {
       id: (data as any).id,
@@ -106,9 +145,9 @@ export const authService = {
       program: (data as any).program,
       role: (data as any).role ?? 'user', // Default to 'user' role
       onboarding_completed: (data as any).onboarding_completed ?? false,
-      subscription_tier: subscriptionData?.subscription_tier ?? null,
-      subscription_status: subscriptionData?.subscription_status ?? null,
-      subscription_expires_at: subscriptionData?.subscription_expires_at ?? null,
+      subscription_tier: (data as any).subscription_tier ?? null,
+      subscription_status: (data as any).subscription_status ?? null,
+      subscription_expires_at: (data as any).subscription_expires_at ?? null,
       created_at: (data as any).created_at,
       updated_at: (data as any).updated_at,
       user_metadata: {
@@ -171,7 +210,6 @@ export const dbUtils = {
     await supabase.from('user_events').delete().eq('user_id', userId);
     await supabase.from('study_sessions').delete().eq('user_id', userId);
     await supabase.from('streaks').delete().eq('user_id', userId);
-    await supabase.from('subscriptions').delete().eq('user_id', userId);
     await supabase.from('users').delete().eq('id', userId);
 
     // Delete auth user

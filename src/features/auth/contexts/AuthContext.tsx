@@ -3,13 +3,13 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 import { supabase, authService as supabaseAuthService } from '@/services/supabase';
 import { authService } from '@/features/auth/services/authService';
-import { User, RootStackParamList } from '@/types';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import { User } from '@/types';
 import { getPendingTask } from '@/utils/taskPersistence';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
+import { isSessionExpired, clearLastActiveTimestamp, updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
+// import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
 interface LoginCredentials {
   email: string;
@@ -32,8 +32,6 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
-type AuthNavProp = StackNavigationProp<RootStackParamList>;
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -50,8 +48,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation<AuthNavProp>();
+  // Navigation is handled in AppNavigator, not here
   // const { fetchInitialData } = useData(); // Removed to fix circular dependency
+  // Grace period check moved to GracePeriodChecker component to avoid circular dependency
 
   // Social providers removed; email-only auth
 
@@ -232,34 +231,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
         // --- END: NEW TRIAL LOGIC ---
         
-        // Navigation logic based on onboarding status
-        if (userProfile) {
-          if (userProfile.onboarding_completed) {
-            // fetchInitialData(); // Removed to fix circular dependency - will be called elsewhere
-            navigation.replace('Main');
-          } else {
-            // Check for pending course before starting onboarding
-            const pendingTask = await getPendingTask();
-            
-            // Pre-fill logic for social login users
-            let params = {};
-            const fullName = session.user?.user_metadata?.full_name;
-
-            if (fullName) {
-              const nameParts = fullName.split(' ');
-              const firstName = nameParts[0];
-              const lastName = nameParts.slice(1).join(' ');
-              params = { firstName, lastName };
-            }
-            
-            // If there's a pending course, skip to onboarding flow
-            if (pendingTask && pendingTask.taskType === 'course') {
-              navigation.replace('OnboardingFlow');
-            } else {
-              navigation.replace('Welcome', params);
-            }
-          }
-        }
+        // Navigation is now handled in AppNavigator based on auth state changes
       } else {
         // Track logout event
         mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
@@ -271,11 +243,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     });
 
     return () => subscription.unsubscribe();
-  }, [navigation]);
+  }, []);
+
+  // Check for session timeout on app load
+  useEffect(() => {
+    const checkSessionTimeout = async () => {
+      try {
+        const expired = await isSessionExpired();
+        
+        if (expired && session) {
+          console.log('⏰ Session expired due to inactivity. Logging out...');
+          
+          // Track the session timeout event
+          mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+            logout_reason: 'session_timeout',
+            timeout_days: 30,
+          });
+          
+          // Sign out the user
+          await signOut();
+          
+          // Clear the last active timestamp
+          await clearLastActiveTimestamp();
+          
+          // Show alert to user
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired due to inactivity. Please log in again.',
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (error) {
+        console.error('❌ Error checking session timeout:', error);
+      }
+    };
+
+    // Only check if we have a session
+    if (session) {
+      checkSessionTimeout();
+    }
+  }, [session]);
 
   const signIn = async (credentials: LoginCredentials) => {
     try {
       const result = await authService.login(credentials);
+      
+      // Set the initial last active timestamp on successful login
+      await updateLastActiveTimestamp();
       
       // Check if MFA is required
       try {
@@ -348,6 +362,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
         logout_reason: 'manual',
       });
+      
+      // Clear the last active timestamp
+      await clearLastActiveTimestamp();
       
       await authService.signOut();
     } catch (error) {

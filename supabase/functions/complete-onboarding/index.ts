@@ -4,11 +4,33 @@ import { CompleteOnboardingSchema } from '../_shared/schemas/user.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
 async function handleCompleteOnboarding({ user, supabaseClient, body }: AuthenticatedRequest) {
-  const { username, university, program, country, courses } = body;
+  const { username, university, program, country, courses, dateOfBirth, hasParentalConsent, marketingOptIn } = body;
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
 
   console.log(`Completing onboarding for user: ${user.id}`);
+
+  // Age validation logic
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+
+  // Check if user is under 13
+  if (age < 13) {
+    throw new AppError('You must be at least 13 years old to use this service.', 403, 'AGE_RESTRICTION');
+  }
+
+  // Check if user is between 13-17 and lacks parental consent
+  if (age >= 13 && age < 18 && !hasParentalConsent) {
+    throw new AppError('Parental consent is required for users under 18.', 403, 'PARENTAL_CONSENT_REQUIRED');
+  }
+
+  console.log(`Age validation passed for user: ${user.id}, age: ${age}`);
 
   // 1. Update the user's profile with onboarding data
   const [encryptedUniversity, encryptedProgram] = await Promise.all([
@@ -23,6 +45,8 @@ async function handleCompleteOnboarding({ user, supabaseClient, body }: Authenti
       university: encryptedUniversity,
       program: encryptedProgram,
       country,
+      date_of_birth: dateOfBirth,
+      marketing_opt_in: marketingOptIn,
       onboarding_completed: true,
     })
     .eq('id', user.id);

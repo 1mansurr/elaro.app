@@ -14,19 +14,26 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onAnimation
 
   // 2. Define the animation sequence
   useEffect(() => {
-    Animated.timing(
+    const animation = Animated.timing(
       fadeAnim,
       {
         toValue: 1, // Animate to opacity 1
         duration: 1500, // Animation duration in milliseconds
         useNativeDriver: true, // Use native driver for better performance
       }
-    ).start(() => {
+    );
+    
+    animation.start(() => {
       // Call the callback function once the animation is complete
       if (onAnimationFinish) {
         onAnimationFinish();
       }
     });
+    
+    // Cleanup: stop animation if component unmounts
+    return () => {
+      animation.stop();
+    };
   }, [fadeAnim, onAnimationFinish]);
 
   // 3. Render the component

@@ -4,6 +4,7 @@ import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 import { corsHeaders } from './cors.ts';
 import { checkRateLimit, RateLimitError } from './rate-limiter.ts';
 import { checkTaskLimit } from './check-task-limit.ts';
+import { createMetricsCollector } from './metrics.ts';
 
 // Define custom, structured application errors
 export class AppError extends Error {
@@ -45,9 +46,24 @@ function handleError(error: unknown): Response {
   }
   
   if (error instanceof RateLimitError) {
-    return new Response(JSON.stringify({ error: error.message }), {
+    const response: any = { 
+      error: 'Too Many Requests',
+      message: error.message 
+    };
+    
+    // Add Retry-After header if available
+    const headers: Record<string, string> = { 
+      ...corsHeaders, 
+      'Content-Type': 'application/json' 
+    };
+    
+    if (error.retryAfter) {
+      headers['Retry-After'] = error.retryAfter.toString();
+    }
+    
+    return new Response(JSON.stringify(response), {
       status: 429,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers,
     });
   }
 
@@ -68,6 +84,9 @@ export function createAuthenticatedHandler(
   }
 ) {
   return async (req: Request): Promise<Response> => {
+    // Create metrics collector
+    const metrics = createMetricsCollector(options.rateLimitName);
+    
     if (req.method === 'OPTIONS') {
       return new Response('ok', { headers: corsHeaders });
     }
@@ -108,7 +127,18 @@ export function createAuthenticatedHandler(
       // 5. Execute the specific business logic
       const result = await handler({ ...req, user, supabaseClient, body });
 
-      // 6. Return success response
+      // 6. Record metrics for successful request
+      metrics.incrementRequest();
+      
+      // Determine status code
+      let statusCode = 200;
+      if (result instanceof Response) {
+        statusCode = result.status;
+      }
+      
+      metrics.incrementStatusCode(statusCode);
+
+      // 7. Return success response
       // If the handler already returned a Response object, use it. Otherwise, stringify the result.
       if (result instanceof Response) {
         return result;
@@ -119,8 +149,21 @@ export function createAuthenticatedHandler(
       });
 
     } catch (error) {
-      // 7. Centralized error handling
+      // 8. Record error metrics
+      if (error instanceof AppError) {
+        metrics.recordError('AppError', error.message);
+        metrics.incrementStatusCode(error.statusCode);
+      } else if (error instanceof RateLimitError) {
+        metrics.recordError('RateLimitError', error.message);
+      } else {
+        metrics.recordError('UnknownError', 'Unknown error occurred');
+      }
+
+      // 9. Centralized error handling
       return handleError(error);
+    } finally {
+      // Ensure metrics are recorded even if there's an error
+      metrics.recordExecutionTime();
     }
   };
 }

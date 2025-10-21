@@ -1,15 +1,7 @@
 project_id = "oqwyoucchbjiyddnznwf"
 
-[functions.paystack-webhook]
-enabled = true
-verify_jwt = true
-import_map = "./functions/paystack-webhook/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/paystack-webhook/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/paystack-webhook/*.html" ]
+[functions.revenuecat-webhook]
+verify_jwt = false
 
 [functions.schedule-reminders]
 import_map = "./functions/import_map.json"
@@ -22,3 +14,12 @@ import_map = "./functions/import_map.json"
 
 [functions.cleanup-old-reminders]
 import_map = "./functions/import_map.json"
+
+[functions.export-user-data]
+verify_jwt = false
+
+[functions.check-grace-period]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false

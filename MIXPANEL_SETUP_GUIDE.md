@@ -12,7 +12,7 @@ Mixpanel has been successfully integrated into your ELARO React Native app. This
 
 ### 2. Core Service
 - ✅ Created `src/services/mixpanel.ts` with comprehensive tracking methods
-- ✅ Configured with your project token: `e3ac54f448ea19920f62c8b4d928f83e`
+- ✅ Configured with your project token via `EXPO_PUBLIC_MIXPANEL_TOKEN` environment variable
 - ✅ Set to use EU API host: `https://api-eu.mixpanel.com`
 
 ### 3. App Integration

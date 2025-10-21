@@ -1,1 +1,1 @@
-// All components have been moved to src/shared/components/
+export { GracePeriodChecker } from './GracePeriodChecker';

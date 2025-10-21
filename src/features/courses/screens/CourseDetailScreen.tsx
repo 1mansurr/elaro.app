@@ -1,10 +1,12 @@
 // FILE: src/features/courses/screens/CourseDetailScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Alert, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useCourseDetail } from '@/hooks/useCourseDetail';
+import { QueryStateWrapper } from '@/shared/components';
 import { supabase } from '@/services/supabase';
-import { RootStackParamList, Course } from '@/types';
+import { RootStackParamList } from '@/types';
 
 // Define the route prop type for this screen
 type CourseDetailScreenRouteProp = RouteProp<RootStackParamList, 'CourseDetail'>;
@@ -14,9 +16,8 @@ const CourseDetailScreen = () => {
   const route = useRoute<CourseDetailScreenRouteProp>();
   const navigation = useNavigation<CourseDetailScreenNavigationProp>();
   const { courseId } = route.params;
-  const [course, setCourse] = useState<Course | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: course, isLoading, isError, error, refetch, isRefetching } = useCourseDetail(courseId);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = () => {
     Alert.alert(
@@ -31,7 +32,7 @@ const CourseDetailScreen = () => {
           text: 'Delete',
           style: 'destructive',
           onPress: async () => {
-            setIsLoading(true);
+            setIsDeleting(true);
             try {
               const { error: deleteError } = await supabase.functions.invoke('delete-course', {
                 body: {
@@ -46,7 +47,8 @@ const CourseDetailScreen = () => {
             } catch (error) {
               Alert.alert('Error', 'Failed to delete the course.');
               console.error('Delete Error:', error instanceof Error ? error.message : 'Unknown error');
-              setIsLoading(false);
+            } finally {
+              setIsDeleting(false);
             }
           },
         },
@@ -54,88 +56,55 @@ const CourseDetailScreen = () => {
     );
   };
 
-  useEffect(() => {
-    const fetchCourseDetails = async () => {
-      if (!courseId) {
-        setError('Course ID is missing.');
-        setIsLoading(false);
-        return;
-      }
-
-      setIsLoading(true);
-
-      const { data, error: fetchError } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', courseId)
-        .is('deleted_at', null) // Only fetch active courses
-        .single();
-
-      if (fetchError) {
-        setError('Failed to fetch course details.');
-        Alert.alert('Error', 'Could not load the course details.');
-        console.error('Fetch Detail Error:', fetchError.message);
-      } else {
-        setCourse(data);
-      }
-
-      setIsLoading(false);
-    };
-
-    fetchCourseDetails();
-  }, [courseId]);
-
-  if (isLoading) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" color="#007AFF" />
-        <Text style={{ marginTop: 10 }}>Loading course details...</Text>
-      </View>
-    );
-  }
-
-  if (error || !course) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.errorText}>{error || 'Course not found.'}</Text>
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Text style={styles.title}>{course.courseName}</Text>
-        {course.courseCode && (
-          <Text style={styles.subtitle}>{course.courseCode}</Text>
-        )}
+    <QueryStateWrapper
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      data={course}
+      refetch={refetch}
+      isRefetching={isRefetching}
+      onRefresh={refetch}
+      emptyTitle="Course not found"
+      emptyMessage="This course may have been deleted or doesn't exist."
+      emptyIcon="book-outline"
+    >
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.title}>{course?.courseName}</Text>
+          {course?.courseCode && (
+            <Text style={styles.subtitle}>{course.courseCode}</Text>
+          )}
+          
+          <View style={styles.divider} />
+          
+          <Text style={styles.label}>About this course:</Text>
+          <Text style={styles.content}>
+            {course?.aboutCourse || 'No description provided.'}
+          </Text>
+        </View>
         
-        <View style={styles.divider} />
-        
-        <Text style={styles.label}>About this course:</Text>
-        <Text style={styles.content}>
-          {course.aboutCourse || 'No description provided.'}
-        </Text>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => navigation.navigate('EditCourseModal', { courseId })}
+            disabled={isDeleting}
+          >
+            <Text style={styles.editButtonText}>Edit Course</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            disabled={isDeleting}
+          >
+            <Text style={styles.deleteButtonText}>
+              {isDeleting ? 'Deleting...' : 'Delete Course'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      
-      <View style={styles.buttonContainer}>
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => navigation.navigate('EditCourseModal', { courseId })}
-          disabled={isLoading}
-        >
-          <Text style={styles.editButtonText}>Edit Course</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={handleDelete}
-          disabled={isLoading}
-        >
-          <Text style={styles.deleteButtonText}>Delete Course</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+    </QueryStateWrapper>
   );
 };
 
@@ -144,11 +113,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f8f9fa',
     padding: 20,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   card: {
     backgroundColor: '#fff',
@@ -187,10 +151,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#444',
     lineHeight: 24,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
   },
   buttonContainer: {
     marginTop: 20,

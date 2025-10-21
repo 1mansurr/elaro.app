@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -6,7 +6,7 @@ import {
   ViewStyle,
   TextStyle,
   ActivityIndicator,
-  Animated,
+  View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
@@ -17,7 +17,6 @@ import {
   FONT_SIZES,
   FONT_WEIGHTS,
   BORDER_RADIUS,
-  ANIMATIONS,
   COMPONENTS,
 } from '@/constants/theme';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -46,6 +45,104 @@ interface ButtonProps {
   accessibilityHint?: string;
 }
 
+const getStyles = (theme: any) => {
+  return StyleSheet.create({
+    base: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'row',
+      borderRadius: COMPONENTS.button.borderRadius,
+      overflow: 'hidden',
+    },
+    // Variant styles
+    primary: {
+      backgroundColor: theme.accent,
+    },
+    secondary: {
+      backgroundColor: theme.warning,
+    },
+    outline: {
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: theme.accent,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+    },
+    danger: {
+      backgroundColor: theme.destructive,
+    },
+    success: {
+      backgroundColor: theme.success,
+    },
+    // Size styles
+    small: {
+      paddingVertical: SPACING.sm,
+      paddingHorizontal: SPACING.md,
+      minHeight: 36,
+    },
+    medium: {
+      paddingVertical: SPACING.md,
+      paddingHorizontal: SPACING.lg,
+      minHeight: COMPONENTS.button.height,
+    },
+    large: {
+      paddingVertical: SPACING.lg,
+      paddingHorizontal: SPACING.xl,
+      minHeight: 56,
+    },
+    // Text styles
+    text: {
+      textAlign: 'center',
+      fontWeight: FONT_WEIGHTS.semibold as any,
+    },
+    primaryText: {
+      color: theme.text === '#FFFFFF' ? '#1C1C1E' : '#FFFFFF',
+    },
+    secondaryText: {
+      color: theme.text,
+    },
+    outlineText: {
+      color: theme.accent,
+    },
+    ghostText: {
+      color: theme.accent,
+    },
+    dangerText: {
+      color: theme.text,
+    },
+    successText: {
+      color: theme.text,
+    },
+    smallText: {
+      fontSize: FONT_SIZES.sm,
+    },
+    mediumText: {
+      fontSize: FONT_SIZES.md,
+    },
+    largeText: {
+      fontSize: FONT_SIZES.lg,
+    },
+    // Other styles
+    disabled: {
+      opacity: 0.5,
+    },
+    iconWrapper: {
+      marginHorizontal: SPACING.xs,
+    },
+    contentWrapper: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: SPACING.xs,
+    },
+    gradientContent: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+  });
+};
+
 export const Button: React.FC<ButtonProps> = ({
   title,
   onPress,
@@ -63,201 +160,109 @@ export const Button: React.FC<ButtonProps> = ({
   accessibilityLabel,
   accessibilityHint,
 }) => {
-  const { theme, isDark } = useTheme();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const { theme } = useTheme();
+  const styles = getStyles(theme);
 
-  const handlePressIn = () => {
-    if (!disabled && !loading) {
-      Animated.spring(scaleAnim, {
-        toValue: 0.95,
-        useNativeDriver: true,
-        ...ANIMATIONS.spring,
-      }).start();
-      if (hapticFeedback) {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }
+  const handlePress = () => {
+    if (hapticFeedback) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    }
+    if (onPress) {
+      onPress();
     }
   };
 
-  const handlePressOut = () => {
-    if (!disabled && !loading) {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        ...ANIMATIONS.spring,
-      }).start();
+  const variantStyle = styles[variant] || styles.primary;
+  const sizeStyle = styles[size] || styles.medium;
+  const disabledStyle = disabled ? styles.disabled : {};
+  const textVariantStyle = styles[`${variant}Text`];
+  const textSizeStyle = styles[`${size}Text`];
+
+  const renderContent = () => {
+    if (loading) {
+      return <ActivityIndicator color={textVariantStyle?.color || theme.white} />;
     }
+
+    const iconElement = icon ? (
+      <View style={styles.iconWrapper}>
+        {icon}
+      </View>
+    ) : null;
+
+    return (
+      <>
+        {iconPosition === 'left' && iconElement}
+        <Text style={[styles.text, textSizeStyle, textVariantStyle, textStyle]}>
+          {title}
+        </Text>
+        {iconPosition === 'right' && iconElement}
+      </>
+    );
   };
 
-  const getVariantStyles = () => {
-    const map = {
-      primary: {
-        backgroundColor: theme.accent,
-        borderColor: theme.accent,
-        textColor: theme.text === '#FFFFFF' ? '#1C1C1E' : '#FFFFFF',
-      },
-      secondary: {
-        backgroundColor: isDark ? theme.success : theme.warning,
-        borderColor: isDark ? theme.success : theme.warning,
-        textColor: theme.text,
-      },
-      outline: {
-        backgroundColor: 'transparent',
-        borderColor: theme.accent,
-        textColor: theme.accent,
-      },
-      ghost: {
-        backgroundColor: 'transparent',
-        borderColor: 'transparent',
-        textColor: theme.accent,
-      },
-      danger: {
-        backgroundColor: theme.destructive,
-        borderColor: theme.destructive,
-        textColor: theme.text,
-      },
-      success: {
-        backgroundColor: theme.success,
-        borderColor: theme.success,
-        textColor: theme.text,
-      },
-    };
-    return map[variant] || map.primary;
-  };
-
-  const getSizeStyles = () => {
-    const map = {
-      small: {
-        paddingVertical: SPACING.sm,
-        paddingHorizontal: SPACING.md,
-        fontSize: FONT_SIZES.sm,
-        minHeight: 36,
-      },
-      medium: {
-        paddingVertical: SPACING.md,
-        paddingHorizontal: SPACING.lg,
-        fontSize: FONT_SIZES.md,
-        minHeight: COMPONENTS.button.height,
-      },
-      large: {
-        paddingVertical: SPACING.lg,
-        paddingHorizontal: SPACING.xl,
-        fontSize: FONT_SIZES.lg,
-        minHeight: 56,
-      },
-    };
-    return map[size] || map.medium;
-  };
-
-  const variantStyles = getVariantStyles();
-  const sizeStyles = getSizeStyles();
-
-  const baseStyle = {
-    backgroundColor: variantStyles.backgroundColor,
-    borderColor: variantStyles.borderColor,
-    borderWidth: variant === 'outline' ? 1 : 0,
-    paddingVertical: sizeStyles.paddingVertical,
-    paddingHorizontal: sizeStyles.paddingHorizontal,
-    minHeight: sizeStyles.minHeight,
-    borderRadius: COMPONENTS.button.borderRadius,
-  };
-
-  const accessibilityProps = {
-    accessible: true,
-    accessibilityRole: 'button' as const,
-    accessibilityLabel: accessibilityLabel || title,
-    accessibilityHint: accessibilityHint || undefined,
-    accessibilityState: { disabled, busy: loading },
-  };
-
-  const content = (
-    <Animated.View style={[styles.innerContent]}>
-      {loading && (
-        <ActivityIndicator
-          size="small"
-          color={variantStyles.textColor}
-          style={styles.loader}
-        />
-      )}
-      {!loading && icon && iconPosition === 'left' && (
-        <Animated.View style={styles.icon}>{icon}</Animated.View>
-      )}
-      <Text
-        style={[
-          styles.text,
-          { color: variantStyles.textColor, fontSize: sizeStyles.fontSize },
-          textStyle,
-        ]}>
-        {title}
-      </Text>
-      {!loading && icon && iconPosition === 'right' && (
-        <Animated.View style={styles.icon}>{icon}</Animated.View>
-      )}
-    </Animated.View>
+  const buttonContent = (
+    <View style={[
+      styles.base,
+      sizeStyle,
+      variantStyle,
+      disabledStyle,
+      style,
+      iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
+    ]}>
+      {renderContent()}
+    </View>
   );
 
-  const TouchableWrapper = (
-    <TouchableOpacity
-      onPress={onPress}
-      onPressIn={handlePressIn}
-      onPressOut={handlePressOut}
-      activeOpacity={0.9}
-      disabled={disabled || loading}
-      style={[styles.base, baseStyle, disabled && styles.disabled, style]}
-      {...accessibilityProps}>
-      {gradient && !disabled && !loading ? (
+  if (gradient && !disabled) {
+    const finalGradientColors = gradientColors || (variant === 'primary' ? [theme.elaroGradientStart, theme.elaroGradientEnd] : [theme.oddityGradientStart, theme.oddityGradientEnd]);
+    return (
+      <TouchableOpacity
+        onPress={handlePress}
+        disabled={disabled || loading}
+        activeOpacity={0.8}
+        accessibilityLabel={accessibilityLabel || title}
+        accessibilityHint={accessibilityHint}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: disabled || loading }}
+      >
         <LinearGradient
-          colors={
-            gradientColors || [
-              theme.accent,
-              isDark ? theme.text : theme.background,
-            ]
-          }
-          style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: COMPONENTS.button.borderRadius },
-          ]}
+          colors={finalGradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-        />
-      ) : null}
-      {content}
-    </TouchableOpacity>
-  );
+          style={[styles.base, sizeStyle, style]}
+        >
+          <View style={[
+            styles.base,
+            sizeStyle,
+            styles.gradientContent,
+            iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
+          ]}>
+            {renderContent()}
+          </View>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
 
   return (
-    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-      {TouchableWrapper}
-    </Animated.View>
+    <TouchableOpacity
+      onPress={handlePress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+      style={[styles.base, sizeStyle, variantStyle, disabledStyle, style]}
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityHint={accessibilityHint}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading }}
+    >
+      <View style={[
+        styles.contentWrapper,
+        iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
+      ]}>
+        {renderContent()}
+      </View>
+    </TouchableOpacity>
   );
 };
-
-const styles = StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
-  text: {
-    textAlign: 'center',
-    fontWeight: FONT_WEIGHTS.semibold as any,
-  },
-  loader: {
-    marginRight: SPACING.sm,
-  },
-  icon: {
-    marginHorizontal: SPACING.xs,
-  },
-  innerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: SPACING.xs,
-  },
-});
 
 export default React.memo(Button);

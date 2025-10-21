@@ -1,11 +1,12 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { supabase } from '@/services/supabase';
 import { debounce } from '@/utils/debounce'; // Assuming debounce utility exists
 import { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
+import { Button } from '@/shared/components';
 
 type ScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'OnboardingUsername'>;
 
@@ -36,7 +37,7 @@ const OnboardingUsernameScreen = () => {
       } finally {
         setIsChecking(false);
       }
-    }, 500),
+    }, 500).debounced,
     []
   );
 
@@ -49,8 +50,12 @@ const OnboardingUsernameScreen = () => {
     navigation.navigate('OnboardingUniversity'); // Navigate to the next screen
   };
 
+  const handleBack = () => {
+    navigation.navigate('AgeConsent');
+  };
+
   return (
-    <View style={styles.container}>
+    <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Choose your username</Text>
       <Text style={styles.subtitle}>This will be your unique name on ELARO.</Text>
       
@@ -75,19 +80,23 @@ const OnboardingUsernameScreen = () => {
         <Text style={[styles.feedback, styles.error]}>Username is already taken.</Text>
       )}
 
-      <Button title="Next" onPress={handleNext} disabled={!isAvailable || username.length < 3} />
-    </View>
+      <View style={styles.buttonContainer}>
+        <Button title="Back" onPress={handleBack} variant="secondary" />
+        <Button title="Next" onPress={handleNext} disabled={!isAvailable || username.length < 3} />
+      </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center' },
+  container: { flexGrow: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
   title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
   subtitle: { fontSize: 16, textAlign: 'center', color: 'gray', marginBottom: 30 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 15, borderRadius: 8, fontSize: 16 },
+  input: { borderWidth: 1, borderColor: '#ccc', padding: 15, borderRadius: 8, fontSize: 16, backgroundColor: '#fff' },
   feedback: { marginTop: 10, textAlign: 'center' },
   success: { color: 'green' },
   error: { color: 'red' },
+  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
 });
 
 export default OnboardingUsernameScreen;

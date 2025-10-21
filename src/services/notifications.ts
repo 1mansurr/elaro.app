@@ -211,8 +211,38 @@ export const notificationService = {
     });
   },
 
-  // Handle notification tap
+  // Handle notification tap with deep linking support
   async handleNotificationTap(data: any) {
+    const { url, itemId, taskType } = data;
+
+    // If a deep link URL is provided, use it
+    if (url) {
+      console.log('Handling notification with deep link:', url);
+      try {
+        // Use React Navigation's linking to navigate
+        if (navigationRef.current) {
+          // Navigate using the deep link
+          navigationRef.current.navigate(url as never);
+          console.log('Successfully navigated to:', url);
+        } else {
+          console.warn('Navigation ref not available, falling back to legacy method');
+          await this.handleNotificationTapLegacy(data);
+        }
+      } catch (error) {
+        console.error('Error navigating with deep link:', error);
+        // Fallback to old method if deep link fails
+        await this.handleNotificationTapLegacy(data);
+      }
+      return;
+    }
+
+    // Fallback to legacy method if no URL is provided
+    console.log('No deep link URL found, using legacy navigation');
+    await this.handleNotificationTapLegacy(data);
+  },
+
+  // Legacy notification tap handler (fallback)
+  async handleNotificationTapLegacy(data: any) {
     const { itemId, taskType } = data;
 
     if (!itemId || !taskType) {

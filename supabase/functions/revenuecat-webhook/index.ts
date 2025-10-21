@@ -1,6 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createWebhookHandler } from '../_shared/function-handler.ts';
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import { sendPushNotification } from '../_shared/send-push-notification.ts';
 
 interface RevenueCatWebhookPayload {
   api_version: string;
@@ -126,6 +127,37 @@ async function handleRevenueCatWebhook(
         }
 
         console.log(`✅ User ${app_user_id} subscription cancelled/expired`);
+
+        // Send push notification to user about subscription ending
+        try {
+          const { data: devices } = await supabaseAdmin
+            .from('user_devices')
+            .select('push_token')
+            .eq('user_id', app_user_id);
+
+          if (devices && devices.length > 0) {
+            const tokens = devices.map(d => d.push_token).filter(Boolean);
+            
+            // Dynamic message based on event type
+            const message = eventType === 'BILLING_ISSUE'
+              ? 'Your subscription payment failed. Become an Oddity to restore access to all features.'
+              : 'Your Oddity subscription has ended. Become an Oddity to restore access.';
+
+            await sendPushNotification(
+              supabaseAdmin,
+              tokens,
+              'Subscription Ended',
+              message,
+              { type: 'subscription_ended', userId: app_user_id }
+            );
+
+            console.log(`📱 Push notification sent to user ${app_user_id} about subscription ending`);
+          }
+        } catch (notificationError) {
+          // Log error but don't fail the webhook
+          console.error(`⚠️ Failed to send push notification to user ${app_user_id}:`, notificationError);
+        }
+
         return { 
           status: 'success', 
           message: 'Subscription cancelled successfully' 

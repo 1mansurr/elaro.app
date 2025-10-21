@@ -1,481 +1,211 @@
-// FILE: src/screens/AccountScreen.tsx
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Modal, Pressable } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
+import Card from '@/shared/components/Card';
+import { Button } from '@/shared/components/Button';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { RootStackParamList } from '@/types';
-import { Card, Button } from '@/shared/components';
-import { NotificationSettings } from '@/features/notifications/components/NotificationSettings';
-import { AnalyticsToggle } from '@/features/settings/components/AnalyticsToggle';
-import { Ionicons } from '@expo/vector-icons';
-import { authService } from '@/features/auth/services/authService';
-import { supabase } from '@/services/supabase';
+import { useTheme } from '@/hooks/useTheme';
+import { showToast } from '@/utils/showToast';
+import { PostChatModal } from '@/features/support/components/PostChatModal';
+import { getSecureChatLink } from '@/features/support/utils/getSecureChatLink';
+import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
 
-// Import the AppError class
-class AppError extends Error {
-  constructor(message: string, public status: number, public code: string) {
-    super(message);
-  }
-}
-
-type AccountScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-const AccountScreen = () => {
-  const navigation = useNavigation<AccountScreenNavigationProp>();
-  const { user, session, signOut } = useAuth();
-  const isGuest = !session;
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
-  const [isSupportChatLoading, setIsSupportChatLoading] = useState(false);
-
-  const handleContactSupport = async () => {
-    setIsSupportChatLoading(true);
-    try {
-      // Call the new backend function
-      const { data, error } = await supabase.functions.invoke('get-secure-chat-link');
-
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      if (data && data.secureUrl) {
-        // Open the secure URL in our in-app browser
-        navigation.navigate('InAppBrowserScreen', {
-          url: data.secureUrl,
-          title: 'Support Chat'
-        });
-      } else {
-        throw new Error('Could not retrieve the secure chat link.');
-      }
-
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Could not open support chat. Please try again later.');
-    } finally {
-      setIsSupportChatLoading(false);
-    }
-  };
-
-  const handleGlobalSignOut = () => {
-    Alert.alert(
-      'Log Out From All Devices',
-      'Are you sure? This will log you out of your ELARO account on all browsers and devices.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out Everywhere',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await authService.signOutFromAllDevices();
-              // The onAuthStateChange listener in AuthContext will handle navigation.
-            } catch (error) {
-              const message = error instanceof AppError ? error.message : 'Failed to log out from all devices.';
-              Alert.alert('Error', message);
-            }
-          },
-        },
-      ]
-    );
-  };
-
-  const handleEnableMfa = () => {
-    navigation.navigate('MFAEnrollmentScreen');
-  };
-
-  const handleDeleteAccount = () => {
-    // First confirmation dialog
-    Alert.alert(
-      'Delete Account',
-      'Your account will be deleted but can be restored within 7 days by logging in again. After 7 days, it will be permanently deleted.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete Account',
-          style: 'destructive',
-          onPress: () => {
-            // Second, final confirmation dialog
-            Alert.alert(
-              'Final Confirmation',
-              'Are you sure you want to delete your account? You have 7 days to restore it by logging in again.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Delete Account',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setIsDeleting(true);
-                    try {
-                      await authService.deleteAccount('User requested account deletion from settings');
-                      Alert.alert(
-                        'Account Deletion Initiated', 
-                        'Your account has been deleted but can be restored within 7 days by logging in again.'
-                      );
-                    } catch (error: any) {
-                      Alert.alert('Deletion Failed', error.message || 'An unexpected error occurred. Please try again.');
-                    } finally {
-                      setIsDeleting(false);
-                    }
-                  },
-                },
-              ]
-            );
-          },
-        },
-      ]
-    );
-  };
-
-  const ListItem = ({ 
-    icon, 
-    label, 
-    onPress, 
-    color = '#343a40', 
-    disabled = false, 
-    rightContent 
-  }: { 
-    icon: any; 
-    label: string; 
-    onPress: () => void; 
-    color?: string; 
-    disabled?: boolean;
-    rightContent?: React.ReactNode;
-  }) => (
+const ListItem = ({ label, onPress, isDestructive = false }) => {
+  const { theme } = useTheme();
+  return (
     <TouchableOpacity 
-      style={[styles.listItem, disabled && styles.listItemDisabled]} 
-      onPress={onPress}
-      disabled={disabled}
+      onPress={onPress} 
+      style={[
+        styles.listItem, 
+        { 
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+        }
+      ]}
+      activeOpacity={0.7}
     >
-      <Ionicons name={icon} size={24} color={disabled ? '#8E8E93' : color} style={styles.listItemIcon} />
-      <Text style={[styles.listItemLabel, disabled && styles.listItemLabelDisabled]}>{label}</Text>
-      {rightContent && <View style={styles.listItemRight}>{rightContent}</View>}
+      <Text style={[
+        styles.listItemText, 
+        { 
+          color: isDestructive ? theme.error : theme.text,
+          fontWeight: '500',
+        }
+      ]}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
+};
 
-  const handleLogout = () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log Out', style: 'destructive', onPress: signOut },
-    ]);
-  };
+export function AccountScreen() {
+  const { user, session } = useAuth();
+  const navigation = useNavigation();
+  const { theme } = useTheme();
+  const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
+  const [isSupportChatLoading, setSupportChatLoading] = useState(false);
+
+  const handleContactSupport = useCallback(async () => {
+    if (!user) return;
+    setSupportChatLoading(true);
+    try {
+      const secureUrl = await getSecureChatLink(user);
+      navigation.navigate('SupportChat', { uri: secureUrl });
+    } catch (error) {
+      showToast({ type: 'error', message: 'Could not open support chat.' });
+    } finally {
+      setSupportChatLoading(false);
+    }
+  }, [user, navigation]);
 
   const renderGuestView = () => (
     <ScrollView style={styles.container}>
-      <Card title="Get Started">
-        <Text style={styles.guestText}>
-          You are currently browsing as a guest.
-        </Text>
-        <Button
-          title="Sign Up for Free"
-          onPress={() => navigation.navigate('Auth', { mode: 'signup' })}
-        />
+      <Card title="Profile">
+        <View style={styles.guestProfileContainer}>
+          <Text style={[styles.guestTitle, { color: theme.text }]}>Join ELARO</Text>
+          <Text style={[styles.guestSubtitle, { color: theme.textSecondary }]}>
+            Log in or create an account to manage your academic life.
+          </Text>
+          <Button title="Login or Sign Up" onPress={() => navigation.navigate('Auth')} />
+        </View>
       </Card>
 
       <Card title="Support">
-        <ListItem
-          icon="help-circle-outline"
-          label="How ELARO Works"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/how-it-works',
+        <ListItem 
+          label="How ELARO Works" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
-          })}
+          })} 
         />
       </Card>
 
       <Card title="Legal">
-        <ListItem
-          icon="document-text-outline"
-          label="Terms of Service"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/terms-of-service',
+        <ListItem 
+          label="Terms of Service" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/terms',
             title: 'Terms of Service'
-          })}
+          })} 
         />
-        <ListItem
-          icon="shield-outline"
-          label="Privacy Policy"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/privacy-policy',
+        <ListItem 
+          label="Privacy Policy" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
-          })}
+          })} 
         />
       </Card>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isPostChatModalVisible}
-        onRequestClose={() => setPostChatModalVisible(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ margin: 20, backgroundColor: 'white', borderRadius: 20, padding: 35, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 }}>
-            <Text style={{ marginBottom: 15, textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>We'll Be With You Shortly!</Text>
-            <Text style={{ marginBottom: 20, textAlign: 'center' }}>
-              Our support team will respond soon. Please check back in the chat from time to time within the next 2 hours.
-            </Text>
-            <Text style={{ marginBottom: 25, textAlign: 'center', fontStyle: 'italic' }}>
-              In the meantime, your question might already be answered in our documentation.
-            </Text>
-            
-            <Button
-              title="Read 'How ELARO Works'"
-              onPress={() => {
-                setPostChatModalVisible(false); // Close this modal first
-                navigation.navigate('InAppBrowserScreen', {
-                  url: 'https://myelaro.com/how-it-works',
-                  title: 'How ELARO Works'
-                });
-              }}
-            />
-
-            <Pressable
-              style={{ marginTop: 15 }}
-              onPress={() => setPostChatModalVisible(false)}
-            >
-              <Text style={{ color: 'blue' }}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </ScrollView>
   );
 
   const renderAuthenticatedView = () => (
     <ScrollView style={styles.container}>
-      {/* Admin Card - Only visible to admin users */}
       {user?.role === 'admin' && (
         <Card title="Admin">
-          <ListItem
-            icon="grid-outline"
-            label="Admin Dashboard"
-            onPress={() => Alert.alert('Coming Soon', 'The Admin Dashboard is under construction.')}
-          />
+          <Button title="Admin Dashboard" onPress={() => navigation.navigate('AdminDashboard')} />
         </Card>
       )}
 
-      {/* Profile Card */}
       <Card title="Profile">
-        <View style={styles.profileHeader}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.name?.charAt(0) || '?'}
-            </Text>
-          </View>
-          <View>
-            <Text style={styles.profileName}>
-              {user?.name || 'User'}
-            </Text>
-            <Text style={styles.profileEmail}>
-              {user?.email}
-            </Text>
-          </View>
+        <View style={styles.profileInfo}>
+          <Text style={[styles.profileName, { color: theme.text }]}>{user?.user_metadata.first_name} {user?.user_metadata.last_name}</Text>
+          <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
         </View>
-        <Button
-          title="View Profile"
-          onPress={() => navigation.navigate('Profile')}
-          style={{ marginTop: 10 }}
-        />
-        <Button
-          title="My Courses"
-          onPress={() => navigation.navigate('Courses')}
-          style={{ marginTop: 10 }}
-        />
-        <Button
-          title="Add a Course"
-          onPress={() => navigation.navigate('AddCourseFlow')}
-          style={{ marginTop: 10 }}
-        />
+        <Button title="View Profile" onPress={() => navigation.navigate('UserProfile')} />
+        <Button title="My Courses" onPress={() => navigation.navigate('CourseList')} />
+        <Button title="Add a Course" onPress={() => navigation.navigate('AddCourseFlow')} />
       </Card>
 
-      {/* Security Card */}
-      <Card title="Security">
-        <ListItem
-          icon="shield-outline"
-          label="Enable Multi-Factor Authentication"
-          onPress={handleEnableMfa}
-        />
+      <Card title="Subscription">
+        <SubscriptionManagementCard />
       </Card>
 
-      {/* Notifications Card */}
-      <Card title="Notifications">
-        <NotificationSettings />
-      </Card>
-
-      {/* Privacy & Analytics Card */}
-      <Card title="Privacy & Analytics">
-        <AnalyticsToggle />
-      </Card>
-
-      {/* Support Card */}
       <Card title="Support">
-        <ListItem
-          icon="help-circle-outline"
-          label="How ELARO Works"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/how-it-works',
+        <ListItem 
+          label="How ELARO Works" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
-          })}
+          })} 
         />
-        <ListItem
-          icon="mail-outline"
-          label="Contact Support"
-          onPress={handleContactSupport}
-          disabled={isSupportChatLoading}
-          rightContent={isSupportChatLoading ? <ActivityIndicator size="small" /> : undefined}
-        />
+        <ListItem label="Contact Support" onPress={handleContactSupport} />
       </Card>
 
-      {/* Legal Card */}
       <Card title="Legal">
-        <ListItem
-          icon="document-text-outline"
-          label="Terms of Service"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/terms-of-service',
+        <ListItem 
+          label="Terms of Service" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/terms',
             title: 'Terms of Service'
-          })}
+          })} 
         />
-        <ListItem
-          icon="shield-outline"
-          label="Privacy Policy"
-          onPress={() => navigation.navigate('InAppBrowserScreen', {
-            url: 'https://myelaro.com/privacy-policy',
+        <ListItem 
+          label="Privacy Policy" 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
-          })}
+          })} 
         />
       </Card>
 
-      {/* Settings Card */}
       <Card title="Settings">
-        <ListItem
-          icon="trash-outline"
-          label="Recycle Bin"
-          onPress={() => navigation.navigate('RecycleBin')}
-        />
-        <ListItem
-          icon="log-out-outline"
-          label="Log Out"
-          onPress={handleLogout}
-        />
-        <ListItem
-          icon="exit-outline"
-          label="Log Out From All Devices"
-          onPress={handleGlobalSignOut}
-          color="#FF3B30"
-        />
-        <ListItem
-          icon="trash-outline"
-          label="Delete Account"
-          onPress={handleDeleteAccount}
-          disabled={isDeleting}
-          color="#FF3B30"
-          rightContent={isDeleting ? <ActivityIndicator color="#FF3B30" size="small" /> : undefined}
-        />
+        <ListItem label="Settings" onPress={() => navigation.navigate('Settings')} />
       </Card>
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isPostChatModalVisible}
-        onRequestClose={() => setPostChatModalVisible(false)}
-      >
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-          <View style={{ margin: 20, backgroundColor: 'white', borderRadius: 20, padding: 35, alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.25, shadowRadius: 4, elevation: 5 }}>
-            <Text style={{ marginBottom: 15, textAlign: 'center', fontSize: 18, fontWeight: 'bold' }}>We'll Be With You Shortly!</Text>
-            <Text style={{ marginBottom: 20, textAlign: 'center' }}>
-              Our support team will respond soon. Please check back in the chat from time to time within the next 2 hours.
-            </Text>
-            <Text style={{ marginBottom: 25, textAlign: 'center', fontStyle: 'italic' }}>
-              In the meantime, your question might already be answered in our documentation.
-            </Text>
-            
-            <Button
-              title="Read 'How ELARO Works'"
-              onPress={() => {
-                setPostChatModalVisible(false); // Close this modal first
-                navigation.navigate('InAppBrowserScreen', {
-                  url: 'https://myelaro.com/how-it-works',
-                  title: 'How ELARO Works'
-                });
-              }}
-            />
-
-            <Pressable
-              style={{ marginTop: 15 }}
-              onPress={() => setPostChatModalVisible(false)}
-            >
-              <Text style={{ color: 'blue' }}>Close</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
+      <PostChatModal
+        isVisible={isPostChatModalVisible}
+        onClose={() => setPostChatModalVisible(false)}
+        onFaqPress={() => {
+          setPostChatModalVisible(false);
+          navigation.navigate('Faq');
+        }}
+      />
     </ScrollView>
   );
 
-  return isGuest ? renderGuestView() : renderAuthenticatedView();
-};
+  return session && user ? renderAuthenticatedView() : renderGuestView();
+}
 
 const styles = StyleSheet.create({
   container: {
-    padding: 20,
-    backgroundColor: '#f8f9fa',
+    flex: 1,
+    padding: 16,
   },
-  guestText: {
-    textAlign: 'center',
-    fontSize: 16,
-    color: '#6c757d',
-    marginBottom: 20,
-  },
-  profileHeader: {
-    flexDirection: 'row',
+  guestProfileContainer: {
     alignItems: 'center',
+    paddingVertical: 8,
   },
-  avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#007AFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  avatarText: {
-    color: '#fff',
+  guestTitle: {
     fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  profileInfo: {
+    marginBottom: 16,
+    alignItems: 'center',
   },
   profileName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#343a40',
   },
   profileEmail: {
-    fontSize: 16,
-    color: '#6c757d',
+    fontSize: 14,
   },
   listItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+    borderWidth: 1,
+    alignItems: 'center',
   },
-  listItemDisabled: {
-    opacity: 0.6,
-  },
-  listItemIcon: {
-    marginRight: 16,
-  },
-  listItemLabel: {
-    flex: 1,
+  listItemText: {
     fontSize: 16,
   },
-  listItemLabelDisabled: {
-    color: '#8E8E93',
-  },
-  listItemRight: {
-    marginLeft: 8,
-  },
 });
-
-export default AccountScreen;
