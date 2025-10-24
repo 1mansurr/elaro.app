@@ -6,13 +6,17 @@ export type RootStackParamList = {
   Login: undefined;
   Auth: { onClose?: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
   Main: undefined;
+  GuestHome: undefined;
   OnboardingFlow: undefined;
   Courses: undefined;
+  Drafts: undefined;
+  Templates: undefined;
   CourseDetail: { courseId: string };
   Calendar: undefined;
   RecycleBin: undefined;
   Profile: undefined;
   Settings: undefined;
+  DeleteAccount: undefined;
   MfaSetup: undefined;
   AdminDashboard: undefined;
   UserProfile: undefined;
@@ -38,6 +42,8 @@ export type RootStackParamList = {
     url: string;
     title?: string;
   };
+  NotificationAnalytics: undefined;
+  AnalyticsAdmin: undefined;
 };
 
 export type MainTabParamList = {

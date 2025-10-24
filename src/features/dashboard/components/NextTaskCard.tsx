@@ -31,6 +31,7 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
   const renderContent = () => {
     if (task) {
       const isPendingSync = isTempId(task.id);
+      const isExample = (task as any).is_example === true;
       
       return (
         <>
@@ -38,13 +39,22 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
             <Text style={styles.taskType}>
               {task.type.replace('_', ' ')}
             </Text>
-            {/* Pending Sync Indicator */}
-            {isPendingSync && (
-              <View style={styles.pendingBadge}>
-                <Ionicons name="cloud-upload-outline" size={14} color="#FF9500" />
-                <Text style={styles.pendingText}>Pending Sync</Text>
-              </View>
-            )}
+            <View style={styles.badgeContainer}>
+              {/* Example Badge */}
+              {isExample && (
+                <View style={styles.exampleBadge}>
+                  <Ionicons name="information-circle" size={14} color="#007AFF" />
+                  <Text style={styles.exampleText}>EXAMPLE</Text>
+                </View>
+              )}
+              {/* Pending Sync Indicator */}
+              {isPendingSync && (
+                <View style={styles.pendingBadge}>
+                  <Ionicons name="cloud-upload-outline" size={14} color="#FF9500" />
+                  <Text style={styles.pendingText}>Pending Sync</Text>
+                </View>
+              )}
+            </View>
           </View>
           
           <Text style={styles.taskName}>{task.name}</Text>
@@ -129,6 +139,26 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     textTransform: 'uppercase',
     letterSpacing: 1,
+  },
+  badgeContainer: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  exampleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  exampleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#007AFF',
   },
   pendingBadge: {
     flexDirection: 'row',

@@ -88,6 +88,8 @@ const OnboardingCoursesScreen = () => {
         ? 'Your profile has been saved! You can add courses anytime from the home screen.'
         : 'Your profile has been saved successfully.';
       Alert.alert('Setup Complete!', message);
+      
+      // Navigate to main app after successful onboarding completion
       navigation.replace('Main');
 
     } catch (error: any) {

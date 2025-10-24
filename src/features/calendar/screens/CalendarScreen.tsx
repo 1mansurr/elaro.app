@@ -4,22 +4,23 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useCalendarTasksWithLockState } from '../hooks/useCalendarTasksWithLockState';
 import { useCalendarData, useCalendarMonthData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { Task, RootStackParamList } from '@/types';
-import { WeekStrip, Timeline } from '../components';
+import { WeekStrip, Timeline, WeekGridView } from '../components';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { QueryStateWrapper } from '@/shared/components';
 import { startOfWeek, isSameDay, format, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useDeleteTask, useCompleteTask, useRestoreTask } from '@/hooks/useTaskMutations';
 import { useToast } from '@/contexts/ToastContext';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 
 type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-type ViewMode = 'month' | 'agenda';
+type ViewMode = 'month' | 'week' | 'agenda';
 
 const CalendarScreen = () => {
   const navigation = useNavigation<CalendarScreenNavigationProp>();
@@ -27,7 +28,7 @@ const CalendarScreen = () => {
   const queryClient = useQueryClient();
   const isGuest = !session;
 
-  const { offerings, purchasePackage } = useRevenueCat();
+  const { offerings, purchasePackage } = useSubscription();
   
   // Mutations for task actions
   const deleteTaskMutation = useDeleteTask();
@@ -57,6 +58,12 @@ const CalendarScreen = () => {
   const error = viewMode === 'month' ? errorMonth : errorWeek;
   const refetch = viewMode === 'month' ? refetchMonth : refetchWeek;
   const isRefetching = viewMode === 'month' ? isRefetchingMonth : isRefetchingWeek;
+
+  // Get all tasks for the week (for week grid view)
+  const weekTasks = useMemo(() => {
+    if (!calendarData) return [];
+    return Object.values(calendarData).flat();
+  }, [calendarData]);
 
   const handleDateSelect = useCallback((newDate: Date) => {
     if (isGuest) return;
@@ -187,35 +194,7 @@ const CalendarScreen = () => {
     }
   }, [selectedDate, handleDateSelect]);
 
-  const tasksWithLockState = useMemo(() => {
-    if (!calendarData || !user || user.subscription_tier === 'oddity') {
-      return Object.values(calendarData || {}).flat().map(task => ({ ...task, isLocked: false }));
-    }
-
-    const allTasks = Object.values(calendarData).flat();
-    
-    const limits: Record<string, number> = {
-      assignment: 15,
-      lecture: 15,
-      study_session: 15,
-    };
-
-    const tasksByType = {
-      assignment: allTasks.filter(t => t.type === 'assignment').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-      lecture: allTasks.filter(t => t.type === 'lecture').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-      study_session: allTasks.filter(t => t.type === 'study_session').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    };
-
-    return allTasks.map(task => {
-      const taskType = task.type as 'assignment' | 'lecture' | 'study_session';
-      const taskIndex = tasksByType[taskType].findIndex(t => t.id === task.id);
-      const limit = limits[taskType] || Infinity;
-      return {
-        ...task,
-        isLocked: taskIndex >= limit,
-      };
-    });
-  }, [calendarData, user]);
+  const { tasksWithLockState, isLoading: isLockStateLoading } = useCalendarTasksWithLockState(calendarData, user);
 
   const tasksForSelectedDay = useMemo(() => {
     if (isGuest) return [];
@@ -308,6 +287,7 @@ const CalendarScreen = () => {
   const renderTaskItem = useCallback(({ item }: { item: Task }) => {
     const taskTime = format(new Date(item.date), 'h:mm a');
     const isLocked = item.isLocked;
+    const isExample = (item as any).is_example === true;
     
     return (
       <TouchableOpacity
@@ -321,9 +301,16 @@ const CalendarScreen = () => {
             </Text>
           </View>
           <View style={styles.taskItemDetails}>
-            <Text style={[styles.taskItemTitle, isLocked && styles.taskItemTitleLocked]} numberOfLines={2}>
-              {item.name || item.title}
-            </Text>
+            <View style={styles.taskTitleRow}>
+              <Text style={[styles.taskItemTitle, isLocked && styles.taskItemTitleLocked]} numberOfLines={2}>
+                {item.name || item.title}
+              </Text>
+              {isExample && (
+                <View style={styles.exampleBadgeSmall}>
+                  <Text style={styles.exampleBadgeText}>EXAMPLE</Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.taskItemTime}>{taskTime}</Text>
             {item.courses && (
               <Text style={styles.taskItemCourse} numberOfLines={1}>
@@ -389,11 +376,25 @@ const CalendarScreen = () => {
           >
             <Ionicons
               name="calendar"
-              size={20}
+              size={18}
               color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
             />
             <Text style={[styles.viewButtonText, viewMode === 'month' && styles.viewButtonTextActive]}>
               Month
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.viewButton, viewMode === 'week' && styles.viewButtonActive]}
+            onPress={() => setViewMode('week')}
+          >
+            <Ionicons
+              name="grid"
+              size={18}
+              color={viewMode === 'week' ? COLORS.primary : COLORS.gray}
+            />
+            <Text style={[styles.viewButtonText, viewMode === 'week' && styles.viewButtonTextActive]}>
+              Week
             </Text>
           </TouchableOpacity>
 
@@ -403,7 +404,7 @@ const CalendarScreen = () => {
           >
             <Ionicons
               name="list"
-              size={20}
+              size={18}
               color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
             />
             <Text style={[styles.viewButtonText, viewMode === 'agenda' && styles.viewButtonTextActive]}>
@@ -458,6 +459,16 @@ const CalendarScreen = () => {
               )}
             </View>
           </View>
+        )}
+
+        {/* Week Grid View */}
+        {viewMode === 'week' && (
+          <WeekGridView
+            tasks={weekTasks}
+            selectedDate={selectedDate}
+            onTaskPress={handleTaskPress}
+            onLockedTaskPress={handleLockedTaskPress}
+          />
         )}
 
         {/* Agenda View */}
@@ -577,14 +588,33 @@ const styles = StyleSheet.create({
   taskItemDetails: {
     flex: 1,
   },
+  taskTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
   taskItemTitle: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.text,
-    marginBottom: 2,
+    flex: 1,
   },
   taskItemTitleLocked: {
     color: COLORS.gray,
+  },
+  exampleBadgeSmall: {
+    backgroundColor: '#E3F2FD',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+  },
+  exampleBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#007AFF',
   },
   taskItemTime: {
     fontSize: FONT_SIZES.sm,

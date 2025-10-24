@@ -9,6 +9,7 @@ import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { isSessionExpired, clearLastActiveTimestamp, updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 import { cache } from '@/utils/cache';
+import { errorTrackingService } from '@/services/ErrorTrackingService';
 import { 
   checkAccountLockout, 
   recordFailedAttempt, 
@@ -196,6 +197,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (session?.user) {
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);
+      
+      // Clear cache to ensure fresh data after onboarding completion
+      if (userProfile?.onboarding_completed) {
+        const cacheKey = `user_profile:${session.user.id}`;
+        await cache.delete(cacheKey);
+      }
     }
   };
 
@@ -367,7 +374,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       
       return { error: null };
     } catch (error: any) {
-      console.error('❌ Sign in error:', error);
+      // Use centralized error tracking
+      errorTrackingService.captureError(error, {
+        tags: { errorType: 'signin' },
+        extra: { email: credentials.email }
+      });
       
       // Record failed login attempt
       if (credentials.email && error.message) {

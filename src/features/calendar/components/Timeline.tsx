@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Task } from '@/types';
 import EventItem from './EventItem';
@@ -13,7 +13,12 @@ interface Props {
 }
 
 const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onScroll }) => {
+  const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
+
+  const handleToggleExpand = (taskId: string) => {
+    setExpandedTaskId(prev => prev === taskId ? null : taskId);
+  };
 
   const calculatePosition = (task: Task) => {
     const startTime = new Date(task.startTime || task.date);
@@ -55,19 +60,25 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onSc
         {tasks.map(task => {
           const position = calculatePosition(task);
           const isLocked = task.isLocked || false;
+          const isExpanded = expandedTaskId === task.id;
           
           return (
-            <View key={task.id} style={[styles.eventContainer, position]}>
+            <View key={task.id} style={[styles.eventContainer, position, isExpanded && { zIndex: 10 }]}>
               <EventItem
                 task={task}
                 position={position}
                 isLocked={isLocked}
+                isExpanded={isExpanded}
                 onPress={() => {
                   if (isLocked && onLockedTaskPress) {
                     onLockedTaskPress(task);
                   } else {
-                    onTaskPress(task);
+                    handleToggleExpand(task.id);
                   }
+                }}
+                onViewDetails={() => {
+                  setExpandedTaskId(null);
+                  onTaskPress(task);
                 }}
               />
             </View>

@@ -1,9 +1,12 @@
 import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback, Alert } from 'react-native';
 import { BlurView } from 'expo-blur';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CommonActions } from '@react-navigation/native';
+import { NotificationBell } from '@/features/notifications/components/NotificationBell';
+import { NotificationHistoryModal } from '@/features/notifications/components/NotificationHistoryModal';
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -14,7 +17,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
-import { Button, QueryStateWrapper } from '@/shared/components';
+import { Button, QueryStateWrapper, QuickAddModal } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -28,6 +31,8 @@ import { supabase } from '@/services/supabase';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { TASK_EVENTS } from '@/utils/analyticsEvents';
+import { createExampleData } from '@/utils/exampleData';
+import { getDraftCount } from '@/utils/draftStorage';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -49,6 +54,9 @@ const HomeScreen = () => {
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
+  const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
+  const [draftCount, setDraftCount] = useState(0);
+  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] = useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   // Optimistic mutation hooks
@@ -56,6 +64,28 @@ const HomeScreen = () => {
   const deleteTaskMutation = useDeleteTask();
   const restoreTaskMutation = useRestoreTask();
   const { showToast } = useToast();
+
+  // Load draft count on mount
+  useEffect(() => {
+    const loadDraftCount = async () => {
+      const count = await getDraftCount();
+      setDraftCount(count);
+    };
+    
+    loadDraftCount();
+  }, []);
+
+  // Refresh draft count when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      const loadDraftCount = async () => {
+        const count = await getDraftCount();
+        setDraftCount(count);
+      };
+      
+      loadDraftCount();
+    }, [])
+  );
 
   const promptSignUp = () => {
     mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
@@ -349,9 +379,133 @@ const HomeScreen = () => {
     return `${getGreeting()}, ${name}!`;
   };
 
+  // Show one-time "How It Works" prompt for new users
+  useEffect(() => {
+    const checkAndShowWelcomePrompt = async () => {
+      // Only show for authenticated users
+      if (isGuest || !user) return;
+      
+      try {
+        const hasSeenPrompt = await AsyncStorage.getItem('hasSeenHowItWorksPrompt');
+        
+        if (!hasSeenPrompt) {
+          // Set the flag immediately to prevent showing again
+          await AsyncStorage.setItem('hasSeenHowItWorksPrompt', 'true');
+          
+          // Small delay to let the screen render first
+          setTimeout(() => {
+            Alert.alert(
+              'Welcome to ELARO!',
+              "Ready to get started? We recommend a quick look at 'How ELARO Works' to learn about all the features that will help you succeed.",
+              [
+                {
+                  text: 'Show Me How',
+                  onPress: () => {
+                    // Navigate to Account screen where "How ELARO Works" is located
+                    navigation.navigate('Main');
+                    // Then switch to Account tab
+                    setTimeout(() => {
+                      navigation.dispatch(
+                        CommonActions.navigate({
+                          name: 'Main',
+                          params: {
+                            screen: 'Account',
+                          },
+                        })
+                      );
+                    }, 100);
+                  },
+                },
+                {
+                  text: 'Got It',
+                  style: 'cancel',
+                },
+              ]
+            );
+          }, 500);
+        }
+      } catch (error) {
+        console.error('Error checking welcome prompt flag:', error);
+      }
+    };
+
+    checkAndShowWelcomePrompt();
+  }, [isGuest, user, navigation]);
+
+  // Create example data for brand new users
+  useEffect(() => {
+    const checkAndCreateExampleData = async () => {
+      // Only for authenticated users
+      if (isGuest || !user || isLoading) return;
+      
+      try {
+        const hasCreatedExamples = await AsyncStorage.getItem('hasCreatedExampleData');
+        
+        // Check if user has any data
+        const hasAnyData = homeData && (
+          (homeData.nextUpcomingTask) ||
+          (homeData.todayOverview && (
+            homeData.todayOverview.lectures > 0 ||
+            homeData.todayOverview.assignments > 0 ||
+            homeData.todayOverview.studySessions > 0
+          ))
+        );
+
+        // If user has no data and we haven't created examples yet
+        if (!hasAnyData && !hasCreatedExamples) {
+          console.log('📚 New user with no data detected. Creating example data...');
+          
+          // Set flag immediately to prevent duplicate creation
+          await AsyncStorage.setItem('hasCreatedExampleData', 'true');
+          
+          // Create example data
+          const result = await createExampleData(user.id);
+          
+          if (result.success) {
+            console.log('✅ Example data created successfully');
+            
+            // Refresh home screen data to show examples
+            await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+            await queryClient.invalidateQueries({ queryKey: ['courses'] });
+            await queryClient.invalidateQueries({ queryKey: ['assignments'] });
+            await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+            await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
+            
+            // Show a subtle toast notification
+            showToast({
+              message: '📚 We\'ve added some example tasks to help you get started!',
+              duration: 4000,
+            });
+          } else {
+            console.error('Failed to create example data:', result.error);
+            // Don't show error to user - it's not critical
+          }
+        }
+      } catch (error) {
+        console.error('Error in checkAndCreateExampleData:', error);
+        // Fail silently - not critical for app function
+      }
+    };
+
+    // Wait a bit after component mounts to avoid blocking initial render
+    const timer = setTimeout(() => {
+      checkAndCreateExampleData();
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [isGuest, user, isLoading, homeData, queryClient, showToast]);
+
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
     <View style={styles.container}>
+      {/* Header with Notification Bell */}
+      {!isGuest && (
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
+          <NotificationBell onPress={() => setIsNotificationHistoryVisible(true)} />
+        </View>
+      )}
+      
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
@@ -371,7 +525,7 @@ const HomeScreen = () => {
             onDismiss={handleDismissBanner}
           />
         )}
-        <Text style={styles.title}>{getPersonalizedTitle()}</Text>
+        {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
         <SwipeableTaskCard
           onSwipeComplete={handleSwipeComplete}
           enabled={!isGuest && !!homeData?.nextUpcomingTask}
@@ -409,6 +563,14 @@ const HomeScreen = () => {
       <FloatingActionButton 
         actions={fabActions}
         onStateChange={handleFabStateChange}
+        onDoubleTap={() => setIsQuickAddVisible(true)}
+        draftCount={draftCount}
+        onDraftBadgePress={() => navigation.navigate('Drafts')}
+      />
+
+      <QuickAddModal
+        isVisible={isQuickAddVisible}
+        onClose={() => setIsQuickAddVisible(false)}
       />
 
       <TaskDetailSheet
@@ -418,6 +580,11 @@ const HomeScreen = () => {
         onEdit={handleEditTask}
         onComplete={handleCompleteTask}
         onDelete={handleDeleteTask}
+      />
+
+      <NotificationHistoryModal
+        isVisible={isNotificationHistoryVisible}
+        onClose={() => setIsNotificationHistoryVisible(false)}
       />
 
     </View>
@@ -453,6 +620,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background,
+  },
+  headerTitle: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.textPrimary,
+    flex: 1,
   },
   scrollContainer: {
     padding: SPACING.lg,

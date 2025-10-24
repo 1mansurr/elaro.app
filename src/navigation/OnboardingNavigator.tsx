@@ -23,6 +23,7 @@ const OnboardingNavigator = () => {
         headerTitle: '',
         headerShadowVisible: false,
       }}
+      initialRouteName="Welcome"
     >
       <Stack.Screen 
         name="Welcome" 

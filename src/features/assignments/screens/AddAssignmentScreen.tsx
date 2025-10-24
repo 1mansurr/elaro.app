@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   TextInput,
+  Switch,
 } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -29,6 +30,14 @@ import { useMonthlyTaskCount, useTotalTaskCount } from '@/hooks';
 import { savePendingTask, clearPendingTask } from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import { saveDraft, getDraft, clearDraft } from '@/utils/draftStorage';
+import { debounce } from '@/utils/debounce';
+import { useCreateTemplate } from '@/hooks/useTemplates';
+import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
+import { EmptyStateModal } from '@/features/templates/components/EmptyStateModal';
+import { useTemplateManagement } from '@/features/templates/hooks/useTemplateManagement';
+import { useTemplateSelection } from '@/features/templates/hooks/useTemplateSelection';
+import { generateTemplateName, clearDateFields, canSaveAsTemplate } from '@/features/templates/utils/templateUtils';
 
 type SubmissionMethod = 'Online' | 'In-person' | null;
 
@@ -46,10 +55,25 @@ const AddAssignmentScreen = () => {
 
   const isGuest = !session;
 
+  // Template management
+  const { createTemplate, hasTemplates } = useTemplateManagement();
+  const {
+    isTemplateBrowserOpen,
+    isUsingTemplate,
+    selectedTemplate,
+    openTemplateBrowser,
+    closeTemplateBrowser,
+    selectTemplate,
+    resetTemplateSelection,
+  } = useTemplateSelection();
+
+  // Get initial data from Quick Add if available
+  const initialData = (route.params as any)?.initialData;
+
   // Required fields
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
-  const [title, setTitle] = useState('');
-  const [dueDate, setDueDate] = useState<Date>(new Date());
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(initialData?.course || null);
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [dueDate, setDueDate] = useState<Date>(initialData?.dateTime || new Date());
   
   // Optional fields
   const [description, setDescription] = useState('');
@@ -66,6 +90,59 @@ const AddAssignmentScreen = () => {
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [templateName, setTemplateName] = useState('');
+  const [saveAsTemplate, setSaveAsTemplate] = useState(false);
+  const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
+
+  const createTemplateMutation = useCreateTemplate();
+
+  // Load draft on mount
+  useEffect(() => {
+    const loadDraft = async () => {
+      // Skip if we have initial data from Quick Add
+      if (initialData) return;
+      
+      const draft = await getDraft('assignment');
+      if (draft) {
+        setSelectedCourse(draft.course);
+        setTitle(draft.title);
+        if (draft.dateTime) {
+          setDueDate(new Date(draft.dateTime));
+        }
+        setDescription(draft.description || '');
+        setSubmissionMethod(draft.submissionMethod || null);
+        setSubmissionLink(draft.submissionLink || '');
+        setReminders(draft.reminders || [120]);
+      }
+    };
+    
+    loadDraft();
+  }, []);
+
+  // Auto-save draft when form data changes (debounced)
+  useEffect(() => {
+    // Don't auto-save if form is empty
+    if (!title && !selectedCourse) return;
+    
+    const debouncedSave = debounce(() => {
+      saveDraft('assignment', {
+        title,
+        course: selectedCourse,
+        dateTime: dueDate,
+        description,
+        submissionMethod,
+        submissionLink,
+        reminders,
+      });
+    }, 1000);
+
+    debouncedSave.debounced();
+
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [title, selectedCourse, dueDate, description, submissionMethod, submissionLink, reminders]);
 
   // Fetch courses
   useEffect(() => {
@@ -104,6 +181,56 @@ const AddAssignmentScreen = () => {
   // Check if form is valid
   const isFormValid = selectedCourse && title.trim().length > 0 && dueDate > new Date();
 
+  // Handle template selection
+  const handleTemplateSelect = (template: any) => {
+    selectTemplate(template);
+    
+    // Pre-fill form with template data
+    if (template.template_data) {
+      const templateData = clearDateFields(template.template_data);
+      
+      // Set title
+      if (templateData.title) {
+        setTitle(templateData.title);
+      }
+      
+      // Set course if available
+      if (templateData.course_id) {
+        const course = courses.find(c => c.id === templateData.course_id);
+        if (course) {
+          setSelectedCourse(course);
+        }
+      }
+      
+      // Set description
+      if (templateData.description) {
+        setDescription(templateData.description);
+      }
+      
+      // Set submission method and link
+      if (templateData.submission_method) {
+        setSubmissionMethod(templateData.submission_method);
+      }
+      if (templateData.submission_link) {
+        setSubmissionLink(templateData.submission_link);
+      }
+      
+      // Set reminders
+      if (templateData.reminders) {
+        setReminders(templateData.reminders);
+      }
+    }
+  };
+
+  // Handle My Templates button press
+  const handleMyTemplatesPress = () => {
+    if (!hasTemplates()) {
+      setShowEmptyStateModal(true);
+    } else {
+      openTemplateBrowser();
+    }
+  };
+
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
@@ -121,6 +248,40 @@ const AddAssignmentScreen = () => {
       newDueDate.setHours(selectedTime.getHours());
       newDueDate.setMinutes(selectedTime.getMinutes());
       setDueDate(newDueDate);
+    }
+  };
+
+  const handleSaveAsTemplate = () => {
+    setShowTemplateModal(true);
+  };
+
+  const handleCreateTemplate = async () => {
+    if (!templateName.trim()) {
+      Alert.alert('Error', 'Please enter a template name');
+      return;
+    }
+
+    try {
+      await createTemplateMutation.mutateAsync({
+        template_name: templateName.trim(),
+        task_type: 'assignment',
+        template_data: {
+          title,
+          course: selectedCourse,
+          dateTime: dueDate,
+          description,
+          submissionMethod,
+          submissionLink,
+          reminders,
+        },
+      });
+
+      Alert.alert('Success', 'Template saved successfully!');
+      setShowTemplateModal(false);
+      setTemplateName('');
+    } catch (error) {
+      console.error('Failed to create template:', error);
+      Alert.alert('Error', 'Failed to save template. Please try again.');
     }
   };
 
@@ -151,19 +312,35 @@ const AddAssignmentScreen = () => {
     setIsSaving(true);
 
     try {
+      const taskData = {
+        course_id: selectedCourse!.id,
+        title: title.trim(),
+        description: description.trim(),
+        submission_method: submissionMethod || undefined,
+        submission_link: submissionMethod === 'Online' ? submissionLink.trim() : undefined,
+        due_date: dueDate.toISOString(),
+        reminders,
+      };
+
       await api.mutations.assignments.create(
-        {
-          course_id: selectedCourse!.id,
-          title: title.trim(),
-          description: description.trim(),
-          submission_method: submissionMethod || undefined,
-          submission_link: submissionMethod === 'Online' ? submissionLink.trim() : undefined,
-          due_date: dueDate.toISOString(),
-          reminders,
-        },
+        taskData,
         isOnline,
         user?.id || ''
       );
+
+      // Save as template if enabled
+      if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
+        try {
+          await createTemplate.mutateAsync({
+            template_name: generateTemplateName(title.trim()),
+            task_type: 'assignment',
+            template_data: taskData,
+          });
+        } catch (templateError) {
+          console.error('Error saving template:', templateError);
+          // Don't show error for template creation failure
+        }
+      }
 
       // Check if this is the user's first task
       if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
@@ -173,6 +350,9 @@ const AddAssignmentScreen = () => {
       // Invalidate queries
       await queryClient.invalidateQueries({ queryKey: ['assignments'] });
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+
+      // Clear draft on successful save
+      await clearDraft('assignment');
 
       Alert.alert('Success', 'Assignment created successfully!', [
         {
@@ -209,24 +389,45 @@ const AddAssignmentScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
+        <TouchableOpacity 
+          onPress={() => {
+            clearDraft('assignment');
+            navigation.goBack();
+          }} 
+          style={styles.headerButton}
+        >
           <Ionicons name="close" size={28} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Assignment</Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={!isFormValid || isSaving}
-          style={[styles.headerButton, (!isFormValid || isSaving) && styles.headerButtonDisabled]}
-        >
-          {isSaving ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : (
-            <Text style={[styles.saveButtonText, !isFormValid && styles.saveButtonTextDisabled]}>
-              Save
-            </Text>
-          )}
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity
+            onPress={handleSaveAsTemplate}
+            style={styles.templateButton}
+          >
+            <Ionicons name="library-outline" size={20} color={COLORS.gray} />
+            <Text style={styles.templateButtonText}>Save as Template</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            onPress={handleSave}
+            disabled={!isFormValid || isSaving}
+            style={[styles.headerButton, (!isFormValid || isSaving) && styles.headerButtonDisabled]}
+          >
+            {isSaving ? (
+              <ActivityIndicator size="small" color={COLORS.primary} />
+            ) : (
+              <Text style={[styles.saveButtonText, !isFormValid && styles.saveButtonTextDisabled]}>
+                Save
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* My Templates Button */}
+      <TouchableOpacity style={styles.myTemplatesButton} onPress={handleMyTemplatesPress}>
+        <Text style={styles.myTemplatesButtonText}>My Templates</Text>
+      </TouchableOpacity>
 
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Required Fields Section */}
@@ -425,6 +626,19 @@ const AddAssignmentScreen = () => {
                 maxReminders={2}
               />
             </View>
+
+            {/* Save as Template Toggle - Only show when not using a template */}
+            {!isUsingTemplate && (
+              <View style={styles.saveTemplateContainer}>
+                <Switch
+                  value={saveAsTemplate}
+                  onValueChange={setSaveAsTemplate}
+                  trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
+                  thumbColor={saveAsTemplate ? '#FFFFFF' : '#FFFFFF'}
+                />
+                <Text style={styles.saveTemplateText}>Save as template for future use</Text>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -488,9 +702,71 @@ const AddAssignmentScreen = () => {
         onSignIn={() => handleGuestAuth('signin')}
         message="Create an account to save your assignment and get reminders!"
       />
-    </View>
-  );
-};
+
+      {/* Save as Template Modal */}
+      <Modal
+        visible={showTemplateModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowTemplateModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Save as Template</Text>
+            <Text style={styles.modalMessage}>
+              Give this template a name so you can reuse it later.
+            </Text>
+            
+            <TextInput
+              style={styles.templateInput}
+              placeholder="e.g., Weekly Math Homework"
+              value={templateName}
+              onChangeText={setTemplateName}
+              autoFocus
+            />
+            
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.cancelButton]}
+                onPress={() => {
+                  setShowTemplateModal(false);
+                  setTemplateName('');
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.modalButton, styles.saveButton]}
+                onPress={handleCreateTemplate}
+                disabled={!templateName.trim() || createTemplateMutation.isPending}
+              >
+                <Text style={styles.saveButtonText}>
+                  {createTemplateMutation.isPending ? 'Saving...' : 'Save Template'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+        </Modal>
+
+        {/* Template Browser Modal */}
+        <TemplateBrowserModal
+          visible={isTemplateBrowserOpen}
+          onClose={closeTemplateBrowser}
+          onSelectTemplate={handleTemplateSelect}
+          currentTaskType="assignment"
+        />
+
+        {/* Empty State Modal */}
+        <EmptyStateModal
+          visible={showEmptyStateModal}
+          onClose={() => setShowEmptyStateModal(false)}
+          message="You don't have any templates. You can add a template using the toggle at the latter part of the task addition."
+        />
+      </View>
+    );
+  };
 
 const styles = StyleSheet.create({
   container: {
@@ -706,6 +982,112 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginBottom: SPACING.md,
     textAlign: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+  },
+  templateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: 6,
+    backgroundColor: COLORS.border,
+    gap: 4,
+  },
+  templateButtonText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+    fontWeight: FONT_WEIGHTS.medium as any,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: SPACING.lg,
+    width: '100%',
+    maxWidth: 400,
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+  },
+  modalMessage: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.gray,
+    lineHeight: 20,
+    marginBottom: SPACING.lg,
+  },
+  templateInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 8,
+    padding: SPACING.md,
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    marginBottom: SPACING.lg,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  modalButton: {
+    flex: 1,
+    paddingVertical: SPACING.md,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: COLORS.border,
+  },
+  cancelButtonText: {
+    color: COLORS.text,
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+  },
+  saveButton: {
+    backgroundColor: COLORS.primary,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+  },
+  myTemplatesButton: {
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    marginHorizontal: 20,
+    marginBottom: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  myTemplatesButtonText: {
+    color: '#FFFFFF',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+  },
+  saveTemplateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.sm,
+  },
+  saveTemplateText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.text,
+    marginLeft: SPACING.sm,
+    flex: 1,
   },
 });
 

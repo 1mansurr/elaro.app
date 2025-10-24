@@ -16,8 +16,8 @@ import { setNotificationTaskHandler } from './src/services/notifications';
 import { OfflineBanner } from './src/shared/components/OfflineBanner';
 import { SyncIndicator } from './src/shared/components/SyncIndicator';
 import { revenueCatService } from './src/services/revenueCat';
-import { mixpanelService } from './src/services/mixpanel';
-import { AnalyticsEvents } from './src/services/analyticsEvents';
+import { analyticsService } from './src/services/analytics';
+import { errorTracking } from './src/services/errorTracking';
 import { Platform } from 'react-native';
 import TaskDetailSheet from './src/shared/components/TaskDetailSheet';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -30,31 +30,24 @@ import notificationServiceNew from './src/services/notificationService';
 import { handleNotificationAction, trackNotificationOpened } from './src/utils/notificationActions';
 import { promptForUpdateIfNeeded } from './src/utils/apiVersionCheck';
 import { GracePeriodChecker } from './src/components/GracePeriodChecker';
-import * as Sentry from '@sentry/react-native';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
 import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 import { syncManager } from './src/services/syncManager';
-
-Sentry.init({
-  dsn: Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN,
-  tracesSampleRate: 1.0,
-  enabled: !!Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN, // Only enable if DSN exists
-});
+// Initialize centralized error tracking service
+errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
 
 // Global unhandled promise rejection handler
-// Send to Sentry for monitoring in production
+// Send to error tracking service for monitoring in production
 if (typeof process !== 'undefined' && process.on) {
   process.on('unhandledRejection', (reason, promise) => {
     console.error('Unhandled Promise Rejection:', reason);
     
-    // Send to Sentry in production
-    if (Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN) {
-      Sentry.captureException(reason, {
-        tags: { type: 'unhandled_promise_rejection' },
-        extra: { promise: String(promise) },
-      });
-    }
+    // Send to error tracking service
+    errorTracking.captureError(reason as Error, {
+      tags: { type: 'unhandled_promise_rejection' },
+      extra: { promise: String(promise) },
+    });
   });
 }
 
@@ -247,11 +240,11 @@ function AuthEffects() {
         await notificationServiceNew.setupNotificationCategories();
         await notificationServiceNew.setupAndroidChannels();
         
-        // Initialize Mixpanel with user ID
-        mixpanelService.identifyUser(user.id);
+        // Initialize Analytics with user ID
+        analyticsService.identifyUser(user.id);
       
       // Track user login
-      mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+      analyticsService.track('User Logged In', {
         user_id: user.id,
         subscription_tier: user.subscription_tier || 'free',
         onboarding_completed: user.onboarding_completed || false,
@@ -348,35 +341,16 @@ function App() {
       try {
         console.log('🚀 Starting app initialization...');
         
-        // Initialize Mixpanel with your project token
+        // Initialize Analytics with your project token
         const projectToken = Constants.expoConfig?.extra?.EXPO_PUBLIC_MIXPANEL_TOKEN;
-        if (!projectToken) {
-          console.warn('⚠️ Mixpanel token not found in environment variables');
-        } else {
-          console.log('📱 About to initialize Mixpanel...');
-          await mixpanelService.initialize(projectToken, true); // Enable consent for testing
-          
-          console.log('⏳ Waiting 2 seconds before tracking events...');
-          await new Promise(resolve => setTimeout(resolve, 2000));
-          
-          // Track app launch
-          console.log('📊 Tracking app launch event...');
-          mixpanelService.track(AnalyticsEvents.APP_OPENED, {
-            platform: Platform.OS,
-            timestamp: new Date().toISOString(),
-            app_version: '1.0.0',
-          });
-          
-          // Add a test event to verify connection
-          console.log('🧪 Tracking test event...');
-          mixpanelService.track('Mixpanel Test Event', {
-            test: true,
-            message: 'This is a test event to verify Mixpanel connection',
-            timestamp: new Date().toISOString(),
-          });
-          
-          console.log('✅ Mixpanel initialization and tracking complete!');
-        }
+        await analyticsService.initialize(projectToken || '');
+        
+        // Track app launch
+        analyticsService.track('App Launched', {
+          platform: Platform.OS,
+          timestamp: new Date().toISOString(),
+          app_version: '1.0.0',
+        });
         
         // Check API version compatibility
         console.log('🔍 Checking API version compatibility...');
@@ -460,4 +434,4 @@ function App() {
   );
 }
 
-export default Sentry.wrap(App);
+export default App;

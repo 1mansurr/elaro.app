@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { usePermissions } from '@/features/auth/hooks/usePermissions';
 
 const FREE_TIER_LIMITS = {
   courses: 2,
@@ -24,12 +25,18 @@ const fetchTotalItemCount = async (itemType: ItemType, userId: string) => {
 
 export const useLockedItemsCount = (itemType: ItemType) => {
   const { user } = useAuth();
+  const { isPremium } = usePermissions(user);
 
   return useQuery({
     queryKey: ['totalItemCount', itemType, user?.id],
     queryFn: () => fetchTotalItemCount(itemType, user!.id),
-    enabled: !!user && user.subscription_tier === 'free',
-    select: (totalCount) => {
+    enabled: !!user,
+    select: async (totalCount) => {
+      const premium = await isPremium();
+      if (premium) {
+        return { totalCount, lockedCount: 0 }; // No locked items for premium users
+      }
+      
       const limit = FREE_TIER_LIMITS[itemType];
       const lockedCount = Math.max(0, totalCount - limit);
       return { totalCount, lockedCount };

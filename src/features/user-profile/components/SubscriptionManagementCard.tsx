@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, Platform, Linking, Alert } from 'react-native';
 import { Button } from '@/shared/components/Button';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
 import { showToast } from '@/utils/showToast';
 
@@ -17,7 +17,7 @@ export function SubscriptionManagementCard() {
     subscriptionExpiration,
     purchasePackage,
     restorePurchases,
-  } = useRevenueCat();
+  } = useSubscription();
 
   const handleManageSubscription = useCallback(async () => {
     const url = Platform.select({

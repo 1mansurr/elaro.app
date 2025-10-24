@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { isPremium, PERMISSIONS } from '../_shared/permissions.ts';
 import { ScheduleRemindersSchema } from '../_shared/schemas/reminders.ts';
 
 // Helper function to add random jitter to a date
@@ -53,6 +54,11 @@ async function handleScheduleReminders({ user, supabaseClient, body }: Authentic
   }
 
   const userTier = userProfile?.subscription_tier || 'free';
+
+  // Check if user has permission to create SRS reminders
+  if (!isPremium(userTier)) {
+    throw new AppError('Premium subscription required for SRS reminders.', 403, 'PREMIUM_REQUIRED');
+  }
 
   // Step 2: Fetch the appropriate SRS schedule based on user tier
   const { data: schedule, error: scheduleError } = await supabaseClient

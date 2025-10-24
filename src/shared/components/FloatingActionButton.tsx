@@ -21,12 +21,25 @@ interface Action {
 interface FloatingActionButtonProps {
   actions: Action[];
   onStateChange?: (state: { isOpen: boolean; animation: Animated.Value }) => void;
+  onDoubleTap?: () => void;
+  draftCount?: number;
+  onDraftBadgePress?: () => void;
 }
 
-const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ actions, onStateChange }) => {
+const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ 
+  actions, 
+  onStateChange, 
+  onDoubleTap,
+  draftCount = 0,
+  onDraftBadgePress,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  
+  // Double-tap detection
+  const lastTap = useRef<number | null>(null);
+  const DOUBLE_TAP_DELAY = 300; // 300ms between taps
 
   const handleToggle = () => {
     const toValue = isOpen ? 0 : 1;
@@ -49,6 +62,28 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ actions, on
     setIsOpen(newOpenState);
     if (onStateChange) {
       onStateChange({ isOpen: newOpenState, animation });
+    }
+  };
+
+  const handlePress = () => {
+    const now = Date.now();
+    
+    if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
+      // Double tap detected!
+      lastTap.current = null;
+      if (onDoubleTap) {
+        onDoubleTap();
+      }
+    } else {
+      // Single tap - set timer to wait for potential second tap
+      lastTap.current = now;
+      setTimeout(() => {
+        // If no second tap came, treat as single tap
+        if (lastTap.current === now) {
+          handleToggle();
+          lastTap.current = null;
+        }
+      }, DOUBLE_TAP_DELAY);
     }
   };
 
@@ -112,12 +147,28 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ actions, on
       })}
       <TouchableOpacity
         style={styles.fab}
-        onPress={handleToggle}
+        onPress={handlePress}
         activeOpacity={0.8}
       >
         <Animated.View style={rotation}>
           <Ionicons name="add" size={32} color="white" />
         </Animated.View>
+        
+        {/* Draft Count Badge */}
+        {draftCount > 0 && (
+          <TouchableOpacity
+            style={styles.draftBadge}
+            onPress={(e) => {
+              e.stopPropagation();
+              if (onDraftBadgePress) {
+                onDraftBadgePress();
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.draftBadgeText}>{draftCount}</Text>
+          </TouchableOpacity>
+        )}
       </TouchableOpacity>
     </View>
   );
@@ -168,6 +219,25 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 12,
+  },
+  draftBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FF3B30',
+    borderRadius: 12,
+    minWidth: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    borderWidth: 2,
+    borderColor: COLORS.background,
+  },
+  draftBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 

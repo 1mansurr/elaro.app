@@ -7,7 +7,7 @@ import { useCourses } from '@/hooks/useDataQueries';
 import { useDebounce } from '@/hooks/useDebounce';
 import { RootStackParamList, Course } from '@/types';
 import { LockedItemsBanner } from '@/features/user-profile/components/LockedItemsBanner';
-import { useRevenueCat } from '@/hooks/useRevenueCat';
+import { useSubscription } from '@/hooks/useSubscription';
 import { QueryStateWrapper } from '@/shared/components';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '@/constants/theme';
@@ -34,7 +34,7 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
-  const { offerings, purchasePackage } = useRevenueCat();
+  const { offerings, purchasePackage } = useSubscription();
   const { theme } = useTheme();
   
   // Search state
