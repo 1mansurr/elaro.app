@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { supabase } from '../../supabase';
+import { supabase } from '@/services/supabase';
 import { 
   INotificationDeliveryService, 
   NotificationPayload, 
@@ -43,9 +43,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       if (!userId || !notification.title || !notification.body) {
         throw errorHandler.createError(
           'Invalid input: userId, title, and body are required',
-          ERROR_CODES.INVALID_INPUT,
-          'NotificationDeliveryService',
-          { userId, hasTitle: !!notification.title, hasBody: !!notification.body }
+          ERROR_CODES.INVALID_INPUT
         );
       }
 
@@ -57,12 +55,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
         .single();
 
       if (prefError) {
-        throw errorHandler.handleError(
-          prefError,
-          'NotificationDeliveryService',
-          { userId, operation: 'get_preferences' },
-          userId
-        );
+        throw errorHandler.handleError(prefError, 'getUserPreferences');
       }
 
       if (!preferences?.master_toggle || preferences?.do_not_disturb) {
@@ -81,21 +74,11 @@ export class NotificationDeliveryService implements INotificationDeliveryService
         .single();
 
       if (deviceError) {
-        throw errorHandler.handleError(
-          deviceError,
-          'NotificationDeliveryService',
-          { userId, platform: Platform.OS, operation: 'get_device_token' },
-          userId
-        );
+        throw errorHandler.handleError(deviceError, 'getDeviceToken');
       }
 
       if (!device?.push_token) {
-        throw errorHandler.createError(
-          'No push token found for user',
-          ERROR_CODES.NOT_FOUND,
-          'NotificationDeliveryService',
-          { userId, platform: Platform.OS }
-        );
+        throw errorHandler.createError('No push token found for user', ERROR_CODES.DELIVERY_FAILED);
       }
 
       // Send via Supabase function
@@ -114,12 +97,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       });
 
       if (error) {
-        throw errorHandler.handleError(
-          error,
-          'NotificationDeliveryService',
-          { userId, notification: notification.title, operation: 'send_notification' },
-          userId
-        );
+        throw errorHandler.handleError(error, 'sendNotification');
       }
 
       return {
@@ -129,12 +107,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       };
 
     } catch (error) {
-      const notificationError = errorHandler.handleError(
-        error as Error,
-        'NotificationDeliveryService',
-        { userId, notification: notification.title },
-        userId
-      );
+      const notificationError = errorHandler.handleError(error, 'sendPushNotification');
 
       return {
         success: false,
@@ -150,16 +123,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
     try {
       // Validate input
       if (!notification.id || !notification.title || !notification.body) {
-        throw errorHandler.createError(
-          'Invalid input: id, title, and body are required',
-          ERROR_CODES.INVALID_INPUT,
-          'NotificationDeliveryService',
-          { 
-            hasId: !!notification.id, 
-            hasTitle: !!notification.title, 
-            hasBody: !!notification.body 
-          }
-        );
+        throw errorHandler.createError('Invalid input: id, title, and body are required', ERROR_CODES.INVALID_INPUT);
       }
 
       const request: Notifications.NotificationRequestInput = {
@@ -177,11 +141,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       console.log(`Local notification scheduled: ${notification.id}`);
 
     } catch (error) {
-      throw errorHandler.handleError(
-        error as Error,
-        'NotificationDeliveryService',
-        { notificationId: notification.id, operation: 'schedule_local' }
-      );
+      throw errorHandler.handleError(error, 'scheduleLocalNotification');
     }
   }
 
@@ -246,16 +206,16 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       localNotifications.forEach(notif => {
         scheduledNotifications.push({
           id: notif.identifier,
-          title: notif.content.title,
-          body: notif.content.body,
-          scheduledFor: notif.trigger.type === 'date' ? new Date(notif.trigger.date!) : new Date(),
-          category: notif.content.categoryIdentifier,
+          title: notif.content.title || '',
+          body: notif.content.body || '',
+          scheduledFor: (notif as any)?.trigger?.date ? new Date((notif as any).trigger.date) : new Date(),
+          category: (notif.content as any)?.categoryIdentifier,
           data: notif.content.data
         });
       });
 
       // Convert database notifications
-      dbNotifications?.forEach(notif => {
+      dbNotifications?.forEach((notif: any) => {
         scheduledNotifications.push({
           id: notif.id,
           title: notif.title,
@@ -284,13 +244,9 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       case 'interval':
         return { seconds: trigger.seconds };
       case 'location':
-        return {
-          location: {
-            latitude: trigger.location.latitude,
-            longitude: trigger.location.longitude,
-            radius: trigger.location.radius
-          }
-        };
+        // Location triggers are not supported in Expo Notifications
+        console.warn('Location triggers are not supported in Expo Notifications');
+        return null;
       default:
         return null;
     }

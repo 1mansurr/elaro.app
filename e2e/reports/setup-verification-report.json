@@ -1,0 +1,33 @@
+{
+  "pass": 1,
+  "name": "Setup Verification",
+  "timestamp": "",
+  "status": "pending",
+  "tests": {
+    "appLaunch": {
+      "status": "pending",
+      "description": "App launches successfully"
+    },
+    "guestState": {
+      "status": "pending",
+      "description": "App starts in guest state"
+    },
+    "mockAuthService": {
+      "status": "pending",
+      "description": "Mock auth service works correctly"
+    },
+    "testHelpers": {
+      "status": "pending",
+      "description": "Test helper utilities function correctly"
+    }
+  },
+  "errors": [],
+  "warnings": [],
+  "summary": {
+    "total": 0,
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  }
+}
+

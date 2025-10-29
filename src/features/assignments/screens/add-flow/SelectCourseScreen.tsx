@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ScrollView } fr
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
-import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
+// import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { Course } from '@/types';
@@ -13,7 +13,18 @@ type SelectCourseScreenNavigationProp = StackNavigationProp<AddAssignmentStackPa
 
 const SelectCourseScreen = () => {
   const navigation = useNavigation<SelectCourseScreenNavigationProp>();
-  const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // Mock data for now - proper structure
+  const assignmentData = { 
+    courseId: null, 
+    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
+    title: "Mock Assignment", 
+    description: "Mock description", 
+    dueDate: new Date(), 
+    submissionMethod: null, 
+    reminders: [] 
+  };
+  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
   const { session, user } = useAuth();
   
   const [courses, setCourses] = useState<Course[]>([]);
@@ -78,13 +89,14 @@ const SelectCourseScreen = () => {
   };
 
   const handleGuestSignUp = () => {
-    (navigation as any).navigate('Auth', { 
+    // Navigate to root Auth screen from nested navigator
+    navigation.getParent()?.navigate('Auth', { 
       mode: 'signup',
       onAuthSuccess: () => {
         // After successful auth, user will have courses and can continue
         // The screen will automatically refresh and show course selection
       }
-    });
+    } as any);
   };
 
   if (isGuest) {

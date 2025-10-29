@@ -11,9 +11,10 @@ Now that path aliasing is configured, here are practical examples of how to use 
 // src/components/NewFeature.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Button } from '@/components/Button';
+import { PrimaryButton } from '@/shared/components';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 export const NewFeature: React.FC = () => {
   const { theme } = useTheme();
@@ -24,18 +25,18 @@ export const NewFeature: React.FC = () => {
       <Text style={[styles.title, { color: theme.text }]}>
         Welcome, {user?.name}!
       </Text>
-      <Button title="Click Me" onPress={() => console.log('Clicked!')} />
+      <PrimaryButton title="Click Me" onPress={() => console.log('Clicked!')} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    padding: 16,
+    padding: SPACING.md,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold as any,
   },
 });
 ```
@@ -45,7 +46,7 @@ const styles = StyleSheet.create({
 // src/screens/NewScreen.tsx
 import React from 'react';
 import { View, Text } from 'react-native';
-import { Card } from '@/components/Card';
+import { Card } from '@/shared/components';
 import { useHealthCheck } from '@/hooks/useHealthCheck';
 import { api } from '@/services/api';
 import { User } from '@/types';
@@ -200,7 +201,7 @@ import { User, Course } from '@/types';
 // UI Components
 import { Button } from '@/components/Button';
 import { Input } from '@/components/Input';
-import { Card } from '@/components/Card';
+import { Card } from '@/shared/components';
 import { Modal } from '@/components/Modal';
 
 // Layout Components
@@ -251,7 +252,7 @@ import { NotificationPreferences } from '@/types';
 ### **Constant Imports**
 ```typescript
 import { COLORS } from '@/constants/theme';
-import { TEXT } from '@/constants/text';
+import { TYPOGRAPHY } from '@/constants/theme';
 ```
 
 ### **Utility Imports**

@@ -185,7 +185,7 @@ export class PermissionService {
 
       // Unlimited for admin or -1 limit
       if (subscriptionTier === 'admin' || limit === -1) {
-        return { allowed: true, limit: -1, current: 0 };
+        return { allowed: true, limit: -1, current: 0, remaining: -1 };
       }
 
       // TODO: Implement actual task count query
@@ -195,11 +195,12 @@ export class PermissionService {
       return {
         allowed: current < limit,
         limit,
-        current
+        current,
+        remaining: Math.max(0, limit - current)
       };
     } catch (error) {
       console.error('❌ Error checking task limit:', error);
-      return { allowed: false, limit: 0, current: 0 };
+      return { allowed: false, limit: 0, current: 0, remaining: 0 };
     }
   }
 
@@ -215,7 +216,7 @@ export class PermissionService {
       }
 
       // Get role and cache it
-      const role = getRoleBySubscriptionTier(user.subscription_tier);
+      const role = getRoleBySubscriptionTier(user.subscription_tier || 'free');
       await this.permissionCacheService.cachePermissions(user.id, role.permissions, role);
 
       return role;

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNotificationPreferences } from '../hooks/useNotificationPreferences';
 import { useTheme } from '@/contexts/ThemeContext';
 import { QueryStateWrapper } from '@/shared/components';
+import { SimpleNotificationPreferences } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
 
 interface ListItemProps {
   icon: string;
@@ -63,7 +64,7 @@ export const NotificationSettings: React.FC = () => {
   const { preferences, isLoading, isError, updatePreferences, isUpdating } = useNotificationPreferences();
   const { theme } = useTheme();
 
-  const handleToggle = (key: keyof typeof preferences, value: boolean) => {
+  const handleToggle = (key: keyof SimpleNotificationPreferences, value: boolean) => {
     if (preferences) {
       updatePreferences({ [key]: value });
     }
@@ -86,17 +87,17 @@ export const NotificationSettings: React.FC = () => {
         icon="notifications-outline"
         rightContent={
           <Switch
-            value={preferences.reminders_enabled}
-            onValueChange={(value) => handleToggle('reminders_enabled', value)}
+            value={preferences?.enabled ?? false}
+            onValueChange={(value) => handleToggle('enabled', value)}
             disabled={isUpdating}
             trackColor={{ false: theme.border, true: theme.accent }}
-            thumbColor={preferences.reminders_enabled ? '#FFFFFF' : '#FFFFFF'}
+            thumbColor={preferences?.enabled ? '#FFFFFF' : '#FFFFFF'}
           />
         }
       />
 
       {/* Sub-settings - Only show when master toggle is on */}
-      {preferences.reminders_enabled && (
+      {preferences?.enabled && (
         <View style={[styles.subSettingsContainer, { borderLeftColor: theme.border }]}>
           <ListItem
             label="Spaced Repetition"
@@ -104,11 +105,11 @@ export const NotificationSettings: React.FC = () => {
             isSubItem={true}
             rightContent={
               <Switch
-                value={preferences.srs_reminders_enabled}
-                onValueChange={(value) => handleToggle('srs_reminders_enabled', value)}
+                value={preferences?.studySessions ?? false}
+                onValueChange={(value) => handleToggle('studySessions', value)}
                 disabled={isUpdating}
                 trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences.srs_reminders_enabled ? '#FFFFFF' : '#FFFFFF'}
+                thumbColor={preferences?.studySessions ? '#FFFFFF' : '#FFFFFF'}
               />
             }
           />
@@ -118,11 +119,11 @@ export const NotificationSettings: React.FC = () => {
             isSubItem={true}
             rightContent={
               <Switch
-                value={preferences.assignment_reminders_enabled}
-                onValueChange={(value) => handleToggle('assignment_reminders_enabled', value)}
+                value={preferences?.assignments ?? false}
+                onValueChange={(value) => handleToggle('assignments', value)}
                 disabled={isUpdating}
                 trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences.assignment_reminders_enabled ? '#FFFFFF' : '#FFFFFF'}
+                thumbColor={preferences?.assignments ? '#FFFFFF' : '#FFFFFF'}
               />
             }
           />
@@ -132,11 +133,11 @@ export const NotificationSettings: React.FC = () => {
             isSubItem={true}
             rightContent={
               <Switch
-                value={preferences.lecture_reminders_enabled}
-                onValueChange={(value) => handleToggle('lecture_reminders_enabled', value)}
+                value={preferences?.lectures ?? false}
+                onValueChange={(value) => handleToggle('lectures', value)}
                 disabled={isUpdating}
                 trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences.lecture_reminders_enabled ? '#FFFFFF' : '#FFFFFF'}
+                thumbColor={preferences?.lectures ? '#FFFFFF' : '#FFFFFF'}
               />
             }
           />
@@ -148,28 +149,15 @@ export const NotificationSettings: React.FC = () => {
 
       {/* Summary Notifications */}
       <ListItem
-        label="Morning Summary"
+        label="Daily Summaries"
         icon="sunny-outline"
         rightContent={
           <Switch
-            value={preferences.morning_summary_enabled}
-            onValueChange={(value) => handleToggle('morning_summary_enabled', value)}
+            value={preferences?.dailySummaries ?? false}
+            onValueChange={(value) => handleToggle('dailySummaries', value)}
             disabled={isUpdating}
             trackColor={{ false: theme.border, true: theme.accent }}
-            thumbColor={preferences.morning_summary_enabled ? '#FFFFFF' : '#FFFFFF'}
-          />
-        }
-      />
-      <ListItem
-        label="Evening Capture"
-        icon="moon-outline"
-        rightContent={
-          <Switch
-            value={preferences.evening_capture_enabled}
-            onValueChange={(value) => handleToggle('evening_capture_enabled', value)}
-            disabled={isUpdating}
-            trackColor={{ false: theme.border, true: theme.accent }}
-            thumbColor={preferences.evening_capture_enabled ? '#FFFFFF' : '#FFFFFF'}
+            thumbColor={preferences?.dailySummaries ? '#FFFFFF' : '#FFFFFF'}
           />
         }
       />

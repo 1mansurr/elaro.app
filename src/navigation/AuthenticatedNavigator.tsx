@@ -9,6 +9,7 @@ import { OnboardingProvider } from '../contexts/OnboardingContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '../hooks/useSmartPreloading';
+import { SCREEN_CONFIGS, TRANSITIONS, GESTURES } from './constants/NavigationConstants';
 
 // Critical screens - loaded immediately
 import LaunchScreen from '@/shared/screens/LaunchScreen';
@@ -23,6 +24,8 @@ const CalendarScreen = lazy(() => import('@/navigation/bundles/CalendarBundle').
 const ProfileScreen = lazy(() => import('@/features/user-profile/screens/ProfileScreen'));
 const SettingsScreen = lazy(() => import('@/features/user-profile/screens').then(module => ({ default: module.SettingsScreen })));
 const DeleteAccountScreen = lazy(() => import('@/features/user-profile/screens/DeleteAccountScreen'));
+const DeviceManagementScreen = lazy(() => import('@/features/user-profile/screens/DeviceManagementScreen').then(module => ({ default: module.DeviceManagementScreen })));
+const LoginHistoryScreen = lazy(() => import('@/features/user-profile/screens/LoginHistoryScreen').then(module => ({ default: module.LoginHistoryScreen })));
 const CoursesScreen = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.CoursesScreen })));
 const EditCourseModal = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.EditCourseModal })));
 const CourseDetailScreen = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.CourseDetailScreen })));
@@ -32,6 +35,10 @@ const MFAEnrollmentScreen = lazy(() => import('@/navigation/bundles/AuthBundle')
 const MFAVerificationScreen = lazy(() => import('@/navigation/bundles/AuthBundle').then(module => ({ default: module.MFAVerificationScreen })));
 const InAppBrowserScreen = lazy(() => import('@/shared/screens').then(module => ({ default: module.InAppBrowserScreen })));
 const AnalyticsAdminScreen = lazy(() => import('@/features/admin/components/AnalyticsAdminDashboard'));
+const StudyResultScreen = lazy(() => import('@/features/studySessions/screens/StudyResultScreen'));
+const StudySessionReviewScreen = lazy(() => import('@/features/studySessions/screens/StudySessionReviewScreen'));
+const PaywallScreen = lazy(() => import('@/features/subscription/screens/PaywallScreen').then(module => ({ default: module.PaywallScreen })));
+const OddityWelcomeScreen = lazy(() => import('@/features/subscription/screens/OddityWelcomeScreen'));
 
 // Lazy-loaded navigators
 const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
@@ -51,10 +58,24 @@ const LoadingFallback = () => (
   </View>
 );
 
-// Shared screen options
+// Shared screen options with default transitions
+// Individual screens can override these defaults via SCREEN_CONFIGS
 const sharedScreenOptions = {
   headerShown: false,
+  // Default transition for all screens (can be overridden per screen)
+  ...TRANSITIONS.slideFromRight,
+  // Default gesture configuration for all screens (can be overridden per screen)
+  ...GESTURES.horizontal,
 };
+
+// Typed screen configuration interface
+type ScreenConfig = {
+  component: React.ComponentType<any>;
+  options?: any;
+};
+
+// Type-safe screens configuration
+type ScreensConfig = Partial<Record<keyof RootStackParamList, ScreenConfig>>;
 
 // AddCourse Flow Wrapper with Provider (lazy loaded)
 const AddCourseFlow = () => (
@@ -104,155 +125,175 @@ const OnboardingFlow = () => (
 const modalFlows = {
   AddCourseFlow: { 
     component: AddCourseFlow,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.AddCourseFlow
   },
   AddLectureFlow: { 
     component: AddLectureFlow,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.AddLectureFlow
   },
   AddAssignmentFlow: { 
     component: AddAssignmentFlow,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.AddAssignmentFlow
   },
   AddStudySessionFlow: { 
     component: AddStudySessionFlow,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.AddStudySessionFlow
   },
   TaskDetailModal: { 
     component: TaskDetailModal,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.TaskDetailModal
   },
   EditCourseModal: { 
     component: EditCourseModal,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.EditCourseModal
   },
   InAppBrowserScreen: { 
     component: InAppBrowserScreen,
-    options: { presentation: 'modal' as const, headerShown: false }
+    options: SCREEN_CONFIGS.InAppBrowserScreen
+  },
+  PaywallScreen: { 
+    component: PaywallScreen,
+    options: SCREEN_CONFIGS.PaywallScreen
+  },
+  OddityWelcomeScreen: { 
+    component: OddityWelcomeScreen,
+    options: SCREEN_CONFIGS.OddityWelcomeScreen
   },
 };
 
-// Helper function to render screens
-const renderScreens = (screens: Record<string, any>) => {
-  return Object.entries(screens).map(([name, config]) => (
-    <Stack.Screen 
-      key={name} 
-      name={name as any} 
-      component={config.component} 
-      options={config.options || {}}
-    />
-  ));
+// Helper function to render screens with type safety
+const renderScreens = (screens: ScreensConfig) => {
+  return Object.entries(screens).map(([name, config]) => {
+    // Type narrowing: ensure name is a valid route
+    const routeName = name as keyof RootStackParamList;
+    if (!config) return null;
+    
+    return (
+      <Stack.Screen 
+        key={name} 
+        name={routeName}
+        component={config.component} 
+        options={config.options || {}}
+      />
+    );
+  }).filter(Boolean); // Remove any null entries
 };
 
 // Main screens configuration
+// Merge SCREEN_CONFIGS with header titles where needed
 const mainScreens = {
-  Main: { component: MainTabNavigator },
+  Main: { 
+    component: MainTabNavigator,
+    options: SCREEN_CONFIGS.Main
+  },
   Drafts: {
     component: DraftsScreen,
     options: {
-      headerShown: true,
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
+      ...SCREEN_CONFIGS.Drafts,
       headerTitle: 'Drafts',
     }
   },
   Templates: {
     component: TemplatesScreen,
     options: {
-      headerShown: true,
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
+      ...SCREEN_CONFIGS.Templates,
       headerTitle: 'Templates',
     }
   },
   Courses: { 
     component: CoursesScreen,
-    options: {
-      headerShown: true,
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
-    }
+    options: SCREEN_CONFIGS.Courses
   },
   CourseDetail: { 
     component: CourseDetailScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.CourseDetail,
       headerTitle: 'Course Details',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   Calendar: { 
     component: CalendarScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.Calendar,
       headerTitle: 'Calendar',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   RecycleBin: { 
     component: RecycleBinScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.RecycleBin,
       headerTitle: 'Recycle Bin',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   MFAEnrollmentScreen: { 
     component: MFAEnrollmentScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.MFAEnrollmentScreen,
       headerTitle: 'Enable MFA',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   MFAVerificationScreen: { 
     component: MFAVerificationScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.MFAVerificationScreen,
       headerTitle: 'Verify Your Identity',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   Profile: { 
     component: ProfileScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.Profile,
       headerTitle: 'Edit Profile',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   Settings: { 
     component: SettingsScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.Settings,
       headerTitle: 'Settings',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
     }
   },
   DeleteAccountScreen: { 
     component: DeleteAccountScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.DeleteAccountScreen,
       headerTitle: 'Delete Account',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
+    }
+  },
+  DeviceManagement: {
+    component: DeviceManagementScreen,
+    options: {
+      ...SCREEN_CONFIGS.DeviceManagement,
+      headerTitle: 'Device Management',
+    }
+  },
+  LoginHistory: {
+    component: LoginHistoryScreen,
+    options: {
+      ...SCREEN_CONFIGS.LoginHistory,
+      headerTitle: 'Login History',
     }
   },
   OnboardingFlow: { component: OnboardingFlow },
   AnalyticsAdmin: { 
     component: AnalyticsAdminScreen,
     options: {
-      headerShown: true,
+      ...SCREEN_CONFIGS.AnalyticsAdmin,
       headerTitle: 'Analytics Admin',
-      headerStyle: { backgroundColor: '#FFFFFF' },
-      headerTitleStyle: { fontWeight: 'bold' },
+    }
+  },
+  StudyResult: {
+    component: StudyResultScreen,
+    options: {
+      ...SCREEN_CONFIGS.StudyResult,
+      headerTitle: 'Study Results',
+    }
+  },
+  StudySessionReview: {
+    component: StudySessionReviewScreen,
+    options: {
+      ...SCREEN_CONFIGS.StudySessionReview,
+      headerTitle: 'Review Study Session',
     }
   },
 };
@@ -279,7 +320,11 @@ export const AuthenticatedNavigator: React.FC = () => {
     <Suspense fallback={<LoadingFallback />}>
       <Stack.Navigator screenOptions={sharedScreenOptions}>
         {/* Always show Launch screen */}
-        <Stack.Screen name="Launch" component={LaunchScreen} />
+        <Stack.Screen 
+          name="Launch" 
+          component={LaunchScreen}
+          options={SCREEN_CONFIGS.Launch}
+        />
         
         {/* Main app screens */}
         {renderScreens(mainScreens)}
@@ -290,22 +335,23 @@ export const AuthenticatedNavigator: React.FC = () => {
           <Stack.Screen 
             name="Auth"
             component={AuthScreen}
-            options={{
-              presentation: 'modal' as const,
-              headerShown: false,
-            }}
+            options={SCREEN_CONFIGS.Auth}
           />
           
           {Object.entries(modalFlows)
             .filter(([name]) => name !== 'InAppBrowserScreen')
-            .map(([name, config]) => (
-              <Stack.Screen 
-                key={name} 
-                name={name as any} 
-                component={config.component} 
-                options={config.options}
-              />
-            ))}
+            .map(([name, config]) => {
+              // Type narrowing: ensure name is a valid route
+              const routeName = name as keyof RootStackParamList;
+              return (
+                <Stack.Screen 
+                  key={name} 
+                  name={routeName}
+                  component={config.component} 
+                  options={config.options}
+                />
+              );
+            })}
         </Stack.Group>
       </Stack.Navigator>
     </Suspense>

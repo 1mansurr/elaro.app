@@ -9,7 +9,7 @@ import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { isSessionExpired, clearLastActiveTimestamp, updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 import { cache } from '@/utils/cache';
-import { errorTrackingService } from '@/services/ErrorTrackingService';
+// import { errorTrackingService } from '@/services/ErrorTrackingService';
 import { 
   checkAccountLockout, 
   recordFailedAttempt, 
@@ -201,7 +201,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear cache to ensure fresh data after onboarding completion
       if (userProfile?.onboarding_completed) {
         const cacheKey = `user_profile:${session.user.id}`;
-        await cache.delete(cacheKey);
+        // await cache.delete(cacheKey);
       }
     }
   };
@@ -234,7 +234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Identify user in Mixpanel and set user properties
         if (userProfile) {
-          mixpanelService.identifyUser(userProfile.id);
+          mixpanelService.identify(userProfile.id);
           mixpanelService.setUserProperties({
             subscription_tier: userProfile.subscription_tier,
             onboarding_completed: userProfile.onboarding_completed,
@@ -374,11 +374,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       
       return { error: null };
     } catch (error: any) {
-      // Use centralized error tracking
-      errorTrackingService.captureError(error, {
-        tags: { errorType: 'signin' },
-        extra: { email: credentials.email }
-      });
+      // Log error for debugging
+      console.error('Sign in error:', error);
       
       // Record failed login attempt
       if (credentials.email && error.message) {

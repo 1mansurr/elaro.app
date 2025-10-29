@@ -173,7 +173,7 @@ import { NotificationPreferences } from '@/types';
 ### **Constants**
 ```typescript
 import { COLORS } from '@/constants/theme';
-import { TEXT } from '@/constants/text';
+import { TYPOGRAPHY } from '@/constants/theme';
 ```
 
 ### **Utils**

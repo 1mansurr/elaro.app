@@ -30,9 +30,9 @@ const EditCourseModal = () => {
   // Update form fields when course data is loaded
   useEffect(() => {
     if (courseData) {
-      setCourseName(courseData.course_name);
-      setCourseCode(courseData.course_code || '');
-      setAboutCourse(courseData.about_course || '');
+      setCourseName(courseData.courseName);
+      setCourseCode(courseData.courseCode || '');
+      setAboutCourse(courseData.aboutCourse || '');
     }
   }, [courseData]);
 

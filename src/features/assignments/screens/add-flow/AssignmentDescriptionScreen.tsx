@@ -3,14 +3,17 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
-import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
+// import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Input, Button } from '@/shared/components';
 
 type AssignmentDescriptionScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'AssignmentDescription'>;
 
 const AssignmentDescriptionScreen = () => {
   const navigation = useNavigation<AssignmentDescriptionScreenNavigationProp>();
-  const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // Mock data for now
+  const assignmentData = { courseId: null, course: null, title: "", description: "", dueDate: null, submissionMethod: null, reminders: [] };
+  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
 
   const handleDescriptionChange = (description: string) => {
     updateAssignmentData({ description });

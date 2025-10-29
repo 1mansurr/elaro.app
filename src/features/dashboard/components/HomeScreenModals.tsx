@@ -32,7 +32,7 @@ export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
     
-    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED, {
+    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
       task_id: selectedTask.id,
       task_type: selectedTask.type,
       task_title: selectedTask.title,
@@ -56,7 +56,9 @@ export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
     }
     
     onCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, { taskToEdit: selectedTask } as any);
+    navigation.navigate(modalName, { 
+      initialData: { taskToEdit: selectedTask } 
+    });
   }, [selectedTask, onCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {

@@ -9,7 +9,7 @@ import { SessionTimeoutService } from '../services/SessionTimeoutService';
 import { AuthAnalyticsService } from '../services/AuthAnalyticsService';
 import { BiometricAuthService } from '../services/BiometricAuthService';
 import { cache } from '@/utils/cache';
-import { errorTrackingService } from '@/services/ErrorTrackingService';
+// import { errorTrackingService } from '@/services/ErrorTrackingService';
 import { 
   checkAccountLockout, 
   recordFailedAttempt, 
@@ -48,7 +48,7 @@ interface AuthContextType {
   loading: boolean;
   isGuest: boolean;
   biometricAuth: BiometricAuthState;
-  signIn: (credentials: LoginCredentials) => Promise<{ error: any; requiresMFA?: boolean; factors?: any[] }>;
+  signIn: (credentials: LoginCredentials) => Promise<{ user: SupabaseUser; session: Session } | { error: unknown }>;
   signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -132,7 +132,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           authAnalyticsService.identifyUser(userProfile);
           authAnalyticsService.trackLogin({
             method: 'email',
-            subscription_tier: userProfile.subscription_tier,
+            subscription_tier: userProfile.subscription_tier || 'free',
             onboarding_completed: userProfile.onboarding_completed,
           });
 
@@ -172,28 +172,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       // Check account lockout
       const lockoutCheck = await checkAccountLockout(credentials.email);
-      if (!lockoutCheck.allowed) {
-        return { error: { message: getLockoutMessage(lockoutCheck) } };
+      if (lockoutCheck.isLocked) {
+        return { error: { message: getLockoutMessage(lockoutCheck.minutesRemaining || 0) } };
       }
 
-      const result = await authService.signIn(credentials);
+      const result = await authService.login(credentials);
       
-      if (result.error) {
-        await recordFailedAttempt(credentials.email);
-      } else {
-        await recordSuccessfulLogin(credentials.email);
-        resetFailedAttempts(credentials.email);
-        
-        // Update last active timestamp
-        await sessionTimeoutService.updateLastActiveTimestamp();
-        
-        // Track successful login
-        authAnalyticsService.trackLogin({
-          method: 'email',
-          subscription_tier: user?.subscription_tier,
-          onboarding_completed: user?.onboarding_completed,
-        });
-      }
+      // If we get here, login was successful
+      await recordSuccessfulLogin(credentials.email);
+      resetFailedAttempts(credentials.email);
+      
+      // Update last active timestamp
+      await sessionTimeoutService.updateLastActiveTimestamp();
+      
+      // Track successful login
+      authAnalyticsService.trackLogin({
+        method: 'email',
+        subscription_tier: user?.subscription_tier || 'free',
+        onboarding_completed: user?.onboarding_completed,
+      });
       
       return result;
     } catch (error) {

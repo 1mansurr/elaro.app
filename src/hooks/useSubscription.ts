@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
 import { revenueCatService } from '@/services/revenueCat';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/services/supabase';
 
 interface UseSubscriptionReturn {
   // Status

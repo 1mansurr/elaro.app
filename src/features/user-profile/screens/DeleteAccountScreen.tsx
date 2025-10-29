@@ -8,6 +8,7 @@ import {
   Alert,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -158,8 +159,8 @@ const DeleteAccountScreen = () => {
         <TextInput
           style={[
             styles.confirmationInput,
-            confirmationText && !isConfirmationValid && styles.confirmationInputInvalid,
-            isConfirmationValid && styles.confirmationInputValid,
+            confirmationText && !isConfirmationValid ? styles.confirmationInputInvalid : undefined,
+            isConfirmationValid ? styles.confirmationInputValid : undefined,
           ]}
           value={confirmationText}
           onChangeText={setConfirmationText}
@@ -186,7 +187,10 @@ const DeleteAccountScreen = () => {
           onPress={handleDeleteAccount}
           disabled={!canDelete || isDeleting}
           loading={isDeleting}
-          style={[styles.deleteButton, { backgroundColor: canDelete ? '#FF3B30' : COLORS.gray }]}
+          style={{
+            ...styles.deleteButton,
+            backgroundColor: canDelete ? '#FF3B30' : COLORS.gray
+          }}
         />
       </View>
 

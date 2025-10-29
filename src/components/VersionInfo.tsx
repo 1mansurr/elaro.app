@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApiVersion } from '../hooks/useVersionedApi';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS } from '../constants/theme';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
 
 interface VersionInfoProps {
   showDetails?: boolean;
@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     margin: SPACING.sm,
-    ...COLORS.shadow,
+    ...SHADOWS.sm,
   },
   header: {
     flexDirection: 'row',

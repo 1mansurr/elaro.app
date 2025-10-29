@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -14,9 +14,11 @@ export const UndoToast: React.FC<UndoToastProps> = ({ visible, message, onUndo, 
   const { theme } = useTheme();
   const slideAnim = useRef(new Animated.Value(100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [isAnimatingOut, setIsAnimatingOut] = useState(false);
 
   useEffect(() => {
     if (visible) {
+      setIsAnimatingOut(false);
       // Animate in
       Animated.parallel([
         Animated.timing(slideAnim, {
@@ -32,6 +34,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({ visible, message, onUndo, 
       ]).start();
     } else {
       // Animate out
+      setIsAnimatingOut(true);
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 100,
@@ -47,7 +50,7 @@ export const UndoToast: React.FC<UndoToastProps> = ({ visible, message, onUndo, 
     }
   }, [visible, slideAnim, opacityAnim]);
 
-  if (!visible && slideAnim._value === 100) {
+  if (!visible && isAnimatingOut) {
     return null;
   }
 

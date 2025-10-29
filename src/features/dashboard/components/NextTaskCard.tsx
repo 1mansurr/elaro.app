@@ -64,6 +64,20 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
             <Text style={styles.time}>{getTaskTime(task.date)}</Text>
           </View>
           
+          {/* Start Study Button - for study_session tasks */}
+          {task.type === 'study_session' && (
+            <TouchableOpacity 
+              style={styles.startStudyButton} 
+              onPress={() => {
+                navigation.navigate('StudySessionReview', { sessionId: task.id });
+              }}
+              testID="start-study-button"
+            >
+              <Ionicons name="play-circle" size={20} color="#FFFFFF" />
+              <Text style={styles.startStudyText}>Start Study</Text>
+            </TouchableOpacity>
+          )}
+          
           {/* View Details Button */}
           {onViewDetails && (
             <TouchableOpacity style={styles.viewDetailsButton} onPress={() => onViewDetails(task)}>
@@ -224,6 +238,22 @@ const styles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '700',
     marginRight: 4,
+    fontSize: 16,
+  },
+  startStudyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    backgroundColor: '#007AFF',
+    borderRadius: 12,
+    gap: 8,
+  },
+  startStudyText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
     fontSize: 16,
   },
 });

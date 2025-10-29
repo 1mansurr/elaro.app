@@ -106,6 +106,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 12,
   },
+  statItem: {
+    alignItems: 'center',
+  },
+  statCount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1A1A1A',
+  },
+  statLabel: {
+    fontSize: 11,
+    color: '#8E8E93',
+    marginTop: 2,
+  },
   statCompact: {
     alignItems: 'center',
   },

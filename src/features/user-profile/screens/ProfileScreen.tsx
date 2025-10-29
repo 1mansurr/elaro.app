@@ -16,7 +16,7 @@ type ScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Account'>;
 
 const ProfileScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const queryClient = useQueryClient();
 
   const [firstName, setFirstName] = useState('');
@@ -60,16 +60,13 @@ const ProfileScreen = () => {
         throw new Error(error.message);
       }
 
-      // On success, invalidate the user query in AuthContext to refetch the fresh user data.
-      // This assumes your AuthContext exposes a function to refetch the user.
-      // A common pattern is to invalidate a query if you are using React Query for user data too.
-      // For now, we'll alert the user and navigate back. A full refresh would be better.
-      Alert.alert('Success', 'Your profile has been updated.');
+      // Refresh user data in AuthContext
+      await refreshUser();
       
-      // To make the UI update, we need to refetch the user data.
-      // The best way is to invalidate a React Query key if 'user' is fetched via React Query.
-      // If not, we might need to add a refresh function to AuthContext.
-      // For now, let's navigate back. The data will be fresh on next app open.
+      // Also invalidate React Query cache if any components use React Query for user data
+      await queryClient.invalidateQueries({ queryKey: ['user'] });
+      
+      Alert.alert('Success', 'Your profile has been updated.');
       navigation.goBack();
 
     } catch (err) {

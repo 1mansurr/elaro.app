@@ -36,8 +36,15 @@
     "test:all": "npm run test:unit && npm run test:integration",
     "e2e:build:ios": "detox build --configuration ios.debug",
     "e2e:test:ios": "detox test --configuration ios.debug",
+    "e2e:test:ci": "detox test --configuration ios.release --headless",
+    "e2e:test:setup": "detox test --configuration ios.debug e2e/pass1-setup-verification.test.ts",
+    "e2e:report:html": "node scripts/generate-html-report.js",
     "e2e:build:android": "detox build --configuration android.emu.debug",
-    "e2e:test:android": "detox test --configuration android.emu.debug"
+    "e2e:test:android": "detox test --configuration android.emu.debug",
+    "migrate-colors": "node scripts/migrate-colors.js",
+    "migrate-colors:dry": "node scripts/migrate-colors.js --dry-run",
+    "migrate-colors:fix": "node scripts/migrate-colors.js --fix",
+    "migrate-colors:stats": "node scripts/migrate-colors.js --stats"
   },
   "dependencies": {
     "@babel/runtime": "^7.27.6",
@@ -77,10 +84,13 @@
     "expo-font": "~12.0.10",
     "expo-haptics": "~13.0.1",
     "expo-image": "~1.13.0",
+    "expo-image-manipulator": "^14.0.7",
+    "expo-image-picker": "^17.0.8",
     "expo-linear-gradient": "~13.0.2",
     "expo-linking": "~6.3.1",
     "expo-local-authentication": "^17.0.7",
     "expo-notifications": "~0.28.19",
+    "expo-secure-store": "~13.0.2",
     "expo-sharing": "~12.0.1",
     "expo-splash-screen": "~0.27.7",
     "expo-status-bar": "~1.12.1",
@@ -91,6 +101,7 @@
     "mixpanel-react-native": "^3.1.2",
     "nativewind": "^4.1.23",
     "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-calendars": "^1.1313.0",
     "react-native-confetti-cannon": "^1.5.2",
@@ -111,7 +122,14 @@
     "tailwindcss-react-native": "^1.7.10",
     "tinycolor2": "^1.6.0"
   },
+  "resolutions": {
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "@types/react": "^18.2.0"
+  },
   "devDependencies": {
+    "@babel/plugin-proposal-export-namespace-from": "^7.18.9",
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@testing-library/jest-native": "^5.4.3",
     "@testing-library/react-native": "^12.4.3",
     "@types/jest": "^30.0.0",

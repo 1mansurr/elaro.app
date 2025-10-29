@@ -170,8 +170,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <View style={styles.gradient}>
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      testID="auth-screen">
+      <View style={styles.gradient} testID="auth-container">
         <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
           <Ionicons name="close" size={20} color="#FFFFFF" />
         </TouchableOpacity>
@@ -199,6 +200,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   placeholder="Enter your first name"
                   autoCapitalize="words"
                   textContentType="givenName"
+                  testID="first-name-input"
                 />
                 <Input
                   label="Last Name (Optional)"
@@ -207,6 +209,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   placeholder="Enter your last name"
                   autoCapitalize="words"
                   textContentType="familyName"
+                  testID="last-name-input"
                 />
               </>
             )}
@@ -219,6 +222,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               keyboardType="email-address"
               autoCapitalize="none"
               error={emailError}
+              testID="email-input"
             />
 
             <Input
@@ -229,6 +233,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               secureTextEntry={!showPassword}
               rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
               onRightIconPress={() => setShowPassword(!showPassword)}
+              testID="password-input"
             />
 
             {/* Password Requirements Checklist */}
@@ -352,13 +357,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               loading={loading}
               disabled={mode === 'signup' && !isPasswordValid()}
               style={styles.authButton}
+              testID="submit-button"
             />
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
                 {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
               </Text>
-              <TouchableOpacity onPress={() => setMode(mode === 'signup' ? 'signin' : 'signup')}>
+              <TouchableOpacity 
+                onPress={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
+                testID="toggle-auth-mode-button">
                 <Text style={styles.footerLink}>
                   {mode === 'signup' ? 'Sign In' : 'Sign Up'}
                 </Text>

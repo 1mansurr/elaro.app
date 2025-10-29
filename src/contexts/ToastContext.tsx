@@ -3,7 +3,7 @@ import { UndoToast } from '@/shared/components/UndoToast';
 
 interface ToastOptions {
   message: string;
-  onUndo: () => void;
+  onUndo?: () => void;
   duration?: number; // in milliseconds, default 5000
 }
 
@@ -50,7 +50,7 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
     // Set new toast state
     setMessage(message);
-    setOnUndo(() => onUndo); // Wrap in arrow function to store function reference
+    setOnUndo(() => onUndo || null); // Wrap in arrow function to store function reference
     setVisible(true);
 
     // Auto-dismiss after duration

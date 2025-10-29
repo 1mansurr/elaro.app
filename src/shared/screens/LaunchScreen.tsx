@@ -26,8 +26,8 @@ const LaunchScreen = () => {
   }, [loading, navigation]);
 
   return (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color={COLORS.primary} />
+    <View style={styles.container} testID="launch-screen">
+      <ActivityIndicator size="large" color={COLORS.primary} testID="launch-activity-indicator" />
     </View>
   );
 };

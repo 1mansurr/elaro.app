@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '@/shared/components/Card';
 import { Button } from '@/shared/components/Button';
@@ -11,11 +13,12 @@ import { PostChatModal } from '@/features/support/components/PostChatModal';
 import { getSecureChatLink } from '@/features/support/utils/getSecureChatLink';
 import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
 
-const ListItem = ({ label, onPress, isDestructive = false }: { label: string; onPress: () => void; isDestructive?: boolean }) => {
+const ListItem = ({ label, onPress, isDestructive = false, testID }: { label: string; onPress: () => void; isDestructive?: boolean; testID?: string }) => {
   const { theme } = useTheme();
   return (
     <TouchableOpacity 
-      onPress={onPress} 
+      onPress={onPress}
+      testID={testID} 
       style={[
         styles.listItem, 
         { 
@@ -81,7 +84,7 @@ const SettingItem = ({
 
 export function AccountScreen() {
   const { user, session } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
   const [isSupportChatLoading, setSupportChatLoading] = useState(false);
@@ -91,7 +94,7 @@ export function AccountScreen() {
     setSupportChatLoading(true);
     try {
       const secureUrl = await getSecureChatLink(user);
-      (navigation as any).navigate('SupportChat', { uri: secureUrl });
+      navigation.navigate('InAppBrowserScreen', { url: secureUrl, title: 'Support Chat' });
     } catch (error) {
       showToast({ type: 'error', message: 'Could not open support chat.' });
     } finally {
@@ -107,7 +110,7 @@ export function AccountScreen() {
           <Text style={[styles.guestSubtitle, { color: theme.textSecondary }]}>
             Log in or create an account to manage your academic life.
           </Text>
-          <Button title="Login or Sign Up" onPress={() => (navigation as any).navigate('Auth')} />
+          <Button title="Login or Sign Up" onPress={() => navigation.navigate('Auth', { mode: 'signin' })} />
         </View>
       </Card>
 
@@ -116,7 +119,7 @@ export function AccountScreen() {
           label="How ELARO Works"
           description="Learn how to get the most out of ELARO"
           icon="school-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
           })}
@@ -125,13 +128,16 @@ export function AccountScreen() {
           label="FAQs"
           description="Find answers to common questions"
           icon="help-outline"
-          onPress={() => (navigation as any).navigate('Faq')}
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/faq',
+            title: 'FAQs'
+          })}
         />
         <SettingItem
           label="Terms of Service"
           description="Read our terms and conditions"
           icon="document-text-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/terms',
             title: 'Terms of Service'
           })}
@@ -140,7 +146,7 @@ export function AccountScreen() {
           label="Privacy Policy"
           description="Learn how we protect your data"
           icon="shield-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
           })}
@@ -153,7 +159,7 @@ export function AccountScreen() {
     <ScrollView style={styles.container}>
       {user?.role === 'admin' && (
         <Card title="Admin">
-          <Button title="Admin Dashboard" onPress={() => (navigation as any).navigate('AdminDashboard')} />
+          <Button title="Admin Dashboard" onPress={() => navigation.navigate('AnalyticsAdmin')} />
         </Card>
       )}
 
@@ -162,9 +168,9 @@ export function AccountScreen() {
           <Text style={[styles.profileName, { color: theme.text }]}>{user?.user_metadata?.first_name} {user?.user_metadata?.last_name}</Text>
           <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
         </View>
-        <Button title="View Profile" onPress={() => (navigation as any).navigate('UserProfile')} />
-        <Button title="My Courses" onPress={() => (navigation as any).navigate('CourseList')} />
-        <Button title="Add a Course" onPress={() => (navigation as any).navigate('AddCourseFlow')} />
+        <Button title="View Profile" onPress={() => navigation.navigate('Profile')} />
+        <Button title="My Courses" onPress={() => navigation.navigate('Courses')} />
+        <Button title="Add a Course" onPress={() => navigation.navigate('AddCourseFlow')} />
       </Card>
 
       <Card title="Subscription">
@@ -188,13 +194,16 @@ export function AccountScreen() {
           label="FAQs"
           description="Find answers to common questions"
           icon="help-outline"
-          onPress={() => (navigation as any).navigate('Faq')}
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/faq',
+            title: 'FAQs'
+          })}
         />
         <SettingItem
           label="How ELARO Works"
           description="Learn how to get the most out of ELARO"
           icon="school-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/how-it-works',
             title: 'How ELARO Works'
           })}
@@ -209,7 +218,7 @@ export function AccountScreen() {
           label="Terms of Service"
           description="Read our terms and conditions"
           icon="document-text-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/terms',
             title: 'Terms of Service'
           })}
@@ -218,7 +227,7 @@ export function AccountScreen() {
           label="Privacy Policy"
           description="Learn how we protect your data"
           icon="shield-outline"
-          onPress={() => (navigation as any).navigate('InAppBrowserScreen', { 
+          onPress={() => navigation.navigate('InAppBrowserScreen', { 
             url: 'https://elaro.app/privacy',
             title: 'Privacy Policy'
           })}
@@ -226,7 +235,7 @@ export function AccountScreen() {
       </Card>
 
       <Card title="Settings">
-        <ListItem label="Settings" onPress={() => (navigation as any).navigate('Settings')} />
+        <ListItem label="Settings" onPress={() => navigation.navigate('Settings')} testID="settings-navigation-button" />
       </Card>
 
       {/* Premium Features - Analytics Dashboard for Oddity users */}
@@ -244,7 +253,10 @@ export function AccountScreen() {
             </View>
             <TouchableOpacity
               style={[styles.premiumFeatureButton, { backgroundColor: theme.accent }]}
-              onPress={() => (navigation as any).navigate('NotificationAnalytics')}
+              onPress={() => navigation.navigate('InAppBrowserScreen', { 
+                url: 'https://elaro.app/analytics',
+                title: 'Analytics'
+              })}
             >
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
@@ -288,7 +300,7 @@ export function AccountScreen() {
             </View>
             <TouchableOpacity
               style={[styles.premiumFeatureButton, { backgroundColor: '#9C27B0' }]}
-              onPress={() => (navigation as any).navigate('AnalyticsAdmin')}
+              onPress={() => navigation.navigate('AnalyticsAdmin')}
             >
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
@@ -301,7 +313,10 @@ export function AccountScreen() {
         onClose={() => setPostChatModalVisible(false)}
         onFaqPress={() => {
           setPostChatModalVisible(false);
-          (navigation as any).navigate('Faq');
+          navigation.navigate('InAppBrowserScreen', { 
+            url: 'https://elaro.app/faq',
+            title: 'FAQs'
+          });
         }}
       />
     </ScrollView>

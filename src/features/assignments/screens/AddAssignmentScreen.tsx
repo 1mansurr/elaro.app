@@ -68,12 +68,20 @@ const AddAssignmentScreen = () => {
   } = useTemplateSelection();
 
   // Get initial data from Quick Add if available
-  const initialData = (route.params as any)?.initialData;
+  const initialData = route.params?.initialData;
+  const taskToEdit = initialData?.taskToEdit || null;
 
   // Required fields
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(initialData?.course || null);
   const [title, setTitle] = useState(initialData?.title || '');
-  const [dueDate, setDueDate] = useState<Date>(initialData?.dateTime || new Date());
+  const [dueDate, setDueDate] = useState<Date>(() => {
+    if (initialData?.dateTime) {
+      return initialData.dateTime instanceof Date 
+        ? initialData.dateTime 
+        : new Date(initialData.dateTime);
+    }
+    return new Date();
+  });
   
   // Optional fields
   const [description, setDescription] = useState('');
@@ -97,11 +105,32 @@ const AddAssignmentScreen = () => {
 
   const createTemplateMutation = useCreateTemplate();
 
+  // Populate form from taskToEdit if present (for editing)
+  useEffect(() => {
+    if (taskToEdit && taskToEdit.type === 'assignment') {
+      // Find the course by courseName
+      const course = courses.find(c => c.courseName === taskToEdit.courses?.courseName);
+      if (course) {
+        setSelectedCourse(course);
+      }
+      
+      setTitle(taskToEdit.title || taskToEdit.name || '');
+      if (taskToEdit.date) {
+        setDueDate(new Date(taskToEdit.date));
+      }
+      if (taskToEdit.description) {
+        setDescription(taskToEdit.description);
+      }
+      // Note: submissionMethod and submissionLink would need to come from the assignment data
+      // which isn't fully available in Task type - this is a limitation
+    }
+  }, [taskToEdit, courses]);
+
   // Load draft on mount
   useEffect(() => {
     const loadDraft = async () => {
-      // Skip if we have initial data from Quick Add
-      if (initialData) return;
+      // Skip if we have initial data from Quick Add or taskToEdit
+      if (initialData || taskToEdit) return;
       
       const draft = await getDraft('assignment');
       if (draft) {
@@ -118,7 +147,7 @@ const AddAssignmentScreen = () => {
     };
     
     loadDraft();
-  }, []);
+  }, [initialData, taskToEdit]);
 
   // Auto-save draft when form data changes (debounced)
   useEffect(() => {
@@ -376,11 +405,11 @@ const AddAssignmentScreen = () => {
       mode,
       onAuthSuccess: async () => {
         // After auth, try to create the assignment from pending data
-        const pendingTask = await getPendingTask();
-        if (pendingTask && pendingTask.taskType === 'assignment') {
-          // Re-trigger save
-          navigation.goBack();
-        }
+        // const pendingTask = await getPendingTask();
+        // if (pendingTask && pendingTask.taskType === 'assignment') {
+        //   // Re-trigger save
+        //   navigation.goBack();
+        // }
       },
     } as any);
   };
@@ -622,7 +651,7 @@ const AddAssignmentScreen = () => {
               <Text style={styles.label}>Reminders (Optional)</Text>
               <ReminderSelector
                 selectedReminders={reminders}
-                onChange={setReminders}
+                onSelectionChange={setReminders}
                 maxReminders={2}
               />
             </View>
@@ -700,7 +729,7 @@ const AddAssignmentScreen = () => {
         onClose={() => setShowGuestAuthModal(false)}
         onSignUp={() => handleGuestAuth('signup')}
         onSignIn={() => handleGuestAuth('signin')}
-        message="Create an account to save your assignment and get reminders!"
+        actionType="Assignment"
       />
 
       {/* Save as Template Modal */}
@@ -926,32 +955,6 @@ const styles = StyleSheet.create({
   submissionLinkContainer: {
     marginTop: SPACING.sm,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    margin: SPACING.xl,
-    maxHeight: '70%',
-    width: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
   coursesList: {
     maxHeight: 400,
   },
@@ -1057,11 +1060,6 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     backgroundColor: COLORS.primary,
-  },
-  saveButtonText: {
-    color: 'white',
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
   },
   myTemplatesButton: {
     backgroundColor: '#007AFF',

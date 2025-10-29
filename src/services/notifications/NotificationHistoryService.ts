@@ -123,6 +123,7 @@ export class NotificationHistoryService {
       if (error) {
         throw new AppError(
           `Failed to get notification history: ${error.message}`,
+          500,
           'NOTIFICATION_HISTORY_ERROR',
           { userId, options }
         );
@@ -145,6 +146,7 @@ export class NotificationHistoryService {
 
       throw new AppError(
         `Error getting notification history: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'NOTIFICATION_HISTORY_ERROR',
         { userId, options }
       );
@@ -165,6 +167,7 @@ export class NotificationHistoryService {
       if (error) {
         throw new AppError(
           `Failed to get unread count: ${error.message}`,
+          500,
           'UNREAD_COUNT_ERROR',
           { userId }
         );
@@ -174,6 +177,7 @@ export class NotificationHistoryService {
     } catch (error) {
       throw new AppError(
         `Error getting unread count: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'UNREAD_COUNT_ERROR',
         { userId }
       );
@@ -194,6 +198,7 @@ export class NotificationHistoryService {
       if (error) {
         throw new AppError(
           `Failed to mark notification as read: ${error.message}`,
+          500,
           'MARK_READ_ERROR',
           { notificationId, userId }
         );
@@ -214,6 +219,7 @@ export class NotificationHistoryService {
 
       throw new AppError(
         `Error marking notification as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'MARK_READ_ERROR',
         { notificationId, userId }
       );
@@ -234,6 +240,7 @@ export class NotificationHistoryService {
       if (error) {
         throw new AppError(
           `Failed to mark all notifications as read: ${error.message}`,
+          500,
           'MARK_ALL_READ_ERROR',
           { userId }
         );
@@ -245,6 +252,7 @@ export class NotificationHistoryService {
     } catch (error) {
       throw new AppError(
         `Error marking all notifications as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'MARK_ALL_READ_ERROR',
         { userId }
       );
@@ -265,6 +273,7 @@ export class NotificationHistoryService {
       if (error) {
         throw new AppError(
           `Failed to delete notification: ${error.message}`,
+          500,
           'DELETE_NOTIFICATION_ERROR',
           { notificationId, userId }
         );
@@ -285,6 +294,7 @@ export class NotificationHistoryService {
 
       throw new AppError(
         `Error deleting notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'DELETE_NOTIFICATION_ERROR',
         { notificationId, userId }
       );
@@ -307,6 +317,7 @@ export class NotificationHistoryService {
       if (fetchError || !notification?.metadata?.taskId) {
         throw new AppError(
           'Task ID not found in notification metadata',
+          500,
           'TASK_NOT_FOUND',
           { notificationId, userId }
         );
@@ -328,6 +339,7 @@ export class NotificationHistoryService {
 
       throw new AppError(
         `Error completing task from notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'COMPLETE_TASK_ERROR',
         { notificationId, userId }
       );

@@ -127,7 +127,7 @@ export const useCompleteTask = () => {
       }
 
       // Track error
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED, {
+      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED.name, {
         task_id: taskId,
         task_type: taskType,
         error: error.message,
@@ -153,7 +153,7 @@ export const useCompleteTask = () => {
     // On success, track the event
     onSuccess: (data, { taskId, taskType, taskTitle }) => {
       // Track successful completion (includes both online and offline modes)
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED, {
+      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED.name, {
         task_id: taskId,
         task_type: taskType,
         task_title: taskTitle,
@@ -274,7 +274,7 @@ export const useDeleteTask = () => {
     // On success, track the event
     onSuccess: (data, { taskId, taskType, taskTitle }) => {
       // Track successful deletion (includes both online and offline modes)
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_DELETED, {
+      mixpanelService.trackEvent(TASK_EVENTS.TASK_DELETED.name, {
         task_id: taskId,
         task_type: taskType,
         task_title: taskTitle,
@@ -383,7 +383,7 @@ export const useRestoreTask = () => {
 
     // Track restore event
     onSuccess: (data, { taskId, taskType, taskTitle }) => {
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_RESTORED, {
+      mixpanelService.trackEvent(TASK_EVENTS.TASK_RESTORED.name, {
         task_id: taskId,
         task_type: taskType,
         task_title: taskTitle,

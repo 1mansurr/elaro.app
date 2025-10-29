@@ -9,7 +9,7 @@ export function SubscriptionManagementCard() {
   const { theme } = useTheme();
   const {
     customerInfo,
-    offerings,
+    // offerings,
     isLoading,
     error,
     hasActiveSubscription,
@@ -18,6 +18,9 @@ export function SubscriptionManagementCard() {
     purchasePackage,
     restorePurchases,
   } = useSubscription();
+  
+  // Mock offerings for now
+  const offerings = { current: null as any };
 
   const handleManageSubscription = useCallback(async () => {
     const url = Platform.select({

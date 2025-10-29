@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
-import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
+// import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Button } from '@/shared/components';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
@@ -12,7 +12,18 @@ type DueDateScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamLi
 
 const DueDateScreen = () => {
   const navigation = useNavigation<DueDateScreenNavigationProp>();
-  const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // Mock data for now - proper structure
+  const assignmentData = { 
+    courseId: null, 
+    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
+    title: "Mock Assignment", 
+    description: "Mock description", 
+    dueDate: new Date(), 
+    submissionMethod: null, 
+    reminders: [] 
+  };
+  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
   
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);

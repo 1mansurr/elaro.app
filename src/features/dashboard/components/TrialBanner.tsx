@@ -6,12 +6,14 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface TrialBannerProps {
-  daysRemaining: number;
+  daysRemaining: number | null;
   onPressSubscribe: () => void;
   onDismiss?: () => void;
 }
 
 const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscribe, onDismiss }) => {
+  if (daysRemaining === null) return null; // Early return for null
+  
   const isExpired = daysRemaining < 0;
   const message = isExpired
     ? "Your Oddity trial has ended."

@@ -53,7 +53,7 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({ onFabState
       <TrialBannerWrapper
         user={user}
         isPremium={isPremium}
-        onPressSubscribe={() => navigation.navigate('Auth')}
+        onPressSubscribe={() => navigation.navigate('Auth', { mode: 'signin' })}
         onDismiss={() => {}}
       />
       

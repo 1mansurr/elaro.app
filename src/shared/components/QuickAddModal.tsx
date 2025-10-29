@@ -286,13 +286,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
     // Navigate to appropriate full modal with pre-filled data
     switch (taskType) {
       case 'assignment':
-        navigation.navigate('AddAssignmentFlow', { initialData } as any);
+        navigation.navigate('AddAssignmentFlow', { initialData });
         break;
       case 'lecture':
-        navigation.navigate('AddLectureFlow', { initialData } as any);
+        navigation.navigate('AddLectureFlow', { initialData });
         break;
       case 'study_session':
-        navigation.navigate('AddStudySessionFlow', { initialData } as any);
+        navigation.navigate('AddStudySessionFlow', { initialData });
         break;
     }
   };

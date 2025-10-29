@@ -6,7 +6,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { versionedApiClient, ApiResponse } from '../services/VersionedApiClient';
+import { versionedApiClient } from '../services/VersionedApiClient';
+import { ApiResponse } from '../services/ApiVersioningService';
 import { apiVersioningService } from '../services/ApiVersioningService';
 
 export interface UseApiState<T = any> {

@@ -27,6 +27,21 @@ export interface INotificationDeliveryService {
    * Get scheduled notifications for a user
    */
   getScheduledNotifications(userId: string): Promise<ScheduledNotification[]>;
+
+  /**
+   * Setup notification categories (optional)
+   */
+  setupNotificationCategories?(): Promise<void>;
+
+  /**
+   * Setup Android channels (optional)
+   */
+  setupAndroidChannels?(): Promise<void>;
+
+  /**
+   * Set navigation reference (optional)
+   */
+  setNavigationRef?(ref: any): void;
 }
 
 export interface NotificationPayload {

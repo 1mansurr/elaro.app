@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } fr
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
-import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
+// import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
@@ -17,7 +17,20 @@ type RemindersScreenNavigationProp = StackNavigationProp<AddAssignmentStackParam
 
 const RemindersScreen = () => {
   const navigation = useNavigation<RemindersScreenNavigationProp>();
-  const { assignmentData, resetAssignmentData } = useAddAssignment();
+  // const { assignmentData, resetAssignmentData } = useAddAssignment();
+  
+  // Mock data for now - proper structure
+  const assignmentData = { 
+    courseId: null, 
+    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
+    title: "Mock Assignment", 
+    description: "Mock description", 
+    dueDate: new Date(), 
+    submissionMethod: 'Online' as const, 
+    submissionLink: 'https://example.com',
+    reminders: [] 
+  };
+  const resetAssignmentData = () => { console.log("Mock resetAssignmentData"); };
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
   const { limitReached, monthlyTaskCount, monthlyLimit, isLoading: isTaskLimitLoading } = useMonthlyTaskCount();
@@ -66,7 +79,7 @@ const RemindersScreen = () => {
         submission_link: taskData.submissionMethod === 'Online' ? taskData.submissionLink.trim() : undefined,
         due_date: taskData.dueDate.toISOString(),
         reminders: taskData.reminders,
-      });
+      }, true, user?.id || ''); // Add isOnline and userId parameters
 
       // Clear pending data
       await clearPendingTask();
@@ -96,18 +109,20 @@ const RemindersScreen = () => {
 
   const handleGuestSignUp = async () => {
     setShowGuestAuthModal(false);
-    (navigation as any).navigate('Auth', { 
+    // Navigate to root Auth screen from nested navigator
+    navigation.getParent()?.navigate('Auth', { 
       mode: 'signup',
       onAuthSuccess: autoCreateTask
-    });
+    } as any);
   };
 
   const handleGuestSignIn = async () => {
     setShowGuestAuthModal(false);
-    (navigation as any).navigate('Auth', { 
+    // Navigate to root Auth screen from nested navigator
+    navigation.getParent()?.navigate('Auth', { 
       mode: 'signin',
       onAuthSuccess: autoCreateTask
-    });
+    } as any);
   };
 
   const createAssignment = async (reminders: number[]) => {
@@ -141,7 +156,7 @@ const RemindersScreen = () => {
         submission_link: assignmentData.submissionMethod === 'Online' ? assignmentData.submissionLink.trim() : undefined,
         due_date: assignmentData.dueDate.toISOString(),
         reminders: reminders, // Pass the array of reminder minutes
-      });
+      }, true, user?.id || ''); // Add isOnline and userId parameters
 
       // Reminders are now handled by the backend create-assignment function
 

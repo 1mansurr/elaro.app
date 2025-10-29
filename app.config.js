@@ -74,6 +74,13 @@ module.exports = ({ config }) => {
           ]
         }
       ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Allow $(PRODUCT_NAME) to access your photos.',
+          cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera.',
+        },
+      ],
       'expo-build-properties',
       'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin

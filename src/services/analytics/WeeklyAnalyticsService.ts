@@ -119,6 +119,7 @@ export class WeeklyAnalyticsService {
       if (sessionsError) {
         throw new AppError(
           `Failed to collect study sessions: ${sessionsError.message}`,
+          500,
           'DATA_COLLECTION_ERROR',
           { userId, weekStart, weekEnd }
         );
@@ -135,6 +136,7 @@ export class WeeklyAnalyticsService {
       if (tasksError) {
         throw new AppError(
           `Failed to collect tasks: ${tasksError.message}`,
+          500,
           'DATA_COLLECTION_ERROR',
           { userId, weekStart, weekEnd }
         );
@@ -162,6 +164,7 @@ export class WeeklyAnalyticsService {
     } catch (error) {
       throw new AppError(
         `Error collecting academic performance data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'DATA_COLLECTION_ERROR',
         { userId, weekStart, weekEnd }
       );
@@ -195,6 +198,7 @@ export class WeeklyAnalyticsService {
     } catch (error) {
       throw new AppError(
         `Error collecting time management data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'DATA_COLLECTION_ERROR',
         { userId, weekStart, weekEnd }
       );
@@ -226,11 +230,12 @@ export class WeeklyAnalyticsService {
       };
 
     } catch (error) {
-      throw new AppError(
-        `Error collecting progress tracking data: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        'DATA_COLLECTION_ERROR',
-        { userId, weekStart, weekEnd }
-      );
+        throw new AppError(
+          `Error collecting progress tracking data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          500,
+          'DATA_COLLECTION_ERROR',
+          { userId, weekStart, weekEnd }
+        );
     }
   }
 
@@ -265,6 +270,7 @@ export class WeeklyAnalyticsService {
       if (createError) {
         throw new AppError(
           `Failed to create report: ${createError.message}`,
+          500,
           'REPORT_CREATION_ERROR',
           { userId, weekStart, weekEnd }
         );
@@ -299,6 +305,7 @@ export class WeeklyAnalyticsService {
         if (updateError) {
           throw new AppError(
             `Failed to update report: ${updateError.message}`,
+            500,
             'REPORT_UPDATE_ERROR',
             { reportId: report.id }
           );
@@ -324,6 +331,7 @@ export class WeeklyAnalyticsService {
     } catch (error) {
       throw new AppError(
         `Error generating weekly report: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'REPORT_GENERATION_ERROR',
         { userId, weekStart, weekEnd }
       );
@@ -346,6 +354,7 @@ export class WeeklyAnalyticsService {
       if (error) {
         throw new AppError(
           `Failed to get user reports: ${error.message}`,
+          500,
           'REPORT_FETCH_ERROR',
           { userId }
         );
@@ -356,6 +365,7 @@ export class WeeklyAnalyticsService {
     } catch (error) {
       throw new AppError(
         `Error getting user reports: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'REPORT_FETCH_ERROR',
         { userId }
       );
@@ -379,6 +389,7 @@ export class WeeklyAnalyticsService {
       if (error && error.code !== 'PGRST116') {
         throw new AppError(
           `Failed to get latest report: ${error.message}`,
+          500,
           'LATEST_REPORT_ERROR',
           { userId }
         );
@@ -389,6 +400,7 @@ export class WeeklyAnalyticsService {
     } catch (error) {
       throw new AppError(
         `Error getting latest report: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'LATEST_REPORT_ERROR',
         { userId }
       );

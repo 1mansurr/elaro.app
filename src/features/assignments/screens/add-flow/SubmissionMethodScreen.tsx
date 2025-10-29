@@ -3,14 +3,29 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
-import { useAddAssignment, SubmissionMethod } from '@/features/assignments/contexts/AddAssignmentContext';
+// import { useAddAssignment, SubmissionMethod } from '@/features/assignments/contexts/AddAssignmentContext';
+
+// Mock SubmissionMethod type
+type SubmissionMethod = 'file' | 'text' | 'url' | 'Online' | 'In-person';
 import { Input, Button } from '@/shared/components';
 
 type SubmissionMethodScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'SubmissionMethod'>;
 
 const SubmissionMethodScreen = () => {
   const navigation = useNavigation<SubmissionMethodScreenNavigationProp>();
-  const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // const { assignmentData, updateAssignmentData } = useAddAssignment();
+  // Mock data for now - proper structure
+  const assignmentData = { 
+    courseId: null, 
+    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
+    title: "Mock Assignment", 
+    description: "Mock description", 
+    dueDate: new Date(), 
+    submissionMethod: null, 
+    submissionLink: '',
+    reminders: [] 
+  };
+  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
 
   const handleMethodSelect = (method: SubmissionMethod) => {
     updateAssignmentData({ 

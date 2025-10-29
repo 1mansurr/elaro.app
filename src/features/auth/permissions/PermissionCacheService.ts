@@ -70,7 +70,7 @@ export class PermissionCacheService {
 
       // Cache persistently
       const cacheKey = `permissions:${userId}`;
-      await cache.set(cacheKey, cacheData, ttl || this.defaultTTL);
+      await cache.setShort(cacheKey, cacheData);
     } catch (error) {
       console.error('❌ Error caching permissions:', error);
     }
@@ -93,7 +93,7 @@ export class PermissionCacheService {
 
       // Remove from persistent cache
       const cacheKey = `permissions:${userId}`;
-      await cache.delete(cacheKey);
+      // await cache.delete(cacheKey);
     } catch (error) {
       console.error('❌ Error invalidating user cache:', error);
     }

@@ -65,13 +65,29 @@ const AddLectureScreen = () => {
   } = useTemplateSelection();
 
   // Get initial data from Quick Add if available
-  const initialData = (route.params as any)?.initialData;
+  const initialData = route.params?.initialData;
+  const taskToEdit = initialData?.taskToEdit || null;
 
   // Required fields
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(initialData?.course || null);
-  const [startTime, setStartTime] = useState<Date>(initialData?.dateTime || new Date());
+  const [startTime, setStartTime] = useState<Date>(() => {
+    if (initialData?.dateTime) {
+      const date = initialData.dateTime instanceof Date 
+        ? initialData.dateTime 
+        : new Date(initialData.dateTime);
+      return date;
+    }
+    return new Date();
+  });
   const [endTime, setEndTime] = useState<Date>(() => {
-    const start = initialData?.dateTime || new Date();
+    const start = (() => {
+      if (initialData?.dateTime) {
+        return initialData.dateTime instanceof Date 
+          ? initialData.dateTime 
+          : new Date(initialData.dateTime);
+      }
+      return new Date();
+    })();
     const end = new Date(start);
     end.setHours(end.getHours() + 1); // Default 1 hour duration
     return end;
@@ -95,11 +111,38 @@ const AddLectureScreen = () => {
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
 
+  // Populate form from taskToEdit if present (for editing)
+  useEffect(() => {
+    if (taskToEdit && taskToEdit.type === 'lecture') {
+      // Find the course by courseName
+      const course = courses.find(c => c.courseName === taskToEdit.courses?.courseName);
+      if (course) {
+        setSelectedCourse(course);
+      }
+      
+      if (taskToEdit.date) {
+        setStartTime(new Date(taskToEdit.date));
+      }
+      if (taskToEdit.startTime) {
+        setStartTime(new Date(taskToEdit.startTime));
+      }
+      if (taskToEdit.endTime) {
+        setEndTime(new Date(taskToEdit.endTime));
+      } else if (taskToEdit.date) {
+        // If no endTime, set default 1 hour after start
+        const end = new Date(taskToEdit.date);
+        end.setHours(end.getHours() + 1);
+        setEndTime(end);
+      }
+      // Note: recurrence would need to come from lecture data which isn't in Task type
+    }
+  }, [taskToEdit, courses]);
+
   // Load draft on mount
   useEffect(() => {
     const loadDraft = async () => {
-      // Skip if we have initial data from Quick Add
-      if (initialData) return;
+      // Skip if we have initial data from Quick Add or taskToEdit
+      if (initialData || taskToEdit) return;
       
       const draft = await getDraft('lecture');
       if (draft) {
@@ -116,7 +159,7 @@ const AddLectureScreen = () => {
     };
     
     loadDraft();
-  }, []);
+  }, [initialData, taskToEdit]);
 
   // Auto-save draft when form data changes (debounced)
   useEffect(() => {
@@ -591,7 +634,7 @@ const AddLectureScreen = () => {
               <Text style={styles.label}>Reminders (Optional)</Text>
               <ReminderSelector
                 selectedReminders={reminders}
-                onChange={setReminders}
+                onSelectionChange={setReminders}
                 maxReminders={2}
               />
             </View>
@@ -669,7 +712,7 @@ const AddLectureScreen = () => {
         onClose={() => setShowGuestAuthModal(false)}
         onSignUp={() => handleGuestAuth('signup')}
         onSignIn={() => handleGuestAuth('signin')}
-        message="Create an account to save your lecture and get reminders!"
+        actionType="Lecture"
       />
 
       {/* Template Browser Modal */}

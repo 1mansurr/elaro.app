@@ -7,7 +7,9 @@ import { batchProcessingService } from '../analytics/BatchProcessingService';
 import { 
   INotificationDeliveryService, 
   INotificationPreferenceService, 
-  INotificationSchedulingService
+  INotificationSchedulingService,
+  NotificationType,
+  NotificationPriority
 } from './interfaces';
 
 /**
@@ -47,8 +49,8 @@ export class NotificationService {
   async initialize(): Promise<void> {
     try {
       // Set up notification categories and channels
-      await this.delivery.setupNotificationCategories();
-      await this.delivery.setupAndroidChannels();
+      await this.delivery?.setupNotificationCategories?.();
+      await this.delivery?.setupAndroidChannels?.();
       
       console.log('✅ Notification system initialized successfully');
     } catch (error) {
@@ -61,7 +63,7 @@ export class NotificationService {
    * Set navigation reference for handling notification taps
    */
   setNavigationRef(ref: any): void {
-    this.delivery.setNavigationRef(ref);
+    this.delivery?.setNavigationRef?.(ref);
   }
 
   /**
@@ -88,8 +90,8 @@ export class NotificationService {
         id: `smart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         title,
         body,
-        type,
-        priority,
+        type: type as NotificationType,
+        priority: priority as NotificationPriority,
         userId,
         data
       };

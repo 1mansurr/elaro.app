@@ -51,6 +51,9 @@ if (typeof process !== 'undefined' && process.on) {
   });
 }
 
+// Navigation ref needs to be accessible globally
+const navigationRef = React.createRef<any>();
+
 // Prevent auto-hide of splash until we're ready
 SplashScreen.preventAutoHideAsync();
 
@@ -328,9 +331,6 @@ function NotificationHandler() {
     />
   );
 }
-
-// Navigation ref needs to be accessible
-const navigationRef = useRef(null);
 
 function App() {
   const [isReady, setIsReady] = useState(false);

@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationSettings } from '../components/SimpleNotificationSettings';
 import { ScheduledNotification } from '@/services/notifications/interfaces';
@@ -35,7 +35,7 @@ export const NotificationManagementScreen: React.FC = () => {
     
     try {
       setLoading(true);
-      const notifications = await notificationService.delivery.getScheduledNotifications(user.id);
+      const notifications = await notificationService.getScheduledNotifications(user.id);
       setScheduledNotifications(notifications);
     } catch (error) {
       console.error('Error loading scheduled notifications:', error);
@@ -53,7 +53,7 @@ export const NotificationManagementScreen: React.FC = () => {
 
   const handleCancelNotification = async (notificationId: string) => {
     try {
-      await notificationService.delivery.cancelNotification(notificationId);
+      await notificationService.cancelNotification(notificationId);
       await loadScheduledNotifications();
       Alert.alert('Success', 'Notification cancelled');
     } catch (error) {

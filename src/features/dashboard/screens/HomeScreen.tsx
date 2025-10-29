@@ -172,7 +172,7 @@ const HomeScreen = () => {
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
     
-    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED, {
+    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
       task_id: selectedTask.id,
       task_type: selectedTask.type,
       task_title: selectedTask.title,
@@ -197,7 +197,9 @@ const HomeScreen = () => {
     }
     
     handleCloseSheet(); // Close the sheet first
-    (navigation as any).navigate(modalName, { taskToEdit: selectedTask });
+    navigation.navigate(modalName, { 
+      initialData: { taskToEdit: selectedTask } 
+    });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
@@ -497,7 +499,7 @@ const HomeScreen = () => {
 
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
-    <View style={styles.container}>
+    <View style={styles.container} testID="home-screen">
       {/* Header with Notification Bell */}
       {!isGuest && (
         <View style={styles.header}>

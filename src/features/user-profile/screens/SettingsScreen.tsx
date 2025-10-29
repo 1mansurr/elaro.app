@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '@/types/navigation';
 import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -91,9 +93,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ title, icon, children }) =>
   );
 };
 
+type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+
 export function SettingsScreen() {
   const { user, session, signOut } = useAuth();
-  const navigation = useNavigation();
+  const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme } = useTheme();
   const queryClient = useQueryClient();
   
@@ -124,11 +128,11 @@ export function SettingsScreen() {
   };
 
   const handleEnableMfa = () => {
-    (navigation as any).navigate('MfaSetup');
+    navigation.navigate('MFAEnrollmentScreen');
   };
 
   const handleEditProfile = () => {
-    (navigation as any).navigate('Profile');
+    navigation.navigate('Profile');
   };
 
   const handleChangePassword = () => {
@@ -333,11 +337,11 @@ export function SettingsScreen() {
   }, [user, queryClient]);
 
   const handleViewDeviceManagement = () => {
-    (navigation as any).navigate('DeviceManagement');
+    navigation.navigate('DeviceManagement');
   };
 
   const handleViewLoginHistory = () => {
-    (navigation as any).navigate('LoginHistory');
+    navigation.navigate('LoginHistory');
   };
 
   const handleResetSettings = useCallback(async () => {
@@ -590,7 +594,7 @@ export function SettingsScreen() {
                 label="Recycle Bin"
                 description="View and restore deleted items"
                 icon="trash-outline"
-                onPress={() => (navigation as any).navigate('RecycleBin')}
+                onPress={() => navigation.navigate('RecycleBin')}
               />
             )}
             {filterText('logout sign out') && (
@@ -625,7 +629,7 @@ export function SettingsScreen() {
               label="Delete Account"
               description="Permanently delete your account and all data"
               icon="trash-bin-outline"
-              onPress={() => (navigation as any).navigate('DeleteAccount')}
+              onPress={() => navigation.navigate('DeleteAccountScreen')}
               isDestructive
             />
           </View>

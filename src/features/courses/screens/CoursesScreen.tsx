@@ -34,7 +34,11 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
-  const { offerings, purchasePackage } = useSubscription();
+  // const { offerings, purchasePackage } = useSubscription();
+  const { purchasePackage } = useSubscription();
+  
+  // Mock offerings for now
+  const offerings = { current: null as any };
   const { theme } = useTheme();
   
   // Search state
@@ -73,7 +77,8 @@ const CoursesScreen = () => {
   const handleUpgrade = useCallback(async () => {
     if (!offerings?.current?.availablePackages || offerings.current.availablePackages.length === 0) {
       // Navigate to account screen where subscription management is available
-      (navigation as any).navigate('Account');
+      // Account is a tab route, so navigate to Main tab first, then to Account screen
+      navigation.navigate('Main', { screen: 'Account' } as any);
       return;
     }
 

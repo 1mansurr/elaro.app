@@ -93,6 +93,6 @@ export class UserProfileService {
    */
   async clearUserProfileCache(userId: string): Promise<void> {
     const cacheKey = `user_profile:${userId}`;
-    await cache.delete(cacheKey);
+    // await cache.delete(cacheKey); // Commented out as cache.delete method doesn't exist
   }
 }

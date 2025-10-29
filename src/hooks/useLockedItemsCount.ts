@@ -29,9 +29,8 @@ export const useLockedItemsCount = (itemType: ItemType) => {
 
   return useQuery({
     queryKey: ['totalItemCount', itemType, user?.id],
-    queryFn: () => fetchTotalItemCount(itemType, user!.id),
-    enabled: !!user,
-    select: async (totalCount) => {
+    queryFn: async () => {
+      const totalCount = await fetchTotalItemCount(itemType, user!.id);
       const premium = await isPremium();
       if (premium) {
         return { totalCount, lockedCount: 0 }; // No locked items for premium users
@@ -41,6 +40,7 @@ export const useLockedItemsCount = (itemType: ItemType) => {
       const lockedCount = Math.max(0, totalCount - limit);
       return { totalCount, lockedCount };
     },
+    enabled: !!user,
   });
 };
 

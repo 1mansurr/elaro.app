@@ -13,6 +13,9 @@ module.exports = function (api) {
           }
         }
       ],
+      // Add these plugins for better Jest compatibility
+      ['@babel/plugin-transform-modules-commonjs', { loose: true }],
+      ['@babel/plugin-transform-export-namespace-from'],
       // This plugin is required for react-native-reanimated v2+
       // Must be last in the plugins array
       'react-native-reanimated/plugin',

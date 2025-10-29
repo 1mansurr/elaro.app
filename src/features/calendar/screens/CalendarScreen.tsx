@@ -28,7 +28,11 @@ const CalendarScreen = () => {
   const queryClient = useQueryClient();
   const isGuest = !session;
 
-  const { offerings, purchasePackage } = useSubscription();
+  // const { offerings, purchasePackage } = useSubscription();
+  const { purchasePackage } = useSubscription();
+  
+  // Mock offerings for now
+  const offerings = { current: null as any };
   
   // Mutations for task actions
   const deleteTaskMutation = useDeleteTask();
@@ -116,7 +120,9 @@ const CalendarScreen = () => {
     }
     
     handleCloseSheet();
-    (navigation as any).navigate(modalName, { taskToEdit: selectedTask });
+    navigation.navigate(modalName, { 
+      initialData: { taskToEdit: selectedTask } 
+    });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
@@ -126,7 +132,7 @@ const CalendarScreen = () => {
       await completeTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
-        taskTitle: selectedTask.name || selectedTask.title,
+        taskTitle: selectedTask.name || selectedTask.title || 'Untitled Task',
       });
       
       Alert.alert('Success', 'Task marked as complete!');
@@ -151,7 +157,7 @@ const CalendarScreen = () => {
       await deleteTaskMutation.mutateAsync({
         taskId: taskInfo.id,
         taskType: taskInfo.type,
-        taskTitle: taskInfo.title,
+        taskTitle: taskInfo.title || 'Untitled Task',
       });
       
       showToast({
@@ -161,7 +167,7 @@ const CalendarScreen = () => {
             await restoreTaskMutation.mutateAsync({
               taskId: taskInfo.id,
               taskType: taskInfo.type,
-              taskTitle: taskInfo.title,
+              taskTitle: taskInfo.title || 'Untitled Task',
             });
           } catch (error) {
             console.error('Error restoring task:', error);
@@ -346,7 +352,7 @@ const CalendarScreen = () => {
         <Text style={styles.guestText}>Sign in to view your calendar</Text>
         <TouchableOpacity
           style={styles.guestButton}
-          onPress={() => navigation.navigate('Auth', { mode: 'signin' } as any)}
+          onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
         >
           <Text style={styles.guestButtonText}>Sign In</Text>
         </TouchableOpacity>

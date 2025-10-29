@@ -38,7 +38,7 @@ export class AuthAnalyticsService {
    */
   identifyUser(user: User): void {
     try {
-      mixpanelService.identifyUser(user.id);
+      mixpanelService.identify(user.id);
       mixpanelService.setUserProperties({
         subscription_tier: user.subscription_tier,
         onboarding_completed: user.onboarding_completed,

@@ -86,18 +86,20 @@ const AddLectureRemindersScreen = () => {
   // Add modal handlers
   const handleGuestSignUp = async () => {
     setShowGuestAuthModal(false);
-    (navigation as any).navigate('Auth', { 
+    // Navigate to root Auth screen from nested navigator
+    navigation.getParent()?.navigate('Auth', { 
       mode: 'signup',
       onAuthSuccess: autoCreateTask
-    });
+    } as any);
   };
 
   const handleGuestSignIn = async () => {
     setShowGuestAuthModal(false);
-    (navigation as any).navigate('Auth', { 
+    // Navigate to root Auth screen from nested navigator
+    navigation.getParent()?.navigate('Auth', { 
       mode: 'signin',
       onAuthSuccess: autoCreateTask
-    });
+    } as any);
   };
 
   const handleFinish = async () => {

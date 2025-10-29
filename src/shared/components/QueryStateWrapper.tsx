@@ -203,16 +203,18 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
     // Wrap children in ScrollView with RefreshControl
     return (
       <View style={{ flex: 1, backgroundColor: theme.background }}>
-        {React.cloneElement(children as React.ReactElement, {
-          refreshControl: (
+        <ScrollView
+          refreshControl={
             <RefreshControl
               refreshing={isRefetching}
               onRefresh={onRefresh}
               tintColor={theme.accent}
               colors={[theme.accent]}
             />
-          ),
-        })}
+          }
+        >
+          {children}
+        </ScrollView>
       </View>
     );
   }

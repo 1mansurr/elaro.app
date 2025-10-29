@@ -55,13 +55,13 @@ const TemplatesScreen = () => {
     // Navigate to appropriate modal based on task type
     switch (template.task_type) {
       case 'assignment':
-        navigation.navigate('AddAssignmentFlow', { initialData } as any);
+        navigation.navigate('AddAssignmentFlow', { initialData });
         break;
       case 'lecture':
-        navigation.navigate('AddLectureFlow', { initialData } as any);
+        navigation.navigate('AddLectureFlow', { initialData });
         break;
       case 'study_session':
-        navigation.navigate('AddStudySessionFlow', { initialData } as any);
+        navigation.navigate('AddStudySessionFlow', { initialData });
         break;
     }
   };
@@ -202,7 +202,7 @@ const TemplatesScreen = () => {
         ListEmptyComponent={renderEmpty}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            refreshing={isRefetching}
             onRefresh={handleRefresh}
             tintColor={COLORS.primary}
           />

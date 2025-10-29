@@ -69,7 +69,7 @@ jest.mock('@supabase/supabase-js', () => ({
     })),
     auth: {
       getUser: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
-      signInWithPassword: jest.fn(() => Promise.resolve({ data: { user: null }, error: null }, error: null)),
+      signInWithPassword: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
       signUp: jest.fn(() => Promise.resolve({ data: { user: null }, error: null })),
       signOut: jest.fn(() => Promise.resolve({ error: null })),
     },

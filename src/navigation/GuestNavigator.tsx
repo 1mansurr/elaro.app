@@ -28,28 +28,43 @@ const sharedScreenOptions = {
   headerShown: false,
 };
 
+// Typed screen configuration interface
+type ScreenConfig = {
+  component: React.ComponentType<any>;
+  options?: any;
+};
+
+// Type-safe screens configuration
+type ScreensConfig = Partial<Record<keyof RootStackParamList, ScreenConfig>>;
+
 // Modal flows available to guest users
-const guestModalFlows = {
+const guestModalFlows: ScreensConfig = {
   InAppBrowserScreen: { 
     component: InAppBrowserScreen,
     options: { presentation: 'modal' as const, headerShown: false }
   },
 };
 
-// Helper function to render screens
-const renderScreens = (screens: Record<string, any>) => {
-  return Object.entries(screens).map(([name, config]) => (
-    <Stack.Screen 
-      key={name} 
-      name={name as any} 
-      component={config.component} 
-      options={config.options || {}}
-    />
-  ));
+// Helper function to render screens with type safety
+const renderScreens = (screens: ScreensConfig) => {
+  return Object.entries(screens).map(([name, config]) => {
+    // Type narrowing: ensure name is a valid route
+    const routeName = name as keyof RootStackParamList;
+    if (!config) return null;
+    
+    return (
+      <Stack.Screen 
+        key={name} 
+        name={routeName}
+        component={config.component} 
+        options={config.options || {}}
+      />
+    );
+  }).filter(Boolean); // Remove any null entries
 };
 
 // Guest screens configuration
-const guestScreens = {
+const guestScreens: ScreensConfig = {
   GuestHome: { 
     component: GuestHomeScreen,
     options: {
@@ -83,14 +98,20 @@ export const GuestNavigator: React.FC = () => {
             }}
           />
           
-          {Object.entries(guestModalFlows).map(([name, config]) => (
-            <Stack.Screen 
-              key={name} 
-              name={name as any} 
-              component={config.component} 
-              options={config.options}
-            />
-          ))}
+          {Object.entries(guestModalFlows).map(([name, config]) => {
+            // Type narrowing: ensure name is a valid route
+            const routeName = name as keyof RootStackParamList;
+            if (!config) return null;
+            
+            return (
+              <Stack.Screen 
+                key={name} 
+                name={routeName}
+                component={config.component} 
+                options={config.options}
+              />
+            );
+          }).filter(Boolean)}
         </Stack.Group>
       </Stack.Navigator>
     </Suspense>

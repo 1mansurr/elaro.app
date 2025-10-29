@@ -175,14 +175,15 @@ export class TaskDependencyService {
 
       if (assignmentDeps) {
         for (const dep of assignmentDeps) {
+          const assignment = Array.isArray(dep.assignments) ? dep.assignments[0] : dep.assignments;
           dependentTasks.push({
-            id: dep.assignments.id,
+            id: assignment?.id,
             type: 'assignment',
-            title: dep.assignments.title,
+            title: assignment?.title,
             status: 'available', // Simplified
             dependencies: [],
             dependentTasks: [],
-            dueDate: dep.assignments.due_date,
+            dueDate: assignment?.due_date,
           });
         }
       }

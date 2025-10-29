@@ -5,6 +5,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
 import { supabase } from './supabase';
+import { NotificationPreferenceService } from '@/services/notifications/NotificationPreferenceService';
+import { SimpleNotificationPreferences, SimpleNotificationPreferencesUpdate } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
+import { NotificationPreferences } from '@/services/notifications/interfaces/INotificationPreferenceService';
 
 // Navigation reference for handling notification taps
 let navigationRef: any = null;
@@ -415,4 +418,117 @@ export const notificationService = {
       trigger: null,
     });
   },
+
+  // Preferences proxy exposing a simplified interface used by UI components
+  preferences: {
+    async getUserPreferences(userId: string): Promise<SimpleNotificationPreferences> {
+      const svc = NotificationPreferenceService.getInstance();
+      const fullPrefs = await svc.getUserPreferences(userId);
+      return mapFullToSimple(userId, fullPrefs);
+    },
+
+    async updateUserPreferences(userId: string, update: SimpleNotificationPreferencesUpdate): Promise<void> {
+      const svc = NotificationPreferenceService.getInstance();
+      const fullUpdate = mapSimpleUpdateToFull(update);
+      await svc.updatePreferences(userId, fullUpdate);
+    },
+  },
+
+  async getScheduledNotifications(userId: string) {
+    // Proxy to delivery service if available, otherwise return empty array
+    try {
+      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      return notifications.map(notif => ({
+        id: notif.identifier,
+        title: notif.content.title || '',
+        body: notif.content.body || '',
+        scheduledFor: notif.trigger ? new Date(notif.trigger as any) : new Date(),
+        category: notif.content.data?.category || 'reminder',
+      }));
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  },
+
+  async cancelNotification(notificationId: string) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+    } catch (error) {
+      console.error('Error cancelling notification:', error);
+      throw error;
+    }
+  },
+
+  async sendSmartNotification(userId: string, title: string, body: string, type: string, priority: string) {
+    // Use the existing sendTestNotification for now
+    try {
+      await this.sendTestNotification();
+      return true;
+    } catch (error) {
+      console.error('Error sending smart notification:', error);
+      return false;
+    }
+  },
 };
+
+// ======================
+// Mapping helpers
+// ======================
+function mapFullToSimple(userId: string, prefs: NotificationPreferences): SimpleNotificationPreferences {
+  return {
+    enabled: prefs.masterToggle && !prefs.doNotDisturb,
+    reminders: prefs.notificationTypes.reminders || prefs.notificationTypes.srs,
+    assignments: prefs.notificationTypes.assignments,
+    lectures: prefs.notificationTypes.lectures,
+    studySessions: prefs.notificationTypes.srs,
+    dailySummaries: prefs.notificationTypes.dailySummaries,
+    marketing: prefs.notificationTypes.marketing,
+    quietHours: {
+      enabled: prefs.quietHours.enabled,
+      start: prefs.quietHours.start,
+      end: prefs.quietHours.end,
+    },
+    userId,
+    updatedAt: prefs.updatedAt,
+  };
+}
+
+function mapSimpleUpdateToFull(update: SimpleNotificationPreferencesUpdate): Partial<NotificationPreferences> {
+  const full: Partial<NotificationPreferences> = {} as any;
+
+  if (update.enabled !== undefined) {
+    full.masterToggle = update.enabled;
+    // Do not change doNotDisturb automatically
+  }
+
+  if (
+    update.reminders !== undefined ||
+    update.assignments !== undefined ||
+    update.lectures !== undefined ||
+    update.studySessions !== undefined ||
+    update.dailySummaries !== undefined ||
+    update.marketing !== undefined
+  ) {
+    full.notificationTypes = {
+      reminders: update.reminders ?? undefined as any,
+      achievements: undefined as any,
+      updates: undefined as any,
+      marketing: update.marketing ?? undefined as any,
+      assignments: update.assignments ?? undefined as any,
+      lectures: update.lectures ?? undefined as any,
+      srs: update.studySessions ?? (update.reminders as any),
+      dailySummaries: update.dailySummaries ?? undefined as any,
+    } as any;
+  }
+
+  if (update.quietHours) {
+    full.quietHours = {
+      enabled: update.quietHours.enabled ?? undefined as any,
+      start: update.quietHours.start ?? undefined as any,
+      end: update.quietHours.end ?? undefined as any,
+    } as any;
+  }
+
+  return full;
+}

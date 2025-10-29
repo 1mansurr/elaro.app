@@ -16,6 +16,7 @@ interface SRSReviewCardProps {
   topic: string;
   reminderId?: string;
   onComplete?: () => void;
+  onStudyComplete?: (sessionId: string) => void; // Callback to navigate to StudyResult screen
 }
 
 export function SRSReviewCard({
@@ -23,6 +24,7 @@ export function SRSReviewCard({
   topic,
   reminderId,
   onComplete,
+  onStudyComplete,
 }: SRSReviewCardProps) {
   const { theme } = useTheme();
   const [loading, setLoading] = useState(false);
@@ -54,6 +56,10 @@ export function SRSReviewCard({
               text: 'OK',
               onPress: () => {
                 onComplete?.();
+                // Navigate to StudyResult screen if callback provided
+                if (onStudyComplete) {
+                  onStudyComplete(sessionId);
+                }
               },
             },
           ]

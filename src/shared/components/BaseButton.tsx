@@ -4,6 +4,7 @@ import {
   ViewStyle,
   ActivityIndicator,
   View,
+  StyleProp,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
@@ -12,7 +13,7 @@ interface BaseButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
   accessibilityHint?: string;
   hapticFeedback?: boolean;

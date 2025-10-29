@@ -13,7 +13,7 @@ const GuestHomeScreen: React.FC = () => {
   const navigation = useNavigation<GuestHomeScreenNavigationProp>();
 
   const handleGetStarted = () => {
-    navigation.navigate('Auth');
+    navigation.navigate('Auth', { mode: 'signin' });
   };
 
   const handleLearnMore = () => {
@@ -22,7 +22,10 @@ const GuestHomeScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={styles.contentContainer}
+      testID="guest-home-screen">
       <View style={styles.header}>
         <Text style={styles.title}>Welcome to ELARO</Text>
         <Text style={styles.subtitle}>
@@ -57,11 +60,17 @@ const GuestHomeScreen: React.FC = () => {
       </View>
 
       <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.primaryButton} onPress={handleGetStarted}>
+        <TouchableOpacity 
+          style={styles.primaryButton} 
+          onPress={handleGetStarted}
+          testID="get-started-button">
           <Text style={styles.primaryButtonText}>Get Started</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} onPress={handleLearnMore}>
+        <TouchableOpacity 
+          style={styles.secondaryButton} 
+          onPress={handleLearnMore}
+          testID="learn-more-button">
           <Text style={styles.secondaryButtonText}>Learn More</Text>
         </TouchableOpacity>
       </View>
@@ -90,14 +99,14 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.text.primary,
+    fontWeight: (FONT_WEIGHTS.bold as any),
+    color: COLORS.textPrimary,
     textAlign: 'center',
     marginBottom: SPACING.md,
   },
   subtitle: {
     fontSize: FONT_SIZES.lg,
-    color: COLORS.text.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -113,14 +122,14 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text.primary,
+    fontWeight: (FONT_WEIGHTS.semibold as any),
+    color: COLORS.textPrimary,
     marginTop: SPACING.sm,
     marginBottom: SPACING.xs,
   },
   featureDescription: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.text.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },
@@ -138,7 +147,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontWeight: (FONT_WEIGHTS.semibold as any),
   },
   secondaryButton: {
     borderColor: COLORS.primary,
@@ -151,14 +160,14 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: COLORS.primary,
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold,
+    fontWeight: (FONT_WEIGHTS.semibold as any),
   },
   footer: {
     alignItems: 'center',
   },
   footerText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.text.secondary,
+    color: COLORS.textSecondary,
     textAlign: 'center',
     lineHeight: 18,
   },

@@ -15,9 +15,10 @@ type HomeScreenFABNavigationProp = StackNavigationProp<RootStackParamList, 'Main
 
 interface HomeScreenFABProps {
   onStateChange: (state: { isOpen: boolean }) => void;
+  onQuickAddPress?: () => void; // Callback for quick add modal (optional)
 }
 
-export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange }) => {
+export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange, onQuickAddPress }) => {
   const navigation = useNavigation<HomeScreenFABNavigationProp>();
   const { session } = useAuth();
   const isGuest = !session;
@@ -50,27 +51,31 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange }) =
   };
 
   const handleQuickAdd = () => {
-    // Navigate to quick add modal
-    navigation.navigate('QuickAddModal' as any);
+    // Use callback if provided (preferred pattern for modals)
+    // Otherwise do nothing (QuickAddModal is controlled by parent component state)
+    if (onQuickAddPress) {
+      onQuickAddPress();
+    }
+    // Note: QuickAddModal is not a navigation route - it's a state-controlled component
   };
 
   const fabActions = [
     {
       icon: 'book-outline' as any,
       label: 'Add Course',
-      onPress: () => navigation.navigate('AddCourseFlow' as any),
+      onPress: () => navigation.navigate('AddCourseFlow'),
       backgroundColor: COLORS.primary,
     },
     {
       icon: 'calendar-outline' as any,
       label: 'Add Assignment',
-      onPress: () => navigation.navigate('AddAssignmentFlow' as any),
+      onPress: () => navigation.navigate('AddAssignmentFlow'),
       backgroundColor: COLORS.secondary,
     },
     {
       icon: 'time-outline' as any,
       label: 'Add Study Session',
-      onPress: () => navigation.navigate('AddStudySessionFlow' as any),
+      onPress: () => navigation.navigate('AddStudySessionFlow'),
       backgroundColor: COLORS.success,
     },
   ];

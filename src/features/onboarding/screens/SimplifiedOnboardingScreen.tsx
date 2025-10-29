@@ -5,7 +5,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { Button } from '@/shared/components';
+import { PrimaryButton, SecondaryButton, OutlineButton } from '@/shared/components';
 
 type SimplifiedOnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OnboardingFlow'>;
 
@@ -114,7 +114,7 @@ const WelcomeStep: React.FC<{
     <Text style={styles.stepDescription}>
       Your personal academic companion for managing courses, assignments, and study sessions.
     </Text>
-    <Button.Primary
+    <PrimaryButton
       title="Get Started"
       onPress={() => onNext({})}
     />
@@ -146,12 +146,12 @@ const ProfileStep: React.FC<{
 
     <View style={styles.buttonContainer}>
       {canGoBack && (
-        <Button.Secondary
+        <SecondaryButton
           title="Back"
           onPress={onBack}
         />
       )}
-      <Button.Primary
+      <PrimaryButton
         title="Continue"
         onPress={() => onNext({ firstName: 'John', lastName: 'Doe', university: 'Example University' })}
       />
@@ -179,12 +179,12 @@ const CourseStep: React.FC<{
 
     <View style={styles.buttonContainer}>
       {canGoBack && (
-        <Button.Secondary
+        <SecondaryButton
           title="Back"
           onPress={onBack}
         />
       )}
-      <Button.Primary
+      <PrimaryButton
         title="Complete Setup"
         onPress={() => onNext({ courses: ['CS101', 'MATH201', 'PHYS301'] })}
       />

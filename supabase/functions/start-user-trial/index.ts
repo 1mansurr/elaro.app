@@ -22,6 +22,7 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
   // Only start a trial if the user is currently on the 'free' tier.
   // This prevents re-starting trials for users who already have one or are paying.
   if (userProfile.subscription_tier === 'free') {
+    const trialStartDate = new Date();
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + 7);
 
@@ -31,6 +32,7 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
         subscription_tier: 'oddity',
         subscription_status: 'trialing',
         subscription_expires_at: trialEndDate.toISOString(),
+        trial_start_date: trialStartDate.toISOString(),
       })
       .eq('id', user.id);
 
@@ -38,10 +40,11 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
       throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
     }
 
-    console.log(`Trial started successfully for user: ${user.id}, expires: ${trialEndDate.toISOString()}`);
+    console.log(`Trial started successfully for user: ${user.id}, started: ${trialStartDate.toISOString()}, expires: ${trialEndDate.toISOString()}`);
     return { 
       success: true, 
       message: 'Trial started successfully.',
+      trial_start_date: trialStartDate.toISOString(),
       trial_expires_at: trialEndDate.toISOString()
     };
   }

@@ -1,3 +1,13 @@
+/**
+ * @deprecated This screen is not registered in the navigation structure.
+ * The route 'TaskCreationFlow' has been removed from RootStackParamList.
+ * 
+ * This file is kept for reference but should not be used for navigation.
+ * Consider using AddAssignmentFlow, AddLectureFlow, or AddStudySessionFlow instead.
+ * 
+ * Removed on: Navigation Audit - Pass 2 Fixes
+ */
+
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -5,10 +15,11 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
 import { DESIGN_SYSTEM, VISUAL_HIERARCHY } from '@/constants/designSystem';
-import { Button } from '@/shared/components';
+import { PrimaryButton, SecondaryButton, OutlineButton } from '@/shared/components';
 import { HeaderSection, ContentSection, ActionSection } from '@/shared/components/LayoutComponents';
 
-type TaskCreationFlowNavigationProp = StackNavigationProp<RootStackParamList, 'TaskCreationFlow'>;
+// Note: TaskCreationFlow is not in RootStackParamList anymore
+type TaskCreationFlowNavigationProp = StackNavigationProp<RootStackParamList>;
 
 interface TaskCreationData {
   type: 'assignment' | 'lecture' | 'study_session';
@@ -108,11 +119,11 @@ const TaskCreationFlow: React.FC = () => {
 
       <ActionSection>
         <View style={styles.buttonContainer}>
-          <Button.Secondary
+          <SecondaryButton
             title="Back"
             onPress={handleBack}
           />
-          <Button.Primary
+          <PrimaryButton
             title={currentStep === steps.length - 1 ? 'Create Task' : 'Next'}
             onPress={() => handleNext({})}
           />
@@ -136,17 +147,17 @@ const TaskTypeStep: React.FC<{
     </Text>
     
     <View style={styles.optionContainer}>
-      <Button.Outline
+      <OutlineButton
         title="📚 Assignment"
         onPress={() => onNext({ type: 'assignment' })}
         style={data.type === 'assignment' ? styles.selectedOption : undefined}
       />
-      <Button.Outline
+      <OutlineButton
         title="🎓 Lecture"
         onPress={() => onNext({ type: 'lecture' })}
         style={data.type === 'lecture' ? styles.selectedOption : undefined}
       />
-      <Button.Outline
+      <OutlineButton
         title="📖 Study Session"
         onPress={() => onNext({ type: 'study_session' })}
         style={data.type === 'study_session' ? styles.selectedOption : undefined}

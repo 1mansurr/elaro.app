@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from '
 import { Button, QueryStateWrapper } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { CommonActions } from '@react-navigation/native';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useCourses } from '@/hooks/useDataQueries';
 import { supabase } from '@/services/supabase';
@@ -90,7 +91,13 @@ const OnboardingCoursesScreen = () => {
       Alert.alert('Setup Complete!', message);
       
       // Navigate to main app after successful onboarding completion
-      navigation.replace('Main');
+      // Use CommonActions.reset() to properly reset navigation stack from nested navigator
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        })
+      );
 
     } catch (error: any) {
       console.error('Onboarding completion error:', error);

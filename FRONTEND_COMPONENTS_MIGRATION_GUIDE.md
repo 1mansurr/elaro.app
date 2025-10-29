@@ -27,10 +27,10 @@ This guide helps developers migrate from the old complex components to the new s
 ### New Simplified Button
 ```typescript
 // NEW - Simple and focused
-import { Button } from '@/shared/components';
+import { PrimaryButton, SecondaryButton, OutlineButton } from '@/shared/components';
 
 // Primary button (most common)
-<Button.Primary
+<PrimaryButton
   title="Save"
   onPress={handleSave}
   loading={false}
@@ -38,25 +38,25 @@ import { Button } from '@/shared/components';
 />
 
 // Secondary button
-<Button.Secondary
+<SecondaryButton
   title="Cancel"
   onPress={handleCancel}
 />
 
 // Outline button
-<Button.Outline
+<OutlineButton
   title="Learn More"
   onPress={handleLearnMore}
 />
 
 // Danger button
-<Button.Danger
+<DangerButton
   title="Delete"
   onPress={handleDelete}
 />
 
 // Ghost button
-<Button.Ghost
+<GhostButton
   title="Skip"
   onPress={handleSkip}
 />
@@ -68,7 +68,84 @@ import { Button } from '@/shared/components';
 3. **Use appropriate variant** for the action type
 4. **Keep only essential props** (title, onPress, loading, disabled)
 
-## 2. Input Component Migration
+## 2. Modal Component Migration
+
+### Old Custom Modal Implementation
+```typescript
+// OLD - Custom modal with manual backdrop handling
+import { Modal } from 'react-native';
+
+<Modal
+  visible={isVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={onClose}
+>
+  <TouchableOpacity
+    style={styles.modalOverlay}
+    activeOpacity={1}
+    onPress={onClose}
+  >
+    <View style={styles.modalContent}>
+      {/* Content */}
+    </View>
+  </TouchableOpacity>
+</Modal>
+```
+
+### New Standardized Modal Variants
+```typescript
+// NEW - Standardized modal variants with consistent animations
+import { DialogModal, SheetModal, SimpleModal, FullScreenModal } from '@/shared/components';
+
+// Dialog modal (centered with blur backdrop)
+<DialogModal
+  isVisible={isVisible}
+  onClose={onClose}
+>
+  <View style={styles.content}>
+    {/* Content */}
+  </View>
+</DialogModal>
+
+// Sheet modal (slides up from bottom)
+<SheetModal
+  isVisible={isVisible}
+  onClose={onClose}
+>
+  <View style={styles.content}>
+    {/* Content */}
+  </View>
+</SheetModal>
+
+// Simple modal (centered with opacity backdrop)
+<SimpleModal
+  isVisible={isVisible}
+  onClose={onClose}
+>
+  <View style={styles.content}>
+    {/* Content */}
+  </View>
+</SimpleModal>
+
+// Full screen modal (takes entire screen)
+<FullScreenModal
+  isVisible={isVisible}
+  onClose={onClose}
+>
+  <View style={styles.content}>
+    {/* Content */}
+  </View>
+</FullScreenModal>
+```
+
+### Modal Migration Benefits
+- **Consistent Animations**: All modals use standardized 300ms animations
+- **Proper Backdrop Types**: Blur for dialogs, opacity for sheets
+- **Reduced Code**: No need for manual backdrop handling
+- **Better UX**: Consistent behavior across the app
+
+## 3. Input Component Migration
 
 ### Old Input (392 lines with complex animations)
 ```typescript
@@ -140,7 +217,7 @@ const themedStyles = useThemedStyles((theme) => ({
 }));
 
 // Use static styles when possible
-import { COMPONENT_STYLES } from '@/constants/components';
+import { COMPONENT_PATTERNS } from '@/constants/theme';
 
 const staticStyles = COMPONENT_STYLES.button.base;
 ```

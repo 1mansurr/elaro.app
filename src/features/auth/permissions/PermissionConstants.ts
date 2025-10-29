@@ -36,6 +36,12 @@ export const PERMISSIONS = {
   DELETE_COURSE: { resource: 'courses', action: 'delete' },
   VIEW_COURSE: { resource: 'courses', action: 'view' },
 
+  // Generic task permissions
+  CREATE_TASK: { resource: 'tasks', action: 'create' },
+  EDIT_TASK: { resource: 'tasks', action: 'update' },
+  DELETE_TASK: { resource: 'tasks', action: 'delete' },
+  VIEW_TASK: { resource: 'tasks', action: 'view' },
+
   // Premium features
   VIEW_PREMIUM_FEATURES: { resource: 'premium', action: 'view' },
   UNLIMITED_TASKS: { resource: 'tasks', action: 'unlimited' },
@@ -85,7 +91,12 @@ export const ROLES: Record<string, UserRole> = {
     name: 'premium_user',
     subscriptionTier: 'oddity',
     permissions: [
-      ...ROLES.FREE_USER.permissions,
+      PERMISSIONS.VIEW_COURSE,
+      PERMISSIONS.CREATE_TASK,
+      PERMISSIONS.EDIT_TASK,
+      PERMISSIONS.DELETE_TASK,
+      PERMISSIONS.VIEW_TASK,
+      PERMISSIONS.MANAGE_NOTIFICATIONS,
       PERMISSIONS.VIEW_PREMIUM_FEATURES,
       PERMISSIONS.UNLIMITED_TASKS,
       PERMISSIONS.ADVANCED_ANALYTICS,
@@ -102,7 +113,19 @@ export const ROLES: Record<string, UserRole> = {
       PERMISSIONS.ADMIN_ACCESS,
       PERMISSIONS.VIEW_ALL_USERS,
       PERMISSIONS.MANAGE_SYSTEM,
-      ...ROLES.PREMIUM_USER.permissions,
+      PERMISSIONS.VIEW_COURSE,
+      PERMISSIONS.CREATE_TASK,
+      PERMISSIONS.EDIT_TASK,
+      PERMISSIONS.DELETE_TASK,
+      PERMISSIONS.VIEW_TASK,
+      PERMISSIONS.MANAGE_NOTIFICATIONS,
+      PERMISSIONS.VIEW_PREMIUM_FEATURES,
+      PERMISSIONS.UNLIMITED_TASKS,
+      PERMISSIONS.ADVANCED_ANALYTICS,
+      PERMISSIONS.EXPORT_DATA,
+      PERMISSIONS.CREATE_SRS_REMINDERS,
+      PERMISSIONS.UNLIMITED_SRS_REMINDERS,
+      PERMISSIONS.PUSH_NOTIFICATIONS,
     ],
   },
 };

@@ -1,4 +1,4 @@
-import { supabase } from '../../supabase';
+import { supabase } from '@/services/supabase';
 import { 
   INotificationSchedulingService, 
   Notification, 
@@ -112,7 +112,9 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
       // Get user preferences
       const preferences = await this.preferenceService.getUserPreferences(userId);
       
-      if (preferences.frequency.type === 'batched') {
+      // Prefer summaries/reminders/update settings to infer batching behavior
+      const isBatched = (preferences.frequency as any).summaries === 'weekly' || (preferences.frequency as any).summaries === 'daily';
+      if (isBatched) {
         // Group notifications by type and priority
         const grouped = this.groupNotificationsByType(notifications);
         
@@ -126,7 +128,7 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
             title: this.getBatchedTitle(type, groupNotifications.length),
             body: this.getBatchedBody(groupNotifications),
             type: groupNotifications[0].type,
-            priority: this.getHighestPriority(groupNotifications),
+            priority: this.getHighestPriority(groupNotifications) as any,
             userId,
             scheduledFor: optimalTime,
             data: {
@@ -445,11 +447,11 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
   /**
    * Get highest priority from a group of notifications
    */
-  private getHighestPriority(notifications: Notification[]): string {
-    const priorityOrder = { 'urgent': 4, 'high': 3, 'normal': 2, 'low': 1 };
+  private getHighestPriority(notifications: Notification[]): 'urgent' | 'high' | 'normal' | 'low' {
+    const priorityOrder: Record<'urgent' | 'high' | 'normal' | 'low', number> = { urgent: 4, high: 3, normal: 2, low: 1 };
     return notifications.reduce((highest, current) => 
-      priorityOrder[current.priority] > priorityOrder[highest.priority] ? current : highest
-    ).priority;
+      priorityOrder[current.priority as 'urgent' | 'high' | 'normal' | 'low'] > priorityOrder[highest as 'urgent' | 'high' | 'normal' | 'low'] ? current.priority : highest
+    , 'normal' as 'urgent' | 'high' | 'normal' | 'low');
   }
 
   /**
@@ -511,8 +513,9 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
   /**
    * Get priority as number for database storage
    */
-  private getPriorityNumber(priority: string): number {
-    const priorityMap = { 'urgent': 1, 'high': 2, 'normal': 3, 'low': 4 };
-    return priorityMap[priority] || 3;
+  private getPriorityNumber(priority: 'urgent' | 'high' | 'normal' | 'low' | string): number {
+    const priorityMap: Record<'urgent' | 'high' | 'normal' | 'low', number> = { urgent: 1, high: 2, normal: 3, low: 4 };
+    const key = (['urgent','high','normal','low'].includes(priority) ? priority : 'normal') as 'urgent' | 'high' | 'normal' | 'low';
+    return priorityMap[key];
   }
 }

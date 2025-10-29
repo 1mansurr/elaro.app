@@ -43,6 +43,7 @@ interface ButtonProps {
   hapticFeedback?: boolean;
   accessibilityLabel?: string;
   accessibilityHint?: string;
+  testID?: string;
 }
 
 const getStyles = (theme: any) => {
@@ -159,6 +160,7 @@ export const Button: React.FC<ButtonProps> = ({
   hapticFeedback = true,
   accessibilityLabel,
   accessibilityHint,
+  testID,
 }) => {
   const { theme } = useTheme();
   const styles = getStyles(theme);
@@ -224,6 +226,7 @@ export const Button: React.FC<ButtonProps> = ({
         accessibilityHint={accessibilityHint}
         accessibilityRole="button"
         accessibilityState={{ disabled: disabled || loading }}
+        testID={testID}
       >
         <LinearGradient
           colors={finalGradientColors}
@@ -254,6 +257,7 @@ export const Button: React.FC<ButtonProps> = ({
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading }}
+      testID={testID}
     >
       <View style={[
         styles.contentWrapper,

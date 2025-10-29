@@ -139,7 +139,7 @@ export class SRSAnalyticsService {
       ]);
 
       return {
-        weeklyProgress,
+        weeklyProgress: weeklyProgress[0] || weeklyProgress,
         topicMastery,
         studyStreaks,
         upcomingReviews,
@@ -231,11 +231,18 @@ export class SRSAnalyticsService {
 
       // Group by topic
       const topicGroups = performance.reduce((groups, p) => {
-        const topic = p.study_sessions.topic;
-        if (!groups[topic]) {
-          groups[topic] = [];
+        let topic: any;
+        if (Array.isArray(p.study_sessions)) {
+          topic = p.study_sessions[0]?.topic;
+        } else if (p.study_sessions) {
+          topic = (p.study_sessions as any).topic;
         }
-        groups[topic].push(p);
+        if (topic) {
+          if (!groups[topic]) {
+            groups[topic] = [];
+          }
+          groups[topic].push(p);
+        }
         return groups;
       }, {} as Record<string, any[]>);
 
@@ -597,13 +604,21 @@ export class SRSAnalyticsService {
         return [];
       }
 
-      return reminders.map(reminder => ({
-        sessionId: reminder.session_id,
-        topic: reminder.study_sessions.topic,
-        dueDate: reminder.reminder_time,
-        priority: reminder.priority,
-        estimatedDifficulty: 3 // Default difficulty, could be calculated based on history
-      }));
+      return reminders.map(reminder => {
+        let topic: any;
+        if (Array.isArray(reminder.study_sessions)) {
+          topic = reminder.study_sessions[0]?.topic;
+        } else if (reminder.study_sessions) {
+          topic = (reminder.study_sessions as any).topic;
+        }
+        return {
+          sessionId: reminder.session_id,
+          topic,
+          dueDate: reminder.reminder_time,
+          priority: reminder.priority,
+          estimatedDifficulty: 3 // Default difficulty, could be calculated based on history
+        };
+      });
     } catch (error) {
       console.error('❌ Error getting upcoming reviews:', error);
       return [];

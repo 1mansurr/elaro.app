@@ -76,6 +76,7 @@ export class BatchProcessingService {
       if (logError) {
         throw new AppError(
           `Failed to create processing log: ${logError.message}`,
+          500,
           'LOG_CREATION_ERROR',
           { processingDate }
         );
@@ -148,6 +149,7 @@ export class BatchProcessingService {
     } catch (error) {
       throw new AppError(
         `Error processing weekly reports: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'BATCH_PROCESSING_ERROR',
         { processingDate }
       );
@@ -172,6 +174,7 @@ export class BatchProcessingService {
       if (error) {
         throw new AppError(
           `Failed to get failed reports: ${error.message}`,
+          500,
           'RETRY_FETCH_ERROR'
         );
       }
@@ -206,6 +209,7 @@ export class BatchProcessingService {
     } catch (error) {
       throw new AppError(
         `Error retrying failed reports: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'RETRY_ERROR'
       );
     }
@@ -225,6 +229,7 @@ export class BatchProcessingService {
       if (error) {
         throw new AppError(
           `Failed to get processing status: ${error.message}`,
+          500,
           'STATUS_FETCH_ERROR'
         );
       }
@@ -234,6 +239,7 @@ export class BatchProcessingService {
     } catch (error) {
       throw new AppError(
         `Error getting processing status: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'STATUS_FETCH_ERROR'
       );
     }
@@ -263,6 +269,7 @@ export class BatchProcessingService {
       if (error) {
         throw new AppError(
           `Failed to get eligible users: ${error.message}`,
+          500,
           'USER_FETCH_ERROR'
         );
       }
@@ -279,6 +286,7 @@ export class BatchProcessingService {
     } catch (error) {
       throw new AppError(
         `Error getting eligible users: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
         'USER_FETCH_ERROR'
       );
     }
@@ -365,7 +373,7 @@ export class BatchProcessingService {
         .gte('created_at', sevenDaysAgo.toISOString())
         .limit(1);
 
-      return (sessions && sessions.length > 0) || (tasks && tasks.length > 0);
+      return (sessions?.length || 0) > 0 || (tasks?.length || 0) > 0;
 
     } catch (error) {
       console.error(`Error checking activity for user ${userId}:`, error);

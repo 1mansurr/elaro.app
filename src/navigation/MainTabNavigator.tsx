@@ -2,6 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { TextStyle } from 'react-native';
 
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -47,7 +48,7 @@ const tabBarScreenOptions = (insets: any, theme: any) =>
   },
   tabBarLabelStyle: {
     fontSize: 12,
-    fontWeight: '500',
+    fontWeight: '500' as TextStyle['fontWeight'],
     marginTop: 4,
   },
   headerShown: false,

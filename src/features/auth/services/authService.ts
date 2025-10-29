@@ -210,7 +210,7 @@ export const authService = {
       
       const factors = data?.totp || [];
       const verifiedFactors = factors.filter(factor => factor.status === 'verified');
-      const unverifiedFactors = factors.filter(factor => factor.status === 'unverified');
+      const unverifiedFactors = factors.filter(factor => (factor.status as string) === 'unverified');
       
       return {
         isEnabled: verifiedFactors.length > 0,

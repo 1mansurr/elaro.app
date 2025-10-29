@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationPreferences } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
 

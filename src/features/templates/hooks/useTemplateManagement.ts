@@ -10,7 +10,7 @@ export interface CreateTemplateData {
 }
 
 export const useTemplateManagement = () => {
-  const { templates, loading } = useTemplates();
+  const { data: templates, isLoading: loading } = useTemplates();
   const queryClient = useQueryClient();
 
   // Create template mutation
@@ -58,24 +58,24 @@ export const useTemplateManagement = () => {
 
   // Get templates filtered by task type
   const getTemplatesByType = (taskType: 'assignment' | 'lecture' | 'study_session') => {
-    return templates.filter(template => template.task_type === taskType);
+    return templates?.filter(template => template.task_type === taskType) || [];
   };
 
   // Get all templates ordered by creation date (latest first)
   const getAllTemplates = () => {
-    return [...templates].sort((a, b) => 
+    return [...(templates || [])].sort((a, b) => 
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   };
 
   // Check if user has any templates
   const hasTemplates = () => {
-    return templates.length > 0;
+    return (templates?.length || 0) > 0;
   };
 
   // Check if user has templates for specific task type
   const hasTemplatesForType = (taskType: 'assignment' | 'lecture' | 'study_session') => {
-    return templates.some(template => template.task_type === taskType);
+    return templates?.some(template => template.task_type === taskType) || false;
   };
 
   return {
