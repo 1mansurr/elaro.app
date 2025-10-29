@@ -3,6 +3,7 @@ import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { Alert } from 'react-native';
 import { supabase, authService as supabaseAuthService } from '@/services/supabase';
 import { authService } from '@/features/auth/services/authService';
+import { authSyncService } from '@/services/authSync';
 import { User } from '@/types';
 import { getPendingTask } from '@/utils/taskPersistence';
 import { mixpanelService } from '@/services/mixpanel';
@@ -18,6 +19,7 @@ import {
   resetFailedAttempts 
 } from '@/utils/authLockout';
 import { Platform } from 'react-native';
+import { useNetwork } from '@/contexts/NetworkContext';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 // import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
@@ -31,6 +33,8 @@ interface SignUpCredentials extends LoginCredentials {
   lastName: string;
 }
 
+type AuthIssue = 'network' | 'backend' | null;
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
@@ -40,6 +44,10 @@ interface AuthContextType {
   signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  // Error/timeout handling for auth init
+  authIssue: AuthIssue;
+  timedOut: boolean;
+  retryAuth: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -63,6 +71,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   // Grace period check moved to GracePeriodChecker component to avoid circular dependency
 
   // Social providers removed; email-only auth
+
+  // Auth issue state
+  const [authIssue, setAuthIssue] = useState<AuthIssue>(null);
+  const [timedOut, setTimedOut] = useState(false);
+  const { isOffline } = useNetwork();
+
+  const classifyError = (err: any): AuthIssue => {
+    const msg = String(err?.message || err || '').toLowerCase();
+    if (isOffline || msg.includes('network') || msg.includes('connection') || msg.includes('timeout')) {
+      return 'network';
+    }
+    return 'backend';
+  };
+
+  const withTimeout = <T,>(promise: Promise<T>, ms: number = 3000): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const id = setTimeout(() => reject(new Error('Auth initialization timeout')),
+        ms);
+      promise
+        .then((res) => {
+          clearTimeout(id);
+          resolve(res);
+        })
+        .catch((err) => {
+          clearTimeout(id);
+          reject(err);
+        });
+    });
+  };
+
+  const runInitialAuth = async () => {
+    setAuthIssue(null);
+    setTimedOut(false);
+
+    try {
+      const initialSession = await authSyncService.initialize();
+      setSession(initialSession);
+
+      if (initialSession?.user) {
+        const userProfile = await fetchUserProfile(initialSession.user.id);
+        setUser(userProfile);
+      } else {
+        setUser(null);
+      }
+    } catch (error) {
+      console.error('❌ Error getting initial session:', error);
+      setSession(null);
+      setUser(null);
+      setAuthIssue(classifyError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const retryAuth = async () => {
+    setLoading(true);
+    setAuthIssue(null);
+    setTimedOut(false);
+    try {
+      await runInitialAuth();
+    } catch {
+      // handled in runInitialAuth
+    }
+  };
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
@@ -207,87 +279,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    // Get initial session
-    authService.getSession().then((session) => {
-      setSession(session);
-      if (session?.user) {
-        fetchUserProfile(session.user.id).then(profile => {
-          setUser(profile);
-          setLoading(false);
-        });
-      } else {
+    // Run auth init with a 3s timeout; if it times out, proceed and show issue modal
+    (async () => {
+      try {
+        await withTimeout(runInitialAuth(), 3000);
+      } catch (err) {
+        const issue = classifyError(err);
+        setAuthIssue(issue);
+        setTimedOut(true);
         setLoading(false);
       }
-    }).catch((error) => {
-      console.error('❌ Error getting initial session:', error);
-      setSession(null);
-      setUser(null);
-      setLoading(false);
-    });
+    })();
 
-    // Listen for auth changes
-    const subscription = authService.onAuthChange(async (event, session) => {
+    // Subscribe to auth sync service changes
+    const unsubscribeAuthSync = authSyncService.onAuthChange(async (session) => {
       setSession(session);
+      
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
-
-        // Identify user in Mixpanel and set user properties
-        if (userProfile) {
-          mixpanelService.identify(userProfile.id);
-          mixpanelService.setUserProperties({
-            subscription_tier: userProfile.subscription_tier,
-            onboarding_completed: userProfile.onboarding_completed,
-            created_at: userProfile.created_at,
-            university: userProfile.university,
-            program: userProfile.program,
-          });
-          
-          // Track login event
-          mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
-            subscription_tier: userProfile.subscription_tier,
-            onboarding_completed: userProfile.onboarding_completed,
-            login_method: 'email',
-          });
-        }
-
-        // --- START: NEW TRIAL LOGIC ---
-        if (userProfile && userProfile.subscription_tier === 'free' && userProfile.subscription_expires_at === null) {
-          console.log('New free user detected. Attempting to start trial...');
-          try {
-            const { error } = await supabase.functions.invoke('start-user-trial');
-            if (error) {
-              console.error('Failed to start user trial:', error.message);
-            } else {
-              console.log('Trial started successfully. Refreshing user profile...');
-              // Refresh the user profile to get the new subscription status
-              const refreshedUserProfile = await fetchUserProfile(session.user.id);
-              setUser(refreshedUserProfile);
-              
-              // Track trial start
-              mixpanelService.track(AnalyticsEvents.TRIAL_STARTED, {
-                trial_type: 'free_trial',
-                trial_duration: 7,
-              });
-            }
-          } catch (e) {
-            console.error('An unexpected error occurred while starting trial:', e);
-          }
-        }
-        // --- END: NEW TRIAL LOGIC ---
-        
-        // Navigation is now handled in AppNavigator based on auth state changes
+        setAuthIssue(null);
+        setTimedOut(false);
       } else {
-        // Track logout event
-        mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-          logout_reason: 'manual',
-        });
         setUser(null);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Listen for Supabase auth changes (primary source of truth)
+    const subscription = authService.onAuthChange(async (event, session) => {
+      console.log(`🔄 Auth event: ${event}`);
+      
+      try {
+        // Sync to authSyncService (updates local cache)
+        if (session) {
+          await authSyncService.saveAuthState(session);
+        } else {
+          await authSyncService.clearAuthState();
+        }
+        
+        setSession(session);
+        if (session?.user) {
+          const userProfile = await fetchUserProfile(session.user.id);
+          setUser(userProfile);
+
+          if (userProfile) {
+            mixpanelService.identify(userProfile.id);
+            mixpanelService.setUserProperties({
+              subscription_tier: userProfile.subscription_tier,
+              onboarding_completed: userProfile.onboarding_completed,
+              created_at: userProfile.created_at,
+              university: userProfile.university,
+              program: userProfile.program,
+            });
+            mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+              subscription_tier: userProfile.subscription_tier,
+              onboarding_completed: userProfile.onboarding_completed,
+              login_method: 'email',
+            });
+          }
+
+          if (userProfile && userProfile.subscription_tier === 'free' && userProfile.subscription_expires_at === null) {
+            console.log('New free user detected. Attempting to start trial...');
+            try {
+              const { error } = await supabase.functions.invoke('start-user-trial');
+              if (!error) {
+                const refreshedUserProfile = await fetchUserProfile(session.user.id);
+                setUser(refreshedUserProfile);
+                mixpanelService.track(AnalyticsEvents.TRIAL_STARTED, {
+                  trial_type: 'free_trial',
+                  trial_duration: 7,
+                });
+              } else {
+                console.error('Failed to start user trial:', error.message);
+              }
+            } catch (e) {
+              console.error('An unexpected error occurred while starting trial:', e);
+            }
+          }
+
+          setAuthIssue(null);
+          setTimedOut(false);
+        } else {
+          mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+            logout_reason: 'manual',
+          });
+          setUser(null);
+        }
+      } catch (e) {
+        setAuthIssue(classifyError(e));
+      } finally {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuthSync();
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Check for session timeout on app load
@@ -439,6 +527,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear the last active timestamp
       await clearLastActiveTimestamp();
       
+      // Clear auth sync state
+      await authSyncService.clearAuthState();
+      
       await authService.signOut();
     } catch (error) {
       console.error('❌ Sign out error:', error);
@@ -456,6 +547,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     signUp,
     signOut,
     refreshUser,
+    authIssue,
+    timedOut,
+    retryAuth,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

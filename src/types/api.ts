@@ -29,12 +29,12 @@ export interface CreateStudySessionRequest {
 export interface CreateLectureRequest {
   course_id: string;
   lecture_name: string;
-  description: string;
+  description?: string;
   start_time: string;
-  end_time: string;
-  is_recurring: boolean;
-  recurring_pattern: string;
-  reminders: number[];
+  end_time?: string;
+  is_recurring?: boolean;
+  recurring_pattern?: string;
+  reminders?: number[];
 }
 
 export interface CreateCourseRequest {

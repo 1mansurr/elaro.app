@@ -18,6 +18,7 @@ class MockSupabaseAuth {
   private currentUser: MockAuthUser | null = null;
   private users: Map<string, { email: string; password: string; firstName?: string; lastName?: string }> = new Map();
   private authStateCallbacks: Array<(event: string, session: Session | null) => void> = [];
+  private networkMode: 'online' | 'offline' = 'online';
 
   // Pre-seeded test user
   private readonly TEST_USER = {
@@ -90,6 +91,14 @@ class MockSupabaseAuth {
    * Sign in with email and password
    */
   async signInWithPassword(email: string, password: string): Promise<{ user: MockAuthUser | null; session: MockSession | null }> {
+    // Allow offline sign-in for existing sessions (local fallback)
+    if (this.networkMode === 'offline' && this.currentSession) {
+      // If already have a session, allow offline sign-in (local cache)
+      return { user: this.currentUser, session: this.currentSession };
+    }
+    
+    this.checkNetwork(); // Check network before new sign-in
+    
     const storedUser = this.users.get(email);
 
     if (!storedUser || storedUser.password !== password) {
@@ -151,6 +160,8 @@ class MockSupabaseAuth {
    * Get the current session
    */
   async getSession(): Promise<{ session: MockSession | null }> {
+    // In offline mode, return cached session if available
+    // This simulates local storage fallback
     return { session: this.currentSession };
   }
 
@@ -213,6 +224,29 @@ class MockSupabaseAuth {
       firstName: this.TEST_USER.firstName,
       lastName: this.TEST_USER.lastName,
     };
+  }
+
+  /**
+   * Set network mode for offline simulation
+   */
+  setNetworkMode(mode: 'online' | 'offline'): void {
+    this.networkMode = mode;
+  }
+
+  /**
+   * Get current network mode
+   */
+  getNetworkMode(): 'online' | 'offline' {
+    return this.networkMode;
+  }
+
+  /**
+   * Simulate network error when offline
+   */
+  private checkNetwork(): void {
+    if (this.networkMode === 'offline') {
+      throw new Error('Network request failed: Device offline');
+    }
   }
 }
 

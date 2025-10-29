@@ -52,7 +52,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0A2540', // Must match the native splash screen color
+    backgroundColor: '#2C5EFF', // Primary blue background
   },
   wordmark: {
     fontSize: 48,

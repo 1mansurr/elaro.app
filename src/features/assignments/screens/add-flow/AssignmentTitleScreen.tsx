@@ -63,10 +63,10 @@ const AssignmentTitleScreen = () => {
             onChangeText={handleTitleChange}
             placeholder="Enter assignment title"
             autoFocus={true}
-            maxLength={100}
+            maxLength={35}
           />
           <Text style={styles.characterCount}>
-            {assignmentData.title.length}/100 characters
+            {assignmentData.title.length}/35 characters
           </Text>
         </View>
 

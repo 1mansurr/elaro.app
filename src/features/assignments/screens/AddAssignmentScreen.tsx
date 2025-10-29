@@ -492,9 +492,9 @@ const AddAssignmentScreen = () => {
               value={title}
               onChangeText={setTitle}
               placeholder="e.g., Essay on Climate Change"
-              maxLength={100}
+              maxLength={35}
             />
-            <Text style={styles.characterCount}>{title.length}/100</Text>
+            <Text style={styles.characterCount}>{title.length}/35</Text>
           </View>
 
           {/* Due Date & Time */}

@@ -34,6 +34,9 @@ import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
 import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 import { syncManager } from './src/services/syncManager';
+import { useAppStateSync } from './src/hooks/useAppState';
+import { navigationSyncService } from './src/services/navigationSync';
+import { AuthIssueModal } from './src/shared/components/AuthIssueModal';
 // Initialize centralized error tracking service
 errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
 
@@ -57,12 +60,6 @@ const navigationRef = React.createRef<any>();
 // Prevent auto-hide of splash until we're ready
 SplashScreen.preventAutoHideAsync();
 
-// Navigation state persistence key
-// Increment version number if navigation structure changes significantly
-// This will clear old saved states that might be incompatible
-const PERSISTENCE_KEY = 'NAVIGATION_STATE_V1';
-const APP_VERSION = '1.0.0'; // Update this when making breaking navigation changes
-
 // Create a new instance of the QueryClient with optimized default options
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,35 +82,61 @@ const queryClient = new QueryClient({
   }),
 });
 
+// Component to handle navigation state saving with auth context
+const NavigationStateHandler: React.FC = () => {
+  const { user, session } = useAuth();
+  
+  useEffect(() => {
+    // Update current user ID in navigationSyncService
+    navigationSyncService.setUserId(user?.id);
+    
+    // Clear navigation state on logout
+    if (!session && !user) {
+      console.log('🔒 NavigationSync: User logged out, clearing navigation state');
+      navigationSyncService.clearState();
+      navigationSyncService.setUserId(undefined);
+      return;
+    }
+    
+    // When user changes and is logged in, save current state with userId
+    if (navigationRef.current && session && user) {
+      const currentState = navigationRef.current.getRootState();
+      if (currentState) {
+        navigationSyncService.saveState(currentState, user.id);
+      }
+    }
+  }, [user?.id, session, user]);
+
+  return null;
+};
+
 // Component to integrate React Query with Error Boundary
 const AppWithErrorBoundary: React.FC<{ initialNavigationState?: any }> = ({ initialNavigationState }) => {
   const { reset } = useQueryErrorResetBoundary();
+  
+  // Sync auth state on app resume
+  useAppStateSync();
 
   return (
     <ErrorBoundary onReset={reset}>
       <NetworkProvider>
-        <AppInitializer>
-          <ThemeProvider>
-            <ThemedStatusBar />
-            <NavigationContainer
-              ref={navigationRef}
-              initialState={initialNavigationState}
-              onStateChange={async (state) => {
-                // Update last active timestamp whenever user navigates
-                await updateLastActiveTimestamp();
-                
-                // Save navigation state to AsyncStorage
-                if (state) {
-                  try {
-                    await AsyncStorage.setItem(PERSISTENCE_KEY, JSON.stringify(state));
-                    await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
-                  } catch (error) {
-                    console.error('Failed to save navigation state:', error);
-                  }
-                }
-              }}
-            >
-              <AuthProvider>
+        <AuthProvider>
+          <AppInitializer>
+            <ThemeProvider>
+              <ThemedStatusBar />
+              <NavigationContainer
+                ref={navigationRef}
+                initialState={initialNavigationState}
+                onStateChange={async (state) => {
+                  // Update last active timestamp whenever user navigates
+                  await updateLastActiveTimestamp();
+                  
+                  // Save navigation state using navigationSyncService
+                  // User ID will be set via NavigationStateHandler component
+                  await navigationSyncService.saveState(state);
+                }}
+              >
+                <NavigationStateHandler />
                 <GracePeriodChecker />
                 <SoftLaunchProvider>
                   <NotificationProvider>
@@ -122,18 +145,18 @@ const AppWithErrorBoundary: React.FC<{ initialNavigationState?: any }> = ({ init
                       {/* Offline Support UI Indicators */}
                       <OfflineBanner />
                       <SyncIndicator />
+                      <AuthIssueModal />
                       <AppNavigator />
                       <NotificationHandler />
                     </ToastProvider>
                   </NotificationProvider>
                 </SoftLaunchProvider>
-              </AuthProvider>
-            </NavigationContainer>
-          </ThemeProvider>
-        </AppInitializer>
+              </NavigationContainer>
+            </ThemeProvider>
+          </AppInitializer>
+        </AuthProvider>
       </NetworkProvider>
     </ErrorBoundary>
-  );
 };
 
 // App Initializer Component for handling async setup
@@ -142,6 +165,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [appIsReady, setAppIsReady] = useState(false);
   const [isAnimationFinished, setAnimationFinished] = useState(false);
+  const { loading: authLoading } = useAuth(); // Get auth loading state
 
   useEffect(() => {
     const prepare = async () => {
@@ -200,9 +224,11 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
     return null;
   }
 
-  // Once the app is ready, we decide whether to show the animation or the main app.
-  if (!isAnimationFinished) {
-    // If the app is ready but the animation isn't finished, show the animated splash screen.
+  // Wait for BOTH animation to finish AND auth to finish loading
+  const shouldShowMainApp = isAnimationFinished && !authLoading;
+
+  if (!shouldShowMainApp) {
+    // Show animated splash screen until both animation finishes AND auth loading completes
     return (
       <AnimatedSplashScreen
         onAnimationFinish={() => setAnimationFinished(true)}
@@ -210,7 +236,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
     );
   }
 
-  // Once BOTH the app is ready AND the animation is finished, show the main navigator.
+  // Once BOTH the animation is finished AND auth loading is complete, show the main navigator
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       {children}
@@ -362,43 +388,16 @@ function App() {
           // Don't block app startup if version check fails
         }
         
-        // Restore navigation state from AsyncStorage
+        // Restore navigation state using navigationSyncService
+        // Note: Auth-aware validation will happen in AppWithErrorBoundary after auth loads
         console.log('📍 Restoring navigation state...');
         try {
-          const savedStateString = await AsyncStorage.getItem(PERSISTENCE_KEY);
-          const savedVersion = await AsyncStorage.getItem('APP_VERSION');
-          
-          if (savedStateString) {
-            // Check if the saved state is from the current app version
-            if (savedVersion !== APP_VERSION) {
-              console.log(`⚠️ Navigation state version mismatch (saved: ${savedVersion}, current: ${APP_VERSION}). Clearing old state.`);
-              await AsyncStorage.removeItem(PERSISTENCE_KEY);
-              await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
-            } else {
-              const state = JSON.parse(savedStateString);
-              
-              // Validate that the state has the expected structure
-              if (state && typeof state === 'object' && state.routes) {
-                console.log('✅ Navigation state restored');
-                setInitialNavigationState(state);
-              } else {
-                console.warn('⚠️ Invalid navigation state structure. Starting fresh.');
-                await AsyncStorage.removeItem(PERSISTENCE_KEY);
-              }
-            }
-          } else {
-            console.log('ℹ️ No saved navigation state found');
-            // Save current version for future checks
-            await AsyncStorage.setItem('APP_VERSION', APP_VERSION);
+          const savedState = await navigationSyncService.loadState();
+          if (savedState) {
+            setInitialNavigationState(savedState);
           }
         } catch (error) {
           console.error('❌ Failed to restore navigation state:', error);
-          // Clear potentially corrupted state
-          try {
-            await AsyncStorage.removeItem(PERSISTENCE_KEY);
-          } catch (clearError) {
-            console.error('Failed to clear corrupted state:', clearError);
-          }
           // Continue without restored state - app will start fresh
         }
         

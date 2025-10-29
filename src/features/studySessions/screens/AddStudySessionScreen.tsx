@@ -430,9 +430,9 @@ const AddStudySessionScreen = () => {
               value={topic}
               onChangeText={setTopic}
               placeholder="e.g., Chapter 5 Review"
-              maxLength={100}
+              maxLength={35}
             />
-            <Text style={styles.characterCount}>{topic.length}/100</Text>
+            <Text style={styles.characterCount}>{topic.length}/35</Text>
           </View>
 
           {/* Session Date & Time */}

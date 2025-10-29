@@ -20,7 +20,7 @@ import { format } from 'date-fns';
 import { RootStackParamList, Course } from '@/types';
 import { useAuth } from '@/features/auth/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
+import { Button, ReminderSelector, GuestAuthModal, Input } from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -70,6 +70,7 @@ const AddLectureScreen = () => {
 
   // Required fields
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(initialData?.course || null);
+  const [lectureName, setLectureName] = useState(initialData?.title || '');
   const [startTime, setStartTime] = useState<Date>(() => {
     if (initialData?.dateTime) {
       const date = initialData.dateTime instanceof Date 
@@ -120,6 +121,15 @@ const AddLectureScreen = () => {
         setSelectedCourse(course);
       }
       
+      // Set lecture name from task (use name, title, or lecture_name if available)
+      if (taskToEdit.name) {
+        setLectureName(taskToEdit.name);
+      } else if (taskToEdit.title) {
+        setLectureName(taskToEdit.title);
+      } else if ((taskToEdit as any).lecture_name) {
+        setLectureName((taskToEdit as any).lecture_name);
+      }
+      
       if (taskToEdit.date) {
         setStartTime(new Date(taskToEdit.date));
       }
@@ -147,6 +157,9 @@ const AddLectureScreen = () => {
       const draft = await getDraft('lecture');
       if (draft) {
         setSelectedCourse(draft.course);
+        if (draft.title) {
+          setLectureName(draft.title);
+        }
         if (draft.dateTime) {
           setStartTime(new Date(draft.dateTime));
         }
@@ -168,7 +181,7 @@ const AddLectureScreen = () => {
     
     const debouncedSave = debounce(() => {
       saveDraft('lecture', {
-        title: '', // Lectures auto-generate title
+        title: lectureName,
         course: selectedCourse,
         dateTime: startTime,
         endTime,
@@ -182,7 +195,7 @@ const AddLectureScreen = () => {
     return () => {
       debouncedSave.cancel();
     };
-  }, [selectedCourse, startTime, endTime, recurrence, reminders]);
+  }, [selectedCourse, lectureName, startTime, endTime, recurrence, reminders]);
 
   // Fetch courses
   useEffect(() => {
@@ -219,7 +232,7 @@ const AddLectureScreen = () => {
   }, [isGuest, user?.id]);
 
   // Check if form is valid
-  const isFormValid = selectedCourse && startTime && endTime && startTime < endTime;
+  const isFormValid = selectedCourse && lectureName.trim().length > 0 && startTime && endTime && startTime < endTime;
 
   // Handle template selection
   const handleTemplateSelect = (template: any) => {
@@ -228,6 +241,11 @@ const AddLectureScreen = () => {
     // Pre-fill form with template data
     if (template.template_data) {
       const templateData = clearDateFields(template.template_data);
+      
+      // Set lecture name if available
+      if (templateData.lecture_name) {
+        setLectureName(templateData.lecture_name);
+      }
       
       // Set course if available
       if (templateData.course_id) {
@@ -313,6 +331,7 @@ const AddLectureScreen = () => {
       await savePendingTask(
         {
           course: selectedCourse,
+          title: lectureName,
           startTime,
           endTime,
           recurrence,
@@ -329,7 +348,7 @@ const AddLectureScreen = () => {
     try {
       const taskData = {
         course_id: selectedCourse!.id,
-        lecture_name: `${selectedCourse!.courseName} Lecture`,
+        lecture_name: lectureName.trim(),
         description: `A lecture for the course: ${selectedCourse!.courseName}.`,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
@@ -348,7 +367,7 @@ const AddLectureScreen = () => {
       if (saveAsTemplate && canSaveAsTemplate(taskData, 'lecture')) {
         try {
           await createTemplate.mutateAsync({
-            template_name: generateTemplateName(`${selectedCourse!.courseName} Lecture`),
+            template_name: generateTemplateName(lectureName.trim()),
             task_type: 'lecture',
             template_data: taskData,
           });
@@ -458,6 +477,18 @@ const AddLectureScreen = () => {
               </Text>
               <Ionicons name="chevron-down" size={20} color={COLORS.gray} />
             </TouchableOpacity>
+          </View>
+
+          {/* Lecture Name Input */}
+          <View style={styles.field}>
+            <Text style={styles.label}>Lecture Name *</Text>
+            <Input
+              value={lectureName}
+              onChangeText={setLectureName}
+              placeholder="e.g., Introduction to Psychology"
+              maxLength={35}
+            />
+            <Text style={styles.characterCount}>{lectureName.length}/35</Text>
           </View>
 
           {/* Start Date & Time */}
@@ -808,6 +839,12 @@ const styles = StyleSheet.create({
   },
   selectButtonPlaceholder: {
     color: COLORS.gray,
+  },
+  characterCount: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+    textAlign: 'right',
+    marginTop: SPACING.xs,
   },
   dateTimeRow: {
     flexDirection: 'row',

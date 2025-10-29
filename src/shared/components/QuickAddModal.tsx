@@ -380,7 +380,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
                 'e.g., Review Chapter 5'
               }
               autoFocus
+              maxLength={35}
             />
+            <Text style={styles.characterCount}>{title.length}/35</Text>
 
             {/* Course Selector */}
             <Text style={styles.label}>Course *</Text>
@@ -774,6 +776,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginLeft: SPACING.sm,
     flex: 1,
+  },
+  characterCount: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+    textAlign: 'right',
+    marginTop: SPACING.xs,
+    marginBottom: SPACING.sm,
   },
 });
 
