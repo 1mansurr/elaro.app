@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Smart Preloading Hook

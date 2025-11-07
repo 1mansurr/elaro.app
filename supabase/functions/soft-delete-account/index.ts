@@ -1,16 +1,30 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const SoftDeleteAccountSchema = z.object({
   reason: z.string().optional(),
 });
 
-async function handleSoftDeleteAccount({ user, supabaseClient, body }: AuthenticatedRequest) {
+async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
   const { reason } = body;
-  
-  console.log(`Soft deleting account for user: ${user.id}`);
-  
+
+  await logger.info(
+    'Soft deleting account',
+    { user_id: user.id },
+    traceContext,
+  );
+
   // Check if account is already deleted
   const { data: currentUser, error: fetchError } = await supabaseClient
     .from('users')
@@ -18,20 +32,28 @@ async function handleSoftDeleteAccount({ user, supabaseClient, body }: Authentic
     .eq('id', user.id)
     .single();
 
-  if (fetchError) throw new AppError(fetchError.message, 500, 'DB_FETCH_ERROR');
-  
+  if (fetchError) throw handleDbError(fetchError);
+
   if (currentUser.account_status === 'deleted') {
-    throw new AppError('Account is already deleted', 400, 'ALREADY_DELETED');
+    throw new AppError(
+      'Account is already deleted',
+      400,
+      ERROR_CODES.ALREADY_EXISTS,
+    );
   }
-  
+
   if (currentUser.account_status === 'suspended') {
-    throw new AppError('Cannot delete a suspended account', 400, 'SUSPENDED_ACCOUNT');
+    throw new AppError(
+      'Cannot delete a suspended account',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
   }
-  
+
   const now = new Date().toISOString();
   const deletionDate = new Date();
   deletionDate.setDate(deletionDate.getDate() + 7); // 7 days from now
-  
+
   // Update user account status to 'deleted' and set deletion timestamp
   const { data, error: updateError } = await supabaseClient
     .from('users')
@@ -45,27 +67,38 @@ async function handleSoftDeleteAccount({ user, supabaseClient, body }: Authentic
     .select()
     .single();
 
-  if (updateError) throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
-  
+  if (updateError) throw handleDbError(updateError);
+
   // Sign out the user from all sessions
-  const { error: signOutError } = await supabaseClient.auth.signOut({ scope: 'global' });
+  const { error: signOutError } = await supabaseClient.auth.signOut({
+    scope: 'global',
+  });
   if (signOutError) {
-    console.error('Error signing out user:', signOutError);
+    await logger.error(
+      'Error signing out user',
+      { user_id: user.id, error: signOutError.message },
+      traceContext,
+    );
     // Don't throw here as the main operation succeeded
   }
-  
-  console.log(`Successfully soft deleted account for user: ${user.id}`);
-  return { 
-    message: 'Account deletion initiated. You have 7 days to restore your account.',
+
+  await logger.info(
+    'Successfully soft deleted account',
+    { user_id: user.id },
+    traceContext,
+  );
+  return {
+    message:
+      'Account deletion initiated. You have 7 days to restore your account.',
     deletionDate: deletionDate.toISOString(),
-    reason: reason || 'User requested account deletion'
+    reason: reason || 'User requested account deletion',
   };
 }
 
-serve(createAuthenticatedHandler(
-  handleSoftDeleteAccount,
-  { 
+serve(
+  createAuthenticatedHandler(handleSoftDeleteAccount, {
     rateLimitName: 'soft-delete-account',
-    schema: SoftDeleteAccountSchema
-  }
-));
+    schema: SoftDeleteAccountSchema,
+    requireIdempotency: true,
+  }),
+);

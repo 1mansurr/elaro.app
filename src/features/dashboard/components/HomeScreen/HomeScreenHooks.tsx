@@ -5,7 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { differenceInCalendarDays } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import { useToast } from '@/contexts/ToastContext';
 import { supabase } from '@/services/supabase';
@@ -27,28 +27,37 @@ export const useTrialBanner = (user: any) => {
   // Performance monitoring for trial banner calculations
   const getTrialDaysRemaining = useStableCallback(() => {
     performanceMonitoringService.startTimer('trial-days-calculation');
-    
-    if (user?.subscription_status !== 'trialing' || !user?.subscription_expires_at) {
+
+    if (
+      user?.subscription_status !== 'trialing' ||
+      !user?.subscription_expires_at
+    ) {
       performanceMonitoringService.endTimer('trial-days-calculation');
       return null;
     }
     const today = new Date();
     const expirationDate = new Date(user.subscription_expires_at);
     const days = differenceInCalendarDays(expirationDate, today);
-    
+
     performanceMonitoringService.endTimer('trial-days-calculation');
     return days;
   }, [user?.subscription_status, user?.subscription_expires_at]);
 
   // Optimized trial days calculation with expensive memoization
-  const trialDaysRemaining = useExpensiveMemo(() => getTrialDaysRemaining(), [getTrialDaysRemaining]);
+  const trialDaysRemaining = useExpensiveMemo(
+    () => getTrialDaysRemaining(),
+    [getTrialDaysRemaining],
+  );
 
-  const shouldShowBanner = trialDaysRemaining !== null && trialDaysRemaining <= 3 && !isBannerDismissed;
+  const shouldShowBanner =
+    trialDaysRemaining !== null &&
+    trialDaysRemaining <= 3 &&
+    !isBannerDismissed;
 
   // Check AsyncStorage for banner dismissal state
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkBannerDismissal = async () => {
       if (!user?.id || trialDaysRemaining === null) {
         if (isMounted) setIsBannerDismissed(false);
@@ -66,7 +75,7 @@ export const useTrialBanner = (user: any) => {
     };
 
     checkBannerDismissal();
-    
+
     return () => {
       isMounted = false;
     };
@@ -106,15 +115,19 @@ export const useSubscriptionUpgrade = () => {
           text: 'Upgrade for Free',
           onPress: async () => {
             try {
-              const { error } = await supabase.functions.invoke('grant-premium-access');
+              const { error } = await supabase.functions.invoke(
+                'grant-premium-access',
+              );
               if (error) throw new Error(error.message);
 
               // Invalidate user data to refresh their subscription status and unlock features.
               queryClient.invalidateQueries({ queryKey: ['user'] });
               queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
 
-              Alert.alert('Success!', 'You now have access to all premium features.');
-
+              Alert.alert(
+                'Success!',
+                'You now have access to all premium features.',
+              );
             } catch (error: any) {
               const errorTitle = getErrorTitle(error);
               const errorMessage = mapErrorCodeToMessage(error);
@@ -123,7 +136,7 @@ export const useSubscriptionUpgrade = () => {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -155,16 +168,19 @@ export const useTaskManagement = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-    
+
     mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
       task_id: selectedTask.id,
       task_type: selectedTask.type,
       task_title: selectedTask.title,
       source: 'task_detail_sheet',
     });
-    
+
     // Determine which modal to navigate to based on task type
-    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
+    let modalName:
+      | 'AddLectureFlow'
+      | 'AddAssignmentFlow'
+      | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
         modalName = 'AddLectureFlow';
@@ -179,7 +195,7 @@ export const useTaskManagement = () => {
         Alert.alert('Error', 'Cannot edit this type of task.');
         return;
     }
-    
+
     handleCloseSheet();
     // Navigation will be handled by the parent component
     return modalName;
@@ -187,40 +203,40 @@ export const useTaskManagement = () => {
 
   const handleCompleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       await completeTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
         taskTitle: selectedTask.title || selectedTask.name,
       });
-      
+
       Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
       console.error('Error completing task:', error);
     }
-    
+
     handleCloseSheet();
   }, [selectedTask, completeTaskMutation, handleCloseSheet]);
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     handleCloseSheet();
-    
+
     const taskInfo = {
       id: selectedTask.id,
       type: selectedTask.type,
       title: selectedTask.title || selectedTask.name,
     };
-    
+
     try {
       await deleteTaskMutation.mutateAsync({
         taskId: taskInfo.id,
         taskType: taskInfo.type,
         taskTitle: taskInfo.title,
       });
-      
+
       showToast({
         message: `${taskInfo.title} moved to Recycle Bin`,
         onUndo: async () => {
@@ -239,7 +255,13 @@ export const useTaskManagement = () => {
     } catch (error) {
       console.error('Error deleting task:', error);
     }
-  }, [selectedTask, deleteTaskMutation, restoreTaskMutation, showToast, handleCloseSheet]);
+  }, [
+    selectedTask,
+    deleteTaskMutation,
+    restoreTaskMutation,
+    showToast,
+    handleCloseSheet,
+  ]);
 
   return {
     selectedTask,
@@ -267,24 +289,30 @@ export const useDraftCount = () => {
   useFocusEffect(
     useCallback(() => {
       loadDraftCount();
-    }, [loadDraftCount])
+    }, [loadDraftCount]),
   );
 
   return { draftCount };
 };
 
 // Custom hook for welcome prompt
-export const useWelcomePrompt = (isGuest: boolean, user: any, navigation: any) => {
+export const useWelcomePrompt = (
+  isGuest: boolean,
+  user: any,
+  navigation: any,
+) => {
   useEffect(() => {
     const checkAndShowWelcomePrompt = async () => {
       if (isGuest || !user) return;
-      
+
       try {
-        const hasSeenPrompt = await AsyncStorage.getItem('hasSeenHowItWorksPrompt');
-        
+        const hasSeenPrompt = await AsyncStorage.getItem(
+          'hasSeenHowItWorksPrompt',
+        );
+
         if (!hasSeenPrompt) {
           await AsyncStorage.setItem('hasSeenHowItWorksPrompt', 'true');
-          
+
           setTimeout(() => {
             Alert.alert(
               'Welcome to ELARO!',
@@ -301,7 +329,7 @@ export const useWelcomePrompt = (isGuest: boolean, user: any, navigation: any) =
                           params: {
                             screen: 'Account',
                           },
-                        })
+                        }),
                       );
                     }, 100);
                   },
@@ -310,7 +338,7 @@ export const useWelcomePrompt = (isGuest: boolean, user: any, navigation: any) =
                   text: 'Got It',
                   style: 'cancel',
                 },
-              ]
+              ],
             );
           }, 500);
         }
@@ -324,41 +352,56 @@ export const useWelcomePrompt = (isGuest: boolean, user: any, navigation: any) =
 };
 
 // Custom hook for example data creation
-export const useExampleData = (isGuest: boolean, user: any, isLoading: boolean, homeData: any, queryClient: any, showToast: any) => {
+export const useExampleData = (
+  isGuest: boolean,
+  user: any,
+  isLoading: boolean,
+  homeData: any,
+  queryClient: any,
+  showToast: any,
+) => {
   useEffect(() => {
     const checkAndCreateExampleData = async () => {
       if (isGuest || !user || isLoading) return;
-      
+
       try {
-        const hasCreatedExamples = await AsyncStorage.getItem('hasCreatedExampleData');
-        
-        const hasAnyData = homeData && (
-          (homeData.nextUpcomingTask) ||
-          (homeData.todayOverview && (
-            homeData.todayOverview.lectures > 0 ||
-            homeData.todayOverview.assignments > 0 ||
-            homeData.todayOverview.studySessions > 0
-          ))
+        const hasCreatedExamples = await AsyncStorage.getItem(
+          'hasCreatedExampleData',
         );
 
+        const hasAnyData =
+          homeData &&
+          (homeData.nextUpcomingTask ||
+            (homeData.todayOverview &&
+              (homeData.todayOverview.lectures > 0 ||
+                homeData.todayOverview.assignments > 0 ||
+                homeData.todayOverview.studySessions > 0)));
+
         if (!hasAnyData && !hasCreatedExamples) {
-          console.log('📚 New user with no data detected. Creating example data...');
-          
+          console.log(
+            '📚 New user with no data detected. Creating example data...',
+          );
+
           await AsyncStorage.setItem('hasCreatedExampleData', 'true');
-          
+
           const result = await createExampleData(user.id);
-          
+
           if (result.success) {
             console.log('✅ Example data created successfully');
-            
-            await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+
+            await queryClient.invalidateQueries({
+              queryKey: ['homeScreenData'],
+            });
             await queryClient.invalidateQueries({ queryKey: ['courses'] });
             await queryClient.invalidateQueries({ queryKey: ['assignments'] });
             await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-            await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
-            
+            await queryClient.invalidateQueries({
+              queryKey: ['studySessions'],
+            });
+
             showToast({
-              message: '📚 We\'ve added some example tasks to help you get started!',
+              message:
+                "📚 We've added some example tasks to help you get started!",
               duration: 4000,
             });
           } else {

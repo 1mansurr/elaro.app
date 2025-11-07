@@ -9,10 +9,16 @@ import { supabase } from '@/services/supabase';
 import { PrimaryButton } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { RootStackParamList } from '@/types/navigation';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
-type OddityWelcomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OddityWelcomeScreen'>;
-type OddityWelcomeScreenRouteProp = RouteProp<RootStackParamList, 'OddityWelcomeScreen'>;
+type OddityWelcomeScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'OddityWelcomeScreen'
+>;
+type OddityWelcomeScreenRouteProp = RouteProp<
+  RootStackParamList,
+  'OddityWelcomeScreen'
+>;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -21,14 +27,20 @@ const OddityWelcomeScreen = () => {
   const route = useRoute<OddityWelcomeScreenRouteProp>();
   const { user } = useAuth();
   const { variant } = route.params;
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const confettiRef = useRef<any>(null);
 
   // Fire confetti on mount
   useEffect(() => {
     // Only fire confetti for active variants, not placeholders
-    const activeVariants = ['trial-early', 'trial-expired', 'direct', 'renewal', 'restore'];
+    const activeVariants = [
+      'trial-early',
+      'trial-expired',
+      'direct',
+      'renewal',
+      'restore',
+    ];
     if (activeVariants.includes(variant)) {
       confettiRef.current?.start();
     }
@@ -36,14 +48,14 @@ const OddityWelcomeScreen = () => {
 
   const handleContinue = async () => {
     setIsLoading(true);
-    
+
     try {
       // Update last_welcome_shown_at in database
       if (user?.id) {
         const { error } = await supabase
           .from('users')
-          .update({ 
-            last_welcome_shown_at: new Date().toISOString() 
+          .update({
+            last_welcome_shown_at: new Date().toISOString(),
           })
           .eq('id', user.id);
 
@@ -54,7 +66,6 @@ const OddityWelcomeScreen = () => {
 
       // Navigate to Home screen
       navigation.navigate('Main');
-      
     } catch (error) {
       console.error('Error in handleContinue:', error);
       // Still navigate even if database update fails
@@ -70,26 +81,26 @@ const OddityWelcomeScreen = () => {
       icon: 'school-outline',
       title: '10 Courses',
       description: 'vs 2 on free plan',
-      color: 'COLORS.blue500'
+      color: 'COLORS.blue500',
     },
     {
-      icon: 'flash-outline', 
+      icon: 'flash-outline',
       title: '70 Activities/Month',
       description: 'vs 15 on free plan',
-      color: 'COLORS.yellow500'
+      color: 'COLORS.yellow500',
     },
     {
       icon: 'alarm-outline',
       title: '112 Spaced Repetition Reminders/Month',
       description: 'vs 15 on free plan',
-      color: 'COLORS.green500'
+      color: 'COLORS.green500',
     },
     {
       icon: 'analytics-outline',
       title: 'Weekly Analytics',
       description: 'Oddity exclusive',
-      color: 'COLORS.purple500'
-    }
+      color: 'COLORS.purple500',
+    },
   ];
 
   // Get variant-specific content
@@ -101,33 +112,33 @@ const OddityWelcomeScreen = () => {
           headline: 'Congratulations!',
           subheadline: "You're now An Oddity",
           benefitsPrefix: 'You now have access to',
-          showConfetti: true
+          showConfetti: true,
         };
-      
+
       case 'direct':
         return {
           headline: 'Welcome!',
           subheadline: "You're now An Oddity",
           benefitsPrefix: 'You now have access to',
-          showConfetti: true
+          showConfetti: true,
         };
-      
+
       case 'renewal':
         return {
           headline: 'Welcome back!',
           subheadline: "You're an Oddity Once again",
           benefitsPrefix: 'You have access to',
-          showConfetti: true
+          showConfetti: true,
         };
-      
+
       case 'restore':
         return {
           headline: 'Your membership has been restored!',
           subheadline: "You're now An Oddity again",
           benefitsPrefix: 'You have access to',
-          showConfetti: true
+          showConfetti: true,
         };
-      
+
       // Placeholder variants (show generic fallback)
       case 'promo':
       case 'granted':
@@ -137,21 +148,20 @@ const OddityWelcomeScreen = () => {
           headline: "You're now An Oddity",
           subheadline: null,
           benefitsPrefix: null,
-          showConfetti: false
+          showConfetti: false,
         };
     }
   };
 
   const content = getContent();
-  const isPlaceholderVariant = ['promo', 'granted', 'plan-change'].includes(variant);
+  const isPlaceholderVariant = ['promo', 'granted', 'plan-change'].includes(
+    variant,
+  );
 
   // Generic fallback for placeholders
   if (isPlaceholderVariant) {
     return (
-      <DialogModal
-        isVisible={true}
-        onClose={handleContinue}
-      >
+      <DialogModal isVisible={true} onClose={handleContinue}>
         <View style={styles.genericContainer}>
           <Text style={styles.genericTitle}>{content.headline}</Text>
           <PrimaryButton
@@ -166,10 +176,7 @@ const OddityWelcomeScreen = () => {
 
   // Full welcome screen for active variants
   return (
-    <DialogModal
-      isVisible={true}
-      onClose={handleContinue}
-    >
+    <DialogModal isVisible={true} onClose={handleContinue}>
       {/* Confetti (full screen) */}
       {content.showConfetti && (
         <ConfettiCannon
@@ -187,10 +194,9 @@ const OddityWelcomeScreen = () => {
       <View style={styles.overlay}>
         {/* Modal container (70% width, 70% height, centered) */}
         <View style={styles.modalContainer}>
-          <ScrollView 
+          <ScrollView
             contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
+            showsVerticalScrollIndicator={false}>
             {/* Header Section */}
             <View style={styles.headerSection}>
               <Text style={styles.headline}>{content.headline}</Text>
@@ -199,16 +205,28 @@ const OddityWelcomeScreen = () => {
 
             {/* Benefits Section */}
             <View style={styles.benefitsSection}>
-              <Text style={styles.benefitsTitle}>{content.benefitsPrefix}:</Text>
-              
+              <Text style={styles.benefitsTitle}>
+                {content.benefitsPrefix}:
+              </Text>
+
               {benefits.map((benefit, index) => (
                 <View key={index} style={styles.benefitCard}>
-                  <View style={[styles.benefitIcon, { backgroundColor: benefit.color + '20' }]}>
-                    <Ionicons name={benefit.icon as any} size={20} color={benefit.color} />
+                  <View
+                    style={[
+                      styles.benefitIcon,
+                      { backgroundColor: benefit.color + '20' },
+                    ]}>
+                    <Ionicons
+                      name={benefit.icon as any}
+                      size={20}
+                      color={benefit.color}
+                    />
                   </View>
                   <View style={styles.benefitContent}>
                     <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                    <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                    <Text style={styles.benefitDescription}>
+                      {benefit.description}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -344,4 +362,3 @@ const styles = StyleSheet.create({
 });
 
 export default OddityWelcomeScreen;
-

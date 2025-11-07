@@ -1,6 +1,6 @@
 /**
  * Centralized Analytics Events Configuration
- * 
+ *
  * This file defines all tracked events and their properties for consistency across the app.
  * Use these constants instead of hardcoded strings to avoid typos and ensure consistency.
  */
@@ -29,7 +29,7 @@ export const AUTH_EVENTS = {
       error_code: 'string', // optional
     },
   },
-  
+
   // User login events
   USER_LOGGED_IN: {
     name: 'User Logged In',
@@ -49,7 +49,7 @@ export const AUTH_EVENTS = {
       error_code: 'string', // optional
     },
   },
-  
+
   // User logout events
   USER_LOGGED_OUT: {
     name: 'User Logged Out',
@@ -58,7 +58,7 @@ export const AUTH_EVENTS = {
       logout_reason: 'string', // 'manual', 'auto', 'error'
     },
   },
-  
+
   // MFA events
   MFA_ENROLLED: {
     name: 'MFA Enrolled',
@@ -159,7 +159,7 @@ export const TASK_EVENTS = {
       source: 'string',
     },
   },
-  
+
   // Task completion
   TASK_COMPLETED: {
     name: 'Task Completed',
@@ -183,7 +183,7 @@ export const TASK_EVENTS = {
       source: 'string',
     },
   },
-  
+
   // Task editing
   TASK_EDITED: {
     name: 'Task Edited',
@@ -203,7 +203,7 @@ export const TASK_EVENTS = {
       source: 'string',
     },
   },
-  
+
   // Task deletion
   TASK_DELETED: {
     name: 'Task Deleted',
@@ -215,7 +215,7 @@ export const TASK_EVENTS = {
       was_completed: 'boolean',
     },
   },
-  
+
   // Task restoration (undo delete)
   TASK_RESTORED: {
     name: 'Task Restored',
@@ -227,7 +227,7 @@ export const TASK_EVENTS = {
       offline_mode: 'boolean',
     },
   },
-  
+
   // Task viewing
   TASK_DETAILS_VIEWED: {
     name: 'Task Details Viewed',
@@ -238,7 +238,7 @@ export const TASK_EVENTS = {
       source: 'string', // 'home_screen', 'calendar', 'notification'
     },
   },
-  
+
   // Task interaction
   TASK_STARTED: {
     name: 'Task Started',
@@ -300,7 +300,7 @@ export const SUBSCRIPTION_EVENTS = {
       time_remaining: 'number', // days until expiration
     },
   },
-  
+
   // Trial events
   TRIAL_STARTED: {
     name: 'Subscription Trial Started',
@@ -319,7 +319,7 @@ export const SUBSCRIPTION_EVENTS = {
       final_tier: 'string', // 'free', 'premium', etc.
     },
   },
-  
+
   // Payment events
   PAYMENT_COMPLETED: {
     name: 'Payment Completed',
@@ -415,7 +415,7 @@ export const FEATURE_EVENTS = {
       user_eligible: 'boolean', // based on subscription tier
     },
   },
-  
+
   // Specific feature events
   DARK_MODE_TOGGLED: {
     name: 'Dark Mode Toggled',
@@ -539,23 +539,26 @@ export const ENGAGEMENT_EVENTS = {
 /**
  * Get all event names as a union type for TypeScript support
  */
-export type AnalyticsEventName = 
-  | typeof AUTH_EVENTS[keyof typeof AUTH_EVENTS]['name']
-  | typeof APP_EVENTS[keyof typeof APP_EVENTS]['name']
-  | typeof SCREEN_EVENTS[keyof typeof SCREEN_EVENTS]['name']
-  | typeof TASK_EVENTS[keyof typeof TASK_EVENTS]['name']
-  | typeof SUBSCRIPTION_EVENTS[keyof typeof SUBSCRIPTION_EVENTS]['name']
-  | typeof ONBOARDING_EVENTS[keyof typeof ONBOARDING_EVENTS]['name']
-  | typeof FEATURE_EVENTS[keyof typeof FEATURE_EVENTS]['name']
-  | typeof ERROR_EVENTS[keyof typeof ERROR_EVENTS]['name']
-  | typeof PERFORMANCE_EVENTS[keyof typeof PERFORMANCE_EVENTS]['name']
-  | typeof ENGAGEMENT_EVENTS[keyof typeof ENGAGEMENT_EVENTS]['name'];
+export type AnalyticsEventName =
+  | (typeof AUTH_EVENTS)[keyof typeof AUTH_EVENTS]['name']
+  | (typeof APP_EVENTS)[keyof typeof APP_EVENTS]['name']
+  | (typeof SCREEN_EVENTS)[keyof typeof SCREEN_EVENTS]['name']
+  | (typeof TASK_EVENTS)[keyof typeof TASK_EVENTS]['name']
+  | (typeof SUBSCRIPTION_EVENTS)[keyof typeof SUBSCRIPTION_EVENTS]['name']
+  | (typeof ONBOARDING_EVENTS)[keyof typeof ONBOARDING_EVENTS]['name']
+  | (typeof FEATURE_EVENTS)[keyof typeof FEATURE_EVENTS]['name']
+  | (typeof ERROR_EVENTS)[keyof typeof ERROR_EVENTS]['name']
+  | (typeof PERFORMANCE_EVENTS)[keyof typeof PERFORMANCE_EVENTS]['name']
+  | (typeof ENGAGEMENT_EVENTS)[keyof typeof ENGAGEMENT_EVENTS]['name'];
 
 /**
  * Helper function to create event tracking calls
  * Usage: trackEvent(TASK_EVENTS.TASK_CREATED, { task_id: '123', ... })
  */
-export const trackEvent = (eventConfig: { name: string; properties: Record<string, string> }, properties: Record<string, any>) => {
+export const trackEvent = (
+  eventConfig: { name: string; properties: Record<string, string> },
+  properties: Record<string, any>,
+) => {
   return {
     eventName: eventConfig.name,
     properties,
@@ -566,7 +569,10 @@ export const trackEvent = (eventConfig: { name: string; properties: Record<strin
  * Validate event properties against the schema
  * This can be used in development to catch property mismatches
  */
-export const validateEventProperties = (eventName: string, properties: Record<string, any>): boolean => {
+export const validateEventProperties = (
+  eventName: string,
+  properties: Record<string, any>,
+): boolean => {
   // Implementation would validate properties against the schema
   // For now, just return true - this can be enhanced later
   console.log(`Validating event: ${eventName}`, properties);

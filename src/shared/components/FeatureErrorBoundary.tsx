@@ -1,6 +1,5 @@
 import React, { ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { COLORS, SPACING } from '@/constants/theme';
+import { ErrorFallback } from './ErrorFallback';
 
 interface Props {
   children: ReactNode;
@@ -9,6 +8,7 @@ interface Props {
 
 interface State {
   hasError: boolean;
+  error?: Error;
 }
 
 class FeatureErrorBoundary extends React.Component<Props, State> {
@@ -19,12 +19,28 @@ class FeatureErrorBoundary extends React.Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI.
-    return { hasError: true };
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // You can also log the error to an error reporting service
-    console.error(`FeatureErrorBoundary caught an error in ${this.props.featureName || 'a feature'}:`, error, errorInfo);
+    // Log error to error tracking service
+    console.error(
+      `FeatureErrorBoundary caught an error in ${this.props.featureName || 'a feature'}:`,
+      error,
+      errorInfo,
+    );
+
+    // Track error if errorTracking is available
+    try {
+      const { errorTracking } = require('@/services/errorTracking');
+      errorTracking.captureError(error, {
+        componentStack: errorInfo.componentStack,
+        featureName: this.props.featureName,
+        errorBoundary: 'FeatureErrorBoundary',
+      });
+    } catch (e) {
+      // Error tracking not available, continue silently
+    }
   }
 
   resetError = () => {
@@ -33,54 +49,21 @@ class FeatureErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      // You can render any custom fallback UI
       return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Oops!</Text>
-          <Text style={styles.message}>
-            Something went wrong with {this.props.featureName || 'this feature'}.
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={this.resetError}>
-            <Text style={styles.buttonText}>Try Again</Text>
-          </TouchableOpacity>
-        </View>
+        <ErrorFallback
+          error={this.state.error}
+          resetError={this.resetError}
+          retry={this.resetError}
+          title="Oops!"
+          message={`Something went wrong with ${this.props.featureName || 'this feature'}.`}
+          showRetry={true}
+          icon="warning-outline"
+        />
       );
     }
 
     return this.props.children;
   }
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: SPACING.lg,
-    backgroundColor: COLORS.background,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.md,
-  },
-  message: {
-    fontSize: 16,
-    color: COLORS.textSecondary,
-    textAlign: 'center',
-    marginBottom: SPACING.lg,
-  },
-  button: {
-    backgroundColor: COLORS.primary,
-    paddingVertical: SPACING.md,
-    paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: COLORS.white,
-    fontWeight: 'bold',
-  },
-});
 
 export default FeatureErrorBoundary;

@@ -1,9 +1,15 @@
 import React, { memo, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
 import TrialBanner from '../../components/TrialBanner';
 import NextTaskCard from '../../components/NextTaskCard';
@@ -32,105 +38,100 @@ interface HomeScreenContentProps {
   onDismissBanner: () => void;
 }
 
-const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(({
-  isGuest,
-  homeData,
-  isLoading,
-  isFabOpen,
-  monthlyTaskCount,
-  shouldShowBanner,
-  trialDaysRemaining,
-  onSwipeComplete,
-  onViewDetails,
-  onFabStateChange,
-  onSubscribePress,
-  onDismissBanner,
-}) => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
+  ({
+    isGuest,
+    homeData,
+    isLoading,
+    isFabOpen,
+    monthlyTaskCount,
+    shouldShowBanner,
+    trialDaysRemaining,
+    onSwipeComplete,
+    onViewDetails,
+    onFabStateChange,
+    onSubscribePress,
+    onDismissBanner,
+  }) => {
+    const navigation = useNavigation<HomeScreenNavigationProp>();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
 
-  // Enhanced performance monitoring
-  useEffect(() => {
-    performanceMonitoringService.startTimer('content-component-mount');
-    return () => {
-      performanceMonitoringService.endTimer('content-component-mount');
-    };
-  }, []);
+    // Enhanced performance monitoring
+    useEffect(() => {
+      performanceMonitoringService.startTimer('content-component-mount');
+      return () => {
+        performanceMonitoringService.endTimer('content-component-mount');
+      };
+    }, []);
 
-  // Optimized refresh with request deduplication
-  const handleRefresh = useStableCallback(async () => {
-    performanceMonitoringService.startTimer('home-screen-refresh');
-    
-    await requestDeduplicationService.deduplicateRequest(
-      'home-screen-refresh',
-      () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
-    );
-    
-    performanceMonitoringService.endTimer('home-screen-refresh');
-  }, [queryClient]);
+    // Optimized refresh with request deduplication
+    const handleRefresh = useStableCallback(async () => {
+      performanceMonitoringService.startTimer('home-screen-refresh');
 
+      await requestDeduplicationService.deduplicateRequest(
+        'home-screen-refresh',
+        () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }),
+      );
 
-  // Optimized data processing with expensive memoization
-  const processedHomeData = useExpensiveMemo(() => {
-    performanceMonitoringService.startTimer('home-data-processing');
-    
-    if (!homeData) {
-      performanceMonitoringService.endTimer('home-data-processing');
-      return null;
-    }
+      performanceMonitoringService.endTimer('home-screen-refresh');
+    }, [queryClient]);
 
-    const processed = {
-      nextUpcomingTask: homeData.nextUpcomingTask,
-      todayOverview: homeData.todayOverview,
-    };
-    
-    performanceMonitoringService.endTimer('home-data-processing');
-    return processed;
-  }, [homeData]);
+    // Optimized data processing with expensive memoization
+    const processedHomeData = useExpensiveMemo(() => {
+      performanceMonitoringService.startTimer('home-data-processing');
 
-
-  return (
-    <ScrollView
-      style={styles.scrollContainer}
-      refreshControl={
-        !isGuest ? (
-          <RefreshControl 
-            refreshing={isLoading} 
-            onRefresh={handleRefresh}
-          />
-        ) : undefined
+      if (!homeData) {
+        performanceMonitoringService.endTimer('home-data-processing');
+        return null;
       }
-      scrollEnabled={!isFabOpen}
-    >
-      {shouldShowBanner && trialDaysRemaining !== null && (
-        <TrialBanner
-          daysRemaining={trialDaysRemaining}
-          onPressSubscribe={onSubscribePress}
-          onDismiss={onDismissBanner}
+
+      const processed = {
+        nextUpcomingTask: homeData.nextUpcomingTask,
+        todayOverview: homeData.todayOverview,
+      };
+
+      performanceMonitoringService.endTimer('home-data-processing');
+      return processed;
+    }, [homeData]);
+
+    return (
+      <ScrollView
+        style={styles.scrollContainer}
+        refreshControl={
+          !isGuest ? (
+            <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
+          ) : undefined
+        }
+        scrollEnabled={!isFabOpen}>
+        {shouldShowBanner && trialDaysRemaining !== null && (
+          <TrialBanner
+            daysRemaining={trialDaysRemaining}
+            onPressSubscribe={onSubscribePress}
+            onDismiss={onDismissBanner}
+          />
+        )}
+
+        <SwipeableTaskCard
+          onSwipeComplete={onSwipeComplete}
+          enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}>
+          <NextTaskCard
+            task={isGuest ? null : processedHomeData?.nextUpcomingTask || null}
+            isGuestMode={isGuest}
+            onAddActivity={() => onFabStateChange({ isOpen: true })}
+            onViewDetails={onViewDetails}
+          />
+        </SwipeableTaskCard>
+
+        <TodayOverviewCard
+          overview={isGuest ? null : processedHomeData?.todayOverview || null}
+          monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
+          subscriptionTier={user?.subscription_tier || 'free'}
         />
-      )}
-      
-      <SwipeableTaskCard
-        onSwipeComplete={onSwipeComplete}
-        enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}
-      >
-        <NextTaskCard 
-          task={isGuest ? null : (processedHomeData?.nextUpcomingTask || null)} 
-          isGuestMode={isGuest}
-          onAddActivity={() => onFabStateChange({ isOpen: true })}
-          onViewDetails={onViewDetails}
-        />
-      </SwipeableTaskCard>
-      
-      <TodayOverviewCard
-        overview={isGuest ? null : (processedHomeData?.todayOverview || null)}
-        monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
-        subscriptionTier={user?.subscription_tier || 'free'}
-      />
-    </ScrollView>
-  );
-});
+      </ScrollView>
+    );
+  },
+);
 
 HomeScreenContent.displayName = 'HomeScreenContent';
 

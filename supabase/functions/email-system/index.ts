@@ -1,9 +1,9 @@
 /**
  * Consolidated Email System Edge Function
- * 
+ *
  * This function consolidates all email-related operations that were previously
  * spread across multiple separate Edge Functions.
- * 
+ *
  * Routes:
  * - POST /email-system/send-welcome - Send welcome email
  * - POST /email-system/send-daily-summary - Send daily summary email
@@ -16,9 +16,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse } from '../_shared/response.ts';
-import { AppError } from '../_shared/response.ts';
+import { createResponse, errorResponse } from '../_shared/response.ts';
+import {
+  AuthenticatedRequest,
+  AppError,
+  ERROR_CODES,
+} from '../_shared/function-handler.ts';
+import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -49,7 +57,10 @@ const CustomEmailSchema = z.object({
 
 // Email service class
 class EmailService {
-  constructor(private supabaseClient: any, private user: any) {}
+  constructor(
+    private supabaseClient: any,
+    private user: any,
+  ) {}
 
   async sendWelcomeEmail(data: any) {
     const { userEmail, userFirstName, userId } = WelcomeEmailSchema.parse(data);
@@ -113,20 +124,29 @@ class EmailService {
     });
 
     if (error) {
-      throw new AppError(`Failed to send welcome email: ${error.message}`, 500, 'EMAIL_ERROR');
+      throw new AppError(
+        `Failed to send welcome email: ${error.message}`,
+        500,
+        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
+      );
     }
 
     return {
       success: true,
       message_id: emailData.id,
-      message: 'Welcome email sent successfully'
+      message: 'Welcome email sent successfully',
     };
   }
 
   async sendDailySummary(data: any) {
-    const { userEmail, userFirstName, summaryData } = DailySummarySchema.parse(data);
+    const { userEmail, userFirstName, summaryData } =
+      DailySummarySchema.parse(data);
 
-    const { upcomingAssignments = 0, completedSessions = 0, streakDays = 0 } = summaryData;
+    const {
+      upcomingAssignments = 0,
+      completedSessions = 0,
+      streakDays = 0,
+    } = summaryData;
 
     const emailContent = `
       <!DOCTYPE html>
@@ -194,20 +214,29 @@ class EmailService {
     });
 
     if (error) {
-      throw new AppError(`Failed to send daily summary: ${error.message}`, 500, 'EMAIL_ERROR');
+      throw new AppError(
+        `Failed to send daily summary: ${error.message}`,
+        500,
+        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
+      );
     }
 
     return {
       success: true,
       message_id: emailData.id,
-      message: 'Daily summary sent successfully'
+      message: 'Daily summary sent successfully',
     };
   }
 
   async sendEveningCapture(data: any) {
-    const { userEmail, userFirstName, captureData } = EveningCaptureSchema.parse(data);
+    const { userEmail, userFirstName, captureData } =
+      EveningCaptureSchema.parse(data);
 
-    const { todaySessions = 0, tomorrowTasks = 0, reflection = '' } = captureData;
+    const {
+      todaySessions = 0,
+      tomorrowTasks = 0,
+      reflection = '',
+    } = captureData;
 
     const emailContent = `
       <!DOCTYPE html>
@@ -241,12 +270,16 @@ class EmailService {
                 <p>You have <strong>${tomorrowTasks}</strong> tasks scheduled for tomorrow.</p>
               </div>
               
-              ${reflection ? `
+              ${
+                reflection
+                  ? `
                 <div class="reflection-box">
                   <h3>Your Reflection</h3>
                   <p>"${reflection}"</p>
                 </div>
-              ` : ''}
+              `
+                  : ''
+              }
               
               <p>Take a moment to reflect on what you learned today and what you want to focus on tomorrow.</p>
               
@@ -271,34 +304,51 @@ class EmailService {
     });
 
     if (error) {
-      throw new AppError(`Failed to send evening capture: ${error.message}`, 500, 'EMAIL_ERROR');
+      throw new AppError(
+        `Failed to send evening capture: ${error.message}`,
+        500,
+        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
+      );
     }
 
     return {
       success: true,
       message_id: emailData.id,
-      message: 'Evening capture sent successfully'
+      message: 'Evening capture sent successfully',
     };
   }
 
   async sendCustomEmail(data: any) {
-    const { to, subject, template, data: templateData } = CustomEmailSchema.parse(data);
+    const {
+      to,
+      subject,
+      template,
+      data: templateData,
+    } = CustomEmailSchema.parse(data);
 
     // Get email template
-    const { data: emailTemplate, error: templateError } = await this.supabaseClient
-      .from('email_templates')
-      .select('*')
-      .eq('template_name', template)
-      .single();
+    const { data: emailTemplate, error: templateError } =
+      await this.supabaseClient
+        .from('email_templates')
+        .select('*')
+        .eq('template_name', template)
+        .single();
 
     if (templateError || !emailTemplate) {
-      throw new AppError('Email template not found', 404, 'NOT_FOUND');
+      throw new AppError(
+        'Email template not found',
+        404,
+        ERROR_CODES.DB_NOT_FOUND,
+      );
     }
 
     // Replace template variables
     let htmlContent = emailTemplate.html_content;
     Object.entries(templateData).forEach(([key, value]) => {
-      htmlContent = htmlContent.replace(new RegExp(`{{${key}}}`, 'g'), String(value));
+      htmlContent = htmlContent.replace(
+        new RegExp(`{{${key}}}`, 'g'),
+        String(value),
+      );
     });
 
     const { data: emailData, error } = await resend.emails.send({
@@ -309,13 +359,17 @@ class EmailService {
     });
 
     if (error) {
-      throw new AppError(`Failed to send custom email: ${error.message}`, 500, 'EMAIL_ERROR');
+      throw new AppError(
+        `Failed to send custom email: ${error.message}`,
+        500,
+        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
+      );
     }
 
     return {
       success: true,
       message_id: emailData.id,
-      message: 'Custom email sent successfully'
+      message: 'Custom email sent successfully',
     };
   }
 
@@ -325,9 +379,7 @@ class EmailService {
       .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw new AppError(error.message, 500, 'DB_QUERY_ERROR');
-    }
+    if (error) handleDbError(error);
 
     return templates;
   }
@@ -350,20 +402,55 @@ class EmailService {
       .select()
       .single();
 
-    if (error) {
-      throw new AppError(error.message, 500, 'DB_INSERT_ERROR');
-    }
+    if (error) handleDbError(error);
 
     return {
       success: true,
       scheduled_email_id: scheduledEmail.id,
-      message: 'Email scheduled successfully'
+      message: 'Email scheduled successfully',
     };
   }
 }
 
-// Main handler
-serve(async (req) => {
+// Handler functions - Use AuthenticatedRequest and EmailService
+async function handleSendWelcomeEmail(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.sendWelcomeEmail(body);
+}
+
+async function handleSendDailySummary(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.sendDailySummary(body);
+}
+
+async function handleSendEveningCapture(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.sendEveningCapture(body);
+}
+
+async function handleSendCustomEmail(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.sendCustomEmail(body);
+}
+
+async function handleGetTemplates(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.getTemplates();
+}
+
+async function handleScheduleEmail(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new EmailService(supabaseClient, user);
+  return await service.scheduleEmail(body);
+}
+
+// Main handler with routing
+serve(async req => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -372,67 +459,87 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
-    const action = pathParts[pathParts.length - 1]; // Get the last part as action
-
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return createResponse({ error: 'Unauthorized' }, 401);
-    }
-
-    // Create email service
-    const emailService = new EmailService(supabaseClient, user);
+    const action = pathParts[pathParts.length - 1];
 
     // Route to appropriate handler
-    switch (action) {
-      case 'send-welcome':
-        const welcomeData = await req.json();
-        const welcomeResult = await emailService.sendWelcomeEmail(welcomeData);
-        return createResponse({ data: welcomeResult }, 200);
-
-      case 'send-daily-summary':
-        const summaryData = await req.json();
-        const summaryResult = await emailService.sendDailySummary(summaryData);
-        return createResponse({ data: summaryResult }, 200);
-
-      case 'send-evening-capture':
-        const captureData = await req.json();
-        const captureResult = await emailService.sendEveningCapture(captureData);
-        return createResponse({ data: captureResult }, 200);
-
-      case 'send-custom':
-        const customData = await req.json();
-        const customResult = await emailService.sendCustomEmail(customData);
-        return createResponse({ data: customResult }, 200);
-
-      case 'templates':
-        const templates = await emailService.getTemplates();
-        return createResponse({ data: templates }, 200);
-
-      case 'schedule':
-        const scheduleData = await req.json();
-        const scheduleResult = await emailService.scheduleEmail(scheduleData);
-        return createResponse({ data: scheduleResult }, 200);
-
-      default:
-        return createResponse({ error: 'Invalid action' }, 404);
+    const handler = getHandler(action);
+    if (!handler) {
+      return errorResponse(
+        new AppError('Invalid action', 404, ERROR_CODES.DB_NOT_FOUND),
+      );
     }
 
+    // Handler is already wrapped with createAuthenticatedHandler, just call it
+    return await handler(req);
   } catch (error) {
-    console.error('Email system error:', error);
-    return createResponse({ 
-      error: error instanceof Error ? error.message : 'Internal server error' 
-    }, 500);
+    const traceContext = extractTraceContext(req);
+    await logger.error(
+      'Email system error',
+      {
+        error: error instanceof Error ? error.message : String(error),
+        url: req.url,
+      },
+      traceContext,
+    );
+    return errorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(
+            'Internal server error',
+            500,
+            ERROR_CODES.INTERNAL_ERROR,
+          ),
+      500,
+    );
   }
 });
+
+// Route handlers - All handlers are wrapped with createAuthenticatedHandler
+function getHandler(action: string | null) {
+  const handlers: Record<string, Function> = {
+    'send-welcome': wrapOldHandler(
+      handleSendWelcomeEmail,
+      'email-send-welcome',
+      WelcomeEmailSchema,
+      true,
+    ),
+    'send-daily-summary': wrapOldHandler(
+      handleSendDailySummary,
+      'email-send-daily-summary',
+      DailySummarySchema,
+      true,
+    ),
+    'send-evening-capture': wrapOldHandler(
+      handleSendEveningCapture,
+      'email-send-evening-capture',
+      EveningCaptureSchema,
+      true,
+    ),
+    'send-custom': wrapOldHandler(
+      handleSendCustomEmail,
+      'email-send-custom',
+      CustomEmailSchema,
+      true,
+    ),
+    templates: wrapOldHandler(
+      handleGetTemplates,
+      'email-templates',
+      undefined,
+      false,
+    ),
+    schedule: wrapOldHandler(
+      handleScheduleEmail,
+      'email-schedule',
+      z.object({
+        to: z.string().email(),
+        subject: z.string().min(1),
+        template: z.string().min(1),
+        data: z.record(z.any()),
+        scheduled_time: z.string().datetime(),
+      }),
+      true,
+    ),
+  };
+
+  return action ? handlers[action] : undefined;
+}

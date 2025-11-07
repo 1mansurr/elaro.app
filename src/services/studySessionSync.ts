@@ -1,11 +1,11 @@
 /**
  * Study Session Synchronization Service
- * 
+ *
  * Manages synchronization between:
  * - Active session progress (local state)
  * - Session completion (Supabase)
  * - SRS performance records (local queue → Supabase)
- * 
+ *
  * Features:
  * - Track ongoing session progress locally
  * - Resume partially completed sessions
@@ -71,7 +71,7 @@ class StudySessionSyncService {
   async startSession(
     sessionId: string,
     userId: string,
-    initialNotes?: string
+    initialNotes?: string,
   ): Promise<void> {
     try {
       const now = Date.now();
@@ -87,7 +87,10 @@ class StudySessionSyncService {
       };
 
       // Save to AsyncStorage
-      await AsyncStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(this.activeSession));
+      await AsyncStorage.setItem(
+        ACTIVE_SESSION_KEY,
+        JSON.stringify(this.activeSession),
+      );
 
       // Start progress tracking interval (update every 10 seconds)
       this.startProgressTracking();
@@ -109,7 +112,7 @@ class StudySessionSyncService {
       notes?: string;
       difficultyRating?: number;
       confidenceLevel?: number;
-    }
+    },
   ): Promise<void> {
     try {
       if (!this.activeSession || this.activeSession.sessionId !== sessionId) {
@@ -130,7 +133,10 @@ class StudySessionSyncService {
       };
 
       // Save to AsyncStorage
-      await AsyncStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(this.activeSession));
+      await AsyncStorage.setItem(
+        ACTIVE_SESSION_KEY,
+        JSON.stringify(this.activeSession),
+      );
 
       // Save progress snapshot
       await this.saveProgressSnapshot(sessionId, this.activeSession.userId);
@@ -158,14 +164,19 @@ class StudySessionSyncService {
         lastUpdatedAt: Date.now(),
       };
 
-      await AsyncStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(this.activeSession));
-      
+      await AsyncStorage.setItem(
+        ACTIVE_SESSION_KEY,
+        JSON.stringify(this.activeSession),
+      );
+
       if (this.progressInterval) {
         clearInterval(this.progressInterval);
         this.progressInterval = null;
       }
 
-      console.log('⏸️ StudySessionSync: Session paused', { sessionId: this.activeSession.sessionId });
+      console.log('⏸️ StudySessionSync: Session paused', {
+        sessionId: this.activeSession.sessionId,
+      });
       this.notifyListeners(this.activeSession);
     } catch (error) {
       console.error('❌ StudySessionSync: Failed to pause session:', error);
@@ -191,10 +202,15 @@ class StudySessionSyncService {
         lastUpdatedAt: Date.now(),
       };
 
-      await AsyncStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(this.activeSession));
+      await AsyncStorage.setItem(
+        ACTIVE_SESSION_KEY,
+        JSON.stringify(this.activeSession),
+      );
       this.startProgressTracking();
 
-      console.log('▶️ StudySessionSync: Session resumed', { sessionId: this.activeSession.sessionId });
+      console.log('▶️ StudySessionSync: Session resumed', {
+        sessionId: this.activeSession.sessionId,
+      });
       this.notifyListeners(this.activeSession);
     } catch (error) {
       console.error('❌ StudySessionSync: Failed to resume session:', error);
@@ -211,7 +227,7 @@ class StudySessionSyncService {
       notes?: string;
       difficultyRating?: number;
       confidenceLevel?: number;
-    }
+    },
   ): Promise<void> {
     try {
       if (!this.activeSession || this.activeSession.sessionId !== sessionId) {
@@ -219,7 +235,10 @@ class StudySessionSyncService {
       }
 
       // Save final progress snapshot
-      await this.saveProgressSnapshot(sessionId, this.activeSession?.userId || '');
+      await this.saveProgressSnapshot(
+        sessionId,
+        this.activeSession?.userId || '',
+      );
 
       // Update session in Supabase
       try {
@@ -236,9 +255,14 @@ class StudySessionSyncService {
 
         if (error) throw error;
 
-        console.log('✅ StudySessionSync: Session completed and synced', { sessionId });
+        console.log('✅ StudySessionSync: Session completed and synced', {
+          sessionId,
+        });
       } catch (error) {
-        console.error('❌ StudySessionSync: Failed to sync completion, adding to queue:', error);
+        console.error(
+          '❌ StudySessionSync: Failed to sync completion, adding to queue:',
+          error,
+        );
         // Add to sync queue for offline handling
         if (this.activeSession?.userId) {
           await syncManager.addToQueue(
@@ -250,7 +274,7 @@ class StudySessionSyncService {
               data: finalData,
             },
             this.activeSession.userId,
-            { syncImmediately: false }
+            { syncImmediately: false },
           );
         }
       }
@@ -310,7 +334,10 @@ class StudySessionSyncService {
         timeSpent: Math.floor(session.timeSpentSeconds / 60),
       });
     } catch (error) {
-      console.error('❌ StudySessionSync: Failed to load active session:', error);
+      console.error(
+        '❌ StudySessionSync: Failed to load active session:',
+        error,
+      );
       this.activeSession = null;
     }
   }
@@ -356,8 +383,10 @@ class StudySessionSyncService {
 
       // Update time spent
       const now = Date.now();
-      const elapsed = Math.floor((now - this.activeSession.lastUpdatedAt) / 1000);
-      
+      const elapsed = Math.floor(
+        (now - this.activeSession.lastUpdatedAt) / 1000,
+      );
+
       await this.updateSessionProgress(this.activeSession.sessionId, {
         timeSpentSeconds: this.activeSession.timeSpentSeconds + elapsed,
       });
@@ -367,7 +396,10 @@ class StudySessionSyncService {
   /**
    * Save progress snapshot for resume capability
    */
-  private async saveProgressSnapshot(sessionId: string, userId: string): Promise<void> {
+  private async saveProgressSnapshot(
+    sessionId: string,
+    userId: string,
+  ): Promise<void> {
     try {
       if (!this.activeSession) return;
 
@@ -381,22 +413,30 @@ class StudySessionSyncService {
         updatedAt: Date.now(),
       };
 
-      await AsyncStorage.setItem(SESSION_PROGRESS_KEY, JSON.stringify(progress));
+      await AsyncStorage.setItem(
+        SESSION_PROGRESS_KEY,
+        JSON.stringify(progress),
+      );
     } catch (error) {
-      console.error('❌ StudySessionSync: Failed to save progress snapshot:', error);
+      console.error(
+        '❌ StudySessionSync: Failed to save progress snapshot:',
+        error,
+      );
     }
   }
 
   /**
    * Get progress snapshot for a session
    */
-  async getProgressSnapshot(sessionId: string): Promise<SessionProgress | null> {
+  async getProgressSnapshot(
+    sessionId: string,
+  ): Promise<SessionProgress | null> {
     try {
       const stored = await AsyncStorage.getItem(SESSION_PROGRESS_KEY);
       if (!stored) return null;
 
       const progress: SessionProgress = JSON.parse(stored);
-      
+
       // Only return if it matches the requested session
       if (progress.sessionId !== sessionId) {
         return null;
@@ -404,7 +444,10 @@ class StudySessionSyncService {
 
       return progress;
     } catch (error) {
-      console.error('❌ StudySessionSync: Failed to get progress snapshot:', error);
+      console.error(
+        '❌ StudySessionSync: Failed to get progress snapshot:',
+        error,
+      );
       return null;
     }
   }
@@ -420,7 +463,7 @@ class StudySessionSyncService {
       qualityRating: number;
       responseTimeSeconds?: number;
       scheduleNext?: boolean;
-    }
+    },
   ): Promise<void> {
     try {
       const pendingRecord: PendingSRSPerformance = {
@@ -437,42 +480,60 @@ class StudySessionSyncService {
 
       // Try to sync immediately
       try {
-        const { error } = await supabase.functions.invoke('record-srs-performance', {
-          body: {
-            session_id: sessionId,
-            reminder_id: performance.reminderId,
-            quality_rating: performance.qualityRating,
-            response_time_seconds: performance.responseTimeSeconds,
-            schedule_next: performance.scheduleNext ?? true,
+        const { error } = await supabase.functions.invoke(
+          'record-srs-performance',
+          {
+            body: {
+              session_id: sessionId,
+              reminder_id: performance.reminderId,
+              quality_rating: performance.qualityRating,
+              response_time_seconds: performance.responseTimeSeconds,
+              schedule_next: performance.scheduleNext ?? true,
+            },
           },
-        });
+        );
 
         if (error) throw error;
 
-        console.log('✅ StudySessionSync: SRS performance synced', { sessionId });
+        console.log('✅ StudySessionSync: SRS performance synced', {
+          sessionId,
+        });
         return;
       } catch (error) {
-        console.log('📴 StudySessionSync: Offline or sync failed, queueing SRS performance', { sessionId });
+        console.log(
+          '📴 StudySessionSync: Offline or sync failed, queueing SRS performance',
+          { sessionId },
+        );
       }
 
       // Queue for later sync
       await this.queueSRSPerformance(pendingRecord);
     } catch (error) {
-      console.error('❌ StudySessionSync: Failed to record SRS performance:', error);
+      console.error(
+        '❌ StudySessionSync: Failed to record SRS performance:',
+        error,
+      );
     }
   }
 
   /**
    * Queue SRS performance for later sync
    */
-  private async queueSRSPerformance(record: PendingSRSPerformance): Promise<void> {
+  private async queueSRSPerformance(
+    record: PendingSRSPerformance,
+  ): Promise<void> {
     try {
       const queue = await this.getSRSQueue();
       queue.push(record);
       await AsyncStorage.setItem(SRS_QUEUE_KEY, JSON.stringify(queue));
-      console.log('📝 StudySessionSync: SRS performance queued', { queueLength: queue.length });
+      console.log('📝 StudySessionSync: SRS performance queued', {
+        queueLength: queue.length,
+      });
     } catch (error) {
-      console.error('❌ StudySessionSync: Failed to queue SRS performance:', error);
+      console.error(
+        '❌ StudySessionSync: Failed to queue SRS performance:',
+        error,
+      );
     }
   }
 
@@ -506,29 +567,40 @@ class StudySessionSyncService {
 
       for (const record of queue) {
         try {
-          const { error } = await supabase.functions.invoke('record-srs-performance', {
-            body: {
-              session_id: record.sessionId,
-              reminder_id: record.reminderId,
-              quality_rating: record.qualityRating,
-              response_time_seconds: record.responseTimeSeconds,
-              schedule_next: true,
+          const { error } = await supabase.functions.invoke(
+            'record-srs-performance',
+            {
+              body: {
+                session_id: record.sessionId,
+                reminder_id: record.reminderId,
+                quality_rating: record.qualityRating,
+                response_time_seconds: record.responseTimeSeconds,
+                schedule_next: true,
+              },
             },
-          });
+          );
 
           if (error) throw error;
 
           synced++;
-          console.log('✅ StudySessionSync: Queued SRS performance synced', { id: record.id });
+          console.log('✅ StudySessionSync: Queued SRS performance synced', {
+            id: record.id,
+          });
         } catch (error) {
           record.retryCount++;
 
           if (record.retryCount >= record.maxRetries) {
             failed++;
-            console.error('❌ StudySessionSync: SRS performance failed after max retries', { id: record.id });
+            console.error(
+              '❌ StudySessionSync: SRS performance failed after max retries',
+              { id: record.id },
+            );
           } else {
             remaining.push(record);
-            console.log(`⏳ StudySessionSync: SRS performance will retry (${record.retryCount}/${record.maxRetries})`, { id: record.id });
+            console.log(
+              `⏳ StudySessionSync: SRS performance will retry (${record.retryCount}/${record.maxRetries})`,
+              { id: record.id },
+            );
           }
         }
       }
@@ -536,7 +608,11 @@ class StudySessionSyncService {
       // Save remaining queue
       await AsyncStorage.setItem(SRS_QUEUE_KEY, JSON.stringify(remaining));
 
-      console.log('🔄 StudySessionSync: SRS queue sync complete', { synced, failed, remaining: remaining.length });
+      console.log('🔄 StudySessionSync: SRS queue sync complete', {
+        synced,
+        failed,
+        remaining: remaining.length,
+      });
       return { synced, failed };
     } catch (error) {
       console.error('❌ StudySessionSync: Failed to sync SRS queue:', error);
@@ -547,7 +623,9 @@ class StudySessionSyncService {
   /**
    * Subscribe to active session changes
    */
-  onSessionChange(callback: (session: ActiveSession | null) => void): () => void {
+  onSessionChange(
+    callback: (session: ActiveSession | null) => void,
+  ): () => void {
     this.listeners.add(callback);
     return () => {
       this.listeners.delete(callback);

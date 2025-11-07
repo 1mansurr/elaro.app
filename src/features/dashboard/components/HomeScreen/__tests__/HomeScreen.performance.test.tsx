@@ -34,9 +34,7 @@ const mockQueryClient = new QueryClient({
 
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={mockQueryClient}>
-    <NavigationContainer>
-      {children}
-    </NavigationContainer>
+    <NavigationContainer>{children}</NavigationContainer>
   </QueryClientProvider>
 );
 
@@ -49,15 +47,16 @@ describe('HomeScreen Performance Tests', () => {
     it('should track component mount times', async () => {
       render(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('header-component-mount');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('header-component-mount');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'header-component-mount',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'header-component-mount',
+      );
     });
 
     it('should track content component mount performance', async () => {
@@ -78,11 +77,15 @@ describe('HomeScreen Performance Tests', () => {
             onDismissBanner={jest.fn()}
             scrollEnabled={true}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('content-component-mount');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('content-component-mount');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'content-component-mount',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'content-component-mount',
+      );
     });
 
     it('should track FAB component mount performance', async () => {
@@ -95,11 +98,15 @@ describe('HomeScreen Performance Tests', () => {
             onDoubleTap={jest.fn()}
             onDraftBadgePress={jest.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('fab-component-mount');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('fab-component-mount');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'fab-component-mount',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'fab-component-mount',
+      );
     });
   });
 
@@ -107,24 +114,20 @@ describe('HomeScreen Performance Tests', () => {
     it('should test expensive memoization caching', async () => {
       const { rerender } = render(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
       // First render
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('header-title-calculation');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'header-title-calculation',
+      );
 
       // Re-render with same props
       rerender(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
       // Should use cached result, not recalculate
@@ -133,32 +136,36 @@ describe('HomeScreen Performance Tests', () => {
 
     it('should test stable callback performance', async () => {
       const mockCallback = jest.fn();
-      
+
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreenHeader
             isGuest={false}
             onNotificationPress={mockCallback}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const notificationBell = getByTestId('notification-bell');
-      
+
       // Multiple rapid clicks should use stable callback
       fireEvent.press(notificationBell);
       fireEvent.press(notificationBell);
       fireEvent.press(notificationBell);
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('header-notification-press');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('header-notification-press');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'header-notification-press',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'header-notification-press',
+      );
     });
   });
 
   describe('Request Deduplication Performance', () => {
     it('should test request deduplication efficiency', async () => {
       const mockRefresh = jest.fn();
-      
+
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreenContent
@@ -176,11 +183,11 @@ describe('HomeScreen Performance Tests', () => {
             onDismissBanner={jest.fn()}
             scrollEnabled={true}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const refreshControl = getByTestId('refresh-control');
-      
+
       // Rapid multiple refresh requests
       act(() => {
         fireEvent(refreshControl, 'refresh');
@@ -189,8 +196,12 @@ describe('HomeScreen Performance Tests', () => {
       });
 
       // Should deduplicate requests
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('home-screen-refresh');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('home-screen-refresh');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'home-screen-refresh',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'home-screen-refresh',
+      );
     });
   });
 
@@ -205,7 +216,7 @@ describe('HomeScreen Performance Tests', () => {
             onDoubleTap={jest.fn()}
             onDraftBadgePress={jest.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test opening animation
@@ -218,11 +229,15 @@ describe('HomeScreen Performance Tests', () => {
             onDoubleTap={jest.fn()}
             onDraftBadgePress={jest.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('fab-state-change');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('fab-state-change');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'fab-state-change',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'fab-state-change',
+      );
     });
   });
 
@@ -230,17 +245,16 @@ describe('HomeScreen Performance Tests', () => {
     it('should test component unmount cleanup', async () => {
       const { unmount } = render(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
       unmount();
 
       // Should clean up performance timers
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('header-component-mount');
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'header-component-mount',
+      );
     });
 
     it('should test modal visibility performance tracking', async () => {
@@ -257,7 +271,7 @@ describe('HomeScreen Performance Tests', () => {
             onCloseQuickAdd={jest.fn()}
             onCloseNotificationHistory={jest.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Open quick add modal
@@ -274,11 +288,15 @@ describe('HomeScreen Performance Tests', () => {
             onCloseQuickAdd={jest.fn()}
             onCloseNotificationHistory={jest.fn()}
           />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
-      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith('quick-add-modal-open');
-      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith('quick-add-modal-open');
+      expect(mockPerformanceService.startTimer).toHaveBeenCalledWith(
+        'quick-add-modal-open',
+      );
+      expect(mockPerformanceService.endTimer).toHaveBeenCalledWith(
+        'quick-add-modal-open',
+      );
     });
   });
 
@@ -286,19 +304,16 @@ describe('HomeScreen Performance Tests', () => {
     it('should collect and report performance metrics', async () => {
       render(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
       const metrics = mockPerformanceService.getMetrics();
-      
+
       expect(metrics).toHaveProperty('header-component-mount');
       expect(metrics).toHaveProperty('content-component-mount');
       expect(metrics).toHaveProperty('fab-component-mount');
-      
+
       expect(typeof metrics['header-component-mount']).toBe('number');
       expect(metrics['header-component-mount']).toBeGreaterThan(0);
     });
@@ -313,15 +328,12 @@ describe('HomeScreen Performance Tests', () => {
 
       render(
         <TestWrapper>
-          <HomeScreenHeader
-            isGuest={false}
-            onNotificationPress={jest.fn()}
-          />
-        </TestWrapper>
+          <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+        </TestWrapper>,
       );
 
       const metrics = mockPerformanceService.getMetrics();
-      
+
       // Should detect slow performance
       expect(metrics['header-component-mount']).toBeGreaterThan(50);
       expect(metrics['content-component-mount']).toBeGreaterThan(100);

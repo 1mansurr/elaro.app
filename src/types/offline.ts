@@ -1,6 +1,6 @@
 /**
  * Types for Offline Support System (Level 2)
- * 
+ *
  * This file defines the structure for offline actions that are queued
  * when the user performs mutations while offline. These actions are
  * stored in AsyncStorage and processed when connectivity is restored.
@@ -9,11 +9,11 @@
 /**
  * The type of operation being performed
  */
-export type OfflineOperationType = 
-  | 'CREATE' 
-  | 'UPDATE' 
-  | 'DELETE' 
-  | 'RESTORE' 
+export type OfflineOperationType =
+  | 'CREATE'
+  | 'UPDATE'
+  | 'DELETE'
+  | 'RESTORE'
   | 'COMPLETE'
   | 'BATCH_DELETE'
   | 'BATCH_RESTORE';
@@ -21,20 +21,20 @@ export type OfflineOperationType =
 /**
  * The type of resource being modified
  */
-export type OfflineResourceType = 
-  | 'assignment' 
-  | 'lecture' 
-  | 'study_session' 
+export type OfflineResourceType =
+  | 'assignment'
+  | 'lecture'
+  | 'study_session'
   | 'course';
 
 /**
  * Status of an offline action
  */
-export type OfflineActionStatus = 
-  | 'pending'    // Waiting to be synced
-  | 'syncing'    // Currently being synced
-  | 'success'    // Successfully synced
-  | 'failed'     // Failed to sync (will retry)
+export type OfflineActionStatus =
+  | 'pending' // Waiting to be synced
+  | 'syncing' // Currently being synced
+  | 'success' // Successfully synced
+  | 'failed' // Failed to sync (will retry)
   | 'cancelled'; // User cancelled the action
 
 /**
@@ -43,34 +43,34 @@ export type OfflineActionStatus =
 export interface OfflineAction {
   /** Unique identifier for this offline action (client-generated UUID) */
   id: string;
-  
+
   /** Type of operation (CREATE, UPDATE, DELETE, etc.) */
   operation: OfflineOperationType;
-  
+
   /** Type of resource (assignment, lecture, etc.) */
   resourceType: OfflineResourceType;
-  
+
   /** The actual data for the mutation */
   payload: OfflineActionPayload;
-  
+
   /** Timestamp when the action was created (offline) */
   timestamp: number;
-  
+
   /** Current status of the action */
   status: OfflineActionStatus;
-  
+
   /** Number of times we've attempted to sync this action */
   retryCount: number;
-  
+
   /** Maximum number of retry attempts before giving up */
   maxRetries: number;
-  
+
   /** User ID who created this action */
   userId: string;
-  
+
   /** Optional error message if sync failed */
   error?: string;
-  
+
   /** Temporary ID used locally (for CREATE operations) */
   tempId?: string;
 }
@@ -78,7 +78,7 @@ export interface OfflineAction {
 /**
  * Payload types for different operations
  */
-export type OfflineActionPayload = 
+export type OfflineActionPayload =
   | CreatePayload
   | UpdatePayload
   | DeletePayload
@@ -145,13 +145,13 @@ export interface BatchPayload {
 export interface SyncResult {
   /** The action that was processed */
   action: OfflineAction;
-  
+
   /** Whether the sync was successful */
   success: boolean;
-  
+
   /** Error message if sync failed */
   error?: string;
-  
+
   /** Server response data (if successful) */
   data?: any;
 }
@@ -162,16 +162,16 @@ export interface SyncResult {
 export interface QueueStats {
   /** Total number of actions in the queue */
   total: number;
-  
+
   /** Number of pending actions */
   pending: number;
-  
+
   /** Number of actions currently syncing */
   syncing: number;
-  
+
   /** Number of failed actions */
   failed: number;
-  
+
   /** Oldest action timestamp */
   oldestTimestamp?: number;
 }
@@ -182,7 +182,7 @@ export interface QueueStats {
 export interface AddToQueueOptions {
   /** Maximum number of retries (default: 3) */
   maxRetries?: number;
-  
+
   /** Whether to immediately try to sync if online (default: true) */
   syncImmediately?: boolean;
 }
@@ -193,14 +193,13 @@ export interface AddToQueueOptions {
 export interface SyncManagerConfig {
   /** Maximum number of concurrent sync operations (default: 3) */
   maxConcurrentSyncs?: number;
-  
+
   /** Delay between retries in milliseconds (default: 5000) */
   retryDelay?: number;
-  
+
   /** Whether to sync automatically when coming online (default: true) */
   autoSyncOnline?: boolean;
-  
+
   /** Maximum queue size (default: 100) */
   maxQueueSize?: number;
 }
-

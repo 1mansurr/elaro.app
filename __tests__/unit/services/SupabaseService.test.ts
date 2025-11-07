@@ -1,16 +1,68 @@
 import { supabase } from '@/services/supabase';
-import { createMockSupabaseClient, createMockUser, createMockAssignment } from '@tests/utils/testUtils';
+import { createMockUser, createMockAssignment } from '@tests/utils/testUtils';
 
-// Mock the supabase client
-jest.mock('@supabase/supabase-js', () => ({
-  createClient: jest.fn(() => createMockSupabaseClient()),
-}));
+// Mock the supabase client - inline factory to avoid scope issues
+jest.mock('@supabase/supabase-js', () => {
+  const createMockSupabaseClient = () => ({
+    from: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
+    insert: jest.fn().mockReturnThis(),
+    update: jest.fn().mockReturnThis(),
+    delete: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    limit: jest.fn().mockResolvedValue({ data: [], error: null }),
+    order: jest.fn().mockReturnThis(),
+    range: jest.fn().mockResolvedValue({ data: [], error: null }),
+    auth: {
+      getUser: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      signInWithPassword: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      signUp: jest
+        .fn()
+        .mockResolvedValue({ data: { user: null }, error: null }),
+      signOut: jest.fn().mockResolvedValue({ error: null }),
+    },
+    functions: {
+      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+    },
+  });
+
+  return {
+    createClient: jest.fn(() => createMockSupabaseClient()),
+  };
+});
 
 describe('SupabaseService', () => {
-  let mockSupabase: any;
+  let mockSupabase: {
+    from: jest.Mock;
+    select: jest.Mock;
+    insert: jest.Mock;
+    update: jest.Mock;
+    delete: jest.Mock;
+    eq: jest.Mock;
+    single: jest.Mock;
+    limit: jest.Mock;
+    order: jest.Mock;
+    range: jest.Mock;
+    auth: {
+      getUser: jest.Mock;
+      signInWithPassword: jest.Mock;
+      signUp: jest.Mock;
+      signOut: jest.Mock;
+    };
+    functions: {
+      invoke: jest.Mock;
+    };
+  };
 
   beforeEach(() => {
-    mockSupabase = createMockSupabaseClient();
+    // Get the mock client from the mocked module
+    const { createClient } = require('@supabase/supabase-js');
+    mockSupabase = createClient();
     // Reset all mocks
     jest.clearAllMocks();
   });
@@ -20,19 +72,19 @@ describe('SupabaseService', () => {
       const mockUser = createMockUser();
       const mockAuthResponse = {
         data: { user: mockUser },
-        error: null
+        error: null,
       };
 
       mockSupabase.auth.signInWithPassword.mockResolvedValue(mockAuthResponse);
 
       const result = await supabase.auth.signInWithPassword({
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
 
       expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
         email: 'test@example.com',
-        password: 'password123'
+        password: 'password123',
       });
       expect(result.data.user).toEqual(mockUser);
       expect(result.error).toBeNull();
@@ -42,12 +94,12 @@ describe('SupabaseService', () => {
       const mockError = { message: 'Invalid credentials' };
       mockSupabase.auth.signInWithPassword.mockResolvedValue({
         data: { user: null },
-        error: mockError
+        error: mockError,
       });
 
       const result = await supabase.auth.signInWithPassword({
         email: 'test@example.com',
-        password: 'wrongpassword'
+        password: 'wrongpassword',
       });
 
       expect(result.data.user).toBeNull();
@@ -58,19 +110,19 @@ describe('SupabaseService', () => {
       const mockUser = createMockUser();
       const mockAuthResponse = {
         data: { user: mockUser },
-        error: null
+        error: null,
       };
 
       mockSupabase.auth.signUp.mockResolvedValue(mockAuthResponse);
 
       const result = await supabase.auth.signUp({
         email: 'newuser@example.com',
-        password: 'password123'
+        password: 'password123',
       });
 
       expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
         email: 'newuser@example.com',
-        password: 'password123'
+        password: 'password123',
       });
       expect(result.data.user).toEqual(mockUser);
     });
@@ -88,7 +140,7 @@ describe('SupabaseService', () => {
       const mockUser = createMockUser();
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: mockUser },
-        error: null
+        error: null,
       });
 
       const result = await supabase.auth.getUser();
@@ -102,7 +154,7 @@ describe('SupabaseService', () => {
       const mockData = [createMockUser(), createMockUser()];
       mockSupabase.from().select().eq().single.mockResolvedValue({
         data: mockData[0],
-        error: null
+        error: null,
       });
 
       const result = await supabase
@@ -119,23 +171,27 @@ describe('SupabaseService', () => {
       const mockAssignment = createMockAssignment();
       mockSupabase.from().insert.mockResolvedValue({
         data: [mockAssignment],
-        error: null
+        error: null,
       });
 
-      const result = await supabase
-        .from('assignments')
-        .insert(mockAssignment);
+      const result = await supabase.from('assignments').insert(mockAssignment);
 
       expect(result.data).toEqual([mockAssignment]);
       expect(result.error).toBeNull();
     });
 
     it('should update data in table', async () => {
-      const updatedAssignment = { ...createMockAssignment(), title: 'Updated Title' };
-      mockSupabase.from().update().eq.mockResolvedValue({
-        data: [updatedAssignment],
-        error: null
-      });
+      const updatedAssignment = {
+        ...createMockAssignment(),
+        title: 'Updated Title',
+      };
+      mockSupabase
+        .from()
+        .update()
+        .eq.mockResolvedValue({
+          data: [updatedAssignment],
+          error: null,
+        });
 
       const result = await supabase
         .from('assignments')
@@ -149,7 +205,7 @@ describe('SupabaseService', () => {
     it('should delete data from table', async () => {
       mockSupabase.from().delete().eq.mockResolvedValue({
         data: [],
-        error: null
+        error: null,
       });
 
       const result = await supabase
@@ -165,12 +221,10 @@ describe('SupabaseService', () => {
       const mockError = { message: 'Table not found' };
       mockSupabase.from().select.mockResolvedValue({
         data: null,
-        error: mockError
+        error: mockError,
       });
 
-      const result = await supabase
-        .from('nonexistent_table')
-        .select('*');
+      const result = await supabase.from('nonexistent_table').select('*');
 
       expect(result.data).toBeNull();
       expect(result.error).toEqual(mockError);
@@ -183,12 +237,15 @@ describe('SupabaseService', () => {
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
 
       const result = await supabase.functions.invoke('create-assignment', {
-        body: { title: 'Test Assignment' }
+        body: { title: 'Test Assignment' },
       });
 
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('create-assignment', {
-        body: { title: 'Test Assignment' }
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'create-assignment',
+        {
+          body: { title: 'Test Assignment' },
+        },
+      );
       expect(result.data.success).toBe(true);
     });
 
@@ -196,11 +253,11 @@ describe('SupabaseService', () => {
       const mockError = { message: 'Function execution failed' };
       mockSupabase.functions.invoke.mockResolvedValue({
         data: null,
-        error: mockError
+        error: mockError,
       });
 
       const result = await supabase.functions.invoke('create-assignment', {
-        body: { title: 'Test Assignment' }
+        body: { title: 'Test Assignment' },
       });
 
       expect(result.data).toBeNull();
@@ -213,7 +270,7 @@ describe('SupabaseService', () => {
       const mockData = [createMockAssignment()];
       mockSupabase.from().select().eq().limit.mockResolvedValue({
         data: mockData,
-        error: null
+        error: null,
       });
 
       const result = await supabase
@@ -227,10 +284,13 @@ describe('SupabaseService', () => {
 
     it('should chain update with conditions', async () => {
       const updatedData = { title: 'Updated' };
-      mockSupabase.from().update().eq.mockResolvedValue({
-        data: [updatedData],
-        error: null
-      });
+      mockSupabase
+        .from()
+        .update()
+        .eq.mockResolvedValue({
+          data: [updatedData],
+          error: null,
+        });
 
       const result = await supabase
         .from('assignments')
@@ -246,25 +306,25 @@ describe('SupabaseService', () => {
       const networkError = new Error('Network request failed');
       mockSupabase.from().select.mockRejectedValue(networkError);
 
-      await expect(
-        supabase.from('users').select('*')
-      ).rejects.toThrow('Network request failed');
+      await expect(supabase.from('users').select('*')).rejects.toThrow(
+        'Network request failed',
+      );
     });
 
     it('should handle timeout errors', async () => {
       const timeoutError = new Error('Request timeout');
       mockSupabase.functions.invoke.mockRejectedValue(timeoutError);
 
-      await expect(
-        supabase.functions.invoke('slow-function')
-      ).rejects.toThrow('Request timeout');
+      await expect(supabase.functions.invoke('slow-function')).rejects.toThrow(
+        'Request timeout',
+      );
     });
 
     it('should handle authentication errors', async () => {
       const authError = { message: 'Invalid JWT token' };
       mockSupabase.auth.getUser.mockResolvedValue({
         data: { user: null },
-        error: authError
+        error: authError,
       });
 
       const result = await supabase.auth.getUser();
@@ -276,15 +336,13 @@ describe('SupabaseService', () => {
     it('should validate required fields on insert', async () => {
       const incompleteData = { title: 'Test' }; // Missing required fields
       const validationError = { message: 'Missing required fields' };
-      
+
       mockSupabase.from().insert.mockResolvedValue({
         data: null,
-        error: validationError
+        error: validationError,
       });
 
-      const result = await supabase
-        .from('assignments')
-        .insert(incompleteData);
+      const result = await supabase.from('assignments').insert(incompleteData);
 
       expect(result.error).toEqual(validationError);
     });
@@ -293,7 +351,7 @@ describe('SupabaseService', () => {
       const constraintError = { message: 'Unique constraint violation' };
       mockSupabase.from().insert.mockResolvedValue({
         data: null,
-        error: constraintError
+        error: constraintError,
       });
 
       const result = await supabase
@@ -306,19 +364,16 @@ describe('SupabaseService', () => {
 
   describe('performance', () => {
     it('should handle large result sets', async () => {
-      const largeDataSet = Array.from({ length: 1000 }, (_, i) => 
-        createMockAssignment({ id: `assignment-${i}` })
+      const largeDataSet = Array.from({ length: 1000 }, (_, i) =>
+        createMockAssignment({ id: `assignment-${i}` }),
       );
-      
+
       mockSupabase.from().select().limit.mockResolvedValue({
         data: largeDataSet,
-        error: null
+        error: null,
       });
 
-      const result = await supabase
-        .from('assignments')
-        .select('*')
-        .limit(1000);
+      const result = await supabase.from('assignments').select('*').limit(1000);
 
       expect(result.data).toHaveLength(1000);
     });
@@ -327,13 +382,10 @@ describe('SupabaseService', () => {
       const pageData = [createMockAssignment()];
       mockSupabase.from().select().range.mockResolvedValue({
         data: pageData,
-        error: null
+        error: null,
       });
 
-      const result = await supabase
-        .from('assignments')
-        .select('*')
-        .range(0, 9); // First 10 items
+      const result = await supabase.from('assignments').select('*').range(0, 9); // First 10 items
 
       expect(result.data).toEqual(pageData);
     });

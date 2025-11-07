@@ -23,27 +23,32 @@ const OnboardingNavigator = () => {
         headerTitle: '',
         headerShadowVisible: false,
       }}
-      initialRouteName="Welcome"
-    >
-      <Stack.Screen 
-        name="Welcome" 
+      initialRouteName="Welcome">
+      <Stack.Screen
+        name="Welcome"
         component={NewWelcomeScreen}
         options={{
-          header: () => <ProgressHeader currentStep={1} totalSteps={TOTAL_STEPS} />,
+          header: () => (
+            <ProgressHeader currentStep={1} totalSteps={TOTAL_STEPS} />
+          ),
         }}
       />
-      <Stack.Screen 
-        name="ProfileSetup" 
+      <Stack.Screen
+        name="ProfileSetup"
         component={ProfileSetupScreen}
         options={{
-          header: () => <ProgressHeader currentStep={2} totalSteps={TOTAL_STEPS} />,
+          header: () => (
+            <ProgressHeader currentStep={2} totalSteps={TOTAL_STEPS} />
+          ),
         }}
       />
-      <Stack.Screen 
-        name="CourseSetup" 
+      <Stack.Screen
+        name="CourseSetup"
         component={OnboardingCoursesScreen}
         options={{
-          header: () => <ProgressHeader currentStep={3} totalSteps={TOTAL_STEPS} />,
+          header: () => (
+            <ProgressHeader currentStep={3} totalSteps={TOTAL_STEPS} />
+          ),
         }}
       />
     </Stack.Navigator>

@@ -4,7 +4,7 @@ import { RootStackParamList } from '@/types';
 
 /**
  * Type-safe navigation utilities for ELARO app
- * 
+ *
  * This module provides type-safe navigation helpers that ensure:
  * - All navigation calls reference valid routes
  * - Parameters are properly typed
@@ -34,7 +34,7 @@ export class SafeNavigation {
    */
   navigate<K extends keyof RootStackParamList>(
     screen: K,
-    params?: RootStackParamList[K]
+    params?: RootStackParamList[K],
   ): void {
     try {
       // Runtime validation: ensure route exists
@@ -53,7 +53,11 @@ export class SafeNavigation {
       }
     } catch (error) {
       console.error(`Navigation error to ${String(screen)}:`, error);
-      NavigationErrorHandler.handleError(error as Error, String(screen), 'navigate');
+      NavigationErrorHandler.handleError(
+        error as Error,
+        String(screen),
+        'navigate',
+      );
     }
   }
 
@@ -62,7 +66,7 @@ export class SafeNavigation {
    */
   replace<K extends keyof RootStackParamList>(
     screen: K,
-    params?: RootStackParamList[K]
+    params?: RootStackParamList[K],
   ): void {
     try {
       // Runtime validation: ensure route exists
@@ -81,7 +85,11 @@ export class SafeNavigation {
       }
     } catch (error) {
       console.error(`Navigation replace error to ${String(screen)}:`, error);
-      NavigationErrorHandler.handleError(error as Error, String(screen), 'replace');
+      NavigationErrorHandler.handleError(
+        error as Error,
+        String(screen),
+        'replace',
+      );
     }
   }
 
@@ -90,7 +98,7 @@ export class SafeNavigation {
    */
   push<K extends keyof RootStackParamList>(
     screen: K,
-    params?: RootStackParamList[K]
+    params?: RootStackParamList[K],
   ): void {
     try {
       // Runtime validation: ensure route exists
@@ -109,7 +117,11 @@ export class SafeNavigation {
       }
     } catch (error) {
       console.error(`Navigation push error to ${String(screen)}:`, error);
-      NavigationErrorHandler.handleError(error as Error, String(screen), 'push');
+      NavigationErrorHandler.handleError(
+        error as Error,
+        String(screen),
+        'push',
+      );
     }
   }
 
@@ -133,7 +145,7 @@ export class SafeNavigation {
    */
   reset<K extends keyof RootStackParamList>(
     screen: K,
-    params?: RootStackParamList[K]
+    params?: RootStackParamList[K],
   ): void {
     try {
       this.navigation.reset({
@@ -156,7 +168,8 @@ export class SafeNavigation {
    * Get current route name
    */
   getCurrentRoute(): string | undefined {
-    return this.navigation.getState().routes[this.navigation.getState().index]?.name;
+    return this.navigation.getState().routes[this.navigation.getState().index]
+      ?.name;
   }
 }
 
@@ -195,7 +208,10 @@ export const NavigationPatterns = {
   /**
    * Navigate to auth modal
    */
-  navigateToAuth: (navigation: AppNavigationProp, mode?: 'signup' | 'signin') => {
+  navigateToAuth: (
+    navigation: AppNavigationProp,
+    mode?: 'signup' | 'signin',
+  ) => {
     const safeNav = new SafeNavigation(navigation);
     safeNav.navigate('Auth', { mode });
   },
@@ -299,7 +315,11 @@ export const NavigationPatterns = {
   /**
    * Navigate to in-app browser
    */
-  navigateToInAppBrowser: (navigation: AppNavigationProp, url: string, title?: string) => {
+  navigateToInAppBrowser: (
+    navigation: AppNavigationProp,
+    url: string,
+    title?: string,
+  ) => {
     const safeNav = new SafeNavigation(navigation);
     safeNav.navigate('InAppBrowserScreen', { url, title });
   },
@@ -312,13 +332,36 @@ export const NavigationValidation = {
    */
   isValidRoute: (routeName: string): routeName is keyof RootStackParamList => {
     const validRoutes: (keyof RootStackParamList)[] = [
-      'Launch', 'Auth', 'Main', 'GuestHome', 'OnboardingFlow',
-      'Courses', 'Drafts', 'Templates', 'CourseDetail', 'Calendar', 'RecycleBin',
-      'Profile', 'Settings', 'DeleteAccountScreen', 'DeviceManagement', 'LoginHistory',
-      'AddCourseFlow', 'AddLectureFlow', 'AddAssignmentFlow', 'AddStudySessionFlow',
-      'EditCourseModal', 'TaskDetailModal', 'MFAEnrollmentScreen', 'MFAVerificationScreen',
-      'InAppBrowserScreen', 'AnalyticsAdmin', 'PaywallScreen', 'OddityWelcomeScreen',
-      'StudyResult', 'StudySessionReview'
+      'Launch',
+      'Auth',
+      'Main',
+      'GuestHome',
+      'OnboardingFlow',
+      'Courses',
+      'Drafts',
+      'Templates',
+      'CourseDetail',
+      'Calendar',
+      'RecycleBin',
+      'Profile',
+      'Settings',
+      'DeleteAccountScreen',
+      'DeviceManagement',
+      'LoginHistory',
+      'AddCourseFlow',
+      'AddLectureFlow',
+      'AddAssignmentFlow',
+      'AddStudySessionFlow',
+      'EditCourseModal',
+      'TaskDetailModal',
+      'MFAEnrollmentScreen',
+      'MFAVerificationScreen',
+      'InAppBrowserScreen',
+      'AnalyticsAdmin',
+      'PaywallScreen',
+      'OddityWelcomeScreen',
+      'StudyResult',
+      'StudySessionReview',
     ];
     return validRoutes.includes(routeName as keyof RootStackParamList);
   },
@@ -328,12 +371,21 @@ export const NavigationValidation = {
    */
   validateParams: <K extends keyof RootStackParamList>(
     routeName: K,
-    params: any
+    params: any,
   ): params is RootStackParamList[K] => {
     // Flow screens can accept undefined or an object with optional initialData
-    if (routeName === 'AddCourseFlow' || routeName === 'AddLectureFlow' ||
-        routeName === 'AddAssignmentFlow' || routeName === 'AddStudySessionFlow') {
-      return params === undefined || (typeof params === 'object' && (params.initialData === undefined || typeof params.initialData === 'object'));
+    if (
+      routeName === 'AddCourseFlow' ||
+      routeName === 'AddLectureFlow' ||
+      routeName === 'AddAssignmentFlow' ||
+      routeName === 'AddStudySessionFlow'
+    ) {
+      return (
+        params === undefined ||
+        (typeof params === 'object' &&
+          (params.initialData === undefined ||
+            typeof params.initialData === 'object'))
+      );
     }
     // Basic validation for other routes
     return params !== undefined || params === undefined; // Most routes can be undefined
@@ -347,7 +399,7 @@ export const NavigationErrorHandler = {
    */
   handleError: (error: Error, routeName: string, action: string) => {
     console.error(`Navigation ${action} error for ${routeName}:`, error);
-    
+
     // Log to analytics/monitoring service
     // Sentry.captureException(error, {
     //   tags: {

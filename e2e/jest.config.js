@@ -1,7 +1,10 @@
 /** @type {import('@jest/types').Config.InitialOptions} */
 module.exports = {
   rootDir: '..',
-  testMatch: ['<rootDir>/e2e/**/*.test.{js,ts}', '<rootDir>/e2e/**/*.e2e.{js,ts}'],
+  testMatch: [
+    '<rootDir>/e2e/**/*.test.{js,ts}',
+    '<rootDir>/e2e/**/*.e2e.{js,ts}',
+  ],
   testTimeout: 120000,
   maxWorkers: 1,
   globalSetup: 'detox/runners/jest/globalSetup',

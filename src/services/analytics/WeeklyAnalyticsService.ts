@@ -1,5 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
+import { StudySessionData, TaskData } from '@/types/service-responses';
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -75,7 +76,11 @@ export interface Achievement {
 export interface ReportTemplate {
   id: string;
   name: string;
-  category: 'academic_performance' | 'time_management' | 'progress_tracking' | 'summary';
+  category:
+    | 'academic_performance'
+    | 'time_management'
+    | 'progress_tracking'
+    | 'summary';
   template_content: string;
   variables: string[];
   is_active: boolean;
@@ -106,7 +111,11 @@ export class WeeklyAnalyticsService {
   /**
    * Collect academic performance data for a user
    */
-  async collectAcademicPerformanceData(userId: string, weekStart: Date, weekEnd: Date): Promise<WeeklyReportData['academic_performance']> {
+  async collectAcademicPerformanceData(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<WeeklyReportData['academic_performance']> {
     try {
       // Get study sessions data
       const { data: studySessions, error: sessionsError } = await supabase
@@ -121,7 +130,7 @@ export class WeeklyAnalyticsService {
           `Failed to collect study sessions: ${sessionsError.message}`,
           500,
           'DATA_COLLECTION_ERROR',
-          { userId, weekStart, weekEnd }
+          { userId, weekStart, weekEnd },
         );
       }
 
@@ -138,17 +147,27 @@ export class WeeklyAnalyticsService {
           `Failed to collect tasks: ${tasksError.message}`,
           500,
           'DATA_COLLECTION_ERROR',
-          { userId, weekStart, weekEnd }
+          { userId, weekStart, weekEnd },
         );
       }
 
       // Calculate metrics
-      const totalStudyTime = studySessions?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
-      const completedTasks = tasks?.filter(task => task.status === 'completed').length || 0;
-      const averageSessionDuration = studySessions?.length ? totalStudyTime / studySessions.length : 0;
+      const totalStudyTime =
+        studySessions?.reduce(
+          (sum, session) => sum + (session.duration || 0),
+          0,
+        ) || 0;
+      const completedTasks =
+        tasks?.filter(task => task.status === 'completed').length || 0;
+      const averageSessionDuration = studySessions?.length
+        ? totalStudyTime / studySessions.length
+        : 0;
 
       // Subject breakdown
-      const subjectBreakdown = this.calculateSubjectBreakdown(studySessions || [], tasks || []);
+      const subjectBreakdown = this.calculateSubjectBreakdown(
+        studySessions || [],
+        tasks || [],
+      );
 
       // Completion rates
       const completionRates = this.calculateCompletionRates(tasks || []);
@@ -158,15 +177,14 @@ export class WeeklyAnalyticsService {
         completed_tasks: completedTasks,
         average_session_duration: averageSessionDuration,
         subject_breakdown: subjectBreakdown,
-        completion_rates: completionRates
+        completion_rates: completionRates,
       };
-
     } catch (error) {
       throw new AppError(
         `Error collecting academic performance data: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'DATA_COLLECTION_ERROR',
-        { userId, weekStart, weekEnd }
+        { userId, weekStart, weekEnd },
       );
     }
   }
@@ -174,33 +192,48 @@ export class WeeklyAnalyticsService {
   /**
    * Collect time management data for a user
    */
-  async collectTimeManagementData(userId: string, weekStart: Date, weekEnd: Date): Promise<WeeklyReportData['time_management']> {
+  async collectTimeManagementData(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<WeeklyReportData['time_management']> {
     try {
       // Get daily activity data
-      const dailyActivity = await this.getDailyActivity(userId, weekStart, weekEnd);
-      
+      const dailyActivity = await this.getDailyActivity(
+        userId,
+        weekStart,
+        weekEnd,
+      );
+
       // Calculate peak study hours
-      const peakStudyHours = await this.getPeakStudyHours(userId, weekStart, weekEnd);
-      
+      const peakStudyHours = await this.getPeakStudyHours(
+        userId,
+        weekStart,
+        weekEnd,
+      );
+
       // Calculate productivity score
       const productivityScore = this.calculateProductivityScore(dailyActivity);
-      
+
       // Count focus sessions
-      const focusSessions = await this.getFocusSessionsCount(userId, weekStart, weekEnd);
+      const focusSessions = await this.getFocusSessionsCount(
+        userId,
+        weekStart,
+        weekEnd,
+      );
 
       return {
         daily_activity: dailyActivity,
         peak_study_hours: peakStudyHours,
         productivity_score: productivityScore,
-        focus_sessions: focusSessions
+        focus_sessions: focusSessions,
       };
-
     } catch (error) {
       throw new AppError(
         `Error collecting time management data: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'DATA_COLLECTION_ERROR',
-        { userId, weekStart, weekEnd }
+        { userId, weekStart, weekEnd },
       );
     }
   }
@@ -208,34 +241,50 @@ export class WeeklyAnalyticsService {
   /**
    * Collect progress tracking data for a user
    */
-  async collectProgressTrackingData(userId: string, weekStart: Date, weekEnd: Date): Promise<WeeklyReportData['progress_tracking']> {
+  async collectProgressTrackingData(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<WeeklyReportData['progress_tracking']> {
     try {
       // Get weekly goals
-      const weeklyGoalsAchieved = await this.getWeeklyGoalsAchieved(userId, weekStart, weekEnd);
-      
+      const weeklyGoalsAchieved = await this.getWeeklyGoalsAchieved(
+        userId,
+        weekStart,
+        weekEnd,
+      );
+
       // Identify improvement areas
-      const improvementAreas = await this.identifyImprovementAreas(userId, weekStart, weekEnd);
-      
+      const improvementAreas = await this.identifyImprovementAreas(
+        userId,
+        weekStart,
+        weekEnd,
+      );
+
       // Get achievements
-      const achievements = await this.getWeeklyAchievements(userId, weekStart, weekEnd);
-      
+      const achievements = await this.getWeeklyAchievements(
+        userId,
+        weekStart,
+        weekEnd,
+      );
+
       // Generate recommendations
-      const nextWeekRecommendations = await this.generateNextWeekRecommendations(userId, weekStart, weekEnd);
+      const nextWeekRecommendations =
+        await this.generateNextWeekRecommendations(userId, weekStart, weekEnd);
 
       return {
         weekly_goals_achieved: weeklyGoalsAchieved,
         improvement_areas: improvementAreas,
         achievements: achievements,
-        next_week_recommendations: nextWeekRecommendations
+        next_week_recommendations: nextWeekRecommendations,
       };
-
     } catch (error) {
-        throw new AppError(
-          `Error collecting progress tracking data: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          500,
-          'DATA_COLLECTION_ERROR',
-          { userId, weekStart, weekEnd }
-        );
+      throw new AppError(
+        `Error collecting progress tracking data: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        500,
+        'DATA_COLLECTION_ERROR',
+        { userId, weekStart, weekEnd },
+      );
     }
   }
 
@@ -246,7 +295,11 @@ export class WeeklyAnalyticsService {
   /**
    * Generate a complete weekly report for a user
    */
-  async generateWeeklyReport(userId: string, weekStart: Date, weekEnd: Date): Promise<WeeklyReport> {
+  async generateWeeklyReport(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<WeeklyReport> {
     try {
       // Check if report already exists
       const existingReport = await this.getExistingReport(userId, weekStart);
@@ -262,7 +315,7 @@ export class WeeklyAnalyticsService {
           week_start_date: weekStart.toISOString().split('T')[0],
           week_end_date: weekEnd.toISOString().split('T')[0],
           status: 'generating',
-          report_data: {}
+          report_data: {},
         })
         .select()
         .single();
@@ -272,25 +325,41 @@ export class WeeklyAnalyticsService {
           `Failed to create report: ${createError.message}`,
           500,
           'REPORT_CREATION_ERROR',
-          { userId, weekStart, weekEnd }
+          { userId, weekStart, weekEnd },
         );
       }
 
       try {
         // Collect all data
-        const academicPerformance = await this.collectAcademicPerformanceData(userId, weekStart, weekEnd);
-        const timeManagement = await this.collectTimeManagementData(userId, weekStart, weekEnd);
-        const progressTracking = await this.collectProgressTrackingData(userId, weekStart, weekEnd);
-        
+        const academicPerformance = await this.collectAcademicPerformanceData(
+          userId,
+          weekStart,
+          weekEnd,
+        );
+        const timeManagement = await this.collectTimeManagementData(
+          userId,
+          weekStart,
+          weekEnd,
+        );
+        const progressTracking = await this.collectProgressTrackingData(
+          userId,
+          weekStart,
+          weekEnd,
+        );
+
         // Generate summary
-        const summary = await this.generateSummary(academicPerformance, timeManagement, progressTracking);
+        const summary = await this.generateSummary(
+          academicPerformance,
+          timeManagement,
+          progressTracking,
+        );
 
         // Update report with data
         const reportData: WeeklyReportData = {
           academic_performance: academicPerformance,
           time_management: timeManagement,
           progress_tracking: progressTracking,
-          summary: summary
+          summary: summary,
         };
 
         const { error: updateError } = await supabase
@@ -298,7 +367,7 @@ export class WeeklyAnalyticsService {
           .update({
             report_data: reportData,
             status: 'completed',
-            generated_at: new Date().toISOString()
+            generated_at: new Date().toISOString(),
           })
           .eq('id', report.id);
 
@@ -307,7 +376,7 @@ export class WeeklyAnalyticsService {
             `Failed to update report: ${updateError.message}`,
             500,
             'REPORT_UPDATE_ERROR',
-            { reportId: report.id }
+            { reportId: report.id },
           );
         }
 
@@ -315,9 +384,8 @@ export class WeeklyAnalyticsService {
           ...report,
           report_data: reportData,
           status: 'completed',
-          generated_at: new Date().toISOString()
+          generated_at: new Date().toISOString(),
         };
-
       } catch (error) {
         // Mark report as failed
         await supabase
@@ -327,13 +395,12 @@ export class WeeklyAnalyticsService {
 
         throw error;
       }
-
     } catch (error) {
       throw new AppError(
         `Error generating weekly report: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'REPORT_GENERATION_ERROR',
-        { userId, weekStart, weekEnd }
+        { userId, weekStart, weekEnd },
       );
     }
   }
@@ -341,7 +408,10 @@ export class WeeklyAnalyticsService {
   /**
    * Get user's weekly reports
    */
-  async getUserReports(userId: string, limit: number = 10): Promise<WeeklyReport[]> {
+  async getUserReports(
+    userId: string,
+    limit: number = 10,
+  ): Promise<WeeklyReport[]> {
     try {
       const { data, error } = await supabase
         .from('weekly_reports')
@@ -356,18 +426,17 @@ export class WeeklyAnalyticsService {
           `Failed to get user reports: ${error.message}`,
           500,
           'REPORT_FETCH_ERROR',
-          { userId }
+          { userId },
         );
       }
 
       return data || [];
-
     } catch (error) {
       throw new AppError(
         `Error getting user reports: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'REPORT_FETCH_ERROR',
-        { userId }
+        { userId },
       );
     }
   }
@@ -391,18 +460,17 @@ export class WeeklyAnalyticsService {
           `Failed to get latest report: ${error.message}`,
           500,
           'LATEST_REPORT_ERROR',
-          { userId }
+          { userId },
         );
       }
 
       return data || null;
-
     } catch (error) {
       throw new AppError(
         `Error getting latest report: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'LATEST_REPORT_ERROR',
-        { userId }
+        { userId },
       );
     }
   }
@@ -411,8 +479,11 @@ export class WeeklyAnalyticsService {
   // HELPER METHODS
   // ============================================================================
 
-  private calculateSubjectBreakdown(sessions: any[], tasks: any[]): SubjectBreakdown[] {
-    const subjectMap = new Map<string, { time: number, tasks: number }>();
+  private calculateSubjectBreakdown(
+    sessions: StudySessionData[],
+    tasks: TaskData[],
+  ): SubjectBreakdown[] {
+    const subjectMap = new Map<string, { time: number; tasks: number }>();
 
     // Process sessions
     sessions.forEach(session => {
@@ -420,7 +491,7 @@ export class WeeklyAnalyticsService {
       const current = subjectMap.get(subject) || { time: 0, tasks: 0 };
       subjectMap.set(subject, {
         time: current.time + (session.duration || 0),
-        tasks: current.tasks
+        tasks: current.tasks,
       });
     });
 
@@ -430,7 +501,7 @@ export class WeeklyAnalyticsService {
       const current = subjectMap.get(subject) || { time: 0, tasks: 0 };
       subjectMap.set(subject, {
         time: current.time,
-        tasks: current.tasks + (task.status === 'completed' ? 1 : 0)
+        tasks: current.tasks + (task.status === 'completed' ? 1 : 0),
       });
     });
 
@@ -438,27 +509,40 @@ export class WeeklyAnalyticsService {
       subject,
       time_spent: data.time,
       tasks_completed: data.tasks,
-      average_score: undefined
+      average_score: undefined,
     }));
   }
 
-  private calculateCompletionRates(tasks: any[]): CompletionRates {
+  private calculateCompletionRates(tasks: TaskData[]): CompletionRates {
     const total = tasks.length;
     const completed = tasks.filter(task => task.status === 'completed').length;
-    
+
     const assignments = tasks.filter(task => task.type === 'assignment');
     const lectures = tasks.filter(task => task.type === 'lecture');
     const studySessions = tasks.filter(task => task.type === 'study_session');
 
     return {
-      assignments: assignments.length ? assignments.filter(t => t.status === 'completed').length / assignments.length : 0,
-      lectures: lectures.length ? lectures.filter(t => t.status === 'completed').length / lectures.length : 0,
-      study_sessions: studySessions.length ? studySessions.filter(t => t.status === 'completed').length / studySessions.length : 0,
-      overall: total ? completed / total : 0
+      assignments: assignments.length
+        ? assignments.filter(t => t.status === 'completed').length /
+          assignments.length
+        : 0,
+      lectures: lectures.length
+        ? lectures.filter(t => t.status === 'completed').length /
+          lectures.length
+        : 0,
+      study_sessions: studySessions.length
+        ? studySessions.filter(t => t.status === 'completed').length /
+          studySessions.length
+        : 0,
+      overall: total ? completed / total : 0,
     };
   }
 
-  private async getDailyActivity(userId: string, weekStart: Date, weekEnd: Date): Promise<DailyActivity[]> {
+  private async getDailyActivity(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<DailyActivity[]> {
     const activities: DailyActivity[] = [];
     const currentDate = new Date(weekStart);
 
@@ -476,7 +560,9 @@ export class WeeklyAnalyticsService {
         .gte('created_at', dayStart.toISOString())
         .lte('created_at', dayEnd.toISOString());
 
-      const studyTime = sessions?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
+      const studyTime =
+        sessions?.reduce((sum, session) => sum + (session.duration || 0), 0) ||
+        0;
 
       // Get tasks completed for the day
       const { data: tasks } = await supabase
@@ -496,7 +582,7 @@ export class WeeklyAnalyticsService {
         date: currentDate.toISOString().split('T')[0],
         study_time: studyTime,
         tasks_completed: tasksCompleted,
-        focus_score: focusScore
+        focus_score: focusScore,
       });
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -505,23 +591,37 @@ export class WeeklyAnalyticsService {
     return activities;
   }
 
-  private async getPeakStudyHours(userId: string, weekStart: Date, weekEnd: Date): Promise<string[]> {
+  private async getPeakStudyHours(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<string[]> {
     // Simplified implementation - would need more sophisticated analysis
     return ['09:00', '14:00', '19:00'];
   }
 
   private calculateProductivityScore(dailyActivity: DailyActivity[]): number {
-    const totalStudyTime = dailyActivity.reduce((sum, day) => sum + day.study_time, 0);
-    const totalTasks = dailyActivity.reduce((sum, day) => sum + day.tasks_completed, 0);
-    
+    const totalStudyTime = dailyActivity.reduce(
+      (sum, day) => sum + day.study_time,
+      0,
+    );
+    const totalTasks = dailyActivity.reduce(
+      (sum, day) => sum + day.tasks_completed,
+      0,
+    );
+
     // Simple scoring algorithm
     const studyScore = Math.min(50, (totalStudyTime / 60) * 2); // 2 points per hour, max 50
     const taskScore = Math.min(50, totalTasks * 5); // 5 points per task, max 50
-    
+
     return Math.round(studyScore + taskScore);
   }
 
-  private async getFocusSessionsCount(userId: string, weekStart: Date, weekEnd: Date): Promise<number> {
+  private async getFocusSessionsCount(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<number> {
     const { data, error } = await supabase
       .from('study_sessions')
       .select('id')
@@ -538,56 +638,79 @@ export class WeeklyAnalyticsService {
     return data?.length || 0;
   }
 
-  private async getWeeklyGoalsAchieved(userId: string, weekStart: Date, weekEnd: Date): Promise<number> {
+  private async getWeeklyGoalsAchieved(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<number> {
     // Simplified implementation
     return 3; // Placeholder
   }
 
-  private async identifyImprovementAreas(userId: string, weekStart: Date, weekEnd: Date): Promise<string[]> {
+  private async identifyImprovementAreas(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<string[]> {
     // Simplified implementation
     return ['Time Management', 'Focus Sessions'];
   }
 
-  private async getWeeklyAchievements(userId: string, weekStart: Date, weekEnd: Date): Promise<Achievement[]> {
+  private async getWeeklyAchievements(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<Achievement[]> {
     // Simplified implementation
     return [
       {
         type: 'streak',
         title: '3-Day Study Streak',
         description: 'You studied for 3 consecutive days!',
-        earned_at: weekEnd.toISOString()
-      }
+        earned_at: weekEnd.toISOString(),
+      },
     ];
   }
 
-  private async generateNextWeekRecommendations(userId: string, weekStart: Date, weekEnd: Date): Promise<string[]> {
+  private async generateNextWeekRecommendations(
+    userId: string,
+    weekStart: Date,
+    weekEnd: Date,
+  ): Promise<string[]> {
     // Simplified implementation
     return [
       'Try to maintain consistent study hours',
       'Focus on completing assignments early',
-      'Take regular breaks during long study sessions'
+      'Take regular breaks during long study sessions',
     ];
   }
 
   private async generateSummary(
     academic: WeeklyReportData['academic_performance'],
     time: WeeklyReportData['time_management'],
-    progress: WeeklyReportData['progress_tracking']
+    progress: WeeklyReportData['progress_tracking'],
   ): Promise<WeeklyReportData['summary']> {
     const keyHighlights: string[] = [];
     const areasForImprovement: string[] = [];
 
     // Generate highlights
-    if (academic.total_study_time > 300) { // 5 hours
-      keyHighlights.push(`Great job! You studied for ${Math.round(academic.total_study_time / 60)} hours this week.`);
+    if (academic.total_study_time > 300) {
+      // 5 hours
+      keyHighlights.push(
+        `Great job! You studied for ${Math.round(academic.total_study_time / 60)} hours this week.`,
+      );
     }
 
     if (academic.completed_tasks > 5) {
-      keyHighlights.push(`You completed ${academic.completed_tasks} tasks this week.`);
+      keyHighlights.push(
+        `You completed ${academic.completed_tasks} tasks this week.`,
+      );
     }
 
     if (time.productivity_score > 70) {
-      keyHighlights.push(`Your productivity score was ${time.productivity_score}% this week.`);
+      keyHighlights.push(
+        `Your productivity score was ${time.productivity_score}% this week.`,
+      );
     }
 
     // Generate improvement areas
@@ -602,11 +725,15 @@ export class WeeklyAnalyticsService {
     return {
       key_highlights: keyHighlights,
       areas_for_improvement: areasForImprovement,
-      motivational_message: "Keep up the great work! Every study session brings you closer to your goals."
+      motivational_message:
+        'Keep up the great work! Every study session brings you closer to your goals.',
     };
   }
 
-  private async getExistingReport(userId: string, weekStart: Date): Promise<WeeklyReport | null> {
+  private async getExistingReport(
+    userId: string,
+    weekStart: Date,
+  ): Promise<WeeklyReport | null> {
     const { data, error } = await supabase
       .from('weekly_reports')
       .select('*')

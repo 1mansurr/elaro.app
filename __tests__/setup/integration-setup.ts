@@ -1,11 +1,16 @@
 import 'react-native-gesture-handler/jestSetup';
 
 // Mock environment variables for integration tests
-process.env.EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://test.supabase.co';
-process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'test-anon-key';
-process.env.EXPO_PUBLIC_MIXPANEL_TOKEN = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || 'test-mixpanel-token';
-process.env.EXPO_PUBLIC_SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://test@sentry.io/test';
-process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY = process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || 'test-revenuecat-key';
+process.env.EXPO_PUBLIC_SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://test.supabase.co';
+process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'test-anon-key';
+process.env.EXPO_PUBLIC_MIXPANEL_TOKEN =
+  process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || 'test-mixpanel-token';
+process.env.EXPO_PUBLIC_SENTRY_DSN =
+  process.env.EXPO_PUBLIC_SENTRY_DSN || 'https://test@sentry.io/test';
+process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY =
+  process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY || 'test-revenuecat-key';
 
 // Mock React Native modules for integration tests
 jest.mock('react-native-reanimated', () => {
@@ -23,16 +28,18 @@ jest.mock('expo-constants', () => ({
     expoConfig: {
       extra: {
         eas: {
-          projectId: 'test-project-id'
-        }
-      }
-    }
-  }
+          projectId: 'test-project-id',
+        },
+      },
+    },
+  },
 }));
 
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: 'granted' }),
+  ),
   scheduleNotificationAsync: jest.fn(() => Promise.resolve('notification-id')),
   cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
   getAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve([])),
@@ -86,7 +93,8 @@ jest.mock('@tanstack/react-query', () => ({
     error: null,
   })),
   QueryClient: jest.fn(),
-  QueryClientProvider: ({ children }: { children: React.ReactNode }) => children,
+  QueryClientProvider: ({ children }: { children: React.ReactNode }) =>
+    children,
 }));
 
 // Mock Mixpanel
@@ -119,7 +127,7 @@ beforeAll(() => {
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: ReactDOM.render is no longer supported') ||
-       args[0].includes('Warning: componentWillReceiveProps'))
+        args[0].includes('Warning: componentWillReceiveProps'))
     ) {
       return;
     }
@@ -154,7 +162,7 @@ global.fetch = jest.fn(() =>
     status: 200,
     json: () => Promise.resolve({ data: null, error: null }),
     text: () => Promise.resolve(JSON.stringify({ data: null, error: null })),
-  })
+  }),
 ) as jest.Mock;
 
 // Mock URL for integration tests

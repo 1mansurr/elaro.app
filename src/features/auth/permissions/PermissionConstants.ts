@@ -156,7 +156,9 @@ export const TASK_LIMITS = {
 } as const;
 
 // Helper function to get role by subscription tier
-export const getRoleBySubscriptionTier = (subscriptionTier: string): UserRole => {
+export const getRoleBySubscriptionTier = (
+  subscriptionTier: string,
+): UserRole => {
   switch (subscriptionTier) {
     case 'oddity':
       return ROLES.PREMIUM_USER;
@@ -168,9 +170,11 @@ export const getRoleBySubscriptionTier = (subscriptionTier: string): UserRole =>
 };
 
 // Helper function to check if permission is allowed for role
-export const isPermissionAllowed = (role: UserRole, permission: Permission): boolean => {
-  return role.permissions.some(p => 
-    p.resource === permission.resource && 
-    p.action === permission.action
+export const isPermissionAllowed = (
+  role: UserRole,
+  permission: Permission,
+): boolean => {
+  return role.permissions.some(
+    p => p.resource === permission.resource && p.action === permission.action,
   );
 };

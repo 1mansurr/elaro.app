@@ -1,9 +1,19 @@
 import React, { memo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Course, Assignment, Lecture, StudySession } from '@/types';
+import { formatDate } from '@/i18n';
 
-type Item = (Course | Assignment | Lecture | StudySession) & { type: string; deleted_at: string };
+type Item = (Course | Assignment | Lecture | StudySession) & {
+  type: string;
+  deleted_at: string;
+};
 
 interface DeletedItemCardProps {
   item: Item;
@@ -23,10 +33,10 @@ const getItemName = (item: Item) => {
 };
 
 export const DeletedItemCard = memo<DeletedItemCardProps>(
-  ({ 
-    item, 
-    onRestore, 
-    onDeletePermanently, 
+  ({
+    item,
+    onRestore,
+    onDeletePermanently,
     isActionLoading,
     isSelectionMode = false,
     isSelected = false,
@@ -39,7 +49,7 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
     };
 
     return (
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
           styles.itemContainer,
           isSelectionMode && styles.selectableContainer,
@@ -48,11 +58,24 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
         onPress={handlePress}
         activeOpacity={isSelectionMode ? 0.7 : 1}
         disabled={!isSelectionMode}
-      >
+        accessibilityLabel={
+          isSelectionMode
+            ? `${getItemName(item)} - ${isSelected ? 'Selected' : 'Not selected'}`
+            : getItemName(item)
+        }
+        accessibilityHint={
+          isSelectionMode ? 'Double tap to toggle selection' : undefined
+        }
+        accessibilityRole={isSelectionMode ? 'checkbox' : 'button'}
+        accessibilityState={{
+          disabled: !isSelectionMode,
+          checked: isSelected,
+        }}>
         {/* Selection checkbox */}
         {isSelectionMode && (
           <View style={styles.checkboxContainer}>
-            <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+            <View
+              style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
               {isSelected && (
                 <Ionicons name="checkmark" size={16} color="#fff" />
               )}
@@ -67,7 +90,7 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
           </Text>
           <Text style={styles.itemName}>{getItemName(item)}</Text>
           <Text style={styles.itemDate}>
-            Deleted on: {new Date(item.deleted_at).toLocaleDateString()}
+            Deleted on: {formatDate(new Date(item.deleted_at))}
           </Text>
         </View>
 
@@ -78,16 +101,20 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
               <ActivityIndicator size="small" color="#007AFF" />
             ) : (
               <>
-                <TouchableOpacity 
-                  style={styles.restoreButton} 
+                <TouchableOpacity
+                  style={styles.restoreButton}
                   onPress={() => onRestore(item.id, item.type)}
-                >
+                  accessibilityLabel="Restore item"
+                  accessibilityHint={`Restores ${getItemName(item)} to your active items`}
+                  accessibilityRole="button">
                   <Text style={styles.buttonText}>Restore</Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.deleteButton} 
+                <TouchableOpacity
+                  style={styles.deleteButton}
                   onPress={() => onDeletePermanently(item.id, item.type)}
-                >
+                  accessibilityLabel="Delete permanently"
+                  accessibilityHint={`Permanently deletes ${getItemName(item)}. This action cannot be undone.`}
+                  accessibilityRole="button">
                   <Text style={styles.buttonText}>Delete</Text>
                 </TouchableOpacity>
               </>
@@ -96,16 +123,16 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
         )}
       </TouchableOpacity>
     );
-  }
+  },
 );
 
 const styles = StyleSheet.create({
-  itemContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    padding: 16, 
-    borderBottomWidth: 1, 
+  itemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
     backgroundColor: '#fff',
   },
@@ -136,39 +163,39 @@ const styles = StyleSheet.create({
   itemInfo: {
     flex: 1,
   },
-  itemType: { 
-    fontSize: 12, 
-    color: '#8E8E93', 
-    textTransform: 'capitalize' 
+  itemType: {
+    fontSize: 12,
+    color: '#8E8E93',
+    textTransform: 'capitalize',
   },
-  itemName: { 
-    fontSize: 16, 
-    fontWeight: '600', 
-    marginVertical: 2 
+  itemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginVertical: 2,
   },
-  itemDate: { 
-    fontSize: 12, 
-    color: '#8E8E93' 
+  itemDate: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
-  actionsContainer: { 
-    flexDirection: 'row', 
-    alignItems: 'center' 
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  restoreButton: { 
-    backgroundColor: '#007AFF', 
-    paddingVertical: 8, 
-    paddingHorizontal: 12, 
-    borderRadius: 8, 
-    marginRight: 8 
+  restoreButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginRight: 8,
   },
-  deleteButton: { 
-    backgroundColor: '#FF3B30', 
-    paddingVertical: 8, 
-    paddingHorizontal: 12, 
-    borderRadius: 8 
+  deleteButton: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
-  buttonText: { 
-    color: 'white', 
-    fontWeight: '600' 
+  buttonText: {
+    color: 'white',
+    fontWeight: '600',
   },
 });

@@ -1,19 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
-  Modal
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
+import { formatDate } from '@/i18n';
 
 interface AnalyticsAdminDashboardProps {
   onClose?: () => void;
@@ -44,15 +45,21 @@ interface BatchProcessingLog {
   error_message?: string;
 }
 
-export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = ({ onClose }) => {
+export const AnalyticsAdminDashboard: React.FC<
+  AnalyticsAdminDashboardProps
+> = ({ onClose }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'templates' | 'monitoring' | 'logs'>('templates');
+  const [activeTab, setActiveTab] = useState<
+    'templates' | 'monitoring' | 'logs'
+  >('templates');
   const [templates, setTemplates] = useState<ReportTemplate[]>([]);
   const [batchLogs, setBatchLogs] = useState<BatchProcessingLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<ReportTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] = useState<ReportTemplate | null>(
+    null,
+  );
 
   useEffect(() => {
     loadData();
@@ -61,10 +68,7 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
   const loadData = async () => {
     try {
       setLoading(true);
-      await Promise.all([
-        loadTemplates(),
-        loadBatchLogs()
-      ]);
+      await Promise.all([loadTemplates(), loadBatchLogs()]);
     } catch (error) {
       console.error('Error loading admin data:', error);
       Alert.alert('Error', 'Failed to load admin data. Please try again.');
@@ -136,7 +140,10 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
     }
   };
 
-  const handleTemplateStatusChange = async (templateId: string, newStatus: string) => {
+  const handleTemplateStatusChange = async (
+    templateId: string,
+    newStatus: string,
+  ) => {
     try {
       const { error } = await supabase
         .from('report_templates')
@@ -157,7 +164,9 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.accent} />
-          <Text style={[styles.loadingText, { color: theme.text }]}>Loading admin dashboard...</Text>
+          <Text style={[styles.loadingText, { color: theme.text }]}>
+            Loading admin dashboard...
+          </Text>
         </View>
       </View>
     );
@@ -167,7 +176,9 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Analytics Admin</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Analytics Admin
+        </Text>
         {onClose && (
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={theme.text} />
@@ -178,28 +189,38 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
       {/* Tabs */}
       <View style={styles.tabContainer}>
         {[
-          { key: 'templates', label: 'Templates', icon: 'document-text-outline' },
+          {
+            key: 'templates',
+            label: 'Templates',
+            icon: 'document-text-outline',
+          },
           { key: 'monitoring', label: 'Monitoring', icon: 'analytics-outline' },
-          { key: 'logs', label: 'Logs', icon: 'list-outline' }
-        ].map((tab) => (
+          { key: 'logs', label: 'Logs', icon: 'list-outline' },
+        ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[
               styles.tab,
               activeTab === tab.key && styles.activeTab,
-              { borderBottomColor: activeTab === tab.key ? theme.accent : 'transparent' }
+              {
+                borderBottomColor:
+                  activeTab === tab.key ? theme.accent : 'transparent',
+              },
             ]}
-            onPress={() => setActiveTab(tab.key as any)}
-          >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={20} 
-              color={activeTab === tab.key ? theme.accent : theme.textSecondary} 
+            onPress={() => setActiveTab(tab.key as any)}>
+            <Ionicons
+              name={tab.icon as any}
+              size={20}
+              color={activeTab === tab.key ? theme.accent : theme.textSecondary}
             />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === tab.key ? theme.accent : theme.textSecondary }
-            ]}>
+            <Text
+              style={[
+                styles.tabText,
+                {
+                  color:
+                    activeTab === tab.key ? theme.accent : theme.textSecondary,
+                },
+              ]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -209,7 +230,7 @@ export const AnalyticsAdminDashboard: React.FC<AnalyticsAdminDashboardProps> = (
       {/* Content */}
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {activeTab === 'templates' && (
-          <TemplatesTab 
+          <TemplatesTab
             templates={templates}
             onTemplateEdit={handleTemplateEdit}
             onTemplateStatusChange={handleTemplateStatusChange}
@@ -251,70 +272,102 @@ interface TemplatesTabProps {
   theme: any;
 }
 
-const TemplatesTab: React.FC<TemplatesTabProps> = ({ 
-  templates, 
-  onTemplateEdit, 
-  onTemplateStatusChange, 
-  theme 
+const TemplatesTab: React.FC<TemplatesTabProps> = ({
+  templates,
+  onTemplateEdit,
+  onTemplateStatusChange,
+  theme,
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'published': return '#4CAF50';
-      case 'draft': return '#FF9800';
-      case 'review': return '#2196F3';
-      case 'archived': return '#9E9E9E';
-      default: return theme.textSecondary;
+      case 'published':
+        return '#4CAF50';
+      case 'draft':
+        return '#FF9800';
+      case 'review':
+        return '#2196F3';
+      case 'archived':
+        return '#9E9E9E';
+      default:
+        return theme.textSecondary;
     }
   };
 
   return (
     <View style={styles.tabContent}>
       <View style={styles.sectionHeader}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>Report Templates</Text>
-        <TouchableOpacity 
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          Report Templates
+        </Text>
+        <TouchableOpacity
           style={[styles.addButton, { backgroundColor: theme.accent }]}
-          onPress={() => onTemplateEdit({} as ReportTemplate)}
-        >
+          onPress={() => onTemplateEdit({} as ReportTemplate)}>
           <Ionicons name="add" size={20} color="white" />
           <Text style={styles.addButtonText}>New Template</Text>
         </TouchableOpacity>
       </View>
 
-      {templates.map((template) => (
-        <View key={template.id} style={[styles.templateCard, { backgroundColor: theme.surface }]}>
+      {templates.map(template => (
+        <View
+          key={template.id}
+          style={[styles.templateCard, { backgroundColor: theme.surface }]}>
           <View style={styles.templateHeader}>
             <View style={styles.templateInfo}>
-              <Text style={[styles.templateName, { color: theme.text }]}>{template.name}</Text>
+              <Text style={[styles.templateName, { color: theme.text }]}>
+                {template.name}
+              </Text>
               <View style={styles.templateMeta}>
-                <Text style={[styles.templateCategory, { color: theme.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.templateCategory,
+                    { color: theme.textSecondary },
+                  ]}>
                   {template.category} • {template.scenario}
                 </Text>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(template.status) + '20' }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(template.status) }]}>
+                <View
+                  style={[
+                    styles.statusBadge,
+                    { backgroundColor: getStatusColor(template.status) + '20' },
+                  ]}>
+                  <Text
+                    style={[
+                      styles.statusText,
+                      { color: getStatusColor(template.status) },
+                    ]}>
                     {template.status.toUpperCase()}
                   </Text>
                 </View>
               </View>
             </View>
             <View style={styles.templateActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButton}
-                onPress={() => onTemplateEdit(template)}
-              >
-                <Ionicons name="create-outline" size={20} color={theme.accent} />
+                onPress={() => onTemplateEdit(template)}>
+                <Ionicons
+                  name="create-outline"
+                  size={20}
+                  color={theme.accent}
+                />
               </TouchableOpacity>
               {template.status === 'draft' && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => onTemplateStatusChange(template.id, 'published')}
-                >
-                  <Ionicons name="checkmark-outline" size={20} color="#4CAF50" />
+                  onPress={() =>
+                    onTemplateStatusChange(template.id, 'published')
+                  }>
+                  <Ionicons
+                    name="checkmark-outline"
+                    size={20}
+                    color="#4CAF50"
+                  />
                 </TouchableOpacity>
               )}
             </View>
           </View>
-          
-          <Text style={[styles.templateContent, { color: theme.textSecondary }]} numberOfLines={3}>
+
+          <Text
+            style={[styles.templateContent, { color: theme.textSecondary }]}
+            numberOfLines={3}>
             {template.template_content}
           </Text>
         </View>
@@ -330,13 +383,19 @@ interface MonitoringTabProps {
 
 const MonitoringTab: React.FC<MonitoringTabProps> = ({ batchLogs, theme }) => {
   const latestLog = batchLogs[0];
-  
+
   if (!latestLog) {
     return (
       <View style={styles.tabContent}>
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>System Monitoring</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>
+          System Monitoring
+        </Text>
         <View style={[styles.emptyState, { backgroundColor: theme.surface }]}>
-          <Ionicons name="analytics-outline" size={48} color={theme.textSecondary} />
+          <Ionicons
+            name="analytics-outline"
+            size={48}
+            color={theme.textSecondary}
+          />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             No batch processing data available
           </Text>
@@ -347,61 +406,100 @@ const MonitoringTab: React.FC<MonitoringTabProps> = ({ batchLogs, theme }) => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return '#4CAF50';
-      case 'running': return '#2196F3';
-      case 'failed': return '#F44336';
-      case 'cancelled': return '#FF9800';
-      default: return theme.textSecondary;
+      case 'completed':
+        return '#4CAF50';
+      case 'running':
+        return '#2196F3';
+      case 'failed':
+        return '#F44336';
+      case 'cancelled':
+        return '#FF9800';
+      default:
+        return theme.textSecondary;
     }
   };
 
   return (
     <View style={styles.tabContent}>
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>System Monitoring</Text>
-      
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>
+        System Monitoring
+      </Text>
+
       <View style={[styles.monitoringCard, { backgroundColor: theme.surface }]}>
-        <Text style={[styles.monitoringTitle, { color: theme.text }]}>Latest Batch Processing</Text>
-        
+        <Text style={[styles.monitoringTitle, { color: theme.text }]}>
+          Latest Batch Processing
+        </Text>
+
         <View style={styles.monitoringRow}>
-          <Text style={[styles.monitoringLabel, { color: theme.textSecondary }]}>Status:</Text>
-          <View style={[styles.statusBadge, { backgroundColor: getStatusColor(latestLog.status) + '20' }]}>
-            <Text style={[styles.statusText, { color: getStatusColor(latestLog.status) }]}>
+          <Text
+            style={[styles.monitoringLabel, { color: theme.textSecondary }]}>
+            Status:
+          </Text>
+          <View
+            style={[
+              styles.statusBadge,
+              { backgroundColor: getStatusColor(latestLog.status) + '20' },
+            ]}>
+            <Text
+              style={[
+                styles.statusText,
+                { color: getStatusColor(latestLog.status) },
+              ]}>
               {latestLog.status.toUpperCase()}
             </Text>
           </View>
         </View>
-        
+
         <View style={styles.monitoringRow}>
-          <Text style={[styles.monitoringLabel, { color: theme.textSecondary }]}>Date:</Text>
+          <Text
+            style={[styles.monitoringLabel, { color: theme.textSecondary }]}>
+            Date:
+          </Text>
           <Text style={[styles.monitoringValue, { color: theme.text }]}>
-            {new Date(latestLog.processing_date).toLocaleDateString()}
+            {formatDate(new Date(latestLog.processing_date))}
           </Text>
         </View>
-        
+
         <View style={styles.monitoringRow}>
-          <Text style={[styles.monitoringLabel, { color: theme.textSecondary }]}>Total Users:</Text>
-          <Text style={[styles.monitoringValue, { color: theme.text }]}>{latestLog.total_users}</Text>
+          <Text
+            style={[styles.monitoringLabel, { color: theme.textSecondary }]}>
+            Total Users:
+          </Text>
+          <Text style={[styles.monitoringValue, { color: theme.text }]}>
+            {latestLog.total_users}
+          </Text>
         </View>
-        
+
         <View style={styles.monitoringRow}>
-          <Text style={[styles.monitoringLabel, { color: theme.textSecondary }]}>Processed:</Text>
+          <Text
+            style={[styles.monitoringLabel, { color: theme.textSecondary }]}>
+            Processed:
+          </Text>
           <Text style={[styles.monitoringValue, { color: theme.text }]}>
             {latestLog.processed_users}/{latestLog.total_users}
           </Text>
         </View>
-        
+
         <View style={styles.monitoringRow}>
-          <Text style={[styles.monitoringLabel, { color: theme.textSecondary }]}>Success Rate:</Text>
+          <Text
+            style={[styles.monitoringLabel, { color: theme.textSecondary }]}>
+            Success Rate:
+          </Text>
           <Text style={[styles.monitoringValue, { color: theme.text }]}>
-            {latestLog.total_users > 0 
-              ? Math.round((latestLog.successful_reports / latestLog.total_users) * 100)
-              : 0}%
+            {latestLog.total_users > 0
+              ? Math.round(
+                  (latestLog.successful_reports / latestLog.total_users) * 100,
+                )
+              : 0}
+            %
           </Text>
         </View>
-        
+
         {latestLog.error_message && (
           <View style={styles.errorContainer}>
-            <Text style={[styles.errorLabel, { color: '#F44336' }]}>Error:</Text>
+            <Text style={[styles.errorLabel, { color: '#F44336' }]}>
+              Error:
+            </Text>
             <Text style={[styles.errorMessage, { color: theme.textSecondary }]}>
               {latestLog.error_message}
             </Text>
@@ -420,21 +518,33 @@ interface LogsTabProps {
 const LogsTab: React.FC<LogsTabProps> = ({ batchLogs, theme }) => {
   return (
     <View style={styles.tabContent}>
-      <Text style={[styles.sectionTitle, { color: theme.text }]}>Processing Logs</Text>
-      
-      {batchLogs.map((log) => (
-        <View key={log.id} style={[styles.logCard, { backgroundColor: theme.surface }]}>
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>
+        Processing Logs
+      </Text>
+
+      {batchLogs.map(log => (
+        <View
+          key={log.id}
+          style={[styles.logCard, { backgroundColor: theme.surface }]}>
           <View style={styles.logHeader}>
             <Text style={[styles.logDate, { color: theme.text }]}>
-              {new Date(log.started_at).toLocaleString()}
+              {formatDate(new Date(log.started_at))}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(log.status) + '20' }]}>
-              <Text style={[styles.statusText, { color: getStatusColor(log.status) }]}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(log.status) + '20' },
+              ]}>
+              <Text
+                style={[
+                  styles.statusText,
+                  { color: getStatusColor(log.status) },
+                ]}>
                 {log.status.toUpperCase()}
               </Text>
             </View>
           </View>
-          
+
           <View style={styles.logStats}>
             <Text style={[styles.logStat, { color: theme.textSecondary }]}>
               Users: {log.processed_users}/{log.total_users}
@@ -466,7 +576,12 @@ interface TemplateModalProps {
   theme: any;
 }
 
-const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose, theme }) => {
+const TemplateModal: React.FC<TemplateModalProps> = ({
+  template,
+  onSave,
+  onClose,
+  theme,
+}) => {
   const [name, setName] = useState(template?.name || '');
   const [category, setCategory] = useState(template?.category || 'general');
   const [scenario, setScenario] = useState(template?.scenario || 'first_week');
@@ -484,13 +599,14 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
       category,
       scenario,
       template_content: content.trim(),
-      status
+      status,
     });
   };
 
   return (
     <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
-      <View style={[styles.modalContainer, { backgroundColor: theme.background }]}>
+      <View
+        style={[styles.modalContainer, { backgroundColor: theme.background }]}>
         <View style={styles.modalHeader}>
           <Text style={[styles.modalTitle, { color: theme.text }]}>
             {template ? 'Edit Template' : 'New Template'}
@@ -502,9 +618,14 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
 
         <ScrollView style={styles.modalContent}>
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Template Name</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Template Name
+            </Text>
             <TextInput
-              style={[styles.textInput, { backgroundColor: theme.surface, color: theme.text }]}
+              style={[
+                styles.textInput,
+                { backgroundColor: theme.surface, color: theme.text },
+              ]}
               value={name}
               onChangeText={setName}
               placeholder="Enter template name"
@@ -513,18 +634,28 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Category</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Category
+            </Text>
             <View style={styles.radioGroup}>
-              {['general', 'academic_performance', 'time_management', 'completion_rates'].map((cat) => (
+              {[
+                'general',
+                'academic_performance',
+                'time_management',
+                'completion_rates',
+              ].map(cat => (
                 <TouchableOpacity
                   key={cat}
                   style={styles.radioOption}
-                  onPress={() => setCategory(cat)}
-                >
-                  <Ionicons 
-                    name={category === cat ? "radio-button-on" : "radio-button-off"} 
-                    size={20} 
-                    color={category === cat ? theme.accent : theme.textSecondary} 
+                  onPress={() => setCategory(cat)}>
+                  <Ionicons
+                    name={
+                      category === cat ? 'radio-button-on' : 'radio-button-off'
+                    }
+                    size={20}
+                    color={
+                      category === cat ? theme.accent : theme.textSecondary
+                    }
                   />
                   <Text style={[styles.radioLabel, { color: theme.text }]}>
                     {cat.replace('_', ' ').toUpperCase()}
@@ -535,18 +666,29 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Scenario</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Scenario
+            </Text>
             <View style={styles.radioGroup}>
-              {['first_week', 'high_activity', 'low_activity', 'improvement', 'decline'].map((scen) => (
+              {[
+                'first_week',
+                'high_activity',
+                'low_activity',
+                'improvement',
+                'decline',
+              ].map(scen => (
                 <TouchableOpacity
                   key={scen}
                   style={styles.radioOption}
-                  onPress={() => setScenario(scen)}
-                >
-                  <Ionicons 
-                    name={scenario === scen ? "radio-button-on" : "radio-button-off"} 
-                    size={20} 
-                    color={scenario === scen ? theme.accent : theme.textSecondary} 
+                  onPress={() => setScenario(scen)}>
+                  <Ionicons
+                    name={
+                      scenario === scen ? 'radio-button-on' : 'radio-button-off'
+                    }
+                    size={20}
+                    color={
+                      scenario === scen ? theme.accent : theme.textSecondary
+                    }
                   />
                   <Text style={[styles.radioLabel, { color: theme.text }]}>
                     {scen.replace('_', ' ').toUpperCase()}
@@ -557,9 +699,14 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Template Content</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Template Content
+            </Text>
             <TextInput
-              style={[styles.textArea, { backgroundColor: theme.surface, color: theme.text }]}
+              style={[
+                styles.textArea,
+                { backgroundColor: theme.surface, color: theme.text },
+              ]}
               value={content}
               onChangeText={setContent}
               placeholder="Enter template content with {{variables}}"
@@ -570,18 +717,21 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={[styles.inputLabel, { color: theme.text }]}>Status</Text>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Status
+            </Text>
             <View style={styles.radioGroup}>
-              {['draft', 'review', 'published', 'archived'].map((stat) => (
+              {['draft', 'review', 'published', 'archived'].map(stat => (
                 <TouchableOpacity
                   key={stat}
                   style={styles.radioOption}
-                  onPress={() => setStatus(stat)}
-                >
-                  <Ionicons 
-                    name={status === stat ? "radio-button-on" : "radio-button-off"} 
-                    size={20} 
-                    color={status === stat ? theme.accent : theme.textSecondary} 
+                  onPress={() => setStatus(stat)}>
+                  <Ionicons
+                    name={
+                      status === stat ? 'radio-button-on' : 'radio-button-off'
+                    }
+                    size={20}
+                    color={status === stat ? theme.accent : theme.textSecondary}
                   />
                   <Text style={[styles.radioLabel, { color: theme.text }]}>
                     {stat.toUpperCase()}
@@ -593,16 +743,16 @@ const TemplateModal: React.FC<TemplateModalProps> = ({ template, onSave, onClose
         </ScrollView>
 
         <View style={styles.modalActions}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.modalButton, { backgroundColor: theme.border }]}
-            onPress={onClose}
-          >
-            <Text style={[styles.modalButtonText, { color: theme.text }]}>Cancel</Text>
+            onPress={onClose}>
+            <Text style={[styles.modalButtonText, { color: theme.text }]}>
+              Cancel
+            </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.modalButton, { backgroundColor: theme.accent }]}
-            onPress={handleSave}
-          >
+            onPress={handleSave}>
             <Text style={styles.modalButtonText}>Save Template</Text>
           </TouchableOpacity>
         </View>
@@ -894,11 +1044,16 @@ const styles = StyleSheet.create({
 // Helper function for status colors
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'completed': return '#4CAF50';
-    case 'running': return '#2196F3';
-    case 'failed': return '#F44336';
-    case 'cancelled': return '#FF9800';
-    default: return '#9E9E9E';
+    case 'completed':
+      return '#4CAF50';
+    case 'running':
+      return '#2196F3';
+    case 'failed':
+      return '#F44336';
+    case 'cancelled':
+      return '#FF9800';
+    default:
+      return '#9E9E9E';
   }
 };
 

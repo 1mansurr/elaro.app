@@ -11,12 +11,17 @@ export interface INotificationPreferenceService {
   /**
    * Update user notification preferences
    */
-  updatePreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<void>;
+  updatePreferences(
+    userId: string,
+    preferences: Partial<NotificationPreferences>,
+  ): Promise<void>;
 
   /**
    * Validate notification preferences
    */
-  validatePreferences(preferences: NotificationPreferences): Promise<ValidationResult>;
+  validatePreferences(
+    preferences: NotificationPreferences,
+  ): Promise<ValidationResult>;
 
   /**
    * Get default preferences for new users
@@ -33,7 +38,7 @@ export interface NotificationPreferences {
   // Master Controls
   masterToggle: boolean;
   doNotDisturb: boolean;
-  
+
   // Timing Preferences
   quietHours: {
     enabled: boolean;
@@ -45,7 +50,7 @@ export interface NotificationPreferences {
     evening: string; // HH:MM format
     weekend: boolean;
   };
-  
+
   // Notification Types
   notificationTypes: {
     reminders: boolean;
@@ -57,7 +62,7 @@ export interface NotificationPreferences {
     srs: boolean;
     dailySummaries: boolean;
   };
-  
+
   // Frequency Settings
   frequency: {
     reminders: 'immediate' | 'daily' | 'weekly';
@@ -66,7 +71,7 @@ export interface NotificationPreferences {
     maxPerDay: number;
     cooldownPeriod: number; // minutes
   };
-  
+
   // Advanced Settings
   advanced: {
     vibration: boolean;
@@ -76,7 +81,7 @@ export interface NotificationPreferences {
     locationAware: boolean;
     activityAware: boolean;
   };
-  
+
   // Metadata
   userId: string;
   createdAt: Date;

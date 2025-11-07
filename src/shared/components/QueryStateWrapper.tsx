@@ -1,15 +1,27 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { mapErrorCodeToMessage, getErrorTitle, isRecoverableError } from '@/utils/errorMapping';
+import {
+  mapErrorCodeToMessage,
+  getErrorTitle,
+  isRecoverableError,
+} from '@/utils/errorMapping';
 
 interface QueryStateWrapperProps {
   isLoading: boolean;
   isError: boolean;
   error: Error | null;
-  data: any;
+  data: unknown;
   children: React.ReactNode;
   refetch?: () => void;
   isRefetching?: boolean;
@@ -25,11 +37,11 @@ interface QueryStateWrapperProps {
 /**
  * A reusable wrapper component that handles loading, error, and empty states for React Query queries.
  * Supports pull-to-refresh functionality.
- * 
+ *
  * @example
  * ```tsx
  * const { data, isLoading, isError, error, refetch, isRefetching } = useAssignments();
- * 
+ *
  * return (
  *   <QueryStateWrapper
  *     isLoading={isLoading}
@@ -54,9 +66,9 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
   refetch,
   isRefetching = false,
   onRefresh,
-  emptyTitle = "No data found",
+  emptyTitle = 'No data found',
   emptyMessage = "There's nothing to show here yet.",
-  emptyIcon = "document-outline",
+  emptyIcon = 'document-outline',
   emptyStateComponent,
   skeletonComponent,
   skeletonCount = 5,
@@ -70,14 +82,12 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
       return (
         <View style={{ flex: 1, backgroundColor: theme.background }}>
           {Array.from({ length: skeletonCount }).map((_, index) => (
-            <View key={index}>
-              {skeletonComponent}
-            </View>
+            <View key={index}>{skeletonComponent}</View>
           ))}
         </View>
       );
     }
-    
+
     // Fallback to original loading state
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -94,13 +104,13 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
     const errorTitle = getErrorTitle(error);
     const errorMessage = mapErrorCodeToMessage(error);
     const canRetry = isRecoverableError(error);
-    
+
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Ionicons 
-          name="alert-circle-outline" 
-          size={64} 
-          color={theme.destructive} 
+        <Ionicons
+          name="alert-circle-outline"
+          size={64}
+          color={theme.destructive}
         />
         <Text style={[styles.errorTitle, { color: theme.text }]}>
           {errorTitle}
@@ -111,8 +121,7 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
         {refetch && canRetry && (
           <TouchableOpacity
             style={[styles.retryButton, { backgroundColor: theme.accent }]}
-            onPress={() => refetch()}
-          >
+            onPress={() => refetch()}>
             <Ionicons name="refresh" size={20} color={theme.white} />
             <Text style={[styles.retryButtonText, { color: theme.white }]}>
               Try Again
@@ -124,8 +133,11 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
   }
 
   // Empty State
-  const isEmpty = data === null || data === undefined || (Array.isArray(data) && data.length === 0);
-  
+  const isEmpty =
+    data === null ||
+    data === undefined ||
+    (Array.isArray(data) && data.length === 0);
+
   if (isEmpty) {
     // If custom empty state component is provided, use it
     if (emptyStateComponent) {
@@ -141,13 +153,16 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
                 tintColor={theme.accent}
                 colors={[theme.accent]}
               />
-            }
-          >
+            }>
             {emptyStateComponent}
           </ScrollView>
         );
       }
-      return <View style={{ flex: 1, backgroundColor: theme.background }}>{emptyStateComponent}</View>;
+      return (
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          {emptyStateComponent}
+        </View>
+      );
     }
 
     // Wrap empty state in ScrollView if pull-to-refresh is enabled
@@ -163,13 +178,8 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
               tintColor={theme.accent}
               colors={[theme.accent]}
             />
-          }
-        >
-          <Ionicons 
-            name={emptyIcon} 
-            size={64} 
-            color={theme.textSecondary} 
-          />
+          }>
+          <Ionicons name={emptyIcon} size={64} color={theme.textSecondary} />
           <Text style={[styles.emptyTitle, { color: theme.text }]}>
             {emptyTitle}
           </Text>
@@ -179,15 +189,11 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
         </ScrollView>
       );
     }
-    
+
     // Original empty state (no pull-to-refresh)
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <Ionicons 
-          name={emptyIcon} 
-          size={64} 
-          color={theme.textSecondary} 
-        />
+        <Ionicons name={emptyIcon} size={64} color={theme.textSecondary} />
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
           {emptyTitle}
         </Text>
@@ -211,8 +217,7 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
               tintColor={theme.accent}
               colors={[theme.accent]}
             />
-          }
-        >
+          }>
           {children}
         </ScrollView>
       </View>
@@ -233,12 +238,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: SPACING.md,
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   errorTitle: {
     marginTop: SPACING.lg,
     fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     textAlign: 'center',
   },
   errorMessage: {
@@ -258,12 +263,12 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
   emptyTitle: {
     marginTop: SPACING.lg,
     fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     textAlign: 'center',
   },
   emptyMessage: {
@@ -273,4 +278,3 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
 });
-

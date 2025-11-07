@@ -4,13 +4,16 @@ import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@/types';
 import { Input, Button, QueryStateWrapper } from '@/shared/components';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
-type EditCourseModalRouteProp = RouteProp<RootStackParamList, 'EditCourseModal'>;
+type EditCourseModalRouteProp = RouteProp<
+  RootStackParamList,
+  'EditCourseModal'
+>;
 
 const EditCourseModal = () => {
   const navigation = useNavigation();
@@ -18,10 +21,16 @@ const EditCourseModal = () => {
   const { courseId } = route.params;
   const { user } = useAuth();
   const { isOnline } = useNetwork();
-  
+
   // Fetch course details using React Query
-  const { data: courseData, isLoading, isError, error, refetch } = useCourseDetail(courseId);
-  
+  const {
+    data: courseData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = useCourseDetail(courseId);
+
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
   const [aboutCourse, setAboutCourse] = useState('');
@@ -58,7 +67,7 @@ const EditCourseModal = () => {
           about_course: aboutCourse.trim(),
         },
         isOnline,
-        user.id
+        user.id,
       );
 
       navigation.goBack();
@@ -80,8 +89,7 @@ const EditCourseModal = () => {
       refetch={refetch}
       emptyTitle="Course Not Found"
       emptyMessage="The course you're trying to edit could not be found."
-      emptyIcon="alert-circle-outline"
-    >
+      emptyIcon="alert-circle-outline">
       <View style={styles.container}>
         <Text style={styles.title}>Edit Course</Text>
 

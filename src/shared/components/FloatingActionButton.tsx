@@ -20,15 +20,18 @@ interface Action {
 
 interface FloatingActionButtonProps {
   actions: Action[];
-  onStateChange?: (state: { isOpen: boolean; animation: Animated.Value }) => void;
+  onStateChange?: (state: {
+    isOpen: boolean;
+    animation: Animated.Value;
+  }) => void;
   onDoubleTap?: () => void;
   draftCount?: number;
   onDraftBadgePress?: () => void;
 }
 
-const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({ 
-  actions, 
-  onStateChange, 
+const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
+  actions,
+  onStateChange,
   onDoubleTap,
   draftCount = 0,
   onDraftBadgePress,
@@ -36,28 +39,28 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
-  
+
   // Double-tap detection
   const lastTap = useRef<number | null>(null);
   const DOUBLE_TAP_DELAY = 300; // 300ms between taps
 
   const handleToggle = () => {
     const toValue = isOpen ? 0 : 1;
-    
+
     // Stop any ongoing animation before starting a new one
     if (animationRef.current) {
       animationRef.current.stop();
     }
-    
+
     const newAnimation = Animated.spring(animation, {
       toValue,
       friction: 6,
       useNativeDriver: false,
     });
-    
+
     animationRef.current = newAnimation;
     newAnimation.start();
-    
+
     const newOpenState = !isOpen;
     setIsOpen(newOpenState);
     if (onStateChange) {
@@ -67,8 +70,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 
   const handlePress = () => {
     const now = Date.now();
-    
-    if (lastTap.current && (now - lastTap.current) < DOUBLE_TAP_DELAY) {
+
+    if (lastTap.current && now - lastTap.current < DOUBLE_TAP_DELAY) {
       // Double tap detected!
       lastTap.current = null;
       if (onDoubleTap) {
@@ -114,7 +117,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
           inputRange: [0, 1],
           outputRange: [0, -(index + 1) * 65],
         });
-        
+
         const opacity = animation.interpolate({
           inputRange: [0, 0.5, 1],
           outputRange: [0, 0, 1],
@@ -125,21 +128,26 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
             key={index}
             style={[
               styles.actionContainer,
-              { 
+              {
                 transform: [{ translateY: translation }],
                 opacity: opacity,
               },
-            ]}
-          >
+            ]}>
             <TouchableOpacity
-              style={[styles.actionItem, { backgroundColor: action.backgroundColor || COLORS.primary }]}
+              style={[
+                styles.actionItem,
+                { backgroundColor: action.backgroundColor || COLORS.primary },
+              ]}
               onPress={() => {
                 handleToggle();
                 action.onPress();
               }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name={action.icon} size={action.size || 24} color={action.color || 'white'} />
+              activeOpacity={0.8}>
+              <Ionicons
+                name={action.icon}
+                size={action.size || 24}
+                color={action.color || 'white'}
+              />
               <Text style={styles.actionLabel}>{action.label}</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -148,24 +156,22 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       <TouchableOpacity
         style={styles.fab}
         onPress={handlePress}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         <Animated.View style={rotation}>
           <Ionicons name="add" size={32} color="white" />
         </Animated.View>
-        
+
         {/* Draft Count Badge */}
         {draftCount > 0 && (
           <TouchableOpacity
             style={styles.draftBadge}
-            onPress={(e) => {
+            onPress={e => {
               e.stopPropagation();
               if (onDraftBadgePress) {
                 onDraftBadgePress();
               }
             }}
-            activeOpacity={0.8}
-          >
+            activeOpacity={0.8}>
             <Text style={styles.draftBadgeText}>{draftCount}</Text>
           </TouchableOpacity>
         )}

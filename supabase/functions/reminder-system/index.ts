@@ -1,41 +1,63 @@
 /**
  * Consolidated Reminder System Edge Function
- * 
+ *
  * This function consolidates all reminder-related operations that were previously
  * spread across multiple separate Edge Functions.
- * 
+ *
  * Routes:
  * - POST /reminder-system/schedule - Schedule reminders
  * - POST /reminder-system/cancel - Cancel specific reminder
  * - POST /reminder-system/cancel-all - Cancel all reminders for item
  * - GET /reminder-system/list - List user reminders
  * - POST /reminder-system/process - Process due reminders
- * - PUT /reminder-system/update - Update reminder
+ * - PUT /reminder-system/update/:id - Update reminder
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
-import { isPremium, PERMISSIONS } from '../_shared/permissions.ts';
+import {
+  AuthenticatedRequest,
+  AppError,
+  ERROR_CODES,
+} from '../_shared/function-handler.ts';
+import {
+  wrapOldHandler,
+  extractIdFromUrl,
+  handleDbError,
+} from '../api-v2/_handler-utils.ts';
+import { isPremium } from '../_shared/permissions.ts';
 import { ScheduleRemindersSchema } from '../_shared/schemas/reminders.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse } from '../_shared/response.ts';
+import { createResponse, errorResponse } from '../_shared/response.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts';
 
-// Helper function to add random jitter to a date
-function addJitter(date: Date, maxMinutes: number): Date {
-  const jitterMinutes = Math.floor(Math.random() * (maxMinutes * 2 + 1)) - maxMinutes;
-  const jitteredDate = new Date(date);
-  jitteredDate.setMinutes(jitteredDate.getMinutes() + jitterMinutes);
-  return jitteredDate;
-}
+const CancelReminderSchema = z.object({
+  reminder_id: z.string().uuid(),
+});
+
+const CancelAllRemindersSchema = z.object({
+  item_id: z.string().uuid(),
+  item_type: z.enum(['study_session', 'assignment', 'lecture']),
+});
+
+const UpdateReminderSchema = z.object({
+  reminder_time: z.string().datetime().optional(),
+  title: z.string().optional(),
+  message: z.string().optional(),
+  completed: z.boolean().optional(),
+});
 
 // Reminder service class
 class ReminderService {
-  constructor(private supabaseClient: any, private user: any) {}
+  constructor(
+    private supabaseClient: any,
+    private user: any,
+  ) {}
 
   async scheduleReminders(data: any) {
     const { session_id, session_date, topic } = data;
-
-    console.log(`Scheduling SRS reminders for session: ${session_id}, user: ${this.user.id}`);
 
     // SECURITY: Verify the user owns the study session
     const { error: checkError } = await this.supabaseClient
@@ -46,56 +68,105 @@ class ReminderService {
       .single();
 
     if (checkError) {
-      throw new AppError('Study session not found or access denied.', 404, 'NOT_FOUND');
+      throw new AppError(
+        'Study session not found or access denied.',
+        404,
+        ERROR_CODES.DB_NOT_FOUND,
+      );
     }
 
     // Check premium permissions for advanced reminder features
-    const userPermissions = await isPremium(this.supabaseClient, this.user.id);
-    const maxReminders = userPermissions.includes(PERMISSIONS.ADVANCED_REMINDERS) ? 10 : 3;
+    const { data: userData } = await this.supabaseClient
+      .from('users')
+      .select('subscription_tier')
+      .eq('id', this.user.id)
+      .single();
 
-    // Define SRS intervals (in days)
-    const srsIntervals = [1, 3, 7, 14, 30, 90]; // Days for spaced repetition
+    const isPremiumUser = userData?.subscription_tier === 'oddity';
+
+    if (!isPremiumUser) {
+      throw new AppError(
+        'Premium subscription required for SRS reminders.',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    const userTier = userData?.subscription_tier || 'free';
+
+    // Fetch the appropriate SRS schedule based on user tier (not hardcoded)
+    const { data: schedule, error: scheduleError } = await this.supabaseClient
+      .from('srs_schedules')
+      .select('intervals, name')
+      .eq('tier_restriction', userTier)
+      .single();
+
+    if (scheduleError || !schedule) {
+      // Fallback to tier-specific hardcoded intervals if schedule not found
+      const fallbackSchedule =
+        userTier === 'free'
+          ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
+          : {
+              intervals: [1, 3, 7, 14, 30, 60, 120, 180],
+              name: 'Oddity Tier (Fallback)',
+            };
+      schedule = fallbackSchedule;
+    }
+
+    const maxReminders = isPremiumUser ? 10 : 3;
+    const srsIntervals = schedule.intervals.slice(0, maxReminders); // Limit based on tier
     const sessionDate = new Date(session_date);
 
-    // Create reminders for each SRS interval
-    const reminders = [];
-    for (let i = 0; i < Math.min(srsIntervals.length, maxReminders); i++) {
-      const reminderDate = new Date(sessionDate);
-      reminderDate.setDate(reminderDate.getDate() + srsIntervals[i]);
-      
-      // Add jitter to prevent all reminders from firing at once
-      const jitteredDate = addJitter(reminderDate, 30); // ±30 minutes jitter
-
-      reminders.push({
-        user_id: this.user.id,
-        study_session_id: session_id,
-        reminder_time: jitteredDate.toISOString(),
-        reminder_type: 'srs_review',
-        day_number: srsIntervals[i],
-        completed: false,
-        title: `Review: ${topic}`,
-        message: `Time to review your study session: ${topic}`,
-      });
+    // Cancel existing reminders for this session before scheduling new ones
+    const { cancelExistingSRSReminders } = await import(
+      '../_shared/reminder-scheduling.ts'
+    );
+    const cancelledCount = await cancelExistingSRSReminders(
+      this.supabaseClient,
+      this.user.id,
+      session_id,
+    );
+    if (cancelledCount > 0) {
+      console.log(
+        `Cancelled ${cancelledCount} existing reminders for session ${session_id}`,
+      );
     }
+
+    // Use consolidated scheduling service for consistent behavior
+    const remindersToInsert = await scheduleMultipleSRSReminders(
+      this.supabaseClient,
+      {
+        userId: this.user.id,
+        sessionId: session_id,
+        sessionDate,
+        topic,
+        preferredHour: 10, // Default hour
+        jitterMinutes: 30,
+        useDeterministicJitter: true, // Deterministic for consistency
+        intervals: srsIntervals.slice(0, maxReminders), // Limit based on tier
+      },
+    );
+
+    // Map to the format expected by this function (with day_number and message fields)
+    const reminders = remindersToInsert.map((reminder, index) => ({
+      ...reminder,
+      study_session_id: reminder.session_id, // Map session_id to study_session_id for compatibility
+      reminder_type: 'spaced_repetition' as const, // Changed from 'srs_review' to standardize
+      day_number: srsIntervals[index],
+      message: reminder.body, // Map body to message for compatibility
+    }));
 
     // Insert reminders
-    const { data: createdReminders, error: insertError } = await this.supabaseClient
-      .from('reminders')
-      .insert(reminders)
-      .select();
+    const { data: createdReminders, error: insertError } =
+      await this.supabaseClient.from('reminders').insert(reminders).select();
 
-    if (insertError) {
-      throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
-    }
+    if (insertError) handleDbError(insertError);
 
-    console.log(`Created ${createdReminders.length} SRS reminders for session ${session_id}`);
     return createdReminders;
   }
 
   async cancelReminder(data: any) {
     const { reminder_id } = data;
-
-    console.log(`Canceling reminder: ${reminder_id} for user: ${this.user.id}`);
 
     // SECURITY: Verify ownership
     const { error: checkError } = await this.supabaseClient
@@ -106,29 +177,29 @@ class ReminderService {
       .single();
 
     if (checkError) {
-      throw new AppError('Reminder not found or access denied.', 404, 'NOT_FOUND');
+      throw new AppError(
+        'Reminder not found or access denied.',
+        404,
+        ERROR_CODES.DB_NOT_FOUND,
+      );
     }
 
     // Cancel the reminder
     const { error: deleteError } = await this.supabaseClient
       .from('reminders')
-      .update({ 
+      .update({
         cancelled: true,
-        cancelled_at: new Date().toISOString()
+        cancelled_at: new Date().toISOString(),
       })
       .eq('id', reminder_id);
 
-    if (deleteError) {
-      throw new AppError(deleteError.message, 500, 'DB_UPDATE_ERROR');
-    }
+    if (deleteError) handleDbError(deleteError);
 
     return { success: true, message: 'Reminder cancelled successfully' };
   }
 
   async cancelAllReminders(data: any) {
     const { item_id, item_type } = data;
-
-    console.log(`Canceling all reminders for ${item_type}: ${item_id} for user: ${this.user.id}`);
 
     // SECURITY: Verify ownership based on item type
     let ownershipCheck;
@@ -158,27 +229,29 @@ class ReminderService {
           .single();
         break;
       default:
-        throw new AppError('Invalid item type', 400, 'INVALID_INPUT');
+        throw new AppError('Invalid item type', 400, ERROR_CODES.INVALID_INPUT);
     }
 
     if (ownershipCheck.error) {
-      throw new AppError('Item not found or access denied.', 404, 'NOT_FOUND');
+      throw new AppError(
+        'Item not found or access denied.',
+        404,
+        ERROR_CODES.DB_NOT_FOUND,
+      );
     }
 
     // Cancel all reminders for this item
     const { error: updateError } = await this.supabaseClient
       .from('reminders')
-      .update({ 
+      .update({
         cancelled: true,
-        cancelled_at: new Date().toISOString()
+        cancelled_at: new Date().toISOString(),
       })
       .eq(`${item_type}_id`, item_id)
       .eq('user_id', this.user.id)
       .eq('cancelled', false);
 
-    if (updateError) {
-      throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
-    }
+    if (updateError) handleDbError(updateError);
 
     return { success: true, message: 'All reminders cancelled successfully' };
   }
@@ -186,7 +259,8 @@ class ReminderService {
   async listReminders() {
     const { data: reminders, error } = await this.supabaseClient
       .from('reminders')
-      .select(`
+      .select(
+        `
         *,
         study_sessions (
           id,
@@ -203,25 +277,25 @@ class ReminderService {
           lecture_name,
           start_time
         )
-      `)
+      `,
+      )
       .eq('user_id', this.user.id)
       .eq('cancelled', false)
       .order('reminder_time', { ascending: true });
 
-    if (error) {
-      throw new AppError(error.message, 500, 'DB_QUERY_ERROR');
-    }
+    if (error) handleDbError(error);
 
     return reminders;
   }
 
   async processDueReminders() {
     const now = new Date().toISOString();
-    
+
     // Get due reminders
     const { data: dueReminders, error: fetchError } = await this.supabaseClient
       .from('reminders')
-      .select(`
+      .select(
+        `
         *,
         study_sessions (
           id,
@@ -238,49 +312,46 @@ class ReminderService {
           lecture_name,
           start_time
         )
-      `)
+      `,
+      )
       .eq('user_id', this.user.id)
       .eq('cancelled', false)
       .eq('completed', false)
       .lte('reminder_time', now);
 
-    if (fetchError) {
-      throw new AppError(fetchError.message, 500, 'DB_QUERY_ERROR');
-    }
+    if (fetchError) handleDbError(fetchError);
 
     // Process each due reminder
     const processedReminders = [];
-    for (const reminder of dueReminders) {
+    for (const reminder of dueReminders || []) {
       // Mark as completed
       const { error: updateError } = await this.supabaseClient
         .from('reminders')
         .update({
           completed: true,
-          completed_at: new Date().toISOString()
+          completed_at: new Date().toISOString(),
         })
         .eq('id', reminder.id);
 
       if (updateError) {
-        console.error(`Failed to mark reminder ${reminder.id} as completed:`, updateError);
+        // Log error but continue processing other reminders
         continue;
       }
 
       processedReminders.push({
         ...reminder,
         completed: true,
-        completed_at: new Date().toISOString()
+        completed_at: new Date().toISOString(),
       });
     }
 
     return {
       processed_count: processedReminders.length,
-      reminders: processedReminders
+      reminders: processedReminders,
     };
   }
 
   async updateReminder(reminderId: string, data: any) {
-    console.log(`Updating reminder: ${reminderId} for user: ${this.user.id}`);
-
     // SECURITY: Verify ownership
     const { error: checkError } = await this.supabaseClient
       .from('reminders')
@@ -290,30 +361,78 @@ class ReminderService {
       .single();
 
     if (checkError) {
-      throw new AppError('Reminder not found or access denied.', 404, 'NOT_FOUND');
+      throw new AppError(
+        'Reminder not found or access denied.',
+        404,
+        ERROR_CODES.DB_NOT_FOUND,
+      );
     }
 
     // Update the reminder
-    const { data: updatedReminder, error: updateError } = await this.supabaseClient
-      .from('reminders')
-      .update({
-        ...data,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', reminderId)
-      .select()
-      .single();
+    const { data: updatedReminder, error: updateError } =
+      await this.supabaseClient
+        .from('reminders')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', reminderId)
+        .select()
+        .single();
 
-    if (updateError) {
-      throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
-    }
+    if (updateError) handleDbError(updateError);
 
     return updatedReminder;
   }
 }
 
-// Main handler
-serve(async (req) => {
+// Handler functions - Use AuthenticatedRequest and ReminderService
+async function handleScheduleReminders(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new ReminderService(supabaseClient, user);
+  return await service.scheduleReminders(body);
+}
+
+async function handleCancelReminder(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new ReminderService(supabaseClient, user);
+  return await service.cancelReminder(body);
+}
+
+async function handleCancelAllReminders(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const service = new ReminderService(supabaseClient, user);
+  return await service.cancelAllReminders(body);
+}
+
+async function handleListReminders(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new ReminderService(supabaseClient, user);
+  return await service.listReminders();
+}
+
+async function handleProcessDueReminders(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new ReminderService(supabaseClient, user);
+  return await service.processDueReminders();
+}
+
+async function handleUpdateReminder(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const reminderId = body?.reminder_id || extractIdFromUrl(req.url);
+  if (!reminderId) {
+    throw new AppError(
+      'Reminder ID is required',
+      400,
+      ERROR_CODES.MISSING_REQUIRED_FIELD,
+    );
+  }
+  const service = new ReminderService(supabaseClient, user);
+  return await service.updateReminder(reminderId, body);
+}
+
+// Main handler with routing
+serve(async req => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -322,67 +441,91 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
-    const action = pathParts[pathParts.length - 1]; // Get the last part as action
-
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return createResponse({ error: 'Unauthorized' }, 401);
+    // Get action - if last part is a UUID and second-to-last is 'update', use 'update' as action
+    let action = pathParts[pathParts.length - 1];
+    const uuidPattern =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (
+      uuidPattern.test(action) &&
+      pathParts.length > 1 &&
+      pathParts[pathParts.length - 2] === 'update'
+    ) {
+      action = 'update';
     }
-
-    // Create reminder service
-    const reminderService = new ReminderService(supabaseClient, user);
 
     // Route to appropriate handler
-    switch (action) {
-      case 'schedule':
-        const scheduleData = await req.json();
-        const scheduledReminders = await reminderService.scheduleReminders(scheduleData);
-        return createResponse({ data: scheduledReminders }, 201);
-
-      case 'cancel':
-        const cancelData = await req.json();
-        const cancelResult = await reminderService.cancelReminder(cancelData);
-        return createResponse({ data: cancelResult }, 200);
-
-      case 'cancel-all':
-        const cancelAllData = await req.json();
-        const cancelAllResult = await reminderService.cancelAllReminders(cancelAllData);
-        return createResponse({ data: cancelAllResult }, 200);
-
-      case 'list':
-        const reminders = await reminderService.listReminders();
-        return createResponse({ data: reminders }, 200);
-
-      case 'process':
-        const processResult = await reminderService.processDueReminders();
-        return createResponse({ data: processResult }, 200);
-
-      case 'update':
-        const reminderId = pathParts[pathParts.length - 2]; // Get ID from path
-        const updateData = await req.json();
-        const updatedReminder = await reminderService.updateReminder(reminderId, updateData);
-        return createResponse({ data: updatedReminder }, 200);
-
-      default:
-        return createResponse({ error: 'Invalid action' }, 404);
+    const handler = getHandler(action);
+    if (!handler) {
+      return errorResponse(
+        new AppError('Invalid action', 404, ERROR_CODES.DB_NOT_FOUND),
+      );
     }
 
+    // Handler is already wrapped with createAuthenticatedHandler, just call it
+    return await handler(req);
   } catch (error) {
-    console.error('Reminder system error:', error);
-    return createResponse({ 
-      error: error instanceof Error ? error.message : 'Internal server error' 
-    }, 500);
+    const traceContext = extractTraceContext(req);
+    await logger.error(
+      'Reminder system error',
+      {
+        error: error instanceof Error ? error.message : String(error),
+        url: req.url,
+      },
+      traceContext,
+    );
+    return errorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(
+            'Internal server error',
+            500,
+            ERROR_CODES.INTERNAL_ERROR,
+          ),
+      500,
+    );
   }
 });
+
+// Route handlers - All handlers are wrapped with createAuthenticatedHandler
+function getHandler(action: string | null) {
+  const handlers: Record<string, Function> = {
+    schedule: wrapOldHandler(
+      handleScheduleReminders,
+      'reminders-schedule',
+      ScheduleRemindersSchema,
+      true,
+    ),
+    cancel: wrapOldHandler(
+      handleCancelReminder,
+      'reminders-cancel',
+      CancelReminderSchema,
+      true,
+    ),
+    'cancel-all': wrapOldHandler(
+      handleCancelAllReminders,
+      'reminders-cancel-all',
+      CancelAllRemindersSchema,
+      true,
+    ),
+    list: wrapOldHandler(
+      handleListReminders,
+      'reminders-list',
+      undefined,
+      false,
+    ),
+    process: wrapOldHandler(
+      handleProcessDueReminders,
+      'reminders-process',
+      undefined,
+      false,
+    ),
+    update: wrapOldHandler(
+      handleUpdateReminder,
+      'reminders-update',
+      UpdateReminderSchema,
+      true,
+    ),
+  };
+
+  return action ? handlers[action] : undefined;
+}

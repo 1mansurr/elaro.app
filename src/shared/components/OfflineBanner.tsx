@@ -1,6 +1,6 @@
 /**
  * OfflineBanner Component
- * 
+ *
  * Displays a non-intrusive banner when the device is offline.
  * Provides immediate visual feedback to users about their connectivity status.
  */
@@ -42,4 +42,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

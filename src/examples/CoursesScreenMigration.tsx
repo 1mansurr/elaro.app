@@ -1,6 +1,6 @@
 /**
  * Example: Courses Screen Migration
- * 
+ *
  * This example shows how to migrate from the legacy API to the versioned API system.
  * Compare the "Before" and "After" implementations to understand the migration process.
  */
@@ -22,11 +22,15 @@ function CoursesScreenLegacy() {
   const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Legacy API calls
-  const { data: courses, isLoading, error } = useQuery({
+  // Legacy API calls (DEPRECATED - shows old pattern)
+  // Note: api.courses.getAll() now returns CoursesPage with pagination
+  // For new code, use useCourses() hook instead (see After section)
+  const { data: coursesData, isLoading, error } = useQuery({
     queryKey: ['courses'],
-    queryFn: () => api.courses.getAll(),
+    queryFn: () => api.courses.getAll({ pageParam: 0, pageSize: 50 }),
   });
+  // Extract courses from paginated response
+  const courses = coursesData?.courses || [];
 
   const createCourseMutation = useMutation({
     mutationFn: (courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>) =>
@@ -112,6 +116,7 @@ import { useCourses } from '@/hooks/useVersionedApi';
 import { useBatchOperations } from '@/hooks/useVersionedApi';
 import { VersionInfo } from '@/components/VersionInfo';
 import { versionedApiClient } from '@/services/VersionedApiClient';
+import { formatDate } from '@/i18n';
 
 interface Course {
   id: string;
@@ -128,23 +133,25 @@ function CoursesScreenVersioned() {
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
 
   // Versioned API with automatic state management
-  const { 
-    data: courses, 
-    loading, 
-    error, 
+  const {
+    data: courses,
+    loading,
+    error,
     deprecationWarning,
     sunsetDate,
     migrationGuide,
-    refetch 
+    refetch,
   } = useCourses();
 
   // Batch operations for multiple actions
   const { executeBatch, loading: batchLoading } = useBatchOperations();
 
-  const handleCreateCourse = async (courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreateCourse = async (
+    courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>,
+  ) => {
     try {
       const response = await versionedApiClient.createCourse(courseData);
-      
+
       if (response.error) {
         Alert.alert('Error', response.error);
         return;
@@ -164,10 +171,13 @@ function CoursesScreenVersioned() {
     }
   };
 
-  const handleUpdateCourse = async (courseId: string, updates: Partial<Course>) => {
+  const handleUpdateCourse = async (
+    courseId: string,
+    updates: Partial<Course>,
+  ) => {
     try {
       const response = await versionedApiClient.updateCourse(courseId, updates);
-      
+
       if (response.error) {
         Alert.alert('Error', response.error);
         return;
@@ -182,7 +192,7 @@ function CoursesScreenVersioned() {
   const handleDeleteCourse = async (courseId: string) => {
     try {
       const response = await versionedApiClient.deleteCourse(courseId);
-      
+
       if (response.error) {
         Alert.alert('Error', response.error);
         return;
@@ -202,11 +212,11 @@ function CoursesScreenVersioned() {
       type: 'course',
       table: 'courses',
       action: 'delete',
-      filters: { id: courseId }
+      filters: { id: courseId },
     }));
 
     const result = await executeBatch(operations);
-    
+
     if (result.success) {
       setSelectedCourses([]);
       await refetch();
@@ -223,11 +233,11 @@ function CoursesScreenVersioned() {
       table: 'courses',
       action: 'update',
       data: updates,
-      filters: { id: courseId }
+      filters: { id: courseId },
     }));
 
     const result = await executeBatch(operations);
-    
+
     if (result.success) {
       setSelectedCourses([]);
       await refetch();
@@ -242,61 +252,64 @@ function CoursesScreenVersioned() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>My Courses</Text>
-      
+
       {/* Version information and warnings */}
       {deprecationWarning && (
-        <VersionInfo 
-          showDetails 
+        <VersionInfo
+          showDetails
           onUpgrade={() => {
             Alert.alert(
               'API Upgrade Available',
               'A newer API version is available. Would you like to upgrade?',
               [
                 { text: 'Later', style: 'cancel' },
-                { text: 'Upgrade', onPress: () => versionedApiClient.upgradeToLatest() }
-              ]
+                {
+                  text: 'Upgrade',
+                  onPress: () => versionedApiClient.upgradeToLatest(),
+                },
+              ],
             );
           }}
         />
       )}
-      
+
       {/* Batch selection controls */}
       {selectedCourses.length > 0 && (
         <View style={styles.batchControls}>
           <Text style={styles.batchText}>
-            {selectedCourses.length} course{selectedCourses.length !== 1 ? 's' : ''} selected
+            {selectedCourses.length} course
+            {selectedCourses.length !== 1 ? 's' : ''} selected
           </Text>
           <View style={styles.batchActions}>
             <TouchableOpacity
               style={styles.batchButton}
-              onPress={() => handleBatchUpdate({ course_name: 'Updated in Batch' })}
-              disabled={batchLoading}
-            >
+              onPress={() =>
+                handleBatchUpdate({ course_name: 'Updated in Batch' })
+              }
+              disabled={batchLoading}>
               <Ionicons name="pencil" size={16} color="white" />
               <Text style={styles.batchButtonText}>Update</Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={[styles.batchButton, styles.deleteButton]}
               onPress={handleBatchDelete}
-              disabled={batchLoading}
-            >
+              disabled={batchLoading}>
               <Ionicons name="trash" size={16} color="white" />
               <Text style={styles.batchButtonText}>Delete</Text>
             </TouchableOpacity>
           </View>
         </View>
       )}
-      
+
       {/* Courses list */}
-      {courses?.map((course) => (
-        <View 
-          key={course.id} 
+      {courses?.map(course => (
+        <View
+          key={course.id}
           style={[
             styles.courseItem,
-            selectedCourses.includes(course.id) && styles.selectedCourse
-          ]}
-        >
+            selectedCourses.includes(course.id) && styles.selectedCourse,
+          ]}>
           <TouchableOpacity
             style={styles.courseContent}
             onPress={() => {
@@ -305,37 +318,34 @@ function CoursesScreenVersioned() {
               } else {
                 setSelectedCourses(prev => [...prev, course.id]);
               }
-            }}
-          >
+            }}>
             <Text style={styles.courseName}>{course.course_name}</Text>
             <Text style={styles.courseCode}>{course.course_code}</Text>
             <Text style={styles.courseDate}>
-              Created: {new Date(course.created_at).toLocaleDateString()}
+              Created: {formatDate(new Date(course.created_at))}
             </Text>
           </TouchableOpacity>
-          
+
           <View style={styles.actions}>
             <TouchableOpacity
-              onPress={() => handleUpdateCourse(course.id, { 
-                course_name: 'Updated Name' 
-              })}
-            >
+              onPress={() =>
+                handleUpdateCourse(course.id, {
+                  course_name: 'Updated Name',
+                })
+              }>
               <Ionicons name="pencil" size={20} color="#007AFF" />
             </TouchableOpacity>
-            
-            <TouchableOpacity
-              onPress={() => handleDeleteCourse(course.id)}
-            >
+
+            <TouchableOpacity onPress={() => handleDeleteCourse(course.id)}>
               <Ionicons name="trash" size={20} color="#FF3B30" />
             </TouchableOpacity>
           </View>
         </View>
       ))}
-      
+
       <TouchableOpacity
         style={styles.addButton}
-        onPress={() => setShowAddModal(true)}
-      >
+        onPress={() => setShowAddModal(true)}>
         <Ionicons name="add" size={24} color="white" />
         <Text style={styles.addButtonText}>Add Course</Text>
       </TouchableOpacity>

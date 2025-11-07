@@ -9,12 +9,14 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 ### Performance Comparison
 
 **Before (Individual Requests):**
+
 - Delete 5 items = 5 API calls
 - Total time: ~2.5 seconds (500ms each)
 - Network overhead: 5x round trips
 - Database connections: 5 separate connections
 
 **After (Batch Request):**
+
 - Delete 5 items = 1 API call
 - Total time: ~600ms
 - Network overhead: 1x round trip
@@ -29,6 +31,7 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 **Location:** `supabase/functions/batch-action/index.ts`
 
 **Request Format:**
+
 ```typescript
 {
   action: 'RESTORE' | 'DELETE_PERMANENTLY',
@@ -41,6 +44,7 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 ```
 
 **Response Format:**
+
 ```typescript
 {
   message: string,
@@ -69,6 +73,7 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 ### Example Flow
 
 **Input:**
+
 ```typescript
 {
   action: 'RESTORE',
@@ -81,6 +86,7 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 ```
 
 **Grouped by type:**
+
 ```typescript
 {
   assignment: ['1', '2'],
@@ -89,25 +95,27 @@ Batch operations allow performing multiple actions (restore, delete) on multiple
 ```
 
 **SQL queries executed in parallel:**
+
 ```sql
 -- Query 1 (assignments)
-UPDATE assignments 
-SET deleted_at = NULL 
+UPDATE assignments
+SET deleted_at = NULL
 WHERE id IN ('1', '2') AND user_id = $user_id;
 
 -- Query 2 (courses) - runs in parallel with Query 1
-UPDATE courses 
-SET deleted_at = NULL 
+UPDATE courses
+SET deleted_at = NULL
 WHERE id IN ('3') AND user_id = $user_id;
 ```
 
 **Result:**
+
 ```typescript
 {
   message: "Successfully restored 3 item(s)",
-  results: { 
-    total: 3, 
-    succeeded: 3, 
+  results: {
+    total: 3,
+    succeeded: 3,
     failed: 0,
     details: {
       success: [
@@ -128,6 +136,7 @@ WHERE id IN ('3') AND user_id = $user_id;
 **Location:** `src/hooks/useBatchAction.ts`
 
 **Basic Usage:**
+
 ```typescript
 import { useBatchAction } from '@/hooks/useBatchAction';
 
@@ -143,7 +152,7 @@ const Component = () => {
           { id: 'uuid2', type: 'course' },
         ],
       });
-      
+
       console.log(result.message);
       // "Successfully restored 2 item(s)"
     } catch (error) {
@@ -152,7 +161,7 @@ const Component = () => {
   };
 
   return (
-    <Button 
+    <Button
       onPress={handleBatchRestore}
       loading={batchMutation.isPending}
     />
@@ -176,17 +185,17 @@ The hook automatically invalidates relevant caches:
 onSuccess: async (data, variables) => {
   // Invalidate deleted items query
   queryClient.invalidateQueries({ queryKey: ['deletedItems'] });
-  
+
   // Clear home screen cache
   await cache.remove('homeScreenData');
-  
+
   // Invalidate specific data types
   if (variables.items.some(item => item.type === 'assignment')) {
     queryClient.invalidateQueries({ queryKey: ['assignments'] });
     await cache.remove('assignments');
   }
   // ... similar for other types
-}
+};
 ```
 
 ## User Interface
@@ -195,11 +204,11 @@ onSuccess: async (data, variables) => {
 
 **Two States:**
 
-1. **Normal Mode**: 
+1. **Normal Mode**:
    - Individual restore/delete buttons per item
    - Standard list view
 
-2. **Selection Mode**: 
+2. **Selection Mode**:
    - Checkboxes for multi-select
    - Batch action buttons at bottom
 
@@ -217,21 +226,25 @@ onSuccess: async (data, variables) => {
 ### UI Components
 
 **Header Button:**
+
 - Normal mode: "Select" (blue text)
 - Selection mode: "Cancel" (blue text)
 
 **Selection Toolbar:**
+
 - "Select All" button
 - "Deselect All" button
 - Selected count display (e.g., "3 selected")
 
 **Batch Action Buttons (Bottom):**
+
 - Restore button (blue) with count
 - Delete button (red) with count
 - Icons for visual clarity
 - Disabled during operation
 
 **Visual Feedback:**
+
 - Selected items: Blue highlight, blue left border
 - Checkboxes: Filled when selected
 - Loading: Buttons disabled during operation
@@ -327,24 +340,26 @@ onSuccess: async (data, variables) => {
 
 ### Common Errors
 
-| Error | Cause | Solution |
-|-------|-------|----------|
-| Item not found | ID doesn't exist or wrong user | Refresh list |
-| Already restored | Item's `deleted_at` is null | Ignore, not critical |
-| Permission denied | User doesn't own item | Security working correctly |
-| Rate limit exceeded | Too many requests | Wait and retry |
-| Validation error | Invalid request format | Check client code |
-| Over 100 items | Batch too large | Split into multiple batches |
+| Error               | Cause                          | Solution                    |
+| ------------------- | ------------------------------ | --------------------------- |
+| Item not found      | ID doesn't exist or wrong user | Refresh list                |
+| Already restored    | Item's `deleted_at` is null    | Ignore, not critical        |
+| Permission denied   | User doesn't own item          | Security working correctly  |
+| Rate limit exceeded | Too many requests              | Wait and retry              |
+| Validation error    | Invalid request format         | Check client code           |
+| Over 100 items      | Batch too large                | Split into multiple batches |
 
 ## Testing
 
 ### Manual Testing Checklist
 
 #### Setup
+
 - [ ] Have 5+ items in recycle bin
 - [ ] Mix of different types (assignments, courses, etc.)
 
 #### Selection Mode
+
 - [ ] Tap "Select" button in header
 - [ ] Checkboxes appear
 - [ ] Individual buttons (Restore/Delete) disappear
@@ -354,6 +369,7 @@ onSuccess: async (data, variables) => {
 - [ ] Selected count updates correctly
 
 #### Batch Operations
+
 - [ ] Select multiple items
 - [ ] Tap "Restore (N)" button
 - [ ] Confirm in alert
@@ -362,6 +378,7 @@ onSuccess: async (data, variables) => {
 - [ ] Selection mode exits
 
 #### Edge Cases
+
 - [ ] Select All → all items selected
 - [ ] Deselect All → no items selected
 - [ ] Cancel → exits selection mode, clears selections
@@ -422,32 +439,34 @@ curl -X POST https://your-project.supabase.co/functions/v1/batch-action \
 
 ### Expected Improvements
 
-| Items | Individual Time | Batch Time | Improvement |
-|-------|----------------|------------|-------------|
-| 1 | 500ms | 500ms | Same |
-| 5 | 2.5s | 600ms | **76% faster** |
-| 10 | 5.0s | 800ms | **84% faster** |
-| 20 | 10.0s | 1.2s | **88% faster** |
-| 50 | 25.0s | 2.0s | **92% faster** |
-| 100 | 50.0s | 3.0s | **94% faster** |
+| Items | Individual Time | Batch Time | Improvement    |
+| ----- | --------------- | ---------- | -------------- |
+| 1     | 500ms           | 500ms      | Same           |
+| 5     | 2.5s            | 600ms      | **76% faster** |
+| 10    | 5.0s            | 800ms      | **84% faster** |
+| 20    | 10.0s           | 1.2s       | **88% faster** |
+| 50    | 25.0s           | 2.0s       | **92% faster** |
+| 100   | 50.0s           | 3.0s       | **94% faster** |
 
 ### Network Usage Comparison
 
 | Items | Individual Calls | Batch Call | Savings |
-|-------|-----------------|------------|---------|
-| 5 | 15 KB | 3 KB | **80%** |
-| 10 | 30 KB | 5 KB | **83%** |
-| 20 | 60 KB | 8 KB | **87%** |
-| 50 | 150 KB | 15 KB | **90%** |
+| ----- | ---------------- | ---------- | ------- |
+| 5     | 15 KB            | 3 KB       | **80%** |
+| 10    | 30 KB            | 5 KB       | **83%** |
+| 20    | 60 KB            | 8 KB       | **87%** |
+| 50    | 150 KB           | 15 KB      | **90%** |
 
 ### Database Impact
 
 **Before:**
+
 - 5 items = 5 separate UPDATE/DELETE queries
 - 5 database connections
 - Higher latency due to round trips
 
 **After:**
+
 - 5 items (same type) = 1 UPDATE/DELETE with IN clause
 - 5 items (mixed types) = 2-4 queries (grouped by type)
 - Single database connection
@@ -492,7 +511,7 @@ const handleBatchDelete = async () => {
       // Partial success
       Alert.alert(
         'Partial Success',
-        `${result.results.succeeded} deleted, ${result.results.failed.length} failed`
+        `${result.results.succeeded} deleted, ${result.results.failed.length} failed`,
       );
     }
   } catch (error) {
@@ -514,7 +533,7 @@ const CoursesScreen = () => {
 
   const handleArchiveSelected = async (courseIds: string[]) => {
     const items = courseIds.map(id => ({ id, type: 'course' as const }));
-    
+
     await batchMutation.mutateAsync({
       action: 'DELETE_PERMANENTLY', // Or create an 'ARCHIVE' action
       items,
@@ -531,7 +550,11 @@ The batch-action function can be extended to support:
 
 ```typescript
 // Extend the action enum
-action: 'RESTORE' | 'DELETE_PERMANENTLY' | 'ARCHIVE' | 'MARK_COMPLETE' | 'DUPLICATE'
+action: 'RESTORE' |
+  'DELETE_PERMANENTLY' |
+  'ARCHIVE' |
+  'MARK_COMPLETE' |
+  'DUPLICATE';
 ```
 
 ### Implementation Example:
@@ -579,12 +602,14 @@ else if (action === 'MARK_COMPLETE') {
 ### Issue: Batch operation fails completely
 
 **Possible Causes:**
+
 - Network error
 - Authentication expired
 - Rate limit exceeded
 - Invalid item IDs
 
 **Solution:**
+
 - Check network connection
 - Re-authenticate user
 - Wait before retrying
@@ -593,11 +618,13 @@ else if (action === 'MARK_COMPLETE') {
 ### Issue: Partial failures occurring
 
 **Possible Causes:**
+
 - Some items don't belong to user
 - Some items already restored/deleted
 - Mixed permissions
 
 **Solution:**
+
 - This is expected behavior
 - Show detailed error messages
 - Allow user to retry failed items
@@ -605,10 +632,12 @@ else if (action === 'MARK_COMPLETE') {
 ### Issue: Slow performance
 
 **Possible Causes:**
+
 - Too many items in single batch
 - Different types requiring multiple queries
 
 **Solution:**
+
 - Limit batch size to 50 items
 - Group items by type before sending
 - Consider progressive updates
@@ -621,9 +650,9 @@ All batch operations respect RLS policies:
 
 ```sql
 -- Users can only restore their own items
-UPDATE assignments 
-SET deleted_at = NULL 
-WHERE id IN (...) 
+UPDATE assignments
+SET deleted_at = NULL
+WHERE id IN (...)
 AND user_id = $authenticated_user_id;
 ```
 
@@ -641,6 +670,7 @@ const rateLimitCost = Math.ceil(items.length / 10); // 1 cost per 10 items
 ### Validation
 
 Zod schema ensures:
+
 - Valid UUIDs
 - Recognized item types
 - Valid actions
@@ -686,6 +716,7 @@ supabase functions invoke batch-action \
 ### Environment Variables
 
 No new environment variables needed. Uses existing:
+
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - Standard rate limiting config
@@ -709,15 +740,18 @@ No new environment variables needed. Uses existing:
 ## Related Files
 
 ### Backend
+
 - `/supabase/functions/batch-action/index.ts` - Edge function implementation
 - `/supabase/functions/_shared/function-handler.ts` - Shared handler utilities
 
 ### Frontend
+
 - `/src/hooks/useBatchAction.ts` - React Query hook
 - `/src/features/data-management/screens/RecycleBinScreen.tsx` - UI implementation
 - `/src/features/data-management/components/DeletedItemCard.tsx` - Selection UI
 
 ### Documentation
+
 - `/BATCH_OPERATIONS.md` - This file
 - `/CACHING_STRATEGY.md` - Related: Cache invalidation
 
@@ -747,4 +781,3 @@ A: Not implemented yet, but could be added with operation history.
 **Status:** ✅ Production Ready  
 **Performance Impact:** 🚀 76-94% faster for batch operations  
 **Network Savings:** 📉 80-90% reduction in traffic
-

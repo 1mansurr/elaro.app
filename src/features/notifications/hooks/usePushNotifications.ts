@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
 import notificationService from '@/services/notificationService';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface UsePushNotificationsReturn {
   registerForPushNotifications: () => Promise<void>;
@@ -67,11 +67,12 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
 
       // Step 3: Save the token to the backend
       await notificationService.savePushToken(user.id, token);
-      
+
       setIsRegistered(true);
       console.log('Successfully registered for push notifications');
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       console.error('Error during push notification registration:', err);
     } finally {
@@ -82,54 +83,64 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
   /**
    * Handles notification taps by extracting task information and calling the appropriate handler.
    */
-  const handleNotificationResponse = useCallback((response: Notifications.NotificationResponse) => {
-    try {
-      const data = response.notification.request.content.data;
-      
-      // Check if a deep link URL is provided
-      if (data?.url) {
-        console.log('Notification tapped with deep link:', data.url);
-        
-        // The notificationService will handle the navigation
-        // Just log for debugging
-        console.log('Deep link will be handled by notificationService');
-        return;
+  const handleNotificationResponse = useCallback(
+    (response: Notifications.NotificationResponse) => {
+      try {
+        const data = response.notification.request.content.data;
+
+        // Check if a deep link URL is provided
+        if (data?.url) {
+          console.log('Notification tapped with deep link:', data.url);
+
+          // The notificationService will handle the navigation
+          // Just log for debugging
+          console.log('Deep link will be handled by notificationService');
+          return;
+        }
+
+        // Fallback to old behavior for notifications without deep links
+        if (data?.taskId && data?.taskType) {
+          // This is a task-related notification
+          console.log(
+            'Notification tapped for task:',
+            data.taskId,
+            data.taskType,
+          );
+
+          // You can dispatch navigation actions or update app state here
+          // For example, navigate to the task detail screen
+          // navigation.navigate('TaskDetailModal', {
+          //   taskId: data.taskId,
+          //   taskType: data.taskType
+          // });
+        } else if (data?.reminderId) {
+          // This is a reminder notification
+          console.log('Reminder notification tapped:', data.reminderId);
+        } else {
+          // Generic notification
+          console.log('Generic notification tapped');
+        }
+      } catch (err) {
+        console.error('Error handling notification response:', err);
       }
-      
-      // Fallback to old behavior for notifications without deep links
-      if (data?.taskId && data?.taskType) {
-        // This is a task-related notification
-        console.log('Notification tapped for task:', data.taskId, data.taskType);
-        
-        // You can dispatch navigation actions or update app state here
-        // For example, navigate to the task detail screen
-        // navigation.navigate('TaskDetailModal', { 
-        //   taskId: data.taskId, 
-        //   taskType: data.taskType 
-        // });
-      } else if (data?.reminderId) {
-        // This is a reminder notification
-        console.log('Reminder notification tapped:', data.reminderId);
-      } else {
-        // Generic notification
-        console.log('Generic notification tapped');
-      }
-    } catch (err) {
-      console.error('Error handling notification response:', err);
-    }
-  }, []);
+    },
+    [],
+  );
 
   /**
    * Handles notifications received while the app is in the foreground.
    */
-  const handleNotificationReceived = useCallback((notification: Notifications.Notification) => {
-    console.log('Notification received:', notification);
-    
-    // You can customize the behavior here, such as:
-    // - Showing a custom in-app notification
-    // - Updating app state
-    // - Playing custom sounds
-  }, []);
+  const handleNotificationReceived = useCallback(
+    (notification: Notifications.Notification) => {
+      console.log('Notification received:', notification);
+
+      // You can customize the behavior here, such as:
+      // - Showing a custom in-app notification
+      // - Updating app state
+      // - Playing custom sounds
+    },
+    [],
+  );
 
   // Set up notification listeners when the hook is first used
   useEffect(() => {
@@ -138,10 +149,15 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
 
     if (user) {
       // Set up notification response listener (when user taps notification)
-      responseSubscription = notificationService.addNotificationResponseListener(handleNotificationResponse);
-      
+      responseSubscription =
+        notificationService.addNotificationResponseListener(
+          handleNotificationResponse,
+        );
+
       // Set up notification received listener (when app is in foreground)
-      receivedSubscription = notificationService.addNotificationListener(handleNotificationReceived);
+      receivedSubscription = notificationService.addNotificationListener(
+        handleNotificationReceived,
+      );
     }
 
     // Cleanup listeners on unmount
@@ -184,7 +200,7 @@ export const useSimplePushNotifications = () => {
 
   const registerForPushNotifications = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const hasPermission = await notificationService.getPermissions();
@@ -202,7 +218,10 @@ export const useSimplePushNotifications = () => {
       await notificationService.savePushToken(user.id, token);
       console.log('Successfully registered for push notifications');
     } catch (error) {
-      console.error('An error occurred during push notification registration:', error);
+      console.error(
+        'An error occurred during push notification registration:',
+        error,
+      );
     } finally {
       setIsLoading(false);
     }

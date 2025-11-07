@@ -6,14 +6,27 @@ import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Input, Button } from '@/shared/components';
 
-type AssignmentDescriptionScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'AssignmentDescription'>;
+type AssignmentDescriptionScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'AssignmentDescription'
+>;
 
 const AssignmentDescriptionScreen = () => {
   const navigation = useNavigation<AssignmentDescriptionScreenNavigationProp>();
   // const { assignmentData, updateAssignmentData } = useAddAssignment();
   // Mock data for now
-  const assignmentData = { courseId: null, course: null, title: "", description: "", dueDate: null, submissionMethod: null, reminders: [] };
-  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
+  const assignmentData = {
+    courseId: null,
+    course: null,
+    title: '',
+    description: '',
+    dueDate: null,
+    submissionMethod: null,
+    reminders: [],
+  };
+  const updateAssignmentData = (data: any) => {
+    console.log('Mock updateAssignmentData:', data);
+  };
 
   const handleDescriptionChange = (description: string) => {
     updateAssignmentData({ description });
@@ -40,7 +53,8 @@ const AssignmentDescriptionScreen = () => {
       <View style={styles.content}>
         <Text style={styles.sectionTitle}>Add more details (optional)</Text>
         <Text style={styles.sectionDescription}>
-          Include any additional information about your assignment, requirements, or notes.
+          Include any additional information about your assignment,
+          requirements, or notes.
         </Text>
 
         <View style={styles.inputContainer}>
@@ -83,18 +97,14 @@ const AssignmentDescriptionScreen = () => {
 
       <View style={styles.footer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => navigation.navigate('DueDate')}
-          >
+            onPress={() => navigation.navigate('DueDate')}>
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.continueButtonContainer}>
-            <Button 
-              title="Continue" 
-              onPress={handleContinue}
-            />
+            <Button title="Continue" onPress={handleContinue} />
           </View>
         </View>
       </View>

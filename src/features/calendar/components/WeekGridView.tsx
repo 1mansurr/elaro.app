@@ -1,5 +1,12 @@
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
@@ -32,17 +39,20 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
   onTaskPress,
   onLockedTaskPress,
 }) => {
-  const weekStart = useMemo(() => startOfWeek(selectedDate, { weekStartsOn: 1 }), [selectedDate]);
-  const weekDays = useMemo(() => 
-    Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
+  const weekStart = useMemo(
+    () => startOfWeek(selectedDate, { weekStartsOn: 1 }),
+    [selectedDate],
+  );
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
+    [weekStart],
   );
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   // Group tasks by day and calculate positions
   const tasksByDay = useMemo(() => {
     const grouped: { [key: number]: Task[] } = {};
-    
+
     weekDays.forEach((_, index) => {
       grouped[index] = [];
     });
@@ -50,7 +60,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
     tasks.forEach(task => {
       const taskDate = new Date(task.startTime || task.date);
       const dayIndex = weekDays.findIndex(day => isSameDay(day, taskDate));
-      
+
       if (dayIndex !== -1) {
         grouped[dayIndex].push(task);
       }
@@ -65,7 +75,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
 
     Object.entries(tasksByDay).forEach(([dayIndexStr, dayTasks]) => {
       const dayIndex = parseInt(dayIndexStr);
-      
+
       // Sort tasks by start time
       const sortedTasks = [...dayTasks].sort((a, b) => {
         const timeA = new Date(a.startTime || a.date).getTime();
@@ -74,12 +84,17 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
       });
 
       // Detect overlaps and assign columns
-      const taskColumns: { task: Task; startMinutes: number; endMinutes: number; column: number }[] = [];
-      
+      const taskColumns: {
+        task: Task;
+        startMinutes: number;
+        endMinutes: number;
+        column: number;
+      }[] = [];
+
       sortedTasks.forEach(task => {
         const startTime = new Date(task.startTime || task.date);
         const startMinutes = startTime.getHours() * 60 + startTime.getMinutes();
-        
+
         // Calculate end time
         let endMinutes = startMinutes + 60; // Default 1 hour
         if (task.type === 'lecture' && task.endTime) {
@@ -92,14 +107,15 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
         // Find which column this task should go in (to avoid overlap)
         let column = 0;
         let foundColumn = false;
-        
+
         while (!foundColumn) {
           const overlapping = taskColumns.some(
-            t => t.column === column &&
-                 t.startMinutes < endMinutes &&
-                 t.endMinutes > startMinutes
+            t =>
+              t.column === column &&
+              t.startMinutes < endMinutes &&
+              t.endMinutes > startMinutes,
           );
-          
+
           if (!overlapping) {
             foundColumn = true;
           } else {
@@ -117,7 +133,10 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
       // Create positioned tasks
       taskColumns.forEach(({ task, startMinutes, endMinutes, column }) => {
         const top = (startMinutes / 60) * HOUR_HEIGHT;
-        const height = Math.max(((endMinutes - startMinutes) / 60) * HOUR_HEIGHT - 2, 40);
+        const height = Math.max(
+          ((endMinutes - startMinutes) / 60) * HOUR_HEIGHT - 2,
+          40,
+        );
 
         positioned.push({
           task,
@@ -151,9 +170,10 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
     const isLocked = task.isLocked || false;
     const isCompleted = task.status === 'completed';
     const isExample = (task as any).is_example === true;
-    
+
     const columnWidth = DAY_WIDTH / totalColumns;
-    const left = TIME_COLUMN_WIDTH + (dayIndex * DAY_WIDTH) + (column * columnWidth);
+    const left =
+      TIME_COLUMN_WIDTH + dayIndex * DAY_WIDTH + column * columnWidth;
 
     const startTime = new Date(task.startTime || task.date);
     const timeStr = format(startTime, 'h:mm a');
@@ -180,8 +200,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
             onTaskPress(task);
           }
         }}
-        activeOpacity={0.8}
-      >
+        activeOpacity={0.8}>
         {isLocked && (
           <View style={styles.lockBadge}>
             <Ionicons name="lock-closed" size={10} color="#fff" />
@@ -208,19 +227,19 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
         {weekDays.map((day, index) => {
           const isToday = isSameDay(day, new Date());
           const isSelected = isSameDay(day, selectedDate);
-          
+
           return (
-            <View 
-              key={index} 
+            <View
+              key={index}
               style={[
                 styles.dayHeader,
                 isSelected && styles.dayHeaderSelected,
-              ]}
-            >
+              ]}>
               <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
                 {format(day, 'EEE')}
               </Text>
-              <Text style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
+              <Text
+                style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
                 {format(day, 'd')}
               </Text>
             </View>
@@ -229,10 +248,9 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
       </View>
 
       {/* Scrollable Grid */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-      >
+        showsVerticalScrollIndicator={false}>
         <View style={styles.gridContainer}>
           {/* Time Column */}
           <View style={styles.timeColumn}>
@@ -251,10 +269,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
             {hours.map(hour => (
               <View
                 key={`line-${hour}`}
-                style={[
-                  styles.gridLine,
-                  { top: hour * HOUR_HEIGHT }
-                ]}
+                style={[styles.gridLine, { top: hour * HOUR_HEIGHT }]}
               />
             ))}
 
@@ -262,10 +277,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
             {weekDays.map((_, index) => (
               <View
                 key={`col-${index}`}
-                style={[
-                  styles.dayColumn,
-                  { left: index * DAY_WIDTH }
-                ]}
+                style={[styles.dayColumn, { left: index * DAY_WIDTH }]}
               />
             ))}
 
@@ -413,4 +425,3 @@ const styles = StyleSheet.create({
 });
 
 export default WeekGridView;
-

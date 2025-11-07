@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/theme';
 
@@ -17,49 +23,49 @@ interface ActionMenuProps {
   animation?: Animated.Value;
 }
 
-export const ActionMenu: React.FC<ActionMenuProps> = ({ 
-  actions, 
-  isVisible, 
-  animation 
+export const ActionMenu: React.FC<ActionMenuProps> = ({
+  actions,
+  isVisible,
+  animation,
 }) => {
   if (!isVisible) return null;
 
   return (
     <View style={styles.container}>
       {actions.map((action, index) => {
-        const translation = animation?.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0, -(index + 1) * 65],
-        }) || 0;
-        
-        const opacity = animation?.interpolate({
-          inputRange: [0, 0.5, 1],
-          outputRange: [0, 0, 1],
-        }) || 1;
+        const translation =
+          animation?.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, -(index + 1) * 65],
+          }) || 0;
+
+        const opacity =
+          animation?.interpolate({
+            inputRange: [0, 0.5, 1],
+            outputRange: [0, 0, 1],
+          }) || 1;
 
         return (
           <Animated.View
             key={index}
             style={[
               styles.actionContainer,
-              { 
+              {
                 transform: [{ translateY: translation }],
                 opacity: opacity,
               },
-            ]}
-          >
+            ]}>
             <TouchableOpacity
               style={[
-                styles.actionItem, 
-                { backgroundColor: action.backgroundColor || COLORS.primary }
+                styles.actionItem,
+                { backgroundColor: action.backgroundColor || COLORS.primary },
               ]}
               onPress={action.onPress}
-              activeOpacity={0.8}
-            >
-              <Ionicons 
-                name={action.icon} 
-                size={24} 
-                color={action.color || 'white'} 
+              activeOpacity={0.8}>
+              <Ionicons
+                name={action.icon}
+                size={24}
+                color={action.color || 'white'}
               />
               <Text style={styles.actionLabel}>{action.label}</Text>
             </TouchableOpacity>

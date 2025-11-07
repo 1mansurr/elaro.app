@@ -1,9 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { mapErrorCodeToMessage, getErrorTitle, isRecoverableError } from '@/utils/errorMapping';
+import {
+  mapErrorCodeToMessage,
+  getErrorTitle,
+  isRecoverableError,
+} from '@/utils/errorMapping';
 
 // ===========================================
 // 🏗️ SIMPLIFIED QUERY STATE INTERFACES
@@ -55,9 +67,7 @@ const LoadingState: React.FC<{
     return (
       <View style={styles.skeletonContainer}>
         {Array.from({ length: skeletonCount }, (_, index) => (
-          <View key={index}>
-            {skeletonComponent}
-          </View>
+          <View key={index}>{skeletonComponent}</View>
         ))}
       </View>
     );
@@ -115,9 +125,7 @@ const EmptyState: React.FC<{
   return (
     <View style={styles.emptyContainer}>
       <Ionicons name={icon} size={64} color={COLORS.textSecondary} />
-      <Text style={[styles.emptyTitle, { color: theme.text }]}>
-        {title}
-      </Text>
+      <Text style={[styles.emptyTitle, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.emptyMessage, { color: theme.textSecondary }]}>
         {message}
       </Text>
@@ -129,13 +137,9 @@ const EmptyState: React.FC<{
 // 🎯 SIMPLIFIED MAIN COMPONENT
 // ===========================================
 
-export const SimplifiedQueryStateWrapper: React.FC<SimplifiedQueryStateWrapperProps> = ({
-  queryState,
-  emptyState,
-  loadingState,
-  onRefresh,
-  children,
-}) => {
+export const SimplifiedQueryStateWrapper: React.FC<
+  SimplifiedQueryStateWrapperProps
+> = ({ queryState, emptyState, loadingState, onRefresh, children }) => {
   const { isLoading, isError, error, data, refetch, isRefetching } = queryState;
 
   // Show loading state
@@ -150,12 +154,7 @@ export const SimplifiedQueryStateWrapper: React.FC<SimplifiedQueryStateWrapperPr
 
   // Show error state
   if (isError && error) {
-    return (
-      <ErrorState
-        error={error}
-        onRetry={refetch}
-      />
-    );
+    return <ErrorState error={error} onRetry={refetch} />;
   }
 
   // Show empty state
@@ -183,8 +182,7 @@ export const SimplifiedQueryStateWrapper: React.FC<SimplifiedQueryStateWrapperPr
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
-        }
-      >
+        }>
         {children}
       </ScrollView>
     );
@@ -282,7 +280,7 @@ export const QueryStateWrapper: React.FC<{
   emptyStateComponent?: React.ReactElement;
   skeletonComponent?: React.ReactElement;
   skeletonCount?: number;
-}> = (props) => {
+}> = props => {
   const {
     isLoading,
     isError,
@@ -320,8 +318,7 @@ export const QueryStateWrapper: React.FC<{
         skeletonComponent,
         skeletonCount,
       }}
-      onRefresh={onRefresh}
-    >
+      onRefresh={onRefresh}>
       {children}
     </SimplifiedQueryStateWrapper>
   );

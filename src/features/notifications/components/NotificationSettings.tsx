@@ -15,56 +15,56 @@ interface ListItemProps {
   disabled?: boolean;
 }
 
-const ListItem: React.FC<ListItemProps> = ({ 
-  icon, 
-  label, 
-  onPress, 
-  rightContent, 
-  isSubItem = false, 
-  disabled = false 
+const ListItem: React.FC<ListItemProps> = ({
+  icon,
+  label,
+  onPress,
+  rightContent,
+  isSubItem = false,
+  disabled = false,
 }) => {
   const { theme } = useTheme();
-  
+
   const containerStyle = [
     styles.listItem,
     isSubItem && styles.subListItem,
-    disabled && styles.disabledItem
+    disabled && styles.disabledItem,
   ];
 
   return (
-    <TouchableOpacity 
-      style={containerStyle} 
+    <TouchableOpacity
+      style={containerStyle}
       onPress={onPress}
       disabled={disabled}
-      activeOpacity={0.7}
-    >
-      <Ionicons 
-        name={icon as any} 
-        size={24} 
-        color={isSubItem ? theme.textSecondary : theme.text} 
-        style={styles.listItemIcon} 
+      activeOpacity={0.7}>
+      <Ionicons
+        name={icon as any}
+        size={24}
+        color={isSubItem ? theme.textSecondary : theme.text}
+        style={styles.listItemIcon}
       />
-      <Text style={[
-        styles.listItemLabel,
-        isSubItem && styles.subListItemLabel,
-        { color: isSubItem ? theme.textSecondary : theme.text }
-      ]}>
+      <Text
+        style={[
+          styles.listItemLabel,
+          isSubItem && styles.subListItemLabel,
+          { color: isSubItem ? theme.textSecondary : theme.text },
+        ]}>
         {label}
       </Text>
-      {rightContent && (
-        <View style={styles.rightContent}>
-          {rightContent}
-        </View>
-      )}
+      {rightContent && <View style={styles.rightContent}>{rightContent}</View>}
     </TouchableOpacity>
   );
 };
 
 export const NotificationSettings: React.FC = () => {
-  const { preferences, isLoading, isError, updatePreferences, isUpdating } = useNotificationPreferences();
+  const { preferences, isLoading, isError, updatePreferences, isUpdating } =
+    useNotificationPreferences();
   const { theme } = useTheme();
 
-  const handleToggle = (key: keyof SimpleNotificationPreferences, value: boolean) => {
+  const handleToggle = (
+    key: keyof SimpleNotificationPreferences,
+    value: boolean,
+  ) => {
     if (preferences) {
       updatePreferences({ [key]: value });
     }
@@ -78,90 +78,95 @@ export const NotificationSettings: React.FC = () => {
       data={preferences}
       emptyTitle="No Settings Available"
       emptyMessage="Unable to load notification preferences."
-      emptyIcon="settings-outline"
-    >
+      emptyIcon="settings-outline">
       <View style={styles.container}>
-      {/* Master Reminders Toggle */}
-      <ListItem
-        label="Enable All Reminders"
-        icon="notifications-outline"
-        rightContent={
-          <Switch
-            value={preferences?.enabled ?? false}
-            onValueChange={(value) => handleToggle('enabled', value)}
-            disabled={isUpdating}
-            trackColor={{ false: theme.border, true: theme.accent }}
-            thumbColor={preferences?.enabled ? '#FFFFFF' : '#FFFFFF'}
-          />
-        }
-      />
+        {/* Master Reminders Toggle */}
+        <ListItem
+          label="Enable All Reminders"
+          icon="notifications-outline"
+          rightContent={
+            <Switch
+              value={preferences?.enabled ?? false}
+              onValueChange={value => handleToggle('enabled', value)}
+              disabled={isUpdating}
+              trackColor={{ false: theme.border, true: theme.accent }}
+              thumbColor={preferences?.enabled ? '#FFFFFF' : '#FFFFFF'}
+            />
+          }
+        />
 
-      {/* Sub-settings - Only show when master toggle is on */}
-      {preferences?.enabled && (
-        <View style={[styles.subSettingsContainer, { borderLeftColor: theme.border }]}>
-          <ListItem
-            label="Spaced Repetition"
-            icon="repeat-outline"
-            isSubItem={true}
-            rightContent={
-              <Switch
-                value={preferences?.studySessions ?? false}
-                onValueChange={(value) => handleToggle('studySessions', value)}
-                disabled={isUpdating}
-                trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences?.studySessions ? '#FFFFFF' : '#FFFFFF'}
-              />
-            }
-          />
-          <ListItem
-            label="Assignment Due Dates"
-            icon="document-text-outline"
-            isSubItem={true}
-            rightContent={
-              <Switch
-                value={preferences?.assignments ?? false}
-                onValueChange={(value) => handleToggle('assignments', value)}
-                disabled={isUpdating}
-                trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences?.assignments ? '#FFFFFF' : '#FFFFFF'}
-              />
-            }
-          />
-          <ListItem
-            label="Upcoming Lectures"
-            icon="time-outline"
-            isSubItem={true}
-            rightContent={
-              <Switch
-                value={preferences?.lectures ?? false}
-                onValueChange={(value) => handleToggle('lectures', value)}
-                disabled={isUpdating}
-                trackColor={{ false: theme.border, true: theme.accent }}
-                thumbColor={preferences?.lectures ? '#FFFFFF' : '#FFFFFF'}
-              />
-            }
-          />
-        </View>
-      )}
+        {/* Sub-settings - Only show when master toggle is on */}
+        {preferences?.enabled && (
+          <View
+            style={[
+              styles.subSettingsContainer,
+              { borderLeftColor: theme.border },
+            ]}>
+            <ListItem
+              label="Spaced Repetition"
+              icon="repeat-outline"
+              isSubItem={true}
+              rightContent={
+                <Switch
+                  value={preferences?.studySessions ?? false}
+                  onValueChange={value => handleToggle('studySessions', value)}
+                  disabled={isUpdating}
+                  trackColor={{ false: theme.border, true: theme.accent }}
+                  thumbColor={
+                    preferences?.studySessions ? '#FFFFFF' : '#FFFFFF'
+                  }
+                />
+              }
+            />
+            <ListItem
+              label="Assignment Due Dates"
+              icon="document-text-outline"
+              isSubItem={true}
+              rightContent={
+                <Switch
+                  value={preferences?.assignments ?? false}
+                  onValueChange={value => handleToggle('assignments', value)}
+                  disabled={isUpdating}
+                  trackColor={{ false: theme.border, true: theme.accent }}
+                  thumbColor={preferences?.assignments ? '#FFFFFF' : '#FFFFFF'}
+                />
+              }
+            />
+            <ListItem
+              label="Upcoming Lectures"
+              icon="time-outline"
+              isSubItem={true}
+              rightContent={
+                <Switch
+                  value={preferences?.lectures ?? false}
+                  onValueChange={value => handleToggle('lectures', value)}
+                  disabled={isUpdating}
+                  trackColor={{ false: theme.border, true: theme.accent }}
+                  thumbColor={preferences?.lectures ? '#FFFFFF' : '#FFFFFF'}
+                />
+              }
+            />
+          </View>
+        )}
 
-      {/* Divider */}
-      <View style={[styles.divider, { backgroundColor: theme.border }]} />
+        {/* Divider */}
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
-      {/* Summary Notifications */}
-      <ListItem
-        label="Daily Summaries"
-        icon="sunny-outline"
-        rightContent={
-          <Switch
-            value={preferences?.dailySummaries ?? false}
-            onValueChange={(value) => handleToggle('dailySummaries', value)}
-            disabled={isUpdating}
-            trackColor={{ false: theme.border, true: theme.accent }}
-            thumbColor={preferences?.dailySummaries ? '#FFFFFF' : '#FFFFFF'}
-          />
-        }
-      />
-    </View>
+        {/* Summary Notifications */}
+        <ListItem
+          label="Daily Summaries"
+          icon="sunny-outline"
+          rightContent={
+            <Switch
+              value={preferences?.dailySummaries ?? false}
+              onValueChange={value => handleToggle('dailySummaries', value)}
+              disabled={isUpdating}
+              trackColor={{ false: theme.border, true: theme.accent }}
+              thumbColor={preferences?.dailySummaries ? '#FFFFFF' : '#FFFFFF'}
+            />
+          }
+        />
+      </View>
     </QueryStateWrapper>
   );
 };

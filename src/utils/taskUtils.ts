@@ -1,7 +1,13 @@
 // FILE: src/utils/taskUtils.ts
 // ACTION: Create a new utility file with a function to count tasks in the current week.
 
-import { isWithinInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  isWithinInterval,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+} from 'date-fns';
 import type { Task } from '../types';
 
 // Minimal shared shape for counting purposes
@@ -9,9 +15,11 @@ type AnyTask = {
   created_at: string;
 };
 
-export const countTasksInCurrentWeek = (
-  data: { lectures?: AnyTask[]; assignments?: AnyTask[]; studySessions?: AnyTask[] }
-): number => {
+export const countTasksInCurrentWeek = (data: {
+  lectures?: AnyTask[];
+  assignments?: AnyTask[];
+  studySessions?: AnyTask[];
+}): number => {
   const now = new Date();
   // Setting weekStartsOn: 1 makes Monday the first day of the week
   const weekStart = startOfWeek(now, { weekStartsOn: 1 });
@@ -32,9 +40,11 @@ export const countTasksInCurrentWeek = (
   return tasksInCurrentWeek.length;
 };
 
-export const countTasksInCurrentMonth = (
-  data: { lectures?: AnyTask[]; assignments?: AnyTask[]; studySessions?: AnyTask[] }
-): number => {
+export const countTasksInCurrentMonth = (data: {
+  lectures?: AnyTask[];
+  assignments?: AnyTask[];
+  studySessions?: AnyTask[];
+}): number => {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -53,5 +63,3 @@ export const countTasksInCurrentMonth = (
 
   return tasksInCurrentMonth.length;
 };
-
-

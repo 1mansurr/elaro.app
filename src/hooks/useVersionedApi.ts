@@ -1,6 +1,6 @@
 /**
  * React Hook for Versioned API Client
- * 
+ *
  * Provides a React-friendly interface to the versioned API client
  * with automatic error handling and loading states.
  */
@@ -23,7 +23,10 @@ export interface UseApiOptions {
   autoFetch?: boolean;
   onSuccess?: (data: any) => void;
   onError?: (error: string) => void;
-  onDeprecationWarning?: (warning: { sunsetDate?: string; migrationGuide?: string }) => void;
+  onDeprecationWarning?: (warning: {
+    sunsetDate?: string;
+    migrationGuide?: string;
+  }) => void;
 }
 
 /**
@@ -31,7 +34,7 @@ export interface UseApiOptions {
  */
 export function useVersionedApi<T = any>(
   apiCall: () => Promise<ApiResponse<T>>,
-  options: UseApiOptions = {}
+  options: UseApiOptions = {},
 ): UseApiState<T> & {
   refetch: () => Promise<void>;
   reset: () => void;
@@ -43,7 +46,12 @@ export function useVersionedApi<T = any>(
   const [sunsetDate, setSunsetDate] = useState<string | undefined>();
   const [migrationGuide, setMigrationGuide] = useState<string | undefined>();
 
-  const { autoFetch = true, onSuccess, onError, onDeprecationWarning } = options;
+  const {
+    autoFetch = true,
+    onSuccess,
+    onError,
+    onDeprecationWarning,
+  } = options;
 
   const executeApiCall = useCallback(async () => {
     setLoading(true);
@@ -115,9 +123,9 @@ export function useVersionedApi<T = any>(
  */
 export function useCourses() {
   const getCourses = useCallback(() => versionedApiClient.getCourses(), []);
-  
+
   return useVersionedApi(getCourses, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Courses API deprecation warning:', warning);
     },
   });
@@ -127,10 +135,13 @@ export function useCourses() {
  * Hook for assignments API
  */
 export function useAssignments() {
-  const getAssignments = useCallback(() => versionedApiClient.getAssignments(), []);
-  
+  const getAssignments = useCallback(
+    () => versionedApiClient.getAssignments(),
+    [],
+  );
+
   return useVersionedApi(getAssignments, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Assignments API deprecation warning:', warning);
     },
   });
@@ -141,9 +152,9 @@ export function useAssignments() {
  */
 export function useLectures() {
   const getLectures = useCallback(() => versionedApiClient.getLectures(), []);
-  
+
   return useVersionedApi(getLectures, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Lectures API deprecation warning:', warning);
     },
   });
@@ -153,10 +164,13 @@ export function useLectures() {
  * Hook for study sessions API
  */
 export function useStudySessions() {
-  const getStudySessions = useCallback(() => versionedApiClient.getStudySessions(), []);
-  
+  const getStudySessions = useCallback(
+    () => versionedApiClient.getStudySessions(),
+    [],
+  );
+
   return useVersionedApi(getStudySessions, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Study Sessions API deprecation warning:', warning);
     },
   });
@@ -166,10 +180,13 @@ export function useStudySessions() {
  * Hook for user profile API
  */
 export function useUserProfile() {
-  const getUserProfile = useCallback(() => versionedApiClient.getUserProfile(), []);
-  
+  const getUserProfile = useCallback(
+    () => versionedApiClient.getUserProfile(),
+    [],
+  );
+
   return useVersionedApi(getUserProfile, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('User Profile API deprecation warning:', warning);
     },
   });
@@ -180,9 +197,9 @@ export function useUserProfile() {
  */
 export function useHomeData() {
   const getHomeData = useCallback(() => versionedApiClient.getHomeData(), []);
-  
+
   return useVersionedApi(getHomeData, {
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Home Data API deprecation warning:', warning);
     },
   });
@@ -194,12 +211,12 @@ export function useHomeData() {
 export function useCalendarData(weekStart: string) {
   const getCalendarData = useCallback(
     () => versionedApiClient.getCalendarData(weekStart),
-    [weekStart]
+    [weekStart],
   );
-  
+
   return useVersionedApi(getCalendarData, {
     autoFetch: !!weekStart,
-    onDeprecationWarning: (warning) => {
+    onDeprecationWarning: warning => {
       console.warn('Calendar Data API deprecation warning:', warning);
     },
   });
@@ -209,15 +226,20 @@ export function useCalendarData(weekStart: string) {
  * Hook for API version management
  */
 export function useApiVersion() {
-  const [currentVersion, setCurrentVersion] = useState(versionedApiClient.getCurrentVersion());
-  const [migrationRecommendations, setMigrationRecommendations] = useState<string[]>([]);
+  const [currentVersion, setCurrentVersion] = useState(
+    versionedApiClient.getCurrentVersion(),
+  );
+  const [migrationRecommendations, setMigrationRecommendations] = useState<
+    string[]
+  >([]);
   const [checkingCompatibility, setCheckingCompatibility] = useState(false);
 
   const checkCompatibility = useCallback(async () => {
     setCheckingCompatibility(true);
     try {
       await versionedApiClient.checkCompatibility();
-      const recommendations = await versionedApiClient.getMigrationRecommendations();
+      const recommendations =
+        await versionedApiClient.getMigrationRecommendations();
       setMigrationRecommendations(recommendations);
     } catch (error) {
       console.error('Failed to check API compatibility:', error);
@@ -240,15 +262,18 @@ export function useApiVersion() {
     }
   }, [checkCompatibility]);
 
-  const setVersion = useCallback((version: string) => {
-    try {
-      versionedApiClient.setVersion(version);
-      setCurrentVersion(version);
-      checkCompatibility();
-    } catch (error) {
-      console.error('Failed to set API version:', error);
-    }
-  }, [checkCompatibility]);
+  const setVersion = useCallback(
+    (version: string) => {
+      try {
+        versionedApiClient.setVersion(version);
+        setCurrentVersion(version);
+        checkCompatibility();
+      } catch (error) {
+        console.error('Failed to set API version:', error);
+      }
+    },
+    [checkCompatibility],
+  );
 
   useEffect(() => {
     checkCompatibility();
@@ -271,33 +296,39 @@ export function useBatchOperations() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const executeBatch = useCallback(async (operations: Array<{
-    type: string;
-    table: string;
-    action: string;
-    data?: any;
-    filters?: Record<string, any>;
-  }>) => {
-    setLoading(true);
-    setError(null);
+  const executeBatch = useCallback(
+    async (
+      operations: Array<{
+        type: string;
+        table: string;
+        action: string;
+        data?: any;
+        filters?: Record<string, any>;
+      }>,
+    ) => {
+      setLoading(true);
+      setError(null);
 
-    try {
-      const response = await versionedApiClient.batchOperations(operations);
-      
-      if (response.error) {
-        setError(response.error);
-        return { success: false, error: response.error };
+      try {
+        const response = await versionedApiClient.batchOperations(operations);
+
+        if (response.error) {
+          setError(response.error);
+          return { success: false, error: response.error };
+        }
+
+        return { success: true, data: response.data };
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Unknown error';
+        setError(errorMessage);
+        return { success: false, error: errorMessage };
+      } finally {
+        setLoading(false);
       }
-
-      return { success: true, data: response.data };
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [],
+  );
 
   return {
     executeBatch,

@@ -8,23 +8,23 @@ import { generateTempId } from '@/utils/uuid';
 export const assignmentsApiMutations = {
   /**
    * Create a new assignment
-   * 
+   *
    * OFFLINE SUPPORT:
    * - When online: Executes server mutation immediately
    * - When offline: Generates temp ID, adds to sync queue, returns optimistic data
    */
   async create(
-    request: CreateAssignmentRequest, 
-    isOnline: boolean, 
-    userId: string
+    request: CreateAssignmentRequest,
+    isOnline: boolean,
+    userId: string,
   ): Promise<Assignment> {
     try {
       // OFFLINE MODE: Generate temp ID and queue for later sync
       if (!isOnline) {
         console.log('📴 Offline: Queueing CREATE assignment action');
-        
+
         const tempId = generateTempId('assignment');
-        
+
         // Add to sync queue
         await syncManager.addToQueue(
           'CREATE',
@@ -34,9 +34,9 @@ export const assignmentsApiMutations = {
             data: request,
           },
           userId,
-          { syncImmediately: false }
+          { syncImmediately: false },
         );
-        
+
         // Return optimistic assignment with temp ID
         const optimisticAssignment: Assignment = {
           id: tempId,
@@ -53,14 +53,17 @@ export const assignmentsApiMutations = {
           _offline: true, // Mark as offline-created
           _tempId: tempId, // Store temp ID for reference
         } as any;
-        
+
         console.log(`✅ Created optimistic assignment with temp ID: ${tempId}`);
         return optimisticAssignment;
       }
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Creating assignment on server');
-      const { data, error } = await supabase.functions.invoke('create-assignment', { body: request });
+      const { data, error } = await supabase.functions.invoke(
+        'create-assignment',
+        { body: request },
+      );
       if (error) throw error;
       return data;
     } catch (error) {

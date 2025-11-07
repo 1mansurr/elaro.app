@@ -1,64 +1,69 @@
-// FILE: supabase/functions/delete-lecture-permanently/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { DeleteLecturePermanentlySchema } from '../_shared/schemas/deletePermanently.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
+async function handleDeleteLecturePermanently(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  // Schema transformation ensures lecture_id is always present
+  const lectureId = body.lecture_id;
+
+  await logger.warn(
+    'Permanent deletion requested',
+    { user_id: user.id, lecture_id: lectureId, type: 'lecture' },
+    traceContext,
   );
-};
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  // SECURITY: Verify ownership before permanent deletion
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('lectures')
+    .select('id')
+    .eq('id', lectureId)
+    .eq('user_id', user.id)
+    .single();
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    const { lectureId } = await req.json();
-
-    if (!lectureId) {
-      return new Response(
-        JSON.stringify({ error: 'lectureId is required.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
     }
-
-    const { error } = await supabase
-      .from('lectures')
-      .delete() // This is a permanent delete
-      .eq('id', lectureId)
-      .eq('user_id', user.id);
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify({ message: 'Lecture permanently deleted.' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    throw new AppError(
+      'Lecture not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
     );
   }
-});
+
+  // Permanently delete
+  const { error: deleteError } = await supabaseClient
+    .from('lectures')
+    .delete()
+    .eq('id', lectureId);
+
+  if (deleteError) throw handleDbError(deleteError);
+
+  await logger.warn(
+    'Lecture permanently deleted',
+    { user_id: user.id, lecture_id: lectureId },
+    traceContext,
+  );
+
+  // Maintain backward compatibility with existing response format
+  return { message: 'Lecture permanently deleted.' };
+}
+
+serve(
+  createAuthenticatedHandler(handleDeleteLecturePermanently, {
+    rateLimitName: 'delete-lecture-permanently',
+    schema: DeleteLecturePermanentlySchema,
+    requireIdempotency: true,
+  }),
+);

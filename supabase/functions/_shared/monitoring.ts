@@ -1,6 +1,6 @@
 /**
  * Comprehensive Monitoring and Observability System
- * 
+ *
  * This module provides centralized monitoring, logging, and observability
  * for all Edge Functions and database operations.
  */
@@ -62,7 +62,7 @@ export class MonitoringService {
    */
   async recordPerformanceMetrics(metrics: PerformanceMetrics): Promise<void> {
     this.metrics.push(metrics);
-    
+
     // Store in database for persistence
     await this.supabaseClient
       .from('performance_metrics')
@@ -74,7 +74,7 @@ export class MonitoringService {
         user_id: metrics.userId,
         success: metrics.success,
         error_message: metrics.errorMessage,
-        timestamp: metrics.timestamp
+        timestamp: metrics.timestamp,
       })
       .catch(error => {
         console.error('Failed to store performance metrics:', error);
@@ -86,7 +86,7 @@ export class MonitoringService {
    */
   async recordDatabaseMetrics(metrics: DatabaseMetrics): Promise<void> {
     this.dbMetrics.push(metrics);
-    
+
     // Store in database for persistence
     await this.supabaseClient
       .from('database_metrics')
@@ -97,7 +97,7 @@ export class MonitoringService {
         user_id: metrics.userId,
         success: metrics.success,
         error_message: metrics.errorMessage,
-        timestamp: metrics.timestamp
+        timestamp: metrics.timestamp,
       })
       .catch(error => {
         console.error('Failed to store database metrics:', error);
@@ -109,7 +109,7 @@ export class MonitoringService {
    */
   async recordBusinessMetrics(metrics: BusinessMetrics): Promise<void> {
     this.businessMetrics.push(metrics);
-    
+
     // Store in database for persistence
     await this.supabaseClient
       .from('business_metrics')
@@ -118,7 +118,7 @@ export class MonitoringService {
         event_count: metrics.eventCount,
         user_id: metrics.userId,
         metadata: metrics.metadata,
-        timestamp: metrics.timestamp
+        timestamp: metrics.timestamp,
       })
       .catch(error => {
         console.error('Failed to store business metrics:', error);
@@ -131,14 +131,14 @@ export class MonitoringService {
   async getSystemHealth(): Promise<SystemHealth> {
     const checks = await this.performHealthChecks();
     const metrics = await this.calculateSystemMetrics();
-    
+
     const status = this.determineHealthStatus(checks, metrics);
-    
+
     return {
       status,
       timestamp: new Date().toISOString(),
       checks,
-      metrics
+      metrics,
     };
   }
 
@@ -150,7 +150,7 @@ export class MonitoringService {
       database: false,
       edgeFunctions: false,
       eventProcessing: false,
-      externalServices: false
+      externalServices: false,
     };
 
     try {
@@ -208,21 +208,27 @@ export class MonitoringService {
         .gte('timestamp', oneHourAgo.toISOString());
 
       const totalRequests = recentMetrics?.length || 0;
-      const successfulRequests = recentMetrics?.filter(m => m.success).length || 0;
-      const avgResponseTime = recentMetrics?.reduce((sum, m) => sum + m.execution_time, 0) / totalRequests || 0;
-      const errorRate = totalRequests > 0 ? ((totalRequests - successfulRequests) / totalRequests) * 100 : 0;
+      const successfulRequests =
+        recentMetrics?.filter(m => m.success).length || 0;
+      const avgResponseTime =
+        recentMetrics?.reduce((sum, m) => sum + m.execution_time, 0) /
+          totalRequests || 0;
+      const errorRate =
+        totalRequests > 0
+          ? ((totalRequests - successfulRequests) / totalRequests) * 100
+          : 0;
 
       return {
         responseTime: avgResponseTime,
         errorRate,
-        throughput: totalRequests / 60 // Requests per minute
+        throughput: totalRequests / 60, // Requests per minute
       };
     } catch (error) {
       console.error('Failed to calculate system metrics:', error);
       return {
         responseTime: 0,
         errorRate: 100,
-        throughput: 0
+        throughput: 0,
       };
     }
   }
@@ -232,7 +238,7 @@ export class MonitoringService {
    */
   private determineHealthStatus(
     checks: SystemHealth['checks'],
-    metrics: SystemHealth['metrics']
+    metrics: SystemHealth['metrics'],
   ): SystemHealth['status'] {
     const allChecksPass = Object.values(checks).every(check => check);
     const errorRateAcceptable = metrics.errorRate < 5;
@@ -240,7 +246,10 @@ export class MonitoringService {
 
     if (allChecksPass && errorRateAcceptable && responseTimeAcceptable) {
       return 'healthy';
-    } else if (allChecksPass && (errorRateAcceptable || responseTimeAcceptable)) {
+    } else if (
+      allChecksPass &&
+      (errorRateAcceptable || responseTimeAcceptable)
+    ) {
       return 'degraded';
     } else {
       return 'unhealthy';
@@ -268,34 +277,47 @@ export class MonitoringService {
 
       const totalRequests = metrics?.length || 0;
       const successfulRequests = metrics?.filter(m => m.success).length || 0;
-      const averageResponseTime = metrics?.reduce((sum, m) => sum + m.execution_time, 0) / totalRequests || 0;
-      const errorRate = totalRequests > 0 ? ((totalRequests - successfulRequests) / totalRequests) * 100 : 0;
+      const averageResponseTime =
+        metrics?.reduce((sum, m) => sum + m.execution_time, 0) /
+          totalRequests || 0;
+      const errorRate =
+        totalRequests > 0
+          ? ((totalRequests - successfulRequests) / totalRequests) * 100
+          : 0;
 
       // Top slow functions
-      const functionTimes = metrics?.reduce((acc, m) => {
-        if (!acc[m.function_name]) {
-          acc[m.function_name] = { total: 0, count: 0 };
-        }
-        acc[m.function_name].total += m.execution_time;
-        acc[m.function_name].count += 1;
-        return acc;
-      }, {} as Record<string, { total: number; count: number }>) || {};
+      const functionTimes =
+        metrics?.reduce(
+          (acc, m) => {
+            if (!acc[m.function_name]) {
+              acc[m.function_name] = { total: 0, count: 0 };
+            }
+            acc[m.function_name].total += m.execution_time;
+            acc[m.function_name].count += 1;
+            return acc;
+          },
+          {} as Record<string, { total: number; count: number }>,
+        ) || {};
 
       const topSlowFunctions = Object.entries(functionTimes)
         .map(([name, data]) => ({
           functionName: name,
-          avgTime: data.total / data.count
+          avgTime: data.total / data.count,
         }))
         .sort((a, b) => b.avgTime - a.avgTime)
         .slice(0, 10);
 
       // User activity
-      const userActivity = metrics?.reduce((acc, m) => {
-        if (m.user_id) {
-          acc[m.user_id] = (acc[m.user_id] || 0) + 1;
-        }
-        return acc;
-      }, {} as Record<string, number>) || {};
+      const userActivity =
+        metrics?.reduce(
+          (acc, m) => {
+            if (m.user_id) {
+              acc[m.user_id] = (acc[m.user_id] || 0) + 1;
+            }
+            return acc;
+          },
+          {} as Record<string, number>,
+        ) || {};
 
       const userActivityArray = Object.entries(userActivity)
         .map(([userId, requestCount]) => ({ userId, requestCount }))
@@ -307,7 +329,7 @@ export class MonitoringService {
         averageResponseTime,
         errorRate,
         topSlowFunctions,
-        userActivity: userActivityArray
+        userActivity: userActivityArray,
       };
     } catch (error) {
       console.error('Failed to get performance analytics:', error);
@@ -316,7 +338,7 @@ export class MonitoringService {
         averageResponseTime: 0,
         errorRate: 0,
         topSlowFunctions: [],
-        userActivity: []
+        userActivity: [],
       };
     }
   }
@@ -344,17 +366,25 @@ export class MonitoringService {
         .gte('timestamp', startTime.toISOString());
 
       const totalEvents = events?.length || 0;
-      const eventsByType = events?.reduce((acc, e) => {
-        acc[e.event_type] = (acc[e.event_type] || 0) + e.event_count;
-        return acc;
-      }, {} as Record<string, number>) || {};
+      const eventsByType =
+        events?.reduce(
+          (acc, e) => {
+            acc[e.event_type] = (acc[e.event_type] || 0) + e.event_count;
+            return acc;
+          },
+          {} as Record<string, number>,
+        ) || {};
 
-      const userEngagement = events?.reduce((acc, e) => {
-        if (e.user_id) {
-          acc[e.user_id] = (acc[e.user_id] || 0) + e.event_count;
-        }
-        return acc;
-      }, {} as Record<string, number>) || {};
+      const userEngagement =
+        events?.reduce(
+          (acc, e) => {
+            if (e.user_id) {
+              acc[e.user_id] = (acc[e.user_id] || 0) + e.event_count;
+            }
+            return acc;
+          },
+          {} as Record<string, number>,
+        ) || {};
 
       const userEngagementArray = Object.entries(userEngagement)
         .map(([userId, eventCount]) => ({ userId, eventCount }))
@@ -379,8 +409,8 @@ export class MonitoringService {
         growthMetrics: {
           newUsers: newUsers?.length || 0,
           activeUsers: activeUsers?.length || 0,
-          retentionRate: 0 // Would need more complex calculation
-        }
+          retentionRate: 0, // Would need more complex calculation
+        },
       };
     } catch (error) {
       console.error('Failed to get business analytics:', error);
@@ -391,8 +421,8 @@ export class MonitoringService {
         growthMetrics: {
           newUsers: 0,
           activeUsers: 0,
-          retentionRate: 0
-        }
+          retentionRate: 0,
+        },
       };
     }
   }
@@ -405,11 +435,16 @@ export class MonitoringService {
     const value = parseInt(timeRange.slice(0, -1));
 
     switch (unit) {
-      case 'h': return value * 60 * 60 * 1000;
-      case 'd': return value * 24 * 60 * 60 * 1000;
-      case 'w': return value * 7 * 24 * 60 * 60 * 1000;
-      case 'm': return value * 30 * 24 * 60 * 60 * 1000;
-      default: return 24 * 60 * 60 * 1000; // Default to 24 hours
+      case 'h':
+        return value * 60 * 60 * 1000;
+      case 'd':
+        return value * 24 * 60 * 60 * 1000;
+      case 'w':
+        return value * 7 * 24 * 60 * 60 * 1000;
+      case 'm':
+        return value * 30 * 24 * 60 * 60 * 1000;
+      default:
+        return 24 * 60 * 60 * 1000; // Default to 24 hours
     }
   }
 
@@ -417,7 +452,9 @@ export class MonitoringService {
    * Clean up old metrics
    */
   async cleanupOldMetrics(retentionDays: number = 30): Promise<void> {
-    const cutoffDate = new Date(Date.now() - retentionDays * 24 * 60 * 60 * 1000);
+    const cutoffDate = new Date(
+      Date.now() - retentionDays * 24 * 60 * 60 * 1000,
+    );
 
     try {
       await Promise.all([
@@ -425,16 +462,16 @@ export class MonitoringService {
           .from('performance_metrics')
           .delete()
           .lt('timestamp', cutoffDate.toISOString()),
-        
+
         this.supabaseClient
           .from('database_metrics')
           .delete()
           .lt('timestamp', cutoffDate.toISOString()),
-        
+
         this.supabaseClient
           .from('business_metrics')
           .delete()
-          .lt('timestamp', cutoffDate.toISOString())
+          .lt('timestamp', cutoffDate.toISOString()),
       ]);
 
       console.log(`Cleaned up metrics older than ${retentionDays} days`);
@@ -447,11 +484,12 @@ export class MonitoringService {
 /**
  * Performance monitoring decorator
  */
-export function monitorPerformance(
-  functionName: string,
-  supabaseClient: any
-) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
+export function monitorPerformance(functionName: string, supabaseClient: any) {
+  return function (
+    target: any,
+    propertyName: string,
+    descriptor: PropertyDescriptor,
+  ) {
     const method = descriptor.value;
 
     descriptor.value = async function (...args: any[]) {
@@ -482,7 +520,7 @@ export function monitorPerformance(
           timestamp: new Date().toISOString(),
           userId: args[0]?.user?.id,
           success,
-          errorMessage
+          errorMessage,
         });
       }
     };

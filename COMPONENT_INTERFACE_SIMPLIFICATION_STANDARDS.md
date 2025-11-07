@@ -3,6 +3,7 @@
 ## 🎯 Prop Naming Conventions
 
 ### **Core Principles:**
+
 1. **Grouped Props**: Use configuration objects instead of flat prop lists
 2. **Descriptive Names**: Props should clearly indicate their purpose
 3. **Consistent Patterns**: Follow established naming conventions
@@ -11,29 +12,34 @@
 ### **Standard Prop Groups:**
 
 #### **Configuration Props (`config`)**
+
 - `variant`: Component visual variant
 - `size`: Component size
 - `required`: Required field indicator
 - `disabled`: Disabled state
 
 #### **State Props (`state`)**
+
 - `error`: Error message
 - `success`: Success state
 - `loading`: Loading state
 - `helperText`: Helper text
 
 #### **Event Props (`on*`)**
+
 - `onPress`: Press handler
 - `onChange`: Change handler
 - `onFocus`: Focus handler
 - `onBlur`: Blur handler
 
 #### **Data Props (`data`)**
+
 - `items`: List items
 - `value`: Current value
 - `options`: Select options
 
 #### **UI Props (`ui`)**
+
 - `visible`: Visibility state
 - `open`: Open state
 - `expanded`: Expanded state
@@ -41,6 +47,7 @@
 ### **Examples:**
 
 #### **❌ Complex Interface (Before):**
+
 ```typescript
 interface ComplexComponentProps {
   isLoading: boolean;
@@ -59,6 +66,7 @@ interface ComplexComponentProps {
 ```
 
 #### **✅ Simplified Interface (After):**
+
 ```typescript
 interface SimplifiedComponentProps {
   queryState: {
@@ -86,6 +94,7 @@ interface SimplifiedComponentProps {
 ## 🧩 Component Architecture Patterns
 
 ### **1. Focused Sub-Components**
+
 Break complex components into focused, single-purpose sub-components:
 
 ```typescript
@@ -105,6 +114,7 @@ const ActionSection = ({ handlers }) => { /* ... */ };
 ```
 
 ### **2. Configuration Objects**
+
 Group related props into configuration objects:
 
 ```typescript
@@ -122,6 +132,7 @@ interface InputState {
 ```
 
 ### **3. Backward Compatibility**
+
 Maintain backward compatibility with legacy interfaces:
 
 ```typescript
@@ -140,16 +151,19 @@ export const LegacyComponent: React.FC<LegacyProps> = (props) => {
 ## 📊 Benefits Achieved
 
 ### **Before Simplification:**
+
 - **Input**: 14 props (complex interface)
 - **QueryStateWrapper**: 13 props (many concerns)
 - **HomeScreenContent**: 13 props (mixed responsibilities)
 
 ### **After Simplification:**
+
 - **SimplifiedInput**: 4 prop groups (focused concerns)
 - **SimplifiedQueryStateWrapper**: 4 prop groups (clear separation)
 - **SimplifiedHomeScreenContent**: 3 prop groups (logical grouping)
 
 ### **Key Improvements:**
+
 1. **Reduced Cognitive Load**: Fewer props to remember
 2. **Better Type Safety**: Grouped interfaces are more maintainable
 3. **Improved Reusability**: Sub-components can be reused independently
@@ -159,16 +173,19 @@ export const LegacyComponent: React.FC<LegacyProps> = (props) => {
 ## 🔄 Migration Strategy
 
 ### **Phase 1: Create Simplified Components**
+
 - Create new simplified components with grouped props
 - Maintain backward compatibility wrappers
 - Add comprehensive documentation
 
 ### **Phase 2: Gradual Migration**
+
 - Update high-priority components first
 - Provide migration guides for developers
 - Monitor usage patterns
 
 ### **Phase 3: Full Adoption**
+
 - Deprecate legacy interfaces
 - Remove backward compatibility wrappers
 - Update all component usage
@@ -176,6 +193,7 @@ export const LegacyComponent: React.FC<LegacyProps> = (props) => {
 ## 📝 Usage Examples
 
 ### **Simplified Input:**
+
 ```typescript
 <SimplifiedInput
   label="Email"
@@ -199,6 +217,7 @@ export const LegacyComponent: React.FC<LegacyProps> = (props) => {
 ```
 
 ### **Simplified Query State Wrapper:**
+
 ```typescript
 <SimplifiedQueryStateWrapper
   queryState={{

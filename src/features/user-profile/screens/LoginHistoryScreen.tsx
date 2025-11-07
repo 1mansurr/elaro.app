@@ -11,8 +11,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { formatDate } from '@/i18n';
 
 interface LoginRecord {
   id: string;
@@ -43,11 +44,10 @@ export function LoginHistoryScreen() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .rpc('get_recent_login_activity', {
-          p_user_id: user.id,
-          p_limit: 50,
-        });
+      const { data, error } = await supabase.rpc('get_recent_login_activity', {
+        p_user_id: user.id,
+        p_limit: 50,
+      });
 
       if (error) throw error;
 
@@ -77,8 +77,8 @@ export function LoginHistoryScreen() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    
-    return date.toLocaleDateString('en-US', {
+
+    return formatDate(date, {
       month: 'short',
       day: 'numeric',
       year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined,
@@ -117,8 +117,7 @@ export function LoginHistoryScreen() {
         styles.recordCard,
         { backgroundColor: theme.card },
         !item.success && styles.failedCard,
-      ]}
-    >
+      ]}>
       <View style={styles.recordHeader}>
         <View
           style={[
@@ -128,8 +127,7 @@ export function LoginHistoryScreen() {
                 ? '#10B981' + '20'
                 : '#EF4444' + '20',
             },
-          ]}
-        >
+          ]}>
           <Ionicons
             name={item.success ? 'checkmark-circle' : 'close-circle'}
             size={24}
@@ -207,7 +205,12 @@ export function LoginHistoryScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          { backgroundColor: theme.background },
+        ]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -219,8 +222,7 @@ export function LoginHistoryScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+          style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -230,8 +232,13 @@ export function LoginHistoryScreen() {
       </View>
 
       {/* Info Banner */}
-      <View style={[styles.infoBanner, { backgroundColor: theme.primary + '20' }]}>
-        <Ionicons name="shield-checkmark-outline" size={20} color={theme.primary} />
+      <View
+        style={[styles.infoBanner, { backgroundColor: theme.primary + '20' }]}>
+        <Ionicons
+          name="shield-checkmark-outline"
+          size={20}
+          color={theme.primary}
+        />
         <Text style={[styles.infoText, { color: theme.text }]}>
           Monitor your account activity for suspicious logins
         </Text>
@@ -250,9 +257,19 @@ export function LoginHistoryScreen() {
             tintColor={theme.primary}
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="time-outline" size={48} color={theme.textSecondary} />
+            <Ionicons
+              name="time-outline"
+              size={48}
+              color={theme.textSecondary}
+            />
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
               No login history found
             </Text>
@@ -361,4 +378,3 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
 });
-

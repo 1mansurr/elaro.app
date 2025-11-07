@@ -1,6 +1,6 @@
 /**
  * API Versioning Service for Client Applications
- * 
+ *
  * Provides version management, compatibility checking, and migration guidance
  * for client applications using the ELARO API.
  */
@@ -67,11 +67,14 @@ export class ApiVersioningService {
    */
   async getSupportedVersions(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/functions/v1/api-v2/version`, {
-        headers: {
-          'X-API-Version': this.currentVersion,
+      const response = await fetch(
+        `${this.baseUrl}/functions/v1/api-v2/version`,
+        {
+          headers: {
+            'X-API-Version': this.currentVersion,
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
@@ -96,11 +99,14 @@ export class ApiVersioningService {
    */
   async getVersionInfo(version: string): Promise<VersionInfo | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/functions/v1/api-v2/version`, {
-        headers: {
-          'X-API-Version': version,
+      const response = await fetch(
+        `${this.baseUrl}/functions/v1/api-v2/version`,
+        {
+          headers: {
+            'X-API-Version': version,
+          },
         },
-      });
+      );
 
       if (response.ok) {
         return await response.json();
@@ -117,10 +123,10 @@ export class ApiVersioningService {
    */
   async request<T = any>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}/functions/v1/${endpoint}`;
-    
+
     const headers = {
       'Content-Type': 'application/json',
       'X-API-Version': this.currentVersion,
@@ -136,7 +142,8 @@ export class ApiVersioningService {
       const data = await response.json();
 
       // Check for version-related headers
-      const isDeprecated = response.headers.get('X-Deprecated-Version') === 'true';
+      const isDeprecated =
+        response.headers.get('X-Deprecated-Version') === 'true';
       const sunsetDate = response.headers.get('X-Sunset-Date');
       const migrationGuide = response.headers.get('X-Migration-Guide');
 
@@ -165,9 +172,12 @@ export class ApiVersioningService {
   /**
    * Make a GET request with versioning
    */
-  async get<T = any>(endpoint: string, params?: Record<string, any>): Promise<ApiResponse<T>> {
+  async get<T = any>(
+    endpoint: string,
+    params?: Record<string, any>,
+  ): Promise<ApiResponse<T>> {
     const url = new URL(`${this.baseUrl}/functions/v1/${endpoint}`);
-    
+
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         url.searchParams.append(key, String(value));
@@ -214,7 +224,7 @@ export class ApiVersioningService {
   async checkCompatibility(): Promise<void> {
     try {
       const versionInfo = await this.getVersionInfo(this.currentVersion);
-      
+
       if (versionInfo) {
         if (versionInfo.isDeprecated) {
           console.warn(`API version ${this.currentVersion} is deprecated.`, {
@@ -226,10 +236,14 @@ export class ApiVersioningService {
         if (versionInfo.sunsetDate) {
           const sunset = new Date(versionInfo.sunsetDate);
           const now = new Date();
-          const daysUntilSunset = Math.ceil((sunset.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          
+          const daysUntilSunset = Math.ceil(
+            (sunset.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+          );
+
           if (daysUntilSunset <= 30) {
-            console.warn(`API version ${this.currentVersion} will be sunset in ${daysUntilSunset} days.`);
+            console.warn(
+              `API version ${this.currentVersion} will be sunset in ${daysUntilSunset} days.`,
+            );
           }
         }
       }
@@ -244,27 +258,39 @@ export class ApiVersioningService {
   async getMigrationRecommendations(): Promise<string[]> {
     try {
       const versionInfo = await this.getVersionInfo(this.currentVersion);
-      
+
       if (!versionInfo) return [];
 
       const recommendations: string[] = [];
-      
+
       if (versionInfo.isDeprecated) {
-        recommendations.push(`Version ${this.currentVersion} is deprecated. Please upgrade to ${versionInfo.isLatest ? 'latest' : 'a supported version'}.`);
+        recommendations.push(
+          `Version ${this.currentVersion} is deprecated. Please upgrade to ${versionInfo.isLatest ? 'latest' : 'a supported version'}.`,
+        );
       }
-      
+
       if (versionInfo.sunsetDate) {
-        recommendations.push(`Version ${this.currentVersion} will be sunset on ${versionInfo.sunsetDate}.`);
+        recommendations.push(
+          `Version ${this.currentVersion} will be sunset on ${versionInfo.sunsetDate}.`,
+        );
       }
-      
+
       if (versionInfo.migrationGuide) {
-        recommendations.push(`See migration guide: ${versionInfo.migrationGuide}`);
+        recommendations.push(
+          `See migration guide: ${versionInfo.migrationGuide}`,
+        );
       }
-      
-      if (versionInfo.breakingChanges && versionInfo.breakingChanges.length > 0) {
-        recommendations.push('Breaking changes in this version:', ...versionInfo.breakingChanges);
+
+      if (
+        versionInfo.breakingChanges &&
+        versionInfo.breakingChanges.length > 0
+      ) {
+        recommendations.push(
+          'Breaking changes in this version:',
+          ...versionInfo.breakingChanges,
+        );
       }
-      
+
       return recommendations;
     } catch (error) {
       console.warn('Failed to get migration recommendations:', error);
@@ -279,13 +305,13 @@ export class ApiVersioningService {
     try {
       const supportedVersions = await this.getSupportedVersions();
       const latestVersion = supportedVersions[supportedVersions.length - 1];
-      
+
       if (latestVersion && latestVersion !== this.currentVersion) {
         this.setVersion(latestVersion);
         console.log(`Upgraded to API version ${latestVersion}`);
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Failed to upgrade API version:', error);

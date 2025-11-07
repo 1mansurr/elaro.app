@@ -43,7 +43,7 @@ export function ForgotPasswordScreen() {
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'elaroapp://reset-password',
+        redirectTo: 'elaro://reset-password',
       });
 
       if (error) throw error;
@@ -51,14 +51,15 @@ export function ForgotPasswordScreen() {
       setSent(true);
       Alert.alert(
         'Check Your Email',
-        'We\'ve sent you a password reset link. Please check your email and follow the instructions.',
-        [{ text: 'OK' }]
+        "We've sent you a password reset link. Please check your email and follow the instructions.",
+        [{ text: 'OK' }],
       );
     } catch (error: any) {
       console.error('Error sending reset email:', error);
       Alert.alert(
         'Error',
-        error.message || 'Failed to send password reset email. Please try again.'
+        error.message ||
+          'Failed to send password reset email. Please try again.',
       );
     } finally {
       setLoading(false);
@@ -74,18 +75,15 @@ export function ForgotPasswordScreen() {
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: theme.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
-    >
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+        keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
+            style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -99,8 +97,16 @@ export function ForgotPasswordScreen() {
           {!sent ? (
             <>
               {/* Icon */}
-              <View style={[styles.iconContainer, { backgroundColor: theme.primary + '20' }]}>
-                <Ionicons name="lock-closed-outline" size={48} color={theme.primary} />
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: theme.primary + '20' },
+                ]}>
+                <Ionicons
+                  name="lock-closed-outline"
+                  size={48}
+                  color={theme.primary}
+                />
               </View>
 
               {/* Instructions */}
@@ -108,13 +114,20 @@ export function ForgotPasswordScreen() {
                 Forgot Your Password?
               </Text>
               <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-                Enter your email address and we'll send you instructions to reset your password.
+                Enter your email address and we'll send you instructions to
+                reset your password.
               </Text>
 
               {/* Email Input */}
               <View style={styles.inputContainer}>
-                <Text style={[styles.label, { color: theme.text }]}>Email Address</Text>
-                <View style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
+                <Text style={[styles.label, { color: theme.text }]}>
+                  Email Address
+                </Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    { backgroundColor: theme.card },
+                  ]}>
                   <Ionicons
                     name="mail-outline"
                     size={20}
@@ -143,8 +156,7 @@ export function ForgotPasswordScreen() {
                   loading && styles.buttonDisabled,
                 ]}
                 onPress={handleResetPassword}
-                disabled={loading}
-              >
+                disabled={loading}>
                 {loading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
@@ -156,8 +168,7 @@ export function ForgotPasswordScreen() {
               <TouchableOpacity
                 style={styles.linkButton}
                 onPress={() => navigation.goBack()}
-                disabled={loading}
-              >
+                disabled={loading}>
                 <Text style={[styles.linkText, { color: theme.primary }]}>
                   Back to Sign In
                 </Text>
@@ -166,8 +177,16 @@ export function ForgotPasswordScreen() {
           ) : (
             <>
               {/* Success Icon */}
-              <View style={[styles.iconContainer, { backgroundColor: '#10B981' + '20' }]}>
-                <Ionicons name="checkmark-circle-outline" size={48} color="#10B981" />
+              <View
+                style={[
+                  styles.iconContainer,
+                  { backgroundColor: '#10B981' + '20' },
+                ]}>
+                <Ionicons
+                  name="checkmark-circle-outline"
+                  size={48}
+                  color="#10B981"
+                />
               </View>
 
               {/* Success Message */}
@@ -180,23 +199,26 @@ export function ForgotPasswordScreen() {
               <Text style={[styles.emailText, { color: theme.primary }]}>
                 {email}
               </Text>
-              <Text style={[styles.subtitle, { color: theme.textSecondary, marginTop: 16 }]}>
-                Please check your email and follow the instructions to reset your password.
+              <Text
+                style={[
+                  styles.subtitle,
+                  { color: theme.textSecondary, marginTop: 16 },
+                ]}>
+                Please check your email and follow the instructions to reset
+                your password.
               </Text>
 
               {/* Resend Button */}
               <TouchableOpacity
                 style={[styles.button, { backgroundColor: theme.primary }]}
-                onPress={resendEmail}
-              >
+                onPress={resendEmail}>
                 <Text style={styles.buttonText}>Resend Email</Text>
               </TouchableOpacity>
 
               {/* Back to Sign In */}
               <TouchableOpacity
                 style={styles.linkButton}
-                onPress={() => navigation.goBack()}
-              >
+                onPress={() => navigation.goBack()}>
                 <Text style={[styles.linkText, { color: theme.primary }]}>
                   Back to Sign In
                 </Text>
@@ -204,9 +226,14 @@ export function ForgotPasswordScreen() {
 
               {/* Troubleshooting */}
               <View style={[styles.infoBox, { backgroundColor: theme.card }]}>
-                <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
+                <Ionicons
+                  name="information-circle-outline"
+                  size={20}
+                  color={theme.primary}
+                />
                 <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-                  Didn't receive the email? Check your spam folder or try resending.
+                  Didn't receive the email? Check your spam folder or try
+                  resending.
                 </Text>
               </View>
             </>
@@ -332,4 +359,3 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-

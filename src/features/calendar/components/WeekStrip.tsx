@@ -1,7 +1,19 @@
 // FILE: src/components/Calendar/WeekStrip.tsx
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import { format, eachDayOfInterval, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
+import {
+  format,
+  eachDayOfInterval,
+  startOfWeek,
+  endOfWeek,
+  isSameDay,
+} from 'date-fns';
 
 interface Props {
   selectedDate: Date;
@@ -16,12 +28,11 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
   }, [selectedDate]);
 
   return (
-    <ScrollView 
-      horizontal 
+    <ScrollView
+      horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {weekDays.map((day) => {
+      contentContainerStyle={styles.scrollContent}>
+      {weekDays.map(day => {
         const isSelected = isSameDay(day, selectedDate);
         return (
           <TouchableOpacity
@@ -30,8 +41,7 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
               styles.dayContainer,
               isSelected && styles.selectedDayContainer,
             ]}
-            onPress={() => onDateSelect(day)}
-          >
+            onPress={() => onDateSelect(day)}>
             <Text style={[styles.dayName, isSelected && styles.selectedText]}>
               {format(day, 'E')}
             </Text>

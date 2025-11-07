@@ -11,7 +11,7 @@ export interface ReminderConflict {
  */
 export async function cancelReminder(
   reminderId: string,
-  reason?: 'not_needed' | 'rescheduled' | 'task_completed' | 'other'
+  reason?: 'not_needed' | 'rescheduled' | 'task_completed' | 'other',
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const { data, error } = await supabase.functions.invoke('cancel-reminder', {
@@ -28,9 +28,13 @@ export async function cancelReminder(
 
     console.log('Reminder cancelled successfully');
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in cancelReminder:', error);
-    return { success: false, error: error.message || 'Failed to cancel reminder' };
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err?.message || 'Failed to cancel reminder',
+    };
   }
 }
 
@@ -39,7 +43,7 @@ export async function cancelReminder(
  */
 export async function checkReminderConflicts(
   reminderTime: Date,
-  bufferMinutes: number = 15
+  bufferMinutes: number = 15,
 ): Promise<ReminderConflict[]> {
   try {
     const { data, error } = await supabase.rpc('check_reminder_conflicts', {
@@ -64,7 +68,7 @@ export async function recordSRSPerformance(
   sessionId: string,
   qualityRating: number,
   reminderId?: string,
-  responseTimeSeconds?: number
+  responseTimeSeconds?: number,
 ): Promise<{
   success: boolean;
   nextIntervalDays?: number;
@@ -73,15 +77,18 @@ export async function recordSRSPerformance(
   error?: string;
 }> {
   try {
-    const { data, error } = await supabase.functions.invoke('record-srs-performance', {
-      body: {
-        session_id: sessionId,
-        reminder_id: reminderId,
-        quality_rating: qualityRating,
-        response_time_seconds: responseTimeSeconds,
-        schedule_next: true,
+    const { data, error } = await supabase.functions.invoke(
+      'record-srs-performance',
+      {
+        body: {
+          session_id: sessionId,
+          reminder_id: reminderId,
+          quality_rating: qualityRating,
+          response_time_seconds: responseTimeSeconds,
+          schedule_next: true,
+        },
       },
-    });
+    );
 
     if (error) {
       console.error('Error recording SRS performance:', error);
@@ -94,9 +101,13 @@ export async function recordSRSPerformance(
       easeFactor: data.ease_factor,
       message: data.message,
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error in recordSRSPerformance:', error);
-    return { success: false, error: error.message || 'Failed to record performance' };
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err?.message || 'Failed to record performance',
+    };
   }
 }
 
@@ -109,8 +120,8 @@ export async function getSRSStatistics(userId: string): Promise<{
   retention_rate: number;
   topics_reviewed: number;
   average_ease_factor: number;
-  strongest_topics: any[];
-  weakest_topics: any[];
+  strongest_topics: Array<{ topic: string; score: number }>;
+  weakest_topics: Array<{ topic: string; score: number }>;
 } | null> {
   try {
     const { data, error } = await supabase.rpc('get_srs_statistics', {
@@ -211,7 +222,7 @@ export async function markReminderOpened(reminderId: string): Promise<void> {
  */
 export async function snoozeReminder(
   reminderId: string,
-  snoozeMinutes: number = 60
+  snoozeMinutes: number = 60,
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const snoozeUntil = new Date(Date.now() + snoozeMinutes * 60000);
@@ -227,9 +238,12 @@ export async function snoozeReminder(
     if (error) throw error;
 
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error snoozing reminder:', error);
-    return { success: false, error: error.message };
+    const err = error as { message?: string };
+    return {
+      success: false,
+      error: err?.message || 'Failed to snooze reminder',
+    };
   }
 }
-

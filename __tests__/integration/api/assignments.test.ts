@@ -1,4 +1,8 @@
-import { createMockUser, createMockAssignment, createMockSupabaseClient } from '@tests/utils/testUtils';
+import {
+  createMockUser,
+  createMockAssignment,
+  createMockSupabaseClient,
+} from '@tests/utils/testUtils';
 
 // Mock Supabase client
 const mockSupabase = createMockSupabaseClient();
@@ -17,12 +21,12 @@ describe('Assignments API Integration', () => {
         title: 'Test Assignment',
         description: 'Test description',
         due_date: new Date(Date.now() + 86400000).toISOString(),
-        course_id: 'course-1'
+        course_id: 'course-1',
       };
 
       const mockResponse = {
         data: createMockAssignment(assignmentData),
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -31,9 +35,9 @@ describe('Assignments API Integration', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(assignmentData)
+        body: JSON.stringify(assignmentData),
       });
 
       expect(response.status).toBe(201);
@@ -44,12 +48,12 @@ describe('Assignments API Integration', () => {
     it('should handle validation errors', async () => {
       const invalidData = {
         title: '', // Empty title should fail validation
-        description: 'Test description'
+        description: 'Test description',
       };
 
       const mockError = {
         data: null,
-        error: { message: 'Title is required' }
+        error: { message: 'Title is required' },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockError);
@@ -58,9 +62,9 @@ describe('Assignments API Integration', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(invalidData)
+        body: JSON.stringify(invalidData),
       });
 
       expect(response.status).toBe(400);
@@ -71,16 +75,16 @@ describe('Assignments API Integration', () => {
     it('should handle authentication errors', async () => {
       const assignmentData = {
         title: 'Test Assignment',
-        description: 'Test description'
+        description: 'Test description',
       };
 
       const response = await fetch('/api/assignments', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
           // Missing Authorization header
         },
-        body: JSON.stringify(assignmentData)
+        body: JSON.stringify(assignmentData),
       });
 
       expect(response.status).toBe(401);
@@ -89,13 +93,13 @@ describe('Assignments API Integration', () => {
     it('should handle rate limiting', async () => {
       const assignmentData = {
         title: 'Test Assignment',
-        description: 'Test description'
+        description: 'Test description',
       };
 
       // Mock rate limit error
       const rateLimitError = {
         data: null,
-        error: { message: 'Rate limit exceeded' }
+        error: { message: 'Rate limit exceeded' },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(rateLimitError);
@@ -104,9 +108,9 @@ describe('Assignments API Integration', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(assignmentData)
+        body: JSON.stringify(assignmentData),
       });
 
       expect(response.status).toBe(429);
@@ -117,12 +121,12 @@ describe('Assignments API Integration', () => {
     it('should fetch user assignments', async () => {
       const mockAssignments = [
         createMockAssignment({ id: 'assignment-1' }),
-        createMockAssignment({ id: 'assignment-2' })
+        createMockAssignment({ id: 'assignment-2' }),
       ];
 
       const mockResponse = {
         data: mockAssignments,
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -130,8 +134,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch('/api/assignments', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(200);
@@ -143,7 +147,7 @@ describe('Assignments API Integration', () => {
     it('should handle empty results', async () => {
       const mockResponse = {
         data: [],
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -151,8 +155,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch('/api/assignments', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(200);
@@ -168,8 +172,8 @@ describe('Assignments API Integration', () => {
         pagination: {
           page: 1,
           limit: 10,
-          total: 25
-        }
+          total: 25,
+        },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -177,8 +181,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch('/api/assignments?page=1&limit=10', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(200);
@@ -192,12 +196,12 @@ describe('Assignments API Integration', () => {
       const assignmentId = 'assignment-1';
       const updateData = {
         title: 'Updated Assignment',
-        description: 'Updated description'
+        description: 'Updated description',
       };
 
       const mockResponse = {
         data: createMockAssignment({ id: assignmentId, ...updateData }),
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -206,9 +210,9 @@ describe('Assignments API Integration', () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       });
 
       expect(response.status).toBe(200);
@@ -219,12 +223,12 @@ describe('Assignments API Integration', () => {
     it('should handle assignment not found', async () => {
       const assignmentId = 'nonexistent-assignment';
       const updateData = {
-        title: 'Updated Assignment'
+        title: 'Updated Assignment',
       };
 
       const mockError = {
         data: null,
-        error: { message: 'Assignment not found' }
+        error: { message: 'Assignment not found' },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockError);
@@ -233,9 +237,9 @@ describe('Assignments API Integration', () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       });
 
       expect(response.status).toBe(404);
@@ -246,12 +250,12 @@ describe('Assignments API Integration', () => {
     it('should handle permission errors', async () => {
       const assignmentId = 'assignment-1';
       const updateData = {
-        title: 'Updated Assignment'
+        title: 'Updated Assignment',
       };
 
       const mockError = {
         data: null,
-        error: { message: 'Permission denied' }
+        error: { message: 'Permission denied' },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockError);
@@ -260,9 +264,9 @@ describe('Assignments API Integration', () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(updateData),
       });
 
       expect(response.status).toBe(403);
@@ -277,7 +281,7 @@ describe('Assignments API Integration', () => {
 
       const mockResponse = {
         data: { id: assignmentId, deleted: true },
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -285,8 +289,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch(`/api/assignments/${assignmentId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(200);
@@ -299,7 +303,7 @@ describe('Assignments API Integration', () => {
 
       const mockResponse = {
         data: { id: assignmentId, deleted_at: new Date().toISOString() },
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -307,8 +311,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch(`/api/assignments/${assignmentId}`, {
         method: 'DELETE',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(200);
@@ -319,13 +323,15 @@ describe('Assignments API Integration', () => {
 
   describe('error handling', () => {
     it('should handle network timeouts', async () => {
-      mockSupabase.functions.invoke.mockRejectedValue(new Error('Request timeout'));
+      mockSupabase.functions.invoke.mockRejectedValue(
+        new Error('Request timeout'),
+      );
 
       const response = await fetch('/api/assignments', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(500);
@@ -334,7 +340,7 @@ describe('Assignments API Integration', () => {
     it('should handle server errors', async () => {
       const mockError = {
         data: null,
-        error: { message: 'Internal server error' }
+        error: { message: 'Internal server error' },
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockError);
@@ -342,8 +348,8 @@ describe('Assignments API Integration', () => {
       const response = await fetch('/api/assignments', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${mockUser.id}`
-        }
+          Authorization: `Bearer ${mockUser.id}`,
+        },
       });
 
       expect(response.status).toBe(500);
@@ -356,9 +362,9 @@ describe('Assignments API Integration', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: 'invalid json'
+        body: 'invalid json',
       });
 
       expect(response.status).toBe(400);
@@ -369,7 +375,7 @@ describe('Assignments API Integration', () => {
     it('should handle concurrent requests', async () => {
       const mockResponse = {
         data: createMockAssignment(),
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -378,13 +384,13 @@ describe('Assignments API Integration', () => {
         fetch('/api/assignments', {
           method: 'GET',
           headers: {
-            'Authorization': `Bearer ${mockUser.id}`
-          }
-        })
+            Authorization: `Bearer ${mockUser.id}`,
+          },
+        }),
       );
 
       const responses = await Promise.all(promises);
-      
+
       responses.forEach(response => {
         expect(response.status).toBe(200);
       });
@@ -394,12 +400,12 @@ describe('Assignments API Integration', () => {
       const largeAssignment = {
         title: 'Large Assignment',
         description: 'A'.repeat(10000), // Large description
-        due_date: new Date(Date.now() + 86400000).toISOString()
+        due_date: new Date(Date.now() + 86400000).toISOString(),
       };
 
       const mockResponse = {
         data: createMockAssignment(largeAssignment),
-        error: null
+        error: null,
       };
 
       mockSupabase.functions.invoke.mockResolvedValue(mockResponse);
@@ -408,9 +414,9 @@ describe('Assignments API Integration', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${mockUser.id}`
+          Authorization: `Bearer ${mockUser.id}`,
         },
-        body: JSON.stringify(largeAssignment)
+        body: JSON.stringify(largeAssignment),
       });
 
       expect(response.status).toBe(201);

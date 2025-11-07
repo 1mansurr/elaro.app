@@ -15,7 +15,9 @@ export interface LockoutStatus {
  * @param email - User's email address
  * @returns Lockout status information
  */
-export async function checkAccountLockout(email: string): Promise<LockoutStatus> {
+export async function checkAccountLockout(
+  email: string,
+): Promise<LockoutStatus> {
   try {
     const { data: user, error } = await supabase
       .from('users')
@@ -35,9 +37,9 @@ export async function checkAccountLockout(email: string): Promise<LockoutStatus>
     // Check if account is locked
     if (user.locked_until && new Date(user.locked_until) > new Date()) {
       const minutesRemaining = Math.ceil(
-        (new Date(user.locked_until).getTime() - Date.now()) / 60000
+        (new Date(user.locked_until).getTime() - Date.now()) / 60000,
       );
-      
+
       return {
         isLocked: true,
         lockedUntil: new Date(user.locked_until),
@@ -73,7 +75,7 @@ export async function recordFailedAttempt(
   email: string,
   reason: string = 'invalid_credentials',
   ipAddress?: string,
-  userAgent?: string
+  userAgent?: string,
 ): Promise<void> {
   try {
     // Get current failed attempts count
@@ -100,7 +102,7 @@ export async function recordFailedAttempt(
     // Lock account if max attempts reached
     if (attempts >= MAX_ATTEMPTS) {
       const lockedUntil = new Date(Date.now() + LOCKOUT_DURATION);
-      
+
       await supabase
         .from('users')
         .update({
@@ -128,17 +130,17 @@ export async function recordFailedAttempt(
  * Resets failed login attempts after successful login
  * @param userId - User's ID or email
  */
-export async function resetFailedAttempts(userIdOrEmail: string): Promise<void> {
+export async function resetFailedAttempts(
+  userIdOrEmail: string,
+): Promise<void> {
   try {
     // Check if it's an email or UUID
     const isEmail = userIdOrEmail.includes('@');
-    
-    const updateQuery = supabase
-      .from('users')
-      .update({
-        failed_login_attempts: 0,
-        locked_until: null,
-      });
+
+    const updateQuery = supabase.from('users').update({
+      failed_login_attempts: 0,
+      locked_until: null,
+    });
 
     if (isEmail) {
       await updateQuery.eq('email', userIdOrEmail);
@@ -166,7 +168,7 @@ export async function recordSuccessfulLogin(
     version?: string;
     ipAddress?: string;
     userAgent?: string;
-  }
+  },
 ): Promise<void> {
   try {
     // Get user email
@@ -226,4 +228,3 @@ export function getLockoutMessage(minutesRemaining: number): string {
   }
   return `Your account has been temporarily locked due to multiple failed login attempts. Please try again in ${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}.`;
 }
-

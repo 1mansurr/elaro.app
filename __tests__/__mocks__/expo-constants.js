@@ -3,9 +3,9 @@ module.exports = {
     expoConfig: {
       extra: {
         eas: {
-          projectId: 'test-project-id'
-        }
-      }
-    }
-  }
+          projectId: 'test-project-id',
+        },
+      },
+    },
+  },
 };

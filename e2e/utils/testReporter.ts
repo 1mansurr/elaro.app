@@ -1,8 +1,8 @@
 /**
  * E2E Test Reporter
- * 
+ *
  * Collects test results and generates comprehensive reports
- * 
+ *
  * Note: File system operations need to be handled differently in Detox
  * This reporter collects data in memory - actual file writing happens via Jest reporter
  */
@@ -63,7 +63,14 @@ class TestReporter {
     });
   }
 
-  recordTest(testName: string, status: 'passed' | 'failed' | 'skipped', duration: number, error?: string, screens?: string[], manual?: boolean) {
+  recordTest(
+    testName: string,
+    status: 'passed' | 'failed' | 'skipped',
+    duration: number,
+    error?: string,
+    screens?: string[],
+    manual?: boolean,
+  ) {
     if (this.currentPass === null) return;
 
     const pass = this.results.get(this.currentPass)!;
@@ -148,7 +155,7 @@ class TestReporter {
     passes: PassResult[];
   } {
     const passes = Array.from(this.results.values());
-    
+
     const overall = {
       totalPasses: passes.length,
       passed: passes.filter(p => p.status === 'passed').length,
@@ -165,15 +172,15 @@ class TestReporter {
 
   async saveReport(filename: string = 'e2e-report.json') {
     const report = this.generateReport();
-    
+
     // In Detox/Jest environment, we'll return the report data
     // File saving can be handled by Jest reporter or post-test script
     const reportData = JSON.stringify(report, null, 2);
-    
+
     // Log report to console (Jest reporter can capture this)
     console.log('\n📊 E2E Test Report:');
     console.log(reportData);
-    
+
     // Return report data for potential file saving
     return {
       filename,
@@ -184,7 +191,7 @@ class TestReporter {
 
   async generateHTMLReport(filename: string = 'e2e-report.html') {
     const report = this.generateReport();
-    
+
     const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -244,65 +251,89 @@ class TestReporter {
       </div>
     </div>
 
-    ${report.passes.map(pass => `
+    ${report.passes
+      .map(
+        pass => `
       <div class="pass-section">
         <h2>Pass ${pass.pass}: ${pass.name}</h2>
         <p><strong>Status:</strong> <span style="color: ${pass.status === 'passed' ? '#28a745' : pass.status === 'failed' ? '#dc3545' : '#ffc107'};">${pass.status.toUpperCase()}</span></p>
         <p><strong>Tests:</strong> ${pass.summary.total} | Passed: ${pass.summary.passed} | Failed: ${pass.summary.failed} | Skipped: ${pass.summary.skipped}</p>
         
-        ${pass.screens.length > 0 ? `
+        ${
+          pass.screens.length > 0
+            ? `
           <div style="margin-top: 15px;">
             <strong>Screens Visited:</strong>
             <div class="screens-list">
               ${pass.screens.map(s => `<span class="screen-tag">${s}</span>`).join('')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
         <div style="margin-top: 20px;">
           <strong>Test Results:</strong>
-          ${Object.values(pass.tests).map(test => `
+          ${Object.values(pass.tests)
+            .map(
+              test => `
             <div class="test-item ${test.status} ${test.manual ? 'manual' : ''}">
               <strong>${test.name}</strong>
               ${test.manual ? '<span class="badge badge-manual">MANUAL</span>' : ''}
               <span style="float: right;">${test.duration}ms</span>
               ${test.error ? `<div class="error-box">❌ ${test.error}</div>` : ''}
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
         
-        ${pass.errors.length > 0 ? `
+        ${
+          pass.errors.length > 0
+            ? `
           <div style="margin-top: 15px; padding: 10px; background: #f8d7da; border-radius: 4px;">
             <strong>Errors:</strong>
             <ul style="margin: 5px 0;">
               ${pass.errors.map(e => `<li>${e}</li>`).join('')}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${pass.warnings.length > 0 ? `
+        ${
+          pass.warnings.length > 0
+            ? `
           <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px;">
             <strong>Warnings:</strong>
             <ul style="margin: 5px 0;">
               ${pass.warnings.map(w => `<li>${w}</li>`).join('')}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-    `).join('')}
+    `,
+      )
+      .join('')}
     
-    ${report.overall.allScreens.length > 0 ? `
+    ${
+      report.overall.allScreens.length > 0
+        ? `
       <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
         <h2>All Screens Visited</h2>
         <div class="screens-list">
           ${report.overall.allScreens.map(s => `<span class="screen-tag">${s}</span>`).join('')}
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
   </div>
 </body>
 </html>`;
-    
+
     return {
       filename,
       html,
@@ -313,4 +344,3 @@ class TestReporter {
 
 // Singleton instance
 export const testReporter = new TestReporter();
-

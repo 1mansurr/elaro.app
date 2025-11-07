@@ -25,12 +25,11 @@ class AnalyticsService {
       this.mixpanel = new Mixpanel(projectToken, true);
       await this.mixpanel.init();
       this.isInitialized = true;
-      
+
       console.log('✅ Analytics initialized successfully');
-      
+
       // Send any stored fallback events
       await this.flushFallbackEvents();
-      
     } catch (error) {
       console.error('❌ Analytics initialization failed:', error);
       await this.loadFallbackEvents();
@@ -42,7 +41,7 @@ class AnalyticsService {
     const eventData: AnalyticsEvent = {
       event,
       properties,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
 
     if (this.isInitialized && this.mixpanel) {
@@ -84,16 +83,18 @@ class AnalyticsService {
   // Store events locally when Mixpanel is unavailable
   private async storeFallbackEvent(eventData: AnalyticsEvent) {
     this.fallbackEvents.push(eventData);
-    
+
     // Keep only recent events
     if (this.fallbackEvents.length > this.MAX_FALLBACK_EVENTS) {
-      this.fallbackEvents = this.fallbackEvents.slice(-this.MAX_FALLBACK_EVENTS);
+      this.fallbackEvents = this.fallbackEvents.slice(
+        -this.MAX_FALLBACK_EVENTS,
+      );
     }
 
     try {
       await AsyncStorage.setItem(
-        this.FALLBACK_STORAGE_KEY, 
-        JSON.stringify(this.fallbackEvents)
+        this.FALLBACK_STORAGE_KEY,
+        JSON.stringify(this.fallbackEvents),
       );
     } catch (error) {
       console.error('❌ Failed to store fallback event:', error);
@@ -119,7 +120,7 @@ class AnalyticsService {
     if (this.fallbackEvents.length === 0) return;
 
     console.log(`📤 Flushing ${this.fallbackEvents.length} fallback events`);
-    
+
     for (const eventData of this.fallbackEvents) {
       try {
         this.mixpanel?.track(eventData.event, eventData.properties);

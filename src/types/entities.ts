@@ -174,7 +174,11 @@ export interface Reminder {
   assignment_id?: string | null;
   lecture_id?: string | null;
   reminder_time: string;
-  reminder_type: 'study_session' | 'lecture' | 'assignment' | 'spaced_repetition';
+  reminder_type:
+    | 'study_session'
+    | 'lecture'
+    | 'assignment'
+    | 'spaced_repetition';
   title?: string | null;
   body?: string | null;
   completed: boolean;

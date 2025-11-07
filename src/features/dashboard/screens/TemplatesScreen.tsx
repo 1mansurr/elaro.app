@@ -16,7 +16,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 
 import { RootStackParamList } from '@/types';
-import { useTemplates, useDeleteTemplate, TaskTemplate } from '@/hooks/useTemplates';
+import {
+  useTemplates,
+  useDeleteTemplate,
+  TaskTemplate,
+} from '@/hooks/useTemplates';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { showToast } from '@/utils/showToast';
 
@@ -24,10 +28,18 @@ type TemplatesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const TemplatesScreen = () => {
   const navigation = useNavigation<TemplatesScreenNavigationProp>();
-  const { data: templates, isLoading, isError, refetch, isRefetching } = useTemplates();
+  const {
+    data: templates,
+    isLoading,
+    isError,
+    refetch,
+    isRefetching,
+  } = useTemplates();
   const deleteTemplateMutation = useDeleteTemplate();
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [templateToDelete, setTemplateToDelete] = useState<TaskTemplate | null>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<TaskTemplate | null>(
+    null,
+  );
 
   const handleRefresh = () => {
     refetch();
@@ -80,7 +92,7 @@ const TemplatesScreen = () => {
         setShowDeleteModal(false);
         setTemplateToDelete(null);
       },
-      onError: (error) => {
+      onError: error => {
         showToast({ type: 'error', message: 'Failed to delete template' });
         console.error('Delete template error:', error);
       },
@@ -90,11 +102,23 @@ const TemplatesScreen = () => {
   const getTaskTypeInfo = (taskType: string) => {
     switch (taskType) {
       case 'assignment':
-        return { icon: 'document-text' as const, color: '#FF9500', label: 'Assignment' };
+        return {
+          icon: 'document-text' as const,
+          color: '#FF9500',
+          label: 'Assignment',
+        };
       case 'lecture':
-        return { icon: 'school' as const, color: COLORS.primary, label: 'Lecture' };
+        return {
+          icon: 'school' as const,
+          color: COLORS.primary,
+          label: 'Lecture',
+        };
       case 'study_session':
-        return { icon: 'book' as const, color: '#34C759', label: 'Study Session' };
+        return {
+          icon: 'book' as const,
+          color: '#34C759',
+          label: 'Study Session',
+        };
       default:
         return { icon: 'document' as const, color: COLORS.gray, label: 'Task' };
     }
@@ -102,15 +126,21 @@ const TemplatesScreen = () => {
 
   const renderTemplate = ({ item }: { item: TaskTemplate }) => {
     const typeInfo = getTaskTypeInfo(item.task_type);
-    const createdAgo = formatDistanceToNow(new Date(item.created_at), { addSuffix: true });
+    const createdAgo = formatDistanceToNow(new Date(item.created_at), {
+      addSuffix: true,
+    });
 
     return (
       <View style={styles.templateCard}>
         <View style={styles.templateContent}>
-          <View style={[styles.typeIcon, { backgroundColor: typeInfo.color + '20' }]}>
+          <View
+            style={[
+              styles.typeIcon,
+              { backgroundColor: typeInfo.color + '20' },
+            ]}>
             <Ionicons name={typeInfo.icon} size={24} color={typeInfo.color} />
           </View>
-          
+
           <View style={styles.templateInfo}>
             <Text style={styles.templateName} numberOfLines={2}>
               {item.template_name}
@@ -127,16 +157,14 @@ const TemplatesScreen = () => {
           <View style={styles.templateActions}>
             <TouchableOpacity
               style={[styles.actionButton, styles.useButton]}
-              onPress={() => handleUseTemplate(item)}
-            >
+              onPress={() => handleUseTemplate(item)}>
               <Ionicons name="play" size={16} color="white" />
               <Text style={styles.useButtonText}>Use</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.actionButton, styles.deleteButton]}
-              onPress={() => handleDeleteTemplate(item)}
-            >
+              onPress={() => handleDeleteTemplate(item)}>
               <Ionicons name="trash-outline" size={16} color="#FF3B30" />
             </TouchableOpacity>
           </View>
@@ -150,13 +178,15 @@ const TemplatesScreen = () => {
       <Ionicons name="library-outline" size={64} color={COLORS.gray} />
       <Text style={styles.emptyTitle}>No Templates</Text>
       <Text style={styles.emptyMessage}>
-        Create templates from your tasks to save time on repetitive work. Templates remember your course, reminders, and other settings.
+        Create templates from your tasks to save time on repetitive work.
+        Templates remember your course, reminders, and other settings.
       </Text>
       <TouchableOpacity
         style={styles.createFirstTemplateButton}
-        onPress={() => navigation.goBack()}
-      >
-        <Text style={styles.createFirstTemplateButtonText}>Create Your First Template</Text>
+        onPress={() => navigation.goBack()}>
+        <Text style={styles.createFirstTemplateButtonText}>
+          Create Your First Template
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -186,7 +216,11 @@ const TemplatesScreen = () => {
       {/* Info Banner */}
       {templates && templates.length > 0 && (
         <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+          <Ionicons
+            name="information-circle-outline"
+            size={20}
+            color={COLORS.primary}
+          />
           <Text style={styles.infoBannerText}>
             Tap "Use" to create a new task with this template's settings.
           </Text>
@@ -197,7 +231,7 @@ const TemplatesScreen = () => {
       <FlatList
         data={templates}
         renderItem={renderTemplate}
-        keyExtractor={(item) => item.id}
+        keyExtractor={item => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
         refreshControl={
@@ -207,6 +241,12 @@ const TemplatesScreen = () => {
             tintColor={COLORS.primary}
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
       />
 
       {/* Delete Confirmation Modal */}
@@ -214,26 +254,24 @@ const TemplatesScreen = () => {
         visible={showDeleteModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowDeleteModal(false)}
-      >
+        onRequestClose={() => setShowDeleteModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Delete Template</Text>
             <Text style={styles.modalMessage}>
-              Are you sure you want to delete "{templateToDelete?.template_name}"? This action cannot be undone.
+              Are you sure you want to delete "{templateToDelete?.template_name}
+              "? This action cannot be undone.
             </Text>
             <View style={styles.modalActions}>
               <TouchableOpacity
                 style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowDeleteModal(false)}
-              >
+                onPress={() => setShowDeleteModal(false)}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalButton, styles.confirmButton]}
                 onPress={confirmDelete}
-                disabled={deleteTemplateMutation.isPending}
-              >
+                disabled={deleteTemplateMutation.isPending}>
                 <Text style={styles.confirmButtonText}>
                   {deleteTemplateMutation.isPending ? 'Deleting...' : 'Delete'}
                 </Text>

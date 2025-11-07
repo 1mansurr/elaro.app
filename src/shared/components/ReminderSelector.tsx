@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, FONT_SIZES, BORDER_RADIUS, COMPONENTS } from '@/constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  BORDER_RADIUS,
+  COMPONENTS,
+} from '@/constants/theme';
 
 // Define the available options
 const REMINDER_OPTIONS = [
@@ -23,14 +29,14 @@ interface ReminderSelectorProps {
   helperText?: string;
 }
 
-const ReminderSelector: React.FC<ReminderSelectorProps> = ({ 
-  selectedReminders, 
-  onSelectionChange, 
+const ReminderSelector: React.FC<ReminderSelectorProps> = ({
+  selectedReminders,
+  onSelectionChange,
   maxReminders = 3,
   label = 'Set Reminder',
   required = false,
   error,
-  helperText
+  helperText,
 }) => {
   const [isModalVisible, setModalVisible] = useState(false);
 
@@ -59,7 +65,9 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
 
   const getSelectedLabels = () => {
     return selectedReminders
-      .map(value => REMINDER_OPTIONS.find(option => option.value === value)?.label)
+      .map(
+        value => REMINDER_OPTIONS.find(option => option.value === value)?.label,
+      )
       .filter(Boolean)
       .join(', ');
   };
@@ -73,16 +81,16 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
         </Text>
       )}
 
-      <TouchableOpacity 
+      <TouchableOpacity
         style={[
-          styles.inputBox, 
+          styles.inputBox,
           error ? styles.inputBoxError : null,
-          selectedReminders.length > 0 ? styles.inputBoxSelected : null
-        ]} 
-        onPress={() => setModalVisible(true)}
-      >
+          selectedReminders.length > 0 ? styles.inputBoxSelected : null,
+        ]}
+        onPress={() => setModalVisible(true)}>
         <View style={styles.inputContent}>
-          <Text style={[styles.inputText, error ? styles.inputTextError : null]}>
+          <Text
+            style={[styles.inputText, error ? styles.inputTextError : null]}>
             {getDisplayText()}
           </Text>
           {selectedReminders.length > 0 && (
@@ -91,10 +99,10 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
             </Text>
           )}
         </View>
-        <Ionicons 
-          name="chevron-down" 
-          size={20} 
-          color={error ? COLORS.error : COLORS.textSecondary} 
+        <Ionicons
+          name="chevron-down"
+          size={20}
+          color={error ? COLORS.error : COLORS.textSecondary}
         />
       </TouchableOpacity>
 
@@ -113,22 +121,23 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
       )}
 
       <Modal visible={isModalVisible} transparent animationType="fade">
-        <TouchableOpacity 
-          style={styles.modalBackdrop} 
-          onPress={() => setModalVisible(false)}
-        >
+        <TouchableOpacity
+          style={styles.modalBackdrop}
+          onPress={() => setModalVisible(false)}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Reminders</Text>
               <Text style={styles.modalSubtitle}>
-                Choose up to {maxReminders} reminder{maxReminders > 1 ? 's' : ''}
+                Choose up to {maxReminders} reminder
+                {maxReminders > 1 ? 's' : ''}
               </Text>
             </View>
-            
+
             {REMINDER_OPTIONS.map((option, index) => {
               const isSelected = selectedReminders.includes(option.value);
-              const isDisabled = !isSelected && selectedReminders.length >= maxReminders;
-              
+              const isDisabled =
+                !isSelected && selectedReminders.length >= maxReminders;
+
               return (
                 <TouchableOpacity
                   key={option.value}
@@ -136,19 +145,28 @@ const ReminderSelector: React.FC<ReminderSelectorProps> = ({
                     styles.optionRow,
                     isSelected && styles.optionRowSelected,
                     isDisabled && styles.optionRowDisabled,
-                    index === REMINDER_OPTIONS.length - 1 && styles.optionRowLast
+                    index === REMINDER_OPTIONS.length - 1 &&
+                      styles.optionRowLast,
                   ]}
-                  onPress={() => !isDisabled && handleToggleReminder(option.value)}
-                  disabled={isDisabled}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    isSelected && styles.optionTextSelected,
-                    isDisabled && styles.optionTextDisabled
-                  ]}>
+                  onPress={() =>
+                    !isDisabled && handleToggleReminder(option.value)
+                  }
+                  disabled={isDisabled}>
+                  <Text
+                    style={[
+                      styles.optionText,
+                      isSelected && styles.optionTextSelected,
+                      isDisabled && styles.optionTextDisabled,
+                    ]}>
                     {option.label}
                   </Text>
-                  {isSelected && <Ionicons name="checkmark" size={24} color={COLORS.primary} />}
+                  {isSelected && (
+                    <Ionicons
+                      name="checkmark"
+                      size={24}
+                      color={COLORS.primary}
+                    />
+                  )}
                 </TouchableOpacity>
               );
             })}

@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
@@ -8,23 +14,32 @@ import { Button } from '@/shared/components';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 
-type DueDateScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'DueDate'>;
+type DueDateScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'DueDate'
+>;
 
 const DueDateScreen = () => {
   const navigation = useNavigation<DueDateScreenNavigationProp>();
   // const { assignmentData, updateAssignmentData } = useAddAssignment();
   // Mock data for now - proper structure
-  const assignmentData = { 
-    courseId: null, 
-    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
-    title: "Mock Assignment", 
-    description: "Mock description", 
-    dueDate: new Date(), 
-    submissionMethod: null, 
-    reminders: [] 
+  const assignmentData = {
+    courseId: null,
+    course: {
+      id: 'mock-course-id',
+      courseName: 'Mock Course',
+      courseCode: 'MOCK101',
+    },
+    title: 'Mock Assignment',
+    description: 'Mock description',
+    dueDate: new Date(),
+    submissionMethod: null,
+    reminders: [],
   };
-  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
-  
+  const updateAssignmentData = (data: any) => {
+    console.log('Mock updateAssignmentData:', data);
+  };
+
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
@@ -37,7 +52,7 @@ const DueDateScreen = () => {
       const newDueDate = new Date(selectedDate);
       newDueDate.setHours(dueDate.getHours());
       newDueDate.setMinutes(dueDate.getMinutes());
-      
+
       updateAssignmentData({ dueDate: newDueDate });
     }
   };
@@ -48,7 +63,7 @@ const DueDateScreen = () => {
       const newDueDate = new Date(dueDate);
       newDueDate.setHours(selectedTime.getHours());
       newDueDate.setMinutes(selectedTime.getMinutes());
-      
+
       updateAssignmentData({ dueDate: newDueDate });
     }
   };
@@ -57,7 +72,7 @@ const DueDateScreen = () => {
     if (!assignmentData.dueDate) {
       return;
     }
-    
+
     navigation.navigate('SubmissionMethod');
   };
 
@@ -82,24 +97,22 @@ const DueDateScreen = () => {
         <Text style={styles.sectionDescription}>
           Set the date and time when you need to submit your assignment.
         </Text>
-        
+
         <View style={styles.datetimeSection}>
           <Text style={styles.label}>Due Date & Time</Text>
-          
+
           <View style={styles.datetimeRow}>
             <TouchableOpacity
               style={styles.dateTimeButton}
-              onPress={() => setShowDatePicker(true)}
-            >
+              onPress={() => setShowDatePicker(true)}>
               <Text style={styles.dateTimeButtonText}>
                 {format(dueDate, 'MMM dd, yyyy')}
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.dateTimeButton}
-              onPress={() => setShowTimePicker(true)}
-            >
+              onPress={() => setShowTimePicker(true)}>
               <Text style={styles.dateTimeButtonText}>
                 {format(dueDate, 'h:mm a')}
               </Text>
@@ -138,10 +151,13 @@ const DueDateScreen = () => {
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Assignment Summary:</Text>
             <Text style={styles.summaryText}>
-              <Text style={styles.bold}>{assignmentData.title || 'Untitled Assignment'}</Text>
+              <Text style={styles.bold}>
+                {assignmentData.title || 'Untitled Assignment'}
+              </Text>
             </Text>
             <Text style={styles.summaryText}>
-              Due: {format(dueDate, 'EEEE, MMM dd, yyyy')} at {format(dueDate, 'h:mm a')}
+              Due: {format(dueDate, 'EEEE, MMM dd, yyyy')} at{' '}
+              {format(dueDate, 'h:mm a')}
             </Text>
             <Text style={styles.summaryText}>
               Course: {assignmentData.course?.courseName}
@@ -164,11 +180,7 @@ const DueDateScreen = () => {
       </View>
 
       <View style={styles.footer}>
-        <Button 
-          title="Continue" 
-          onPress={handleContinue}
-          disabled={!isValid}
-        />
+        <Button title="Continue" onPress={handleContinue} disabled={!isValid} />
       </View>
     </View>
   );

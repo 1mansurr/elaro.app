@@ -17,7 +17,10 @@ export const ERROR_CODES = {
 } as const;
 
 export class NotificationError extends Error {
-  constructor(message: string, public code: string) {
+  constructor(
+    message: string,
+    public code: string,
+  ) {
     super(message);
     this.name = 'NotificationError';
   }
@@ -26,9 +29,12 @@ export class NotificationError extends Error {
 export const errorHandler = {
   handleError: (error: any, context: string) => {
     console.error(`Error in ${context}:`, error);
-    return new NotificationError(error.message || 'Unknown error', ERROR_CODES.DELIVERY_FAILED);
+    return new NotificationError(
+      error.message || 'Unknown error',
+      ERROR_CODES.DELIVERY_FAILED,
+    );
   },
-  
+
   createError: (message: string, code: string) => {
     return new NotificationError(message, code);
   },

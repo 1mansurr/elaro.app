@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { Task } from '../types'; // Assuming Task type is in src/types
 
 interface NotificationContextType {
@@ -6,13 +13,31 @@ interface NotificationContextType {
   setTaskToShow: (task: Task | null) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined,
+);
 
-export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const NotificationProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [taskToShow, setTaskToShow] = useState<Task | null>(null);
 
+  // Memoize setter to prevent unnecessary re-renders
+  const handleSetTaskToShow = useCallback((task: Task | null) => {
+    setTaskToShow(task);
+  }, []);
+
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      taskToShow,
+      setTaskToShow: handleSetTaskToShow,
+    }),
+    [taskToShow, handleSetTaskToShow],
+  );
+
   return (
-    <NotificationContext.Provider value={{ taskToShow, setTaskToShow }}>
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );
@@ -21,7 +46,9 @@ export const NotificationProvider: React.FC<{ children: ReactNode }> = ({ childr
 export const useNotification = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error('useNotification must be used within a NotificationProvider');
+    throw new Error(
+      'useNotification must be used within a NotificationProvider',
+    );
   }
   return context;
 };

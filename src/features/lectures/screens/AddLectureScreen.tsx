@@ -18,28 +18,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
 import { RootStackParamList, Course } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { Button, ReminderSelector, GuestAuthModal, Input } from '@/shared/components';
+import {
+  Button,
+  ReminderSelector,
+  GuestAuthModal,
+  Input,
+} from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount, useTotalTaskCount } from '@/hooks';
-import { savePendingTask, clearPendingTask, getPendingTask } from '@/utils/taskPersistence';
+import {
+  savePendingTask,
+  clearPendingTask,
+  getPendingTask,
+} from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { saveDraft, getDraft, clearDraft } from '@/utils/draftStorage';
 import { debounce } from '@/utils/debounce';
-import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
-import { EmptyStateModal } from '@/features/templates/components/EmptyStateModal';
-import { useTemplateManagement } from '@/features/templates/hooks/useTemplateManagement';
-import { useTemplateSelection } from '@/features/templates/hooks/useTemplateSelection';
-import { generateTemplateName, clearDateFields, canSaveAsTemplate } from '@/features/templates/utils/templateUtils';
+import { TemplateBrowserModal } from '@/shared/components/TemplateBrowserModal';
+import { EmptyStateModal } from '@/shared/components/EmptyStateModal';
+import { useTemplateManagement } from '@/shared/hooks/useTemplateManagement';
+import { useTemplateSelection } from '@/shared/hooks/useTemplateSelection';
+import {
+  generateTemplateName,
+  clearDateFields,
+  canSaveAsTemplate,
+} from '@/shared/utils/templateUtils';
 
 type RecurrenceType = 'none' | 'weekly' | 'bi-weekly';
 type AddLectureScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-type AddLectureScreenRouteProp = RouteProp<RootStackParamList, 'AddLectureFlow'>;
+type AddLectureScreenRouteProp = RouteProp<
+  RootStackParamList,
+  'AddLectureFlow'
+>;
 
 const AddLectureScreen = () => {
   const navigation = useNavigation<AddLectureScreenNavigationProp>();
@@ -47,8 +63,10 @@ const AddLectureScreen = () => {
   const { session, user } = useAuth();
   const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
-  const { limitReached, monthlyTaskCount, monthlyLimit } = useMonthlyTaskCount();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
+  const { limitReached, monthlyTaskCount, monthlyLimit } =
+    useMonthlyTaskCount();
+  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
+    useTotalTaskCount();
 
   const isGuest = !session;
 
@@ -69,13 +87,16 @@ const AddLectureScreen = () => {
   const taskToEdit = initialData?.taskToEdit || null;
 
   // Required fields
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(initialData?.course || null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(
+    initialData?.course || null,
+  );
   const [lectureName, setLectureName] = useState(initialData?.title || '');
   const [startTime, setStartTime] = useState<Date>(() => {
     if (initialData?.dateTime) {
-      const date = initialData.dateTime instanceof Date 
-        ? initialData.dateTime 
-        : new Date(initialData.dateTime);
+      const date =
+        initialData.dateTime instanceof Date
+          ? initialData.dateTime
+          : new Date(initialData.dateTime);
       return date;
     }
     return new Date();
@@ -83,8 +104,8 @@ const AddLectureScreen = () => {
   const [endTime, setEndTime] = useState<Date>(() => {
     const start = (() => {
       if (initialData?.dateTime) {
-        return initialData.dateTime instanceof Date 
-          ? initialData.dateTime 
+        return initialData.dateTime instanceof Date
+          ? initialData.dateTime
           : new Date(initialData.dateTime);
       }
       return new Date();
@@ -93,11 +114,11 @@ const AddLectureScreen = () => {
     end.setHours(end.getHours() + 1); // Default 1 hour duration
     return end;
   });
-  
+
   // Optional fields
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
   const [reminders, setReminders] = useState<number[]>([30]); // Default 30-min reminder
-  
+
   // UI state
   const [showOptionalFields, setShowOptionalFields] = useState(false);
   const [showCourseModal, setShowCourseModal] = useState(false);
@@ -116,11 +137,13 @@ const AddLectureScreen = () => {
   useEffect(() => {
     if (taskToEdit && taskToEdit.type === 'lecture') {
       // Find the course by courseName
-      const course = courses.find(c => c.courseName === taskToEdit.courses?.courseName);
+      const course = courses.find(
+        c => c.courseName === taskToEdit.courses?.courseName,
+      );
       if (course) {
         setSelectedCourse(course);
       }
-      
+
       // Set lecture name from task (use name, title, or lecture_name if available)
       if (taskToEdit.name) {
         setLectureName(taskToEdit.name);
@@ -129,7 +152,7 @@ const AddLectureScreen = () => {
       } else if ((taskToEdit as any).lecture_name) {
         setLectureName((taskToEdit as any).lecture_name);
       }
-      
+
       if (taskToEdit.date) {
         setStartTime(new Date(taskToEdit.date));
       }
@@ -153,7 +176,7 @@ const AddLectureScreen = () => {
     const loadDraft = async () => {
       // Skip if we have initial data from Quick Add or taskToEdit
       if (initialData || taskToEdit) return;
-      
+
       const draft = await getDraft('lecture');
       if (draft) {
         setSelectedCourse(draft.course);
@@ -170,7 +193,7 @@ const AddLectureScreen = () => {
         setReminders(draft.reminders || [30]);
       }
     };
-    
+
     loadDraft();
   }, [initialData, taskToEdit]);
 
@@ -178,7 +201,7 @@ const AddLectureScreen = () => {
   useEffect(() => {
     // Don't auto-save if form is empty
     if (!selectedCourse) return;
-    
+
     const debouncedSave = debounce(() => {
       saveDraft('lecture', {
         title: lectureName,
@@ -201,15 +224,15 @@ const AddLectureScreen = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       if (isGuest) return;
-      
+
       setIsLoadingCourses(true);
       try {
         const { data, error } = await supabase
           .from('courses')
           .select('id, course_name, course_code, about_course');
-        
+
         if (error) throw error;
-        
+
         const formattedCourses = (data || []).map(course => ({
           id: course.id,
           courseName: course.course_name,
@@ -219,7 +242,7 @@ const AddLectureScreen = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })) as Course[];
-        
+
         setCourses(formattedCourses);
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -227,26 +250,31 @@ const AddLectureScreen = () => {
         setIsLoadingCourses(false);
       }
     };
-    
+
     fetchCourses();
   }, [isGuest, user?.id]);
 
   // Check if form is valid
-  const isFormValid = selectedCourse && lectureName.trim().length > 0 && startTime && endTime && startTime < endTime;
+  const isFormValid =
+    selectedCourse &&
+    lectureName.trim().length > 0 &&
+    startTime &&
+    endTime &&
+    startTime < endTime;
 
   // Handle template selection
   const handleTemplateSelect = (template: any) => {
     selectTemplate(template);
-    
+
     // Pre-fill form with template data
     if (template.template_data) {
       const templateData = clearDateFields(template.template_data);
-      
+
       // Set lecture name if available
       if (templateData.lecture_name) {
         setLectureName(templateData.lecture_name);
       }
-      
+
       // Set course if available
       if (templateData.course_id) {
         const course = courses.find(c => c.id === templateData.course_id);
@@ -254,12 +282,12 @@ const AddLectureScreen = () => {
           setSelectedCourse(course);
         }
       }
-      
+
       // Set recurrence
       if (templateData.recurrence) {
         setRecurrence(templateData.recurrence);
       }
-      
+
       // Set reminders
       if (templateData.reminders) {
         setReminders(templateData.reminders);
@@ -293,7 +321,7 @@ const AddLectureScreen = () => {
       newStartTime.setHours(selectedTime.getHours());
       newStartTime.setMinutes(selectedTime.getMinutes());
       setStartTime(newStartTime);
-      
+
       // Auto-adjust end time to maintain duration
       const duration = endTime.getTime() - startTime.getTime();
       const newEndTime = new Date(newStartTime.getTime() + duration);
@@ -323,7 +351,10 @@ const AddLectureScreen = () => {
 
   const handleSave = async () => {
     if (!isFormValid) {
-      Alert.alert('Missing Information', 'Please fill in all required fields and ensure start time is before end time.');
+      Alert.alert(
+        'Missing Information',
+        'Please fill in all required fields and ensure start time is before end time.',
+      );
       return;
     }
 
@@ -337,7 +368,11 @@ const AddLectureScreen = () => {
           recurrence,
           reminders,
         },
-        'lecture'
+        'lecture',
+      );
+      Alert.alert(
+        'Task Saved!',
+        'Your task is almost saved! Sign up to complete it.',
       );
       setShowGuestAuthModal(true);
       return;
@@ -357,11 +392,7 @@ const AddLectureScreen = () => {
         reminders,
       };
 
-      await api.mutations.lectures.create(
-        taskData,
-        isOnline,
-        user?.id || ''
-      );
+      await api.mutations.lectures.create(taskData, isOnline, user?.id || '');
 
       // Save as template if enabled
       if (saveAsTemplate && canSaveAsTemplate(taskData, 'lecture')) {
@@ -422,25 +453,30 @@ const AddLectureScreen = () => {
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           onPress={() => {
             clearDraft('lecture');
             navigation.goBack();
-          }} 
-          style={styles.headerButton}
-        >
+          }}
+          style={styles.headerButton}>
           <Ionicons name="close" size={28} color={COLORS.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>New Lecture</Text>
         <TouchableOpacity
           onPress={handleSave}
           disabled={!isFormValid || isSaving}
-          style={[styles.headerButton, (!isFormValid || isSaving) && styles.headerButtonDisabled]}
-        >
+          style={[
+            styles.headerButton,
+            (!isFormValid || isSaving) && styles.headerButtonDisabled,
+          ]}>
           {isSaving ? (
             <ActivityIndicator size="small" color={COLORS.primary} />
           ) : (
-            <Text style={[styles.saveButtonText, !isFormValid && styles.saveButtonTextDisabled]}>
+            <Text
+              style={[
+                styles.saveButtonText,
+                !isFormValid && styles.saveButtonTextDisabled,
+              ]}>
               Save
             </Text>
           )}
@@ -448,11 +484,15 @@ const AddLectureScreen = () => {
       </View>
 
       {/* My Templates Button */}
-      <TouchableOpacity style={styles.myTemplatesButton} onPress={handleMyTemplatesPress}>
+      <TouchableOpacity
+        style={styles.myTemplatesButton}
+        onPress={handleMyTemplatesPress}>
         <Text style={styles.myTemplatesButtonText}>My Templates</Text>
       </TouchableOpacity>
 
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}>
         {/* Required Fields Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Required Information</Text>
@@ -463,14 +503,12 @@ const AddLectureScreen = () => {
             <TouchableOpacity
               style={styles.selectButton}
               onPress={() => setShowCourseModal(true)}
-              disabled={isLoadingCourses}
-            >
+              disabled={isLoadingCourses}>
               <Text
                 style={[
                   styles.selectButtonText,
                   !selectedCourse && styles.selectButtonPlaceholder,
-                ]}
-              >
+                ]}>
                 {isLoadingCourses
                   ? 'Loading courses...'
                   : selectedCourse?.courseName || 'Select a course'}
@@ -497,9 +535,12 @@ const AddLectureScreen = () => {
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowStartDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                onPress={() => setShowStartDatePicker(true)}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.primary}
+                />
                 <Text style={styles.dateTimeButtonText}>
                   {format(startTime, 'MMM dd, yyyy')}
                 </Text>
@@ -507,10 +548,15 @@ const AddLectureScreen = () => {
 
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowStartTimePicker(true)}
-              >
-                <Ionicons name="time-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.dateTimeButtonText}>{format(startTime, 'h:mm a')}</Text>
+                onPress={() => setShowStartTimePicker(true)}>
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.dateTimeButtonText}>
+                  {format(startTime, 'h:mm a')}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -540,9 +586,12 @@ const AddLectureScreen = () => {
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowEndDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={20} color={COLORS.primary} />
+                onPress={() => setShowEndDatePicker(true)}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={20}
+                  color={COLORS.primary}
+                />
                 <Text style={styles.dateTimeButtonText}>
                   {format(endTime, 'MMM dd, yyyy')}
                 </Text>
@@ -550,10 +599,15 @@ const AddLectureScreen = () => {
 
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowEndTimePicker(true)}
-              >
-                <Ionicons name="time-outline" size={20} color={COLORS.primary} />
-                <Text style={styles.dateTimeButtonText}>{format(endTime, 'h:mm a')}</Text>
+                onPress={() => setShowEndTimePicker(true)}>
+                <Ionicons
+                  name="time-outline"
+                  size={20}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.dateTimeButtonText}>
+                  {format(endTime, 'h:mm a')}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -582,7 +636,11 @@ const AddLectureScreen = () => {
             <View style={styles.durationDisplay}>
               <Ionicons name="time" size={16} color={COLORS.gray} />
               <Text style={styles.durationText}>
-                Duration: {Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))} minutes
+                Duration:{' '}
+                {Math.round(
+                  (endTime.getTime() - startTime.getTime()) / (1000 * 60),
+                )}{' '}
+                minutes
               </Text>
             </View>
           )}
@@ -591,8 +649,7 @@ const AddLectureScreen = () => {
         {/* Optional Fields Section */}
         <TouchableOpacity
           style={styles.optionalToggle}
-          onPress={() => setShowOptionalFields(!showOptionalFields)}
-        >
+          onPress={() => setShowOptionalFields(!showOptionalFields)}>
           <Text style={styles.optionalToggleText}>Optional Details</Text>
           <Ionicons
             name={showOptionalFields ? 'chevron-up' : 'chevron-down'}
@@ -612,14 +669,13 @@ const AddLectureScreen = () => {
                     styles.recurrenceOption,
                     recurrence === 'none' && styles.recurrenceOptionSelected,
                   ]}
-                  onPress={() => setRecurrence('none')}
-                >
+                  onPress={() => setRecurrence('none')}>
                   <Text
                     style={[
                       styles.recurrenceOptionText,
-                      recurrence === 'none' && styles.recurrenceOptionTextSelected,
-                    ]}
-                  >
+                      recurrence === 'none' &&
+                        styles.recurrenceOptionTextSelected,
+                    ]}>
                     One-time
                   </Text>
                 </TouchableOpacity>
@@ -629,14 +685,13 @@ const AddLectureScreen = () => {
                     styles.recurrenceOption,
                     recurrence === 'weekly' && styles.recurrenceOptionSelected,
                   ]}
-                  onPress={() => setRecurrence('weekly')}
-                >
+                  onPress={() => setRecurrence('weekly')}>
                   <Text
                     style={[
                       styles.recurrenceOptionText,
-                      recurrence === 'weekly' && styles.recurrenceOptionTextSelected,
-                    ]}
-                  >
+                      recurrence === 'weekly' &&
+                        styles.recurrenceOptionTextSelected,
+                    ]}>
                     Weekly
                   </Text>
                 </TouchableOpacity>
@@ -644,16 +699,16 @@ const AddLectureScreen = () => {
                 <TouchableOpacity
                   style={[
                     styles.recurrenceOption,
-                    recurrence === 'bi-weekly' && styles.recurrenceOptionSelected,
+                    recurrence === 'bi-weekly' &&
+                      styles.recurrenceOptionSelected,
                   ]}
-                  onPress={() => setRecurrence('bi-weekly')}
-                >
+                  onPress={() => setRecurrence('bi-weekly')}>
                   <Text
                     style={[
                       styles.recurrenceOptionText,
-                      recurrence === 'bi-weekly' && styles.recurrenceOptionTextSelected,
-                    ]}
-                  >
+                      recurrence === 'bi-weekly' &&
+                        styles.recurrenceOptionTextSelected,
+                    ]}>
                     Bi-weekly
                   </Text>
                 </TouchableOpacity>
@@ -679,7 +734,9 @@ const AddLectureScreen = () => {
                   trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
                   thumbColor={saveAsTemplate ? '#FFFFFF' : '#FFFFFF'}
                 />
-                <Text style={styles.saveTemplateText}>Save as template for future use</Text>
+                <Text style={styles.saveTemplateText}>
+                  Save as template for future use
+                </Text>
               </View>
             )}
           </View>
@@ -691,13 +748,11 @@ const AddLectureScreen = () => {
         visible={showCourseModal}
         transparent
         animationType="fade"
-        onRequestClose={() => setShowCourseModal(false)}
-      >
+        onRequestClose={() => setShowCourseModal(false)}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setShowCourseModal(false)}
-        >
+          onPress={() => setShowCourseModal(false)}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Select Course</Text>
             <ScrollView style={styles.coursesList}>
@@ -718,16 +773,20 @@ const AddLectureScreen = () => {
                     key={course.id}
                     style={[
                       styles.courseOption,
-                      selectedCourse?.id === course.id && styles.courseOptionSelected,
+                      selectedCourse?.id === course.id &&
+                        styles.courseOptionSelected,
                     ]}
                     onPress={() => {
                       setSelectedCourse(course);
                       setShowCourseModal(false);
-                    }}
-                  >
-                    <Text style={styles.courseOptionName}>{course.courseName}</Text>
+                    }}>
+                    <Text style={styles.courseOptionName}>
+                      {course.courseName}
+                    </Text>
                     {course.courseCode && (
-                      <Text style={styles.courseOptionCode}>{course.courseCode}</Text>
+                      <Text style={styles.courseOptionCode}>
+                        {course.courseCode}
+                      </Text>
                     )}
                   </TouchableOpacity>
                 ))
@@ -1003,4 +1062,3 @@ const styles = StyleSheet.create({
 });
 
 export default AddLectureScreen;
-

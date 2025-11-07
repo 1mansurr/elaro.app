@@ -1,6 +1,6 @@
 /**
  * Event-Driven Architecture for Business Logic
- * 
+ *
  * This module provides a centralized event-driven system for handling
  * business logic that was previously embedded in database triggers.
  */
@@ -55,10 +55,10 @@ export interface SubscriptionChangedEvent extends BaseEvent {
   };
 }
 
-export type AppEvent = 
-  | UserCreatedEvent 
-  | CourseDeletedEvent 
-  | TaskCompletedEvent 
+export type AppEvent =
+  | UserCreatedEvent
+  | CourseDeletedEvent
+  | TaskCompletedEvent
   | SubscriptionChangedEvent;
 
 export interface EventHandler<T extends AppEvent = AppEvent> {
@@ -93,10 +93,10 @@ export class CentralEventProcessor implements EventProcessor {
   registerHandler(handler: EventHandler): void {
     const existing = this.handlers.get(handler.eventType) || [];
     existing.push(handler);
-    
+
     // Sort by priority (higher priority first)
     existing.sort((a, b) => (b.priority || 0) - (a.priority || 0));
-    
+
     this.handlers.set(handler.eventType, existing);
   }
 
@@ -114,13 +114,16 @@ export class CentralEventProcessor implements EventProcessor {
    */
   async processEvent(event: AppEvent): Promise<void> {
     const handlers = this.handlers.get(event.type) || [];
-    
+
     for (const handler of handlers) {
       try {
         await this.executeHandler(handler, event);
       } catch (error) {
-        console.error(`Error processing event ${event.type} with handler:`, error);
-        
+        console.error(
+          `Error processing event ${event.type} with handler:`,
+          error,
+        );
+
         // Retry logic
         if (handler.retryCount && handler.retryCount > 0) {
           await this.retryHandler(handler, event, handler.retryCount);
@@ -132,14 +135,17 @@ export class CentralEventProcessor implements EventProcessor {
   /**
    * Execute a handler with timeout
    */
-  private async executeHandler(handler: EventHandler, event: AppEvent): Promise<void> {
+  private async executeHandler(
+    handler: EventHandler,
+    event: AppEvent,
+  ): Promise<void> {
     const timeout = handler.timeout || 30000; // 30 seconds default
-    
+
     return Promise.race([
       handler.handler(event),
-      new Promise<never>((_, reject) => 
-        setTimeout(() => reject(new Error('Handler timeout')), timeout)
-      )
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Handler timeout')), timeout),
+      ),
     ]);
   }
 
@@ -147,23 +153,28 @@ export class CentralEventProcessor implements EventProcessor {
    * Retry a failed handler
    */
   private async retryHandler(
-    handler: EventHandler, 
-    event: AppEvent, 
-    retryCount: number
+    handler: EventHandler,
+    event: AppEvent,
+    retryCount: number,
   ): Promise<void> {
     for (let i = 0; i < retryCount; i++) {
       try {
         await this.executeHandler(handler, event);
         return; // Success
       } catch (error) {
-        console.error(`Retry ${i + 1}/${retryCount} failed for event ${event.type}:`, error);
-        
+        console.error(
+          `Retry ${i + 1}/${retryCount} failed for event ${event.type}:`,
+          error,
+        );
+
         if (i === retryCount - 1) {
           throw error; // Final retry failed
         }
-        
+
         // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 1000));
+        await new Promise(resolve =>
+          setTimeout(resolve, Math.pow(2, i) * 1000),
+        );
       }
     }
   }
@@ -178,7 +189,7 @@ export class CentralEventProcessor implements EventProcessor {
       }
 
       this.isProcessing = true;
-      
+
       try {
         const event = this.processingQueue.shift();
         if (event) {
@@ -225,18 +236,16 @@ export class DatabaseEventEmitter {
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
-        subscriptionTier: 'free'
-      }
+        subscriptionTier: 'free',
+      },
     };
 
     // Store event in database
-    await this.supabaseClient
-      .from('user_events')
-      .insert({
-        user_id: userData.userId,
-        event_type: event.type,
-        event_data: event.data
-      });
+    await this.supabaseClient.from('user_events').insert({
+      user_id: userData.userId,
+      event_type: event.type,
+      event_data: event.data,
+    });
 
     // Emit to event processor
     globalEventProcessor.queueEvent(event);
@@ -260,18 +269,16 @@ export class DatabaseEventEmitter {
         courseId: courseData.courseId,
         userId: courseData.userId,
         courseName: courseData.courseName,
-        cascadeCount: courseData.cascadeCount
-      }
+        cascadeCount: courseData.cascadeCount,
+      },
     };
 
     // Store event in database
-    await this.supabaseClient
-      .from('user_events')
-      .insert({
-        user_id: courseData.userId,
-        event_type: event.type,
-        event_data: event.data
-      });
+    await this.supabaseClient.from('user_events').insert({
+      user_id: courseData.userId,
+      event_type: event.type,
+      event_data: event.data,
+    });
 
     // Emit to event processor
     globalEventProcessor.queueEvent(event);
@@ -295,18 +302,16 @@ export class DatabaseEventEmitter {
         taskId: taskData.taskId,
         taskType: taskData.taskType,
         userId: taskData.userId,
-        completedAt: taskData.completedAt
-      }
+        completedAt: taskData.completedAt,
+      },
     };
 
     // Store event in database
-    await this.supabaseClient
-      .from('user_events')
-      .insert({
-        user_id: taskData.userId,
-        event_type: event.type,
-        event_data: taskData
-      });
+    await this.supabaseClient.from('user_events').insert({
+      user_id: taskData.userId,
+      event_type: event.type,
+      event_data: taskData,
+    });
 
     // Emit to event processor
     globalEventProcessor.queueEvent(event);
@@ -326,15 +331,13 @@ export class BusinessLogicHandlers {
     console.log('Processing user created event:', event.data);
 
     // Setup notification preferences
-    await this.supabaseClient
-      .from('notification_preferences')
-      .insert({
-        user_id: event.data.userId,
-        email_notifications: true,
-        push_notifications: true,
-        reminder_notifications: true,
-        marketing_notifications: false
-      });
+    await this.supabaseClient.from('notification_preferences').insert({
+      user_id: event.data.userId,
+      email_notifications: true,
+      push_notifications: true,
+      reminder_notifications: true,
+      marketing_notifications: false,
+    });
 
     // Send welcome email (async, don't wait)
     this.sendWelcomeEmail(event.data).catch(error => {
@@ -342,13 +345,11 @@ export class BusinessLogicHandlers {
     });
 
     // Initialize user analytics
-    await this.supabaseClient
-      .from('user_analytics')
-      .insert({
-        user_id: event.data.userId,
-        signup_date: new Date().toISOString(),
-        subscription_tier: event.data.subscriptionTier
-      });
+    await this.supabaseClient.from('user_analytics').insert({
+      user_id: event.data.userId,
+      signup_date: new Date().toISOString(),
+      subscription_tier: event.data.subscriptionTier,
+    });
 
     console.log('User created event processed successfully');
   }
@@ -360,15 +361,13 @@ export class BusinessLogicHandlers {
     console.log('Processing course deleted event:', event.data);
 
     // Log the deletion for analytics
-    await this.supabaseClient
-      .from('deletion_analytics')
-      .insert({
-        user_id: event.data.userId,
-        item_type: 'course',
-        item_id: event.data.courseId,
-        cascade_count: event.data.cascadeCount,
-        deleted_at: new Date().toISOString()
-      });
+    await this.supabaseClient.from('deletion_analytics').insert({
+      user_id: event.data.userId,
+      item_type: 'course',
+      item_id: event.data.courseId,
+      cascade_count: event.data.cascadeCount,
+      deleted_at: new Date().toISOString(),
+    });
 
     // Send notification to user (if enabled)
     await this.sendDeletionNotification(event.data);
@@ -386,14 +385,12 @@ export class BusinessLogicHandlers {
     await this.updateUserStreak(event.data.userId);
 
     // Update analytics
-    await this.supabaseClient
-      .from('task_completion_analytics')
-      .insert({
-        user_id: event.data.userId,
-        task_id: event.data.taskId,
-        task_type: event.data.taskType,
-        completed_at: event.data.completedAt
-      });
+    await this.supabaseClient.from('task_completion_analytics').insert({
+      user_id: event.data.userId,
+      task_id: event.data.taskId,
+      task_type: event.data.taskType,
+      completed_at: event.data.completedAt,
+    });
 
     // Check for achievement unlocks
     await this.checkAchievements(event.data.userId);
@@ -460,7 +457,7 @@ export function initializeEventDrivenArchitecture(supabaseClient: any): void {
     handler: businessHandlers.handleUserCreated.bind(businessHandlers),
     priority: 1,
     retryCount: 3,
-    timeout: 30000
+    timeout: 30000,
   });
 
   globalEventProcessor.registerHandler({
@@ -468,7 +465,7 @@ export function initializeEventDrivenArchitecture(supabaseClient: any): void {
     handler: businessHandlers.handleCourseDeleted.bind(businessHandlers),
     priority: 2,
     retryCount: 2,
-    timeout: 15000
+    timeout: 15000,
   });
 
   globalEventProcessor.registerHandler({
@@ -476,7 +473,7 @@ export function initializeEventDrivenArchitecture(supabaseClient: any): void {
     handler: businessHandlers.handleTaskCompleted.bind(businessHandlers),
     priority: 3,
     retryCount: 1,
-    timeout: 10000
+    timeout: 10000,
   });
 
   console.log('Event-driven architecture initialized');
@@ -493,7 +490,7 @@ export const EventUtils = {
     type: T['type'],
     data: T['data'],
     userId?: string,
-    metadata?: Record<string, any>
+    metadata?: Record<string, any>,
   ): T {
     return {
       id: crypto.randomUUID(),
@@ -501,7 +498,7 @@ export const EventUtils = {
       timestamp: new Date().toISOString(),
       userId,
       data,
-      metadata
+      metadata,
     } as T;
   },
 
@@ -533,15 +530,19 @@ export const EventUtils = {
       .limit(1000);
 
     const totalEvents = events?.length || 0;
-    const eventsByType = events?.reduce((acc, event) => {
-      acc[event.event_type] = (acc[event.event_type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
+    const eventsByType =
+      events?.reduce(
+        (acc, event) => {
+          acc[event.event_type] = (acc[event.event_type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>,
+      ) || {};
 
     return {
       totalEvents,
       eventsByType,
-      recentEvents: events?.slice(0, 10) || []
+      recentEvents: events?.slice(0, 10) || [],
     };
-  }
+  },
 };

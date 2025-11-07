@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Modal,
   Dimensions,
   Alert,
-  Animated
+  Animated,
 } from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { NotificationHistoryItem, NotificationFilter, notificationHistoryService } from '@/services/notifications/NotificationHistoryService';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  NotificationHistoryItem,
+  NotificationFilter,
+  notificationHistoryService,
+} from '@/services/notifications/NotificationHistoryService';
+import { formatDate } from '@/i18n';
 
 interface NotificationHistoryModalProps {
   isVisible: boolean;
@@ -23,15 +28,19 @@ interface NotificationHistoryModalProps {
 
 const { width: screenWidth } = Dimensions.get('window');
 
-export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> = ({ 
-  isVisible, 
-  onClose 
-}) => {
+export const NotificationHistoryModal: React.FC<
+  NotificationHistoryModalProps
+> = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<NotificationHistoryItem[]>([]);
-  const [filteredNotifications, setFilteredNotifications] = useState<NotificationHistoryItem[]>([]);
-  const [activeFilter, setActiveFilter] = useState<NotificationFilter['type']>('all');
+  const [notifications, setNotifications] = useState<NotificationHistoryItem[]>(
+    [],
+  );
+  const [filteredNotifications, setFilteredNotifications] = useState<
+    NotificationHistoryItem[]
+  >([]);
+  const [activeFilter, setActiveFilter] =
+    useState<NotificationFilter['type']>('all');
   const [loading, setLoading] = useState(true);
   const [hasUnread, setHasUnread] = useState(false);
   const [swipeAnimations] = useState<{ [key: string]: Animated.Value }>({});
@@ -48,7 +57,7 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
     // Apply filter
     const filtered = notifications.filter(notification => {
       if (activeFilter === 'all') return true;
-      
+
       const type = notification.notification_type;
       switch (activeFilter) {
         case 'assignments':
@@ -56,16 +65,24 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
         case 'lectures':
           return type === 'lecture' || type === 'lecture_reminder';
         case 'study_sessions':
-          return type === 'srs' || type === 'study_session' || type === 'srs_reminder';
+          return (
+            type === 'srs' ||
+            type === 'study_session' ||
+            type === 'srs_reminder'
+          );
         case 'analytics':
           return type === 'weekly_report' || type === 'analytics';
         case 'summaries':
-          return type === 'daily_summary' || type === 'achievement' || type === 'update';
+          return (
+            type === 'daily_summary' ||
+            type === 'achievement' ||
+            type === 'update'
+          );
         default:
           return true;
       }
     });
-    
+
     setFilteredNotifications(filtered);
   }, [notifications, activeFilter]);
 
@@ -74,17 +91,21 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
 
     try {
       setLoading(true);
-      const data = await notificationHistoryService.getNotificationHistory(user.id, {
-        limit: 50,
-        includeRead: true
-      });
-      
-      setNotifications(data);
-      
-      // Check if there are unread notifications
-      const unreadCount = data.filter((n: NotificationHistoryItem) => !n.opened_at).length;
-      setHasUnread(unreadCount > 0);
+      const data = await notificationHistoryService.getNotificationHistory(
+        user.id,
+        {
+          limit: 50,
+          includeRead: true,
+        },
+      );
 
+      setNotifications(data);
+
+      // Check if there are unread notifications
+      const unreadCount = data.filter(
+        (n: NotificationHistoryItem) => !n.opened_at,
+      ).length;
+      setHasUnread(unreadCount > 0);
     } catch (error) {
       console.error('Error loading notifications:', error);
       Alert.alert('Error', 'Failed to load notifications. Please try again.');
@@ -120,7 +141,10 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
     if (!user) return;
 
     try {
-      await notificationHistoryService.deleteNotification(notificationId, user.id);
+      await notificationHistoryService.deleteNotification(
+        notificationId,
+        user.id,
+      );
       await loadNotifications();
     } catch (error) {
       console.error('Error deleting notification:', error);
@@ -131,7 +155,10 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
     if (!user) return;
 
     try {
-      await notificationHistoryService.completeTaskFromNotification(notificationId, user.id);
+      await notificationHistoryService.completeTaskFromNotification(
+        notificationId,
+        user.id,
+      );
       await loadNotifications();
     } catch (error) {
       console.error('Error completing task:', error);
@@ -189,12 +216,14 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+    const diffInHours = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+    );
+
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInHours < 48) return 'Yesterday';
-    return date.toLocaleDateString();
+    return formatDate(date);
   };
 
   const truncateTitle = (title: string) => {
@@ -202,8 +231,12 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
   };
 
   const isTaskNotification = (type: string) => {
-    return type === 'assignment' || type === 'assignment_reminder' || 
-           type === 'srs' || type === 'study_session';
+    return (
+      type === 'assignment' ||
+      type === 'assignment_reminder' ||
+      type === 'srs' ||
+      type === 'study_session'
+    );
   };
 
   if (!isVisible) return null;
@@ -213,47 +246,56 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
       visible={isVisible}
       animationType="slide"
       presentationStyle="fullScreen"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         {/* Header */}
         <View style={[styles.header, { borderBottomColor: theme.border }]}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>Notifications</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            Notifications
+          </Text>
           <View style={styles.headerSpacer} />
         </View>
 
         {/* Filter Tabs */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}
-        >
+          contentContainerStyle={styles.filterContent}>
           {filters.map((filter: NotificationFilter) => (
             <TouchableOpacity
               key={filter.type}
               style={[
                 styles.filterTab,
                 activeFilter === filter.type && styles.activeFilterTab,
-                { 
-                  backgroundColor: activeFilter === filter.type ? theme.accent : 'transparent',
-                  borderColor: activeFilter === filter.type ? theme.accent : theme.border
-                }
+                {
+                  backgroundColor:
+                    activeFilter === filter.type ? theme.accent : 'transparent',
+                  borderColor:
+                    activeFilter === filter.type ? theme.accent : theme.border,
+                },
               ]}
-              onPress={() => setActiveFilter(filter.type)}
-            >
-              <Ionicons 
-                name={filter.icon as any} 
-                size={16} 
-                color={activeFilter === filter.type ? 'white' : theme.textSecondary} 
+              onPress={() => setActiveFilter(filter.type)}>
+              <Ionicons
+                name={filter.icon as any}
+                size={16}
+                color={
+                  activeFilter === filter.type ? 'white' : theme.textSecondary
+                }
               />
-              <Text style={[
-                styles.filterText,
-                { color: activeFilter === filter.type ? 'white' : theme.textSecondary }
-              ]}>
+              <Text
+                style={[
+                  styles.filterText,
+                  {
+                    color:
+                      activeFilter === filter.type
+                        ? 'white'
+                        : theme.textSecondary,
+                  },
+                ]}>
                 {filter.label}
               </Text>
             </TouchableOpacity>
@@ -263,11 +305,14 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
         {/* Mark All as Read Button */}
         {hasUnread && (
           <View style={styles.markAllContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.markAllButton, { backgroundColor: theme.surface }]}
-              onPress={handleMarkAllAsRead}
-            >
-              <Ionicons name="checkmark-circle" size={20} color={theme.accent} />
+              onPress={handleMarkAllAsRead}>
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={theme.accent}
+              />
               <Text style={[styles.markAllText, { color: theme.accent }]}>
                 Mark All as Read
               </Text>
@@ -276,28 +321,40 @@ export const NotificationHistoryModal: React.FC<NotificationHistoryModalProps> =
         )}
 
         {/* Notifications List */}
-        <ScrollView style={styles.notificationsList} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.notificationsList}
+          showsVerticalScrollIndicator={false}>
           {loading ? (
             <View style={styles.loadingContainer}>
-              <Text style={[styles.loadingText, { color: theme.textSecondary }]}>
+              <Text
+                style={[styles.loadingText, { color: theme.textSecondary }]}>
                 Loading notifications...
               </Text>
             </View>
           ) : filteredNotifications.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <Ionicons name="notifications-outline" size={48} color={theme.textSecondary} />
+              <Ionicons
+                name="notifications-outline"
+                size={48}
+                color={theme.textSecondary}
+              />
               <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                {activeFilter === 'all' ? 'No notifications yet' : 'No notifications in this category'}
+                {activeFilter === 'all'
+                  ? 'No notifications yet'
+                  : 'No notifications in this category'}
               </Text>
-              <Text style={[styles.emptyDescription, { color: theme.textSecondary }]}>
-                {activeFilter === 'all' 
+              <Text
+                style={[
+                  styles.emptyDescription,
+                  { color: theme.textSecondary },
+                ]}>
+                {activeFilter === 'all'
                   ? 'Your notifications will appear here'
-                  : 'Try selecting a different filter'
-                }
+                  : 'Try selecting a different filter'}
               </Text>
             </View>
           ) : (
-            filteredNotifications.map((notification) => (
+            filteredNotifications.map(notification => (
               <NotificationItem
                 key={notification.id}
                 notification={notification}
@@ -346,7 +403,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   getColor,
   formatTimestamp,
   truncateTitle,
-  theme
+  theme,
 }) => {
   const [swipeProgress, setSwipeProgress] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -358,7 +415,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const handleSwipeRight = (progress: number) => {
     setSwipeProgress(progress);
-    
+
     if (progress >= 0.5 && isTask && !isCompleting) {
       setIsCompleting(true);
       // Animate to blue background
@@ -373,7 +430,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         onMarkAsRead();
       }
     }
-    
+
     // Reset animation
     translateX.setValue(0);
     setSwipeProgress(0);
@@ -383,15 +440,16 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const handleTap = () => {
     if (isTask) {
       // Show action options for task notifications
-      Alert.alert(
-        'Task Notification',
-        'What would you like to do?',
-        [
-          { text: 'View Task Details', onPress: () => {/* Navigate to task details */} },
-          { text: 'Complete Task', onPress: onCompleteTask },
-          { text: 'Cancel', style: 'cancel' }
-        ]
-      );
+      Alert.alert('Task Notification', 'What would you like to do?', [
+        {
+          text: 'View Task Details',
+          onPress: () => {
+            /* Navigate to task details */
+          },
+        },
+        { text: 'Complete Task', onPress: onCompleteTask },
+        { text: 'Cancel', style: 'cancel' },
+      ]);
     } else {
       // Navigate to relevant screen for other notifications
       if (notification.deep_link_url) {
@@ -399,7 +457,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         console.log('Navigate to:', notification.deep_link_url);
       }
     }
-    
+
     if (!isRead) {
       onMarkAsRead();
     }
@@ -409,7 +467,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     <PanGestureHandler
       onGestureEvent={(event: any) => {
         if (isTask) {
-          const progress = Math.max(0, Math.min(1, event.nativeEvent.translationX / (screenWidth * 0.3)));
+          const progress = Math.max(
+            0,
+            Math.min(1, event.nativeEvent.translationX / (screenWidth * 0.3)),
+          );
           handleSwipeRight(progress);
         }
       }}
@@ -418,56 +479,69 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           handleSwipeComplete();
         }
       }}
-      enabled={isTask}
-    >
+      enabled={isTask}>
       <Animated.View
         style={[
           styles.notificationItem,
-          { 
+          {
             backgroundColor: isCompleting ? '#007AFF' : theme.surface,
-            transform: [{ translateX }]
-          }
-        ]}
-      >
+            transform: [{ translateX }],
+          },
+        ]}>
         {isCompleting && (
           <View style={styles.completingOverlay}>
             <Text style={styles.completingText}>Task Completed</Text>
           </View>
         )}
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.notificationContent}
           onPress={handleTap}
-          activeOpacity={0.7}
-        >
+          activeOpacity={0.7}>
           <View style={styles.notificationLeft}>
-            <View style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
+            <View
+              style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
               <Text style={styles.notificationIcon}>{icon}</Text>
             </View>
-            
+
             <View style={styles.notificationText}>
-              <Text style={[
-                styles.notificationTitle,
-                { 
-                  color: isCompleting ? 'white' : theme.text,
-                  fontWeight: isRead ? 'normal' : 'bold'
-                }
-              ]}>
-                {isCompleting ? 'Task Completed' : truncateTitle(notification.title)}
+              <Text
+                style={[
+                  styles.notificationTitle,
+                  {
+                    color: isCompleting ? 'white' : theme.text,
+                    fontWeight: isRead ? 'normal' : 'bold',
+                  },
+                ]}>
+                {isCompleting
+                  ? 'Task Completed'
+                  : truncateTitle(notification.title)}
               </Text>
-              
+
               {!isCompleting && (
-                <Text style={[styles.notificationTime, { color: theme.textSecondary }]}>
+                <Text
+                  style={[
+                    styles.notificationTime,
+                    { color: theme.textSecondary },
+                  ]}>
                   {formatTimestamp(notification.sent_at)}
                 </Text>
               )}
             </View>
           </View>
-          
+
           {!isCompleting && (
             <View style={styles.notificationRight}>
-              {!isRead && <View style={[styles.unreadDot, { backgroundColor: theme.accent }]} />}
-              <Ionicons name="chevron-forward" size={16} color={theme.textSecondary} />
+              {!isRead && (
+                <View
+                  style={[styles.unreadDot, { backgroundColor: theme.accent }]}
+                />
+              )}
+              <Ionicons
+                name="chevron-forward"
+                size={16}
+                color={theme.textSecondary}
+              />
             </View>
           )}
         </TouchableOpacity>

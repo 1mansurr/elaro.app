@@ -7,48 +7,48 @@ graph TB
     subgraph "HomeScreen Container"
         HS[HomeScreen.tsx<br/>85 lines]
     end
-    
+
     subgraph "State Management"
         HSS[useHomeScreenState<br/>Centralized state]
         HSA[useHomeScreenActions<br/>Action handlers]
     end
-    
+
     subgraph "UI Components"
         HSH[HomeScreenHeader<br/>Greeting & Notifications]
         HSC[HomeScreenContent<br/>Scrollable Content]
         HSF[HomeScreenFAB<br/>Floating Actions]
         HSM[HomeScreenModals<br/>Modals & Sheets]
     end
-    
+
     subgraph "Performance Layer"
         PM[Performance Monitoring]
         RD[Request Deduplication]
         MEM[Memoization Hooks]
     end
-    
+
     subgraph "External Services"
         API[Supabase API]
         AUTH[Auth Context]
         QUERY[React Query]
         NAV[Navigation]
     end
-    
+
     HS --> HSS
     HS --> HSA
     HS --> HSH
     HS --> HSC
     HS --> HSF
     HS --> HSM
-    
+
     HSS --> PM
     HSA --> RD
     HSA --> MEM
-    
+
     HSH --> AUTH
     HSC --> QUERY
     HSF --> NAV
     HSM --> API
-    
+
     PM --> HSH
     PM --> HSC
     PM --> HSF
@@ -67,24 +67,24 @@ sequenceDiagram
     participant HSC as HomeScreenContent
     participant HSF as HomeScreenFAB
     participant HSM as HomeScreenModals
-    
+
     U->>HS: App Launch
     HS->>HSS: Initialize State
     HSS->>HSH: Render Header
     HSS->>HSC: Render Content
     HSS->>HSF: Render FAB
     HSS->>HSM: Render Modals
-    
+
     U->>HSF: Tap FAB
     HSF->>HSA: handleFabStateChange
     HSA->>HSC: Update scrollEnabled
     HSA->>HSF: Show Actions
-    
+
     U->>HSC: Swipe Task
     HSC->>HSA: handleSwipeComplete
     HSA->>API: Complete Task
     HSA->>HSC: Update UI
-    
+
     U->>HSH: Tap Notification
     HSH->>HSA: handleNotificationPress
     HSA->>HSM: Show History Modal
@@ -100,7 +100,7 @@ graph LR
         C --> D[Performance Timer Ends]
         D --> E[Metrics Recorded]
     end
-    
+
     subgraph "User Interaction"
         F[User Action] --> G[Stable Callback]
         G --> H[Performance Timer]
@@ -108,7 +108,7 @@ graph LR
         I --> J[Timer End]
         J --> K[Metrics Update]
     end
-    
+
     subgraph "Data Processing"
         L[Data Change] --> M[useExpensiveMemo Check]
         M --> N{Cache Valid?}
@@ -129,26 +129,26 @@ graph TB
         IT[Integration Tests<br/>Component interaction]
         PT[Performance Tests<br/>Optimization validation]
     end
-    
+
     subgraph "Test Components"
         HSH_T[HomeScreenHeader Tests]
         HSC_T[HomeScreenContent Tests]
         HSF_T[HomeScreenFAB Tests]
         HSM_T[HomeScreenModals Tests]
     end
-    
+
     subgraph "Test Types"
         RENDER[Render Tests]
         INTERACT[Interaction Tests]
         PERF[Performance Tests]
         ERROR[Error Handling Tests]
     end
-    
+
     UT --> HSH_T
     UT --> HSC_T
     UT --> HSF_T
     UT --> HSM_T
-    
+
     IT --> RENDER
     IT --> INTERACT
     PT --> PERF
@@ -165,20 +165,20 @@ graph TD
         C[Local State]
         D[Performance Monitoring]
     end
-    
+
     subgraph "useHomeScreenActions"
         E[State from useHomeScreenState]
         F[Toast Context]
         G[Mutation Hooks]
         H[Performance Monitoring]
     end
-    
+
     subgraph "useTrialBanner"
         I[User Data]
         J[AsyncStorage]
         K[Performance Monitoring]
     end
-    
+
     A --> E
     B --> E
     C --> E
@@ -197,14 +197,14 @@ graph LR
         C --> D[End Timer]
         D --> E[Record Metric]
     end
-    
+
     subgraph "User Interactions"
         F[User Action] --> G[Start Timer]
         G --> H[Execute Action]
         H --> I[End Timer]
         I --> J[Record Metric]
     end
-    
+
     subgraph "Data Processing"
         K[Data Change] --> L[Check Cache]
         L --> M{Cache Hit?}
@@ -214,7 +214,7 @@ graph LR
         N --> Q[Render]
         P --> Q
     end
-    
+
     E --> R[Performance Dashboard]
     J --> R
     Q --> R
@@ -230,7 +230,7 @@ graph TB
         HS -->|Props| HSF[HomeScreenFAB]
         HS -->|Props| HSM[HomeScreenModals]
     end
-    
+
     subgraph "State Synchronization"
         HSS[useHomeScreenState] -->|State| HS
         HSA[useHomeScreenActions] -->|Actions| HS
@@ -239,7 +239,7 @@ graph TB
         HS -->|Props| HSF
         HS -->|Props| HSM
     end
-    
+
     subgraph "Event Flow"
         HSH -->|onNotificationPress| HSA
         HSC -->|onSwipeComplete| HSA
@@ -257,13 +257,13 @@ graph TD
         B --> C[Fallback UI]
         C --> D[Error Logging]
     end
-    
+
     subgraph "Network Errors"
         E[API Error] --> F[Error State]
         F --> G[Retry Mechanism]
         G --> H[User Feedback]
     end
-    
+
     subgraph "Performance Errors"
         I[Slow Performance] --> J[Performance Alert]
         J --> K[Optimization Suggestion]
@@ -280,13 +280,13 @@ graph TB
         B --> C[Action Execution]
         C --> D[Visual Feedback]
     end
-    
+
     subgraph "Scroll Performance"
         E[Scroll Event] --> F[Throttle Scroll]
         F --> G[Update UI]
         G --> H[Maintain 60fps]
     end
-    
+
     subgraph "Memory Management"
         I[Component Unmount] --> J[Cleanup Timers]
         J --> K[Clear Caches]

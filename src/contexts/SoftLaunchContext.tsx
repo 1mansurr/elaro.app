@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { Alert } from 'react-native';
 
 const defaultFeatureFlags = {
@@ -19,7 +26,9 @@ interface SoftLaunchContextType {
   featureFlags: typeof defaultFeatureFlags;
   showComingSoonModal: (feature?: string) => void;
   showComingSoonToast: (message: string) => void;
-  blockPremiumFeature: (featureName: keyof typeof defaultFeatureFlags.premiumFeatures) => boolean;
+  blockPremiumFeature: (
+    featureName: keyof typeof defaultFeatureFlags.premiumFeatures,
+  ) => boolean;
   getComingSoonMessage: (feature: string) => string;
 }
 
@@ -53,10 +62,10 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
   //   fetchRemoteFlags();
   // }, []);
 
-  const getComingSoonMessage = (feature: string): string => {
+  const getComingSoonMessage = useCallback((feature: string): string => {
     const messages = {
       'study-guide':
-        '🎁 Bonus: AI Study Guide is coming soon! You’ll get personalized learning strategies and advanced study techniques as a free bonus for Oddity members.',
+        '🎁 Bonus: AI Study Guide is coming soon! You will get personalized learning strategies and advanced study techniques as a free bonus for Oddity members.',
       'spaced-repetition':
         '🧠 Advanced Spaced Repetition is coming soon! Get intelligent review scheduling and extended intervals.',
       'premium-analytics':
@@ -73,48 +82,66 @@ export const SoftLaunchProvider: React.FC<SoftLaunchProviderProps> = ({
         '✨ This Oddity feature is launching soon! Become An Oddity to unlock premium tools and upgrades.',
     };
     return messages[feature as keyof typeof messages] || messages.default;
-  };
+  }, []);
 
-  const showComingSoonModal = (feature: string = 'default') => {
-    const message = getComingSoonMessage(feature);
-    Alert.alert(
-      '🚀 Become An Oddity',
-      `${message}\n\nFull Oddity access launches next week ($1.99/month). Stay tuned!`,
-      [{ text: 'Got it!', style: 'default' }],
-    );
-  };
+  const showComingSoonModal = useCallback(
+    (feature: string = 'default') => {
+      const message = getComingSoonMessage(feature);
+      Alert.alert(
+        '🚀 Become An Oddity',
+        `${message}\n\nFull Oddity access launches next week ($1.99/month). Stay tuned!`,
+        [{ text: 'Got it!', style: 'default' }],
+      );
+    },
+    [getComingSoonMessage],
+  );
 
-  const showComingSoonToast = (message: string) => {
+  const showComingSoonToast = useCallback((message: string) => {
     // For now, we'll use Alert as a fallback
     // In a real implementation, you'd use a toast library
     Alert.alert('Coming Soon', message, [{ text: 'OK' }]);
-  };
+  }, []);
 
-  const blockPremiumFeature = (featureName: keyof typeof defaultFeatureFlags.premiumFeatures): boolean => {
-    // If the whole system is disabled, never block anything.
-    if (!featureFlags.isFeatureFlaggingEnabled) {
+  const blockPremiumFeature = useCallback(
+    (
+      featureName: keyof typeof defaultFeatureFlags.premiumFeatures,
+    ): boolean => {
+      // If the whole system is disabled, never block anything.
+      if (!featureFlags.isFeatureFlaggingEnabled) {
+        return false;
+      }
+
+      const feature = featureFlags.premiumFeatures[featureName];
+
+      // If the feature exists in our config and is set to be blocked, block it.
+      if (feature && feature.block) {
+        showComingSoonModal(featureName);
+        return true;
+      }
+
+      // Otherwise, do not block it.
       return false;
-    }
+    },
+    [featureFlags, showComingSoonModal],
+  );
 
-    const feature = featureFlags.premiumFeatures[featureName];
-    
-    // If the feature exists in our config and is set to be blocked, block it.
-    if (feature && feature.block) {
-      showComingSoonModal(featureName);
-      return true;
-    }
-
-    // Otherwise, do not block it.
-    return false;
-  };
-
-  const value: SoftLaunchContextType = {
-    featureFlags,
-    showComingSoonModal,
-    showComingSoonToast,
-    blockPremiumFeature,
-    getComingSoonMessage,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const value: SoftLaunchContextType = useMemo(
+    () => ({
+      featureFlags,
+      showComingSoonModal,
+      showComingSoonToast,
+      blockPremiumFeature,
+      getComingSoonMessage,
+    }),
+    [
+      featureFlags,
+      showComingSoonModal,
+      showComingSoonToast,
+      blockPremiumFeature,
+      getComingSoonMessage,
+    ],
+  );
 
   return (
     <SoftLaunchContext.Provider value={value}>

@@ -1,6 +1,6 @@
 /**
  * Request deduplication service to prevent duplicate API calls
- * 
+ *
  * This service helps optimize network usage by:
  * - Preventing duplicate requests with the same key
  * - Caching in-flight requests
@@ -35,10 +35,10 @@ class RequestDeduplicationService {
   public async deduplicateRequest<T>(
     key: string,
     requestFn: () => Promise<T>,
-    timeout: number = this.cacheTimeout
+    timeout: number = this.cacheTimeout,
   ): Promise<T> {
     this.metrics.totalRequests++;
-    
+
     // Check if request is already in progress
     if (this.requestCache.has(key)) {
       this.metrics.deduplicatedRequests++;
@@ -52,7 +52,7 @@ class RequestDeduplicationService {
 
     // Create new request
     const promise = requestFn()
-      .then((result) => {
+      .then(result => {
         // Clean up cache after successful request
         setTimeout(() => {
           this.requestCache.delete(key);
@@ -60,7 +60,7 @@ class RequestDeduplicationService {
         }, timeout);
         return result;
       })
-      .catch((error) => {
+      .catch(error => {
         // Clean up cache on error
         this.requestCache.delete(key);
         console.error(`❌ Request failed and cache cleared: ${key}`, error);
@@ -80,7 +80,7 @@ class RequestDeduplicationService {
   public async deduplicateWithKeyGenerator<T>(
     requestFn: () => Promise<T>,
     keyGenerator: () => string,
-    timeout: number = this.cacheTimeout
+    timeout: number = this.cacheTimeout,
   ): Promise<T> {
     const key = keyGenerator();
     return this.deduplicateRequest(key, requestFn, timeout);
@@ -95,14 +95,18 @@ class RequestDeduplicationService {
   public async deduplicateApiCall(
     url: string,
     options: RequestInit = {},
-    timeout: number = this.cacheTimeout
+    timeout: number = this.cacheTimeout,
   ): Promise<Response> {
     const key = `api-${url}-${JSON.stringify(options)}`;
-    
-    return this.deduplicateRequest(key, async () => {
-      console.log(`🌐 Making API call: ${url}`);
-      return fetch(url, options);
-    }, timeout);
+
+    return this.deduplicateRequest(
+      key,
+      async () => {
+        console.log(`🌐 Making API call: ${url}`);
+        return fetch(url, options);
+      },
+      timeout,
+    );
   }
 
   /**
@@ -114,14 +118,18 @@ class RequestDeduplicationService {
   public async deduplicateSupabaseOperation<T>(
     operation: string,
     operationFn: () => Promise<T>,
-    timeout: number = this.cacheTimeout
+    timeout: number = this.cacheTimeout,
   ): Promise<T> {
     const key = `supabase-${operation}`;
-    
-    return this.deduplicateRequest(key, async () => {
-      console.log(`🗄️ Making Supabase operation: ${operation}`);
-      return operationFn();
-    }, timeout);
+
+    return this.deduplicateRequest(
+      key,
+      async () => {
+        console.log(`🗄️ Making Supabase operation: ${operation}`);
+        return operationFn();
+      },
+      timeout,
+    );
   }
 
   /**
@@ -158,12 +166,17 @@ class RequestDeduplicationService {
     return {
       ...this.metrics,
       cacheSize: this.requestCache.size,
-      deduplicationRate: this.metrics.totalRequests > 0 
-        ? (this.metrics.deduplicatedRequests / this.metrics.totalRequests) * 100 
-        : 0,
-      cacheHitRate: this.metrics.cacheHits + this.metrics.cacheMisses > 0
-        ? (this.metrics.cacheHits / (this.metrics.cacheHits + this.metrics.cacheMisses)) * 100
-        : 0,
+      deduplicationRate:
+        this.metrics.totalRequests > 0
+          ? (this.metrics.deduplicatedRequests / this.metrics.totalRequests) *
+            100
+          : 0,
+      cacheHitRate:
+        this.metrics.cacheHits + this.metrics.cacheMisses > 0
+          ? (this.metrics.cacheHits /
+              (this.metrics.cacheHits + this.metrics.cacheMisses)) *
+            100
+          : 0,
     };
   }
 
@@ -197,4 +210,5 @@ class RequestDeduplicationService {
   }
 }
 
-export const requestDeduplicationService = RequestDeduplicationService.getInstance();
+export const requestDeduplicationService =
+  RequestDeduplicationService.getInstance();

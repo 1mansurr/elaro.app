@@ -1,0 +1,3488 @@
+{
+  "total": 451,
+  "byFile": {
+    "components/MemoizedComponents.tsx": [
+      {
+        "line": 27,
+        "type": "asAny",
+        "content": "<Ionicons name={icon as any} size={20} color=\"COLORS.textSecondary\" style={styles.icon} />"
+      },
+      {
+        "line": 63,
+        "type": "explicitAny",
+        "content": "onAction: (data: any) => void;"
+      },
+      {
+        "line": 64,
+        "type": "explicitAny",
+        "content": "onPress?: (data: any) => void;"
+      },
+      {
+        "line": 112,
+        "type": "explicitAny",
+        "content": "onSelect: (item: any) => void;"
+      },
+      {
+        "line": 150,
+        "type": "asAny",
+        "content": "name={getTypeIcon(item.type) as any}"
+      },
+      {
+        "line": 191,
+        "type": "explicitAny",
+        "content": "onPress: (notification: any) => void;"
+      },
+      {
+        "line": 237,
+        "type": "asAny",
+        "content": "<Ionicons name={getTypeIcon as any} size={20} color=\"COLORS.textSecondary\" />"
+      },
+      {
+        "line": 283,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 303,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 328,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 373,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 387,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 413,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "components/VersionInfo.tsx": [
+      {
+        "line": 193,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 207,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 218,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 252,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 270,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 290,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "contexts/AuthContext.tsx": [
+      {
+        "line": 40,
+        "type": "explicitAny",
+        "content": "signIn: (credentials: LoginCredentials) => Promise<{ error: any; requiresMFA?: boolean; factors?: any[] }>;"
+      },
+      {
+        "line": 41,
+        "type": "explicitAny",
+        "content": "signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;"
+      },
+      {
+        "line": 499,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "contexts/CreationFlowContext.tsx": [
+      {
+        "line": 11,
+        "type": "genericAny",
+        "content": "export const CreationFlowContext = createContext<CreationFlowContextType<any> | undefined>(undefined);"
+      }
+    ],
+    "features/admin/components/AnalyticsAdminDashboard.tsx": [
+      {
+        "line": 193,
+        "type": "asAny",
+        "content": "onPress={() => setActiveTab(tab.key as any)}"
+      },
+      {
+        "line": 196,
+        "type": "asAny",
+        "content": "name={tab.icon as any}"
+      },
+      {
+        "line": 252,
+        "type": "explicitAny",
+        "content": "theme: any;"
+      },
+      {
+        "line": 329,
+        "type": "explicitAny",
+        "content": "theme: any;"
+      },
+      {
+        "line": 418,
+        "type": "explicitAny",
+        "content": "theme: any;"
+      },
+      {
+        "line": 467,
+        "type": "explicitAny",
+        "content": "theme: any;"
+      }
+    ],
+    "features/assignments/screens/AddAssignmentScreen.tsx": [
+      {
+        "line": 214,
+        "type": "explicitAny",
+        "content": "const handleTemplateSelect = (template: any) => {"
+      },
+      {
+        "line": 263,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 273,
+        "type": "explicitAny",
+        "content": "const handleTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 415,
+        "type": "asAny",
+        "content": "} as any);"
+      },
+      {
+        "line": 825,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 830,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 847,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 856,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 899,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 912,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 951,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 972,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 1007,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 1025,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 1060,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 1077,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/assignments/screens/add-flow/AssignmentDescriptionScreen.tsx": [
+      {
+        "line": 16,
+        "type": "explicitAny",
+        "content": "const updateAssignmentData = (data: any) => { console.log(\"Mock updateAssignmentData:\", data); };"
+      }
+    ],
+    "features/assignments/screens/add-flow/AssignmentRemindersScreen.tsx": [
+      {
+        "line": 117,
+        "type": "asAny",
+        "content": "} as any);"
+      },
+      {
+        "line": 126,
+        "type": "asAny",
+        "content": "} as any);"
+      }
+    ],
+    "features/assignments/screens/add-flow/AssignmentTitleScreen.tsx": [
+      {
+        "line": 24,
+        "type": "explicitAny",
+        "content": "const updateAssignmentData = (data: any) => { console.log(\"Mock updateAssignmentData:\", data); };"
+      }
+    ],
+    "features/assignments/screens/add-flow/DueDateScreen.tsx": [
+      {
+        "line": 26,
+        "type": "explicitAny",
+        "content": "const updateAssignmentData = (data: any) => { console.log(\"Mock updateAssignmentData:\", data); };"
+      },
+      {
+        "line": 34,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 45,
+        "type": "explicitAny",
+        "content": "const handleTimeChange = (event: any, selectedTime?: Date) => {"
+      }
+    ],
+    "features/assignments/screens/add-flow/SelectCourseScreen.tsx": [
+      {
+        "line": 27,
+        "type": "explicitAny",
+        "content": "const updateAssignmentData = (data: any) => { console.log(\"Mock updateAssignmentData:\", data); };"
+      },
+      {
+        "line": 99,
+        "type": "asAny",
+        "content": "} as any);"
+      }
+    ],
+    "features/assignments/screens/add-flow/SubmissionMethodScreen.tsx": [
+      {
+        "line": 28,
+        "type": "explicitAny",
+        "content": "const updateAssignmentData = (data: any) => { console.log(\"Mock updateAssignmentData:\", data); };"
+      }
+    ],
+    "features/assignments/services/mutations.ts": [
+      {
+        "line": 55,
+        "type": "asAny",
+        "content": "} as any;"
+      }
+    ],
+    "features/auth/permissions/permissionGuard.ts": [
+      {
+        "line": 5,
+        "type": "explicitAny",
+        "content": "type NavigateFn = (route: string, params?: any) => void;"
+      }
+    ],
+    "features/auth/screens/AuthScreen.tsx": [
+      {
+        "line": 504,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 568,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 592,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/auth/screens/EnhancedAuthScreen.tsx": [
+      {
+        "line": 161,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 170,
+        "type": "explicitAny",
+        "content": "const handleMFASuccess = (session: any) => {"
+      }
+    ],
+    "features/auth/screens/ForgotPasswordScreen.tsx": [
+      {
+        "line": 57,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/auth/screens/MFAEnrollmentScreen.tsx": [
+      {
+        "line": 35,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 79,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/auth/screens/MFAVerificationScreen.tsx": [
+      {
+        "line": 24,
+        "type": "explicitAny",
+        "content": "factors?: any[];"
+      },
+      {
+        "line": 25,
+        "type": "explicitAny",
+        "content": "onVerificationSuccess?: (session: any) => void;"
+      },
+      {
+        "line": 60,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/auth/services/authService.ts": [
+      {
+        "line": 31,
+        "type": "explicitAny",
+        "content": "error?: any;"
+      },
+      {
+        "line": 112,
+        "type": "genericAny",
+        "content": "restoreAccount: async (): Promise<any> => {"
+      }
+    ],
+    "features/calendar/components/EventItem.tsx": [
+      {
+        "line": 122,
+        "type": "asAny",
+        "content": "{task.type === 'lecture' && (task as any).location && ("
+      },
+      {
+        "line": 126,
+        "type": "asAny",
+        "content": "{(task as any).location}"
+      },
+      {
+        "line": 135,
+        "type": "asAny",
+        "content": "{(task.description || (task as any).notes) && ("
+      },
+      {
+        "line": 141,
+        "type": "asAny",
+        "content": "{task.description || (task as any).notes}"
+      },
+      {
+        "line": 147,
+        "type": "asAny",
+        "content": "{task.type === 'assignment' && (task as any).submission_method && ("
+      },
+      {
+        "line": 151,
+        "type": "asAny",
+        "content": "{(task as any).submission_method}"
+      },
+      {
+        "line": 157,
+        "type": "asAny",
+        "content": "{task.type === 'lecture' && (task as any).recurrence_rule && ("
+      },
+      {
+        "line": 161,
+        "type": "asAny",
+        "content": "Recurring: {(task as any).recurrence_rule}"
+      },
+      {
+        "line": 167,
+        "type": "asAny",
+        "content": "{task.type === 'study_session' && (task as any).has_spaced_repetition && ("
+      }
+    ],
+    "features/calendar/components/Timeline.tsx": [
+      {
+        "line": 12,
+        "type": "explicitAny",
+        "content": "onScroll: (event: any) => void;"
+      }
+    ],
+    "features/calendar/components/WeekGridView.tsx": [
+      {
+        "line": 153,
+        "type": "asAny",
+        "content": "const isExample = (task as any).is_example === true;"
+      },
+      {
+        "line": 307,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 316,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 343,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "features/courses/screens/CoursesScreen.tsx": [
+      {
+        "line": 46,
+        "type": "asAny",
+        "content": "const offerings = { current: null as any };"
+      },
+      {
+        "line": 105,
+        "type": "asAny",
+        "content": "navigation.navigate('Main', { screen: 'Account' } as any);"
+      }
+    ],
+    "features/courses/screens/add-flow/AddLectureRemindersScreen.tsx": [
+      {
+        "line": 93,
+        "type": "asAny",
+        "content": "} as any);"
+      },
+      {
+        "line": 102,
+        "type": "asAny",
+        "content": "} as any);"
+      }
+    ],
+    "features/courses/services/mutations.ts": [
+      {
+        "line": 52,
+        "type": "asAny",
+        "content": "} as any;"
+      },
+      {
+        "line": 186,
+        "type": "asAny",
+        "content": "return { id: courseId, deleted_at: null } as any;"
+      }
+    ],
+    "features/dashboard/components/HomeScreen/HomeScreenContent.tsx": [
+      {
+        "line": 22,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      }
+    ],
+    "features/dashboard/components/HomeScreen/HomeScreenFAB.tsx": [
+      {
+        "line": 44,
+        "type": "asAny",
+        "content": "icon: 'book-outline' as any,"
+      },
+      {
+        "line": 57,
+        "type": "asAny",
+        "content": "icon: 'document-text-outline' as any,"
+      },
+      {
+        "line": 70,
+        "type": "asAny",
+        "content": "icon: 'school-outline' as any,"
+      }
+    ],
+    "features/dashboard/components/HomeScreen/HomeScreenHeader.tsx": [
+      {
+        "line": 88,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 98,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/dashboard/components/HomeScreen/HomeScreenHooks.tsx": [
+      {
+        "line": 24,
+        "type": "explicitAny",
+        "content": "export const useTrialBanner = (user: any) => {"
+      },
+      {
+        "line": 118,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 277,
+        "type": "explicitAny",
+        "content": "export const useWelcomePrompt = (isGuest: boolean, user: any, navigation: any) => {"
+      },
+      {
+        "line": 327,
+        "type": "explicitAny",
+        "content": "export const useExampleData = (isGuest: boolean, user: any, isLoading: boolean, homeData: any, queryClient: any, showToast: any) => {"
+      }
+    ],
+    "features/dashboard/components/HomeScreen/__tests__/HomeScreenModals.test.tsx": [
+      {
+        "line": 7,
+        "type": "explicitAny",
+        "content": "return function MockTaskDetailSheet({ isVisible, task }: any) {"
+      },
+      {
+        "line": 13,
+        "type": "explicitAny",
+        "content": "QuickAddModal: function MockQuickAddModal({ isVisible }: any) {"
+      },
+      {
+        "line": 19,
+        "type": "explicitAny",
+        "content": "return function MockNotificationHistoryModal({ isVisible }: any) {"
+      }
+    ],
+    "features/dashboard/components/HomeScreenEmptyState.tsx": [
+      {
+        "line": 105,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/dashboard/components/HomeScreenFAB.tsx": [
+      {
+        "line": 64,
+        "type": "asAny",
+        "content": "icon: 'book-outline' as any,"
+      },
+      {
+        "line": 70,
+        "type": "asAny",
+        "content": "icon: 'calendar-outline' as any,"
+      },
+      {
+        "line": 76,
+        "type": "asAny",
+        "content": "icon: 'time-outline' as any,"
+      }
+    ],
+    "features/dashboard/components/HomeScreenHeader.tsx": [
+      {
+        "line": 18,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/dashboard/screens/DraftsScreen.tsx": [
+      {
+        "line": 248,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 254,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 306,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 337,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/dashboard/screens/GuestHomeScreen.tsx": [
+      {
+        "line": 102,
+        "type": "asAny",
+        "content": "fontWeight: (FONT_WEIGHTS.bold as any),"
+      },
+      {
+        "line": 125,
+        "type": "asAny",
+        "content": "fontWeight: (FONT_WEIGHTS.semibold as any),"
+      },
+      {
+        "line": 150,
+        "type": "asAny",
+        "content": "fontWeight: (FONT_WEIGHTS.semibold as any),"
+      },
+      {
+        "line": 163,
+        "type": "asAny",
+        "content": "fontWeight: (FONT_WEIGHTS.semibold as any),"
+      }
+    ],
+    "features/dashboard/screens/HomeScreen.tsx": [
+      {
+        "line": 472,
+        "type": "asAny",
+        "content": "// Check if user has any data"
+      }
+    ],
+    "features/dashboard/screens/OptimizedHomeScreen.tsx": [
+      {
+        "line": 247,
+        "type": "asAny",
+        "content": "(navigation as any).navigate(modalName, { taskToEdit: task });"
+      },
+      {
+        "line": 382,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 388,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/dashboard/screens/TemplatesScreen.tsx": [
+      {
+        "line": 267,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 320,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 357,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 373,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 395,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 405,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 425,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 443,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 469,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 477,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/data-management/screens/RecycleBinScreen.tsx": [
+      {
+        "line": 93,
+        "type": "asAny",
+        "content": "type: (item as any).type,"
+      },
+      {
+        "line": 146,
+        "type": "asAny",
+        "content": "type: (item as any).type,"
+      },
+      {
+        "line": 288,
+        "type": "asAny",
+        "content": "keyExtractor={(item, index) => `${(item as any).type || 'unknown'}-${item.id || index}`}"
+      },
+      {
+        "line": 291,
+        "type": "asAny",
+        "content": "item={item as any}"
+      }
+    ],
+    "features/dev/screens/NotificationTestScreen.tsx": [
+      {
+        "line": 61,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 76,
+        "type": "explicitAny",
+        "content": "const presets: Record<string, { title: string; body: string; data?: any }> = {"
+      },
+      {
+        "line": 109,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/lectures/screens/AddLectureScreen.tsx": [
+      {
+        "line": 129,
+        "type": "asAny",
+        "content": "} else if ((taskToEdit as any).lecture_name) {"
+      },
+      {
+        "line": 130,
+        "type": "asAny",
+        "content": "setLectureName((taskToEdit as any).lecture_name);"
+      },
+      {
+        "line": 238,
+        "type": "explicitAny",
+        "content": "const handleTemplateSelect = (template: any) => {"
+      },
+      {
+        "line": 279,
+        "type": "explicitAny",
+        "content": "const handleStartDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 289,
+        "type": "explicitAny",
+        "content": "const handleStartTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 304,
+        "type": "explicitAny",
+        "content": "const handleEndDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 314,
+        "type": "explicitAny",
+        "content": "const handleEndTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 419,
+        "type": "asAny",
+        "content": "} as any);"
+      },
+      {
+        "line": 792,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 797,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 814,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 823,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 866,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 879,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 892,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 915,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 919,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 941,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 960,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 990,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/lectures/services/mutations.ts": [
+      {
+        "line": 54,
+        "type": "asAny",
+        "content": "} as any;"
+      }
+    ],
+    "features/notifications/components/NotificationHistoryModal.tsx": [
+      {
+        "line": 250,
+        "type": "asAny",
+        "content": "name={filter.icon as any}"
+      },
+      {
+        "line": 337,
+        "type": "explicitAny",
+        "content": "theme: any;"
+      },
+      {
+        "line": 411,
+        "type": "explicitAny",
+        "content": "onGestureEvent={(event: any) => {"
+      },
+      {
+        "line": 417,
+        "type": "explicitAny",
+        "content": "onHandlerStateChange={(event: any) => {"
+      }
+    ],
+    "features/notifications/components/NotificationSettings.tsx": [
+      {
+        "line": 42,
+        "type": "asAny",
+        "content": "name={icon as any}"
+      }
+    ],
+    "features/notifications/hooks/usePushNotifications.ts": [
+      {
+        "line": 136,
+        "type": "explicitAny",
+        "content": "let responseSubscription: any;"
+      },
+      {
+        "line": 137,
+        "type": "explicitAny",
+        "content": "let receivedSubscription: any;"
+      }
+    ],
+    "features/notifications/screens/NotificationManagementScreen.tsx": [
+      {
+        "line": 135,
+        "type": "asAny",
+        "content": "setActiveTab(tab.key as any);"
+      },
+      {
+        "line": 140,
+        "type": "asAny",
+        "content": "name={tab.icon as any}"
+      },
+      {
+        "line": 288,
+        "type": "asAny",
+        "content": "name={getCategoryIcon(notification.category) as any}"
+      }
+    ],
+    "features/onboarding/screens/NewWelcomeScreen.tsx": [
+      {
+        "line": 55,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 204,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 211,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.normal as any,"
+      },
+      {
+        "line": 222,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 239,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 260,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 272,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 282,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 325,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/onboarding/screens/OnboardingCoursesScreen.tsx": [
+      {
+        "line": 19,
+        "type": "explicitAny",
+        "content": "const CourseItem = memo<{ item: any }>(({ item }) => ("
+      },
+      {
+        "line": 102,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 121,
+        "type": "explicitAny",
+        "content": "({ item }: { item: any }) => <CourseItem item={item} />,"
+      }
+    ],
+    "features/onboarding/screens/ProfileSetupScreen.tsx": [
+      {
+        "line": 222,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 239,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/onboarding/screens/SimplifiedOnboardingScreen.tsx": [
+      {
+        "line": 206,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 235,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 246,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 261,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "features/onboarding/screens/TrialWelcomeScreen.tsx": [
+      {
+        "line": 103,
+        "type": "asAny",
+        "content": "<Ionicons name={benefit.icon as any} size={24} color={benefit.color} />"
+      },
+      {
+        "line": 148,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 171,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 204,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 223,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/srs/services/SRSAnalyticsService.ts": [
+      {
+        "line": 234,
+        "type": "explicitAny",
+        "content": "let topic: any;"
+      },
+      {
+        "line": 238,
+        "type": "asAny",
+        "content": "topic = (p.study_sessions as any).topic;"
+      },
+      {
+        "line": 443,
+        "type": "explicitAny",
+        "content": "}, {} as Record<string, { reviews: any[]; timeSpent: number }>);"
+      },
+      {
+        "line": 540,
+        "type": "explicitAny",
+        "content": "let currentStreak: any[] = [];"
+      },
+      {
+        "line": 608,
+        "type": "explicitAny",
+        "content": "let topic: any;"
+      },
+      {
+        "line": 612,
+        "type": "asAny",
+        "content": "topic = (reminder.study_sessions as any).topic;"
+      }
+    ],
+    "features/studySessions/components/SRSReviewCard.tsx": [
+      {
+        "line": 70,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/studySessions/screens/AddStudySessionScreen.tsx": [
+      {
+        "line": 204,
+        "type": "explicitAny",
+        "content": "const handleTemplateSelect = (template: any) => {"
+      },
+      {
+        "line": 250,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 260,
+        "type": "explicitAny",
+        "content": "const handleTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 363,
+        "type": "asAny",
+        "content": "} as any);"
+      },
+      {
+        "line": 659,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 664,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 681,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 690,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 733,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 746,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 793,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 812,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 842,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/studySessions/screens/StudySessionReviewScreen.tsx": [
+      {
+        "line": 31,
+        "type": "genericAny",
+        "content": "const [studySession, setStudySession] = useState<any>(null);"
+      },
+      {
+        "line": 51,
+        "type": "explicitAny",
+        "content": "} catch (err: any) {"
+      }
+    ],
+    "features/studySessions/services/mutations.ts": [
+      {
+        "line": 55,
+        "type": "asAny",
+        "content": "} as any;"
+      }
+    ],
+    "features/subscription/screens/OddityWelcomeScreen.tsx": [
+      {
+        "line": 26,
+        "type": "genericAny",
+        "content": "const confettiRef = useRef<any>(null);"
+      },
+      {
+        "line": 207,
+        "type": "asAny",
+        "content": "<Ionicons name={benefit.icon as any} size={20} color={benefit.color} />"
+      },
+      {
+        "line": 261,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 268,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 277,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 305,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 339,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/subscription/screens/PaywallScreen.tsx": [
+      {
+        "line": 37,
+        "type": "asAny",
+        "content": "const offerings = { current: null as any };"
+      },
+      {
+        "line": 131,
+        "type": "explicitAny",
+        "content": "(pkg: any) => pkg.identifier === 'oddity_monthly'"
+      },
+      {
+        "line": 145,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 209,
+        "type": "asAny",
+        "content": "<Ionicons name={benefit.icon as any} size={24} color={benefit.color} />"
+      },
+      {
+        "line": 267,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 296,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "features/support/utils/getSecureChatLink.ts": [
+      {
+        "line": 17,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "features/task-creation/screens/TaskCreationFlow.tsx": [
+      {
+        "line": 31,
+        "type": "explicitAny",
+        "content": "course: any;"
+      }
+    ],
+    "features/tasks/services/AdvancedTemplateService.ts": [
+      {
+        "line": 8,
+        "type": "explicitAny",
+        "content": "defaultValue?: any;"
+      },
+      {
+        "line": 510,
+        "type": "explicitAny",
+        "content": "const updateData: any = {};"
+      },
+      {
+        "line": 621,
+        "type": "explicitAny",
+        "content": "private mapTemplateFromDB(dbTemplate: any): AdvancedTaskTemplate {"
+      },
+      {
+        "line": 650,
+        "type": "explicitAny",
+        "content": "private mapCategoryFromDB(dbCategory: any): TemplateCategory {"
+      },
+      {
+        "line": 665,
+        "type": "explicitAny",
+        "content": "private mapShareFromDB(dbShare: any): TemplateShare {"
+      },
+      {
+        "line": 679,
+        "type": "explicitAny",
+        "content": "private mapRatingFromDB(dbRating: any): TemplateRating {"
+      },
+      {
+        "line": 694,
+        "type": "explicitAny",
+        "content": "private mapUsageFromDB(dbUsage: any): TemplateUsage {"
+      }
+    ],
+    "features/tasks/services/RecurringTaskService.ts": [
+      {
+        "line": 208,
+        "type": "explicitAny",
+        "content": "const updateData: any = {};"
+      },
+      {
+        "line": 351,
+        "type": "explicitAny",
+        "content": "private mapPatternFromDB(dbPattern: any): RecurringPattern {"
+      },
+      {
+        "line": 370,
+        "type": "explicitAny",
+        "content": "private mapRecurringTaskFromDB(dbTask: any): RecurringTask {"
+      },
+      {
+        "line": 390,
+        "type": "explicitAny",
+        "content": "private mapGeneratedTaskFromDB(dbTask: any): GeneratedTask {"
+      },
+      {
+        "line": 479,
+        "type": "explicitAny",
+        "content": "sum + s.generated_tasks.filter((gt: any) => gt.is_completed).length, 0"
+      }
+    ],
+    "features/tasks/services/TaskDependencyService.ts": [
+      {
+        "line": 109,
+        "type": "explicitAny",
+        "content": "let dependencies: any[] = [];"
+      }
+    ],
+    "features/templates/hooks/useTemplateManagement.ts": [
+      {
+        "line": 9,
+        "type": "explicitAny",
+        "content": "template_data: any;"
+      },
+      {
+        "line": 71,
+        "type": "asAny",
+        "content": "// Check if user has any templates"
+      }
+    ],
+    "features/templates/utils/templateUtils.ts": [
+      {
+        "line": 13,
+        "type": "explicitAny",
+        "content": "export const clearDateFields = (templateData: any): any => {"
+      },
+      {
+        "line": 41,
+        "type": "explicitAny",
+        "content": "export const validateTemplateData = (templateData: any, taskType: string): { isValid: boolean; error?: string } => {"
+      },
+      {
+        "line": 90,
+        "type": "explicitAny",
+        "content": "export const createTemplateDataFromTask = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): any => {"
+      },
+      {
+        "line": 98,
+        "type": "explicitAny",
+        "content": "export const canSaveAsTemplate = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): boolean => {"
+      }
+    ],
+    "features/user-profile/components/QuietHoursSettings.tsx": [
+      {
+        "line": 127,
+        "type": "explicitAny",
+        "content": "const handleStartTimeChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 135,
+        "type": "explicitAny",
+        "content": "const handleEndTimeChange = (event: any, selectedDate?: Date) => {"
+      }
+    ],
+    "features/user-profile/components/SubscriptionManagementCard.tsx": [
+      {
+        "line": 24,
+        "type": "asAny",
+        "content": "const offerings = { current: null as any };"
+      }
+    ],
+    "features/user-profile/screens/DeleteAccountScreen.tsx": [
+      {
+        "line": 226,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 247,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 277,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 291,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 296,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 353,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      }
+    ],
+    "features/user-profile/screens/DeviceManagementScreen.tsx": [
+      {
+        "line": 59,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 102,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 135,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 179,
+        "type": "asAny",
+        "content": "name={getDeviceIcon(item.platform) as any}"
+      }
+    ],
+    "features/user-profile/screens/LoginHistoryScreen.tsx": [
+      {
+        "line": 56,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      },
+      {
+        "line": 154,
+        "type": "asAny",
+        "content": "name={getMethodIcon(item.method) as any}"
+      },
+      {
+        "line": 167,
+        "type": "asAny",
+        "content": "name={getDeviceIcon(item.device_info.platform) as any}"
+      }
+    ],
+    "features/user-profile/screens/NotificationAnalyticsScreen.tsx": [
+      {
+        "line": 21,
+        "type": "genericAny",
+        "content": "const [analytics, setAnalytics] = useState<any>(null);"
+      },
+      {
+        "line": 144,
+        "type": "asAny",
+        "content": "name={getTypeIcon(type) as any}"
+      }
+    ],
+    "hooks/useBatchAction.ts": [
+      {
+        "line": 68,
+        "type": "asAny",
+        "content": "type: item.type as any,"
+      }
+    ],
+    "hooks/useJSThreadMonitor.ts": [
+      {
+        "line": 104,
+        "type": "asAny",
+        "content": "if (!__DEV__ && typeof window !== 'undefined' && (window as any).mixpanel) {"
+      }
+    ],
+    "hooks/useMemoization.ts": [
+      {
+        "line": 25,
+        "type": "explicitAny",
+        "content": "export const useStableCallback = <T extends (...args: any[]) => any>("
+      }
+    ],
+    "hooks/useMemoryMonitor.ts": [
+      {
+        "line": 34,
+        "type": "asAny",
+        "content": "if (!(performance as any).memory) {"
+      },
+      {
+        "line": 41,
+        "type": "asAny",
+        "content": "const memory = (performance as any).memory;"
+      }
+    ],
+    "hooks/usePerformanceMonitor.ts": [
+      {
+        "line": 56,
+        "type": "genericAny",
+        "content": "const previousProps = useRef<any>(null);"
+      },
+      {
+        "line": 61,
+        "type": "asAny",
+        "content": "if (trackMemory && typeof performance !== 'undefined' && (performance as any).memory) {"
+      },
+      {
+        "line": 62,
+        "type": "asAny",
+        "content": "memoryBaseline.current = (performance as any).memory.usedJSHeapSize;"
+      },
+      {
+        "line": 85,
+        "type": "asAny",
+        "content": "if (enableAnalytics && typeof window !== 'undefined' && (window as any).mixpanel) {"
+      },
+      {
+        "line": 95,
+        "type": "asAny",
+        "content": "if (trackMemory && typeof performance !== 'undefined' && (performance as any).memory) {"
+      },
+      {
+        "line": 96,
+        "type": "asAny",
+        "content": "metrics.memoryUsage = (performance as any).memory.usedJSHeapSize - memoryBaseline.current;"
+      },
+      {
+        "line": 99,
+        "type": "asAny",
+        "content": "(window as any).mixpanel.track('component_slow_render', metrics);"
+      },
+      {
+        "line": 128,
+        "type": "asAny",
+        "content": "memoryUsage: trackMemory && typeof performance !== 'undefined' && (performance as any).memory"
+      },
+      {
+        "line": 129,
+        "type": "asAny",
+        "content": "? (performance as any).memory.usedJSHeapSize - memoryBaseline.current"
+      },
+      {
+        "line": 143,
+        "type": "asAny",
+        "content": "if (typeof performance !== 'undefined' && (performance as any).memory) {"
+      },
+      {
+        "line": 144,
+        "type": "asAny",
+        "content": "memoryUsage.current = (performance as any).memory.usedJSHeapSize;"
+      },
+      {
+        "line": 232,
+        "type": "asAny",
+        "content": "if (typeof performance !== 'undefined' && (performance as any).memory) {"
+      },
+      {
+        "line": 233,
+        "type": "asAny",
+        "content": "return (performance as any).memory.usedJSHeapSize;"
+      }
+    ],
+    "hooks/useReactNativeMemoryMonitor.ts": [
+      {
+        "line": 37,
+        "type": "asAny",
+        "content": "if (typeof performance !== 'undefined' && (performance as any).memory) {"
+      },
+      {
+        "line": 38,
+        "type": "asAny",
+        "content": "return (performance as any).memory.usedJSHeapSize;"
+      }
+    ],
+    "hooks/useSyncDebug.ts": [
+      {
+        "line": 100,
+        "type": "asAny",
+        "content": "userId: (navState as any)?.userId || null,"
+      }
+    ],
+    "hooks/useTemplates.ts": [
+      {
+        "line": 9,
+        "type": "explicitAny",
+        "content": "template_data: any;"
+      },
+      {
+        "line": 17,
+        "type": "explicitAny",
+        "content": "template_data: any;"
+      },
+      {
+        "line": 23,
+        "type": "explicitAny",
+        "content": "template_data: any;"
+      }
+    ],
+    "hooks/useVersionedApi.ts": [
+      {
+        "line": 24,
+        "type": "explicitAny",
+        "content": "onSuccess?: (data: any) => void;"
+      },
+      {
+        "line": 278,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      }
+    ],
+    "navigation/AuthNavigator.tsx": [
+      {
+        "line": 12,
+        "type": "genericAny",
+        "content": "component: React.ComponentType<any>;"
+      },
+      {
+        "line": 13,
+        "type": "explicitAny",
+        "content": "options?: any;"
+      }
+    ],
+    "navigation/AuthenticatedNavigator.tsx": [
+      {
+        "line": 73,
+        "type": "genericAny",
+        "content": "component: React.ComponentType<any>;"
+      },
+      {
+        "line": 74,
+        "type": "explicitAny",
+        "content": "options?: any;"
+      }
+    ],
+    "navigation/GuestNavigator.tsx": [
+      {
+        "line": 33,
+        "type": "genericAny",
+        "content": "component: React.ComponentType<any>;"
+      },
+      {
+        "line": 34,
+        "type": "explicitAny",
+        "content": "options?: any;"
+      }
+    ],
+    "navigation/MainTabNavigator.tsx": [
+      {
+        "line": 37,
+        "type": "explicitAny",
+        "content": "const tabBarScreenOptions = (insets: any, theme: any) =>"
+      }
+    ],
+    "navigation/constants/NavigationConstants.ts": [
+      {
+        "line": 35,
+        "type": "explicitAny",
+        "content": "cardStyleInterpolator: ({ current, layouts }: any) => {"
+      },
+      {
+        "line": 70,
+        "type": "explicitAny",
+        "content": "cardStyleInterpolator: ({ current, layouts }: any) => {"
+      },
+      {
+        "line": 105,
+        "type": "explicitAny",
+        "content": "cardStyleInterpolator: ({ current }: any) => {"
+      },
+      {
+        "line": 133,
+        "type": "explicitAny",
+        "content": "cardStyleInterpolator: ({ current }: any) => {"
+      }
+    ],
+    "navigation/hooks/useNavigationPerformance.ts": [
+      {
+        "line": 179,
+        "type": "genericAny",
+        "content": "const loadComponent = useCallback(async (componentName: string, loader: () => Promise<any>) => {"
+      },
+      {
+        "line": 223,
+        "type": "asAny",
+        "content": "if (global.performance && (global.performance as any).memory) {"
+      },
+      {
+        "line": 225,
+        "type": "asAny",
+        "content": "used: (global.performance as any).memory.usedJSHeapSize,"
+      },
+      {
+        "line": 226,
+        "type": "asAny",
+        "content": "total: (global.performance as any).memory.totalJSHeapSize,"
+      },
+      {
+        "line": 227,
+        "type": "asAny",
+        "content": "limit: (global.performance as any).memory.jsHeapSizeLimit,"
+      }
+    ],
+    "navigation/utils/SafeNavigation.ts": [
+      {
+        "line": 331,
+        "type": "explicitAny",
+        "content": "params: any"
+      }
+    ],
+    "navigation/utils/navigationPerformance.ts": [
+      {
+        "line": 76,
+        "type": "explicitAny",
+        "content": "params?: any"
+      },
+      {
+        "line": 93,
+        "type": "explicitAny",
+        "content": "navigation: any,"
+      },
+      {
+        "line": 95,
+        "type": "explicitAny",
+        "content": "params?: any"
+      },
+      {
+        "line": 139,
+        "type": "explicitAny",
+        "content": "navigation: any,"
+      }
+    ],
+    "services/ApiVersioningService.ts": [
+      {
+        "line": 185,
+        "type": "explicitAny",
+        "content": "async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {"
+      },
+      {
+        "line": 195,
+        "type": "explicitAny",
+        "content": "async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {"
+      }
+    ],
+    "services/PerformanceMonitoringService.ts": [
+      {
+        "line": 230,
+        "type": "explicitAny",
+        "content": "networkStats: any;"
+      }
+    ],
+    "services/RequestDeduplicationService.ts": [
+      {
+        "line": 12,
+        "type": "genericAny",
+        "content": "private requestCache = new Map<string, Promise<any>>();"
+      }
+    ],
+    "services/VersionedApiClient.ts": [
+      {
+        "line": 225,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      },
+      {
+        "line": 226,
+        "type": "genericAny",
+        "content": "}): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 236,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      },
+      {
+        "line": 237,
+        "type": "genericAny",
+        "content": "}): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 241,
+        "type": "genericAny",
+        "content": "async cancelNotification(reminderId: string): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 249,
+        "type": "genericAny",
+        "content": "async getHomeData(): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 253,
+        "type": "genericAny",
+        "content": "async getCalendarData(weekStart: string): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 257,
+        "type": "genericAny",
+        "content": "async getStreakInfo(): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 261,
+        "type": "genericAny",
+        "content": "async exportData(): Promise<ApiResponse<any>> {"
+      },
+      {
+        "line": 273,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      },
+      {
+        "line": 275,
+        "type": "genericAny",
+        "content": "}>): Promise<ApiResponse<any>> {"
+      }
+    ],
+    "services/api/errors.ts": [
+      {
+        "line": 5,
+        "type": "explicitAny",
+        "content": "public details?: any,"
+      },
+      {
+        "line": 13,
+        "type": "explicitAny",
+        "content": "export const handleApiError = (error: any): ApiError => {"
+      }
+    ],
+    "services/authService.ts": [
+      {
+        "line": 112,
+        "type": "genericAny",
+        "content": "restoreAccount: async (): Promise<any> => {"
+      }
+    ],
+    "services/navigationSync.ts": [
+      {
+        "line": 194,
+        "type": "explicitAny",
+        "content": "const validateRoute = (route: any): boolean => {"
+      },
+      {
+        "line": 207,
+        "type": "explicitAny",
+        "content": "return route.state.routes.every((nestedRoute: any) => validateRoute(nestedRoute));"
+      }
+    ],
+    "services/notificationService.ts": [
+      {
+        "line": 72,
+        "type": "asAny",
+        "content": "(Constants.manifest as any)?.extra?.eas?.projectId;"
+      },
+      {
+        "line": 173,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      }
+    ],
+    "services/notifications/NotificationDeliveryService.ts": [
+      {
+        "line": 20,
+        "type": "explicitAny",
+        "content": "private navigationRef: any = null;"
+      },
+      {
+        "line": 34,
+        "type": "explicitAny",
+        "content": "public setNavigationRef(ref: any): void {"
+      },
+      {
+        "line": 238,
+        "type": "asAny",
+        "content": "scheduledFor: (notif as any)?.trigger?.date ? new Date((notif as any).trigger.date) : new Date(),"
+      },
+      {
+        "line": 239,
+        "type": "asAny",
+        "content": "category: (notif.content as any)?.categoryIdentifier,"
+      },
+      {
+        "line": 245,
+        "type": "explicitAny",
+        "content": "dbNotifications?.forEach((notif: any) => {"
+      },
+      {
+        "line": 267,
+        "type": "explicitAny",
+        "content": "private convertTrigger(trigger: any): Notifications.NotificationTriggerInput {"
+      }
+    ],
+    "services/notifications/NotificationHistoryService.ts": [
+      {
+        "line": 21,
+        "type": "explicitAny",
+        "content": "metadata?: any;"
+      }
+    ],
+    "services/notifications/NotificationPreferenceService.ts": [
+      {
+        "line": 217,
+        "type": "explicitAny",
+        "content": "private convertFromDatabase(data: any): NotificationPreferences {"
+      },
+      {
+        "line": 274,
+        "type": "explicitAny",
+        "content": "private convertToDatabase(preferences: Partial<NotificationPreferences>): any {"
+      },
+      {
+        "line": 275,
+        "type": "explicitAny",
+        "content": "const dbData: any = {};"
+      }
+    ],
+    "services/notifications/NotificationSchedulingService.ts": [
+      {
+        "line": 116,
+        "type": "asAny",
+        "content": "const isBatched = (preferences.frequency as any).summaries === 'weekly' || (preferences.frequency as any).summaries === 'daily';"
+      },
+      {
+        "line": 131,
+        "type": "asAny",
+        "content": "priority: this.getHighestPriority(groupNotifications) as any,"
+      }
+    ],
+    "services/notifications/NotificationService.ts": [
+      {
+        "line": 65,
+        "type": "explicitAny",
+        "content": "setNavigationRef(ref: any): void {"
+      },
+      {
+        "line": 144,
+        "type": "explicitAny",
+        "content": "async updateUserPreferences(userId: string, preferences: any) {"
+      }
+    ],
+    "services/notifications/interfaces/INotificationDeliveryService.ts": [
+      {
+        "line": 44,
+        "type": "explicitAny",
+        "content": "setNavigationRef?(ref: any): void;"
+      }
+    ],
+    "services/notifications/utils/ErrorHandler.ts": [
+      {
+        "line": 27,
+        "type": "explicitAny",
+        "content": "handleError: (error: any, context: string) => {"
+      }
+    ],
+    "services/revenueCat.ts": [
+      {
+        "line": 292,
+        "type": "asAny",
+        "content": "* Check if user has any active subscription"
+      }
+    ],
+    "services/settingsSync.ts": [
+      {
+        "line": 135,
+        "type": "explicitAny",
+        "content": "value: any"
+      },
+      {
+        "line": 151,
+        "type": "asAny",
+        "content": "(settings.profile as any)[field] = value;"
+      },
+      {
+        "line": 215,
+        "type": "explicitAny",
+        "content": "const updates: any = {};"
+      },
+      {
+        "line": 230,
+        "type": "explicitAny",
+        "content": "const updates: any = {};"
+      },
+      {
+        "line": 249,
+        "type": "explicitAny",
+        "content": "const srsUpdates: any = {};"
+      },
+      {
+        "line": 331,
+        "type": "explicitAny",
+        "content": "value: any"
+      }
+    ],
+    "shared/components/BaseModal.tsx": [
+      {
+        "line": 129,
+        "type": "asAny",
+        "content": "presentationStyle={presentationStyle as any}"
+      }
+    ],
+    "shared/components/Button.tsx": [
+      {
+        "line": 49,
+        "type": "explicitAny",
+        "content": "const getStyles = (theme: any) => {"
+      },
+      {
+        "line": 98,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/GuestAuthModal.tsx": [
+      {
+        "line": 122,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 147,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 156,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "shared/components/Icon.tsx": [
+      {
+        "line": 20,
+        "type": "explicitAny",
+        "content": "style?: any;"
+      }
+    ],
+    "shared/components/ModalVariants.tsx": [
+      {
+        "line": 151,
+        "type": "asAny",
+        "content": "maxHeight: '85%' as any,"
+      },
+      {
+        "line": 164,
+        "type": "asAny",
+        "content": "maxWidth: '90%' as any,"
+      },
+      {
+        "line": 173,
+        "type": "asAny",
+        "content": "maxWidth: '80%' as any,"
+      }
+    ],
+    "shared/components/NotificationHistoryModal.tsx": [
+      {
+        "line": 250,
+        "type": "asAny",
+        "content": "name={filter.icon as any}"
+      }
+    ],
+    "shared/components/OptimizedFlatList.tsx": [
+      {
+        "line": 31,
+        "type": "explicitAny",
+        "content": "getItemLayout?: (data: any, index: number) => { length: number; offset: number; index: number };"
+      },
+      {
+        "line": 80,
+        "type": "explicitAny",
+        "content": "(data: any, index: number) => ({"
+      },
+      {
+        "line": 111,
+        "type": "explicitAny",
+        "content": "return (data: any, index: number) => ({"
+      },
+      {
+        "line": 130,
+        "type": "explicitAny",
+        "content": "getItemHeight: (item: any, index: number) => number,"
+      },
+      {
+        "line": 133,
+        "type": "explicitAny",
+        "content": "return (data: any, index: number) => {"
+      }
+    ],
+    "shared/components/PasswordStrengthIndicator.tsx": [
+      {
+        "line": 85,
+        "type": "explicitAny",
+        "content": "const RequirementItem: React.FC<{ met: boolean; text: string; theme: any }> = ({ met, text, theme }) => ("
+      },
+      {
+        "line": 107,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/ProgressHeader.tsx": [
+      {
+        "line": 53,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/QuickAddModal/CourseSelector.tsx": [
+      {
+        "line": 114,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 156,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 175,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 189,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 216,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "shared/components/QuickAddModal/DateTimePicker.tsx": [
+      {
+        "line": 25,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 31,
+        "type": "explicitAny",
+        "content": "const handleTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 89,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/QuickAddModal/TaskDetailsSection.tsx": [
+      {
+        "line": 88,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 116,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 120,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/QuickAddModal/TemplateSection.tsx": [
+      {
+        "line": 67,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      }
+    ],
+    "shared/components/QuickAddModal.tsx": [
+      {
+        "line": 139,
+        "type": "explicitAny",
+        "content": "const handleTemplateSelect = (template: any) => {"
+      },
+      {
+        "line": 177,
+        "type": "explicitAny",
+        "content": "const handleDateChange = (event: any, selectedDate?: Date) => {"
+      },
+      {
+        "line": 187,
+        "type": "explicitAny",
+        "content": "const handleTimeChange = (event: any, selectedTime?: Date) => {"
+      },
+      {
+        "line": 245,
+        "type": "explicitAny",
+        "content": "let taskData: any = {};"
+      },
+      {
+        "line": 328,
+        "type": "asAny",
+        "content": "navigation.navigate('Auth', { mode } as any);"
+      },
+      {
+        "line": 656,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 670,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 698,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 702,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 749,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 793,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 812,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 828,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 847,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/SimplifiedHomeScreenContent.tsx": [
+      {
+        "line": 27,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      },
+      {
+        "line": 81,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      },
+      {
+        "line": 102,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      },
+      {
+        "line": 123,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      },
+      {
+        "line": 365,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.bold as any,"
+      },
+      {
+        "line": 390,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 409,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 420,
+        "type": "explicitAny",
+        "content": "homeData: any;"
+      }
+    ],
+    "shared/components/SimplifiedInput.tsx": [
+      {
+        "line": 100,
+        "type": "explicitAny",
+        "content": "const handleFocus = (e: any) => {"
+      },
+      {
+        "line": 105,
+        "type": "explicitAny",
+        "content": "const handleBlur = (e: any) => {"
+      }
+    ],
+    "shared/components/SimplifiedQueryStateWrapper.tsx": [
+      {
+        "line": 17,
+        "type": "explicitAny",
+        "content": "data: any;"
+      },
+      {
+        "line": 223,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 243,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 253,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 274,
+        "type": "explicitAny",
+        "content": "data: any;"
+      }
+    ],
+    "shared/components/TaskDetailModal.tsx": [
+      {
+        "line": 15,
+        "type": "genericAny",
+        "content": "const [task, setTask] = useState<any>(null);"
+      },
+      {
+        "line": 38,
+        "type": "explicitAny",
+        "content": "} catch (err: any) {"
+      }
+    ],
+    "shared/components/UnifiedButton.tsx": [
+      {
+        "line": 280,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      }
+    ],
+    "shared/components/UnifiedInput.tsx": [
+      {
+        "line": 95,
+        "type": "explicitAny",
+        "content": "const handleFocus = (e: any) => {"
+      },
+      {
+        "line": 117,
+        "type": "explicitAny",
+        "content": "const handleBlur = (e: any) => {"
+      },
+      {
+        "line": 324,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.medium as any,"
+      },
+      {
+        "line": 328,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.semibold as any,"
+      },
+      {
+        "line": 337,
+        "type": "asAny",
+        "content": "fontWeight: FONT_WEIGHTS.normal as any,"
+      }
+    ],
+    "shared/hooks/useTemplateManagement.ts": [
+      {
+        "line": 9,
+        "type": "explicitAny",
+        "content": "template_data: any;"
+      },
+      {
+        "line": 71,
+        "type": "asAny",
+        "content": "// Check if user has any templates"
+      }
+    ],
+    "shared/utils/getSecureChatLink.ts": [
+      {
+        "line": 17,
+        "type": "explicitAny",
+        "content": "} catch (error: any) {"
+      }
+    ],
+    "shared/utils/templateUtils.ts": [
+      {
+        "line": 13,
+        "type": "explicitAny",
+        "content": "export const clearDateFields = (templateData: any): any => {"
+      },
+      {
+        "line": 41,
+        "type": "explicitAny",
+        "content": "export const validateTemplateData = (templateData: any, taskType: string): { isValid: boolean; error?: string } => {"
+      },
+      {
+        "line": 90,
+        "type": "explicitAny",
+        "content": "export const createTemplateDataFromTask = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): any => {"
+      },
+      {
+        "line": 98,
+        "type": "explicitAny",
+        "content": "export const canSaveAsTemplate = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): boolean => {"
+      }
+    ],
+    "types/entities.ts": [
+      {
+        "line": 229,
+        "type": "explicitAny",
+        "content": "device_info?: any;"
+      },
+      {
+        "line": 242,
+        "type": "explicitAny",
+        "content": "details?: any;"
+      }
+    ],
+    "types/navigation.ts": [
+      {
+        "line": 8,
+        "type": "explicitAny",
+        "content": "course?: any;"
+      },
+      {
+        "line": 12,
+        "type": "explicitAny",
+        "content": "[key: string]: any;"
+      }
+    ],
+    "types/offline.ts": [
+      {
+        "line": 156,
+        "type": "explicitAny",
+        "content": "data?: any;"
+      }
+    ],
+    "utils/AppError.ts": [
+      {
+        "line": 14,
+        "type": "explicitAny",
+        "content": "public details?: any"
+      },
+      {
+        "line": 42,
+        "type": "explicitAny",
+        "content": "static fromJSON(obj: any): AppError {"
+      }
+    ],
+    "utils/cache.ts": [
+      {
+        "line": 221,
+        "type": "genericAny",
+        "content": "const cached: CachedData<any> = JSON.parse(value || '{}');"
+      }
+    ],
+    "utils/debounce.ts": [
+      {
+        "line": 2,
+        "type": "explicitAny",
+        "content": "export function debounce<T extends (...args: any[]) => any>("
+      }
+    ],
+    "utils/exampleData.ts": [
+      {
+        "line": 198,
+        "type": "asAny",
+        "content": "* Check if user has any example data"
+      }
+    ],
+    "utils/syncDebugUtils.ts": [
+      {
+        "line": 62,
+        "type": "explicitAny",
+        "content": "auth: any;"
+      },
+      {
+        "line": 63,
+        "type": "explicitAny",
+        "content": "navigation: any;"
+      },
+      {
+        "line": 64,
+        "type": "explicitAny",
+        "content": "studySession: any;"
+      },
+      {
+        "line": 65,
+        "type": "explicitAny",
+        "content": "settings: any;"
+      },
+      {
+        "line": 191,
+        "type": "explicitAny",
+        "content": "const state: any = {};"
+      },
+      {
+        "line": 239,
+        "type": "asAny",
+        "content": "(global as any).__ELARO_SYNC_DEBUG__ = {"
+      }
+    ],
+    "utils/taskPersistence.ts": [
+      {
+        "line": 6,
+        "type": "explicitAny",
+        "content": "taskData: any;"
+      },
+      {
+        "line": 11,
+        "type": "explicitAny",
+        "content": "export const savePendingTask = async (taskData: any, taskType: 'assignment' | 'study_session' | 'lecture' | 'course') => {"
+      }
+    ]
+  },
+  "byType": {
+    "explicitAny": 188,
+    "asAny": 241,
+    "anyInGenerics": 22
+  },
+  "categories": {
+    "easy": [
+      {
+        "file": "features/support/utils/getSecureChatLink.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 17,
+            "type": "explicitAny",
+            "content": "} catch (error: any) {"
+          }
+        ]
+      },
+      {
+        "file": "features/templates/utils/templateUtils.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 13,
+            "type": "explicitAny",
+            "content": "export const clearDateFields = (templateData: any): any => {"
+          },
+          {
+            "line": 41,
+            "type": "explicitAny",
+            "content": "export const validateTemplateData = (templateData: any, taskType: string): { isValid: boolean; error?: string } => {"
+          },
+          {
+            "line": 90,
+            "type": "explicitAny",
+            "content": "export const createTemplateDataFromTask = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): any => {"
+          },
+          {
+            "line": 98,
+            "type": "explicitAny",
+            "content": "export const canSaveAsTemplate = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): boolean => {"
+          }
+        ]
+      },
+      {
+        "file": "services/api/errors.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 5,
+            "type": "explicitAny",
+            "content": "public details?: any,"
+          },
+          {
+            "line": 13,
+            "type": "explicitAny",
+            "content": "export const handleApiError = (error: any): ApiError => {"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/utils/ErrorHandler.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 27,
+            "type": "explicitAny",
+            "content": "handleError: (error: any, context: string) => {"
+          }
+        ]
+      },
+      {
+        "file": "shared/utils/getSecureChatLink.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 17,
+            "type": "explicitAny",
+            "content": "} catch (error: any) {"
+          }
+        ]
+      },
+      {
+        "file": "shared/utils/templateUtils.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 13,
+            "type": "explicitAny",
+            "content": "export const clearDateFields = (templateData: any): any => {"
+          },
+          {
+            "line": 41,
+            "type": "explicitAny",
+            "content": "export const validateTemplateData = (templateData: any, taskType: string): { isValid: boolean; error?: string } => {"
+          },
+          {
+            "line": 90,
+            "type": "explicitAny",
+            "content": "export const createTemplateDataFromTask = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): any => {"
+          },
+          {
+            "line": 98,
+            "type": "explicitAny",
+            "content": "export const canSaveAsTemplate = (taskData: any, taskType: 'assignment' | 'lecture' | 'study_session'): boolean => {"
+          }
+        ]
+      },
+      {
+        "file": "utils/exampleData.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 198,
+            "type": "asAny",
+            "content": "* Check if user has any example data"
+          }
+        ]
+      },
+      {
+        "file": "utils/syncDebugUtils.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 62,
+            "type": "explicitAny",
+            "content": "auth: any;"
+          },
+          {
+            "line": 63,
+            "type": "explicitAny",
+            "content": "navigation: any;"
+          },
+          {
+            "line": 64,
+            "type": "explicitAny",
+            "content": "studySession: any;"
+          },
+          {
+            "line": 65,
+            "type": "explicitAny",
+            "content": "settings: any;"
+          },
+          {
+            "line": 191,
+            "type": "explicitAny",
+            "content": "const state: any = {};"
+          }
+        ]
+      }
+    ],
+    "medium": [
+      {
+        "file": "features/assignments/services/mutations.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 55,
+            "type": "asAny",
+            "content": "} as any;"
+          }
+        ]
+      },
+      {
+        "file": "features/auth/services/authService.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 31,
+            "type": "explicitAny",
+            "content": "error?: any;"
+          },
+          {
+            "line": 112,
+            "type": "genericAny",
+            "content": "restoreAccount: async (): Promise<any> => {"
+          }
+        ]
+      },
+      {
+        "file": "features/courses/services/mutations.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 52,
+            "type": "asAny",
+            "content": "} as any;"
+          },
+          {
+            "line": 186,
+            "type": "asAny",
+            "content": "return { id: courseId, deleted_at: null } as any;"
+          }
+        ]
+      },
+      {
+        "file": "features/lectures/services/mutations.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 54,
+            "type": "asAny",
+            "content": "} as any;"
+          }
+        ]
+      },
+      {
+        "file": "features/notifications/hooks/usePushNotifications.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 136,
+            "type": "explicitAny",
+            "content": "let responseSubscription: any;"
+          },
+          {
+            "line": 137,
+            "type": "explicitAny",
+            "content": "let receivedSubscription: any;"
+          }
+        ]
+      },
+      {
+        "file": "features/srs/services/SRSAnalyticsService.ts",
+        "count": 6,
+        "issues": [
+          {
+            "line": 234,
+            "type": "explicitAny",
+            "content": "let topic: any;"
+          },
+          {
+            "line": 238,
+            "type": "asAny",
+            "content": "topic = (p.study_sessions as any).topic;"
+          },
+          {
+            "line": 443,
+            "type": "explicitAny",
+            "content": "}, {} as Record<string, { reviews: any[]; timeSpent: number }>);"
+          }
+        ]
+      },
+      {
+        "file": "features/studySessions/services/mutations.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 55,
+            "type": "asAny",
+            "content": "} as any;"
+          }
+        ]
+      },
+      {
+        "file": "features/tasks/services/AdvancedTemplateService.ts",
+        "count": 7,
+        "issues": [
+          {
+            "line": 8,
+            "type": "explicitAny",
+            "content": "defaultValue?: any;"
+          },
+          {
+            "line": 510,
+            "type": "explicitAny",
+            "content": "const updateData: any = {};"
+          },
+          {
+            "line": 621,
+            "type": "explicitAny",
+            "content": "private mapTemplateFromDB(dbTemplate: any): AdvancedTaskTemplate {"
+          }
+        ]
+      },
+      {
+        "file": "features/tasks/services/RecurringTaskService.ts",
+        "count": 5,
+        "issues": [
+          {
+            "line": 208,
+            "type": "explicitAny",
+            "content": "const updateData: any = {};"
+          },
+          {
+            "line": 351,
+            "type": "explicitAny",
+            "content": "private mapPatternFromDB(dbPattern: any): RecurringPattern {"
+          },
+          {
+            "line": 370,
+            "type": "explicitAny",
+            "content": "private mapRecurringTaskFromDB(dbTask: any): RecurringTask {"
+          }
+        ]
+      },
+      {
+        "file": "features/tasks/services/TaskDependencyService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 109,
+            "type": "explicitAny",
+            "content": "let dependencies: any[] = [];"
+          }
+        ]
+      },
+      {
+        "file": "features/templates/hooks/useTemplateManagement.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 9,
+            "type": "explicitAny",
+            "content": "template_data: any;"
+          },
+          {
+            "line": 71,
+            "type": "asAny",
+            "content": "// Check if user has any templates"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useBatchAction.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 68,
+            "type": "asAny",
+            "content": "type: item.type as any,"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useJSThreadMonitor.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 104,
+            "type": "asAny",
+            "content": "if (!__DEV__ && typeof window !== 'undefined' && (window as any).mixpanel) {"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useMemoization.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 25,
+            "type": "explicitAny",
+            "content": "export const useStableCallback = <T extends (...args: any[]) => any>("
+          }
+        ]
+      },
+      {
+        "file": "hooks/useMemoryMonitor.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 34,
+            "type": "asAny",
+            "content": "if (!(performance as any).memory) {"
+          },
+          {
+            "line": 41,
+            "type": "asAny",
+            "content": "const memory = (performance as any).memory;"
+          }
+        ]
+      },
+      {
+        "file": "hooks/usePerformanceMonitor.ts",
+        "count": 13,
+        "issues": [
+          {
+            "line": 56,
+            "type": "genericAny",
+            "content": "const previousProps = useRef<any>(null);"
+          },
+          {
+            "line": 61,
+            "type": "asAny",
+            "content": "if (trackMemory && typeof performance !== 'undefined' && (performance as any).memory) {"
+          },
+          {
+            "line": 62,
+            "type": "asAny",
+            "content": "memoryBaseline.current = (performance as any).memory.usedJSHeapSize;"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useReactNativeMemoryMonitor.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 37,
+            "type": "asAny",
+            "content": "if (typeof performance !== 'undefined' && (performance as any).memory) {"
+          },
+          {
+            "line": 38,
+            "type": "asAny",
+            "content": "return (performance as any).memory.usedJSHeapSize;"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useSyncDebug.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 100,
+            "type": "asAny",
+            "content": "userId: (navState as any)?.userId || null,"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useTemplates.ts",
+        "count": 3,
+        "issues": [
+          {
+            "line": 9,
+            "type": "explicitAny",
+            "content": "template_data: any;"
+          },
+          {
+            "line": 17,
+            "type": "explicitAny",
+            "content": "template_data: any;"
+          },
+          {
+            "line": 23,
+            "type": "explicitAny",
+            "content": "template_data: any;"
+          }
+        ]
+      },
+      {
+        "file": "hooks/useVersionedApi.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 24,
+            "type": "explicitAny",
+            "content": "onSuccess?: (data: any) => void;"
+          },
+          {
+            "line": 278,
+            "type": "explicitAny",
+            "content": "data?: any;"
+          }
+        ]
+      },
+      {
+        "file": "navigation/hooks/useNavigationPerformance.ts",
+        "count": 5,
+        "issues": [
+          {
+            "line": 179,
+            "type": "genericAny",
+            "content": "const loadComponent = useCallback(async (componentName: string, loader: () => Promise<any>) => {"
+          },
+          {
+            "line": 223,
+            "type": "asAny",
+            "content": "if (global.performance && (global.performance as any).memory) {"
+          },
+          {
+            "line": 225,
+            "type": "asAny",
+            "content": "used: (global.performance as any).memory.usedJSHeapSize,"
+          }
+        ]
+      },
+      {
+        "file": "services/ApiVersioningService.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 185,
+            "type": "explicitAny",
+            "content": "async post<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {"
+          },
+          {
+            "line": 195,
+            "type": "explicitAny",
+            "content": "async put<T = any>(endpoint: string, data?: any): Promise<ApiResponse<T>> {"
+          }
+        ]
+      },
+      {
+        "file": "services/PerformanceMonitoringService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 230,
+            "type": "explicitAny",
+            "content": "networkStats: any;"
+          }
+        ]
+      },
+      {
+        "file": "services/RequestDeduplicationService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 12,
+            "type": "genericAny",
+            "content": "private requestCache = new Map<string, Promise<any>>();"
+          }
+        ]
+      },
+      {
+        "file": "services/VersionedApiClient.ts",
+        "count": 11,
+        "issues": [
+          {
+            "line": 225,
+            "type": "explicitAny",
+            "content": "data?: any;"
+          },
+          {
+            "line": 226,
+            "type": "genericAny",
+            "content": "}): Promise<ApiResponse<any>> {"
+          },
+          {
+            "line": 236,
+            "type": "explicitAny",
+            "content": "data?: any;"
+          }
+        ]
+      },
+      {
+        "file": "services/api/errors.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 5,
+            "type": "explicitAny",
+            "content": "public details?: any,"
+          },
+          {
+            "line": 13,
+            "type": "explicitAny",
+            "content": "export const handleApiError = (error: any): ApiError => {"
+          }
+        ]
+      },
+      {
+        "file": "services/authService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 112,
+            "type": "genericAny",
+            "content": "restoreAccount: async (): Promise<any> => {"
+          }
+        ]
+      },
+      {
+        "file": "services/navigationSync.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 194,
+            "type": "explicitAny",
+            "content": "const validateRoute = (route: any): boolean => {"
+          },
+          {
+            "line": 207,
+            "type": "explicitAny",
+            "content": "return route.state.routes.every((nestedRoute: any) => validateRoute(nestedRoute));"
+          }
+        ]
+      },
+      {
+        "file": "services/notificationService.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 72,
+            "type": "asAny",
+            "content": "(Constants.manifest as any)?.extra?.eas?.projectId;"
+          },
+          {
+            "line": 173,
+            "type": "explicitAny",
+            "content": "data?: any;"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/NotificationDeliveryService.ts",
+        "count": 6,
+        "issues": [
+          {
+            "line": 20,
+            "type": "explicitAny",
+            "content": "private navigationRef: any = null;"
+          },
+          {
+            "line": 34,
+            "type": "explicitAny",
+            "content": "public setNavigationRef(ref: any): void {"
+          },
+          {
+            "line": 238,
+            "type": "asAny",
+            "content": "scheduledFor: (notif as any)?.trigger?.date ? new Date((notif as any).trigger.date) : new Date(),"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/NotificationHistoryService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 21,
+            "type": "explicitAny",
+            "content": "metadata?: any;"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/NotificationPreferenceService.ts",
+        "count": 3,
+        "issues": [
+          {
+            "line": 217,
+            "type": "explicitAny",
+            "content": "private convertFromDatabase(data: any): NotificationPreferences {"
+          },
+          {
+            "line": 274,
+            "type": "explicitAny",
+            "content": "private convertToDatabase(preferences: Partial<NotificationPreferences>): any {"
+          },
+          {
+            "line": 275,
+            "type": "explicitAny",
+            "content": "const dbData: any = {};"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/NotificationSchedulingService.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 116,
+            "type": "asAny",
+            "content": "const isBatched = (preferences.frequency as any).summaries === 'weekly' || (preferences.frequency as any).summaries === 'daily';"
+          },
+          {
+            "line": 131,
+            "type": "asAny",
+            "content": "priority: this.getHighestPriority(groupNotifications) as any,"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/NotificationService.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 65,
+            "type": "explicitAny",
+            "content": "setNavigationRef(ref: any): void {"
+          },
+          {
+            "line": 144,
+            "type": "explicitAny",
+            "content": "async updateUserPreferences(userId: string, preferences: any) {"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/interfaces/INotificationDeliveryService.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 44,
+            "type": "explicitAny",
+            "content": "setNavigationRef?(ref: any): void;"
+          }
+        ]
+      },
+      {
+        "file": "services/notifications/utils/ErrorHandler.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 27,
+            "type": "explicitAny",
+            "content": "handleError: (error: any, context: string) => {"
+          }
+        ]
+      },
+      {
+        "file": "services/revenueCat.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 292,
+            "type": "asAny",
+            "content": "* Check if user has any active subscription"
+          }
+        ]
+      },
+      {
+        "file": "services/settingsSync.ts",
+        "count": 6,
+        "issues": [
+          {
+            "line": 135,
+            "type": "explicitAny",
+            "content": "value: any"
+          },
+          {
+            "line": 151,
+            "type": "asAny",
+            "content": "(settings.profile as any)[field] = value;"
+          },
+          {
+            "line": 215,
+            "type": "explicitAny",
+            "content": "const updates: any = {};"
+          }
+        ]
+      },
+      {
+        "file": "shared/hooks/useTemplateManagement.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 9,
+            "type": "explicitAny",
+            "content": "template_data: any;"
+          },
+          {
+            "line": 71,
+            "type": "asAny",
+            "content": "// Check if user has any templates"
+          }
+        ]
+      }
+    ],
+    "hard": [
+      {
+        "file": "contexts/AuthContext.tsx",
+        "count": 3,
+        "issues": [
+          {
+            "line": 40,
+            "type": "explicitAny",
+            "content": "signIn: (credentials: LoginCredentials) => Promise<{ error: any; requiresMFA?: boolean; factors?: any[] }>;"
+          },
+          {
+            "line": 41,
+            "type": "explicitAny",
+            "content": "signUp: (credentials: SignUpCredentials) => Promise<{ error: any }>;"
+          },
+          {
+            "line": 499,
+            "type": "explicitAny",
+            "content": "} catch (error: any) {"
+          }
+        ]
+      },
+      {
+        "file": "contexts/CreationFlowContext.tsx",
+        "count": 1,
+        "issues": [
+          {
+            "line": 11,
+            "type": "genericAny",
+            "content": "export const CreationFlowContext = createContext<CreationFlowContextType<any> | undefined>(undefined);"
+          }
+        ]
+      },
+      {
+        "file": "navigation/AuthNavigator.tsx",
+        "count": 2,
+        "issues": [
+          {
+            "line": 12,
+            "type": "genericAny",
+            "content": "component: React.ComponentType<any>;"
+          },
+          {
+            "line": 13,
+            "type": "explicitAny",
+            "content": "options?: any;"
+          }
+        ]
+      },
+      {
+        "file": "navigation/AuthenticatedNavigator.tsx",
+        "count": 2,
+        "issues": [
+          {
+            "line": 73,
+            "type": "genericAny",
+            "content": "component: React.ComponentType<any>;"
+          },
+          {
+            "line": 74,
+            "type": "explicitAny",
+            "content": "options?: any;"
+          }
+        ]
+      },
+      {
+        "file": "navigation/GuestNavigator.tsx",
+        "count": 2,
+        "issues": [
+          {
+            "line": 33,
+            "type": "genericAny",
+            "content": "component: React.ComponentType<any>;"
+          },
+          {
+            "line": 34,
+            "type": "explicitAny",
+            "content": "options?: any;"
+          }
+        ]
+      },
+      {
+        "file": "navigation/MainTabNavigator.tsx",
+        "count": 1,
+        "issues": [
+          {
+            "line": 37,
+            "type": "explicitAny",
+            "content": "const tabBarScreenOptions = (insets: any, theme: any) =>"
+          }
+        ]
+      },
+      {
+        "file": "navigation/constants/NavigationConstants.ts",
+        "count": 4,
+        "issues": [
+          {
+            "line": 35,
+            "type": "explicitAny",
+            "content": "cardStyleInterpolator: ({ current, layouts }: any) => {"
+          },
+          {
+            "line": 70,
+            "type": "explicitAny",
+            "content": "cardStyleInterpolator: ({ current, layouts }: any) => {"
+          },
+          {
+            "line": 105,
+            "type": "explicitAny",
+            "content": "cardStyleInterpolator: ({ current }: any) => {"
+          }
+        ]
+      },
+      {
+        "file": "navigation/hooks/useNavigationPerformance.ts",
+        "count": 5,
+        "issues": [
+          {
+            "line": 179,
+            "type": "genericAny",
+            "content": "const loadComponent = useCallback(async (componentName: string, loader: () => Promise<any>) => {"
+          },
+          {
+            "line": 223,
+            "type": "asAny",
+            "content": "if (global.performance && (global.performance as any).memory) {"
+          },
+          {
+            "line": 225,
+            "type": "asAny",
+            "content": "used: (global.performance as any).memory.usedJSHeapSize,"
+          }
+        ]
+      },
+      {
+        "file": "navigation/utils/SafeNavigation.ts",
+        "count": 1,
+        "issues": [
+          {
+            "line": 331,
+            "type": "explicitAny",
+            "content": "params: any"
+          }
+        ]
+      },
+      {
+        "file": "navigation/utils/navigationPerformance.ts",
+        "count": 4,
+        "issues": [
+          {
+            "line": 76,
+            "type": "explicitAny",
+            "content": "params?: any"
+          },
+          {
+            "line": 93,
+            "type": "explicitAny",
+            "content": "navigation: any,"
+          },
+          {
+            "line": 95,
+            "type": "explicitAny",
+            "content": "params?: any"
+          }
+        ]
+      },
+      {
+        "file": "services/navigationSync.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 194,
+            "type": "explicitAny",
+            "content": "const validateRoute = (route: any): boolean => {"
+          },
+          {
+            "line": 207,
+            "type": "explicitAny",
+            "content": "return route.state.routes.every((nestedRoute: any) => validateRoute(nestedRoute));"
+          }
+        ]
+      },
+      {
+        "file": "types/navigation.ts",
+        "count": 2,
+        "issues": [
+          {
+            "line": 8,
+            "type": "explicitAny",
+            "content": "course?: any;"
+          },
+          {
+            "line": 12,
+            "type": "explicitAny",
+            "content": "[key: string]: any;"
+          }
+        ]
+      }
+    ]
+  }
+}

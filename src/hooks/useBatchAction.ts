@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { syncManager } from '@/services/syncManager';
 
 export type BatchActionType = 'RESTORE' | 'DELETE_PERMANENTLY';
@@ -30,9 +30,11 @@ export interface BatchActionResult {
   };
 }
 
-async function batchAction(request: BatchActionRequest): Promise<BatchActionResult> {
+async function batchAction(
+  request: BatchActionRequest,
+): Promise<BatchActionResult> {
   console.log(`🔄 Batch ${request.action} for ${request.items.length} items`);
-  
+
   const { data, error } = await supabase.functions.invoke('batch-action', {
     body: request,
   });
@@ -53,8 +55,10 @@ export function useBatchAction() {
     mutationFn: async (request: BatchActionRequest) => {
       // OFFLINE MODE: Add to queue instead of calling server
       if (!isOnline) {
-        console.log(`📴 Offline: Queueing BATCH ${request.action} for ${request.items.length} items`);
-        
+        console.log(
+          `📴 Offline: Queueing BATCH ${request.action} for ${request.items.length} items`,
+        );
+
         // Add to sync queue
         if (user?.id) {
           await syncManager.addToQueue(
@@ -69,10 +73,10 @@ export function useBatchAction() {
               })),
             },
             user.id,
-            { syncImmediately: false }
+            { syncImmediately: false },
           );
         }
-        
+
         // Return optimistic result
         return {
           message: `Batch ${request.action} queued for sync`,
@@ -81,7 +85,10 @@ export function useBatchAction() {
             succeeded: request.items.length,
             failed: 0,
             details: {
-              success: request.items.map(item => ({ id: item.id, type: item.type })),
+              success: request.items.map(item => ({
+                id: item.id,
+                type: item.type,
+              })),
               failed: [],
             },
           },
@@ -90,7 +97,9 @@ export function useBatchAction() {
       }
 
       // ONLINE MODE: Execute server mutation
-      console.log(`🌐 Online: Executing batch ${request.action} for ${request.items.length} items`);
+      console.log(
+        `🌐 Online: Executing batch ${request.action} for ${request.items.length} items`,
+      );
       return batchAction(request);
     },
     onSuccess: async (data, variables) => {
@@ -100,11 +109,11 @@ export function useBatchAction() {
       if (isOnline) {
         // Invalidate relevant queries
         queryClient.invalidateQueries({ queryKey: ['deletedItems'] });
-        
+
         // Clear cache for home screen and calendar data
         // since items might have been restored
         await cache.remove('homeScreenData');
-        
+
         // Also invalidate other queries based on item types
         const types = [...new Set(variables.items.map(item => item.type))];
         types.forEach(type => {
@@ -129,4 +138,3 @@ export function useBatchAction() {
     },
   });
 }
-

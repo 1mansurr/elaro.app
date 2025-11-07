@@ -51,8 +51,7 @@ export const GradientButton: React.FC<GradientButtonProps> = ({
       colors={gradientColors}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
-      style={[{ borderRadius: BORDER_RADIUS.md }, style]}
-    >
+      style={[{ borderRadius: BORDER_RADIUS.md }, style]}>
       <UnifiedButton
         title={title}
         onPress={onPress}

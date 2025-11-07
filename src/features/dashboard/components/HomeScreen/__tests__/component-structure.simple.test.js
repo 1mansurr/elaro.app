@@ -4,18 +4,18 @@ describe('HomeScreen Components Structure', () => {
     // Test that all component files exist
     const fs = require('fs');
     const path = require('path');
-    
+
     const componentDir = path.join(__dirname, '..');
-    
+
     const requiredFiles = [
       'HomeScreenHeader.tsx',
       'HomeScreenContent.tsx',
       'HomeScreenFAB.tsx',
       'HomeScreenModals.tsx',
       'HomeScreenHooks.tsx',
-      'index.ts'
+      'index.ts',
     ];
-    
+
     requiredFiles.forEach(file => {
       const filePath = path.join(componentDir, file);
       expect(fs.existsSync(filePath)).toBe(true);
@@ -26,10 +26,10 @@ describe('HomeScreen Components Structure', () => {
     // Test that the directory structure is correct
     const fs = require('fs');
     const path = require('path');
-    
+
     const componentDir = path.join(__dirname, '..');
     const files = fs.readdirSync(componentDir);
-    
+
     // Should have the main component files
     expect(files).toContain('HomeScreenHeader.tsx');
     expect(files).toContain('HomeScreenContent.tsx');
@@ -43,10 +43,10 @@ describe('HomeScreen Components Structure', () => {
     // Test that test files exist
     const fs = require('fs');
     const path = require('path');
-    
+
     const testDir = path.join(__dirname);
     const files = fs.readdirSync(testDir);
-    
+
     // Should have test files
     expect(files.length).toBeGreaterThan(0);
     expect(files.some(file => file.includes('.test.'))).toBe(true);

@@ -1,6 +1,6 @@
 /**
  * Network Helper Utilities for E2E Offline Testing
- * 
+ *
  * Provides utilities to simulate network online/offline states
  * and verify offline behavior
  */
@@ -15,7 +15,7 @@ let networkState: 'online' | 'offline' = 'online';
 
 /**
  * Mock network control for E2E tests
- * 
+ *
  * Note: In Detox, we can't directly control device network.
  * Instead, we simulate it by:
  * 1. Injecting network state into the app via mock services
@@ -28,17 +28,17 @@ export const network = {
    */
   async setNetworkMode(mode: 'online' | 'offline'): Promise<void> {
     networkState = mode;
-    
+
     // Update mock auth to simulate offline behavior
     if (mode === 'offline') {
       mockSupabaseAuth.setNetworkMode('offline');
     } else {
       mockSupabaseAuth.setNetworkMode('online');
     }
-    
+
     // Give app time to react to network change
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     console.log(`🌐 Network mode set to: ${mode}`);
   },
 
@@ -66,7 +66,9 @@ export const network = {
   /**
    * Simulate network interruption (offline → online)
    */
-  async simulateNetworkInterruption(offlineDurationMs: number = 2000): Promise<void> {
+  async simulateNetworkInterruption(
+    offlineDurationMs: number = 2000,
+  ): Promise<void> {
     await this.goOffline();
     await new Promise(resolve => setTimeout(resolve, offlineDurationMs));
     await this.goOnline();
@@ -102,4 +104,3 @@ export const network = {
     await this.setNetworkMode('online');
   },
 };
-

@@ -2,7 +2,16 @@ import React from 'react';
 import { View, StyleSheet, ViewStyle } from 'react-native';
 import { BaseModal } from './BaseModal';
 import { useTheme } from '@/contexts/ThemeContext';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, MODAL_TOKENS, SHADOWS, ANIMATIONS } from '@/constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  MODAL_TOKENS,
+  SHADOWS,
+  ANIMATIONS,
+} from '@/constants/theme';
 
 interface ModalVariantProps {
   isVisible: boolean;
@@ -30,17 +39,18 @@ export const SheetModal: React.FC<ModalVariantProps> = ({
       animationType="slide"
       animationDuration={modalConfig.duration}
       closeOnBackdropPress={closeOnBackdropPress}
-      modalStyle={[
-        styles.sheetContainer,
-        {
-          backgroundColor: theme.background,
-          borderTopLeftRadius: BORDER_RADIUS.lg,
-          borderTopRightRadius: BORDER_RADIUS.lg,
-        },
-        modalStyle,
-      ] as ViewStyle}
-      overlayStyle={styles.sheetOverlay}
-    >
+      modalStyle={
+        [
+          styles.sheetContainer,
+          {
+            backgroundColor: theme.background,
+            borderTopLeftRadius: BORDER_RADIUS.lg,
+            borderTopRightRadius: BORDER_RADIUS.lg,
+          },
+          modalStyle,
+        ] as ViewStyle
+      }
+      overlayStyle={styles.sheetOverlay}>
       {children}
     </BaseModal>
   );
@@ -64,15 +74,16 @@ export const DialogModal: React.FC<ModalVariantProps> = ({
       animationType="fade"
       animationDuration={modalConfig.duration}
       closeOnBackdropPress={closeOnBackdropPress}
-      modalStyle={[
-        styles.dialogContainer,
-        {
-          backgroundColor: theme.background,
-          borderRadius: BORDER_RADIUS.lg,
-        },
-        modalStyle,
-      ] as ViewStyle}
-    >
+      modalStyle={
+        [
+          styles.dialogContainer,
+          {
+            backgroundColor: theme.background,
+            borderRadius: BORDER_RADIUS.lg,
+          },
+          modalStyle,
+        ] as ViewStyle
+      }>
       {children}
     </BaseModal>
   );
@@ -96,15 +107,16 @@ export const SimpleModal: React.FC<ModalVariantProps> = ({
       animationType="fade"
       animationDuration={modalConfig.duration}
       closeOnBackdropPress={closeOnBackdropPress}
-      modalStyle={[
-        styles.simpleContainer,
-        {
-          backgroundColor: theme.background,
-          borderRadius: BORDER_RADIUS.md,
-        },
-        modalStyle,
-      ] as ViewStyle}
-    >
+      modalStyle={
+        [
+          styles.simpleContainer,
+          {
+            backgroundColor: theme.background,
+            borderRadius: BORDER_RADIUS.md,
+          },
+          modalStyle,
+        ] as ViewStyle
+      }>
       {children}
     </BaseModal>
   );
@@ -129,14 +141,15 @@ export const FullScreenModal: React.FC<ModalVariantProps> = ({
       animationDuration={modalConfig.duration}
       closeOnBackdropPress={closeOnBackdropPress}
       presentationStyle="fullScreen"
-      modalStyle={[
-        styles.fullScreenContainer,
-        {
-          backgroundColor: theme.background,
-        },
-        modalStyle,
-      ] as ViewStyle}
-    >
+      modalStyle={
+        [
+          styles.fullScreenContainer,
+          {
+            backgroundColor: theme.background,
+          },
+          modalStyle,
+        ] as ViewStyle
+      }>
       {children}
     </BaseModal>
   );

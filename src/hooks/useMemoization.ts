@@ -7,14 +7,16 @@ import React, { useMemo, useCallback, useRef } from 'react';
 export const useExpensiveMemo = <T>(
   factory: () => T,
   deps: React.DependencyList,
-  equalityFn?: (a: T, b: T) => boolean
+  equalityFn?: (a: T, b: T) => boolean,
 ): T => {
-  const ref = useRef<{ value: T; deps: React.DependencyList } | undefined>(undefined);
-  
+  const ref = useRef<{ value: T; deps: React.DependencyList } | undefined>(
+    undefined,
+  );
+
   if (!ref.current || !areEqual(ref.current.deps, deps)) {
     ref.current = { value: factory(), deps };
   }
-  
+
   return ref.current.value;
 };
 
@@ -24,14 +26,16 @@ export const useExpensiveMemo = <T>(
  */
 export const useStableCallback = <T extends (...args: any[]) => any>(
   callback: T,
-  deps: React.DependencyList
+  deps: React.DependencyList,
 ): T => {
-  const ref = useRef<{ callback: T; deps: React.DependencyList } | undefined>(undefined);
-  
+  const ref = useRef<{ callback: T; deps: React.DependencyList } | undefined>(
+    undefined,
+  );
+
   if (!ref.current || !areEqual(ref.current.deps, deps)) {
     ref.current = { callback, deps };
   }
-  
+
   return ref.current.callback;
 };
 
@@ -41,11 +45,11 @@ export const useStableCallback = <T extends (...args: any[]) => any>(
  */
 function areEqual(a: React.DependencyList, b: React.DependencyList): boolean {
   if (a.length !== b.length) return false;
-  
+
   for (let i = 0; i < a.length; i++) {
     if (a[i] !== b[i]) return false;
   }
-  
+
   return true;
 }
 
@@ -55,7 +59,7 @@ function areEqual(a: React.DependencyList, b: React.DependencyList): boolean {
  */
 export const useExpensiveCalculation = <T>(
   calculation: () => T,
-  deps: React.DependencyList
+  deps: React.DependencyList,
 ): T => {
   return useMemo(() => {
     console.time('Expensive calculation');
@@ -72,7 +76,7 @@ export const useExpensiveCalculation = <T>(
  */
 export const useStableObject = <T extends Record<string, any>>(
   factory: () => T,
-  deps: React.DependencyList
+  deps: React.DependencyList,
 ): T => {
   return useMemo(() => {
     const result = factory();
@@ -89,7 +93,7 @@ export const useStableObject = <T extends Record<string, any>>(
  */
 export const useStableArray = <T>(
   factory: () => T[],
-  deps: React.DependencyList
+  deps: React.DependencyList,
 ): T[] => {
   return useMemo(() => {
     const result = factory();
@@ -106,19 +110,19 @@ export const useStableArray = <T>(
 export const useDebouncedMemo = <T>(
   factory: () => T,
   deps: React.DependencyList,
-  delay: number = 300
+  delay: number = 300,
 ): T => {
   const [debouncedValue, setDebouncedValue] = React.useState<T>(factory);
-  
+
   React.useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedValue(factory());
     }, delay);
-    
+
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [factory, delay, ...deps]);
-  
+
   return debouncedValue;
 };
 
@@ -129,13 +133,18 @@ export const useDebouncedMemo = <T>(
 export const useCustomMemo = <T>(
   factory: () => T,
   deps: React.DependencyList,
-  equalityFn: (prevDeps: React.DependencyList, nextDeps: React.DependencyList) => boolean
+  equalityFn: (
+    prevDeps: React.DependencyList,
+    nextDeps: React.DependencyList,
+  ) => boolean,
 ): T => {
-  const ref = useRef<{ value: T; deps: React.DependencyList } | undefined>(undefined);
-  
+  const ref = useRef<{ value: T; deps: React.DependencyList } | undefined>(
+    undefined,
+  );
+
   if (!ref.current || !equalityFn(ref.current.deps, deps)) {
     ref.current = { value: factory(), deps };
   }
-  
+
   return ref.current.value;
 };

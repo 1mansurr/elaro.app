@@ -3,7 +3,7 @@
  * The app currently uses AddAssignmentScreen (single-screen modal) instead of this 6-screen flow.
  * However, this file is kept for type definitions (AddAssignmentStackParamList) which are used
  * by the individual flow screens for their navigation types.
- * 
+ *
  * TODO: Either integrate this navigator into the navigation structure or extract the types
  * to a separate file and remove this navigator.
  */
@@ -42,35 +42,34 @@ export const AddAssignmentNavigator: React.FC = () => {
         headerTitleStyle: {
           fontWeight: '600',
         },
-      }}
-    >
-      <Stack.Screen 
-        name="SelectCourse" 
+      }}>
+      <Stack.Screen
+        name="SelectCourse"
         component={SelectCourseScreen}
         options={{ title: 'Select Course' }}
       />
-      <Stack.Screen 
-        name="AssignmentTitle" 
+      <Stack.Screen
+        name="AssignmentTitle"
         component={AssignmentTitleScreen}
         options={{ title: 'Assignment Title' }}
       />
-      <Stack.Screen 
-        name="AssignmentDescription" 
+      <Stack.Screen
+        name="AssignmentDescription"
         component={AssignmentDescriptionScreen}
         options={{ title: 'Assignment Description' }}
       />
-      <Stack.Screen 
-        name="DueDate" 
+      <Stack.Screen
+        name="DueDate"
         component={DueDateScreen}
         options={{ title: 'Due Date' }}
       />
-      <Stack.Screen 
-        name="SubmissionMethod" 
+      <Stack.Screen
+        name="SubmissionMethod"
         component={SubmissionMethodScreen}
         options={{ title: 'Submission Method' }}
       />
-      <Stack.Screen 
-        name="Reminders" 
+      <Stack.Screen
+        name="Reminders"
         component={AssignmentRemindersScreen}
         options={{ title: 'Reminders' }}
       />

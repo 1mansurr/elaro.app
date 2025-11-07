@@ -3,6 +3,7 @@
     "https://deno.land/std@0.168.0/": "https://deno.land/std@0.168.0/",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.0.0",
     "sentry": "https://deno.land/x/sentry/index.mjs",
+    "https://deno.land/x/sentry_deno@v0.2.2/": "https://deno.land/x/sentry_deno@v0.2.2/",
     "expo-server-sdk": "https://esm.sh/expo-server-sdk@3.7.0"
   }
-} 
+}

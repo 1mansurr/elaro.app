@@ -47,13 +47,8 @@ export const BaseButton: React.FC<BaseButtonProps> = ({
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
-      accessibilityState={{ disabled: disabled || loading }}
-    >
-      {loading ? (
-        <ActivityIndicator color="#FFFFFF" />
-      ) : (
-        children
-      )}
+      accessibilityState={{ disabled: disabled || loading }}>
+      {loading ? <ActivityIndicator color="#FFFFFF" /> : children}
     </TouchableOpacity>
   );
 };

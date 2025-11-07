@@ -14,7 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { formatDistanceToNow } from 'date-fns';
 
 import { RootStackParamList } from '@/types';
-import { DraftData, getAllDrafts, clearDraft, clearAllDrafts } from '@/utils/draftStorage';
+import {
+  DraftData,
+  getAllDrafts,
+  clearDraft,
+  clearAllDrafts,
+} from '@/utils/draftStorage';
 import { Button } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { showToast } from '@/utils/showToast';
@@ -47,7 +52,7 @@ const DraftsScreen = () => {
   useFocusEffect(
     useCallback(() => {
       loadDrafts();
-    }, [])
+    }, []),
   );
 
   const handleRefresh = () => {
@@ -91,7 +96,7 @@ const DraftsScreen = () => {
             loadDrafts();
           },
         },
-      ]
+      ],
     );
   };
 
@@ -112,18 +117,30 @@ const DraftsScreen = () => {
             loadDrafts();
           },
         },
-      ]
+      ],
     );
   };
 
   const getTaskTypeInfo = (taskType: string) => {
     switch (taskType) {
       case 'assignment':
-        return { icon: 'document-text' as const, color: '#FF9500', label: 'Assignment' };
+        return {
+          icon: 'document-text' as const,
+          color: '#FF9500',
+          label: 'Assignment',
+        };
       case 'lecture':
-        return { icon: 'school' as const, color: COLORS.primary, label: 'Lecture' };
+        return {
+          icon: 'school' as const,
+          color: COLORS.primary,
+          label: 'Lecture',
+        };
       case 'study_session':
-        return { icon: 'book' as const, color: '#34C759', label: 'Study Session' };
+        return {
+          icon: 'book' as const,
+          color: '#34C759',
+          label: 'Study Session',
+        };
       default:
         return { icon: 'document' as const, color: COLORS.gray, label: 'Task' };
     }
@@ -131,19 +148,24 @@ const DraftsScreen = () => {
 
   const renderDraft = ({ item }: { item: DraftData }) => {
     const typeInfo = getTaskTypeInfo(item.taskType);
-    const savedAgo = formatDistanceToNow(new Date(item.savedAt), { addSuffix: true });
+    const savedAgo = formatDistanceToNow(new Date(item.savedAt), {
+      addSuffix: true,
+    });
 
     return (
       <TouchableOpacity
         style={styles.draftCard}
         onPress={() => handleOpenDraft(item)}
-        activeOpacity={0.7}
-      >
+        activeOpacity={0.7}>
         <View style={styles.draftContent}>
-          <View style={[styles.typeIcon, { backgroundColor: typeInfo.color + '20' }]}>
+          <View
+            style={[
+              styles.typeIcon,
+              { backgroundColor: typeInfo.color + '20' },
+            ]}>
             <Ionicons name={typeInfo.icon} size={24} color={typeInfo.color} />
           </View>
-          
+
           <View style={styles.draftInfo}>
             <Text style={styles.draftTitle} numberOfLines={2}>
               {item.title || 'Untitled'}
@@ -159,11 +181,10 @@ const DraftsScreen = () => {
 
           <TouchableOpacity
             style={styles.deleteButton}
-            onPress={(e) => {
+            onPress={e => {
               e.stopPropagation();
               handleDeleteDraft(item);
-            }}
-          >
+            }}>
             <Ionicons name="trash-outline" size={20} color={COLORS.gray} />
           </TouchableOpacity>
         </View>
@@ -176,7 +197,8 @@ const DraftsScreen = () => {
       <Ionicons name="document-outline" size={64} color={COLORS.gray} />
       <Text style={styles.emptyTitle}>No Drafts</Text>
       <Text style={styles.emptyMessage}>
-        Drafts are automatically saved when you start creating a task. They'll appear here so you can continue later.
+        Drafts are automatically saved when you start creating a task. They'll
+        appear here so you can continue later.
       </Text>
     </View>
   );
@@ -198,7 +220,11 @@ const DraftsScreen = () => {
       {/* Info Banner */}
       {drafts.length > 0 && (
         <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={20} color={COLORS.primary} />
+          <Ionicons
+            name="information-circle-outline"
+            size={20}
+            color={COLORS.primary}
+          />
           <Text style={styles.infoBannerText}>
             Tap a draft to continue editing. Drafts are auto-saved as you type.
           </Text>
@@ -209,7 +235,7 @@ const DraftsScreen = () => {
       <FlatList
         data={drafts}
         renderItem={renderDraft}
-        keyExtractor={(item) => item.taskType}
+        keyExtractor={item => item.taskType}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmpty}
         refreshControl={
@@ -219,6 +245,12 @@ const DraftsScreen = () => {
             tintColor={COLORS.primary}
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
       />
     </View>
   );
@@ -343,4 +375,3 @@ const styles = StyleSheet.create({
 });
 
 export default DraftsScreen;
-

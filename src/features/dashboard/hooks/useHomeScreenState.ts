@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePermissions } from '@/features/auth/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 
@@ -9,7 +9,7 @@ export const useHomeScreenState = () => {
   const { session, user } = useAuth();
   const { isPremium } = usePermissions(user);
   const isGuest = !session;
-  
+
   // State management
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isFabOpen, setIsFabOpen] = useState(false);
@@ -44,13 +44,14 @@ export const useHomeScreenState = () => {
     if (isGuest) {
       return 'Welcome to ELARO';
     }
-    
+
     const hour = new Date().getHours();
     let greeting = 'Good evening';
     if (hour < 12) greeting = 'Good morning';
     else if (hour < 18) greeting = 'Good afternoon';
-    
-    const firstName = user?.first_name || user?.user_metadata?.first_name || 'there';
+
+    const firstName =
+      user?.first_name || user?.user_metadata?.first_name || 'there';
     return `${greeting}, ${firstName}`;
   }, [isGuest, user]);
 
@@ -77,13 +78,13 @@ export const useHomeScreenState = () => {
     isBannerDismissed,
     isGuest,
     user,
-    
+
     // Handlers
     handleViewDetails,
     handleCloseSheet,
     handleFabStateChange,
     handleDismissBanner,
-    
+
     // Computed values
     getPersonalizedTitle,
     shouldShowBanner,

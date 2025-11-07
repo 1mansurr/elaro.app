@@ -1,9 +1,17 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { validatePassword, getPasswordStrengthColor } from '@/utils/passwordValidation';
+import {
+  validatePassword,
+  getPasswordStrengthColor,
+} from '@/utils/passwordValidation';
 import { useTheme } from '@/contexts/ThemeContext';
-import { SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '@/constants/theme';
+import {
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 
 interface PasswordStrengthIndicatorProps {
   password: string;
@@ -12,7 +20,7 @@ interface PasswordStrengthIndicatorProps {
 
 /**
  * A reusable component that displays password strength requirements and indicator
- * 
+ *
  * @example
  * ```tsx
  * <PasswordStrengthIndicator
@@ -21,10 +29,9 @@ interface PasswordStrengthIndicatorProps {
  * />
  * ```
  */
-export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps> = ({
-  password,
-  showRequirements = true,
-}) => {
+export const PasswordStrengthIndicator: React.FC<
+  PasswordStrengthIndicatorProps
+> = ({ password, showRequirements = true }) => {
   const { theme } = useTheme();
   const validation = validatePassword(password);
 
@@ -37,7 +44,7 @@ export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps>
           <Text style={[styles.title, { color: theme.text }]}>
             Password Requirements:
           </Text>
-          
+
           <RequirementItem
             met={validation.checks.hasMinLength}
             text="At least 8 characters"
@@ -68,28 +75,36 @@ export const PasswordStrengthIndicator: React.FC<PasswordStrengthIndicatorProps>
 
       {/* Strength Bar */}
       <View style={styles.strengthContainer}>
-        <View 
+        <View
           style={[
-            styles.strengthBar, 
-            { 
-              width: `${validation.strength * 20}%`, 
-              backgroundColor: getPasswordStrengthColor(validation.strength)
-            }
-          ]} 
+            styles.strengthBar,
+            {
+              width: `${validation.strength * 20}%`,
+              backgroundColor: getPasswordStrengthColor(validation.strength),
+            },
+          ]}
         />
       </View>
     </View>
   );
 };
 
-const RequirementItem: React.FC<{ met: boolean; text: string; theme: any }> = ({ met, text, theme }) => (
+const RequirementItem: React.FC<{ met: boolean; text: string; theme: any }> = ({
+  met,
+  text,
+  theme,
+}) => (
   <View style={styles.requirementItem}>
-    <Ionicons 
-      name={met ? "checkmark-circle" : "close-circle"} 
-      size={16} 
-      color={met ? theme.success : theme.destructive} 
+    <Ionicons
+      name={met ? 'checkmark-circle' : 'close-circle'}
+      size={16}
+      color={met ? theme.success : theme.destructive}
     />
-    <Text style={[styles.requirementText, { color: met ? theme.success : theme.destructive }]}>
+    <Text
+      style={[
+        styles.requirementText,
+        { color: met ? theme.success : theme.destructive },
+      ]}>
       {text}
     </Text>
   </View>
@@ -130,4 +145,3 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
 });
-

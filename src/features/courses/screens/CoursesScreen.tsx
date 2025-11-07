@@ -1,21 +1,34 @@
 // FILE: src/features/courses/screens/CoursesScreen.tsx
 import React, { useLayoutEffect, useCallback, useState, memo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, Modal, Switch, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  Modal,
+  Switch,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCourses } from '@/hooks/useDataQueries';
 import { useDebounce } from '@/hooks/useDebounce';
 import { RootStackParamList, Course } from '@/types';
-import { LockedItemsBanner } from '@/features/user-profile/components/LockedItemsBanner';
+import { LockedItemsBanner } from '@/shared/components/LockedItemsBanner';
 import { useSubscription } from '@/hooks/useSubscription';
 import { QueryStateWrapper } from '@/shared/components';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING } from '@/constants/theme';
 import { CourseSortOption } from '@/features/courses/services/queries';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
+import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 
 // Define the navigation prop type for this screen
-type CoursesScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type CoursesScreenNavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
 
 // Memoized course item component
 const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
@@ -23,36 +36,61 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
     <TouchableOpacity
       style={styles.courseItem}
       onPress={() => onPress(item.id)}
-    >
+      accessibilityLabel={
+        item.courseCode
+          ? `${item.courseName}, ${item.courseCode}`
+          : item.courseName
+      }
+      accessibilityHint="Opens course details"
+      accessibilityRole="button">
       <Text style={styles.courseName}>{item.courseName}</Text>
       {item.courseCode && (
         <Text style={styles.courseCode}>{item.courseCode}</Text>
       )}
     </TouchableOpacity>
-  )
+  ),
 );
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
   // const { offerings, purchasePackage } = useSubscription();
   const { purchasePackage } = useSubscription();
-  
+
   // Mock offerings for now
   const offerings = { current: null as any };
   const { theme } = useTheme();
-  
+
+  // JS Thread monitoring (dev only)
+  const jsThreadMetrics = useJSThreadMonitor({
+    enabled: __DEV__,
+    logSlowFrames: true,
+    slowFrameThreshold: 20,
+  });
+
+  // Memory monitoring (dev only)
+  useMemoryMonitor(__DEV__, 50, 30000); // 50% threshold, check every 30s
+
+  // Log warnings in dev if too many slow frames
+  React.useEffect(() => {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+      console.warn(
+        `⚠️ CoursesScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+      );
+    }
+  }, [jsThreadMetrics.slowFrameCount, jsThreadMetrics.averageFrameTime]);
+
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Sort and filter state
   const [sortOption, setSortOption] = useState<CourseSortOption>('name-asc');
   const [showArchived, setShowArchived] = useState(false);
   const [isSortModalVisible, setSortModalVisible] = useState(false);
   const [isFilterModalVisible, setFilterModalVisible] = useState(false);
-  
+
   // Debounce the search query (500ms delay)
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
-  
+
   // Use infinite query for pagination
   const {
     data,
@@ -69,13 +107,16 @@ const CoursesScreen = () => {
     sortOption,
     showArchived,
   });
-  
+
   // Flatten all pages into a single array
   const courses = data?.pages.flatMap(page => page.courses) ?? [];
 
   // Handle upgrade to unlock locked courses
   const handleUpgrade = useCallback(async () => {
-    if (!offerings?.current?.availablePackages || offerings.current.availablePackages.length === 0) {
+    if (
+      !offerings?.current?.availablePackages ||
+      offerings.current.availablePackages.length === 0
+    ) {
       // Navigate to account screen where subscription management is available
       // Account is a tab route, so navigate to Main tab first, then to Account screen
       navigation.navigate('Main', { screen: 'Account' } as any);
@@ -96,18 +137,38 @@ const CoursesScreen = () => {
     navigation.setOptions({
       headerTitle: 'My Courses',
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, gap: 12 }}>
-          <TouchableOpacity onPress={() => setSortModalVisible(true)}>
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginRight: 16,
+            gap: 12,
+          }}>
+          <TouchableOpacity
+            onPress={() => setSortModalVisible(true)}
+            accessibilityLabel="Sort courses"
+            accessibilityHint="Opens sorting options for courses"
+            accessibilityRole="button">
             <Ionicons name="swap-vertical" size={22} color={COLORS.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setFilterModalVisible(true)}>
-            <Ionicons 
-              name={showArchived ? "funnel" : "funnel-outline"} 
-              size={22} 
-              color={showArchived ? COLORS.primary : COLORS.text} 
+          <TouchableOpacity
+            onPress={() => setFilterModalVisible(true)}
+            accessibilityLabel={
+              showArchived ? 'Hide archived courses' : 'Show archived courses'
+            }
+            accessibilityHint="Toggles visibility of archived courses"
+            accessibilityRole="button">
+            <Ionicons
+              name={showArchived ? 'funnel' : 'funnel-outline'}
+              size={22}
+              color={showArchived ? COLORS.primary : COLORS.text}
             />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('AddCourseFlow')}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('AddCourseFlow')}
+            accessibilityLabel="Add new course"
+            accessibilityHint="Opens the add course flow"
+            accessibilityRole="button">
             <Text style={styles.headerButton}>Add</Text>
           </TouchableOpacity>
         </View>
@@ -121,16 +182,19 @@ const CoursesScreen = () => {
   };
 
   // Memoized navigation handler
-  const handleNavigateToCourse = useCallback((courseId: string) => {
-    navigation.navigate('CourseDetail', { courseId });
-  }, [navigation]);
+  const handleNavigateToCourse = useCallback(
+    (courseId: string) => {
+      navigation.navigate('CourseDetail', { courseId });
+    },
+    [navigation],
+  );
 
   // Render item for the FlatList
   const renderCourse = useCallback(
     ({ item }: { item: Course }) => (
       <CourseItem item={item} onPress={handleNavigateToCourse} />
     ),
-    [handleNavigateToCourse]
+    [handleNavigateToCourse],
   );
 
   // Sort options
@@ -161,7 +225,7 @@ const CoursesScreen = () => {
   // Render footer with loading indicator
   const renderFooter = useCallback(() => {
     if (!isFetchingNextPage) return null;
-    
+
     return (
       <View style={styles.footerLoader}>
         <ActivityIndicator size="small" color={theme.accent} />
@@ -182,19 +246,23 @@ const CoursesScreen = () => {
         refetch={refetch}
         isRefetching={isRefetching}
         onRefresh={refetch}
-        emptyTitle={searchQuery.trim() ? "No courses found" : "No courses yet"}
+        emptyTitle={searchQuery.trim() ? 'No courses found' : 'No courses yet'}
         emptyMessage={
           searchQuery.trim()
             ? `No courses match "${searchQuery}". Try a different search term.`
-            : "Start by adding your first course to organize your academic schedule!"
+            : 'Start by adding your first course to organize your academic schedule!'
         }
-        emptyIcon="book-outline"
-      >
+        emptyIcon="book-outline">
         <View style={styles.container}>
           {/* Search Bar */}
           <View style={styles.searchContainer}>
             <View style={styles.searchInputContainer}>
-              <Ionicons name="search" size={20} color={COLORS.textSecondary} style={styles.searchIcon} />
+              <Ionicons
+                name="search"
+                size={20}
+                color={COLORS.textSecondary}
+                style={styles.searchIcon}
+              />
               <TextInput
                 style={styles.searchInput}
                 placeholder="Search courses..."
@@ -205,8 +273,17 @@ const CoursesScreen = () => {
                 autoCorrect={false}
               />
               {searchQuery.length > 0 && (
-                <TouchableOpacity onPress={handleClearSearch} style={styles.clearButton}>
-                  <Ionicons name="close-circle" size={20} color={COLORS.textSecondary} />
+                <TouchableOpacity
+                  onPress={handleClearSearch}
+                  style={styles.clearButton}
+                  accessibilityLabel="Clear search"
+                  accessibilityHint="Clears the search query"
+                  accessibilityRole="button">
+                  <Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={COLORS.textSecondary}
+                  />
                 </TouchableOpacity>
               )}
             </View>
@@ -215,7 +292,11 @@ const CoursesScreen = () => {
           {/* Active filters indicator */}
           {(sortOption !== 'name-asc' || showArchived) && (
             <View style={styles.activeFiltersContainer}>
-              <Text style={[styles.activeFiltersText, { color: theme.textSecondary }]}>
+              <Text
+                style={[
+                  styles.activeFiltersText,
+                  { color: theme.textSecondary },
+                ]}>
                 {getSortLabel()}
                 {showArchived && ' • Showing Archived'}
               </Text>
@@ -225,8 +306,13 @@ const CoursesScreen = () => {
                   setShowArchived(false);
                 }}
                 style={styles.clearFiltersButton}
-              >
-                <Text style={[styles.clearFiltersText, { color: theme.accent }]}>Clear</Text>
+                accessibilityLabel="Clear filters"
+                accessibilityHint="Resets sorting and filtering to defaults"
+                accessibilityRole="button">
+                <Text
+                  style={[styles.clearFiltersText, { color: theme.accent }]}>
+                  Clear
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -234,17 +320,20 @@ const CoursesScreen = () => {
           <FlatList
             data={courses}
             renderItem={renderCourse}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             contentContainerStyle={styles.listContainer}
             ListHeaderComponent={
-              <LockedItemsBanner
-                itemType="courses"
-                onUpgrade={handleUpgrade}
-              />
+              <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
             }
             ListFooterComponent={renderFooter}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
+            // Performance optimizations
+            removeClippedSubviews={true}
+            maxToRenderPerBatch={10}
+            windowSize={5}
+            updateCellsBatchingPeriod={50}
+            initialNumToRender={10}
           />
         </View>
       </QueryStateWrapper>
@@ -254,36 +343,57 @@ const CoursesScreen = () => {
         visible={isSortModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setSortModalVisible(false)}
-      >
+        onRequestClose={() => setSortModalVisible(false)}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setSortModalVisible(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Sort Courses</Text>
-              <TouchableOpacity onPress={() => setSortModalVisible(false)}>
+          accessibilityLabel="Close sort modal"
+          accessibilityRole="button">
+          <View
+            style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View
+              style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                Sort Courses
+              </Text>
+              <TouchableOpacity
+                onPress={() => setSortModalVisible(false)}
+                accessibilityLabel="Close sort modal"
+                accessibilityHint="Closes the sort options modal"
+                accessibilityRole="button">
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
             </View>
-            
-            {sortOptions.map((option) => (
+
+            {sortOptions.map(option => (
               <TouchableOpacity
                 key={option.value}
                 style={[
                   styles.modalOption,
                   { borderBottomColor: theme.border },
-                  sortOption === option.value && { backgroundColor: theme.accent + '15' }
+                  sortOption === option.value && {
+                    backgroundColor: theme.accent + '15',
+                  },
                 ]}
                 onPress={() => handleSortSelect(option.value)}
-              >
-                <Text style={[
-                  styles.modalOptionText,
-                  { color: theme.text },
-                  sortOption === option.value && { color: theme.accent, fontWeight: '600' }
-                ]}>
+                accessibilityLabel={option.label}
+                accessibilityHint={
+                  sortOption === option.value
+                    ? 'Currently selected'
+                    : 'Select this sorting option'
+                }
+                accessibilityRole="button"
+                accessibilityState={{ selected: sortOption === option.value }}>
+                <Text
+                  style={[
+                    styles.modalOptionText,
+                    { color: theme.text },
+                    sortOption === option.value && {
+                      color: theme.accent,
+                      fontWeight: '600',
+                    },
+                  ]}>
                   {option.label}
                 </Text>
                 {sortOption === option.value && (
@@ -300,25 +410,39 @@ const CoursesScreen = () => {
         visible={isFilterModalVisible}
         transparent
         animationType="fade"
-        onRequestClose={() => setFilterModalVisible(false)}
-      >
+        onRequestClose={() => setFilterModalVisible(false)}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setFilterModalVisible(false)}
-        >
-          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
-            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
-              <Text style={[styles.modalTitle, { color: theme.text }]}>Filter Courses</Text>
-              <TouchableOpacity onPress={() => setFilterModalVisible(false)}>
+          accessibilityLabel="Close filter modal"
+          accessibilityRole="button">
+          <View
+            style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View
+              style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>
+                Filter Courses
+              </Text>
+              <TouchableOpacity
+                onPress={() => setFilterModalVisible(false)}
+                accessibilityLabel="Close filter modal"
+                accessibilityHint="Closes the filter options modal"
+                accessibilityRole="button">
                 <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
             </View>
-            
+
             <View style={styles.filterOption}>
               <View style={styles.filterOptionText}>
-                <Text style={[styles.filterLabel, { color: theme.text }]}>Show Archived Courses</Text>
-                <Text style={[styles.filterDescription, { color: theme.textSecondary }]}>
+                <Text style={[styles.filterLabel, { color: theme.text }]}>
+                  Show Archived Courses
+                </Text>
+                <Text
+                  style={[
+                    styles.filterDescription,
+                    { color: theme.textSecondary },
+                  ]}>
                   Include courses that have been archived or deleted
                 </Text>
               </View>

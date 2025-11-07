@@ -2,7 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, Switch } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Course } from '@/types';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, COMPONENT_TOKENS } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  COMPONENT_TOKENS,
+} from '@/constants/theme';
 import { canSaveAsTemplate } from '@/features/templates/utils/templateUtils';
 
 interface TemplateSectionProps {
@@ -27,13 +33,22 @@ export const TemplateSection: React.FC<TemplateSectionProps> = ({
     <View style={styles.container}>
       <View style={styles.templateToggleContainer}>
         <View style={styles.templateToggleInfo}>
-          <Ionicons name="information-circle-outline" size={16} color={COLORS.primary} />
-          <Text style={styles.templateToggleText}>Save as template for future use</Text>
+          <Ionicons
+            name="information-circle-outline"
+            size={16}
+            color={COLORS.primary}
+          />
+          <Text style={styles.templateToggleText}>
+            Save as template for future use
+          </Text>
         </View>
         <Switch
           value={saveAsTemplate}
           onValueChange={onSaveAsTemplateChange}
-          trackColor={{ false: 'COLORS.lightGray', true: 'COLORS.primaryLight '}}
+          trackColor={{
+            false: 'COLORS.lightGray',
+            true: 'COLORS.primaryLight ',
+          }}
           thumbColor={saveAsTemplate ? COLORS.primary : 'COLORS.gray'}
         />
       </View>

@@ -1,6 +1,6 @@
 /**
  * Pass 4: Profile Flow Validation
- * 
+ *
  * Tests profile and settings navigation flows:
  * - Dashboard → Profile → Settings → Back
  * - Settings → DeviceManagement → LoginHistory → Back
@@ -29,7 +29,7 @@ describe('Pass 4: Profile Flow Validation', () => {
     mockSupabaseAuth.reset();
     await device.reloadReactNative();
     await TestHelpers.wait(2000);
-    
+
     try {
       await TestHelpers.loginWithTestUser();
       await TestHelpers.wait(3000);
@@ -67,7 +67,7 @@ describe('Pass 4: Profile Flow Validation', () => {
         await waitFor(element(by.id('settings-navigation-button')))
           .toBeVisible()
           .withTimeout(5000);
-        
+
         await element(by.id('settings-navigation-button')).tap();
         await TestHelpers.wait(2000);
 
@@ -85,9 +85,11 @@ describe('Pass 4: Profile Flow Validation', () => {
       // Try to navigate to settings via Account screen
       try {
         // Navigate to Account tab first
-        await element(by.text('Account')).tap().catch(() => {
-          // Tab might already be selected
-        });
+        await element(by.text('Account'))
+          .tap()
+          .catch(() => {
+            // Tab might already be selected
+          });
         await TestHelpers.wait(2000);
 
         // Navigate to Settings
@@ -105,17 +107,21 @@ describe('Pass 4: Profile Flow Validation', () => {
     it('should restore correct stack when navigating back', async () => {
       // Navigate forward: Dashboard → Account → Settings
       try {
-        await element(by.text('Account')).tap().catch(() => {});
+        await element(by.text('Account'))
+          .tap()
+          .catch(() => {});
         await TestHelpers.wait(1000);
-        
+
         await element(by.id('settings-navigation-button')).tap();
         await TestHelpers.wait(2000);
 
         // Navigate back
-        await element(by.id('back-button')).tap().catch(() => {
-          // Try device back button or system back
-          device.pressBack();
-        });
+        await element(by.id('back-button'))
+          .tap()
+          .catch(() => {
+            // Try device back button or system back
+            device.pressBack();
+          });
         await TestHelpers.wait(2000);
 
         // Should be back on Account screen (or Dashboard)
@@ -130,7 +136,9 @@ describe('Pass 4: Profile Flow Validation', () => {
     it('should navigate to profile edit screen', async () => {
       // Navigate to Account/Profile
       try {
-        await element(by.text('Account')).tap().catch(() => {});
+        await element(by.text('Account'))
+          .tap()
+          .catch(() => {});
         await TestHelpers.wait(2000);
 
         // Look for "View Profile" or "Edit Profile" button
@@ -151,14 +159,18 @@ describe('Pass 4: Profile Flow Validation', () => {
     it('should navigate to DeviceManagement from Settings', async () => {
       // Navigate to Settings
       try {
-        await element(by.text('Account')).tap().catch(() => {});
+        await element(by.text('Account'))
+          .tap()
+          .catch(() => {});
         await TestHelpers.wait(1000);
         await element(by.id('settings-navigation-button')).tap();
         await TestHelpers.wait(2000);
 
         // Look for Device Management option
         // Would need testID on SettingsScreen items
-        console.log('ℹ️ Device Management navigation - requires testIDs on Settings items');
+        console.log(
+          'ℹ️ Device Management navigation - requires testIDs on Settings items',
+        );
       } catch {
         console.log('ℹ️ Settings sub-navigation requires manual verification');
       }
@@ -166,8 +178,9 @@ describe('Pass 4: Profile Flow Validation', () => {
 
     it('should navigate to LoginHistory from Settings', async () => {
       // Similar to DeviceManagement test
-      console.log('ℹ️ Login History navigation - requires testIDs on Settings items');
+      console.log(
+        'ℹ️ Login History navigation - requires testIDs on Settings items',
+      );
     });
   });
 });
-

@@ -1,6 +1,6 @@
 /**
  * Navigation Helper Utilities for E2E Sync Tests
- * 
+ *
  * Provides utilities to navigate and verify navigation state
  */
 
@@ -93,4 +93,3 @@ export const navigation = {
     }
   },
 };
-

@@ -7,12 +7,15 @@ import { authSyncService } from '@/services/authSync';
  */
 export function useAppStateSync() {
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', async (nextAppState: AppStateStatus) => {
-      if (nextAppState === 'active') {
-        console.log('📱 App became active, syncing auth...');
-        await authSyncService.onAppResume();
-      }
-    });
+    const subscription = AppState.addEventListener(
+      'change',
+      async (nextAppState: AppStateStatus) => {
+        if (nextAppState === 'active') {
+          console.log('📱 App became active, syncing auth...');
+          await authSyncService.onAppResume();
+        }
+      },
+    );
 
     return () => {
       subscription.remove();

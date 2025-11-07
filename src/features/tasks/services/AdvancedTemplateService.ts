@@ -23,7 +23,13 @@ export interface AdvancedTaskTemplate {
   templateName: string;
   description: string;
   taskType: 'assignment' | 'lecture' | 'study_session';
-  category: 'academic' | 'work' | 'personal' | 'study' | 'project' | 'maintenance';
+  category:
+    | 'academic'
+    | 'work'
+    | 'personal'
+    | 'study'
+    | 'project'
+    | 'maintenance';
   fields: TemplateField[];
   defaultValues: Record<string, any>;
   validationRules: Record<string, any>;
@@ -116,6 +122,19 @@ export interface TemplateSearchFilters {
   searchQuery?: string;
 }
 
+export interface PublicTemplateQueryOptions extends TemplateSearchFilters {
+  pageParam?: number;
+  pageSize?: number;
+  sortBy?: 'usage_count' | 'rating' | 'created_at';
+  sortAscending?: boolean;
+}
+
+export interface PublicTemplatesPage {
+  templates: AdvancedTaskTemplate[];
+  nextOffset: number | undefined;
+  hasMore: boolean;
+}
+
 export class AdvancedTemplateService {
   private static instance: AdvancedTemplateService;
 
@@ -131,7 +150,7 @@ export class AdvancedTemplateService {
    */
   async createTemplate(
     userId: string,
-    request: CreateTemplateRequest
+    request: CreateTemplateRequest,
   ): Promise<AdvancedTaskTemplate> {
     try {
       const { data: template, error } = await supabase
@@ -181,7 +200,9 @@ export class AdvancedTemplateService {
         throw new Error(`Failed to get user templates: ${error.message}`);
       }
 
-      return (templates || []).map(template => this.mapTemplateFromDB(template));
+      return (templates || []).map(template =>
+        this.mapTemplateFromDB(template),
+      );
     } catch (error) {
       console.error('❌ Error getting user templates:', error);
       throw error;
@@ -189,49 +210,98 @@ export class AdvancedTemplateService {
   }
 
   /**
-   * Get public templates
+   * Get public templates with pagination
+   * @param options - Query options including pagination, sorting, and filters
+   * @returns Paginated templates with metadata
    */
-  async getPublicTemplates(filters?: TemplateSearchFilters): Promise<AdvancedTaskTemplate[]> {
+  async getPublicTemplates(
+    options?: PublicTemplateQueryOptions,
+  ): Promise<PublicTemplatesPage> {
     try {
+      const {
+        pageParam = 0,
+        pageSize = 50,
+        sortBy = 'usage_count',
+        sortAscending = false,
+        category,
+        tags,
+        taskType,
+        minRating,
+        searchQuery,
+      } = options || {};
+
       let query = supabase
         .from('task_templates')
-        .select('*')
-        .eq('is_public', true)
-        .order('usage_count', { ascending: false });
+        .select('*', { count: 'exact' })
+        .eq('is_public', true);
 
-      if (filters) {
-        if (filters.category) {
-          query = query.eq('category', filters.category);
-        }
-        
-        if (filters.tags && filters.tags.length > 0) {
-          query = query.overlaps('tags', filters.tags);
-        }
-        
-        if (filters.taskType) {
-          query = query.eq('task_type', filters.taskType);
-        }
-        
-        if (filters.minRating) {
-          query = query.gte('rating', filters.minRating);
-        }
-        
-        if (filters.searchQuery) {
-          query = query.or(`template_name.ilike.%${filters.searchQuery}%,description.ilike.%${filters.searchQuery}%`);
-        }
+      // Apply filters
+      if (category) {
+        query = query.eq('category', category);
       }
 
-      const { data: templates, error } = await query;
+      if (tags && tags.length > 0) {
+        query = query.overlaps('tags', tags);
+      }
+
+      if (taskType) {
+        query = query.eq('task_type', taskType);
+      }
+
+      if (minRating) {
+        query = query.gte('rating', minRating);
+      }
+
+      if (searchQuery) {
+        query = query.or(
+          `template_name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`,
+        );
+      }
+
+      // Apply sorting
+      query = query.order(sortBy, { ascending: sortAscending });
+
+      // Apply pagination
+      const from = pageParam;
+      const to = pageParam + pageSize - 1;
+      query = query.range(from, to);
+
+      const { data: templates, error, count } = await query;
 
       if (error) {
         throw new Error(`Failed to get public templates: ${error.message}`);
       }
 
-      return (templates || []).map(template => this.mapTemplateFromDB(template));
+      const mappedData = (templates || []).map(template =>
+        this.mapTemplateFromDB(template),
+      );
+      const hasMore = count ? pageParam + pageSize < count : false;
+      const nextOffset = hasMore ? pageParam + pageSize : undefined;
+
+      return {
+        templates: mappedData,
+        nextOffset,
+        hasMore,
+      };
     } catch (error) {
       console.error('❌ Error getting public templates:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get public templates (backward compatibility - use getPublicTemplates with options for pagination)
+   * @deprecated Consider using getPublicTemplates() with pagination options for better performance
+   */
+  async getPublicTemplatesLegacy(
+    filters?: TemplateSearchFilters,
+  ): Promise<AdvancedTaskTemplate[]> {
+    const result = await this.getPublicTemplates({
+      ...filters,
+      pageParam: 0,
+      pageSize: 1000, // Large page size for backward compatibility
+    });
+    return result.templates;
   }
 
   /**
@@ -241,10 +311,12 @@ export class AdvancedTemplateService {
     try {
       const { data: templates, error } = await supabase
         .from('task_templates')
-        .select(`
+        .select(
+          `
           *,
           template_shares!inner(permission)
-        `)
+        `,
+        )
         .eq('template_shares.shared_with_user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -252,7 +324,9 @@ export class AdvancedTemplateService {
         throw new Error(`Failed to get shared templates: ${error.message}`);
       }
 
-      return (templates || []).map(template => this.mapTemplateFromDB(template));
+      return (templates || []).map(template =>
+        this.mapTemplateFromDB(template),
+      );
     } catch (error) {
       console.error('❌ Error getting shared templates:', error);
       throw error;
@@ -273,7 +347,9 @@ export class AdvancedTemplateService {
         throw new Error(`Failed to get template categories: ${error.message}`);
       }
 
-      return (categories || []).map(category => this.mapCategoryFromDB(category));
+      return (categories || []).map(category =>
+        this.mapCategoryFromDB(category),
+      );
     } catch (error) {
       console.error('❌ Error getting template categories:', error);
       throw error;
@@ -285,17 +361,21 @@ export class AdvancedTemplateService {
    */
   async createTaskFromTemplate(
     userId: string,
-    request: CreateTaskFromTemplateRequest
+    request: CreateTaskFromTemplateRequest,
   ): Promise<string> {
     try {
-      const { data: taskId, error } = await supabase
-        .rpc('create_task_from_template', {
+      const { data: taskId, error } = await supabase.rpc(
+        'create_task_from_template',
+        {
           p_template_id: request.templateId,
-          p_customizations: request.customizations
-        });
+          p_customizations: request.customizations,
+        },
+      );
 
       if (error) {
-        throw new Error(`Failed to create task from template: ${error.message}`);
+        throw new Error(
+          `Failed to create task from template: ${error.message}`,
+        );
       }
 
       return taskId;
@@ -315,22 +395,26 @@ export class AdvancedTemplateService {
     description: string = '',
     category: string = 'personal',
     tags: string[] = [],
-    isPublic: boolean = false
+    isPublic: boolean = false,
   ): Promise<string> {
     try {
-      const { data: templateId, error } = await supabase
-        .rpc('create_template_from_task', {
+      const { data: templateId, error } = await supabase.rpc(
+        'create_template_from_task',
+        {
           p_task_id: taskId,
           p_task_type: taskType,
           p_template_name: templateName,
           p_description: description,
           p_category: category,
           p_tags: tags,
-          p_is_public: isPublic
-        });
+          p_is_public: isPublic,
+        },
+      );
 
       if (error) {
-        throw new Error(`Failed to create template from task: ${error.message}`);
+        throw new Error(
+          `Failed to create template from task: ${error.message}`,
+        );
       }
 
       return templateId;
@@ -345,7 +429,7 @@ export class AdvancedTemplateService {
    */
   async shareTemplate(
     userId: string,
-    request: ShareTemplateRequest
+    request: ShareTemplateRequest,
   ): Promise<TemplateShare[]> {
     try {
       const shares = request.sharedWithUserIds.map(sharedWithUserId => ({
@@ -376,7 +460,7 @@ export class AdvancedTemplateService {
    */
   async rateTemplate(
     userId: string,
-    request: RateTemplateRequest
+    request: RateTemplateRequest,
   ): Promise<TemplateRating> {
     try {
       const { data: rating, error } = await supabase
@@ -450,29 +534,32 @@ export class AdvancedTemplateService {
    */
   async updateTemplate(
     templateId: string,
-    updates: Partial<CreateTemplateRequest>
+    updates: Partial<CreateTemplateRequest>,
   ): Promise<AdvancedTaskTemplate> {
     try {
       const updateData: any = {};
-      
+
       if (updates.templateName) updateData.template_name = updates.templateName;
       if (updates.description) updateData.description = updates.description;
       if (updates.category) updateData.category = updates.category;
       if (updates.tags) updateData.tags = updates.tags;
-      if (updates.isPublic !== undefined) updateData.is_public = updates.isPublic;
-      
+      if (updates.isPublic !== undefined)
+        updateData.is_public = updates.isPublic;
+
       if (updates.fields || updates.defaultValues || updates.validationRules) {
         const { data: currentTemplate } = await supabase
           .from('task_templates')
           .select('template_data')
           .eq('id', templateId)
           .single();
-        
+
         if (currentTemplate) {
           const templateData = currentTemplate.template_data;
           if (updates.fields) templateData.fields = updates.fields;
-          if (updates.defaultValues) templateData.defaultValues = updates.defaultValues;
-          if (updates.validationRules) templateData.validationRules = updates.validationRules;
+          if (updates.defaultValues)
+            templateData.defaultValues = updates.defaultValues;
+          if (updates.validationRules)
+            templateData.validationRules = updates.validationRules;
           updateData.template_data = templateData;
         }
       }
@@ -538,16 +625,21 @@ export class AdvancedTemplateService {
           .from('template_usage')
           .select('id')
           .eq('template_id', templateId)
-          .gte('used_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
+          .gte(
+            'used_at',
+            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          ),
       ]);
 
       const templateData = template.data;
       const ratingsData = ratings.data || [];
       const recentUsageData = recentUsage.data || [];
 
-      const averageRating = ratingsData.length > 0 
-        ? ratingsData.reduce((sum, r) => sum + r.rating, 0) / ratingsData.length 
-        : 0;
+      const averageRating =
+        ratingsData.length > 0
+          ? ratingsData.reduce((sum, r) => sum + r.rating, 0) /
+            ratingsData.length
+          : 0;
 
       return {
         usageCount: templateData?.usage_count || 0,
@@ -566,7 +658,7 @@ export class AdvancedTemplateService {
    */
   private mapTemplateFromDB(dbTemplate: any): AdvancedTaskTemplate {
     const templateData = dbTemplate.template_data || {};
-    
+
     return {
       id: dbTemplate.id,
       userId: dbTemplate.user_id,

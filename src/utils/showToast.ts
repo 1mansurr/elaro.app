@@ -13,9 +13,8 @@ interface ToastOptions {
  */
 export const showToast = (options: ToastOptions | string) => {
   // Support both object and string signatures
-  const config: ToastOptions = typeof options === 'string' 
-    ? { message: options } 
-    : options;
+  const config: ToastOptions =
+    typeof options === 'string' ? { message: options } : options;
 
   const { type = 'info', message, title } = config;
 
@@ -60,4 +59,3 @@ export const showInfoToast = (message: string, title?: string) => {
 export const showWarningToast = (message: string, title?: string) => {
   showToast({ type: 'warning', message, title });
 };
-

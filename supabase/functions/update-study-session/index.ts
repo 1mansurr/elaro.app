@@ -1,24 +1,52 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { UpdateStudySessionSchema } from '../_shared/schemas/studySession.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
-async function handleUpdateStudySession({ user, supabaseClient, body }: AuthenticatedRequest) {
+async function handleUpdateStudySession(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
   const { session_id, ...updates } = body;
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
-  if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
+  if (!encryptionKey)
+    throw new AppError(
+      'Encryption key not configured.',
+      500,
+      ERROR_CODES.CONFIG_ERROR,
+    );
 
-  console.log(`Verifying ownership for user: ${user.id}, session: ${session_id}`);
+  await logger.info(
+    'Verifying study session ownership',
+    { user_id: user.id, session_id },
+    traceContext,
+  );
 
   // SECURITY: Verify ownership before updating
-  const { error: checkError } = await supabaseClient
+  const { data: existing, error: checkError } = await supabaseClient
     .from('study_sessions')
     .select('id')
     .eq('id', session_id)
     .eq('user_id', user.id)
     .single();
 
-  if (checkError) throw new AppError('Study session not found or access denied.', 404, 'NOT_FOUND');
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
+    }
+    throw new AppError(
+      'Study session not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
+    );
+  }
 
   // Encrypt fields if they are being updated
   const encryptedUpdates = { ...updates };
@@ -39,16 +67,19 @@ async function handleUpdateStudySession({ user, supabaseClient, body }: Authenti
     .select()
     .single();
 
-  if (updateError) throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
-  
-  console.log(`Successfully updated study session with ID: ${session_id}`);
+  if (updateError) throw handleDbError(updateError);
+
+  await logger.info(
+    'Successfully updated study session',
+    { user_id: user.id, session_id },
+    traceContext,
+  );
   return data;
 }
 
-serve(createAuthenticatedHandler(
-  handleUpdateStudySession,
-  {
+serve(
+  createAuthenticatedHandler(handleUpdateStudySession, {
     rateLimitName: 'update-study-session',
     schema: UpdateStudySessionSchema,
-  }
-));
+  }),
+);

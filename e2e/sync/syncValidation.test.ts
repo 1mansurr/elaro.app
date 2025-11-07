@@ -1,12 +1,12 @@
 /**
  * Pass 7: Sync Validation E2E Test
- * 
+ *
  * Tests end-to-end state synchronization across:
  * - Auth persistence
  * - Preference state sync (theme, settings)
  * - Navigation state retention
  * - Local storage rehydration
- * 
+ *
  * Structure: Chunked into parallel test groups for better organization
  */
 
@@ -43,7 +43,7 @@ describe('Pass 7: Sync Validation', () => {
 
       // Step 1: Sign in as test user
       await auth.signIn();
-      
+
       // Verify login succeeded
       const isLoggedIn = await auth.isLoggedIn();
       expect(isLoggedIn).toBe(true);
@@ -67,12 +67,12 @@ describe('Pass 7: Sync Validation', () => {
       // Step 5: Verify user remains logged in after reload
       const stillLoggedIn = await auth.isLoggedIn();
       expect(stillLoggedIn).toBe(true);
-      
+
       // Verify session still valid
       const sessionAfter = await auth.getSupabaseUser();
       expect(sessionAfter).not.toBeNull();
       expect(sessionAfter?.email).toBe(testUser.email);
-      
+
       console.log('✅ Step 5: Auth state persisted after reload');
     });
 
@@ -84,7 +84,7 @@ describe('Pass 7: Sync Validation', () => {
       // Verify state matches
       const matches = await syncHelpers.verifyLocalStateMatchesSupabase();
       expect(matches).toBe(true);
-      
+
       console.log('✅ Auth state synced between Supabase and local storage');
     });
 
@@ -103,7 +103,7 @@ describe('Pass 7: Sync Validation', () => {
       // Verify logged out
       const isLoggedOut = !(await auth.isLoggedIn());
       expect(isLoggedOut).toBe(true);
-      
+
       // Verify no local state
       const hasLocalState = await syncHelpers.verifyLocalAuthState();
       expect(hasLocalState).toBe(false);
@@ -135,17 +135,19 @@ describe('Pass 7: Sync Validation', () => {
 
       // Note: Theme toggle would need a testID on the theme toggle button
       // For now, we verify the preference system exists
-      
+
       // Change theme (this would require UI interaction with testID)
       // await element(by.id('theme-toggle-button')).tap();
-      
+
       // Reload app
       await device.reloadReactNative();
       await TestHelpers.wait(3000);
 
       // Verify theme preference persisted
       // In real app, would check AsyncStorage or UI state
-      console.log('✅ Theme preference sync test - requires theme toggle testID');
+      console.log(
+        '✅ Theme preference sync test - requires theme toggle testID',
+      );
     });
 
     it('should sync notification preferences to Supabase', async () => {
@@ -159,29 +161,33 @@ describe('Pass 7: Sync Validation', () => {
 
       // Update notification preference
       // This would require notification settings UI with testIDs
-      
+
       // Reload app
       await device.reloadReactNative();
       await TestHelpers.wait(3000);
 
       // Verify preference persisted
       // Would check AsyncStorage cache and Supabase
-      
-      console.log('✅ Notification preferences sync - requires settings UI testIDs');
+
+      console.log(
+        '✅ Notification preferences sync - requires settings UI testIDs',
+      );
     });
 
     it('should queue preference changes when offline', async () => {
       // This test would verify offline queueing
       // For now, we verify the sync mechanism exists
-      
+
       // Make a preference change
       // Go offline (simulate)
       // Make another change
       // Verify both are queued
       // Go online
       // Verify sync happens
-      
-      console.log('ℹ️ Offline preference queueing - requires network simulation');
+
+      console.log(
+        'ℹ️ Offline preference queueing - requires network simulation',
+      );
     });
   });
 
@@ -200,11 +206,11 @@ describe('Pass 7: Sync Validation', () => {
       // Navigate to a deep screen
       await navigation.goToDashboard();
       await TestHelpers.wait(1000);
-      
+
       try {
         await navigation.goToProfile();
         await TestHelpers.wait(1000);
-        
+
         await navigation.goToSettings();
         await TestHelpers.wait(1000);
       } catch {
@@ -213,7 +219,7 @@ describe('Pass 7: Sync Validation', () => {
 
       // Verify we're on settings (or last navigated screen)
       const onSettings = await navigation.verifyScreen('settings-screen');
-      
+
       // Reload app
       await device.reloadReactNative();
       await TestHelpers.wait(3000);
@@ -225,13 +231,15 @@ describe('Pass 7: Sync Validation', () => {
       expect(appReloaded).toBe(true);
 
       console.log('✅ Navigation state restoration after reload');
-      console.log('ℹ️ Full navigation stack verification requires navigation state inspection');
+      console.log(
+        'ℹ️ Full navigation stack verification requires navigation state inspection',
+      );
     });
 
     it('should preserve tab state across reload', async () => {
       // Navigate to different tabs
       const tabs = ['Home', 'Calendar', 'Courses', 'Account'];
-      
+
       for (const tab of tabs) {
         try {
           await navigation.goTo(tab);
@@ -268,12 +276,16 @@ describe('Pass 7: Sync Validation', () => {
       // Verify navigation reset to guest state
       // Should be on guest home or auth screen
       try {
-        await waitFor(element(by.id('guest-home-screen')).or(element(by.id('auth-screen'))))
+        await waitFor(
+          element(by.id('guest-home-screen')).or(element(by.id('auth-screen'))),
+        )
           .toBeVisible()
           .withTimeout(5000);
         console.log('✅ Navigation state cleared on logout');
       } catch {
-        console.log('ℹ️ Navigation state clear verification - manual check recommended');
+        console.log(
+          'ℹ️ Navigation state clear verification - manual check recommended',
+        );
       }
     });
 
@@ -292,7 +304,7 @@ describe('Pass 7: Sync Validation', () => {
 
       // Login as different user (in real app)
       // Verify no cross-user navigation state
-      
+
       console.log('✅ Navigation state isolation test completed');
     });
   });
@@ -324,4 +336,3 @@ describe('Pass 7: Sync Validation', () => {
     });
   });
 });
-

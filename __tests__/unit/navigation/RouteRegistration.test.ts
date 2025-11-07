@@ -2,14 +2,16 @@ import { NavigationValidation } from '@/navigation/utils/SafeNavigation';
 
 /**
  * Route Registration Validation Tests
- * 
+ *
  * These tests ensure that all critical navigation routes are properly registered
  * in the navigation system. This is important for runtime navigation validation.
  */
 describe('Route Registration Validation', () => {
   describe('Critical Study Flow Routes', () => {
     it('should have StudySessionReview registered', () => {
-      expect(NavigationValidation.isValidRoute('StudySessionReview')).toBe(true);
+      expect(NavigationValidation.isValidRoute('StudySessionReview')).toBe(
+        true,
+      );
     });
 
     it('should have StudyResult registered', () => {
@@ -23,7 +25,9 @@ describe('Route Registration Validation', () => {
     });
 
     it('should have OddityWelcomeScreen registered', () => {
-      expect(NavigationValidation.isValidRoute('OddityWelcomeScreen')).toBe(true);
+      expect(NavigationValidation.isValidRoute('OddityWelcomeScreen')).toBe(
+        true,
+      );
     });
   });
 
@@ -47,4 +51,3 @@ describe('Route Registration Validation', () => {
     });
   });
 });
-

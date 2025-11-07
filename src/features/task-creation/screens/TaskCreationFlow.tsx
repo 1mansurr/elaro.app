@@ -1,10 +1,10 @@
 /**
  * @deprecated This screen is not registered in the navigation structure.
  * The route 'TaskCreationFlow' has been removed from RootStackParamList.
- * 
+ *
  * This file is kept for reference but should not be used for navigation.
  * Consider using AddAssignmentFlow, AddLectureFlow, or AddStudySessionFlow instead.
- * 
+ *
  * Removed on: Navigation Audit - Pass 2 Fixes
  */
 
@@ -15,8 +15,17 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
 import { DESIGN_SYSTEM, VISUAL_HIERARCHY } from '@/constants/designSystem';
-import { PrimaryButton, SecondaryButton, OutlineButton } from '@/shared/components';
-import { HeaderSection, ContentSection, ActionSection } from '@/shared/components/LayoutComponents';
+import {
+  PrimaryButton,
+  SecondaryButton,
+  OutlineButton,
+} from '@/shared/components';
+import {
+  HeaderSection,
+  ContentSection,
+  ActionSection,
+} from '@/shared/components/LayoutComponents';
+import { formatDate } from '@/i18n';
 
 // Note: TaskCreationFlow is not in RootStackParamList anymore
 type TaskCreationFlowNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -61,15 +70,18 @@ const TaskCreationFlow: React.FC = () => {
     },
   ];
 
-  const handleNext = useCallback((stepData: Partial<TaskCreationData>) => {
-    setFormData(prev => ({ ...prev, ...stepData }));
-    
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      handleCompleteTask();
-    }
-  }, [currentStep, steps.length]);
+  const handleNext = useCallback(
+    (stepData: Partial<TaskCreationData>) => {
+      setFormData(prev => ({ ...prev, ...stepData }));
+
+      if (currentStep < steps.length - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        handleCompleteTask();
+      }
+    },
+    [currentStep, steps.length],
+  );
 
   const handleBack = useCallback(() => {
     if (currentStep > 0) {
@@ -93,11 +105,11 @@ const TaskCreationFlow: React.FC = () => {
         <Text style={styles.title}>{steps[currentStep].title}</Text>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
-                styles.progressFill, 
-                { width: `${((currentStep + 1) / steps.length) * 100}%` }
-              ]} 
+                styles.progressFill,
+                { width: `${((currentStep + 1) / steps.length) * 100}%` },
+              ]}
             />
           </View>
           <Text style={styles.progressText}>
@@ -108,7 +120,7 @@ const TaskCreationFlow: React.FC = () => {
 
       <ContentSection>
         <ScrollView>
-          <CurrentStep 
+          <CurrentStep
             data={formData}
             onNext={handleNext}
             onBack={handleBack}
@@ -119,10 +131,7 @@ const TaskCreationFlow: React.FC = () => {
 
       <ActionSection>
         <View style={styles.buttonContainer}>
-          <SecondaryButton
-            title="Back"
-            onPress={handleBack}
-          />
+          <SecondaryButton title="Back" onPress={handleBack} />
           <PrimaryButton
             title={currentStep === steps.length - 1 ? 'Create Task' : 'Next'}
             onPress={() => handleNext({})}
@@ -145,7 +154,7 @@ const TaskTypeStep: React.FC<{
     <Text style={styles.stepDescription}>
       Choose the type of task you want to create.
     </Text>
-    
+
     <View style={styles.optionContainer}>
       <OutlineButton
         title="📚 Assignment"
@@ -160,7 +169,9 @@ const TaskTypeStep: React.FC<{
       <OutlineButton
         title="📖 Study Session"
         onPress={() => onNext({ type: 'study_session' })}
-        style={data.type === 'study_session' ? styles.selectedOption : undefined}
+        style={
+          data.type === 'study_session' ? styles.selectedOption : undefined
+        }
       />
     </View>
   </View>
@@ -177,13 +188,15 @@ const TaskDetailsStep: React.FC<{
     <Text style={styles.stepDescription}>
       Provide the basic information for your task.
     </Text>
-    
+
     <View style={styles.formContainer}>
       <Text style={styles.formLabel}>Title</Text>
       <Text style={styles.formInput}>{data.title || 'Enter task title'}</Text>
-      
+
       <Text style={styles.formLabel}>Description</Text>
-      <Text style={styles.formInput}>{data.description || 'Enter task description'}</Text>
+      <Text style={styles.formInput}>
+        {data.description || 'Enter task description'}
+      </Text>
     </View>
   </View>
 );
@@ -199,13 +212,11 @@ const TaskScheduleStep: React.FC<{
     <Text style={styles.stepDescription}>
       Set the due date and reminders for your task.
     </Text>
-    
+
     <View style={styles.formContainer}>
       <Text style={styles.formLabel}>Due Date</Text>
-      <Text style={styles.formInput}>
-        {data.dueDate.toLocaleDateString()}
-      </Text>
-      
+      <Text style={styles.formInput}>{formatDate(data.dueDate)}</Text>
+
       <Text style={styles.formLabel}>Reminders</Text>
       <Text style={styles.formInput}>
         {data.reminders.length} reminder(s) set
@@ -225,16 +236,16 @@ const TaskReviewStep: React.FC<{
     <Text style={styles.stepDescription}>
       Review your task details before creating.
     </Text>
-    
+
     <View style={styles.reviewContainer}>
       <Text style={styles.reviewLabel}>Type:</Text>
       <Text style={styles.reviewValue}>{data.type}</Text>
-      
+
       <Text style={styles.reviewLabel}>Title:</Text>
       <Text style={styles.reviewValue}>{data.title || 'No title'}</Text>
-      
+
       <Text style={styles.reviewLabel}>Due Date:</Text>
-      <Text style={styles.reviewValue}>{data.dueDate.toLocaleDateString()}</Text>
+      <Text style={styles.reviewValue}>{formatDate(data.dueDate)}</Text>
     </View>
   </View>
 );

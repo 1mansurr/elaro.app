@@ -11,25 +11,45 @@ export const TaskCardSkeleton: React.FC = () => {
   return (
     <View style={styles.card}>
       {/* Header */}
-      <SkeletonLoader width={120} height={16} borderRadius={4} style={styles.header} />
-      
+      <SkeletonLoader
+        width={120}
+        height={16}
+        borderRadius={4}
+        style={styles.header}
+      />
+
       {/* Task Type Badge */}
-      <SkeletonLoader width={80} height={14} borderRadius={4} style={styles.taskType} />
-      
+      <SkeletonLoader
+        width={80}
+        height={14}
+        borderRadius={4}
+        style={styles.taskType}
+      />
+
       {/* Task Name */}
-      <SkeletonLoader width="85%" height={24} borderRadius={4} style={styles.taskName} />
-      
+      <SkeletonLoader
+        width="85%"
+        height={24}
+        borderRadius={4}
+        style={styles.taskName}
+      />
+
       {/* Divider */}
       <View style={styles.divider} />
-      
+
       {/* Footer */}
       <View style={styles.footer}>
         <SkeletonLoader width={100} height={16} borderRadius={4} />
         <SkeletonLoader width={60} height={16} borderRadius={4} />
       </View>
-      
+
       {/* View Details Button */}
-      <SkeletonLoader width={110} height={16} borderRadius={4} style={styles.viewDetails} />
+      <SkeletonLoader
+        width={110}
+        height={16}
+        borderRadius={4}
+        style={styles.viewDetails}
+      />
     </View>
   );
 };
@@ -71,4 +91,3 @@ const styles = StyleSheet.create({
 });
 
 export default TaskCardSkeleton;
-

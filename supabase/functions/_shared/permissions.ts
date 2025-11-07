@@ -130,7 +130,9 @@ export const TASK_LIMITS = {
 /**
  * Get role by subscription tier
  */
-export const getRoleBySubscriptionTier = (subscriptionTier: string): UserRole => {
+export const getRoleBySubscriptionTier = (
+  subscriptionTier: string,
+): UserRole => {
   switch (subscriptionTier) {
     case 'oddity':
       return ROLES.PREMIUM_USER;
@@ -144,10 +146,12 @@ export const getRoleBySubscriptionTier = (subscriptionTier: string): UserRole =>
 /**
  * Check if user has a specific permission
  */
-export const hasPermission = (role: UserRole, permission: Permission): boolean => {
-  return role.permissions.some(p => 
-    p.resource === permission.resource && 
-    p.action === permission.action
+export const hasPermission = (
+  role: UserRole,
+  permission: Permission,
+): boolean => {
+  return role.permissions.some(
+    p => p.resource === permission.resource && p.action === permission.action,
   );
 };
 
@@ -169,7 +173,10 @@ export const isPremium = (subscriptionTier: string): boolean => {
  * Get user's task limits
  */
 export const getTaskLimits = (subscriptionTier: string) => {
-  return TASK_LIMITS[subscriptionTier as keyof typeof TASK_LIMITS] || TASK_LIMITS.free;
+  return (
+    TASK_LIMITS[subscriptionTier as keyof typeof TASK_LIMITS] ||
+    TASK_LIMITS.free
+  );
 };
 
 /**
@@ -178,7 +185,7 @@ export const getTaskLimits = (subscriptionTier: string) => {
 export const canCreateTask = async (
   supabaseClient: SupabaseClient,
   userId: string,
-  taskType: string
+  taskType: string,
 ): Promise<{ allowed: boolean; reason?: string }> => {
   try {
     // Get user's subscription tier
@@ -213,9 +220,9 @@ export const canCreateTask = async (
 
     const limit = limits[taskType as keyof typeof limits];
     if (count && count >= limit) {
-      return { 
-        allowed: false, 
-        reason: `Monthly limit reached for ${taskType}` 
+      return {
+        allowed: false,
+        reason: `Monthly limit reached for ${taskType}`,
       };
     }
 

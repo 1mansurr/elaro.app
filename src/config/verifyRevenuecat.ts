@@ -8,12 +8,19 @@ export const verifyRevenueCatSetup = async (): Promise<boolean> => {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
     if (customerInfo) {
-      console.log('✅ RevenueCat setup verified: SDK initialized and responding.');
+      console.log(
+        '✅ RevenueCat setup verified: SDK initialized and responding.',
+      );
       console.log('📊 Customer ID:', customerInfo.originalAppUserId);
-      console.log('🎫 Active Entitlements:', Object.keys(customerInfo.entitlements.active).length);
+      console.log(
+        '🎫 Active Entitlements:',
+        Object.keys(customerInfo.entitlements.active).length,
+      );
       return true;
     } else {
-      console.warn('⚠️ RevenueCat initialized but no customer info returned yet.');
+      console.warn(
+        '⚠️ RevenueCat initialized but no customer info returned yet.',
+      );
       return false;
     }
   } catch (error) {
@@ -21,4 +28,3 @@ export const verifyRevenueCatSetup = async (): Promise<boolean> => {
     return false;
   }
 };
-

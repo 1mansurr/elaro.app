@@ -1,5 +1,8 @@
 import React, { ReactNode } from 'react';
-import { CreationFlowProvider, useCreationFlow } from '@/contexts/CreationFlowContext';
+import {
+  CreationFlowProvider,
+  useCreationFlow,
+} from '@/contexts/CreationFlowContext';
 
 // 1. Define the specific data structure for this flow
 export interface AddCourseData {

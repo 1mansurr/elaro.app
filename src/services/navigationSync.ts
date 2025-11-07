@@ -1,6 +1,6 @@
 /**
  * Navigation State Synchronization Service
- * 
+ *
  * Manages synchronization between:
  * - React Navigation state
  * - AsyncStorage persistence
@@ -11,6 +11,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationState, PartialState } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/navigation';
+import {
+  AUTHENTICATED_ROUTES,
+  GUEST_ROUTES,
+} from '@/navigation/utils/RouteGuards';
 
 // Storage keys
 const NAVIGATION_STATE_KEY = '@elaro_navigation_state_v1';
@@ -78,7 +82,10 @@ class NavigationSyncService {
   /**
    * Save navigation state to AsyncStorage
    */
-  async saveState(state: NavigationState | undefined, userId?: string): Promise<void> {
+  async saveState(
+    state: NavigationState | undefined,
+    userId?: string,
+  ): Promise<void> {
     if (!state) return;
 
     try {
@@ -94,7 +101,10 @@ class NavigationSyncService {
         userId: userIdToSave,
       };
 
-      await AsyncStorage.setItem(NAVIGATION_STATE_KEY, JSON.stringify(snapshot));
+      await AsyncStorage.setItem(
+        NAVIGATION_STATE_KEY,
+        JSON.stringify(snapshot),
+      );
       await AsyncStorage.setItem(NAVIGATION_VERSION_KEY, NAVIGATION_VERSION);
 
       console.log('💾 NavigationSync: State saved', {
@@ -126,7 +136,9 @@ class NavigationSyncService {
 
       // Check version compatibility
       if (savedVersion !== NAVIGATION_VERSION) {
-        console.log(`⚠️ NavigationSync: Version mismatch (saved: ${savedVersion}, current: ${NAVIGATION_VERSION}). Clearing old state.`);
+        console.log(
+          `⚠️ NavigationSync: Version mismatch (saved: ${savedVersion}, current: ${NAVIGATION_VERSION}). Clearing old state.`,
+        );
         await this.clearState();
         return null;
       }
@@ -142,7 +154,9 @@ class NavigationSyncService {
 
       // Check if state belongs to different user (auth change)
       if (userId && snapshot.userId && snapshot.userId !== userId) {
-        console.log('👤 NavigationSync: State belongs to different user. Clearing.');
+        console.log(
+          '👤 NavigationSync: State belongs to different user. Clearing.',
+        );
         await this.clearState();
         return null;
       }
@@ -150,7 +164,9 @@ class NavigationSyncService {
       // Validate routes
       const validatedState = this.validateState(snapshot.state);
       if (!validatedState) {
-        console.warn('⚠️ NavigationSync: Invalid routes detected. Clearing state.');
+        console.warn(
+          '⚠️ NavigationSync: Invalid routes detected. Clearing state.',
+        );
         await this.clearState();
         return null;
       }
@@ -203,7 +219,9 @@ class NavigationSyncService {
 
         // Validate nested routes (for nested navigators)
         if (route.state && route.state.routes) {
-          return route.state.routes.every((nestedRoute: any) => validateRoute(nestedRoute));
+          return route.state.routes.every((nestedRoute: any) =>
+            validateRoute(nestedRoute),
+          );
         }
 
         return true;
@@ -242,7 +260,10 @@ class NavigationSyncService {
 
       return currentRoute.name || null;
     } catch (error) {
-      console.error('❌ NavigationSync: Error getting current route name:', error);
+      console.error(
+        '❌ NavigationSync: Error getting current route name:',
+        error,
+      );
       return null;
     }
   }
@@ -270,11 +291,13 @@ class NavigationSyncService {
   async getSafeInitialState(
     isAuthenticated: boolean,
     isLoading: boolean,
-    userId?: string
+    userId?: string,
   ): Promise<NavigationState | null> {
     // Don't restore state while auth is loading
     if (isLoading) {
-      console.log('⏳ NavigationSync: Auth loading, skipping state restoration');
+      console.log(
+        '⏳ NavigationSync: Auth loading, skipping state restoration',
+      );
       return null;
     }
 
@@ -288,18 +311,26 @@ class NavigationSyncService {
     // Auth-aware routing:
     // If user is logged out but state contains authenticated routes, clear it
     const currentRoute = this.getCurrentRouteName(savedState);
-    const authenticatedRoutes = ['Main', 'Courses', 'Profile', 'Settings', 'Calendar'];
-    
-    if (!isAuthenticated && currentRoute && authenticatedRoutes.includes(currentRoute)) {
-      console.log('🔒 NavigationSync: Logged out user trying to access authenticated route. Clearing state.');
+    const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
+
+    if (
+      !isAuthenticated &&
+      currentRoute &&
+      authenticatedRoutes.includes(currentRoute)
+    ) {
+      console.log(
+        '🔒 NavigationSync: Logged out user trying to access authenticated route. Clearing state.',
+      );
       await this.clearState();
       return null;
     }
 
     // If user is logged in but state contains guest-only routes, clear it
-    const guestRoutes = ['GuestHome'];
+    const guestRoutes = GUEST_ROUTES as readonly string[];
     if (isAuthenticated && currentRoute && guestRoutes.includes(currentRoute)) {
-      console.log('✅ NavigationSync: Authenticated user in guest route. Clearing state.');
+      console.log(
+        '✅ NavigationSync: Authenticated user in guest route. Clearing state.',
+      );
       await this.clearState();
       return null;
     }
@@ -319,7 +350,7 @@ class NavigationSyncService {
    */
   onStateChange(callback: (state: NavigationState | null) => void): () => void {
     this.listeners.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback);
@@ -365,7 +396,9 @@ class NavigationSyncService {
 
       const snapshot: NavigationSnapshot = JSON.parse(savedStateString);
       const routeCount = snapshot.state?.routes?.length || 0;
-      const currentRoute = snapshot.state ? this.getCurrentRouteName(snapshot.state) : null;
+      const currentRoute = snapshot.state
+        ? this.getCurrentRouteName(snapshot.state)
+        : null;
 
       return {
         hasState: true,

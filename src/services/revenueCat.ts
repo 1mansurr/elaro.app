@@ -1,8 +1,55 @@
-import Purchases, { 
-  PurchasesOffering, 
-  PurchasesPackage, 
-  CustomerInfo
+import Purchases, {
+  PurchasesOffering,
+  PurchasesPackage,
+  CustomerInfo,
 } from 'react-native-purchases';
+import { retryWithBackoff } from '@/utils/errorRecovery';
+import { CircuitBreaker } from '@/utils/circuitBreaker';
+import {
+  withRateLimit,
+  CLIENT_RATE_LIMITS,
+  RateLimitError,
+} from '@/utils/clientRateLimiter';
+
+/**
+ * Execute a promise with a timeout
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  errorMessage: string = 'Operation timed out',
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), timeoutMs),
+    ),
+  ]);
+}
+
+/**
+ * Default timeout for RevenueCat operations (10 seconds)
+ */
+const REVENUECAT_TIMEOUT = 10000;
+
+/**
+ * Check if a RevenueCat error is retryable
+ */
+interface RevenueCatError {
+  code?: string;
+  message?: string;
+}
+
+function isRetryableRevenueCatError(error: unknown): boolean {
+  const err = error as RevenueCatError;
+  // Don't retry user cancellations or invalid API keys
+  if (error?.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') return false;
+  if (error?.message?.includes('Invalid API key')) return false;
+  if (error?.message?.includes('authentication failed')) return false;
+
+  // Retry network errors and server errors
+  return true;
+}
 
 export const revenueCatService = {
   /**
@@ -13,19 +60,25 @@ export const revenueCatService = {
     try {
       // Validate API key format
       if (!apiKey || apiKey.length < 10) {
-        console.warn('⚠️ RevenueCat API key is missing or invalid. Skipping initialization.');
+        console.warn(
+          '⚠️ RevenueCat API key is missing or invalid. Skipping initialization.',
+        );
         return false;
       }
 
       await Purchases.configure({ apiKey });
       console.log('✅ RevenueCat initialized successfully');
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const err = error as { message?: string };
       // Handle specific RevenueCat errors gracefully
-      if (error?.message?.includes('Invalid API key')) {
-        console.error('❌ RevenueCat API key is invalid:', error.message);
+      if (err?.message?.includes('Invalid API key')) {
+        console.error('❌ RevenueCat API key is invalid:', err.message);
       } else {
-        console.error('❌ RevenueCat initialization failed:', error?.message || error);
+        console.error(
+          '❌ RevenueCat initialization failed:',
+          err?.message || error,
+        );
       }
       // Don't throw - allow app to continue without RevenueCat
       return false;
@@ -33,31 +86,142 @@ export const revenueCatService = {
   },
 
   /**
-   * Get current offerings from RevenueCat
+   * Get current offerings from RevenueCat (direct implementation)
+   * @internal Use getOfferings() for recovery support
    */
-  getOfferings: async (): Promise<PurchasesOffering | null> => {
+  getOfferingsDirect: async (): Promise<PurchasesOffering | null> => {
     try {
-      const offerings = await Purchases.getOfferings();
-      return offerings.current;
+      const retryResult = await withRateLimit(
+        'revenuecat_offerings',
+        CLIENT_RATE_LIMITS.revenuecat_api,
+        async () => {
+          return await retryWithBackoff(
+            async () => {
+              return await CircuitBreaker.getInstance('revenuecat', {
+                failureThreshold: 3,
+                resetTimeout: 30000,
+              }).execute(async () => {
+                return await withTimeout(
+                  Purchases.getOfferings(),
+                  REVENUECAT_TIMEOUT,
+                  'RevenueCat getOfferings timed out',
+                );
+              });
+            },
+            {
+              maxRetries: 3,
+              baseDelay: 1000,
+              retryCondition: isRetryableRevenueCatError,
+            },
+          );
+        },
+      );
+
+      // retryWithBackoff returns RetryResult, retryResult is a RetryResult here
+      if (!retryResult.success) {
+        if (retryResult.error instanceof RateLimitError) {
+          console.warn(
+            'Rate limit exceeded for RevenueCat offerings:',
+            retryResult.error.message,
+          );
+          // Could return cached value here if available
+        }
+        console.error('Error fetching offerings:', retryResult.error);
+        return null;
+      }
+
+      return retryResult.result.current;
     } catch (error) {
+      if (error instanceof RateLimitError) {
+        console.warn(
+          'Rate limit exceeded for RevenueCat offerings:',
+          error.message,
+        );
+        // Could return cached value here if available
+      }
       console.error('Error fetching offerings:', error);
       return null;
     }
   },
 
   /**
+   * Get current offerings from RevenueCat
+   * Uses recovery strategy with cached fallback
+   */
+  getOfferings: async (): Promise<PurchasesOffering | null> => {
+    try {
+      const { getOfferingsWithRecovery } = await import(
+        '@/utils/revenueCatRecovery'
+      );
+      return await getOfferingsWithRecovery();
+    } catch (error) {
+      console.error('Error in getOfferings with recovery:', error);
+      // Fallback to direct call if recovery utility fails
+      return await revenueCatService.getOfferingsDirect();
+    }
+  },
+
+  /**
    * Purchase a specific package
    */
-  purchasePackage: async (packageToPurchase: PurchasesPackage): Promise<CustomerInfo> => {
+  purchasePackage: async (
+    packageToPurchase: PurchasesPackage,
+  ): Promise<CustomerInfo> => {
     try {
-      const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
-      console.log('Purchase successful:', customerInfo);
-      return customerInfo;
-    } catch (error: any) {
-      if (error.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') {
-        throw new Error('Purchase was cancelled by user');
+      const retryResult = await withRateLimit(
+        'revenuecat_purchase',
+        CLIENT_RATE_LIMITS.revenuecat_api,
+        async () => {
+          return await retryWithBackoff(
+            async () => {
+              return await CircuitBreaker.getInstance('revenuecat', {
+                failureThreshold: 3,
+                resetTimeout: 30000,
+              }).execute(async () => {
+                const response = await withTimeout(
+                  Purchases.purchasePackage(packageToPurchase),
+                  REVENUECAT_TIMEOUT,
+                  'RevenueCat purchasePackage timed out',
+                );
+                return response.customerInfo;
+              });
+            },
+            {
+              maxRetries: 2, // Lower retries for purchases (user-facing)
+              baseDelay: 1000,
+              retryCondition: isRetryableRevenueCatError,
+            },
+          );
+        },
+      );
+
+      if (!retryResult.success) {
+        if (retryResult.error instanceof RateLimitError) {
+          throw new Error(`Rate limit exceeded. ${retryResult.error.message}`);
+        }
+        const error = retryResult.error as RevenueCatError;
+        if (error?.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') {
+          throw new Error('Purchase was cancelled by user');
+        }
+        throw new Error(
+          `Purchase failed: ${error?.message || 'Unknown error'}`,
+        );
       }
-      throw new Error(`Purchase failed: ${error.message || 'Unknown error'}`);
+
+      console.log('Purchase successful:', retryResult.result);
+      return retryResult.result;
+    } catch (error: unknown) {
+      if (error instanceof RateLimitError) {
+        throw new Error(`Rate limit exceeded. ${error.message}`);
+      }
+      if (
+        error instanceof Error &&
+        error.message === 'Purchase was cancelled by user'
+      ) {
+        throw error;
+      }
+      const err = error as { message?: string };
+      throw new Error(`Purchase failed: ${err?.message || 'Unknown error'}`);
     }
   },
 
@@ -66,9 +230,39 @@ export const revenueCatService = {
    */
   restorePurchases: async (): Promise<CustomerInfo> => {
     try {
-      const customerInfo = await Purchases.restorePurchases();
+      const retryResult = await withRateLimit(
+        'revenuecat_restore',
+        CLIENT_RATE_LIMITS.revenuecat_api,
+        async () => {
+          return await retryWithBackoff(
+            async () => {
+              return await CircuitBreaker.getInstance('revenuecat', {
+                failureThreshold: 3,
+                resetTimeout: 30000,
+              }).execute(async () => {
+                return await withTimeout(
+                  Purchases.restorePurchases(),
+                  REVENUECAT_TIMEOUT,
+                  'RevenueCat restorePurchases timed out',
+                );
+              });
+            },
+            {
+              maxRetries: 3,
+              baseDelay: 1000,
+              retryCondition: isRetryableRevenueCatError,
+            },
+          );
+        },
+      );
+
+      if (!retryResult.success) {
+        console.error('Error restoring purchases:', retryResult.error);
+        throw retryResult.error;
+      }
+
       console.log('Purchases restored successfully');
-      return customerInfo;
+      return retryResult.result;
     } catch (error) {
       console.error('Error restoring purchases:', error);
       throw error;
@@ -80,8 +274,38 @@ export const revenueCatService = {
    */
   getCustomerInfo: async (): Promise<CustomerInfo> => {
     try {
-      const customerInfo = await Purchases.getCustomerInfo();
-      return customerInfo;
+      const retryResult = await withRateLimit(
+        'revenuecat_customer_info',
+        CLIENT_RATE_LIMITS.revenuecat_api,
+        async () => {
+          return await retryWithBackoff(
+            async () => {
+              return await CircuitBreaker.getInstance('revenuecat', {
+                failureThreshold: 3,
+                resetTimeout: 30000,
+              }).execute(async () => {
+                return await withTimeout(
+                  Purchases.getCustomerInfo(),
+                  REVENUECAT_TIMEOUT,
+                  'RevenueCat getCustomerInfo timed out',
+                );
+              });
+            },
+            {
+              maxRetries: 3,
+              baseDelay: 1000,
+              retryCondition: isRetryableRevenueCatError,
+            },
+          );
+        },
+      );
+
+      if (!retryResult.success) {
+        console.error('Error getting customer info:', retryResult.error);
+        throw retryResult.error;
+      }
+
+      return retryResult.result;
     } catch (error) {
       console.error('Error getting customer info:', error);
       throw error;
@@ -122,7 +346,14 @@ export const revenueCatService = {
   isInTrial: (customerInfo: CustomerInfo): boolean => {
     const oddityEntitlement = customerInfo.entitlements.active['oddity'];
     // Check if the property exists before accessing it
-    return (oddityEntitlement as any)?.isInIntroOfferPeriod || false;
+    // RevenueCat EntitlementInfo may have isInIntroOfferPeriod property
+    if (oddityEntitlement && 'isInIntroOfferPeriod' in oddityEntitlement) {
+      return Boolean(
+        (oddityEntitlement as { isInIntroOfferPeriod?: boolean })
+          .isInIntroOfferPeriod,
+      );
+    }
+    return false;
   },
 
   /**
@@ -130,7 +361,31 @@ export const revenueCatService = {
    */
   setUserId: async (userId: string): Promise<void> => {
     try {
-      await Purchases.logIn(userId);
+      const retryResult = await retryWithBackoff(
+        async () => {
+          return await CircuitBreaker.getInstance('revenuecat', {
+            failureThreshold: 3,
+            resetTimeout: 30000,
+          }).execute(async () => {
+            return await withTimeout(
+              Purchases.logIn(userId),
+              REVENUECAT_TIMEOUT,
+              'RevenueCat logIn timed out',
+            );
+          });
+        },
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          retryCondition: isRetryableRevenueCatError,
+        },
+      );
+
+      if (!retryResult.success) {
+        console.error('Error setting RevenueCat user ID:', retryResult.error);
+        throw retryResult.error;
+      }
+
       console.log('RevenueCat user ID set:', userId);
     } catch (error) {
       console.error('Error setting RevenueCat user ID:', error);
@@ -143,9 +398,33 @@ export const revenueCatService = {
    */
   logOut: async (): Promise<CustomerInfo> => {
     try {
-      const customerInfo = await Purchases.logOut();
+      const retryResult = await retryWithBackoff(
+        async () => {
+          return await CircuitBreaker.getInstance('revenuecat', {
+            failureThreshold: 3,
+            resetTimeout: 30000,
+          }).execute(async () => {
+            return await withTimeout(
+              Purchases.logOut(),
+              REVENUECAT_TIMEOUT,
+              'RevenueCat logOut timed out',
+            );
+          });
+        },
+        {
+          maxRetries: 3,
+          baseDelay: 1000,
+          retryCondition: isRetryableRevenueCatError,
+        },
+      );
+
+      if (!retryResult.success) {
+        console.error('Error logging out RevenueCat user:', retryResult.error);
+        throw retryResult.error;
+      }
+
       console.log('RevenueCat user logged out');
-      return customerInfo;
+      return retryResult.result;
     } catch (error) {
       console.error('Error logging out RevenueCat user:', error);
       throw error;
@@ -158,8 +437,13 @@ export const revenueCatService = {
   isInGracePeriod: (customerInfo: CustomerInfo): boolean => {
     const oddityEntitlement = customerInfo.entitlements.active['oddity'];
     if (!oddityEntitlement) return false;
-    // Check if the property exists before accessing it
-    return (oddityEntitlement as any)?.isInGracePeriod || false;
+    // RevenueCat EntitlementInfo may have isInGracePeriod property
+    if ('isInGracePeriod' in oddityEntitlement) {
+      return Boolean(
+        (oddityEntitlement as { isInGracePeriod?: boolean }).isInGracePeriod,
+      );
+    }
+    return false;
   },
 
   /**
@@ -177,7 +461,7 @@ export const revenueCatService = {
     const oddityEntitlement = customerInfo.entitlements.active['oddity'];
     if (!oddityEntitlement) return null;
     return oddityEntitlement.expirationDate;
-  }
+  },
 };
 
 export const SUBSCRIPTION_PLANS = {

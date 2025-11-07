@@ -1,9 +1,21 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, COMPONENT_TOKENS } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  COMPONENT_TOKENS,
+} from '@/constants/theme';
 
 interface DateTimePickerProps {
   dateTime: Date;
@@ -39,20 +51,18 @@ export const DateTimePickerComponent: React.FC<DateTimePickerProps> = ({
       {/* Date and Time Selection */}
       <Text style={styles.label}>Due Date & Time *</Text>
       <View style={styles.dateTimeContainer}>
-        <TouchableOpacity 
-          style={styles.dateTimeButton} 
-          onPress={() => onShowDatePicker(true)}
-        >
+        <TouchableOpacity
+          style={styles.dateTimeButton}
+          onPress={() => onShowDatePicker(true)}>
           <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
           <Text style={styles.dateTimeButtonText}>
             {format(dateTime, 'MMM dd, yyyy')}
           </Text>
         </TouchableOpacity>
-        
-        <TouchableOpacity 
-          style={styles.dateTimeButton} 
-          onPress={() => onShowTimePicker(true)}
-        >
+
+        <TouchableOpacity
+          style={styles.dateTimeButton}
+          onPress={() => onShowTimePicker(true)}>
           <Ionicons name="time-outline" size={18} color={COLORS.primary} />
           <Text style={styles.dateTimeButtonText}>
             {format(dateTime, 'h:mm a')}

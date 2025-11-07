@@ -16,8 +16,13 @@ export interface MockAuthUser extends SupabaseUser {
 class MockSupabaseAuth {
   private currentSession: MockSession | null = null;
   private currentUser: MockAuthUser | null = null;
-  private users: Map<string, { email: string; password: string; firstName?: string; lastName?: string }> = new Map();
-  private authStateCallbacks: Array<(event: string, session: Session | null) => void> = [];
+  private users: Map<
+    string,
+    { email: string; password: string; firstName?: string; lastName?: string }
+  > = new Map();
+  private authStateCallbacks: Array<
+    (event: string, session: Session | null) => void
+  > = [];
   private networkMode: 'online' | 'offline' = 'online';
 
   // Pre-seeded test user
@@ -42,7 +47,11 @@ class MockSupabaseAuth {
   /**
    * Sign up a new user
    */
-  async signUp(email: string, password: string, options?: { data?: { first_name?: string; last_name?: string } }): Promise<{ user: MockAuthUser | null; session: MockSession | null }> {
+  async signUp(
+    email: string,
+    password: string,
+    options?: { data?: { first_name?: string; last_name?: string } },
+  ): Promise<{ user: MockAuthUser | null; session: MockSession | null }> {
     if (this.users.has(email)) {
       throw new Error('User already registered');
     }
@@ -77,7 +86,12 @@ class MockSupabaseAuth {
       user,
     };
 
-    this.users.set(email, { email, password, firstName: options?.data?.first_name, lastName: options?.data?.last_name });
+    this.users.set(email, {
+      email,
+      password,
+      firstName: options?.data?.first_name,
+      lastName: options?.data?.last_name,
+    });
     this.currentSession = session;
     this.currentUser = user;
 
@@ -90,22 +104,26 @@ class MockSupabaseAuth {
   /**
    * Sign in with email and password
    */
-  async signInWithPassword(email: string, password: string): Promise<{ user: MockAuthUser | null; session: MockSession | null }> {
+  async signInWithPassword(
+    email: string,
+    password: string,
+  ): Promise<{ user: MockAuthUser | null; session: MockSession | null }> {
     // Allow offline sign-in for existing sessions (local fallback)
     if (this.networkMode === 'offline' && this.currentSession) {
       // If already have a session, allow offline sign-in (local cache)
       return { user: this.currentUser, session: this.currentSession };
     }
-    
+
     this.checkNetwork(); // Check network before new sign-in
-    
+
     const storedUser = this.users.get(email);
 
     if (!storedUser || storedUser.password !== password) {
       throw new Error('Invalid email or password');
     }
 
-    const userId = email === this.TEST_USER.email ? this.TEST_USER.id : `user-${Date.now()}`;
+    const userId =
+      email === this.TEST_USER.email ? this.TEST_USER.id : `user-${Date.now()}`;
     const user: MockAuthUser = {
       id: userId,
       email,
@@ -175,7 +193,9 @@ class MockSupabaseAuth {
   /**
    * Subscribe to auth state changes
    */
-  onAuthStateChange(callback: (event: string, session: Session | null) => void): { data: { subscription: { unsubscribe: () => void } } } {
+  onAuthStateChange(
+    callback: (event: string, session: Session | null) => void,
+  ): { data: { subscription: { unsubscribe: () => void } } } {
     this.authStateCallbacks.push(callback);
 
     return {
@@ -252,4 +272,3 @@ class MockSupabaseAuth {
 
 // Singleton instance
 export const mockSupabaseAuth = new MockSupabaseAuth();
-

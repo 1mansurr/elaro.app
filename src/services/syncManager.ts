@@ -1,10 +1,10 @@
 /**
  * Sync Manager - Offline Queue Management and Synchronization
- * 
+ *
  * This service manages the offline action queue. When the app is offline,
  * mutation actions are added to a queue in AsyncStorage. When connectivity
  * is restored, this manager processes the queue and syncs actions with the server.
- * 
+ *
  * Phase 3: Full implementation with sync logic, network listeners, and temp ID replacement.
  */
 
@@ -13,11 +13,12 @@ import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { isTempId } from '@/utils/uuid';
-import { 
-  OfflineAction, 
-  OfflineActionStatus, 
-  AddToQueueOptions, 
-  QueueStats, 
+import { CircuitBreaker } from '@/utils/circuitBreaker';
+import {
+  OfflineAction,
+  OfflineActionStatus,
+  AddToQueueOptions,
+  QueueStats,
   SyncResult,
   SyncManagerConfig,
   OfflineOperationType,
@@ -51,8 +52,16 @@ const DEFAULT_CONFIG: SyncManagerConfig = {
 };
 
 /**
+ * Extended OfflineAction with retry scheduling and priority
+ */
+interface ExtendedOfflineAction extends OfflineAction {
+  nextRetryAt?: number;
+  priority?: 'high' | 'normal' | 'low';
+}
+
+/**
  * SyncManager Class
- * 
+ *
  * Manages offline actions and their synchronization with the server.
  */
 class SyncManager {
@@ -63,33 +72,45 @@ class SyncManager {
   private listeners: Array<(stats: QueueStats) => void> = [];
   private networkUnsubscribe: (() => void) | null = null;
   private idMapping: Map<string, string> = new Map(); // tempId -> realId
+  private circuitBreaker: CircuitBreaker;
 
   /**
    * Initialize the Sync Manager
    * Loads the queue from AsyncStorage and sets up listeners
    * Sets up network change listener to auto-sync when coming online
    */
+  constructor() {
+    // Initialize circuit breaker for sync operations
+    this.circuitBreaker = CircuitBreaker.getInstance('sync-manager', {
+      failureThreshold: 5,
+      successThreshold: 2,
+      resetTimeout: 30000, // 30 seconds
+    });
+  }
+
   async start(): Promise<void> {
     console.log('🔄 SyncManager: Starting...');
-    
+
     try {
       // Load configuration from storage
       await this.loadConfig();
-      
+
       // Load existing queue from AsyncStorage
       await this.loadQueue();
-      
+
       // Load ID mapping from storage
       await this.loadIdMapping();
-      
-      console.log(`✅ SyncManager: Started with ${this.queue.length} queued actions`);
-      
+
+      console.log(
+        `✅ SyncManager: Started with ${this.queue.length} queued actions`,
+      );
+
       // Notify listeners about initial state
       this.notifyListeners();
-      
+
       // Set up network change listener
       this.setupNetworkListener();
-      
+
       // Process queue on startup if there are pending actions
       if (this.queue.length > 0) {
         console.log('📦 SyncManager: Processing existing queue on startup...');
@@ -98,7 +119,10 @@ class SyncManager {
         if (netInfo.isConnected && netInfo.isInternetReachable) {
           // Don't await - let it run in background
           this.processQueue().catch(err => {
-            console.error('❌ SyncManager: Error processing startup queue:', err);
+            console.error(
+              '❌ SyncManager: Error processing startup queue:',
+              err,
+            );
           });
         } else {
           console.log('📴 SyncManager: Device offline, will sync when online');
@@ -115,28 +139,37 @@ class SyncManager {
    */
   private setupNetworkListener(): void {
     console.log('📡 SyncManager: Setting up network listener...');
-    
+
     let wasOffline = false;
-    
-    this.networkUnsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
-      const isOnline = state.isConnected === true && 
-                       (state.isInternetReachable === true || state.isInternetReachable === null);
-      
-      console.log(`📡 Network state changed: ${isOnline ? 'ONLINE' : 'OFFLINE'}`);
-      
-      // Trigger sync when transitioning from offline to online
-      if (isOnline && wasOffline && this.config.autoSyncOnline) {
-        console.log('🌐 Device came online! Triggering sync...');
-        
-        // Process queue in background
-        this.processQueue().catch(err => {
-          console.error('❌ SyncManager: Error processing queue after coming online:', err);
-        });
-      }
-      
-      wasOffline = !isOnline;
-    });
-    
+
+    this.networkUnsubscribe = NetInfo.addEventListener(
+      (state: NetInfoState) => {
+        const isOnline =
+          state.isConnected === true &&
+          (state.isInternetReachable === true ||
+            state.isInternetReachable === null);
+
+        console.log(
+          `📡 Network state changed: ${isOnline ? 'ONLINE' : 'OFFLINE'}`,
+        );
+
+        // Trigger sync when transitioning from offline to online
+        if (isOnline && wasOffline && this.config.autoSyncOnline) {
+          console.log('🌐 Device came online! Triggering sync...');
+
+          // Process queue in background
+          this.processQueue().catch(err => {
+            console.error(
+              '❌ SyncManager: Error processing queue after coming online:',
+              err,
+            );
+          });
+        }
+
+        wasOffline = !isOnline;
+      },
+    );
+
     console.log('✅ SyncManager: Network listener active');
   }
 
@@ -148,20 +181,20 @@ class SyncManager {
     this.isProcessing = false;
     this.isSyncing = false;
     this.listeners = [];
-    
+
     // Unsubscribe from network listener
     if (this.networkUnsubscribe) {
       this.networkUnsubscribe();
       this.networkUnsubscribe = null;
       console.log('📡 SyncManager: Network listener cleaned up');
     }
-    
+
     console.log('✅ SyncManager: Stopped');
   }
 
   /**
    * Add an action to the offline queue
-   * 
+   *
    * @param operation - The type of operation (CREATE, UPDATE, DELETE, etc.)
    * @param resourceType - The type of resource (assignment, lecture, etc.)
    * @param payload - The data for the mutation
@@ -174,15 +207,25 @@ class SyncManager {
     resourceType: OfflineResourceType,
     payload: OfflineActionPayload,
     userId: string,
-    options?: AddToQueueOptions
+    options?: AddToQueueOptions,
   ): Promise<OfflineAction> {
-    console.log(`📝 SyncManager: Adding ${operation} action for ${resourceType} to queue`);
-    
+    console.log(
+      `📝 SyncManager: Adding ${operation} action for ${resourceType} to queue`,
+    );
+
     // Generate a unique ID for this action
     const actionId = `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
+
+    // Determine priority based on operation type
+    const priority: 'high' | 'normal' | 'low' =
+      operation === 'DELETE'
+        ? 'high' // Deletions are high priority
+        : operation === 'UPDATE'
+          ? 'normal' // Updates are normal
+          : 'low'; // Creates are low priority (can be retried more easily)
+
     // Create the offline action
-    const action: OfflineAction = {
+    const action: ExtendedOfflineAction = {
       id: actionId,
       operation,
       resourceType,
@@ -193,29 +236,39 @@ class SyncManager {
       maxRetries: options?.maxRetries ?? 3,
       userId,
       tempId: payload.type === 'CREATE' ? actionId : undefined,
+      priority,
     };
 
     // Add to in-memory queue
     this.queue.push(action);
-    
-    // Check queue size limit
+
+    // Check queue size limit and evict old low-priority items if needed
     if (this.queue.length > (this.config.maxQueueSize ?? 100)) {
-      console.warn('⚠️ SyncManager: Queue size exceeded, removing oldest actions');
-      this.queue = this.queue.slice(-this.config.maxQueueSize!);
+      console.warn(
+        '⚠️ SyncManager: Queue size exceeded, evicting old low-priority actions',
+      );
+      await this.evictOldQueueItems();
     }
 
     // Persist to AsyncStorage
     await this.saveQueue();
-    
-    console.log(`✅ SyncManager: Action ${actionId} added to queue (total: ${this.queue.length})`);
-    
+
+    console.log(
+      `✅ SyncManager: Action ${actionId} added to queue (total: ${this.queue.length})`,
+    );
+
     // Notify listeners
     this.notifyListeners();
-    
+
+    // Monitor queue size
+    this.monitorQueueSize();
+
     // If syncImmediately is true, trigger sync (will be implemented in Phase 3)
     if (options?.syncImmediately !== false) {
       // TODO: Phase 3 - Check if online and start sync
-      console.log('🔄 SyncManager: syncImmediately requested (will be implemented in Phase 3)');
+      console.log(
+        '🔄 SyncManager: syncImmediately requested (will be implemented in Phase 3)',
+      );
     }
 
     return action;
@@ -223,7 +276,7 @@ class SyncManager {
 
   /**
    * Process the offline queue and sync with server
-   * 
+   *
    * Main sync logic that processes all pending actions in FIFO order:
    * 1. Execute server mutations for each action
    * 2. Handle success: remove from queue, replace temp IDs, update caches
@@ -231,7 +284,7 @@ class SyncManager {
    */
   async processQueue(): Promise<SyncResult[]> {
     console.log('🔄 SyncManager: processQueue() called');
-    
+
     if (this.isProcessing) {
       console.log('⚠️ SyncManager: Already processing queue, skipping');
       return [];
@@ -239,26 +292,61 @@ class SyncManager {
 
     this.isProcessing = true;
     this.isSyncing = true;
-    
+
     const results: SyncResult[] = [];
-    
+
     try {
       // Reload queue from storage to ensure we have latest
       await this.loadQueue();
-      
+
       const pendingActions = this.queue.filter(a => a.status === 'pending');
-      
-      console.log(`📊 SyncManager: Found ${this.queue.length} total actions, ${pendingActions.length} pending`);
-      
+
+      console.log(
+        `📊 SyncManager: Found ${this.queue.length} total actions, ${pendingActions.length} pending`,
+      );
+
       if (pendingActions.length === 0) {
         console.log('✅ SyncManager: No pending actions to process');
         return results;
       }
 
-      // Process actions in FIFO order (oldest first)
-      for (const action of pendingActions) {
-        console.log(`\n🔄 Processing action: ${action.operation} ${action.resourceType} (${action.id})`);
-        
+      // Sort queue by priority (high > normal > low), then by timestamp (oldest first)
+      const sortedActions = pendingActions.sort((a, b) => {
+        const priorityOrder = { high: 3, normal: 2, low: 1 };
+        const aPriority = (a as ExtendedOfflineAction).priority || 'normal';
+        const bPriority = (b as ExtendedOfflineAction).priority || 'normal';
+
+        // Sort by priority first
+        if (priorityOrder[aPriority] !== priorityOrder[bPriority]) {
+          return priorityOrder[bPriority] - priorityOrder[aPriority];
+        }
+
+        // Then by timestamp (oldest first)
+        return a.timestamp - b.timestamp;
+      });
+
+      // Process actions in priority order
+      for (const action of sortedActions) {
+        // Check if this action should be retried (has a scheduled retry time)
+        const extendedAction = action as ExtendedOfflineAction;
+        const nextRetryAt = extendedAction.nextRetryAt;
+        if (nextRetryAt && Date.now() < nextRetryAt) {
+          const waitTime = nextRetryAt - Date.now();
+          console.log(
+            `⏳ Action ${action.id} scheduled for retry in ${waitTime.toFixed(0)}ms, skipping for now`,
+          );
+          continue; // Skip this action for now, process it later
+        }
+
+        // Clear retry time if it exists
+        if (nextRetryAt) {
+          delete extendedAction.nextRetryAt;
+        }
+
+        console.log(
+          `\n🔄 Processing action: ${action.operation} ${action.resourceType} (${action.id})`,
+        );
+
         // Update status to syncing
         action.status = 'syncing';
         await this.saveQueue();
@@ -267,63 +355,99 @@ class SyncManager {
         try {
           // Execute the server mutation
           const serverResponse = await this.executeServerMutation(action);
-          
+
           // Success! Handle the successful sync
           console.log(`✅ Action ${action.id} synced successfully`);
-          
+
           // If this was a CREATE action, we need to handle temp ID replacement
-          if (action.operation === 'CREATE' && action.tempId && serverResponse?.id) {
-            await this.handleTempIdReplacement(action.tempId, serverResponse.id, action.resourceType);
+          if (action.operation === 'CREATE' && action.tempId) {
+            const response = serverResponse as
+              | { id?: string }
+              | null
+              | undefined;
+            if (response?.id) {
+              await this.handleTempIdReplacement(
+                action.tempId,
+                response.id,
+                action.resourceType,
+              );
+            }
           }
-          
+
           // Remove the action from the queue
           this.queue = this.queue.filter(a => a.id !== action.id);
-          
+
           // Update cache to reflect server state
           await this.invalidateRelatedCaches(action.resourceType);
-          
+
           results.push({
             action,
             success: true,
             data: serverResponse,
           });
-          
-        } catch (error: any) {
-          console.error(`❌ Action ${action.id} failed:`, error.message);
-          
-          // Handle failure
-          action.retryCount += 1;
-          action.error = error.message || 'Unknown error';
-          
-          if (action.retryCount >= action.maxRetries) {
-            // Max retries reached - mark as failed
-            action.status = 'failed';
-            console.error(`🚫 Action ${action.id} has failed ${action.retryCount} times. Marking as failed.`);
-          } else {
-            // Reset to pending for next retry
+        } catch (error: unknown) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          console.error(`❌ Action ${action.id} failed:`, errorMessage);
+
+          // Check if error is from circuit breaker being open
+          const isCircuitBreakerOpen = errorMessage.includes(
+            'Circuit breaker is open',
+          );
+
+          if (isCircuitBreakerOpen) {
+            // Don't increment retry count for circuit breaker errors
+            // Just mark as pending and wait for circuit to recover
             action.status = 'pending';
-            console.log(`↩️ Action ${action.id} will be retried (${action.retryCount}/${action.maxRetries})`);
+            action.error = errorMessage;
+            console.log(
+              `⏸️ Action ${action.id} paused due to circuit breaker. Will retry when circuit recovers.`,
+            );
+          } else {
+            // Handle failure normally
+            action.retryCount += 1;
+            action.error = errorMessage;
+
+            if (action.retryCount >= action.maxRetries) {
+              // Max retries reached - mark as failed
+              action.status = 'failed';
+              console.error(
+                `🚫 Action ${action.id} has failed ${action.retryCount} times. Marking as failed.`,
+              );
+            } else {
+              // Reset to pending for next retry
+              action.status = 'pending';
+              const retryDelay = this.calculateRetryDelay(
+                action.retryCount - 1,
+              );
+              console.log(
+                `↩️ Action ${action.id} will be retried (${action.retryCount}/${action.maxRetries}) after ${retryDelay.toFixed(0)}ms`,
+              );
+
+              // Store the retry delay in the action for use during processing
+              const extendedAction = action as ExtendedOfflineAction;
+              extendedAction.nextRetryAt = Date.now() + retryDelay;
+            }
           }
-          
+
           results.push({
             action,
             success: false,
             error: action.error,
           });
         }
-        
+
         // Save queue after each action
         await this.saveQueue();
         this.notifyListeners();
-        
+
         // Small delay between actions to avoid overwhelming the server
         await this.delay(100);
       }
-      
+
       console.log(`\n✅ SyncManager: Processed ${results.length} actions`);
       console.log(`   - Succeeded: ${results.filter(r => r.success).length}`);
       console.log(`   - Failed: ${results.filter(r => !r.success).length}`);
-      
     } catch (error) {
       console.error('❌ SyncManager: Error processing queue:', error);
     } finally {
@@ -342,9 +466,10 @@ class SyncManager {
     const pending = this.queue.filter(a => a.status === 'pending').length;
     const syncing = this.queue.filter(a => a.status === 'syncing').length;
     const failed = this.queue.filter(a => a.status === 'failed').length;
-    const oldestTimestamp = this.queue.length > 0 
-      ? Math.min(...this.queue.map(a => a.timestamp))
-      : undefined;
+    const oldestTimestamp =
+      this.queue.length > 0
+        ? Math.min(...this.queue.map(a => a.timestamp))
+        : undefined;
 
     return {
       total: this.queue.length,
@@ -389,10 +514,10 @@ class SyncManager {
    */
   subscribe(listener: (stats: QueueStats) => void): () => void {
     this.listeners.push(listener);
-    
+
     // Immediately notify the listener of the current state
     listener(this.getQueueStats());
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
@@ -425,10 +550,15 @@ class SyncManager {
       const stored = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
       if (stored) {
         this.queue = JSON.parse(stored);
-        console.log(`📂 SyncManager: Loaded ${this.queue.length} actions from storage`);
+        console.log(
+          `📂 SyncManager: Loaded ${this.queue.length} actions from storage`,
+        );
       }
     } catch (error) {
-      console.error('❌ SyncManager: Failed to load queue from storage:', error);
+      console.error(
+        '❌ SyncManager: Failed to load queue from storage:',
+        error,
+      );
       this.queue = [];
     }
   }
@@ -455,7 +585,10 @@ class SyncManager {
         console.log('📂 SyncManager: Loaded configuration from storage');
       }
     } catch (error) {
-      console.error('❌ SyncManager: Failed to load config from storage:', error);
+      console.error(
+        '❌ SyncManager: Failed to load config from storage:',
+        error,
+      );
     }
   }
 
@@ -487,50 +620,62 @@ class SyncManager {
   /**
    * Execute the appropriate server mutation for an action
    * Returns the server response
+   * Protected by circuit breaker to prevent cascading failures
    */
-  private async executeServerMutation(action: OfflineAction): Promise<any> {
-    console.log(`🌐 Executing ${action.operation} ${action.resourceType} on server...`);
-    
-    const { operation, resourceType, payload } = action;
+  private async executeServerMutation(action: OfflineAction): Promise<unknown> {
+    console.log(
+      `🌐 Executing ${action.operation} ${action.resourceType} on server...`,
+    );
 
-    switch (operation) {
-      case 'CREATE':
-        return await this.executeCreate(resourceType, payload);
-      
-      case 'UPDATE':
-        return await this.executeUpdate(resourceType, payload);
-      
-      case 'DELETE':
-        return await this.executeDelete(resourceType, payload);
-      
-      case 'RESTORE':
-        return await this.executeRestore(resourceType, payload);
-      
-      case 'COMPLETE':
-        return await this.executeComplete(resourceType, payload);
-      
-      case 'BATCH_DELETE':
-      case 'BATCH_RESTORE':
-        return await this.executeBatch(operation, payload);
-      
-      default:
-        throw new Error(`Unknown operation type: ${operation}`);
-    }
+    return await this.circuitBreaker.execute(async () => {
+      const { operation, resourceType, payload } = action;
+
+      switch (operation) {
+        case 'CREATE':
+          return await this.executeCreate(resourceType, payload);
+
+        case 'UPDATE':
+          return await this.executeUpdate(resourceType, payload);
+
+        case 'DELETE':
+          return await this.executeDelete(resourceType, payload);
+
+        case 'RESTORE':
+          return await this.executeRestore(resourceType, payload);
+
+        case 'COMPLETE':
+          return await this.executeComplete(resourceType, payload);
+
+        case 'BATCH_DELETE':
+        case 'BATCH_RESTORE':
+          return await this.executeBatch(operation, payload);
+
+        default:
+          throw new Error(`Unknown operation type: ${operation}`);
+      }
+    });
   }
 
   /**
    * Execute CREATE mutation
    */
-  private async executeCreate(resourceType: OfflineResourceType, payload: any): Promise<any> {
+  private async executeCreate(
+    resourceType: OfflineResourceType,
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'CREATE') {
       throw new Error('Invalid payload type for CREATE operation');
     }
 
+    const createPayload = payload as {
+      type: 'CREATE';
+      data: Record<string, unknown>;
+    };
     const functionName = `create-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName}...`);
-    
+
     const { data, error } = await supabase.functions.invoke(functionName, {
-      body: payload.data,
+      body: createPayload.data,
     });
 
     if (error) throw new Error(error.message || 'Create operation failed');
@@ -540,19 +685,27 @@ class SyncManager {
   /**
    * Execute UPDATE mutation
    */
-  private async executeUpdate(resourceType: OfflineResourceType, payload: any): Promise<any> {
+  private async executeUpdate(
+    resourceType: OfflineResourceType,
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'UPDATE') {
       throw new Error('Invalid payload type for UPDATE operation');
     }
 
-    const resourceId = this.resolveId(payload.resourceId);
+    const updatePayload = payload as {
+      type: 'UPDATE';
+      resourceId: string;
+      updates: Record<string, unknown>;
+    };
+    const resourceId = this.resolveId(updatePayload.resourceId);
     const functionName = `update-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
-    
+
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: {
         [`${resourceType}Id`]: resourceId,
-        updates: payload.updates,
+        updates: updatePayload.updates,
       },
     });
 
@@ -563,15 +716,19 @@ class SyncManager {
   /**
    * Execute DELETE mutation
    */
-  private async executeDelete(resourceType: OfflineResourceType, payload: any): Promise<any> {
+  private async executeDelete(
+    resourceType: OfflineResourceType,
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'DELETE') {
       throw new Error('Invalid payload type for DELETE operation');
     }
 
-    const resourceId = this.resolveId(payload.resourceId);
+    const deletePayload = payload as { type: 'DELETE'; resourceId: string };
+    const resourceId = this.resolveId(deletePayload.resourceId);
     const functionName = `delete-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
-    
+
     const { error } = await supabase.functions.invoke(functionName, {
       body: { [`${resourceType}Id`]: resourceId },
     });
@@ -583,15 +740,19 @@ class SyncManager {
   /**
    * Execute RESTORE mutation
    */
-  private async executeRestore(resourceType: OfflineResourceType, payload: any): Promise<any> {
+  private async executeRestore(
+    resourceType: OfflineResourceType,
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'RESTORE') {
       throw new Error('Invalid payload type for RESTORE operation');
     }
 
-    const resourceId = this.resolveId(payload.resourceId);
+    const restorePayload = payload as { type: 'RESTORE'; resourceId: string };
+    const resourceId = this.resolveId(restorePayload.resourceId);
     const functionName = `restore-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
-    
+
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: { [`${resourceType}Id`]: resourceId },
     });
@@ -603,15 +764,21 @@ class SyncManager {
   /**
    * Execute COMPLETE mutation
    */
-  private async executeComplete(resourceType: OfflineResourceType, payload: any): Promise<any> {
+  private async executeComplete(
+    resourceType: OfflineResourceType,
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'COMPLETE') {
       throw new Error('Invalid payload type for COMPLETE operation');
     }
 
-    const resourceId = this.resolveId(payload.resourceId);
+    const completePayload = payload as { type: 'COMPLETE'; resourceId: string };
+    const resourceId = this.resolveId(completePayload.resourceId);
     const functionName = `update-${resourceType.replace('_', '-')}`;
-    console.log(`  → Calling ${functionName} to mark ${resourceId} as complete...`);
-    
+    console.log(
+      `  → Calling ${functionName} to mark ${resourceId} as complete...`,
+    );
+
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: {
         [`${resourceType}Id`]: resourceId,
@@ -626,19 +793,28 @@ class SyncManager {
   /**
    * Execute BATCH mutation
    */
-  private async executeBatch(operation: 'BATCH_DELETE' | 'BATCH_RESTORE', payload: any): Promise<any> {
+  private async executeBatch(
+    operation: 'BATCH_DELETE' | 'BATCH_RESTORE',
+    payload: OfflineActionPayload,
+  ): Promise<unknown> {
     if (payload.type !== 'BATCH') {
       throw new Error('Invalid payload type for BATCH operation');
     }
 
     // Resolve any temp IDs in the batch items
-    const resolvedItems = payload.items.map((item: any) => ({
+    const batchPayload = payload as {
+      type: 'BATCH';
+      items: Array<{ id: string; type: string }>;
+    };
+    const resolvedItems = batchPayload.items.map(item => ({
       id: this.resolveId(item.id),
       type: item.type,
     }));
 
-    console.log(`  → Calling batch-action for ${resolvedItems.length} items...`);
-    
+    console.log(
+      `  → Calling batch-action for ${resolvedItems.length} items...`,
+    );
+
     const { data, error } = await supabase.functions.invoke('batch-action', {
       body: {
         action: payload.action,
@@ -669,46 +845,61 @@ class SyncManager {
   private async handleTempIdReplacement(
     tempId: string,
     realId: string,
-    resourceType: OfflineResourceType
+    resourceType: OfflineResourceType,
   ): Promise<void> {
     console.log(`🔄 Replacing temp ID ${tempId} with real ID ${realId}`);
-    
+
     // Store the mapping
     this.idMapping.set(tempId, realId);
     await this.saveIdMapping();
-    
+
     // Update any subsequent actions in the queue that reference this temp ID
     this.queue.forEach(action => {
       if (action.status === 'pending') {
         // Check if payload contains the temp ID and replace it
-        if (action.payload.type === 'UPDATE' && action.payload.resourceId === tempId) {
+        if (
+          action.payload.type === 'UPDATE' &&
+          action.payload.resourceId === tempId
+        ) {
           action.payload.resourceId = realId;
           console.log(`  ↪️ Updated UPDATE action to use real ID`);
-        } else if (action.payload.type === 'DELETE' && action.payload.resourceId === tempId) {
+        } else if (
+          action.payload.type === 'DELETE' &&
+          action.payload.resourceId === tempId
+        ) {
           action.payload.resourceId = realId;
           console.log(`  ↪️ Updated DELETE action to use real ID`);
-        } else if (action.payload.type === 'COMPLETE' && action.payload.resourceId === tempId) {
+        } else if (
+          action.payload.type === 'COMPLETE' &&
+          action.payload.resourceId === tempId
+        ) {
           action.payload.resourceId = realId;
           console.log(`  ↪️ Updated COMPLETE action to use real ID`);
         } else if (action.payload.type === 'BATCH') {
           // Update batch items
-          action.payload.items = action.payload.items.map((item: any) => ({
+          const batchPayload = action.payload as {
+            type: 'BATCH';
+            items: Array<{ id: string; type: string }>;
+          };
+          batchPayload.items = batchPayload.items.map(item => ({
             ...item,
             id: item.id === tempId ? realId : item.id,
           }));
         }
       }
     });
-    
+
     await this.saveQueue();
-    
+
     console.log(`✅ Temp ID replacement complete for ${tempId}`);
   }
 
   /**
    * Invalidate React Query and AsyncStorage caches for a resource type
    */
-  private async invalidateRelatedCaches(resourceType: OfflineResourceType): Promise<void> {
+  private async invalidateRelatedCaches(
+    resourceType: OfflineResourceType,
+  ): Promise<void> {
     // Clear AsyncStorage caches
     switch (resourceType) {
       case 'assignment':
@@ -728,7 +919,7 @@ class SyncManager {
         await cache.remove('homeScreenData');
         break;
     }
-    
+
     console.log(`  🗑️ Cleared caches for ${resourceType}`);
   }
 
@@ -741,7 +932,9 @@ class SyncManager {
       if (stored) {
         const mappingArray: [string, string][] = JSON.parse(stored);
         this.idMapping = new Map(mappingArray);
-        console.log(`📂 SyncManager: Loaded ${this.idMapping.size} ID mappings`);
+        console.log(
+          `📂 SyncManager: Loaded ${this.idMapping.size} ID mappings`,
+        );
       }
     } catch (error) {
       console.error('❌ SyncManager: Failed to load ID mapping:', error);
@@ -762,6 +955,103 @@ class SyncManager {
   }
 
   /**
+   * Calculate retry delay with exponential backoff and jitter
+   * @param attemptIndex - Zero-based attempt index (0 = first retry)
+   * @returns Delay in milliseconds
+   */
+  private calculateRetryDelay(attemptIndex: number): number {
+    const baseDelay = this.config.retryDelay * Math.pow(2, attemptIndex); // Exponential backoff
+    const jitter = baseDelay * 0.2 * (Math.random() * 2 - 1); // ±20% jitter
+    const delay = baseDelay + jitter;
+    // Cap at 30 seconds max delay
+    return Math.min(Math.max(delay, this.config.retryDelay), 30000);
+  }
+
+  /**
+   * Evict old queue items (older than 7 days, prioritizing low-priority items)
+   */
+  private async evictOldQueueItems(): Promise<void> {
+    const maxAge = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const now = Date.now();
+
+    // First, remove items older than maxAge (starting with low priority)
+    const oldItems = this.queue.filter(action => {
+      const age = now - action.timestamp;
+      return age > maxAge;
+    });
+
+    // Sort old items by priority (low first, then normal, then high)
+    oldItems.sort((a, b) => {
+      const priorityOrder = { low: 1, normal: 2, high: 3 };
+      const aPriority = (a as ExtendedOfflineAction).priority || 'normal';
+      const bPriority = (b as ExtendedOfflineAction).priority || 'normal';
+      return priorityOrder[aPriority] - priorityOrder[bPriority];
+    });
+
+    // Remove old items (keep high priority items even if old)
+    for (const item of oldItems) {
+      const priority = (item as ExtendedOfflineAction).priority || 'normal';
+      if (
+        priority === 'low' ||
+        (priority === 'normal' &&
+          this.queue.length > this.config.maxQueueSize! * 1.2)
+      ) {
+        this.queue = this.queue.filter(a => a.id !== item.id);
+        console.log(
+          `🗑️ Evicted old queue item: ${item.id} (age: ${Math.floor((now - item.timestamp) / (24 * 60 * 60 * 1000))} days)`,
+        );
+      }
+    }
+
+    // If still over limit, remove oldest low-priority items
+    if (this.queue.length > this.config.maxQueueSize!) {
+      const lowPriorityItems = this.queue
+        .filter(
+          a => ((a as ExtendedOfflineAction).priority || 'normal') === 'low',
+        )
+        .sort((a, b) => a.timestamp - b.timestamp);
+
+      const toRemove = this.queue.length - this.config.maxQueueSize!;
+      for (let i = 0; i < toRemove && i < lowPriorityItems.length; i++) {
+        this.queue = this.queue.filter(a => a.id !== lowPriorityItems[i].id);
+        console.log(
+          `🗑️ Evicted low-priority queue item: ${lowPriorityItems[i].id}`,
+        );
+      }
+    }
+
+    await this.saveQueue();
+  }
+
+  /**
+   * Monitor queue size and alert if approaching limit
+   */
+  private monitorQueueSize(): void {
+    const threshold = (this.config.maxQueueSize ?? 100) * 0.8; // 80% of max
+    if (this.queue.length > threshold) {
+      console.warn(
+        `⚠️ SyncManager: Queue size approaching limit: ${this.queue.length}/${this.config.maxQueueSize ?? 100}`,
+      );
+
+      // Send analytics event (sampled)
+      if (Math.random() < 0.1) {
+        // 10% sampling
+        try {
+          const { analyticsService } = require('@/services/analytics');
+          analyticsService.track('sync_queue_size_warning', {
+            queueSize: this.queue.length,
+            maxSize: this.config.maxQueueSize ?? 100,
+            percentage:
+              (this.queue.length / (this.config.maxQueueSize ?? 100)) * 100,
+          });
+        } catch (error) {
+          // Silently fail
+        }
+      }
+    }
+  }
+
+  /**
    * Simple delay utility
    */
   private delay(ms: number): Promise<void> {
@@ -778,4 +1068,3 @@ export const syncManager = new SyncManager();
  * Export the class for testing purposes
  */
 export { SyncManager };
-

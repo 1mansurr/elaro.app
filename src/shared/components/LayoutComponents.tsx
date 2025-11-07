@@ -10,45 +10,31 @@ interface LayoutProps {
 }
 
 export const HeaderSection: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.headerSection, style]}>
-    {children}
-  </View>
+  <View style={[styles.headerSection, style]}>{children}</View>
 );
 
 export const ContentSection: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.contentSection, style]}>
-    {children}
-  </View>
+  <View style={[styles.contentSection, style]}>{children}</View>
 );
 
 export const ActionSection: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.actionSection, style]}>
-    {children}
-  </View>
+  <View style={[styles.actionSection, style]}>{children}</View>
 );
 
 export const CardSection: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.cardSection, style]}>
-    {children}
-  </View>
+  <View style={[styles.cardSection, style]}>{children}</View>
 );
 
 export const ListSection: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.listSection, style]}>
-    {children}
-  </View>
+  <View style={[styles.listSection, style]}>{children}</View>
 );
 
 export const ScreenContainer: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.screenContainer, style]}>
-    {children}
-  </View>
+  <View style={[styles.screenContainer, style]}>{children}</View>
 );
 
 export const CardContainer: React.FC<LayoutProps> = ({ children, style }) => (
-  <View style={[styles.cardContainer, style]}>
-    {children}
-  </View>
+  <View style={[styles.cardContainer, style]}>{children}</View>
 );
 
 const styles = StyleSheet.create({
@@ -77,4 +63,3 @@ const styles = StyleSheet.create({
     ...VISUAL_HIERARCHY.card,
   },
 });
-

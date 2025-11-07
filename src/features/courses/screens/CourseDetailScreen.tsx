@@ -7,14 +7,18 @@ import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { QueryStateWrapper } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 // Define the route prop type for this screen
-type CourseDetailScreenRouteProp = RouteProp<RootStackParamList, 'CourseDetail'>;
-type CourseDetailScreenNavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type CourseDetailScreenRouteProp = RouteProp<
+  RootStackParamList,
+  'CourseDetail'
+>;
+type CourseDetailScreenNavigationProp =
+  NativeStackNavigationProp<RootStackParamList>;
 
 const CourseDetailScreen = () => {
   const route = useRoute<CourseDetailScreenRouteProp>();
@@ -22,7 +26,14 @@ const CourseDetailScreen = () => {
   const { courseId } = route.params;
   const { user } = useAuth();
   const { isOnline } = useNetwork();
-  const { data: course, isLoading, isError, error, refetch, isRefetching } = useCourseDetail(courseId);
+  const {
+    data: course,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useCourseDetail(courseId);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = () => {
@@ -54,13 +65,16 @@ const CourseDetailScreen = () => {
               const errorTitle = getErrorTitle(error);
               const errorMessage = mapErrorCodeToMessage(error);
               Alert.alert(errorTitle, errorMessage);
-              console.error('Delete Error:', error instanceof Error ? error.message : 'Unknown error');
+              console.error(
+                'Delete Error:',
+                error instanceof Error ? error.message : 'Unknown error',
+              );
             } finally {
               setIsDeleting(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -75,37 +89,34 @@ const CourseDetailScreen = () => {
       onRefresh={refetch}
       emptyTitle="Course not found"
       emptyMessage="This course may have been deleted or doesn't exist."
-      emptyIcon="book-outline"
-    >
+      emptyIcon="book-outline">
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>{course?.courseName}</Text>
           {course?.courseCode && (
             <Text style={styles.subtitle}>{course.courseCode}</Text>
           )}
-          
+
           <View style={styles.divider} />
-          
+
           <Text style={styles.label}>About this course:</Text>
           <Text style={styles.content}>
             {course?.aboutCourse || 'No description provided.'}
           </Text>
         </View>
-        
+
         <View style={styles.buttonContainer}>
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => navigation.navigate('EditCourseModal', { courseId })}
-            disabled={isDeleting}
-          >
+            disabled={isDeleting}>
             <Text style={styles.editButtonText}>Edit Course</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={handleDelete}
-            disabled={isDeleting}
-          >
+            disabled={isDeleting}>
             <Text style={styles.deleteButtonText}>
               {isDeleting ? 'Deleting...' : 'Delete Course'}
             </Text>

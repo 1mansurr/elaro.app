@@ -2,7 +2,7 @@
 // To add dark mode support, implement dynamic color selection using Appearance API or similar.
 // theme.ts
 
-import { Platform } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 
 /* ---------------------------------- 🎨 COLORS ---------------------------------- */
 
@@ -65,59 +65,59 @@ export const COLORS = {
 
   // 🔖 Design Tokens (Tailwind-style)
   ...{
-  yellow50: '#fefce8',
-  yellow100: '#fef3c7',
-  yellow200: '#fde68a',
-  yellow400: '#facc15',
-  yellow500: '#eab308',
-  yellow600: '#ca8a04',
-  yellow700: '#a16207',
-  orange50: '#fff7ed',
-  orange100: '#ffedd5',
-  orange200: '#fed7aa',
-  orange400: '#fb923c',
-  orange500: '#f97316',
-  orange600: '#ea580c',
-  purple50: '#faf5ff',
-  purple100: '#f3e8ff',
-  purple200: '#e9d5ff',
-  purple400: '#c084fc',
-  purple500: '#a855f7',
-  purple600: '#9333ea',
-  purple800: '#6b21a8',
-  blue50: '#eff6ff',
-  blue100: '#dbeafe',
-  blue200: '#bfdbfe',
+    yellow50: '#fefce8',
+    yellow100: '#fef3c7',
+    yellow200: '#fde68a',
+    yellow400: '#facc15',
+    yellow500: '#eab308',
+    yellow600: '#ca8a04',
+    yellow700: '#a16207',
+    orange50: '#fff7ed',
+    orange100: '#ffedd5',
+    orange200: '#fed7aa',
+    orange400: '#fb923c',
+    orange500: '#f97316',
+    orange600: '#ea580c',
+    purple50: '#faf5ff',
+    purple100: '#f3e8ff',
+    purple200: '#e9d5ff',
+    purple400: '#c084fc',
+    purple500: '#a855f7',
+    purple600: '#9333ea',
+    purple800: '#6b21a8',
+    blue50: '#eff6ff',
+    blue100: '#dbeafe',
+    blue200: '#bfdbfe',
     blue400: '#60a5fa',
     blue500: '#3b82f6',
-  blue600: '#2563eb',
+    blue600: '#2563eb',
     blue700: '#1d4ed8',
-  blue900: '#1e3a8a',
-  green50: '#f0fdf4',
-  green100: '#dcfce7',
-  green200: '#bbf7d0',
-  green300: '#86efac',
-  green400: '#4ade80',
+    blue900: '#1e3a8a',
+    green50: '#f0fdf4',
+    green100: '#dcfce7',
+    green200: '#bbf7d0',
+    green300: '#86efac',
+    green400: '#4ade80',
     green500: '#22c55e',
-  green600: '#16a34a',
-  green700: '#15803d',
-  green800: '#166534',
-  red50: '#fef2f2',
-  red100: '#fee2e2',
-  red200: '#fecaca',
-  red400: '#f87171',
-  red500: '#ef4444',
+    green600: '#16a34a',
+    green700: '#15803d',
+    green800: '#166534',
+    red50: '#fef2f2',
+    red100: '#fee2e2',
+    red200: '#fecaca',
+    red400: '#f87171',
+    red500: '#ef4444',
     red600: '#dc2626',
-  gray50: '#f9fafb',
-  gray100: '#f3f4f6',
-  gray200: '#e5e7eb',
-  gray300: '#d1d5db',
-  gray400: '#9ca3af',
-  gray500: '#6b7280',
-  gray600: '#4b5563',
-  gray700: '#374151',
-  gray800: '#1f2937',
-  gray900: '#111827',
+    gray50: '#f9fafb',
+    gray100: '#f3f4f6',
+    gray200: '#e5e7eb',
+    gray300: '#d1d5db',
+    gray400: '#9ca3af',
+    gray500: '#6b7280',
+    gray600: '#4b5563',
+    gray700: '#374151',
+    gray800: '#1f2937',
+    gray900: '#111827',
   },
 };
 
@@ -137,14 +137,14 @@ export const FONT_SIZES = {
   caption: 12,
 };
 
-export const FONT_WEIGHTS = {
+export const FONT_WEIGHTS: Record<string, TextStyle['fontWeight']> = {
   light: '300',
   normal: '400',
   medium: '500',
   semibold: '600',
   bold: '700',
   heavy: '800',
-};
+} as const;
 
 export const FONT_FAMILIES = {
   monospace: Platform.select({
@@ -268,9 +268,15 @@ export const ANIMATIONS = {
   // React Native Animated easing functions
   animatedEasing: {
     ease: require('react-native').Easing.ease,
-    easeIn: require('react-native').Easing.in(require('react-native').Easing.ease),
-    easeOut: require('react-native').Easing.out(require('react-native').Easing.ease),
-    easeInOut: require('react-native').Easing.inOut(require('react-native').Easing.ease),
+    easeIn: require('react-native').Easing.in(
+      require('react-native').Easing.ease,
+    ),
+    easeOut: require('react-native').Easing.out(
+      require('react-native').Easing.ease,
+    ),
+    easeInOut: require('react-native').Easing.inOut(
+      require('react-native').Easing.ease,
+    ),
     bounce: require('react-native').Easing.bounce,
     smooth: require('react-native').Easing.bezier(0.4, 0, 0.2, 1),
     sharp: require('react-native').Easing.bezier(0.4, 0, 0.6, 1),
@@ -283,19 +289,27 @@ export const ANIMATIONS = {
   modal: {
     sheet: {
       duration: 300,
-      easing: require('react-native').Easing.out(require('react-native').Easing.ease),
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
     },
     dialog: {
       duration: 250,
-      easing: require('react-native').Easing.out(require('react-native').Easing.ease),
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
     },
     simple: {
       duration: 200,
-      easing: require('react-native').Easing.out(require('react-native').Easing.ease),
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
     },
     fullScreen: {
       duration: 350,
-      easing: require('react-native').Easing.out(require('react-native').Easing.ease),
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
     },
   },
 };

@@ -1,7 +1,9 @@
 import React, { memo, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, FONT_WEIGHTS } from '@/constants/theme';
+import { formatDate } from '@/i18n';
 
 /**
  * Memoized list item component
@@ -14,35 +16,43 @@ export const MemoizedListItem = memo<{
   onPress: (id: string) => void;
   icon?: string;
   badge?: number;
-}>(({ id, title, subtitle, onPress, icon, badge }) => {
-  const handlePress = useCallback(() => {
-    onPress(id);
-  }, [id, onPress]);
+}>(
+  ({ id, title, subtitle, onPress, icon, badge }) => {
+    const handlePress = useCallback(() => {
+      onPress(id);
+    }, [id, onPress]);
 
-  return (
-    <TouchableOpacity style={styles.listItem} onPress={handlePress}>
-      {icon && (
-        <Ionicons name={icon as any} size={20} color="COLORS.textSecondary" style={styles.icon} />
-      )}
-      <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-      </View>
-      {badge && badge > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+    return (
+      <TouchableOpacity style={styles.listItem} onPress={handlePress}>
+        {icon && (
+          <Ionicons
+            name={icon as any}
+            size={20}
+            color="COLORS.textSecondary"
+            style={styles.icon}
+          />
+        )}
+        <View style={styles.content}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
         </View>
-      )}
-    </TouchableOpacity>
-  );
-}, (prevProps, nextProps) => {
-  // Only re-render if id, title, or badge changes
-  return (
-    prevProps.id === nextProps.id &&
-    prevProps.title === nextProps.title &&
-    prevProps.badge === nextProps.badge
-  );
-});
+        {badge && badge > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge > 99 ? '99+' : badge}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if id, title, or badge changes
+    return (
+      prevProps.id === nextProps.id &&
+      prevProps.title === nextProps.title &&
+      prevProps.badge === nextProps.badge
+    );
+  },
+);
 
 MemoizedListItem.displayName = 'MemoizedListItem';
 
@@ -60,38 +70,49 @@ export const MemoizedCard = memo<{
   };
   onAction: (data: any) => void;
   onPress?: (data: any) => void;
-}>(({ data, onAction, onPress }) => {
-  const handleAction = useCallback(() => {
-    onAction(data);
-  }, [data, onAction]);
+}>(
+  ({ data, onAction, onPress }) => {
+    const handleAction = useCallback(() => {
+      onAction(data);
+    }, [data, onAction]);
 
-  const handlePress = useCallback(() => {
-    onPress?.(data);
-  }, [data, onPress]);
+    const handlePress = useCallback(() => {
+      onPress?.(data);
+    }, [data, onPress]);
 
-  const formattedTime = useMemo(() => {
-    return new Date(data.timestamp).toLocaleDateString();
-  }, [data.timestamp]);
+    const formattedTime = useMemo(() => {
+      return formatDate(new Date(data.timestamp));
+    }, [data.timestamp]);
 
-  return (
-    <TouchableOpacity style={styles.card} onPress={handlePress}>
-      {data.image && (
-        <Image source={{ uri: data.image }} style={styles.cardImage} />
-      )}
-      <View style={styles.cardContent}>
-        <Text style={styles.cardTitle}>{data.title}</Text>
-        <Text style={styles.cardText}>{data.content}</Text>
-        <Text style={styles.cardTime}>{formattedTime}</Text>
-      </View>
-      <TouchableOpacity style={styles.actionButton} onPress={handleAction}>
-        <Ionicons name="ellipsis-horizontal" size={20} color="COLORS.textSecondary" />
+    return (
+      <TouchableOpacity style={styles.card} onPress={handlePress}>
+        {data.image && (
+          <Image
+            source={{ uri: data.image }}
+            style={styles.cardImage}
+            contentFit="cover"
+          />
+        )}
+        <View style={styles.cardContent}>
+          <Text style={styles.cardTitle}>{data.title}</Text>
+          <Text style={styles.cardText}>{data.content}</Text>
+          <Text style={styles.cardTime}>{formattedTime}</Text>
+        </View>
+        <TouchableOpacity style={styles.actionButton} onPress={handleAction}>
+          <Ionicons
+            name="ellipsis-horizontal"
+            size={20}
+            color="COLORS.textSecondary"
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
-    </TouchableOpacity>
-  );
-}, (prevProps, nextProps) => {
-  // Deep equality check for data object
-  return JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data);
-});
+    );
+  },
+  (prevProps, nextProps) => {
+    // Deep equality check for data object
+    return JSON.stringify(prevProps.data) === JSON.stringify(nextProps.data);
+  },
+);
 
 MemoizedCard.displayName = 'MemoizedCard';
 
@@ -109,64 +130,79 @@ export const MemoizedSearchResult = memo<{
   };
   onSelect: (item: any) => void;
   isSelected?: boolean;
-}>(({ item, onSelect, isSelected = false }) => {
-  const handleSelect = useCallback(() => {
-    onSelect(item);
-  }, [item, onSelect]);
+}>(
+  ({ item, onSelect, isSelected = false }) => {
+    const handleSelect = useCallback(() => {
+      onSelect(item);
+    }, [item, onSelect]);
 
-  const getTypeIcon = useCallback((type: string) => {
-    switch (type) {
-      case 'course': return 'book-outline';
-      case 'assignment': return 'document-text-outline';
-      case 'lecture': return 'play-outline';
-      case 'study-session': return 'time-outline';
-      default: return 'help-outline';
-    }
-  }, []);
+    const getTypeIcon = useCallback((type: string) => {
+      switch (type) {
+        case 'course':
+          return 'book-outline';
+        case 'assignment':
+          return 'document-text-outline';
+        case 'lecture':
+          return 'play-outline';
+        case 'study-session':
+          return 'time-outline';
+        default:
+          return 'help-outline';
+      }
+    }, []);
 
-  const getTypeColor = useCallback((type: string) => {
-    switch (type) {
-      case 'course': return COLORS.success;
-      case 'assignment': return COLORS.warning;
-      case 'lecture': return COLORS.primary;
-      case 'study-session': return COLORS.purple;
-      default: return COLORS.textSecondary;
-    }
-  }, []);
+    const getTypeColor = useCallback((type: string) => {
+      switch (type) {
+        case 'course':
+          return COLORS.success;
+        case 'assignment':
+          return COLORS.warning;
+        case 'lecture':
+          return COLORS.primary;
+        case 'study-session':
+          return COLORS.purple;
+        default:
+          return COLORS.textSecondary;
+      }
+    }, []);
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.searchResult,
-        isSelected && styles.searchResultSelected
-      ]}
-      onPress={handleSelect}
-    >
-      <View style={styles.searchResultLeft}>
-        <View style={[styles.typeIcon, { backgroundColor: getTypeColor(item.type) }]}>
-          <Ionicons 
-            name={getTypeIcon(item.type) as any} 
-            size={16} 
-            color="white" 
-          />
+    return (
+      <TouchableOpacity
+        style={[styles.searchResult, isSelected && styles.searchResultSelected]}
+        onPress={handleSelect}>
+        <View style={styles.searchResultLeft}>
+          <View
+            style={[
+              styles.typeIcon,
+              { backgroundColor: getTypeColor(item.type) },
+            ]}>
+            <Ionicons
+              name={getTypeIcon(item.type) as any}
+              size={16}
+              color="white"
+            />
+          </View>
+          <View style={styles.searchResultContent}>
+            <Text style={styles.searchResultTitle}>{item.title}</Text>
+            <Text style={styles.searchResultDescription}>
+              {item.description}
+            </Text>
+          </View>
         </View>
-        <View style={styles.searchResultContent}>
-          <Text style={styles.searchResultTitle}>{item.title}</Text>
-          <Text style={styles.searchResultDescription}>{item.description}</Text>
+        <View style={styles.searchResultRight}>
+          <Text style={styles.scoreText}>{Math.round(item.score * 100)}%</Text>
         </View>
-      </View>
-      <View style={styles.searchResultRight}>
-        <Text style={styles.scoreText}>{Math.round(item.score * 100)}%</Text>
-      </View>
-    </TouchableOpacity>
-  );
-}, (prevProps, nextProps) => {
-  // Only re-render if item data or selection state changes
-  return (
-    prevProps.item.id === nextProps.item.id &&
-    prevProps.isSelected === nextProps.isSelected
-  );
-});
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if item data or selection state changes
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.isSelected === nextProps.isSelected
+    );
+  },
+);
 
 MemoizedSearchResult.displayName = 'MemoizedSearchResult';
 
@@ -187,77 +223,90 @@ export const MemoizedNotificationItem = memo<{
   onMarkAsRead: (id: string) => void;
   onDelete: (id: string) => void;
   onPress: (notification: any) => void;
-}>(({ notification, onMarkAsRead, onDelete, onPress }) => {
-  const handleMarkAsRead = useCallback(() => {
-    onMarkAsRead(notification.id);
-  }, [notification.id, onMarkAsRead]);
+}>(
+  ({ notification, onMarkAsRead, onDelete, onPress }) => {
+    const handleMarkAsRead = useCallback(() => {
+      onMarkAsRead(notification.id);
+    }, [notification.id, onMarkAsRead]);
 
-  const handleDelete = useCallback(() => {
-    onDelete(notification.id);
-  }, [notification.id, onDelete]);
+    const handleDelete = useCallback(() => {
+      onDelete(notification.id);
+    }, [notification.id, onDelete]);
 
-  const handlePress = useCallback(() => {
-    onPress(notification);
-  }, [notification, onPress]);
+    const handlePress = useCallback(() => {
+      onPress(notification);
+    }, [notification, onPress]);
 
-  const formattedTime = useMemo(() => {
-    const now = Date.now();
-    const diff = now - notification.timestamp;
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
+    const formattedTime = useMemo(() => {
+      const now = Date.now();
+      const diff = now - notification.timestamp;
+      const minutes = Math.floor(diff / 60000);
+      const hours = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
 
-    if (minutes < 1) return 'Just now';
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  }, [notification.timestamp]);
+      if (minutes < 1) return 'Just now';
+      if (minutes < 60) return `${minutes}m ago`;
+      if (hours < 24) return `${hours}h ago`;
+      return `${days}d ago`;
+    }, [notification.timestamp]);
 
-  const getTypeIcon = useMemo(() => {
-    switch (notification.type) {
-      case 'assignment': return 'document-text-outline';
-      case 'lecture': return 'play-outline';
-      case 'study-session': return 'time-outline';
-      case 'reminder': return 'alarm-outline';
-      default: return 'notifications-outline';
-    }
-  }, [notification.type]);
+    const getTypeIcon = useMemo(() => {
+      switch (notification.type) {
+        case 'assignment':
+          return 'document-text-outline';
+        case 'lecture':
+          return 'play-outline';
+        case 'study-session':
+          return 'time-outline';
+        case 'reminder':
+          return 'alarm-outline';
+        default:
+          return 'notifications-outline';
+      }
+    }, [notification.type]);
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.notificationItem,
-        !notification.isRead && styles.notificationItemUnread
-      ]}
-      onPress={handlePress}
-    >
-      <View style={styles.notificationLeft}>
-        <Ionicons name={getTypeIcon as any} size={20} color="COLORS.textSecondary" />
-        <View style={styles.notificationContent}>
-          <Text style={styles.notificationTitle}>{notification.title}</Text>
-          <Text style={styles.notificationBody}>{notification.body}</Text>
-          <Text style={styles.notificationTime}>{formattedTime}</Text>
+    return (
+      <TouchableOpacity
+        style={[
+          styles.notificationItem,
+          !notification.isRead && styles.notificationItemUnread,
+        ]}
+        onPress={handlePress}>
+        <View style={styles.notificationLeft}>
+          <Ionicons
+            name={getTypeIcon as any}
+            size={20}
+            color="COLORS.textSecondary"
+          />
+          <View style={styles.notificationContent}>
+            <Text style={styles.notificationTitle}>{notification.title}</Text>
+            <Text style={styles.notificationBody}>{notification.body}</Text>
+            <Text style={styles.notificationTime}>{formattedTime}</Text>
+          </View>
         </View>
-      </View>
-      <View style={styles.notificationActions}>
-        {!notification.isRead && (
-          <TouchableOpacity onPress={handleMarkAsRead} style={styles.actionButton}>
-            <Ionicons name="checkmark" size={16} color={COLORS.success} />
+        <View style={styles.notificationActions}>
+          {!notification.isRead && (
+            <TouchableOpacity
+              onPress={handleMarkAsRead}
+              style={styles.actionButton}>
+              <Ionicons name="checkmark" size={16} color={COLORS.success} />
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
+            <Ionicons name="trash-outline" size={16} color="COLORS.error" />
           </TouchableOpacity>
-        )}
-        <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-          <Ionicons name="trash-outline" size={16} color="COLORS.error" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-}, (prevProps, nextProps) => {
-  // Only re-render if notification data changes
-  return (
-    prevProps.notification.id === nextProps.notification.id &&
-    prevProps.notification.isRead === nextProps.notification.isRead
-  );
-});
+        </View>
+      </TouchableOpacity>
+    );
+  },
+  (prevProps, nextProps) => {
+    // Only re-render if notification data changes
+    return (
+      prevProps.notification.id === nextProps.notification.id &&
+      prevProps.notification.isRead === nextProps.notification.isRead
+    );
+  },
+);
 
 MemoizedNotificationItem.displayName = 'MemoizedNotificationItem';
 

@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { Button, QueryStateWrapper } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -13,13 +20,16 @@ import { useQueryClient } from '@tanstack/react-query';
 import { getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
-type OnboardingCoursesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type OnboardingCoursesScreenNavigationProp =
+  StackNavigationProp<RootStackParamList>;
 
 // Memoized course item component
 const CourseItem = memo<{ item: any }>(({ item }) => (
   <View style={styles.courseItem}>
     <Text style={styles.courseName}>{item.course_name}</Text>
-    {item.course_code && <Text style={styles.courseCode}>{item.course_code}</Text>}
+    {item.course_code && (
+      <Text style={styles.courseCode}>{item.course_code}</Text>
+    )}
   </View>
 ));
 
@@ -27,12 +37,18 @@ const OnboardingCoursesScreen = () => {
   const navigation = useNavigation<OnboardingCoursesScreenNavigationProp>();
   const { onboardingData } = useOnboarding();
   const queryClient = useQueryClient();
-  
+
   // Get courses directly from React Query with full result object
-  const { data, isLoading: coursesLoading, isError, error, refetch } = useCourses();
+  const {
+    data,
+    isLoading: coursesLoading,
+    isError,
+    error,
+    refetch,
+  } = useCourses();
   const [isLoading, setIsLoading] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
-  
+
   // Flatten all pages into a single array for onboarding (should only be a few courses)
   const courses = data?.pages.flatMap(page => page.courses) ?? [];
 
@@ -43,9 +59,12 @@ const OnboardingCoursesScreen = () => {
       if (pendingTask && pendingTask.taskType === 'course') {
         // Auto-create the course
         try {
-          const { error } = await supabase.functions.invoke('create-course-and-lecture', {
-            body: pendingTask.taskData,
-          });
+          const { error } = await supabase.functions.invoke(
+            'create-course-and-lecture',
+            {
+              body: pendingTask.taskData,
+            },
+          );
 
           if (error) throw new Error(error.message);
 
@@ -56,12 +75,18 @@ const OnboardingCoursesScreen = () => {
           await queryClient.invalidateQueries({ queryKey: ['courses'] });
           await queryClient.invalidateQueries({ queryKey: ['lectures'] });
 
-          Alert.alert('Welcome!', `Your course "${pendingTask.taskData.courseName}" has been automatically created!`);
+          Alert.alert(
+            'Welcome!',
+            `Your course "${pendingTask.taskData.courseName}" has been automatically created!`,
+          );
         } catch (error) {
           console.error('Failed to auto-create course:', error);
           const errorTitle = getErrorTitle(error);
           const errorMessage = mapErrorCodeToMessage(error);
-          Alert.alert(errorTitle, `${errorMessage} You can add the course manually.`);
+          Alert.alert(
+            errorTitle,
+            `${errorMessage} You can add the course manually.`,
+          );
         }
       }
     };
@@ -73,32 +98,47 @@ const OnboardingCoursesScreen = () => {
     setIsLoading(true);
     try {
       // The username, university, and program come from the onboarding context
-      const { username, country, university, program, dateOfBirth, hasParentalConsent } = onboardingData;
+      const {
+        username,
+        country,
+        university,
+        program,
+        dateOfBirth,
+        hasParentalConsent,
+      } = onboardingData;
       // The courses now come from our React Query hook, or empty array if skipping
-      const finalCourses = skipCourses ? [] : (courses || []);
+      const finalCourses = skipCourses ? [] : courses || [];
 
       const { error } = await supabase.functions.invoke('complete-onboarding', {
-        body: { username, country, university, program, courses: finalCourses, dateOfBirth, hasParentalConsent, marketingOptIn },
+        body: {
+          username,
+          country,
+          university,
+          program,
+          courses: finalCourses,
+          dateOfBirth,
+          hasParentalConsent,
+          marketingOptIn,
+        },
       });
 
       if (error) {
         throw error;
       }
 
-      const message = skipCourses 
+      const message = skipCourses
         ? 'Your profile has been saved! You can add courses anytime from the home screen.'
         : 'Your profile has been saved successfully.';
       Alert.alert('Setup Complete!', message);
-      
+
       // Navigate to main app after successful onboarding completion
       // Use CommonActions.reset() to properly reset navigation stack from nested navigator
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
           routes: [{ name: 'Main' }],
-        })
+        }),
       );
-
     } catch (error: any) {
       console.error('Onboarding completion error:', error);
       const errorTitle = getErrorTitle(error);
@@ -119,16 +159,17 @@ const OnboardingCoursesScreen = () => {
 
   const renderCourseItem = useCallback(
     ({ item }: { item: any }) => <CourseItem item={item} />,
-    []
+    [],
   );
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Add Your First Courses</Text>
       <Text style={styles.subtitle}>
-        Get a head start by adding up to 3 courses now, or skip this step and add them later from the home screen.
+        Get a head start by adding up to 3 courses now, or skip this step and
+        add them later from the home screen.
       </Text>
-      
+
       <QueryStateWrapper
         isLoading={coursesLoading}
         isError={isError}
@@ -137,14 +178,19 @@ const OnboardingCoursesScreen = () => {
         refetch={refetch}
         emptyTitle="No courses yet"
         emptyMessage="Start by adding your first course using the button below."
-        emptyIcon="school-outline"
-      >
+        emptyIcon="school-outline">
         <FlatList
           style={styles.list}
           data={courses || []}
           renderItem={renderCourseItem}
           keyExtractor={(item, index) => index.toString()}
           scrollEnabled={false}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
         />
       </QueryStateWrapper>
 
@@ -153,14 +199,15 @@ const OnboardingCoursesScreen = () => {
         <TouchableOpacity
           style={styles.checkboxContainer}
           onPress={() => setMarketingOptIn(!marketingOptIn)}
-          activeOpacity={0.7}
-        >
-          <View style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
+          activeOpacity={0.7}>
+          <View
+            style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
             {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
           </View>
           <View style={styles.checkboxTextContainer}>
             <Text style={styles.checkboxLabel}>
-              Yes, send me helpful tips, new feature announcements, and special offers from ELARO.
+              Yes, send me helpful tips, new feature announcements, and special
+              offers from ELARO.
             </Text>
             <Text style={styles.checkboxSubtext}>
               You can change this anytime in your Settings.
@@ -170,22 +217,20 @@ const OnboardingCoursesScreen = () => {
       </View>
 
       <View style={styles.actionButtonsContainer}>
-        <Button 
-          title="Add a Course" 
+        <Button
+          title="Add a Course"
           onPress={() => navigation.getParent()?.navigate('AddCourseFlow')}
           disabled={(courses?.length || 0) >= 3 || coursesLoading}
         />
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button 
-          title="Back" 
-          onPress={handleBack} 
-          variant="outline" 
-        />
-        <Button 
-          title={(courses?.length || 0) > 0 ? "Finish Setup" : "Skip for Now"}
-          onPress={() => (courses?.length || 0) > 0 ? handleFinish(false) : handleSkip()}
+        <Button title="Back" onPress={handleBack} variant="outline" />
+        <Button
+          title={(courses?.length || 0) > 0 ? 'Finish Setup' : 'Skip for Now'}
+          onPress={() =>
+            (courses?.length || 0) > 0 ? handleFinish(false) : handleSkip()
+          }
           loading={isLoading}
         />
       </View>
@@ -195,8 +240,18 @@ const OnboardingCoursesScreen = () => {
 
 const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20, backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 10 },
-  subtitle: { fontSize: 16, textAlign: 'center', color: 'gray', marginBottom: 30 },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    color: 'gray',
+    marginBottom: 30,
+  },
   list: { marginBottom: 20 },
   courseItem: {
     backgroundColor: '#f8f9fa',
@@ -267,9 +322,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 10,
   },
-  buttonContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 10,
     gap: 10,
   },

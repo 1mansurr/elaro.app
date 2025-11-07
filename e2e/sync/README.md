@@ -3,6 +3,7 @@
 ## Overview
 
 Tests for end-to-end state synchronization across the app, ensuring data consistency across:
+
 - Auth persistence
 - Preference state sync (theme, notifications, settings)
 - Navigation state retention
@@ -22,17 +23,20 @@ e2e/sync/
 ## Test Scenarios
 
 ### Test 1: Auth Persistence
+
 - ✅ Sign in → Verify Supabase session valid
 - ✅ Reload app → User remains logged in
 - ✅ Verify local state matches Supabase
 - ✅ Clear state on logout
 
 ### Test 2: Preference State Sync
+
 - ✅ Theme preference persistence
 - ✅ Notification preferences sync to Supabase
 - ✅ Offline preference queueing
 
 ### Test 3: Navigation & Cache Sync
+
 - ✅ Navigation stack restoration after reload
 - ✅ Tab state preservation
 - ✅ Navigation state cleared on logout
@@ -41,6 +45,7 @@ e2e/sync/
 ## Helper Utilities
 
 ### `auth.ts`
+
 - `signIn()` - Sign in through UI
 - `isLoggedIn()` - Check login status
 - `signOut()` - Sign out user
@@ -48,6 +53,7 @@ e2e/sync/
 - `getSupabaseUser()` - Get current user
 
 ### `navigation.ts`
+
 - `goTo()` - Navigate to screen
 - `navigateSequence()` - Navigate through multiple screens
 - `verifyScreen()` - Verify current screen
@@ -55,6 +61,7 @@ e2e/sync/
 - `goToDashboard()` / `goToProfile()` / `goToSettings()` - Specific navigation
 
 ### `syncHelpers.ts`
+
 - `verifyLocalAuthState()` - Verify local auth state
 - `verifySupabaseSession()` - Verify Supabase session
 - `verifyNavigationState()` - Verify navigation persistence
@@ -84,6 +91,7 @@ npm run e2e:test:ios -- e2e/sync/syncValidation.test.ts
 ## Pass 8: Offline Validation Tests
 
 Pass 8 tests the resilience of the sync system under adverse conditions:
+
 - Network loss and restoration
 - Offline replay of queued operations
 - Multi-session overlap handling
@@ -108,18 +116,21 @@ e2e/sync/offline/
 ### Test Scenarios
 
 #### Chunk 1: Offline Auth Recovery
+
 - Sign in → disable network → verify local session persists
 - Reload app → ensure user remains authenticated (local fallback)
 - Reconnect → confirm Supabase session restored and reconciled
 - Log out → verify local and remote states both cleared
 
 #### Chunk 2: Offline Session Replay
+
 - Start study session → disable network midway
 - Record local progress (ratings, time, notes)
 - Reconnect → verify remote Supabase session matches local data
 - Validate progress queue replay and conflict resolution
 
 #### Chunk 3: Offline Settings Persistence
+
 - Change theme and notification preferences offline
 - Verify UI updates immediately (local-first behavior)
 - Reconnect → confirm sync with Supabase
@@ -161,6 +172,7 @@ e2e/sync/stress/
 ### Test Scenarios
 
 #### Chunk 1: High Frequency State Updates
+
 - Handle 10-20 operations per second
 - Queue 100+ progress updates offline, replay in order
 - Maintain queue integrity during random network toggles
@@ -168,6 +180,7 @@ e2e/sync/stress/
 - **Benchmarks:** Queue replay < 2s for 100 ops, avg latency < 50ms
 
 #### Chunk 2: Multi-Device Session Consistency
+
 - Simulate two device contexts using separate Supabase sessions
 - Make concurrent updates to settings and study progress
 - Reconcile conflicts (last-write-wins or timestamp merge)
@@ -175,6 +188,7 @@ e2e/sync/stress/
 - Handle device session expiration and offline recovery
 
 #### Chunk 3: Stress Navigation & Settings
+
 - Rapidly switch tabs and modify settings (theme, notifications) under load
 - Trigger background/foreground transitions repeatedly
 - Validate no crashes, no inconsistent states, and stable UI feedback
@@ -259,6 +273,7 @@ e2e/sync/recovery/
 ### Test Scenarios
 
 #### Chunk 1: Crash Recovery & Reload
+
 - Recover gracefully from forced termination during sync
 - Restore last known valid state after crash
 - Automatically resume queue replay after crash
@@ -266,6 +281,7 @@ e2e/sync/recovery/
 - **Benchmarks:** Recovery < 3s, replay < 2s
 
 #### Chunk 2: Corrupted Cache Resilience
+
 - Self-heal from invalid JSON in cache
 - Handle missing cache keys and fallback to Supabase
 - Handle version mismatches and clear incompatible data
@@ -273,6 +289,7 @@ e2e/sync/recovery/
 - **Self-healing:** No crashes, quick recovery sync
 
 #### Chunk 3: Long Idle Session Recovery
+
 - Recover from extended idle (1-48 hours)
 - Refresh expired sessions properly
 - Rehydrate settings and study session states
@@ -323,4 +340,3 @@ detox test --configuration ios.debug e2e/sync/recovery --loglevel verbose
 - Advanced conflict resolution strategies (beyond last-write-wins)
 - Performance profiling and bottleneck identification
 - Real crash reporting integration (Sentry)
-

@@ -1,6 +1,6 @@
 /**
  * Cache Mutation Utilities for E2E Recovery Tests
- * 
+ *
  * Provides utilities to corrupt local cache and validate self-healing behavior
  */
 
@@ -23,9 +23,12 @@ const SYNC_STORAGE_KEYS = [
 /**
  * Corrupt a specific storage key with invalid JSON
  */
-export async function corruptStorageKey(key: string, corruptionType: 'invalid-json' | 'empty' | 'malformed' = 'invalid-json'): Promise<void> {
+export async function corruptStorageKey(
+  key: string,
+  corruptionType: 'invalid-json' | 'empty' | 'malformed' = 'invalid-json',
+): Promise<void> {
   console.log(`🔧 Corrupting storage key: ${key} (type: ${corruptionType})`);
-  
+
   switch (corruptionType) {
     case 'invalid-json':
       await AsyncStorage.setItem(key, '{{invalid json{{');
@@ -44,7 +47,7 @@ export async function corruptStorageKey(key: string, corruptionType: 'invalid-js
  */
 export async function corruptAllSyncStorage(): Promise<void> {
   console.log('🔧 Corrupting all sync storage keys...');
-  
+
   for (const key of SYNC_STORAGE_KEYS) {
     await corruptStorageKey(key, 'invalid-json');
   }
@@ -71,11 +74,11 @@ export async function removeStorageKey(key: string): Promise<void> {
  */
 export async function clearAllSyncStorage(): Promise<void> {
   console.log('🗑️ Clearing all sync storage keys...');
-  
+
   for (const key of SYNC_STORAGE_KEYS) {
     await AsyncStorage.removeItem(key);
   }
-  
+
   // Also clear SecureStore items
   try {
     await SecureStore.deleteItemAsync('auth_session_token');
@@ -98,15 +101,22 @@ export async function corruptCacheVersion(key: string): Promise<void> {
 /**
  * Simulate partial cache (some keys present, some missing)
  */
-export async function simulatePartialCache(presentKeys: string[]): Promise<void> {
-  console.log(`🔧 Simulating partial cache (${presentKeys.length} keys present)...`);
-  
+export async function simulatePartialCache(
+  presentKeys: string[],
+): Promise<void> {
+  console.log(
+    `🔧 Simulating partial cache (${presentKeys.length} keys present)...`,
+  );
+
   // Clear all first
   await clearAllSyncStorage();
-  
+
   // Set only specified keys with valid (empty) structure
   for (const key of presentKeys) {
-    await AsyncStorage.setItem(key, JSON.stringify({ version: 'v1', data: {} }));
+    await AsyncStorage.setItem(
+      key,
+      JSON.stringify({ version: 'v1', data: {} }),
+    );
   }
 }
 
@@ -129,7 +139,7 @@ export async function verifyStorageIntegrity(key: string): Promise<boolean> {
   try {
     const value = await AsyncStorage.getItem(key);
     if (!value) return false; // Missing is considered invalid for sync keys
-    
+
     JSON.parse(value); // Will throw if invalid JSON
     return true;
   } catch (error) {
@@ -147,7 +157,7 @@ export async function verifyAllStorageIntegrity(): Promise<{
 }> {
   const invalid: string[] = [];
   let valid = 0;
-  
+
   for (const key of SYNC_STORAGE_KEYS) {
     const isValid = await verifyStorageIntegrity(key);
     if (isValid) {
@@ -156,7 +166,7 @@ export async function verifyAllStorageIntegrity(): Promise<{
       invalid.push(key);
     }
   }
-  
+
   return {
     total: SYNC_STORAGE_KEYS.length,
     valid,
@@ -169,18 +179,22 @@ export async function verifyAllStorageIntegrity(): Promise<{
  */
 export async function restoreValidCacheStructure(): Promise<void> {
   console.log('🔧 Restoring valid cache structure...');
-  
+
   // Restore with valid empty structures
   const validStructures: Record<string, any> = {
     '@elaro_auth_state_v1': { version: 'v1', userId: null, lastSyncedAt: 0 },
-    '@elaro_navigation_state_v1': { version: 'v1', state: null, savedAt: Date.now() },
+    '@elaro_navigation_state_v1': {
+      version: 'v1',
+      state: null,
+      savedAt: Date.now(),
+    },
     '@elaro_active_session_v1': null, // Can be null
     '@elaro_srs_queue_v1': [],
     '@elaro_settings_cache_v1': { version: 'v1', lastSyncedAt: 0 },
     '@elaro_settings_pending_v1': [],
     '@elaro_sync_queue': [],
   };
-  
+
   for (const [key, value] of Object.entries(validStructures)) {
     if (value !== null) {
       await AsyncStorage.setItem(key, JSON.stringify(value));
@@ -189,4 +203,3 @@ export async function restoreValidCacheStructure(): Promise<void> {
     }
   }
 }
-

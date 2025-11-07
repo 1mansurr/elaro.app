@@ -12,10 +12,10 @@ export const TestHelpers = {
   async ensureGuestState(): Promise<void> {
     // Reset auth state
     mockSupabaseAuth.reset();
-    
+
     // Reload app to pick up guest state
     await device.reloadReactNative();
-    
+
     // Wait a moment for app to initialize
     await new Promise(resolve => setTimeout(resolve, 1000));
   },
@@ -43,12 +43,12 @@ export const TestHelpers = {
    */
   async loginWithTestUser(): Promise<void> {
     const testUser = mockSupabaseAuth.getTestUser();
-    
+
     // Wait for auth screen (if coming from guest home)
     await this.waitForElement('auth-screen', 5000).catch(() => {
       // Auth screen might already be visible, continue
     });
-    
+
     // Toggle to sign in mode if needed (check if we're in signup mode)
     try {
       const signInText = element(by.text('Sign In'));
@@ -63,16 +63,16 @@ export const TestHelpers = {
         // Already in sign in mode or toggle button not visible
       }
     }
-    
+
     // Fill in email
     await element(by.id('email-input')).typeText(testUser.email);
-    
+
     // Fill in password
     await element(by.id('password-input')).typeText(testUser.password);
-    
+
     // Submit
     await element(by.id('submit-button')).tap();
-    
+
     // Wait for navigation away from auth screen
     await this.wait(2000);
   },
@@ -102,4 +102,3 @@ export const TestHelpers = {
     await new Promise(resolve => setTimeout(resolve, ms));
   },
 };
-

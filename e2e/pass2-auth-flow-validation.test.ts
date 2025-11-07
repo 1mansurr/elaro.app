@@ -1,6 +1,6 @@
 /**
  * Pass 2: Auth Flow Validation
- * 
+ *
  * Tests authentication navigation flows:
  * - Launch → Onboarding → Login → Dashboard
  * - Launch → Signup → MFA Enrollment → Dashboard
@@ -123,11 +123,13 @@ describe('Pass 2: Auth Flow Validation', () => {
       // Fill signup form
       await element(by.id('first-name-input')).typeText('E2E');
       await element(by.id('last-name-input')).typeText('Test');
-      await element(by.id('email-input')).typeText(`e2e-${Date.now()}@test.com`);
-      
+      await element(by.id('email-input')).typeText(
+        `e2e-${Date.now()}@test.com`,
+      );
+
       // Password must meet requirements: 8+ chars, uppercase, lowercase, number, special char
       await element(by.id('password-input')).typeText('TestPassword123!');
-      
+
       // Submit signup
       await element(by.id('submit-button')).tap();
 
@@ -172,7 +174,7 @@ describe('Pass 2: Auth Flow Validation', () => {
 
       // Verify session still exists (mock auth maintains state)
       const { session: sessionAfter } = await mockSupabaseAuth.getSession();
-      
+
       // Note: In real app, Supabase would persist session in AsyncStorage
       // For mock, we're just verifying the auth state management
       console.log('✅ Session persistence check completed');
@@ -232,4 +234,3 @@ describe('Pass 2: Auth Flow Validation', () => {
     });
   });
 });
-

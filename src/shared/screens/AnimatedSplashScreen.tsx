@@ -8,28 +8,27 @@ interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
 }
 
-const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({ onAnimationFinish }) => {
+const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
+  onAnimationFinish,
+}) => {
   // 1. Set up the animated value
   const fadeAnim = useRef(new Animated.Value(0)).current; // Initial opacity is 0
 
   // 2. Define the animation sequence
   useEffect(() => {
-    const animation = Animated.timing(
-      fadeAnim,
-      {
-        toValue: 1, // Animate to opacity 1
-        duration: 1500, // Animation duration in milliseconds
-        useNativeDriver: true, // Use native driver for better performance
-      }
-    );
-    
+    const animation = Animated.timing(fadeAnim, {
+      toValue: 1, // Animate to opacity 1
+      duration: 1500, // Animation duration in milliseconds
+      useNativeDriver: true, // Use native driver for better performance
+    });
+
     animation.start(() => {
       // Call the callback function once the animation is complete
       if (onAnimationFinish) {
         onAnimationFinish();
       }
     });
-    
+
     // Cleanup: stop animation if component unmounts
     return () => {
       animation.stop();
@@ -52,7 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#2C5EFF', // Primary blue background
+    backgroundColor: '#0A2540', // Must match the native splash screen color
   },
   wordmark: {
     fontSize: 48,

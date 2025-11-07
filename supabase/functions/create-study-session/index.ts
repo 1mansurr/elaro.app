@@ -1,5 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { CreateStudySessionSchema } from '../_shared/schemas/studySession.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
@@ -15,7 +23,12 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     reminders,
   } = body;
 
-  console.log(`Verifying ownership for user: ${user.id}, course: ${course_id}`);
+  const traceContext = extractTraceContext(req as unknown as Request);
+  await logger.info(
+    'Verifying course ownership',
+    { user_id: user.id, course_id },
+    traceContext,
+  );
 
   // SECURITY: Verify course ownership
   const { data: course, error: courseError } = await supabaseClient
@@ -26,11 +39,23 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     .single();
 
   if (courseError || !course) {
-    throw new AppError('Course not found or access denied.', 404, 'NOT_FOUND');
+    if (courseError) {
+      throw handleDbError(courseError);
+    }
+    throw new AppError(
+      'Course not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
+    );
   }
 
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
-  if (!encryptionKey) throw new AppError('Encryption key not configured.', 500, 'CONFIG_ERROR');
+  if (!encryptionKey)
+    throw new AppError(
+      'Encryption key not configured.',
+      500,
+      ERROR_CODES.CONFIG_ERROR,
+    );
 
   const [encryptedTopic, encryptedNotes] = await Promise.all([
     encrypt(topic, encryptionKey),
@@ -50,29 +75,59 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     .select('id, topic, session_date')
     .single();
 
-  if (insertError) throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
-  console.log(`Successfully created study session with ID: ${newSession.id}`);
+  if (insertError) throw handleDbError(insertError);
+  await logger.info(
+    'Successfully created study session',
+    { user_id: user.id, session_id: newSession.id },
+    traceContext,
+  );
 
   // Spaced Repetition Reminder Logic
   if (has_spaced_repetition) {
-    console.log(`Scheduling spaced repetition reminders for session ID: ${newSession.id}`);
-    const { error: reminderError } = await supabaseClient.functions.invoke('schedule-reminders', {
-      body: {
-        session_id: newSession.id,
-        session_date: newSession.session_date,
-        topic: topic, // Pass the original, unencrypted topic
+    await logger.info(
+      'Scheduling spaced repetition reminders',
+      { user_id: user.id, session_id: newSession.id },
+      traceContext,
+    );
+    const { error: reminderError } = await supabaseClient.functions.invoke(
+      'schedule-reminders',
+      {
+        body: {
+          session_id: newSession.id,
+          session_date: newSession.session_date,
+          topic: topic, // Pass the original, unencrypted topic
+        },
       },
-    });
+    );
 
     if (reminderError) {
       // Log the error but don't fail the whole request, as the session was still created
-      console.error('Failed to schedule reminders:', reminderError.message);
+      await logger.error(
+        'Failed to schedule reminders',
+        {
+          user_id: user.id,
+          session_id: newSession.id,
+          error:
+            reminderError instanceof Error
+              ? reminderError.message
+              : String(reminderError),
+        },
+        traceContext,
+      );
     }
   }
 
   // Immediate Reminder Logic
   if (reminders && reminders.length > 0) {
-    console.log(`Creating ${reminders.length} immediate reminders for session ID: ${newSession.id}`);
+    await logger.info(
+      'Creating immediate reminders',
+      {
+        user_id: user.id,
+        session_id: newSession.id,
+        reminder_count: reminders.length,
+      },
+      traceContext,
+    );
     const sessionDate = new Date(session_date);
     const remindersToInsert = reminders.map((mins: number) => {
       const reminderTime = new Date(sessionDate.getTime() - mins * 60000);
@@ -85,12 +140,26 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
         completed: false,
       };
     });
-    
-    const { error: reminderError } = await supabaseClient.from('reminders').insert(remindersToInsert);
+
+    const { error: reminderError } = await supabaseClient
+      .from('reminders')
+      .insert(remindersToInsert);
     if (reminderError) {
-      console.error('Failed to create immediate reminders for session:', newSession.id, reminderError);
+      await logger.error(
+        'Failed to create immediate reminders',
+        {
+          user_id: user.id,
+          session_id: newSession.id,
+          error: reminderError.message,
+        },
+        traceContext,
+      );
     } else {
-      console.log('Successfully created immediate reminders.');
+      await logger.info(
+        'Successfully created immediate reminders',
+        { user_id: user.id, session_id: newSession.id },
+        traceContext,
+      );
     }
   }
 
@@ -98,11 +167,10 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
 }
 
 // Wrap the business logic with our secure, generic handler
-serve(createAuthenticatedHandler(
-  handleCreateStudySession,
-  {
+serve(
+  createAuthenticatedHandler(handleCreateStudySession, {
     rateLimitName: 'create-study-session',
     checkTaskLimit: true,
     schema: CreateStudySessionSchema,
-  }
-));
+  }),
+);

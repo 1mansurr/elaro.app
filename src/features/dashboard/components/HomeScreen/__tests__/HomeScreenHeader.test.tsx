@@ -1,7 +1,7 @@
 import React from 'react';
 import { render } from '@testing-library/react-native';
 import { HomeScreenHeader } from '../HomeScreenHeader';
-import { AuthProvider } from '@/features/auth/contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 
 // Mock the auth context
 const mockAuthContext = {
@@ -26,35 +26,28 @@ jest.mock('@/features/auth/contexts/AuthContext', () => ({
 describe('HomeScreenHeader', () => {
   it('renders guest title for guest users', () => {
     const { getByText } = render(
-      <HomeScreenHeader 
-        isGuest={true} 
-        onNotificationPress={jest.fn()} 
-      />
+      <HomeScreenHeader isGuest={true} onNotificationPress={jest.fn()} />,
     );
-    
+
     expect(getByText("Let's Make Today Count")).toBeTruthy();
   });
 
   it('renders personalized title for authenticated users', () => {
     const { getByText } = render(
-      <HomeScreenHeader 
-        isGuest={false} 
-        onNotificationPress={jest.fn()} 
-      />
+      <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />,
     );
-    
-    expect(getByText(/Good (morning|afternoon|evening), testuser!/)).toBeTruthy();
+
+    expect(
+      getByText(/Good (morning|afternoon|evening), testuser!/),
+    ).toBeTruthy();
   });
 
   it('calls onNotificationPress when notification bell is pressed', () => {
     const mockOnPress = jest.fn();
     const { getByTestId } = render(
-      <HomeScreenHeader 
-        isGuest={false} 
-        onNotificationPress={mockOnPress} 
-      />
+      <HomeScreenHeader isGuest={false} onNotificationPress={mockOnPress} />,
     );
-    
+
     // Note: This test would need the NotificationBell component to have a testID
     // For now, we're just verifying the component renders without errors
     expect(mockOnPress).not.toHaveBeenCalled();

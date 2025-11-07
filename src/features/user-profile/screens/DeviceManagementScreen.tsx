@@ -12,9 +12,10 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Platform } from 'react-native';
+import { formatDate } from '@/i18n';
 
 interface Device {
   id: string;
@@ -49,10 +50,11 @@ export function DeviceManagementScreen() {
       if (error) throw error;
 
       // Mark current device (simplified - in production, match by push token)
-      const devicesWithCurrent = data?.map((device, index) => ({
-        ...device,
-        is_current: index === 0, // First device (most recent) is assumed current
-      })) || [];
+      const devicesWithCurrent =
+        data?.map((device, index) => ({
+          ...device,
+          is_current: index === 0, // First device (most recent) is assumed current
+        })) || [];
 
       setDevices(devicesWithCurrent);
     } catch (error: any) {
@@ -73,15 +75,15 @@ export function DeviceManagementScreen() {
     if (isCurrent) {
       Alert.alert(
         'Cannot Remove Current Device',
-        'You cannot remove the device you\'re currently using. Please use another device to remove this one.',
-        [{ text: 'OK' }]
+        "You cannot remove the device you're currently using. Please use another device to remove this one.",
+        [{ text: 'OK' }],
       );
       return;
     }
 
     Alert.alert(
       'Remove Device',
-      'Are you sure you want to remove this device? You\'ll need to sign in again on that device.',
+      "Are you sure you want to remove this device? You'll need to sign in again on that device.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -104,14 +106,14 @@ export function DeviceManagementScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
   const revokeAllDevices = () => {
     Alert.alert(
       'Remove All Other Devices',
-      'This will sign out all devices except the one you\'re currently using. Are you sure?',
+      "This will sign out all devices except the one you're currently using. Are you sure?",
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -120,7 +122,7 @@ export function DeviceManagementScreen() {
           onPress: async () => {
             try {
               const currentDevice = devices.find(d => d.is_current);
-              
+
               const { error } = await supabase
                 .from('user_devices')
                 .delete()
@@ -137,7 +139,7 @@ export function DeviceManagementScreen() {
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -167,13 +169,17 @@ export function DeviceManagementScreen() {
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    return formatDate(date);
   };
 
   const renderDevice = ({ item }: { item: Device }) => (
     <View style={[styles.deviceCard, { backgroundColor: theme.card }]}>
       <View style={styles.deviceInfo}>
-        <View style={[styles.deviceIconContainer, { backgroundColor: theme.primary + '20' }]}>
+        <View
+          style={[
+            styles.deviceIconContainer,
+            { backgroundColor: theme.primary + '20' },
+          ]}>
           <Ionicons
             name={getDeviceIcon(item.platform) as any}
             size={24}
@@ -186,7 +192,11 @@ export function DeviceManagementScreen() {
               {item.platform || 'Unknown Device'}
             </Text>
             {item.is_current && (
-              <View style={[styles.currentBadge, { backgroundColor: '#10B981' + '20' }]}>
+              <View
+                style={[
+                  styles.currentBadge,
+                  { backgroundColor: '#10B981' + '20' },
+                ]}>
                 <Text style={styles.currentText}>Current</Text>
               </View>
             )}
@@ -196,12 +206,11 @@ export function DeviceManagementScreen() {
           </Text>
         </View>
       </View>
-      
+
       {!item.is_current && (
         <TouchableOpacity
           style={styles.revokeButton}
-          onPress={() => revokeDevice(item.id, item.is_current)}
-        >
+          onPress={() => revokeDevice(item.id, item.is_current)}>
           <Ionicons name="trash-outline" size={20} color="#EF4444" />
         </TouchableOpacity>
       )}
@@ -210,7 +219,12 @@ export function DeviceManagementScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          { backgroundColor: theme.background },
+        ]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -222,8 +236,7 @@ export function DeviceManagementScreen() {
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+          style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -235,7 +248,8 @@ export function DeviceManagementScreen() {
       {/* Device Count */}
       <View style={styles.countContainer}>
         <Text style={[styles.countText, { color: theme.textSecondary }]}>
-          {devices.length} {devices.length === 1 ? 'device' : 'devices'} signed in
+          {devices.length} {devices.length === 1 ? 'device' : 'devices'} signed
+          in
         </Text>
       </View>
 
@@ -252,9 +266,19 @@ export function DeviceManagementScreen() {
             tintColor={theme.primary}
           />
         }
+        // Performance optimizations
+        removeClippedSubviews={true}
+        maxToRenderPerBatch={10}
+        windowSize={5}
+        updateCellsBatchingPeriod={50}
+        initialNumToRender={10}
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Ionicons name="phone-portrait-outline" size={48} color={theme.textSecondary} />
+            <Ionicons
+              name="phone-portrait-outline"
+              size={48}
+              color={theme.textSecondary}
+            />
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
               No devices found
             </Text>
@@ -267,8 +291,7 @@ export function DeviceManagementScreen() {
         <View style={styles.footer}>
           <TouchableOpacity
             style={[styles.removeAllButton, { borderColor: '#EF4444' }]}
-            onPress={revokeAllDevices}
-          >
+            onPress={revokeAllDevices}>
             <Ionicons name="log-out-outline" size={20} color="#EF4444" />
             <Text style={styles.removeAllText}>Sign Out All Other Devices</Text>
           </TouchableOpacity>
@@ -397,4 +420,3 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 });
-

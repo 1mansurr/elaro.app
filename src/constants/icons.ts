@@ -37,7 +37,7 @@ export const ICON_NAMES = {
   calendarOutline: 'calendar-outline',
   person: 'person',
   personOutline: 'person-outline',
-  
+
   // Actions
   add: 'add',
   close: 'close',
@@ -49,7 +49,7 @@ export const ICON_NAMES = {
   editOutline: 'create-outline',
   save: 'save',
   saveOutline: 'save-outline',
-  
+
   // Navigation arrows
   chevronDown: 'chevron-down',
   chevronUp: 'chevron-up',
@@ -57,7 +57,7 @@ export const ICON_NAMES = {
   chevronRight: 'chevron-forward',
   arrowBack: 'arrow-back',
   arrowForward: 'arrow-forward',
-  
+
   // Task types
   school: 'school',
   schoolOutline: 'school-outline',
@@ -67,7 +67,7 @@ export const ICON_NAMES = {
   playOutline: 'play-outline',
   book: 'book',
   bookOutline: 'book-outline',
-  
+
   // UI elements
   search: 'search',
   filter: 'filter',
@@ -76,14 +76,14 @@ export const ICON_NAMES = {
   menu: 'menu',
   more: 'ellipsis-horizontal',
   moreVertical: 'ellipsis-vertical',
-  
+
   // Status indicators
   warning: 'warning',
   warningOutline: 'warning-outline',
   information: 'information-circle',
   informationOutline: 'information-circle-outline',
   checkmarkCircleOutline: 'checkmark-circle-outline',
-  
+
   // Media
   image: 'image',
   imageOutline: 'image-outline',
@@ -97,25 +97,25 @@ export const ICON_NAMES = {
 export const ICON_PRESETS = {
   // Tab bar icons
   tabBar: ICON_SIZES.large,
-  
+
   // Button icons
   button: ICON_SIZES.medium,
   buttonSmall: ICON_SIZES.small,
   buttonLarge: ICON_SIZES.large,
-  
+
   // List item icons
   listItem: ICON_SIZES.medium,
   listItemSmall: ICON_SIZES.small,
-  
+
   // Input icons
   input: ICON_SIZES.medium,
-  
+
   // Header icons
   header: ICON_SIZES.large,
-  
+
   // Floating action button
   fab: ICON_SIZES.xlarge,
-  
+
   // Status indicators
   status: ICON_SIZES.small,
   statusLarge: ICON_SIZES.medium,
@@ -153,7 +153,7 @@ export const ICON_GUIDELINES = {
     xlarge: 'Extra large - FABs, prominent actions',
     xxlarge: 'XX large - Hero sections, splash screens',
   },
-  
+
   // Color guidelines
   colors: {
     primary: 'Main brand color - Primary actions',
@@ -168,7 +168,7 @@ export const ICON_GUIDELINES = {
     background: 'Background color',
     surface: 'Surface color - Cards, modals',
   },
-  
+
   // Usage patterns
   patterns: {
     navigation: 'Use outline variants for inactive states',

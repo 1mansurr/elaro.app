@@ -31,23 +31,24 @@ const GuestAuthModal: React.FC<GuestAuthModalProps> = ({
       transparent
       visible={isVisible}
       animationType="fade"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
       </TouchableWithoutFeedback>
-      
+
       <View style={styles.modalContainer}>
         <View style={styles.header}>
           <View style={styles.iconContainer}>
-            <Ionicons 
+            <Ionicons
               name={
-                actionType === 'Study Session' ? 'book-outline' :
-                actionType === 'Assignment' ? 'document-text-outline' :
-                'school-outline'
-              } 
-              size={32} 
-              color={COLORS.primary} 
+                actionType === 'Study Session'
+                  ? 'book-outline'
+                  : actionType === 'Assignment'
+                    ? 'document-text-outline'
+                    : 'school-outline'
+              }
+              size={32}
+              color={COLORS.primary}
             />
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
@@ -58,8 +59,8 @@ const GuestAuthModal: React.FC<GuestAuthModalProps> = ({
         <View style={styles.content}>
           <Text style={styles.title}>Save Your {actionType}</Text>
           <Text style={styles.message}>
-            Create an account to save and manage your {actionType.toLowerCase()}s. 
-            It's completely free and takes less than a minute!
+            Create an account to save and manage your {actionType.toLowerCase()}
+            s. It's completely free and takes less than a minute!
           </Text>
         </View>
 
@@ -67,9 +68,11 @@ const GuestAuthModal: React.FC<GuestAuthModalProps> = ({
           <TouchableOpacity style={styles.signUpButton} onPress={onSignUp}>
             <Text style={styles.signUpButtonText}>Sign Up for Free</Text>
           </TouchableOpacity>
-          
+
           <TouchableOpacity style={styles.signInButton} onPress={onSignIn}>
-            <Text style={styles.signInButtonText}>Already have an account? Sign In</Text>
+            <Text style={styles.signInButtonText}>
+              Already have an account? Sign In
+            </Text>
           </TouchableOpacity>
         </View>
       </View>

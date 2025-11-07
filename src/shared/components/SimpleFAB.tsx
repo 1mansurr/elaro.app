@@ -10,11 +10,11 @@ interface SimpleFABProps {
   size?: number;
 }
 
-export const SimpleFAB: React.FC<SimpleFABProps> = ({ 
-  onPress, 
-  icon = 'add', 
-  badge, 
-  size = 24 
+export const SimpleFAB: React.FC<SimpleFABProps> = ({
+  onPress,
+  icon = 'add',
+  badge,
+  size = 24,
 }) => {
   return (
     <TouchableOpacity style={styles.fab} onPress={onPress} activeOpacity={0.8}>

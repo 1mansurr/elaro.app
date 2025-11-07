@@ -1,6 +1,6 @@
 /**
  * Comprehensive API Versioning Strategy
- * 
+ *
  * Provides robust version management for Edge Functions to support
  * backward compatibility, graceful deprecation, and client migration.
  */
@@ -16,22 +16,22 @@ export const DEPRECATED_VERSIONS = ['v1'];
 
 // Sunset dates for deprecated versions
 export const SUNSET_VERSIONS: Record<string, string> = {
-  'v1': '2024-12-31' // v1 will be sunset on this date
+  v1: '2024-12-31', // v1 will be sunset on this date
 };
 
 // Migration guides for version transitions
 export const MIGRATION_GUIDES: Record<string, string> = {
   'v1-to-v2': 'https://docs.elaro.app/migration/v1-to-v2',
-  'v2-to-v3': 'https://docs.elaro.app/migration/v2-to-v3'
+  'v2-to-v3': 'https://docs.elaro.app/migration/v2-to-v3',
 };
 
 // Breaking changes by version
 export const BREAKING_CHANGES: Record<string, string[]> = {
-  'v2': [
+  v2: [
     'Response format changed for error messages',
     'Pagination parameters renamed',
-    'Some field names updated for consistency'
-  ]
+    'Some field names updated for consistency',
+  ],
 };
 
 export interface VersionInfo {
@@ -73,7 +73,7 @@ export function getVersionInfo(version: string): VersionInfo {
     sunsetDate,
     migrationGuide,
     breakingChanges,
-    isLatest
+    isLatest,
   };
 }
 
@@ -98,7 +98,7 @@ export function isVersionDeprecated(version: string): boolean {
 export function isVersionSunset(version: string): boolean {
   const sunsetDate = SUNSET_VERSIONS[version];
   if (!sunsetDate) return false;
-  
+
   const sunset = new Date(sunsetDate);
   const now = new Date();
   return now > sunset;
@@ -108,10 +108,12 @@ export function isVersionSunset(version: string): boolean {
  * Get API version from request headers with fallback
  */
 export function getRequestedVersion(req: Request): string {
-  return req.headers.get('X-API-Version') || 
-         req.headers.get('Api-Version') || 
-         req.headers.get('API-Version') ||
-         API_VERSION;
+  return (
+    req.headers.get('X-API-Version') ||
+    req.headers.get('Api-Version') ||
+    req.headers.get('API-Version') ||
+    API_VERSION
+  );
 }
 
 /**
@@ -119,10 +121,12 @@ export function getRequestedVersion(req: Request): string {
  */
 export function addVersionHeaders(
   headers: Record<string, string> = {},
-  requestedVersion?: string
+  requestedVersion?: string,
 ): Record<string, string> {
-  const versionInfo = requestedVersion ? getVersionInfo(requestedVersion) : null;
-  
+  const versionInfo = requestedVersion
+    ? getVersionInfo(requestedVersion)
+    : null;
+
   return {
     ...headers,
     'X-API-Version': API_VERSION,
@@ -131,11 +135,11 @@ export function addVersionHeaders(
     ...(versionInfo?.isDeprecated && {
       'X-Deprecated-Version': 'true',
       'X-Sunset-Date': versionInfo.sunsetDate || '',
-      'X-Migration-Guide': versionInfo.migrationGuide || ''
+      'X-Migration-Guide': versionInfo.migrationGuide || '',
     }),
     ...(versionInfo?.sunsetDate && {
-      'X-Sunset-Date': versionInfo.sunsetDate
-    })
+      'X-Sunset-Date': versionInfo.sunsetDate,
+    }),
   };
 }
 
@@ -144,10 +148,10 @@ export function addVersionHeaders(
  */
 export function createVersionError(
   requestedVersion: string,
-  statusCode: number = 400
+  statusCode: number = 400,
 ): Response {
   const versionInfo = getVersionInfo(requestedVersion);
-  
+
   const errorResponse = {
     error: 'Unsupported API Version',
     code: 'UNSUPPORTED_VERSION',
@@ -157,24 +161,29 @@ export function createVersionError(
     ...(versionInfo.isDeprecated && {
       deprecationWarning: true,
       sunsetDate: versionInfo.sunsetDate,
-      migrationGuide: versionInfo.migrationGuide
-    })
+      migrationGuide: versionInfo.migrationGuide,
+    }),
   };
 
   return new Response(JSON.stringify(errorResponse), {
     status: statusCode,
-    headers: addVersionHeaders({
-      'Content-Type': 'application/json'
-    }, requestedVersion)
+    headers: addVersionHeaders(
+      {
+        'Content-Type': 'application/json',
+      },
+      requestedVersion,
+    ),
   });
 }
 
 /**
  * Create version information response
  */
-export function createVersionResponse(requestedVersion: string): VersionResponse {
+export function createVersionResponse(
+  requestedVersion: string,
+): VersionResponse {
   const versionInfo = getVersionInfo(requestedVersion);
-  
+
   return {
     currentVersion: API_VERSION,
     requestedVersion,
@@ -183,7 +192,7 @@ export function createVersionResponse(requestedVersion: string): VersionResponse
     sunsetDate: versionInfo.sunsetDate,
     migrationGuide: versionInfo.migrationGuide,
     supportedVersions: SUPPORTED_VERSIONS,
-    latestVersion: API_VERSION
+    latestVersion: API_VERSION,
   };
 }
 
@@ -193,10 +202,10 @@ export function createVersionResponse(requestedVersion: string): VersionResponse
 export function transformForVersion<T>(
   data: T,
   requestedVersion: string,
-  transformer?: (data: T, version: string) => T
+  transformer?: (data: T, version: string) => T,
 ): T {
   if (!transformer) return data;
-  
+
   try {
     return transformer(data, requestedVersion);
   } catch (error) {
@@ -211,10 +220,10 @@ export function transformForVersion<T>(
 export function logVersionUsage(
   requestedVersion: string,
   endpoint: string,
-  userId?: string
+  userId?: string,
 ): void {
   const versionInfo = getVersionInfo(requestedVersion);
-  
+
   console.log('API Version Usage:', {
     version: requestedVersion,
     endpoint,
@@ -222,7 +231,7 @@ export function logVersionUsage(
     isSupported: versionInfo.isSupported,
     isDeprecated: versionInfo.isDeprecated,
     isLatest: versionInfo.isLatest,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }
 
@@ -240,35 +249,45 @@ export function requiresMigration(version: string): boolean {
 export function getMigrationRecommendations(version: string): string[] {
   const recommendations: string[] = [];
   const versionInfo = getVersionInfo(version);
-  
+
   if (versionInfo.isDeprecated) {
-    recommendations.push(`Version ${version} is deprecated. Please upgrade to ${API_VERSION}.`);
+    recommendations.push(
+      `Version ${version} is deprecated. Please upgrade to ${API_VERSION}.`,
+    );
   }
-  
+
   if (versionInfo.sunsetDate) {
-    recommendations.push(`Version ${version} will be sunset on ${versionInfo.sunsetDate}.`);
+    recommendations.push(
+      `Version ${version} will be sunset on ${versionInfo.sunsetDate}.`,
+    );
   }
-  
+
   if (versionInfo.migrationGuide) {
     recommendations.push(`See migration guide: ${versionInfo.migrationGuide}`);
   }
-  
+
   if (versionInfo.breakingChanges && versionInfo.breakingChanges.length > 0) {
-    recommendations.push('Breaking changes in this version:', ...versionInfo.breakingChanges);
+    recommendations.push(
+      'Breaking changes in this version:',
+      ...versionInfo.breakingChanges,
+    );
   }
-  
+
   return recommendations;
 }
 
 /**
  * Add deprecation warning to headers if applicable (legacy function for backward compatibility)
  */
-export function addDeprecationHeaders(version: string, headers: Record<string, string> = {}): Record<string, string> {
+export function addDeprecationHeaders(
+  version: string,
+  headers: Record<string, string> = {},
+): Record<string, string> {
   if (isVersionDeprecated(version)) {
     return {
       ...headers,
-      'Deprecation': 'true',
-      'Sunset': new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString(), // 90 days
+      Deprecation: 'true',
+      Sunset: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toUTCString(), // 90 days
     };
   }
   return headers;

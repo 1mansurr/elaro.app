@@ -46,7 +46,9 @@ export const createMockSupabaseClient = (overrides: any = {}) => ({
   range: jest.fn().mockReturnThis(),
   auth: {
     getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
-    signInWithPassword: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    signInWithPassword: jest
+      .fn()
+      .mockResolvedValue({ data: { user: null }, error: null }),
     signUp: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     signOut: jest.fn().mockResolvedValue({ error: null }),
   },
@@ -138,10 +140,13 @@ export const createMockRoute = (params: any = {}) => ({
 });
 
 // Wait for async operations
-export const waitFor = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+export const waitFor = (ms: number) =>
+  new Promise(resolve => setTimeout(resolve, ms));
 
 // Mock fetch
-export const createMockFetch = (response: any = { data: null, error: null }) => {
+export const createMockFetch = (
+  response: any = { data: null, error: null },
+) => {
   return jest.fn().mockResolvedValue({
     ok: !response.error,
     status: response.error ? 400 : 200,
@@ -161,18 +166,22 @@ export const mockEnvVars = {
 
 // Test data generators
 export const generateTestData = {
-  users: (count: number) => Array.from({ length: count }, (_, i) => 
-    createMockUser({ id: `user-${i + 1}`, email: `user${i + 1}@test.com` })
-  ),
-  assignments: (count: number, userId: string = 'test-user-1') => Array.from({ length: count }, (_, i) => 
-    createMockAssignment({ id: `assignment-${i + 1}`, user_id: userId })
-  ),
-  courses: (count: number, userId: string = 'test-user-1') => Array.from({ length: count }, (_, i) => 
-    createMockCourse({ id: `course-${i + 1}`, user_id: userId })
-  ),
-  notifications: (count: number, userId: string = 'test-user-1') => Array.from({ length: count }, (_, i) => 
-    createMockNotification({ id: `notification-${i + 1}`, user_id: userId })
-  ),
+  users: (count: number) =>
+    Array.from({ length: count }, (_, i) =>
+      createMockUser({ id: `user-${i + 1}`, email: `user${i + 1}@test.com` }),
+    ),
+  assignments: (count: number, userId: string = 'test-user-1') =>
+    Array.from({ length: count }, (_, i) =>
+      createMockAssignment({ id: `assignment-${i + 1}`, user_id: userId }),
+    ),
+  courses: (count: number, userId: string = 'test-user-1') =>
+    Array.from({ length: count }, (_, i) =>
+      createMockCourse({ id: `course-${i + 1}`, user_id: userId }),
+    ),
+  notifications: (count: number, userId: string = 'test-user-1') =>
+    Array.from({ length: count }, (_, i) =>
+      createMockNotification({ id: `notification-${i + 1}`, user_id: userId }),
+    ),
 };
 
 // Assertion helpers
@@ -180,12 +189,18 @@ export const expectToBeCalledWith = (mockFn: jest.Mock, ...args: any[]) => {
   expect(mockFn).toHaveBeenCalledWith(...args);
 };
 
-export const expectToHaveBeenCalledTimes = (mockFn: jest.Mock, times: number) => {
+export const expectToHaveBeenCalledTimes = (
+  mockFn: jest.Mock,
+  times: number,
+) => {
   expect(mockFn).toHaveBeenCalledTimes(times);
 };
 
 // Error testing helpers
-export const expectToThrow = async (fn: () => Promise<any>, errorMessage?: string) => {
+export const expectToThrow = async (
+  fn: () => Promise<any>,
+  errorMessage?: string,
+) => {
   await expect(fn()).rejects.toThrow(errorMessage);
 };
 
@@ -209,16 +224,19 @@ export const cleanupMocks = () => {
 };
 
 // Test isolation helpers
-export const withMockedEnv = (envVars: Record<string, string>, testFn: () => void) => {
+export const withMockedEnv = (
+  envVars: Record<string, string>,
+  testFn: () => void,
+) => {
   const originalEnv = process.env;
-  
+
   beforeEach(() => {
     process.env = { ...originalEnv, ...envVars };
   });
-  
+
   afterEach(() => {
     process.env = originalEnv;
   });
-  
+
   testFn();
 };

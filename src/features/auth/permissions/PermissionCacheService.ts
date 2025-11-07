@@ -23,7 +23,9 @@ export class PermissionCacheService {
   /**
    * Get cached permission data for user
    */
-  async getCachedPermissions(userId: string): Promise<CachedPermissionData | null> {
+  async getCachedPermissions(
+    userId: string,
+  ): Promise<CachedPermissionData | null> {
     try {
       // Check memory cache first
       const memoryCached = this.memoryCache.get(userId);
@@ -34,7 +36,7 @@ export class PermissionCacheService {
       // Check persistent cache
       const cacheKey = `permissions:${userId}`;
       const persistentCached = await cache.get<CachedPermissionData>(cacheKey);
-      
+
       if (persistentCached && this.isValid(persistentCached)) {
         // Update memory cache
         this.memoryCache.set(userId, persistentCached);
@@ -52,10 +54,10 @@ export class PermissionCacheService {
    * Cache permission data for user
    */
   async cachePermissions(
-    userId: string, 
-    permissions: Permission[], 
-    role: UserRole, 
-    ttl?: number
+    userId: string,
+    permissions: Permission[],
+    role: UserRole,
+    ttl?: number,
   ): Promise<void> {
     try {
       const cacheData: CachedPermissionData = {
@@ -143,9 +145,11 @@ export class PermissionCacheService {
       }
 
       expiredKeys.forEach(key => this.memoryCache.delete(key));
-      
+
       if (expiredKeys.length > 0) {
-        console.log(`🧹 Cleaned up ${expiredKeys.length} expired permission cache entries`);
+        console.log(
+          `🧹 Cleaned up ${expiredKeys.length} expired permission cache entries`,
+        );
       }
     } catch (error) {
       console.error('❌ Error cleaning up expired entries:', error);

@@ -1,0 +1,286 @@
+import { syncManager } from '@/services/syncManager';
+import {
+  OfflineAction,
+  OfflineOperationType,
+  OfflineResourceType,
+} from '@/types/offline';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import NetInfo from '@react-native-community/netinfo';
+import { supabase } from '@/services/supabase';
+import { CircuitBreaker } from '@/utils/circuitBreaker';
+
+jest.mock('@react-native-async-storage/async-storage');
+jest.mock('@react-native-community/netinfo');
+jest.mock('@/services/supabase');
+jest.mock('@/utils/circuitBreaker');
+jest.mock('@/utils/cache', () => ({
+  cache: {
+    remove: jest.fn().mockResolvedValue(undefined),
+  },
+}));
+
+const mockAsyncStorage = AsyncStorage as jest.Mocked<typeof AsyncStorage>;
+const mockNetInfo = NetInfo as jest.Mocked<typeof NetInfo>;
+const mockSupabase = supabase as jest.Mocked<typeof supabase>;
+const mockCircuitBreaker = CircuitBreaker as jest.MockedClass<
+  typeof CircuitBreaker
+>;
+
+describe('SyncManager', () => {
+  beforeEach(async () => {
+    await syncManager.clearQueue();
+    jest.clearAllMocks();
+
+    // Mock AsyncStorage
+    mockAsyncStorage.getItem = jest.fn().mockResolvedValue(null);
+    mockAsyncStorage.setItem = jest.fn().mockResolvedValue(undefined);
+    mockAsyncStorage.removeItem = jest.fn().mockResolvedValue(undefined);
+
+    // Mock NetInfo
+    mockNetInfo.fetch = jest.fn().mockResolvedValue({
+      isConnected: true,
+      isInternetReachable: true,
+    } as any);
+
+    // Mock Circuit Breaker
+    const mockCircuitBreakerInstance = {
+      execute: jest.fn(fn => fn()),
+      getState: jest.fn().mockReturnValue('closed'),
+      getStats: jest
+        .fn()
+        .mockReturnValue({ failures: 0, successes: 0, state: 'closed' }),
+      reset: jest.fn(),
+    };
+
+    mockCircuitBreaker.getInstance = jest
+      .fn()
+      .mockReturnValue(mockCircuitBreakerInstance as any);
+  });
+
+  afterAll(async () => {
+    await syncManager.stop();
+  });
+
+  describe('Queue Management', () => {
+    it('should add action to queue', async () => {
+      const action = await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test Assignment' } },
+        'user-1',
+      );
+
+      expect(action).toBeDefined();
+      expect(action.status).toBe('pending');
+
+      const queue = syncManager.getQueue();
+      expect(queue.length).toBe(1);
+      expect(queue[0].id).toBe(action.id);
+    });
+
+    it('should persist queue to AsyncStorage', async () => {
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      expect(mockAsyncStorage.setItem).toHaveBeenCalled();
+    });
+
+    it('should load queue from AsyncStorage on start', async () => {
+      const mockQueue = [
+        {
+          id: 'action-1',
+          operation: 'CREATE' as OfflineOperationType,
+          resourceType: 'assignment' as OfflineResourceType,
+          payload: { type: 'CREATE' as const, data: { title: 'Test' } },
+          userId: 'user-1',
+          status: 'pending' as const,
+          timestamp: Date.now(),
+          retryCount: 0,
+          maxRetries: 3,
+        },
+      ];
+
+      mockAsyncStorage.getItem = jest
+        .fn()
+        .mockResolvedValue(JSON.stringify(mockQueue));
+
+      await syncManager.start();
+
+      const queue = syncManager.getQueue();
+      expect(queue.length).toBe(1);
+    });
+  });
+
+  describe('Queue Processing', () => {
+    it('should process pending actions when online', async () => {
+      (mockNetInfo.fetch as jest.Mock).mockResolvedValue({
+        isConnected: true,
+        isInternetReachable: true,
+      } as any);
+
+      (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+        data: { id: 'created-1' },
+        error: null,
+      });
+
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      const results = await syncManager.processQueue();
+
+      expect(results.length).toBe(1);
+      expect(results[0].success).toBe(true);
+      expect(mockSupabase.functions.invoke).toHaveBeenCalled();
+    });
+
+    it('should not process queue when offline', async () => {
+      (mockNetInfo.fetch as jest.Mock).mockResolvedValue({
+        isConnected: false,
+        isInternetReachable: false,
+      } as any);
+
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      const results = await syncManager.processQueue();
+
+      expect(results.length).toBe(0);
+      expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+    });
+
+    it('should retry failed actions with exponential backoff', async () => {
+      (mockSupabase.functions.invoke as jest.Mock)
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({ data: { id: 'created-1' }, error: null });
+
+      const action = await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      // First attempt fails
+      await syncManager.processQueue();
+
+      // Verify retry delay is set
+      const queue = syncManager.getQueue();
+      const queuedAction = queue.find(a => a.id === action.id);
+      expect((queuedAction as any).nextRetryAt).toBeDefined();
+    });
+  });
+
+  describe('Circuit Breaker Integration', () => {
+    it('should use circuit breaker for server mutations', async () => {
+      const mockExecute = jest.fn().mockResolvedValue({ id: 'created-1' });
+      const mockCircuitBreakerInstance = {
+        execute: mockExecute,
+        getState: jest.fn().mockReturnValue('closed'),
+        getStats: jest.fn(),
+        reset: jest.fn(),
+      };
+
+      mockCircuitBreaker.getInstance = jest
+        .fn()
+        .mockReturnValue(mockCircuitBreakerInstance as any);
+
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      await syncManager.processQueue();
+
+      expect(mockExecute).toHaveBeenCalled();
+    });
+
+    it('should handle circuit breaker open state', async () => {
+      const mockExecute = jest
+        .fn()
+        .mockRejectedValue(
+          new Error('Circuit breaker is open for sync-manager'),
+        );
+      const mockCircuitBreakerInstance = {
+        execute: mockExecute,
+        getState: jest.fn().mockReturnValue('open'),
+        getStats: jest.fn(),
+        reset: jest.fn(),
+      };
+
+      mockCircuitBreaker.getInstance = jest
+        .fn()
+        .mockReturnValue(mockCircuitBreakerInstance as any);
+
+      const action = await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      await syncManager.processQueue();
+
+      // Verify action is still pending (not retried)
+      const queue = syncManager.getQueue();
+      const queuedAction = queue.find(a => a.id === action.id);
+      expect(queuedAction?.status).toBe('pending');
+      expect(queuedAction?.retryCount).toBe(0); // Should not increment for circuit breaker errors
+    });
+  });
+
+  describe('Queue Statistics', () => {
+    it('should return accurate queue statistics', async () => {
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: {} },
+        'user-1',
+      );
+      await syncManager.addToQueue(
+        'UPDATE',
+        'assignment',
+        { type: 'UPDATE', resourceId: 'id-1', updates: {} },
+        'user-1',
+      );
+
+      const stats = syncManager.getQueueStats();
+
+      expect(stats.total).toBe(2);
+      expect(stats.pending).toBe(2);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should handle network errors gracefully', async () => {
+      (mockSupabase.functions.invoke as jest.Mock).mockRejectedValue(
+        new Error('Network error'),
+      );
+
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Test' } },
+        'user-1',
+      );
+
+      const results = await syncManager.processQueue();
+
+      expect(results[0].success).toBe(false);
+      expect(results[0].error).toBeDefined();
+    });
+  });
+});

@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Input, Button } from '@/shared/components';
 import {
@@ -25,6 +25,7 @@ import {
 } from '@/constants/theme';
 import { RootStackParamList } from '@/types';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { LEGAL_URLS } from '@/constants/legal';
 
 type AuthScreenNavProp = StackNavigationProp<RootStackParamList, 'Auth'>;
 
@@ -53,17 +54,33 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
+  // Import Zod schemas (will work after npm install zod)
+  // import { emailSchema, passwordSchema, signUpSchema, signInSchema } from '../../../shared/validation/schemas';
+
   const validateEmail = (text: string) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (text && !emailRegex.test(text)) {
-      setEmailError('Please enter a valid email address.');
-    } else {
-      setEmailError('');
+    // Try to use Zod if available, fallback to regex for now
+    try {
+      const { emailSchema } = require('../../../shared/validation/schemas');
+      const result = emailSchema.safeParse(text);
+      if (!result.success && text) {
+        setEmailError(result.error.errors[0]?.message || 'Invalid email');
+      } else {
+        setEmailError('');
+      }
+    } catch {
+      // Fallback to regex if Zod not installed yet
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (text && !emailRegex.test(text)) {
+        setEmailError('Please enter a valid email address.');
+      } else {
+        setEmailError('');
+      }
     }
     setEmail(text);
   };
 
   const checkPasswordStrength = (text: string) => {
+    // Still calculate visual strength indicator
     let strength = 0;
     if (text.length >= 8) strength++;
     if (text.match(/[a-z]/)) strength++;
@@ -74,7 +91,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     setPassword(text);
   };
 
-  // Password validation checks
+  // Password validation checks (for UI display)
   const passwordChecks = {
     hasLowercase: /[a-z]/.test(password),
     hasUppercase: /[A-Z]/.test(password),
@@ -82,79 +99,156 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     hasSpecialChar: /[^a-zA-Z0-9]/.test(password),
   };
 
-  // Check if password meets all requirements
+  // Check if password meets all requirements (using Zod if available)
   const isPasswordValid = () => {
-    return password.length >= 8 &&
-           passwordChecks.hasLowercase &&
-           passwordChecks.hasUppercase &&
-           passwordChecks.hasNumber &&
-           passwordChecks.hasSpecialChar;
+    try {
+      const { passwordSchema } = require('../../../shared/validation/schemas');
+      return passwordSchema.safeParse(password).success;
+    } catch {
+      // Fallback if Zod not installed
+      return (
+        password.length >= 8 &&
+        passwordChecks.hasLowercase &&
+        passwordChecks.hasUppercase &&
+        passwordChecks.hasNumber &&
+        passwordChecks.hasSpecialChar
+      );
+    }
   };
 
   const handleAuth = async () => {
-    if (emailError) {
-      Alert.alert('Invalid Email', 'Please correct the email address before proceeding.');
-      return;
-    }
-    if (!email || !password) {
-      Alert.alert('Missing Fields', 'Please fill in all required fields.');
-      return;
-    }
-    if (mode === 'signup') {
-      if (!firstName.trim()) {
-        Alert.alert('First Name is required for sign up.');
-        return;
-      }
-      if (!agreedToTerms) {
-        Alert.alert(
-          'Agreement Required',
-          'You must agree to the Terms of Service and Privacy Policy to sign up.',
-        );
-        return;
-      }
-      
-      // Check if password meets all requirements
-      if (!isPasswordValid()) {
-        Alert.alert(
-          'Password Requirements Not Met',
-          'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)'
-        );
-        return;
-      }
-    }
     setLoading(true);
+
     try {
-      const { error } = mode === 'signup'
-        ? await signUp({ 
-            email, 
-            password, 
-            firstName: firstName.trim(), 
-            lastName: lastName.trim() 
-          })
-        : await signIn({ email, password });
+      // Use Zod validation if available
+      let useZod = false;
+      try {
+        const {
+          signUpSchema,
+          signInSchema,
+        } = require('../../../shared/validation/schemas');
+        useZod = true;
+
+        if (mode === 'signup') {
+          const validationResult = signUpSchema.safeParse({
+            email,
+            password,
+            firstName,
+            lastName,
+            agreedToTerms,
+          });
+
+          if (!validationResult.success) {
+            const errors = validationResult.error.flatten().fieldErrors;
+            const firstError = Object.values(errors)[0]?.[0];
+            Alert.alert(
+              'Validation Error',
+              firstError || 'Please check your input',
+            );
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Sign in
+          const validationResult = signInSchema.safeParse({ email, password });
+
+          if (!validationResult.success) {
+            const errors = validationResult.error.flatten().fieldErrors;
+            const firstError = Object.values(errors)[0]?.[0];
+            Alert.alert(
+              'Validation Error',
+              firstError || 'Please check your input',
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // Zod not available, use fallback validation
+        useZod = false;
+        if (emailError) {
+          Alert.alert(
+            'Invalid Email',
+            'Please correct the email address before proceeding.',
+          );
+          setLoading(false);
+          return;
+        }
+        if (!email || !password) {
+          Alert.alert('Missing Fields', 'Please fill in all required fields.');
+          setLoading(false);
+          return;
+        }
+        if (mode === 'signup') {
+          if (!firstName.trim()) {
+            Alert.alert('First Name is required for sign up.');
+            setLoading(false);
+            return;
+          }
+          if (!agreedToTerms) {
+            Alert.alert(
+              'Agreement Required',
+              'You must agree to the Terms of Service and Privacy Policy to sign up.',
+            );
+            setLoading(false);
+            return;
+          }
+          if (!isPasswordValid()) {
+            Alert.alert(
+              'Password Requirements Not Met',
+              'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)',
+            );
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
+      // Proceed with authentication
+      const { error } =
+        mode === 'signup'
+          ? await signUp({
+              email,
+              password,
+              firstName: firstName.trim(),
+              lastName: lastName.trim(),
+            })
+          : await signIn({ email, password });
 
       if (error) {
         // Enhanced error handling for password-related errors
         let errorMessage = error.message;
         let errorTitle = 'Authentication Failed';
-        
+
         // Check for various password-related error messages
-        if (errorMessage.includes('Password should contain') || 
-            errorMessage.includes('password') && errorMessage.includes('weak') ||
-            errorMessage.includes('Password is too weak') ||
-            errorMessage.includes('password strength')) {
+        if (
+          errorMessage.includes('Password should contain') ||
+          (errorMessage.includes('password') &&
+            errorMessage.includes('weak')) ||
+          errorMessage.includes('Password is too weak') ||
+          errorMessage.includes('password strength')
+        ) {
           errorTitle = 'Password Requirements Not Met';
-          errorMessage = 'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
+          errorMessage =
+            'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
         } else if (errorMessage.includes('User already registered')) {
           errorTitle = 'Account Already Exists';
-          errorMessage = 'An account with this email already exists. Please sign in instead.';
+          errorMessage =
+            'An account with this email already exists. Please sign in instead.';
         } else if (errorMessage.includes('Invalid login credentials')) {
           errorTitle = 'Invalid Credentials';
-          errorMessage = 'The email or password you entered is incorrect. Please try again.';
+          errorMessage =
+            'The email or password you entered is incorrect. Please try again.';
         }
-        
+
         Alert.alert(errorTitle, errorMessage);
       } else {
+        if (mode === 'signup') {
+          Alert.alert(
+            'Verify your email',
+            'We sent a confirmation link to your email. You can continue using the app once verified.',
+          );
+        }
         onAuthSuccess?.();
         navigation.goBack();
       }
@@ -173,7 +267,12 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       testID="auth-screen">
       <View style={styles.gradient} testID="auth-container">
-        <TouchableOpacity style={styles.closeButton} onPress={() => navigation.goBack()}>
+        <TouchableOpacity
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}
+          accessibilityLabel="Close"
+          accessibilityHint="Closes the authentication screen"
+          accessibilityRole="button">
           <Ionicons name="close" size={20} color="#FFFFFF" />
         </TouchableOpacity>
         <ScrollView
@@ -184,8 +283,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               {mode === 'signup' ? 'Create Account' : 'Sign In with Email'}
             </Text>
             <Text style={styles.subtitle}>
-              {mode === 'signup' 
-                ? 'Start your journey to academic excellence.' 
+              {mode === 'signup'
+                ? 'Start your journey to academic excellence.'
                 : 'Welcome back! Sign in to continue your progress.'}
             </Text>
           </View>
@@ -231,7 +330,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               onChangeText={checkPasswordStrength}
               placeholder="Enter your password"
               secureTextEntry={!showPassword}
-              rightIcon={showPassword ? "eye-off-outline" : "eye-outline"}
+              rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
               onRightIconPress={() => setShowPassword(!showPassword)}
               testID="password-input"
             />
@@ -239,56 +338,94 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             {/* Password Requirements Checklist */}
             {mode === 'signup' && password.length > 0 && (
               <View style={styles.passwordRequirements}>
-                <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                <Text style={styles.passwordRequirementsTitle}>
+                  Password Requirements:
+                </Text>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasLowercase ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasLowercase ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasLowercase
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasLowercase ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[
-                    styles.requirementText,
-                    { color: passwordChecks.hasLowercase ? "#34C759" : "#FF3B30" }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasLowercase
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one lowercase letter (a-z)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasUppercase ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasUppercase ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasUppercase
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasUppercase ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[
-                    styles.requirementText,
-                    { color: passwordChecks.hasUppercase ? "#34C759" : "#FF3B30" }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasUppercase
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one uppercase letter (A-Z)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasNumber ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasNumber ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasNumber
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasNumber ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[
-                    styles.requirementText,
-                    { color: passwordChecks.hasNumber ? "#34C759" : "#FF3B30" }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasNumber ? '#34C759' : '#FF3B30',
+                      },
+                    ]}>
                     At least one number (0-9)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasSpecialChar ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasSpecialChar
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={
+                      passwordChecks.hasSpecialChar ? '#34C759' : '#FF3B30'
+                    }
                   />
-                  <Text style={[
-                    styles.requirementText,
-                    { color: passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30" }
-                  ]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasSpecialChar
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one special character (!@#$%...)
                   </Text>
                 </View>
@@ -298,14 +435,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             {/* Password Strength Indicator */}
             {mode === 'signup' && password.length > 0 && (
               <View style={styles.strengthContainer}>
-                <View 
+                <View
                   style={[
-                    styles.strengthBar, 
-                    { 
-                      width: `${passwordStrength * 20}%`, 
-                      backgroundColor: ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][passwordStrength - 1] || '#E0E0E0' 
-                    }
-                  ]} 
+                    styles.strengthBar,
+                    {
+                      width: `${passwordStrength * 20}%`,
+                      backgroundColor:
+                        ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][
+                          passwordStrength - 1
+                        ] || '#E0E0E0',
+                    },
+                  ]}
                 />
               </View>
             )}
@@ -315,27 +455,35 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               <TouchableOpacity
                 style={styles.termsContainer}
                 onPress={() => setAgreedToTerms(v => !v)}
-                activeOpacity={0.8}>
+                activeOpacity={0.8}
+                accessibilityLabel="Agree to terms and privacy policy"
+                accessibilityHint={
+                  agreedToTerms
+                    ? 'Uncheck to disagree'
+                    : 'Check to agree to terms and privacy policy'
+                }
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: agreedToTerms }}>
                 <View
                   style={[
                     styles.checkbox,
                     {
-                      borderColor: agreedToTerms ? theme.primary : theme.gray300,
+                      borderColor: agreedToTerms
+                        ? theme.primary
+                        : theme.gray300,
                       backgroundColor: agreedToTerms
                         ? theme.primary
                         : theme.white,
                     },
                   ]}>
-                  {agreedToTerms && (
-                    <Text style={styles.checkmark}>✓</Text>
-                  )}
+                  {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <Text style={styles.termsText}>
                   I agree to the{' '}
                   <Text
                     style={styles.linkText}
                     onPress={() =>
-                      Linking.openURL('https://elarolearning.com/terms')
+                      Linking.openURL(LEGAL_URLS.TERMS_OF_SERVICE)
                     }>
                     Terms of Service
                   </Text>{' '}
@@ -343,7 +491,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   <Text
                     style={styles.linkText}
                     onPress={() =>
-                      Linking.openURL('https://elarolearning.com/privacy')
+                      Linking.openURL(LEGAL_URLS.PRIVACY_POLICY)
                     }>
                     Privacy Policy
                   </Text>
@@ -362,11 +510,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
-                {mode === 'signup' ? 'Already have an account?' : "Don't have an account?"}{' '}
+                {mode === 'signup'
+                  ? 'Already have an account?'
+                  : "Don't have an account?"}{' '}
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 onPress={() => setMode(mode === 'signup' ? 'signin' : 'signup')}
-                testID="toggle-auth-mode-button">
+                testID="toggle-auth-mode-button"
+                accessibilityLabel={
+                  mode === 'signup' ? 'Switch to sign in' : 'Switch to sign up'
+                }
+                accessibilityHint="Toggles between sign in and sign up modes"
+                accessibilityRole="button">
                 <Text style={styles.footerLink}>
                   {mode === 'signup' ? 'Sign In' : 'Sign Up'}
                 </Text>

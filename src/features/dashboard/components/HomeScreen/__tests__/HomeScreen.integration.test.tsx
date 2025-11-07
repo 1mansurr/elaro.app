@@ -27,9 +27,7 @@ const mockQueryClient = new QueryClient({
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={mockQueryClient}>
-    <NavigationContainer>
-      {children}
-    </NavigationContainer>
+    <NavigationContainer>{children}</NavigationContainer>
   </QueryClientProvider>
 );
 
@@ -45,7 +43,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Wait for components to render
@@ -58,7 +56,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test FAB state changes affect scroll behavior
@@ -76,7 +74,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test that memoization is working
@@ -87,13 +85,13 @@ describe('HomeScreen Integration Tests', () => {
       const { rerender } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       rerender(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Components should be memoized and not re-render unnecessarily
@@ -104,12 +102,12 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Simulate multiple rapid refresh requests
       const refreshControl = getByTestId('refresh-control');
-      
+
       act(() => {
         fireEvent(refreshControl, 'refresh');
         fireEvent(refreshControl, 'refresh');
@@ -128,7 +126,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // 1. User sees header
@@ -158,7 +156,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // User clicks notification bell
@@ -182,12 +180,14 @@ describe('HomeScreen Integration Tests', () => {
   describe('Error Handling Integration', () => {
     it('should handle component errors gracefully', async () => {
       // Mock a component to throw an error
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Should still render other components
@@ -202,7 +202,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Simulate network error
@@ -221,7 +221,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test that FAB state affects scroll behavior
@@ -246,7 +246,7 @@ describe('HomeScreen Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Open quick add modal

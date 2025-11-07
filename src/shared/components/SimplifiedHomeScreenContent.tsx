@@ -1,9 +1,16 @@
 import React, { memo, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
 import TrialBanner from '@/features/dashboard/components/TrialBanner';
 import NextTaskCard from '@/features/dashboard/components/NextTaskCard';
@@ -62,17 +69,24 @@ const TrialBannerSection: React.FC<{
   trialDaysRemaining: number | null;
   onSubscribePress: () => void;
   onDismissBanner: () => void;
-}> = memo(({ shouldShowBanner, trialDaysRemaining, onSubscribePress, onDismissBanner }) => {
-  if (!shouldShowBanner) return null;
+}> = memo(
+  ({
+    shouldShowBanner,
+    trialDaysRemaining,
+    onSubscribePress,
+    onDismissBanner,
+  }) => {
+    if (!shouldShowBanner) return null;
 
-  return (
-    <TrialBanner
-      daysRemaining={trialDaysRemaining}
-      onPressSubscribe={onSubscribePress}
-      onDismiss={onDismissBanner}
-    />
-  );
-});
+    return (
+      <TrialBanner
+        daysRemaining={trialDaysRemaining}
+        onPressSubscribe={onSubscribePress}
+        onDismiss={onDismissBanner}
+      />
+    );
+  },
+);
 
 TrialBannerSection.displayName = 'TrialBannerSection';
 
@@ -125,34 +139,39 @@ const TaskListSection: React.FC<{
   onSwipeComplete: () => void;
   onViewDetails: (task: Task) => void;
   onFabStateChange: (state: { isOpen: boolean }) => void;
-}> = memo(({ homeData, isGuest, onSwipeComplete, onViewDetails, onFabStateChange }) => {
-  const tasks = homeData?.tasks || [];
+}> = memo(
+  ({ homeData, isGuest, onSwipeComplete, onViewDetails, onFabStateChange }) => {
+    const tasks = homeData?.tasks || [];
 
-  if (tasks.length === 0) return null;
+    if (tasks.length === 0) return null;
 
-  return (
-    <View style={styles.taskListContainer}>
-      {tasks.map((task: Task) => (
-        <SwipeableTaskCard
-          key={task.id}
-          onSwipeComplete={onSwipeComplete}
-          enabled={!isGuest}
-        >
-          <View style={styles.taskCard}>
-            <Text style={styles.taskTitle}>{task.title}</Text>
-            <Text style={styles.taskDescription}>{task.description || 'No description'}</Text>
-            <TouchableOpacity
-              style={styles.viewDetailsButton}
-              onPress={() => onViewDetails(task)}
-            >
-              <Text style={styles.viewDetailsText}>View Details</Text>
-            </TouchableOpacity>
-          </View>
-        </SwipeableTaskCard>
-      ))}
-    </View>
-  );
-});
+    return (
+      <View style={styles.taskListContainer}>
+        {tasks.map((task: Task) => (
+          <SwipeableTaskCard
+            key={task.id}
+            onSwipeComplete={onSwipeComplete}
+            enabled={!isGuest}>
+            <View style={styles.taskCard}>
+              <Text style={styles.taskTitle}>{task.title}</Text>
+              <Text style={styles.taskDescription}>
+                {task.description || 'No description'}
+              </Text>
+              <TouchableOpacity
+                style={styles.viewDetailsButton}
+                onPress={() => onViewDetails(task)}
+                accessibilityLabel="View task details"
+                accessibilityHint={`Shows detailed information about ${task.title || 'this task'}`}
+                accessibilityRole="button">
+                <Text style={styles.viewDetailsText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+          </SwipeableTaskCard>
+        ))}
+      </View>
+    );
+  },
+);
 
 TaskListSection.displayName = 'TaskListSection';
 
@@ -166,10 +185,9 @@ const EmptyStateSection: React.FC<{
       {isGuest ? 'Welcome to ELARO!' : 'No tasks yet'}
     </Text>
     <Text style={styles.emptyStateMessage}>
-      {isGuest 
+      {isGuest
         ? 'Sign up to start organizing your academic schedule'
-        : 'Add your first task to get started'
-      }
+        : 'Add your first task to get started'}
     </Text>
     <PrimaryButton
       title={isGuest ? 'Get Started' : 'Add Task'}
@@ -185,78 +203,95 @@ EmptyStateSection.displayName = 'EmptyStateSection';
 // 🎯 SIMPLIFIED MAIN COMPONENT
 // ===========================================
 
-export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentProps> = memo(({
-  data,
-  uiState,
-  eventHandlers,
-}) => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
+export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentProps> =
+  memo(({ data, uiState, eventHandlers }) => {
+    const navigation = useNavigation<HomeScreenNavigationProp>();
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
 
-  const {
-    isGuest,
-    homeData,
-    isLoading,
-    monthlyTaskCount,
-  } = data;
+    const { isGuest, homeData, isLoading, monthlyTaskCount } = data;
 
-  const {
-    isFabOpen,
-    shouldShowBanner,
-    trialDaysRemaining,
-  } = uiState;
+    const { isFabOpen, shouldShowBanner, trialDaysRemaining } = uiState;
 
-  const {
-    onSwipeComplete,
-    onViewDetails,
-    onFabStateChange,
-    onSubscribePress,
-    onDismissBanner,
-  } = eventHandlers;
+    const {
+      onSwipeComplete,
+      onViewDetails,
+      onFabStateChange,
+      onSubscribePress,
+      onDismissBanner,
+    } = eventHandlers;
 
-  // Performance monitoring
-  useEffect(() => {
-    performanceMonitoringService.startTimer('HomeScreenContent');
-    return () => {
-      performanceMonitoringService.endTimer('HomeScreenContent');
-    };
-  }, []);
+    // Performance monitoring
+    useEffect(() => {
+      performanceMonitoringService.startTimer('HomeScreenContent');
+      return () => {
+        performanceMonitoringService.endTimer('HomeScreenContent');
+      };
+    }, []);
 
-  // Memoized subscription tier
-  const subscriptionTier = useExpensiveMemo(() => {
-    return user?.subscription_tier || 'free';
-  }, [user?.subscription_tier]);
+    // Memoized subscription tier
+    const subscriptionTier = useExpensiveMemo(() => {
+      return user?.subscription_tier || 'free';
+    }, [user?.subscription_tier]);
 
-  // Memoized refresh handler
-  const handleRefresh = useStableCallback(() => {
-    requestDeduplicationService.deduplicateRequest('refresh-home-data', async () => {
-      await queryClient.invalidateQueries({ queryKey: ['home-data'] });
-    });
-  }, [queryClient]);
+    // Memoized refresh handler
+    const handleRefresh = useStableCallback(() => {
+      requestDeduplicationService.deduplicateRequest(
+        'refresh-home-data',
+        async () => {
+          await queryClient.invalidateQueries({ queryKey: ['home-data'] });
+        },
+      );
+    }, [queryClient]);
 
-  // Memoized add activity handler
-  const handleAddActivity = useStableCallback(() => {
-    if (isGuest) {
-      navigation.navigate('Auth', { mode: 'signin' });
-    } else {
-      // TaskCreationFlow is deprecated - use AddAssignmentFlow as default
-      // Users can switch to other task types from within the flow
-      navigation.navigate('AddAssignmentFlow');
+    // Memoized add activity handler
+    const handleAddActivity = useStableCallback(() => {
+      if (isGuest) {
+        navigation.navigate('Auth', { mode: 'signin' });
+      } else {
+        // TaskCreationFlow is deprecated - use AddAssignmentFlow as default
+        // Users can switch to other task types from within the flow
+        navigation.navigate('AddAssignmentFlow');
+      }
+    }, [isGuest, navigation]);
+
+    // Show loading state
+    if (isLoading) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading...</Text>
+        </View>
+      );
     }
-  }, [isGuest, navigation]);
 
-  // Show loading state
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <Text style={styles.loadingText}>Loading...</Text>
-      </View>
-    );
-  }
+    // Show empty state
+    if (!homeData || (!homeData.tasks?.length && !homeData.nextTask)) {
+      return (
+        <ScrollView
+          style={styles.container}
+          refreshControl={
+            <RefreshControl
+              refreshing={false}
+              onRefresh={handleRefresh}
+              colors={[COLORS.primary]}
+              tintColor={COLORS.primary}
+            />
+          }>
+          <TrialBannerSection
+            shouldShowBanner={shouldShowBanner}
+            trialDaysRemaining={trialDaysRemaining}
+            onSubscribePress={onSubscribePress}
+            onDismissBanner={onDismissBanner}
+          />
+          <EmptyStateSection
+            isGuest={isGuest}
+            onAddActivity={handleAddActivity}
+          />
+        </ScrollView>
+      );
+    }
 
-  // Show empty state
-  if (!homeData || (!homeData.tasks?.length && !homeData.nextTask)) {
+    // Show content
     return (
       <ScrollView
         style={styles.container}
@@ -267,64 +302,36 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
             colors={[COLORS.primary]}
             tintColor={COLORS.primary}
           />
-        }
-      >
+        }>
         <TrialBannerSection
           shouldShowBanner={shouldShowBanner}
           trialDaysRemaining={trialDaysRemaining}
           onSubscribePress={onSubscribePress}
           onDismissBanner={onDismissBanner}
         />
-        <EmptyStateSection
+
+        <NextTaskSection
+          homeData={homeData}
           isGuest={isGuest}
-          onAddActivity={handleAddActivity}
+          onViewDetails={onViewDetails}
+        />
+
+        <TodayOverviewSection
+          homeData={homeData}
+          monthlyTaskCount={monthlyTaskCount}
+          subscriptionTier={subscriptionTier}
+        />
+
+        <TaskListSection
+          homeData={homeData}
+          isGuest={isGuest}
+          onSwipeComplete={onSwipeComplete}
+          onViewDetails={onViewDetails}
+          onFabStateChange={onFabStateChange}
         />
       </ScrollView>
     );
-  }
-
-  // Show content
-  return (
-    <ScrollView
-      style={styles.container}
-      refreshControl={
-        <RefreshControl
-          refreshing={false}
-          onRefresh={handleRefresh}
-          colors={[COLORS.primary]}
-          tintColor={COLORS.primary}
-        />
-      }
-    >
-      <TrialBannerSection
-        shouldShowBanner={shouldShowBanner}
-        trialDaysRemaining={trialDaysRemaining}
-        onSubscribePress={onSubscribePress}
-        onDismissBanner={onDismissBanner}
-      />
-      
-      <NextTaskSection
-        homeData={homeData}
-        isGuest={isGuest}
-        onViewDetails={onViewDetails}
-      />
-      
-      <TodayOverviewSection
-        homeData={homeData}
-        monthlyTaskCount={monthlyTaskCount}
-        subscriptionTier={subscriptionTier}
-      />
-      
-      <TaskListSection
-        homeData={homeData}
-        isGuest={isGuest}
-        onSwipeComplete={onSwipeComplete}
-        onViewDetails={onViewDetails}
-        onFabStateChange={onFabStateChange}
-      />
-    </ScrollView>
-  );
-});
+  });
 
 SimplifiedHomeScreenContent.displayName = 'SimplifiedHomeScreenContent';
 
@@ -425,7 +432,7 @@ export const HomeScreenContent: React.FC<{
   onFabStateChange: (state: { isOpen: boolean }) => void;
   onSubscribePress: () => void;
   onDismissBanner: () => void;
-}> = (props) => {
+}> = props => {
   const {
     isGuest,
     homeData,

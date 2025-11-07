@@ -1,17 +1,17 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  Alert, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator 
+  ActivityIndicator,
 } from 'react-native';
-import { authService } from '@/features/auth/services/authService';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface RouteParams {
   factorId: string;
@@ -27,7 +27,13 @@ interface MFAVerificationScreenProps {
   onCancel?: () => void;
 }
 
-const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, factors, onVerificationSuccess, onVerificationError, onCancel }) => {
+const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({
+  route,
+  factors,
+  onVerificationSuccess,
+  onVerificationError,
+  onCancel,
+}) => {
   const factorId = route?.params?.factorId;
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +41,10 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, fa
 
   const handleVerify = async () => {
     if (!code) {
-      Alert.alert('Error', 'Please enter the code from your authenticator app.');
+      Alert.alert(
+        'Error',
+        'Please enter the code from your authenticator app.',
+      );
       return;
     }
 
@@ -51,17 +60,18 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, fa
       }
       const { challengeId } = await authService.mfa.challenge(factorId);
       await authService.mfa.verify({ factorId, challengeId, code });
-      
+
       // On success, refresh user state and let the AuthContext handle navigation
       await refreshUser();
-      
+
       // The onAuthStateChange listener in AuthContext should handle
       // the rest of the login flow, navigating the user into the main app.
     } catch (error: any) {
       console.error('MFA verification error:', error);
       Alert.alert(
-        'Verification Failed', 
-        error.message || 'Invalid code. Please check your authenticator app and try again.'
+        'Verification Failed',
+        error.message ||
+          'Invalid code. Please check your authenticator app and try again.',
       );
       setCode(''); // Clear the code input for retry
     } finally {
@@ -70,15 +80,15 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, fa
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
         <Text style={styles.title}>Two-Factor Authentication</Text>
-        
+
         <Text style={styles.description}>
-          Enter the 6-digit code from your authenticator app to complete sign-in.
+          Enter the 6-digit code from your authenticator app to complete
+          sign-in.
         </Text>
 
         <TextInput
@@ -95,11 +105,14 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, fa
           autoFocus
         />
 
-        <TouchableOpacity 
-          style={[styles.verifyButton, (!code || code.length !== 6 || isLoading) && styles.verifyButtonDisabled]}
+        <TouchableOpacity
+          style={[
+            styles.verifyButton,
+            (!code || code.length !== 6 || isLoading) &&
+              styles.verifyButtonDisabled,
+          ]}
           onPress={handleVerify}
-          disabled={!code || code.length !== 6 || isLoading}
-        >
+          disabled={!code || code.length !== 6 || isLoading}>
           {isLoading ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
@@ -111,16 +124,15 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({ route, fa
           Check your authenticator app for the current 6-digit code
         </Text>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.troubleshootButton}
           onPress={() => {
             Alert.alert(
               'Troubleshooting',
-              'Make sure your device time is correct and that you\'re using the right authenticator app for this account.',
-              [{ text: 'OK' }]
+              "Make sure your device time is correct and that you're using the right authenticator app for this account.",
+              [{ text: 'OK' }],
             );
-          }}
-        >
+          }}>
           <Text style={styles.troubleshootButtonText}>Having trouble?</Text>
         </TouchableOpacity>
       </View>

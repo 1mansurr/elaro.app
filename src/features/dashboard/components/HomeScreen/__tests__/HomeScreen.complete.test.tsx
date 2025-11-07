@@ -51,9 +51,7 @@ const mockQueryClient = new QueryClient({
 // Test wrapper with all necessary providers
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <QueryClientProvider client={mockQueryClient}>
-    <NavigationContainer>
-      {children}
-    </NavigationContainer>
+    <NavigationContainer>{children}</NavigationContainer>
   </QueryClientProvider>
 );
 
@@ -69,7 +67,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Wait for all components to render
@@ -87,7 +85,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // 1. User sees the home screen
@@ -115,7 +113,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // User clicks notification bell
@@ -131,7 +129,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Simulate task swipe
@@ -150,7 +148,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId, rerender } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Initial render
@@ -162,7 +160,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       rerender(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Components should be memoized and not cause unnecessary re-renders
@@ -175,11 +173,11 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       const fabButton = getByTestId('fab-button');
-      
+
       // Rapid FAB interactions
       act(() => {
         fireEvent.press(fabButton);
@@ -199,7 +197,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test FAB state affects scroll behavior
@@ -224,7 +222,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Open quick add modal
@@ -250,12 +248,14 @@ describe('HomeScreen Complete Integration Tests', () => {
 
   describe('Error Handling Integration', () => {
     it('should handle component errors gracefully', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Should render without crashing
@@ -270,7 +270,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Simulate network error
@@ -289,7 +289,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { unmount } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Unmount component
@@ -303,7 +303,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId, unmount } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Mount
@@ -324,7 +324,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Check accessibility attributes
@@ -344,7 +344,7 @@ describe('HomeScreen Complete Integration Tests', () => {
       const { getByTestId } = render(
         <TestWrapper>
           <HomeScreen />
-        </TestWrapper>
+        </TestWrapper>,
       );
 
       // Test platform-specific behavior

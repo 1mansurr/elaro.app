@@ -11,36 +11,42 @@ import { TASK_EVENTS } from '@/utils/analyticsEvents';
 import { QuickAddModal } from '@/shared/components';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 
-type HomeScreenModalsNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+type HomeScreenModalsNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Main'
+>;
 
 interface HomeScreenModalsProps {
   selectedTask: Task | null;
   onCloseSheet: () => void;
 }
 
-export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({ 
-  selectedTask, 
-  onCloseSheet 
+export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
+  selectedTask,
+  onCloseSheet,
 }) => {
   const navigation = useNavigation<HomeScreenModalsNavigationProp>();
   const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
-  
+
   // Mutation hooks
   const completeTaskMutation = useCompleteTask();
   const deleteTaskMutation = useDeleteTask();
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-    
+
     mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
       task_id: selectedTask.id,
       task_type: selectedTask.type,
       task_title: selectedTask.title,
       source: 'task_detail_sheet',
     });
-    
+
     // Determine which modal to navigate to based on task type
-    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
+    let modalName:
+      | 'AddLectureFlow'
+      | 'AddAssignmentFlow'
+      | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
         modalName = 'AddLectureFlow';
@@ -54,23 +60,23 @@ export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
       default:
         return;
     }
-    
+
     onCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, { 
-      initialData: { taskToEdit: selectedTask } 
+    navigation.navigate(modalName, {
+      initialData: { taskToEdit: selectedTask },
     });
   }, [selectedTask, onCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       await completeTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
         taskTitle: selectedTask.title || selectedTask.name,
       });
-      
+
       onCloseSheet();
     } catch (error) {
       console.error('Error completing task:', error);
@@ -79,14 +85,14 @@ export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       await deleteTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
         taskTitle: selectedTask.title || selectedTask.name,
       });
-      
+
       onCloseSheet();
     } catch (error) {
       console.error('Error deleting task:', error);

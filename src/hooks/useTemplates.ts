@@ -28,9 +28,12 @@ export const useTemplates = () => {
   return useQuery({
     queryKey: ['templates'],
     queryFn: async (): Promise<TaskTemplate[]> => {
-      const { data, error } = await supabase.functions.invoke('template-actions', {
-        method: 'GET',
-      });
+      const { data, error } = await supabase.functions.invoke(
+        'template-actions',
+        {
+          method: 'GET',
+        },
+      );
 
       if (error) {
         throw error;
@@ -47,11 +50,16 @@ export const useCreateTemplate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (templateData: CreateTemplateData): Promise<TaskTemplate> => {
-      const { data, error } = await supabase.functions.invoke('template-actions', {
-        method: 'POST',
-        body: templateData,
-      });
+    mutationFn: async (
+      templateData: CreateTemplateData,
+    ): Promise<TaskTemplate> => {
+      const { data, error } = await supabase.functions.invoke(
+        'template-actions',
+        {
+          method: 'POST',
+          body: templateData,
+        },
+      );
 
       if (error) {
         throw error;
@@ -71,11 +79,16 @@ export const useUpdateTemplate = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (updateData: UpdateTemplateData): Promise<TaskTemplate> => {
-      const { data, error } = await supabase.functions.invoke('template-actions', {
-        method: 'PUT',
-        body: updateData,
-      });
+    mutationFn: async (
+      updateData: UpdateTemplateData,
+    ): Promise<TaskTemplate> => {
+      const { data, error } = await supabase.functions.invoke(
+        'template-actions',
+        {
+          method: 'PUT',
+          body: updateData,
+        },
+      );
 
       if (error) {
         throw error;
@@ -113,11 +126,14 @@ export const useDeleteTemplate = () => {
 };
 
 // Get templates by task type
-export const useTemplatesByType = (taskType: 'assignment' | 'lecture' | 'study_session') => {
+export const useTemplatesByType = (
+  taskType: 'assignment' | 'lecture' | 'study_session',
+) => {
   const { data: allTemplates, ...rest } = useTemplates();
-  
-  const templates = allTemplates?.filter(template => template.task_type === taskType) || [];
-  
+
+  const templates =
+    allTemplates?.filter(template => template.task_type === taskType) || [];
+
   return {
     templates,
     ...rest,

@@ -1,5 +1,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, StyleSheet, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useOnboarding } from '@/contexts/OnboardingContext';
@@ -14,46 +23,55 @@ import countriesData from '@/data/countries.json';
 import universities from '@/data/universities.json';
 import programsData from '@/data/programs.json';
 
-type ScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'ProfileSetup'>;
+type ScreenNavigationProp = StackNavigationProp<
+  OnboardingStackParamList,
+  'ProfileSetup'
+>;
 
 const ProfileSetupScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
   const { onboardingData, updateOnboardingData } = useOnboarding();
-  
+
   // Username state
   const [username, setUsername] = useState(onboardingData.username || '');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(
-    onboardingData.username ? true : null
+    onboardingData.username ? true : null,
   );
   const [isChecking, setIsChecking] = useState(false);
 
   // University state
-  const [selectedCountry, setSelectedCountry] = useState(onboardingData.country || '');
+  const [selectedCountry, setSelectedCountry] = useState(
+    onboardingData.country || '',
+  );
   const [university, setUniversity] = useState(onboardingData.university || '');
   const [program, setProgram] = useState(onboardingData.program || '');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const checkUsernameDebounced = useMemo(
-    () => debounce(async (newUsername: string) => {
-      if (newUsername.length < 3) {
-        setIsAvailable(null);
-        setIsChecking(false);
-        return;
-      }
-      setIsChecking(true);
-      try {
-        const { data } = await supabase.functions.invoke('check-username-availability', {
-          body: { username: newUsername },
-        });
-        setIsAvailable(data.isAvailable);
-      } catch (err) {
-        console.error('Error checking username:', err);
-        setIsAvailable(null);
-      } finally {
-        setIsChecking(false);
-      }
-    }, 500).debounced,
-    []
+    () =>
+      debounce(async (newUsername: string) => {
+        if (newUsername.length < 3) {
+          setIsAvailable(null);
+          setIsChecking(false);
+          return;
+        }
+        setIsChecking(true);
+        try {
+          const { data } = await supabase.functions.invoke(
+            'check-username-availability',
+            {
+              body: { username: newUsername },
+            },
+          );
+          setIsAvailable(data.isAvailable);
+        } catch (err) {
+          console.error('Error checking username:', err);
+          setIsAvailable(null);
+        } finally {
+          setIsChecking(false);
+        }
+      }, 500).debounced,
+    [],
   );
 
   // Filter universities based on the selected country
@@ -67,9 +85,12 @@ const ProfileSetupScreen = () => {
 
   // Extract program names for the selector
   const programData = useMemo(() => {
-    return programsData.categories.flatMap(category => 
-      category.subfields.flatMap(subfield => subfield.programs)
-    ).filter((program): program is string => program !== undefined).sort();
+    return programsData.categories
+      .flatMap(category =>
+        category.subfields.flatMap(subfield => subfield.programs),
+      )
+      .filter((program): program is string => program !== undefined)
+      .sort();
   }, []);
 
   // Extract country names for the selector
@@ -78,24 +99,28 @@ const ProfileSetupScreen = () => {
   }, []);
 
   // Check if form is valid
-  const isFormValid = username.trim().length >= 3 && 
-                      isAvailable === true && 
-                      selectedCountry.trim().length > 0 && 
-                      university.trim().length > 0;
+  const isFormValid =
+    username.trim().length >= 3 &&
+    isAvailable === true &&
+    selectedCountry.trim().length > 0 &&
+    university.trim().length > 0;
 
   const handleNext = () => {
     if (!isFormValid) {
-      Alert.alert('Please complete all required fields', 'Username, Country, and University are required.');
+      Alert.alert(
+        'Please complete all required fields',
+        'Username, Country, and University are required.',
+      );
       return;
     }
-    
+
     updateOnboardingData({
       username: username.trim(),
       country: selectedCountry,
       university: university.trim(),
       program: program.trim(),
     });
-    
+
     navigation.navigate('CourseSetup');
   };
 
@@ -116,7 +141,7 @@ const ProfileSetupScreen = () => {
       <Text style={styles.subtitle}>
         Choose your username and tell us about your studies.
       </Text>
-      
+
       {/* Username Section */}
       <View style={styles.section}>
         <Text style={styles.sectionLabel}>Username *</Text>
@@ -124,7 +149,7 @@ const ProfileSetupScreen = () => {
           style={styles.input}
           placeholder="e.g., john_doe"
           value={username}
-          onChangeText={(text) => {
+          onChangeText={text => {
             const formattedText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
             setUsername(formattedText);
             setIsChecking(true);
@@ -132,7 +157,7 @@ const ProfileSetupScreen = () => {
           }}
           autoCapitalize="none"
         />
-        
+
         {isChecking && (
           <View style={styles.feedbackContainer}>
             <ActivityIndicator size="small" color={COLORS.primary} />
@@ -140,13 +165,19 @@ const ProfileSetupScreen = () => {
           </View>
         )}
         {!isChecking && isAvailable === true && username.length >= 3 && (
-          <Text style={[styles.feedback, styles.success]}>✓ Username is available!</Text>
+          <Text style={[styles.feedback, styles.success]}>
+            ✓ Username is available!
+          </Text>
         )}
         {!isChecking && isAvailable === false && (
-          <Text style={[styles.feedback, styles.error]}>✗ Username is already taken.</Text>
+          <Text style={[styles.feedback, styles.error]}>
+            ✗ Username is already taken.
+          </Text>
         )}
         {!isChecking && username.length > 0 && username.length < 3 && (
-          <Text style={[styles.feedback, styles.error]}>Username must be at least 3 characters.</Text>
+          <Text style={[styles.feedback, styles.error]}>
+            Username must be at least 3 characters.
+          </Text>
         )}
       </View>
 
@@ -194,11 +225,7 @@ const ProfileSetupScreen = () => {
 
       <View style={styles.buttonContainer}>
         <Button title="Back" onPress={handleBack} variant="outline" />
-        <Button 
-          title="Continue" 
-          onPress={handleNext} 
-          disabled={!isFormValid}
-        />
+        <Button title="Continue" onPress={handleNext} disabled={!isFormValid} />
       </View>
 
       <InfoModal
@@ -291,4 +318,3 @@ const styles = StyleSheet.create({
 });
 
 export default ProfileSetupScreen;
-

@@ -6,22 +6,31 @@ import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator
 // // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Input, Button } from '@/shared/components';
 
-type AssignmentTitleScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'AssignmentTitle'>;
+type AssignmentTitleScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'AssignmentTitle'
+>;
 
 const AssignmentTitleScreen = () => {
   const navigation = useNavigation<AssignmentTitleScreenNavigationProp>();
   // // const { assignmentData, updateAssignmentData } = useAddAssignment();
   // Mock data for now - proper structure
-  const assignmentData = { 
-    courseId: null, 
-    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
-    title: "", 
-    description: "", 
-    dueDate: null, 
-    submissionMethod: null, 
-    reminders: [] 
+  const assignmentData = {
+    courseId: null,
+    course: {
+      id: 'mock-course-id',
+      courseName: 'Mock Course',
+      courseCode: 'MOCK101',
+    },
+    title: '',
+    description: '',
+    dueDate: null,
+    submissionMethod: null,
+    reminders: [],
   };
-  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
+  const updateAssignmentData = (data: any) => {
+    console.log('Mock updateAssignmentData:', data);
+  };
 
   const handleTitleChange = (title: string) => {
     updateAssignmentData({ title });
@@ -31,7 +40,7 @@ const AssignmentTitleScreen = () => {
     if (!assignmentData.title.trim()) {
       return;
     }
-    
+
     navigation.navigate('AssignmentDescription');
   };
 
@@ -52,9 +61,12 @@ const AssignmentTitleScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>What&apos;s your assignment about?</Text>
+        <Text style={styles.sectionTitle}>
+          What&apos;s your assignment about?
+        </Text>
         <Text style={styles.sectionDescription}>
-          Give your assignment a clear, descriptive title that helps you remember what it&apos;s for.
+          Give your assignment a clear, descriptive title that helps you
+          remember what it&apos;s for.
         </Text>
 
         <View style={styles.inputContainer}>
@@ -85,16 +97,15 @@ const AssignmentTitleScreen = () => {
 
       <View style={styles.footer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.skipButton}
-            onPress={() => navigation.navigate('AssignmentDescription')}
-          >
+            onPress={() => navigation.navigate('AssignmentDescription')}>
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.continueButtonContainer}>
-            <Button 
-              title="Continue" 
+            <Button
+              title="Continue"
               onPress={handleContinue}
               disabled={!isValid}
             />

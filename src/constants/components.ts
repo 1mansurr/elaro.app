@@ -117,6 +117,6 @@ export const COMPONENT_VARIANTS = {
   input: ['default', 'outlined', 'filled'] as const,
 } as const;
 
-export type ButtonVariant = typeof COMPONENT_VARIANTS.button[number];
-export type InputVariant = typeof COMPONENT_VARIANTS.input[number];
+export type ButtonVariant = (typeof COMPONENT_VARIANTS.button)[number];
+export type InputVariant = (typeof COMPONENT_VARIANTS.input)[number];
 export type ComponentSize = 'small' | 'medium' | 'large';

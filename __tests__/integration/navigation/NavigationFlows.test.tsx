@@ -3,7 +3,10 @@ import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { NextTaskCard } from '@/features/dashboard/components/NextTaskCard';
-import { SafeNavigation, NavigationPatterns } from '@/navigation/utils/SafeNavigation';
+import {
+  SafeNavigation,
+  NavigationPatterns,
+} from '@/navigation/utils/SafeNavigation';
 import { RootStackParamList } from '@/types/navigation';
 import { createMockNavigation, createMockUser } from '@tests/utils/testUtils';
 
@@ -63,10 +66,7 @@ describe('Navigation Flows Integration Tests', () => {
       } as any;
 
       const { getByText } = render(
-        <NextTaskCard 
-          task={mockTask}
-          isGuestMode={false}
-        />
+        <NextTaskCard task={mockTask} isGuestMode={false} />,
       );
 
       // Find and press the "Start Study" button
@@ -74,12 +74,14 @@ describe('Navigation Flows Integration Tests', () => {
       fireEvent.press(startButton);
 
       // Wait for navigation to be called
-      await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          'StudySessionReview',
-          { sessionId: 'session-123' }
-        );
-      }, { timeout: 1000 });
+      await waitFor(
+        () => {
+          expect(mockNavigate).toHaveBeenCalledWith('StudySessionReview', {
+            sessionId: 'session-123',
+          });
+        },
+        { timeout: 1000 },
+      );
     });
 
     it('should navigate with correct sessionId parameter', async () => {
@@ -95,20 +97,16 @@ describe('Navigation Flows Integration Tests', () => {
       } as any;
 
       const { getByText } = render(
-        <NextTaskCard 
-          task={mockTask}
-          isGuestMode={false}
-        />
+        <NextTaskCard task={mockTask} isGuestMode={false} />,
       );
 
       const startButton = getByText(/Start Study/i);
       fireEvent.press(startButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(
-          'StudySessionReview',
-          { sessionId }
-        );
+        expect(mockNavigate).toHaveBeenCalledWith('StudySessionReview', {
+          sessionId,
+        });
       });
     });
 
@@ -124,10 +122,7 @@ describe('Navigation Flows Integration Tests', () => {
       } as any;
 
       const { queryByText } = render(
-        <NextTaskCard 
-          task={mockTask}
-          isGuestMode={false}
-        />
+        <NextTaskCard task={mockTask} isGuestMode={false} />,
       );
 
       const startButton = queryByText(/Start Study/i);
@@ -138,7 +133,7 @@ describe('Navigation Flows Integration Tests', () => {
   describe('PaywallScreen Flow', () => {
     it('should navigate to PaywallScreen via SafeNavigation', () => {
       const mockNavigation = createMockNavigation();
-      
+
       NavigationPatterns.navigateToPaywall(mockNavigation as any);
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith('PaywallScreen');
@@ -147,31 +142,33 @@ describe('Navigation Flows Integration Tests', () => {
     it('should navigate with variant parameter', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
-      
-      safeNav.navigate('PaywallScreen', { variant: 'locked', lockedContent: 'Premium feature' });
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith(
-        'PaywallScreen',
-        { variant: 'locked', lockedContent: 'Premium feature' }
-      );
+      safeNav.navigate('PaywallScreen', {
+        variant: 'locked',
+        lockedContent: 'Premium feature',
+      });
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('PaywallScreen', {
+        variant: 'locked',
+        lockedContent: 'Premium feature',
+      });
     });
 
     it('should navigate with general variant by default', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
-      
+
       safeNav.navigate('PaywallScreen', { variant: 'general' });
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith(
-        'PaywallScreen',
-        { variant: 'general' }
-      );
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('PaywallScreen', {
+        variant: 'general',
+      });
     });
 
     it('should handle undefined params for PaywallScreen', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
-      
+
       // Navigate without params (should work since params are optional)
       safeNav.navigate('PaywallScreen');
 
@@ -183,22 +180,24 @@ describe('Navigation Flows Integration Tests', () => {
   describe('OddityWelcomeScreen Flow', () => {
     it('should navigate from PaywallScreen to OddityWelcomeScreen', () => {
       const mockNavigation = createMockNavigation();
-      
+
       // Simulate purchase completion navigation
       const safeNav = new SafeNavigation(mockNavigation as any);
       safeNav.navigate('OddityWelcomeScreen', { variant: 'trial-early' });
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith(
         'OddityWelcomeScreen',
-        { variant: 'trial-early' }
+        { variant: 'trial-early' },
       );
     });
 
     it('should navigate with all valid variant types', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
-      
-      const variants: Array<RootStackParamList['OddityWelcomeScreen']['variant']> = [
+
+      const variants: Array<
+        RootStackParamList['OddityWelcomeScreen']['variant']
+      > = [
         'trial-early',
         'trial-expired',
         'direct',
@@ -214,11 +213,11 @@ describe('Navigation Flows Integration Tests', () => {
       });
 
       expect(mockNavigation.navigate).toHaveBeenCalledTimes(variants.length);
-      
+
       // Verify last call was with the last variant
       expect(mockNavigation.navigate).toHaveBeenLastCalledWith(
         'OddityWelcomeScreen',
-        { variant: 'plan-change' }
+        { variant: 'plan-change' },
       );
     });
   });
@@ -231,7 +230,7 @@ describe('Navigation Flows Integration Tests', () => {
 
       // Step 1: Navigate to StudySessionReview
       safeNav.navigate('StudySessionReview', { sessionId: 'session-123' });
-      
+
       // Step 2: After study complete, navigate to StudyResult
       safeNav.navigate('StudyResult', { sessionId: 'session-123' });
 
@@ -239,12 +238,12 @@ describe('Navigation Flows Integration Tests', () => {
       expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
         1,
         'StudySessionReview',
-        { sessionId: 'session-123' }
+        { sessionId: 'session-123' },
       );
       expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
         2,
         'StudyResult',
-        { sessionId: 'session-123' }
+        { sessionId: 'session-123' },
       );
     });
 
@@ -254,16 +253,19 @@ describe('Navigation Flows Integration Tests', () => {
 
       // Step 1: Navigate to PaywallScreen
       NavigationPatterns.navigateToPaywall(mockNavigation as any);
-      
+
       // Step 2: After purchase, navigate to OddityWelcomeScreen
       safeNav.navigate('OddityWelcomeScreen', { variant: 'direct' });
 
       expect(mockNavigation.navigate).toHaveBeenCalledTimes(2);
-      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(1, 'PaywallScreen');
+      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
+        1,
+        'PaywallScreen',
+      );
       expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
         2,
         'OddityWelcomeScreen',
-        { variant: 'direct' }
+        { variant: 'direct' },
       );
     });
   });
@@ -283,5 +285,98 @@ describe('Navigation Flows Integration Tests', () => {
       // This test verifies the navigation object is used correctly
     });
   });
-});
 
+  describe('Deep Linking', () => {
+    it('should handle deep link navigation to assignment detail', () => {
+      const mockNavigation = createMockNavigation();
+      const safeNav = new SafeNavigation(mockNavigation as any);
+
+      // Simulate deep link: elaro://assignment/123
+      const assignmentId = 'assignment-123';
+      safeNav.navigate('AssignmentDetail', { assignmentId });
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('AssignmentDetail', {
+        assignmentId,
+      });
+    });
+
+    it('should handle deep link navigation to course detail', () => {
+      const mockNavigation = createMockNavigation();
+      const safeNav = new SafeNavigation(mockNavigation as any);
+
+      const courseId = 'course-456';
+      safeNav.navigate('CourseDetail', { courseId });
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('CourseDetail', {
+        courseId,
+      });
+    });
+  });
+
+  describe('Modal Flows', () => {
+    it('should navigate to Add Course modal flow', () => {
+      const mockNavigation = createMockNavigation();
+      const safeNav = new SafeNavigation(mockNavigation as any);
+
+      safeNav.navigate('AddCourseNavigator');
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith(
+        'AddCourseNavigator',
+      );
+    });
+
+    it('should navigate to Add Assignment modal flow', () => {
+      const mockNavigation = createMockNavigation();
+      const safeNav = new SafeNavigation(mockNavigation as any);
+
+      safeNav.navigate('AddAssignmentNavigator', { courseId: 'course-123' });
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith(
+        'AddAssignmentNavigator',
+        { courseId: 'course-123' },
+      );
+    });
+
+    it('should handle back navigation from modal flows', () => {
+      const mockNavigation = createMockNavigation();
+
+      // Simulate navigating to modal and then going back
+      mockNavigation.navigate('AddCourseNavigator');
+      mockNavigation.goBack();
+
+      expect(mockNavigation.navigate).toHaveBeenCalledWith(
+        'AddCourseNavigator',
+      );
+      expect(mockNavigation.goBack).toHaveBeenCalled();
+    });
+  });
+
+  describe('Navigation State Persistence', () => {
+    it('should preserve navigation state structure', () => {
+      const mockNavigation = createMockNavigation();
+      const safeNav = new SafeNavigation(mockNavigation as any);
+
+      // Navigate through multiple screens
+      safeNav.navigate('CoursesScreen');
+      safeNav.navigate('CourseDetail', { courseId: 'course-123' });
+      safeNav.navigate('AssignmentDetail', { assignmentId: 'assignment-456' });
+
+      // Verify navigation stack was built correctly
+      expect(mockNavigation.navigate).toHaveBeenCalledTimes(3);
+      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
+        1,
+        'CoursesScreen',
+      );
+      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
+        2,
+        'CourseDetail',
+        { courseId: 'course-123' },
+      );
+      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
+        3,
+        'AssignmentDetail',
+        { assignmentId: 'assignment-456' },
+      );
+    });
+  });
+});

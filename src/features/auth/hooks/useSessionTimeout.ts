@@ -5,7 +5,11 @@ export interface UseSessionTimeoutReturn {
   checkTimeout: () => Promise<boolean>;
   updateLastActive: () => Promise<void>;
   clearTimeout: () => Promise<void>;
-  configure: (config: Partial<import('../services/SessionTimeoutService').SessionTimeoutConfig>) => void;
+  configure: (
+    config: Partial<
+      import('../services/SessionTimeoutService').SessionTimeoutConfig
+    >,
+  ) => void;
   config: import('../services/SessionTimeoutService').SessionTimeoutConfig;
 }
 
@@ -42,10 +46,17 @@ export const useSessionTimeout = (): UseSessionTimeoutReturn => {
     }
   }, [sessionTimeoutService]);
 
-  const configure = useCallback((newConfig: Partial<import('../services/SessionTimeoutService').SessionTimeoutConfig>) => {
-    sessionTimeoutService.configure(newConfig);
-    setConfig(sessionTimeoutService.getConfig());
-  }, [sessionTimeoutService]);
+  const configure = useCallback(
+    (
+      newConfig: Partial<
+        import('../services/SessionTimeoutService').SessionTimeoutConfig
+      >,
+    ) => {
+      sessionTimeoutService.configure(newConfig);
+      setConfig(sessionTimeoutService.getConfig());
+    },
+    [sessionTimeoutService],
+  );
 
   return {
     checkTimeout,

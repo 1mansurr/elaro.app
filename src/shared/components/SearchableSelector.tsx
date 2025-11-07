@@ -2,7 +2,13 @@
 // ACTION: Create this new reusable component.
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import SelectDropdown from 'react-native-select-dropdown';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -68,7 +74,9 @@ const SearchableSelector: React.FC<Props> = ({
             onChangeText={handleTextChange}
             autoFocus={true}
           />
-          <TouchableOpacity onPress={switchToDropdown} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={switchToDropdown}
+            style={styles.backButton}>
             <Text style={styles.backButtonText}>‹ Back to list</Text>
           </TouchableOpacity>
         </View>
@@ -88,7 +96,11 @@ const SearchableSelector: React.FC<Props> = ({
             </View>
           )}
           renderItem={(item, index, isSelected) => (
-            <View style={[styles.dropdownRow, isSelected && { backgroundColor: '#f0f0f0' }]}>
+            <View
+              style={[
+                styles.dropdownRow,
+                isSelected && { backgroundColor: '#f0f0f0' },
+              ]}>
               <Text style={styles.dropdownRowText}>{item}</Text>
             </View>
           )}

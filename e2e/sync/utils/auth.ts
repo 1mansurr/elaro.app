@@ -1,6 +1,6 @@
 /**
  * Auth Helper Utilities for E2E Sync Tests
- * 
+ *
  * Provides utilities to interact with authentication in E2E tests
  */
 
@@ -17,7 +17,7 @@ export const auth = {
    */
   async signIn(page: any = device) {
     const testUser = mockSupabaseAuth.getTestUser();
-    
+
     // Navigate to auth screen if needed
     try {
       await waitFor(element(by.id('auth-screen')))
@@ -92,7 +92,7 @@ export const auth = {
    */
   async reloadAndVerifySession(): Promise<boolean> {
     const testUser = mockSupabaseAuth.getTestUser();
-    
+
     // Get session before reload
     const { session: sessionBefore } = await mockSupabaseAuth.getSession();
     if (!sessionBefore) return false;
@@ -104,13 +104,15 @@ export const auth = {
     // Verify session still exists (check mock auth state)
     // In real app, this would check AsyncStorage/SecureStore
     const { session: sessionAfter } = await mockSupabaseAuth.getSession();
-    
+
     // Also verify UI shows authenticated state
     try {
       await waitFor(element(by.id('home-screen')))
         .toBeVisible()
         .withTimeout(5000);
-      return sessionAfter !== null && sessionAfter.user.email === testUser.email;
+      return (
+        sessionAfter !== null && sessionAfter.user.email === testUser.email
+      );
     } catch {
       return sessionAfter !== null;
     }
@@ -124,4 +126,3 @@ export const auth = {
     return session?.user || null;
   },
 };
-

@@ -112,39 +112,17 @@ COMMENT ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") IS 'Checks if
 CREATE OR REPLACE FUNCTION "public"."check_and_send_reminders"() RETURNS "void"
     LANGUAGE "plpgsql"
     AS $$
-DECLARE
-  reminder_row RECORD; -- This is the correct place to declare the loop variable
-  supabase_url TEXT := 'https://oqwyoucchbjiyddnznwf.supabase.co';
-  service_role_key TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xd3lvdWNjaGJqaXlkZG56bndmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTcxODg0MSwiZXhwIjoyMDY1Mjk0ODQxfQ.DkL-1UK1wBxrgCJU6tm00cgl6xEcFLDjnm0MHRHwuNw'; -- REMEMBER TO REPLACE THIS AND WRAP IN QUOTES
 BEGIN
-  -- Find all reminders that are due and still pending
-  FOR reminder_row IN SELECT * FROM public.reminders WHERE send_at <= NOW( ) AND status = 'pending' LIMIT 10
-  LOOP
-    -- Call our 'send-push-notification' Edge Function for each due reminder
-    PERFORM net.http_post(
-      url := supabase_url || '/functions/v1/send-push-notification',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || service_role_key
-       ),
-      body := jsonb_build_object(
-        'userId', reminder_row.user_id,
-        'title', reminder_row.title,
-        'body', reminder_row.body,
-        'data', reminder_row.data
-      )
-    );
-
-    -- Update the status of the reminder to 'sent'
-    UPDATE public.reminders
-    SET status = 'sent'
-    WHERE id = reminder_row.id;
-  END LOOP;
+  RAISE NOTICE 'check_and_send_reminders() is deprecated and disabled for security reasons. Use Edge Function process-due-reminders instead.';
+  -- Function intentionally does nothing - all reminder processing should go through Edge Functions
 END;
 $$;
 
 
 ALTER FUNCTION "public"."check_and_send_reminders"() OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."check_and_send_reminders"() IS 'DEPRECATED: This function is disabled for security reasons. Use the process-due-reminders Edge Function instead, which properly uses environment variables for secrets.';
 
 
 CREATE OR REPLACE FUNCTION "public"."count_tasks_since"("since_date" timestamp with time zone) RETURNS integer
@@ -635,7 +613,8 @@ CREATE TABLE IF NOT EXISTS "public"."courses" (
     "course_code" "text",
     "about_course" "text",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "deleted_at" timestamp with time zone
 );
 
 
@@ -651,6 +630,9 @@ COMMENT ON COLUMN "public"."courses"."course_code" IS 'The official code for the
 
 
 COMMENT ON COLUMN "public"."courses"."about_course" IS 'A brief description or notes about the course, optional.';
+
+
+COMMENT ON COLUMN "public"."courses"."deleted_at" IS 'Timestamp for soft deletion. NULL means active, non-NULL means soft-deleted.';
 
 
 
@@ -1087,6 +1069,14 @@ CREATE INDEX "idx_courses_user_created" ON "public"."courses" USING "btree" ("us
 
 
 
+CREATE INDEX "idx_courses_deleted_at" ON "public"."courses" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
+
+
+
+COMMENT ON INDEX "public"."idx_courses_deleted_at" IS 'Partial index for efficiently querying soft-deleted courses.';
+
+
+
 CREATE INDEX "idx_lectures_deleted_at" ON "public"."lectures" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
 
 
@@ -1206,12 +1196,12 @@ ALTER TABLE ONLY "public"."admin_actions"
 
 
 ALTER TABLE ONLY "public"."assignments"
-    ADD CONSTRAINT "assignments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "assignments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id");
 
 
 
 ALTER TABLE ONLY "public"."assignments"
-    ADD CONSTRAINT "assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
 
 
@@ -1221,12 +1211,12 @@ ALTER TABLE ONLY "public"."courses"
 
 
 ALTER TABLE ONLY "public"."lectures"
-    ADD CONSTRAINT "lectures_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "lectures_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id");
 
 
 
 ALTER TABLE ONLY "public"."lectures"
-    ADD CONSTRAINT "lectures_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "lectures_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
 
 
@@ -1241,22 +1231,22 @@ ALTER TABLE ONLY "public"."profiles"
 
 
 ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignments"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "reminders_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignments"("id");
 
 
 
 ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_lecture_id_fkey" FOREIGN KEY ("lecture_id") REFERENCES "public"."lectures"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "reminders_lecture_id_fkey" FOREIGN KEY ("lecture_id") REFERENCES "public"."lectures"("id");
 
 
 
 ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "reminders_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id");
 
 
 
 ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "reminders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id");
 
 
 
@@ -1271,7 +1261,7 @@ ALTER TABLE ONLY "public"."study_sessions"
 
 
 ALTER TABLE ONLY "public"."study_sessions"
-    ADD CONSTRAINT "study_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+    ADD CONSTRAINT "study_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id");
 
 
 
@@ -1483,159 +1473,129 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."can_create_srs_reminders"("p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."can_create_srs_reminders"("p_user_id" "uuid") TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."can_create_srs_reminders"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."can_create_srs_reminders"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."check_and_send_reminders"() TO "anon";
-GRANT ALL ON FUNCTION "public"."check_and_send_reminders"() TO "authenticated";
-GRANT ALL ON FUNCTION "public"."check_and_send_reminders"() TO "service_role";
+-- Anon has no permissions (revoked by migration 20251102)
+-- Functions accessible to authenticated/users are handled via RLS and triggers
+-- Minimal permissions: EXECUTE only (no ALL permissions for security best practice)
+GRANT EXECUTE ON FUNCTION "public"."check_and_send_reminders"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."count_tasks_since"("since_date" timestamp with time zone) TO "anon";
-GRANT ALL ON FUNCTION "public"."count_tasks_since"("since_date" timestamp with time zone) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."count_tasks_since"("since_date" timestamp with time zone) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "anon";
-GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_code" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "anon";
-GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_code" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."create_course_and_lectures_transaction"("p_user_id" "uuid", "p_course_name" "text", "p_course_code" "text", "p_course_description" "text", "p_start_time" timestamp with time zone, "p_end_time" timestamp with time zone, "p_recurrence_type" "text", "p_reminders" integer[]) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_accessible_item_ids"("p_user_id" "uuid", "p_table_name" "text", "p_free_limit" integer) TO "anon";
-GRANT ALL ON FUNCTION "public"."get_accessible_item_ids"("p_user_id" "uuid", "p_table_name" "text", "p_free_limit" integer) TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."get_accessible_item_ids"("p_user_id" "uuid", "p_table_name" "text", "p_free_limit" integer) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_accessible_item_ids"("p_user_id" "uuid", "p_table_name" "text", "p_free_limit" integer) TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."get_home_screen_data_for_user"("p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."get_home_screen_data_for_user"("p_user_id" "uuid") TO "authenticated";
+GRANT EXECUTE ON FUNCTION "public"."get_home_screen_data_for_user"("p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."get_home_screen_data_for_user"("p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "anon";
-GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."handle_new_user"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."schedule_daily_cleanup"() TO "anon";
-GRANT ALL ON FUNCTION "public"."schedule_daily_cleanup"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."schedule_daily_cleanup"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."update_user_streak"() TO "anon";
-GRANT ALL ON FUNCTION "public"."update_user_streak"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_user_streak"() TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."update_user_streak"("user_uuid" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."update_user_streak"("user_uuid" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_user_streak"("user_uuid" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."admin_actions" TO "anon";
-GRANT ALL ON TABLE "public"."admin_actions" TO "authenticated";
+GRANT SELECT, INSERT ON TABLE "public"."admin_actions" TO "authenticated";
 GRANT ALL ON TABLE "public"."admin_actions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."assignments" TO "anon";
-GRANT ALL ON TABLE "public"."assignments" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."assignments" TO "authenticated";
 GRANT ALL ON TABLE "public"."assignments" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."courses" TO "anon";
-GRANT ALL ON TABLE "public"."courses" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."courses" TO "authenticated";
 GRANT ALL ON TABLE "public"."courses" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."lectures" TO "anon";
-GRANT ALL ON TABLE "public"."lectures" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."lectures" TO "authenticated";
 GRANT ALL ON TABLE "public"."lectures" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."notification_preferences" TO "anon";
-GRANT ALL ON TABLE "public"."notification_preferences" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE ON TABLE "public"."notification_preferences" TO "authenticated";
 GRANT ALL ON TABLE "public"."notification_preferences" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."profiles" TO "anon";
-GRANT ALL ON TABLE "public"."profiles" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."profiles" TO "authenticated";
 GRANT ALL ON TABLE "public"."profiles" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."reminders" TO "anon";
-GRANT ALL ON TABLE "public"."reminders" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."reminders" TO "authenticated";
 GRANT ALL ON TABLE "public"."reminders" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."srs_schedules" TO "anon";
-GRANT ALL ON TABLE "public"."srs_schedules" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."srs_schedules" TO "authenticated";
 GRANT ALL ON TABLE "public"."srs_schedules" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."streaks" TO "anon";
-GRANT ALL ON TABLE "public"."streaks" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE ON TABLE "public"."streaks" TO "authenticated";
 GRANT ALL ON TABLE "public"."streaks" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."study_sessions" TO "anon";
-GRANT ALL ON TABLE "public"."study_sessions" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."study_sessions" TO "authenticated";
 GRANT ALL ON TABLE "public"."study_sessions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tasks_events" TO "anon";
-GRANT ALL ON TABLE "public"."tasks_events" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."tasks_events" TO "authenticated";
 GRANT ALL ON TABLE "public"."tasks_events" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."user_devices" TO "anon";
-GRANT ALL ON TABLE "public"."user_devices" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE "public"."user_devices" TO "authenticated";
 GRANT ALL ON TABLE "public"."user_devices" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."users" TO "anon";
-GRANT ALL ON TABLE "public"."users" TO "authenticated";
+GRANT SELECT, INSERT, UPDATE ON TABLE "public"."users" TO "authenticated";
 GRANT ALL ON TABLE "public"."users" TO "service_role";
 
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+-- Anon has no sequence permissions (revoked by migration 20251102)
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT USAGE ON SEQUENCES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 
@@ -1644,8 +1604,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQ
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+-- Anon has no function permissions (revoked by migration 20251102)
+-- Authenticated functions are granted explicitly per function
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 
@@ -1654,8 +1614,8 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUN
 
 
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
+-- Anon has no table permissions (revoked by migration 20251102)
+-- Authenticated table permissions are granted explicitly per table
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
 
 

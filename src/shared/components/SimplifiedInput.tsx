@@ -38,7 +38,7 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
 
-  const themedStyles = useThemedStyles((theme) => ({
+  const themedStyles = useThemedStyles(theme => ({
     container: {
       marginBottom: SPACING.md,
     },
@@ -56,7 +56,11 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
       alignItems: 'center' as const,
       backgroundColor: theme.input,
       borderWidth: 1,
-      borderColor: error ? theme.destructive : isFocused ? theme.accent : theme.inputBorder,
+      borderColor: error
+        ? theme.destructive
+        : isFocused
+          ? theme.accent
+          : theme.inputBorder,
       borderRadius: BORDER_RADIUS.md,
       paddingHorizontal: SPACING.md,
     },
@@ -115,17 +119,19 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
           {required && <Text style={themedStyles.required}> *</Text>}
         </Text>
       )}
-      
+
       <View style={[themedStyles.inputContainer, style]}>
         {leftIcon && (
           <Ionicons
             name={leftIcon}
             size={20}
-            color={error ? themedStyles.required.color : themedStyles.label.color}
+            color={
+              error ? themedStyles.required.color : themedStyles.label.color
+            }
             style={themedStyles.leftIcon}
           />
         )}
-        
+
         <TextInput
           {...props}
           style={[themedStyles.input, sizeStyles]}
@@ -133,26 +139,25 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
           onBlur={handleBlur}
           placeholderTextColor={themedStyles.helperText.color}
         />
-        
+
         {rightIcon && (
           <TouchableOpacity
             onPress={onRightIconPress}
             disabled={!onRightIconPress}
-            style={themedStyles.rightIcon}
-          >
+            style={themedStyles.rightIcon}>
             <Ionicons
               name={rightIcon}
               size={20}
-              color={error ? themedStyles.required.color : themedStyles.label.color}
+              color={
+                error ? themedStyles.required.color : themedStyles.label.color
+              }
             />
           </TouchableOpacity>
         )}
       </View>
-      
+
       {(error || helperText) && (
-        <Text style={themedStyles.helperText}>
-          {error || helperText}
-        </Text>
+        <Text style={themedStyles.helperText}>{error || helperText}</Text>
       )}
     </View>
   );

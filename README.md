@@ -14,24 +14,28 @@ A modern, intelligent study planning app designed to help students build better 
 ## 🎨 Recent UI/UX Improvements (4-Phase Plan)
 
 ### Phase 1: Design System Consolidation ✅
+
 - **Unified Theme System**: Consolidated all design tokens into `src/constants/theme.ts`
 - **Eliminated Redundancy**: Removed duplicate design system files (`designSystem.ts`, `components.ts`, `text.ts`)
 - **Centralized Tokens**: Single source of truth for colors, spacing, typography, and component patterns
 - **Legacy Compatibility**: Maintained backward compatibility with existing components
 
 ### Phase 2: Button System Consolidation ✅
+
 - **Simplified Button API**: Migrated from complex `<Button>` to focused variants (`<PrimaryButton>`, `<SecondaryButton>`, etc.)
 - **Eliminated Complexity**: Removed 268-line Button component in favor of focused variants
 - **Consistent Styling**: All buttons now use theme tokens instead of hardcoded values
 - **ESLint Enforcement**: Added rules to prevent future Button misuse
 
 ### Phase 3: Modal Animation Consistency ✅
+
 - **Standardized Animations**: All modals now use consistent 300ms animations
 - **Backdrop Types**: Proper backdrop types per modal variant (blur for dialogs, opacity for sheets)
 - **Modal Variants**: Created `DialogModal`, `SheetModal`, `SimpleModal`, `FullScreenModal`
 - **100% Migration**: Eliminated all custom Modal implementations across the codebase
 
 ### Phase 4: Component Interface Simplification ✅
+
 - **Reduced Complexity**: Simplified components with 10+ props using grouped interfaces
 - **Focused Sub-Components**: Broke complex components into single-purpose sub-components
 - **Prop Grouping**: Organized props into logical groups (`config`, `state`, `handlers`)
@@ -106,9 +110,10 @@ EXPO_PUBLIC_MIXPANEL_TOKEN=your_mixpanel_token
 
 ### Database Setup
 
-For database setup instructions, see [DATABASE_SETUP.md](DATABASE_SETUP.md).
+For database setup instructions, see [Database Setup Guide](./docs/DATABASE/SETUP.md).
 
 **Quick Start:**
+
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -119,6 +124,18 @@ supabase link --project-ref YOUR_PROJECT_REF
 # Apply migrations
 supabase db reset
 ```
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`docs/`](./docs/) directory:
+
+- **[Documentation Index](./docs/README.md)** - Complete documentation index
+- **[Getting Started](./docs/GETTING_STARTED.md)** - Quick start guide
+- **[Architecture](./ARCHITECTURE.md)** - System architecture
+- **[Development Guides](./docs/DEVELOPMENT/)** - UI/UX, Performance, Testing, Patterns
+- **[Database Guides](./docs/DATABASE/)** - Setup, Migrations, Operations
+- **[Security Guides](./docs/SECURITY/)** - Security best practices
+- **[Operations Guides](./docs/OPERATIONS/)** - Deployment, Incident Response
 
 ## 🏗️ Architecture
 
@@ -172,11 +189,13 @@ To maintain consistency and modularity, please follow these guidelines when addi
 ### Adding a New Feature
 
 1. **Create a Feature Directory**: All new features should reside in their own directory within `src/features/`.
+
    ```bash
    mkdir src/features/your-new-feature
    ```
 
 2. **Follow the Standard Structure**: Inside your new feature directory, group files by their type.
+
    ```
    src/features/your-new-feature/
    ├── components/    # Components used only by this feature
@@ -334,11 +353,13 @@ This project uses [Expo Application Services (EAS) Build](https://docs.expo.dev/
 The following commands are configured in `package.json`:
 
 - **Build for iOS:**
+
   ```bash
   npm run build:ios
   ```
 
 - **Build for Android:**
+
   ```bash
   npm run build:android
   ```

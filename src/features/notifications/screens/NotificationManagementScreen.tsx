@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   ScrollView,
   RefreshControl,
-  Alert
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationSettings } from '../components/SimpleNotificationSettings';
 import { ScheduledNotification } from '@/services/notifications/interfaces';
@@ -18,8 +18,12 @@ import { ScheduledNotification } from '@/services/notifications/interfaces';
 export const NotificationManagementScreen: React.FC = () => {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>('settings');
-  const [scheduledNotifications, setScheduledNotifications] = useState<ScheduledNotification[]>([]);
+  const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>(
+    'settings',
+  );
+  const [scheduledNotifications, setScheduledNotifications] = useState<
+    ScheduledNotification[]
+  >([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -32,10 +36,12 @@ export const NotificationManagementScreen: React.FC = () => {
 
   const loadScheduledNotifications = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      const notifications = await notificationService.getScheduledNotifications(user.id);
+      const notifications = await notificationService.getScheduledNotifications(
+        user.id,
+      );
       setScheduledNotifications(notifications);
     } catch (error) {
       console.error('Error loading scheduled notifications:', error);
@@ -64,20 +70,23 @@ export const NotificationManagementScreen: React.FC = () => {
 
   const handleTestNotification = async () => {
     if (!user) return;
-    
+
     try {
       const success = await notificationService.sendSmartNotification(
         user.id,
         'Test Notification',
         'This is a test notification to verify your settings are working correctly.',
         'test',
-        'normal'
+        'normal',
       );
-      
+
       if (success) {
         Alert.alert('Success', 'Test notification sent! Check your device.');
       } else {
-        Alert.alert('Error', 'Failed to send test notification. Check your settings.');
+        Alert.alert(
+          'Error',
+          'Failed to send test notification. Check your settings.',
+        );
       }
     } catch (error) {
       console.error('Error sending test notification:', error);
@@ -88,15 +97,19 @@ export const NotificationManagementScreen: React.FC = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case 'settings':
-        return <SimpleNotificationSettings onClose={() => setShowSettings(false)} />;
+        return (
+          <SimpleNotificationSettings onClose={() => setShowSettings(false)} />
+        );
       case 'scheduled':
-        return <ScheduledNotificationsList 
-          notifications={scheduledNotifications}
-          loading={loading}
-          onCancel={handleCancelNotification}
-          onRefresh={handleRefresh}
-          refreshing={refreshing}
-        />;
+        return (
+          <ScheduledNotificationsList
+            notifications={scheduledNotifications}
+            loading={loading}
+            onCancel={handleCancelNotification}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
+        );
       default:
         return null;
     }
@@ -106,11 +119,12 @@ export const NotificationManagementScreen: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>Notification Management</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Notification Management
+        </Text>
         <TouchableOpacity
           style={[styles.testButton, { backgroundColor: theme.accent }]}
-          onPress={handleTestNotification}
-        >
+          onPress={handleTestNotification}>
           <Ionicons name="send-outline" size={16} color="white" />
           <Text style={styles.testButtonText}>Test</Text>
         </TouchableOpacity>
@@ -120,31 +134,32 @@ export const NotificationManagementScreen: React.FC = () => {
       <View style={styles.tabContainer}>
         {[
           { key: 'settings', label: 'Settings', icon: 'settings-outline' },
-          { key: 'scheduled', label: 'Scheduled', icon: 'list-outline' }
-        ].map((tab) => (
+          { key: 'scheduled', label: 'Scheduled', icon: 'list-outline' },
+        ].map(tab => (
           <TouchableOpacity
             key={tab.key}
             style={[
               styles.tab,
-              { 
-                backgroundColor: activeTab === tab.key ? theme.accent : theme.card,
-                borderColor: theme.border
-              }
+              {
+                backgroundColor:
+                  activeTab === tab.key ? theme.accent : theme.card,
+                borderColor: theme.border,
+              },
             ]}
             onPress={() => {
               setActiveTab(tab.key as any);
               if (tab.key === 'settings') setShowSettings(true);
-            }}
-          >
-            <Ionicons 
-              name={tab.icon as any} 
-              size={16} 
-              color={activeTab === tab.key ? 'white' : theme.text} 
+            }}>
+            <Ionicons
+              name={tab.icon as any}
+              size={16}
+              color={activeTab === tab.key ? 'white' : theme.text}
             />
-            <Text style={[
-              styles.tabText,
-              { color: activeTab === tab.key ? 'white' : theme.text }
-            ]}>
+            <Text
+              style={[
+                styles.tabText,
+                { color: activeTab === tab.key ? 'white' : theme.text },
+              ]}>
               {tab.label}
             </Text>
           </TouchableOpacity>
@@ -152,9 +167,7 @@ export const NotificationManagementScreen: React.FC = () => {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {renderTabContent()}
-      </View>
+      <View style={styles.content}>{renderTabContent()}</View>
     </View>
   );
 };
@@ -173,14 +186,16 @@ const ScheduledNotificationsList: React.FC<ScheduledNotificationsListProps> = ({
   loading,
   onCancel,
   onRefresh,
-  refreshing
+  refreshing,
 }) => {
   const { theme } = useTheme();
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <Text style={[styles.loadingText, { color: theme.text }]}>Loading notifications...</Text>
+        <Text style={[styles.loadingText, { color: theme.text }]}>
+          Loading notifications...
+        </Text>
       </View>
     );
   }
@@ -188,10 +203,17 @@ const ScheduledNotificationsList: React.FC<ScheduledNotificationsListProps> = ({
   if (notifications.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="notifications-off-outline" size={48} color={theme.textSecondary} />
-        <Text style={[styles.emptyTitle, { color: theme.text }]}>No Scheduled Notifications</Text>
+        <Ionicons
+          name="notifications-off-outline"
+          size={48}
+          color={theme.textSecondary}
+        />
+        <Text style={[styles.emptyTitle, { color: theme.text }]}>
+          No Scheduled Notifications
+        </Text>
         <Text style={[styles.emptyMessage, { color: theme.textSecondary }]}>
-          You don't have any notifications scheduled. Use the Schedule tab to create new notifications.
+          You don't have any notifications scheduled. Use the Schedule tab to
+          create new notifications.
         </Text>
       </View>
     );
@@ -202,9 +224,8 @@ const ScheduledNotificationsList: React.FC<ScheduledNotificationsListProps> = ({
       style={styles.notificationsList}
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      {notifications.map((notification) => (
+      }>
+      {notifications.map(notification => (
         <ScheduledNotificationItem
           key={notification.id}
           notification={notification}
@@ -223,7 +244,7 @@ interface ScheduledNotificationItemProps {
 
 const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
   notification,
-  onCancel
+  onCancel,
 }) => {
   const { theme } = useTheme();
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -234,12 +255,12 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
       'Are you sure you want to cancel this notification?',
       [
         { text: 'No', style: 'cancel' },
-        { 
-          text: 'Yes', 
+        {
+          text: 'Yes',
           style: 'destructive',
-          onPress: () => onCancel(notification.id)
-        }
-      ]
+          onPress: () => onCancel(notification.id),
+        },
+      ],
     );
   };
 
@@ -260,41 +281,62 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
 
   const getCategoryIcon = (category?: string) => {
     switch (category) {
-      case 'assignment': return 'document-text-outline';
-      case 'lecture': return 'school-outline';
-      case 'srs': return 'repeat-outline';
-      case 'reminder': return 'alarm-outline';
-      case 'achievement': return 'trophy-outline';
-      default: return 'notifications-outline';
+      case 'assignment':
+        return 'document-text-outline';
+      case 'lecture':
+        return 'school-outline';
+      case 'srs':
+        return 'repeat-outline';
+      case 'reminder':
+        return 'alarm-outline';
+      case 'achievement':
+        return 'trophy-outline';
+      default:
+        return 'notifications-outline';
     }
   };
 
   const getCategoryColor = (category?: string) => {
     switch (category) {
-      case 'assignment': return '#FF6B6B';
-      case 'lecture': return '#4ECDC4';
-      case 'srs': return '#95E1D3';
-      case 'reminder': return '#FFE66D';
-      case 'achievement': return '#FF9800';
-      default: return '#9E9E9E';
+      case 'assignment':
+        return '#FF6B6B';
+      case 'lecture':
+        return '#4ECDC4';
+      case 'srs':
+        return '#95E1D3';
+      case 'reminder':
+        return '#FFE66D';
+      case 'achievement':
+        return '#FF9800';
+      default:
+        return '#9E9E9E';
     }
   };
 
   return (
-    <View style={[styles.notificationItem, { backgroundColor: theme.card, borderColor: theme.border }]}>
+    <View
+      style={[
+        styles.notificationItem,
+        { backgroundColor: theme.card, borderColor: theme.border },
+      ]}>
       <View style={styles.notificationItemLeft}>
-        <View style={[styles.categoryIcon, { backgroundColor: getCategoryColor(notification.category) }]}>
-          <Ionicons 
-            name={getCategoryIcon(notification.category) as any} 
-            size={20} 
-            color="white" 
+        <View
+          style={[
+            styles.categoryIcon,
+            { backgroundColor: getCategoryColor(notification.category) },
+          ]}>
+          <Ionicons
+            name={getCategoryIcon(notification.category) as any}
+            size={20}
+            color="white"
           />
         </View>
         <View style={styles.notificationContent}>
           <Text style={[styles.notificationTitle, { color: theme.text }]}>
             {notification.title}
           </Text>
-          <Text style={[styles.notificationBody, { color: theme.textSecondary }]}>
+          <Text
+            style={[styles.notificationBody, { color: theme.textSecondary }]}>
             {notification.body}
           </Text>
           <Text style={[styles.notificationTime, { color: theme.accent }]}>
@@ -304,8 +346,7 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
       </View>
       <TouchableOpacity
         style={[styles.cancelButton, { backgroundColor: '#F44336' }]}
-        onPress={handleCancel}
-      >
+        onPress={handleCancel}>
         <Ionicons name="close" size={16} color="white" />
       </TouchableOpacity>
     </View>

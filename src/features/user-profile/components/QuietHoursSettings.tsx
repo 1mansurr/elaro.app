@@ -12,7 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { formatDate } from '@/i18n';
 
 interface QuietHoursSettingsProps {
   onUpdate?: () => void;
@@ -39,7 +40,9 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
     try {
       const { data, error } = await supabase
         .from('notification_preferences')
-        .select('quiet_hours_start, quiet_hours_end, weekend_notifications_enabled')
+        .select(
+          'quiet_hours_start, quiet_hours_end, weekend_notifications_enabled',
+        )
         .eq('user_id', user.id)
         .single();
 
@@ -47,17 +50,19 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
 
       if (data?.quiet_hours_start && data?.quiet_hours_end) {
         setQuietHoursEnabled(true);
-        
+
         // Parse time strings (HH:MM:SS) to Date objects
-        const [startHour, startMin] = data.quiet_hours_start.split(':').map(Number);
+        const [startHour, startMin] = data.quiet_hours_start
+          .split(':')
+          .map(Number);
         const [endHour, endMin] = data.quiet_hours_end.split(':').map(Number);
-        
+
         const startDate = new Date();
         startDate.setHours(startHour, startMin, 0, 0);
-        
+
         const endDate = new Date();
         endDate.setHours(endHour, endMin, 0, 0);
-        
+
         setQuietStart(startDate);
         setQuietEnd(endDate);
       } else {
@@ -66,7 +71,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
         defaultStart.setHours(22, 0, 0, 0); // 10 PM
         const defaultEnd = new Date();
         defaultEnd.setHours(8, 0, 0, 0); // 8 AM
-        
+
         setQuietStart(defaultStart);
         setQuietEnd(defaultEnd);
       }
@@ -105,7 +110,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   };
 
   const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString('en-US', {
+    return formatDate(date, {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true,
@@ -178,29 +183,39 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
           {/* Start Time */}
           <TouchableOpacity
             style={styles.timeButton}
-            onPress={() => setShowStartPicker(true)}
-          >
+            onPress={() => setShowStartPicker(true)}>
             <View style={styles.timeInfo}>
-              <Text style={[styles.timeLabel, { color: theme.text }]}>Start Time</Text>
+              <Text style={[styles.timeLabel, { color: theme.text }]}>
+                Start Time
+              </Text>
               <Text style={[styles.timeValue, { color: theme.primary }]}>
                 {formatTime(quietStart)}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
 
           {/* End Time */}
           <TouchableOpacity
             style={styles.timeButton}
-            onPress={() => setShowEndPicker(true)}
-          >
+            onPress={() => setShowEndPicker(true)}>
             <View style={styles.timeInfo}>
-              <Text style={[styles.timeLabel, { color: theme.text }]}>End Time</Text>
+              <Text style={[styles.timeLabel, { color: theme.text }]}>
+                End Time
+              </Text>
               <Text style={[styles.timeValue, { color: theme.primary }]}>
                 {formatTime(quietEnd)}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={theme.textSecondary}
+            />
           </TouchableOpacity>
 
           {/* Time Pickers */}
@@ -225,10 +240,16 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
           )}
 
           {/* Example */}
-          <View style={[styles.exampleBox, { backgroundColor: theme.background }]}>
-            <Ionicons name="information-circle-outline" size={16} color={theme.textSecondary} />
+          <View
+            style={[styles.exampleBox, { backgroundColor: theme.background }]}>
+            <Ionicons
+              name="information-circle-outline"
+              size={16}
+              color={theme.textSecondary}
+            />
             <Text style={[styles.exampleText, { color: theme.textSecondary }]}>
-              Notifications will be paused from {formatTime(quietStart)} to {formatTime(quietEnd)}
+              Notifications will be paused from {formatTime(quietStart)} to{' '}
+              {formatTime(quietEnd)}
             </Text>
           </View>
         </>
@@ -334,4 +355,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

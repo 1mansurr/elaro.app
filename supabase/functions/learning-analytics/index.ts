@@ -1,9 +1,9 @@
 /**
  * Consolidated Learning Analytics Edge Function
- * 
+ *
  * This function consolidates all learning analytics operations that were previously
  * spread across multiple separate Edge Functions.
- * 
+ *
  * Routes:
  * - GET /learning-analytics/streak - Get user streak information
  * - GET /learning-analytics/performance - Get learning performance metrics
@@ -13,14 +13,21 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from '@supabase/supabase-js';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { wrapOldHandler } from '../api-v2/_handler-utils.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse } from '../_shared/response.ts';
-import { AppError } from '../_shared/response.ts';
+import { createResponse, errorResponse } from '../_shared/response.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 
 // Learning Analytics service class
 class LearningAnalyticsService {
-  constructor(private supabaseClient: any, private user: any) {}
+  constructor(
+    private supabaseClient: any,
+    private user: any,
+  ) {}
 
   async getStreakInfo() {
     // Get study sessions for the last 30 days
@@ -36,17 +43,17 @@ class LearningAnalyticsService {
       .order('session_date', { ascending: true });
 
     if (error) {
-      throw new AppError(error.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(error);
     }
 
     // Calculate current streak
     let currentStreak = 0;
     let longestStreak = 0;
     let tempStreak = 0;
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const sessionDates = sessions.map(s => {
       const date = new Date(s.session_date);
       date.setHours(0, 0, 0, 0);
@@ -62,7 +69,10 @@ class LearningAnalyticsService {
 
     // Calculate longest streak
     for (let i = 0; i < sessionDates.length; i++) {
-      if (i === 0 || sessionDates[i].getTime() - sessionDates[i-1].getTime() === 86400000) {
+      if (
+        i === 0 ||
+        sessionDates[i].getTime() - sessionDates[i - 1].getTime() === 86400000
+      ) {
         tempStreak++;
       } else {
         longestStreak = Math.max(longestStreak, tempStreak);
@@ -75,7 +85,8 @@ class LearningAnalyticsService {
       current_streak: currentStreak,
       longest_streak: longestStreak,
       total_sessions_30_days: sessions.length,
-      last_study_date: sessions.length > 0 ? sessions[sessions.length - 1].session_date : null,
+      last_study_date:
+        sessions.length > 0 ? sessions[sessions.length - 1].session_date : null,
     };
   }
 
@@ -87,7 +98,7 @@ class LearningAnalyticsService {
       .eq('user_id', this.user.id);
 
     if (srsError) {
-      throw new AppError(srsError.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(srsError);
     }
 
     // Get study session data
@@ -98,21 +109,23 @@ class LearningAnalyticsService {
       .is('deleted_at', null);
 
     if (sessionError) {
-      throw new AppError(sessionError.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(sessionError);
     }
 
     // Calculate metrics
     const totalSessions = sessions.length;
     const srsSessions = sessions.filter(s => s.has_spaced_repetition).length;
-    const averageQuality = srsData.length > 0 
-      ? srsData.reduce((sum, s) => sum + s.quality_rating, 0) / srsData.length 
-      : 0;
+    const averageQuality =
+      srsData.length > 0
+        ? srsData.reduce((sum, s) => sum + s.quality_rating, 0) / srsData.length
+        : 0;
     const totalReviews = srsData.reduce((sum, s) => sum + s.review_count, 0);
 
     return {
       total_sessions: totalSessions,
       srs_sessions: srsSessions,
-      srs_adoption_rate: totalSessions > 0 ? (srsSessions / totalSessions) * 100 : 0,
+      srs_adoption_rate:
+        totalSessions > 0 ? (srsSessions / totalSessions) * 100 : 0,
       average_quality_rating: Math.round(averageQuality * 100) / 100,
       total_reviews: totalReviews,
       reviews_per_session: srsSessions > 0 ? totalReviews / srsSessions : 0,
@@ -123,7 +136,8 @@ class LearningAnalyticsService {
     // Get courses with their assignments and study sessions
     const { data: courses, error: courseError } = await this.supabaseClient
       .from('courses')
-      .select(`
+      .select(
+        `
         id,
         course_name,
         course_code,
@@ -137,20 +151,21 @@ class LearningAnalyticsService {
           session_date,
           deleted_at
         )
-      `)
+      `,
+      )
       .eq('user_id', this.user.id)
       .is('deleted_at', null);
 
     if (courseError) {
-      throw new AppError(courseError.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(courseError);
     }
 
     const courseProgress = courses.map(course => {
       const activeAssignments = course.assignments.filter(a => !a.deleted_at);
       const activeSessions = course.study_sessions.filter(s => !s.deleted_at);
-      
-      const upcomingAssignments = activeAssignments.filter(a => 
-        new Date(a.due_date) > new Date()
+
+      const upcomingAssignments = activeAssignments.filter(
+        a => new Date(a.due_date) > new Date(),
       ).length;
 
       const recentSessions = activeSessions.filter(s => {
@@ -168,7 +183,10 @@ class LearningAnalyticsService {
         upcoming_assignments: upcomingAssignments,
         total_sessions: activeSessions.length,
         recent_sessions: recentSessions,
-        activity_score: this.calculateActivityScore(activeSessions, activeAssignments),
+        activity_score: this.calculateActivityScore(
+          activeSessions,
+          activeAssignments,
+        ),
       };
     });
 
@@ -185,7 +203,7 @@ class LearningAnalyticsService {
       .order('session_date', { ascending: false });
 
     if (error) {
-      throw new AppError(error.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(error);
     }
 
     // Calculate time-based analytics
@@ -193,14 +211,20 @@ class LearningAnalyticsService {
     const lastWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const lastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    const weeklySessions = sessions.filter(s => new Date(s.session_date) >= lastWeek).length;
-    const monthlySessions = sessions.filter(s => new Date(s.session_date) >= lastMonth).length;
+    const weeklySessions = sessions.filter(
+      s => new Date(s.session_date) >= lastWeek,
+    ).length;
+    const monthlySessions = sessions.filter(
+      s => new Date(s.session_date) >= lastMonth,
+    ).length;
 
     // Calculate study patterns
-    const studyDays = new Set(sessions.map(s => {
-      const date = new Date(s.session_date);
-      return date.toISOString().split('T')[0];
-    }));
+    const studyDays = new Set(
+      sessions.map(s => {
+        const date = new Date(s.session_date);
+        return date.toISOString().split('T')[0];
+      }),
+    );
 
     const studyPattern = this.analyzeStudyPattern(sessions);
 
@@ -210,7 +234,8 @@ class LearningAnalyticsService {
       monthly_sessions: monthlySessions,
       unique_study_days: studyDays.size,
       study_pattern: studyPattern,
-      average_sessions_per_day: studyDays.size > 0 ? sessions.length / studyDays.size : 0,
+      average_sessions_per_day:
+        studyDays.size > 0 ? sessions.length / studyDays.size : 0,
     };
   }
 
@@ -222,20 +247,23 @@ class LearningAnalyticsService {
       .eq('user_id', this.user.id);
 
     if (error) {
-      throw new AppError(error.message, 500, 'DB_QUERY_ERROR');
+      throw handleDbError(error);
     }
 
     // Calculate retention metrics
     const totalItems = srsData.length;
     const masteredItems = srsData.filter(s => s.quality_rating >= 4).length;
     const strugglingItems = srsData.filter(s => s.quality_rating <= 2).length;
-    
+
     const now = new Date();
-    const dueForReview = srsData.filter(s => new Date(s.next_review_at) <= now).length;
-    
-    const averageReviewCount = totalItems > 0 
-      ? srsData.reduce((sum, s) => sum + s.review_count, 0) / totalItems 
-      : 0;
+    const dueForReview = srsData.filter(
+      s => new Date(s.next_review_at) <= now,
+    ).length;
+
+    const averageReviewCount =
+      totalItems > 0
+        ? srsData.reduce((sum, s) => sum + s.review_count, 0) / totalItems
+        : 0;
 
     return {
       total_items: totalItems,
@@ -256,8 +284,8 @@ class LearningAnalyticsService {
       return sessionDate >= sevenDaysAgo;
     }).length;
 
-    const upcomingAssignments = assignments.filter(a => 
-      new Date(a.due_date) > new Date()
+    const upcomingAssignments = assignments.filter(
+      a => new Date(a.due_date) > new Date(),
     ).length;
 
     // Simple scoring: recent sessions + upcoming assignments
@@ -277,11 +305,11 @@ class LearningAnalyticsService {
       hourCount[hour] = (hourCount[hour] || 0) + 1;
     });
 
-    const mostActiveDay = Object.entries(dayOfWeekCount)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || 0;
-    
-    const mostActiveHour = Object.entries(hourCount)
-      .sort(([,a], [,b]) => b - a)[0]?.[0] || 0;
+    const mostActiveDay =
+      Object.entries(dayOfWeekCount).sort(([, a], [, b]) => b - a)[0]?.[0] || 0;
+
+    const mostActiveHour =
+      Object.entries(hourCount).sort(([, a], [, b]) => b - a)[0]?.[0] || 0;
 
     return {
       most_active_day: mostActiveDay,
@@ -295,15 +323,86 @@ class LearningAnalyticsService {
     if (srsData.length === 0) return 0;
 
     const qualityScores = srsData.map(s => s.quality_rating);
-    const averageQuality = qualityScores.reduce((sum, score) => sum + score, 0) / qualityScores.length;
-    
+    const averageQuality =
+      qualityScores.reduce((sum, score) => sum + score, 0) /
+      qualityScores.length;
+
     // Retention score based on average quality (0-100 scale)
     return Math.round((averageQuality / 5) * 100);
   }
 }
 
-// Main handler
-serve(async (req) => {
+// Handler functions - Use AuthenticatedRequest and LearningAnalyticsService
+async function handleGetStreakInfo(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new LearningAnalyticsService(supabaseClient, user);
+  return await service.getStreakInfo();
+}
+
+async function handleGetPerformanceMetrics(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new LearningAnalyticsService(supabaseClient, user);
+  return await service.getPerformanceMetrics();
+}
+
+async function handleGetCourseProgress(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new LearningAnalyticsService(supabaseClient, user);
+  return await service.getCourseProgress();
+}
+
+async function handleGetStudyTimeAnalytics(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new LearningAnalyticsService(supabaseClient, user);
+  return await service.getStudyTimeAnalytics();
+}
+
+async function handleGetRetentionMetrics(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const service = new LearningAnalyticsService(supabaseClient, user);
+  return await service.getRetentionMetrics();
+}
+
+// Route handlers - All handlers are wrapped with createAuthenticatedHandler
+function getHandler(action: string | null) {
+  const handlers: Record<string, Function> = {
+    streak: wrapOldHandler(
+      handleGetStreakInfo,
+      'analytics-streak',
+      undefined,
+      false,
+    ),
+    performance: wrapOldHandler(
+      handleGetPerformanceMetrics,
+      'analytics-performance',
+      undefined,
+      false,
+    ),
+    progress: wrapOldHandler(
+      handleGetCourseProgress,
+      'analytics-progress',
+      undefined,
+      false,
+    ),
+    'study-time': wrapOldHandler(
+      handleGetStudyTimeAnalytics,
+      'analytics-study-time',
+      undefined,
+      false,
+    ),
+    retention: wrapOldHandler(
+      handleGetRetentionMetrics,
+      'analytics-retention',
+      undefined,
+      false,
+    ),
+  };
+
+  return action ? handlers[action] : undefined;
+}
+
+// Main handler with routing
+serve(async req => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -312,58 +411,37 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
-    const action = pathParts[pathParts.length - 1]; // Get the last part as action
-
-    // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      }
-    );
-
-    // Get authenticated user
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
-    if (authError || !user) {
-      return createResponse({ error: 'Unauthorized' }, 401);
-    }
-
-    // Create learning analytics service
-    const analyticsService = new LearningAnalyticsService(supabaseClient, user);
+    const action = pathParts[pathParts.length - 1];
 
     // Route to appropriate handler
-    switch (action) {
-      case 'streak':
-        const streakInfo = await analyticsService.getStreakInfo();
-        return createResponse({ data: streakInfo }, 200);
-
-      case 'performance':
-        const performance = await analyticsService.getPerformanceMetrics();
-        return createResponse({ data: performance }, 200);
-
-      case 'progress':
-        const progress = await analyticsService.getCourseProgress();
-        return createResponse({ data: progress }, 200);
-
-      case 'study-time':
-        const studyTime = await analyticsService.getStudyTimeAnalytics();
-        return createResponse({ data: studyTime }, 200);
-
-      case 'retention':
-        const retention = await analyticsService.getRetentionMetrics();
-        return createResponse({ data: retention }, 200);
-
-      default:
-        return createResponse({ error: 'Invalid action' }, 404);
+    const handler = getHandler(action);
+    if (!handler) {
+      return errorResponse(
+        new AppError('Invalid action', 404, ERROR_CODES.DB_NOT_FOUND),
+      );
     }
 
+    // Handler is already wrapped with createAuthenticatedHandler, just call it
+    return await handler(req);
   } catch (error) {
-    console.error('Learning analytics error:', error);
-    return createResponse({ 
-      error: error instanceof Error ? error.message : 'Internal server error' 
-    }, 500);
+    const traceContext = extractTraceContext(req);
+    await logger.error(
+      'Learning analytics error',
+      {
+        error: error instanceof Error ? error.message : String(error),
+        url: req.url,
+      },
+      traceContext,
+    );
+    return errorResponse(
+      error instanceof AppError
+        ? error
+        : new AppError(
+            'Internal server error',
+            500,
+            ERROR_CODES.INTERNAL_ERROR,
+          ),
+      500,
+    );
   }
 });

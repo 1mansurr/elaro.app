@@ -7,10 +7,10 @@ import { ThemeType } from '@/contexts/ThemeContext';
  * Reduces theme context re-renders by memoizing style objects
  */
 export const useThemedStyles = <T>(
-  styleFactory: (theme: ThemeType) => T
+  styleFactory: (theme: ThemeType) => T,
 ): T => {
   const { theme } = useTheme();
-  
+
   return useMemo(() => styleFactory(theme), [theme, styleFactory]);
 };
 
@@ -27,9 +27,12 @@ export const useStaticStyles = <T>(styles: T): T => {
  * Use this when you need to apply different styles based on theme state
  */
 export const useConditionalThemedStyles = <T>(
-  styleFactory: (theme: ThemeType, isDark: boolean) => T
+  styleFactory: (theme: ThemeType, isDark: boolean) => T,
 ): T => {
   const { theme, isDark } = useTheme();
-  
-  return useMemo(() => styleFactory(theme, isDark), [theme, isDark, styleFactory]);
+
+  return useMemo(
+    () => styleFactory(theme, isDark),
+    [theme, isDark, styleFactory],
+  );
 };

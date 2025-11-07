@@ -1,12 +1,19 @@
 // FILE: src/components/NextTaskCard.tsx
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Task } from '@/types';
 import { Button } from '@/shared/components';
 import { isTempId } from '@/utils/uuid';
+import { formatDate } from '@/i18n';
 
 interface Props {
   task: Task | null;
@@ -15,12 +22,17 @@ interface Props {
   onViewDetails?: (task: Task) => void; // Add this prop
 }
 
-const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivity, onViewDetails }) => {
+const NextTaskCard: React.FC<Props> = ({
+  task,
+  isGuestMode = false,
+  onAddActivity,
+  onViewDetails,
+}) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const getTaskTime = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return formatDate(date, { hour: '2-digit', minute: '2-digit' });
   };
 
   const handlePress = () => {
@@ -31,56 +43,73 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
   const renderContent = () => {
     if (task) {
       const isPendingSync = isTempId(task.id);
-      const isExample = (task as any).is_example === true;
-      
+      const isExample =
+        'is_example' in task &&
+        (task as Task & { is_example?: boolean }).is_example === true;
+
       return (
         <>
           <View style={styles.typeRow}>
-            <Text style={styles.taskType}>
-              {task.type.replace('_', ' ')}
-            </Text>
+            <Text style={styles.taskType}>{task.type.replace('_', ' ')}</Text>
             <View style={styles.badgeContainer}>
               {/* Example Badge */}
               {isExample && (
                 <View style={styles.exampleBadge}>
-                  <Ionicons name="information-circle" size={14} color="#007AFF" />
+                  <Ionicons
+                    name="information-circle"
+                    size={14}
+                    color="#007AFF"
+                  />
                   <Text style={styles.exampleText}>EXAMPLE</Text>
                 </View>
               )}
               {/* Pending Sync Indicator */}
               {isPendingSync && (
                 <View style={styles.pendingBadge}>
-                  <Ionicons name="cloud-upload-outline" size={14} color="#FF9500" />
+                  <Ionicons
+                    name="cloud-upload-outline"
+                    size={14}
+                    color="#FF9500"
+                  />
                   <Text style={styles.pendingText}>Pending Sync</Text>
                 </View>
               )}
             </View>
           </View>
-          
+
           <Text style={styles.taskName}>{task.name}</Text>
-          
+
           <View style={styles.footer}>
             <Text style={styles.courseName}>{task.courses.courseName}</Text>
             <Text style={styles.time}>{getTaskTime(task.date)}</Text>
           </View>
-          
+
           {/* Start Study Button - for study_session tasks */}
           {task.type === 'study_session' && (
-            <TouchableOpacity 
-              style={styles.startStudyButton} 
+            <TouchableOpacity
+              style={styles.startStudyButton}
               onPress={() => {
-                navigation.navigate('StudySessionReview', { sessionId: task.id });
+                navigation.navigate('StudySessionReview', {
+                  sessionId: task.id,
+                });
               }}
               testID="start-study-button"
-            >
+              accessibilityLabel="Start study session"
+              accessibilityHint={`Opens the study session for ${task.name}`}
+              accessibilityRole="button">
               <Ionicons name="play-circle" size={20} color="#FFFFFF" />
               <Text style={styles.startStudyText}>Start Study</Text>
             </TouchableOpacity>
           )}
-          
+
           {/* View Details Button */}
           {onViewDetails && (
-            <TouchableOpacity style={styles.viewDetailsButton} onPress={() => onViewDetails(task)}>
+            <TouchableOpacity
+              style={styles.viewDetailsButton}
+              onPress={() => onViewDetails(task)}
+              accessibilityLabel="View task details"
+              accessibilityHint={`Shows detailed information about ${task.name}`}
+              accessibilityRole="button">
               <Text style={styles.viewDetailsText}>View Details</Text>
               <Ionicons name="chevron-forward" size={16} color="#2C5EFF" />
             </TouchableOpacity>
@@ -92,9 +121,7 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
     if (isGuestMode) {
       return (
         <View style={styles.guestContainer}>
-          <Text style={styles.noTaskText}>
-            You have no upcoming activities
-          </Text>
+          <Text style={styles.noTaskText}>You have no upcoming activities</Text>
           <Button
             title="Add Your First Activity"
             onPress={onAddActivity || (() => {})}
@@ -114,7 +141,7 @@ const NextTaskCard: React.FC<Props> = ({ task, isGuestMode = false, onAddActivit
   return (
     <View style={styles.card}>
       <Text style={styles.header}>What&apos;s Next</Text>
-      
+
       {renderContent()}
     </View>
   );

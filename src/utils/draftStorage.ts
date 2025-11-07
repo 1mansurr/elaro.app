@@ -27,7 +27,10 @@ const DRAFT_KEY_PREFIX = '@draft_';
 /**
  * Save a draft for a specific task type
  */
-export async function saveDraft(taskType: DraftType, data: Partial<DraftData>): Promise<void> {
+export async function saveDraft(
+  taskType: DraftType,
+  data: Partial<DraftData>,
+): Promise<void> {
   try {
     const draft: DraftData = {
       ...data,
@@ -53,11 +56,11 @@ export async function getDraft(taskType: DraftType): Promise<DraftData | null> {
   try {
     const key = `${DRAFT_KEY_PREFIX}${taskType}`;
     const draftJson = await AsyncStorage.getItem(key);
-    
+
     if (!draftJson) return null;
 
     const draft = JSON.parse(draftJson) as DraftData;
-    
+
     // Convert string dates back to Date objects
     if (draft.dateTime) {
       draft.dateTime = new Date(draft.dateTime);
@@ -94,11 +97,11 @@ export async function getAllDrafts(): Promise<DraftData[]> {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const draftKeys = keys.filter(key => key.startsWith(DRAFT_KEY_PREFIX));
-    
+
     if (draftKeys.length === 0) return [];
 
     const drafts = await AsyncStorage.multiGet(draftKeys);
-    
+
     return drafts
       .map(([_, value]) => {
         if (!value) return null;
@@ -117,7 +120,9 @@ export async function getAllDrafts(): Promise<DraftData[]> {
         }
       })
       .filter((draft): draft is DraftData => draft !== null)
-      .sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime());
+      .sort(
+        (a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime(),
+      );
   } catch (error) {
     console.error('Error getting all drafts:', error);
     return [];
@@ -145,7 +150,7 @@ export async function clearAllDrafts(): Promise<void> {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const draftKeys = keys.filter(key => key.startsWith(DRAFT_KEY_PREFIX));
-    
+
     if (draftKeys.length > 0) {
       await AsyncStorage.multiRemove(draftKeys);
       console.log(`🗑️ Cleared ${draftKeys.length} drafts`);
@@ -154,4 +159,3 @@ export async function clearAllDrafts(): Promise<void> {
     console.error('Error clearing all drafts:', error);
   }
 }
-

@@ -1,24 +1,31 @@
 # Color Migration Guide
 
 ## Overview
+
 This guide explains how to migrate hardcoded colors to theme colors in ELARO for consistent light/dark mode support.
 
 ## Quick Start
 
 - Dry run
+
 ```bash
 npm run migrate-colors:dry
 ```
+
 - Apply fixes
+
 ```bash
 npm run migrate-colors:fix
 ```
+
 - Show statistics
+
 ```bash
 npm run migrate-colors:stats
 ```
 
 ## Mapped Colors (examples)
+
 - `#007AFF` → `COLORS.primary`
 - `#FFFFFF` → `COLORS.white`
 - `#333333` → `COLORS.textPrimary`
@@ -29,25 +36,33 @@ npm run migrate-colors:stats
 - `#f8f9fa` → `COLORS.backgroundSecondary`
 
 ## Manual Fix Patterns
+
 Before:
+
 ```ts
-color: '#333333'
+color: '#333333';
 ```
+
 After:
+
 ```ts
-color: COLORS.textPrimary
+color: COLORS.textPrimary;
 ```
 
 Before:
+
 ```ts
-backgroundColor: '#FFFFFF'
+backgroundColor: '#FFFFFF';
 ```
+
 After:
+
 ```ts
-backgroundColor: COLORS.white
+backgroundColor: COLORS.white;
 ```
 
 ## Theme-aware Usage
+
 ```ts
 const { theme } = useTheme();
 <View style={{ backgroundColor: theme.background }} />
@@ -55,9 +70,10 @@ const { theme } = useTheme();
 ```
 
 ## Troubleshooting
+
 - Shadow colors: keep `shadowOpacity`/`shadowRadius`, replace `#000` with `COLORS.black`.
 - Unmapped colors: add to mappings in `src/utils/colorMigration.ts`.
 
 ---
-Status: Ready
 
+Status: Ready

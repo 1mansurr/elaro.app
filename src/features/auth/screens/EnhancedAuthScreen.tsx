@@ -12,7 +12,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Factor } from '@supabase/supabase-js';
 import MFAVerificationScreen from './MFAVerificationScreen';
@@ -38,12 +38,15 @@ export default function EnhancedAuthScreen({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
-  
+
   // MFA state
   const [showMFAVerification, setShowMFAVerification] = useState(false);
   const [mfaFactors, setMfaFactors] = useState<Factor[]>([]);
-  const [loginCredentials, setLoginCredentials] = useState({ email: '', password: '' });
-  
+  const [loginCredentials, setLoginCredentials] = useState({
+    email: '',
+    password: '',
+  });
+
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
 
@@ -67,11 +70,13 @@ export default function EnhancedAuthScreen({
   };
 
   const isPasswordValid = () => {
-    return password.length >= 8 &&
-           passwordChecks.hasLowercase &&
-           passwordChecks.hasUppercase &&
-           passwordChecks.hasNumber &&
-           passwordChecks.hasSpecialChar;
+    return (
+      password.length >= 8 &&
+      passwordChecks.hasLowercase &&
+      passwordChecks.hasUppercase &&
+      passwordChecks.hasNumber &&
+      passwordChecks.hasSpecialChar
+    );
   };
 
   const handleAuth = async () => {
@@ -79,7 +84,7 @@ export default function EnhancedAuthScreen({
       Alert.alert('Missing Fields', 'Please fill in all required fields.');
       return;
     }
-    
+
     if (currentMode === 'signup') {
       if (!firstName.trim()) {
         Alert.alert('First Name is required for sign up.');
@@ -92,60 +97,70 @@ export default function EnhancedAuthScreen({
         );
         return;
       }
-      
+
       // Check if password meets all requirements
       if (!isPasswordValid()) {
         Alert.alert(
           'Password Requirements Not Met',
-          'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)'
+          'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)',
         );
         return;
       }
     }
-    
+
     setLoading(true);
     try {
       if (currentMode === 'signup') {
-        const { error } = await signUp({ 
-          email, 
-          password, 
-          firstName: firstName.trim(), 
-          lastName: lastName.trim() 
+        const { error } = await signUp({
+          email,
+          password,
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
         });
-        
+
         if (error) {
           // Enhanced error handling
           let errorMessage = error.message;
           let errorTitle = 'Authentication Failed';
-          
-          if (errorMessage.includes('Password should contain') || 
-              errorMessage.includes('password') && errorMessage.includes('weak') ||
-              errorMessage.includes('Password is too weak') ||
-              errorMessage.includes('password strength')) {
+
+          if (
+            errorMessage.includes('Password should contain') ||
+            (errorMessage.includes('password') &&
+              errorMessage.includes('weak')) ||
+            errorMessage.includes('Password is too weak') ||
+            errorMessage.includes('password strength')
+          ) {
             errorTitle = 'Password Requirements Not Met';
-            errorMessage = 'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
+            errorMessage =
+              'Your password must meet all requirements:\n• At least 8 characters\n• At least one lowercase letter (a-z)\n• At least one uppercase letter (A-Z)\n• At least one number (0-9)\n• At least one special character (!@#$%...)';
           } else if (errorMessage.includes('User already registered')) {
             errorTitle = 'Account Already Exists';
-            errorMessage = 'An account with this email already exists. Please sign in instead.';
+            errorMessage =
+              'An account with this email already exists. Please sign in instead.';
           }
-          
+
           Alert.alert(errorTitle, errorMessage);
         } else {
+          Alert.alert(
+            'Verify your email',
+            'We sent a confirmation link to your email. You can continue using the app once verified.',
+          );
           onAuthSuccess?.();
         }
       } else {
         // Handle sign in with potential MFA
         const result = await signIn({ email, password });
-        
+
         if (result.error) {
           let errorMessage = result.error.message;
           let errorTitle = 'Authentication Failed';
-          
+
           if (errorMessage.includes('Invalid login credentials')) {
             errorTitle = 'Invalid Credentials';
-            errorMessage = 'The email or password you entered is incorrect. Please try again.';
+            errorMessage =
+              'The email or password you entered is incorrect. Please try again.';
           }
-          
+
           Alert.alert(errorTitle, errorMessage);
         } else if (result.requiresMFA && result.factors) {
           // Store credentials and show MFA verification
@@ -194,20 +209,18 @@ export default function EnhancedAuthScreen({
   }
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>
             {currentMode === 'signup' ? 'Create Account' : 'Sign In'}
           </Text>
           <Text style={styles.subtitle}>
-            {currentMode === 'signup' 
-              ? 'Join ELARO to organize your studies' 
-              : 'Welcome back to ELARO'
-            }
+            {currentMode === 'signup'
+              ? 'Join ELARO to organize your studies'
+              : 'Welcome back to ELARO'}
           </Text>
         </View>
 
@@ -267,12 +280,11 @@ export default function EnhancedAuthScreen({
               />
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}
-              >
-                <Ionicons 
-                  name={showPassword ? "eye-off-outline" : "eye-outline"} 
-                  size={20} 
-                  color="#666" 
+                style={styles.eyeIcon}>
+                <Ionicons
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                  size={20}
+                  color="#666"
                 />
               </TouchableOpacity>
             </View>
@@ -282,54 +294,110 @@ export default function EnhancedAuthScreen({
           {currentMode === 'signup' && password.length > 0 && (
             <>
               <View style={styles.passwordRequirements}>
-                <Text style={styles.passwordRequirementsTitle}>Password Requirements:</Text>
+                <Text style={styles.passwordRequirementsTitle}>
+                  Password Requirements:
+                </Text>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={password.length >= 8 ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={password.length >= 8 ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      password.length >= 8 ? 'checkmark-circle' : 'close-circle'
+                    }
+                    size={16}
+                    color={password.length >= 8 ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[styles.requirementText, { color: password.length >= 8 ? "#34C759" : "#FF3B30" }]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      { color: password.length >= 8 ? '#34C759' : '#FF3B30' },
+                    ]}>
                     At least 8 characters
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasLowercase ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasLowercase ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasLowercase
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasLowercase ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[styles.requirementText, { color: passwordChecks.hasLowercase ? "#34C759" : "#FF3B30" }]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasLowercase
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one lowercase letter (a-z)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasUppercase ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasUppercase ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasUppercase
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasUppercase ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[styles.requirementText, { color: passwordChecks.hasUppercase ? "#34C759" : "#FF3B30" }]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasUppercase
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one uppercase letter (A-Z)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasNumber ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasNumber ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasNumber
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={passwordChecks.hasNumber ? '#34C759' : '#FF3B30'}
                   />
-                  <Text style={[styles.requirementText, { color: passwordChecks.hasNumber ? "#34C759" : "#FF3B30" }]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasNumber ? '#34C759' : '#FF3B30',
+                      },
+                    ]}>
                     At least one number (0-9)
                   </Text>
                 </View>
                 <View style={styles.requirementItem}>
-                  <Ionicons 
-                    name={passwordChecks.hasSpecialChar ? "checkmark-circle" : "close-circle"} 
-                    size={16} 
-                    color={passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30"} 
+                  <Ionicons
+                    name={
+                      passwordChecks.hasSpecialChar
+                        ? 'checkmark-circle'
+                        : 'close-circle'
+                    }
+                    size={16}
+                    color={
+                      passwordChecks.hasSpecialChar ? '#34C759' : '#FF3B30'
+                    }
                   />
-                  <Text style={[styles.requirementText, { color: passwordChecks.hasSpecialChar ? "#34C759" : "#FF3B30" }]}>
+                  <Text
+                    style={[
+                      styles.requirementText,
+                      {
+                        color: passwordChecks.hasSpecialChar
+                          ? '#34C759'
+                          : '#FF3B30',
+                      },
+                    ]}>
                     At least one special character (!@#$%...)
                   </Text>
                 </View>
@@ -337,14 +405,17 @@ export default function EnhancedAuthScreen({
 
               {/* Password Strength Bar */}
               <View style={styles.strengthContainer}>
-                <View 
+                <View
                   style={[
-                    styles.strengthBar, 
-                    { 
-                      width: `${passwordStrength * 20}%`, 
-                      backgroundColor: ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][passwordStrength - 1] || '#E0E0E0' 
-                    }
-                  ]} 
+                    styles.strengthBar,
+                    {
+                      width: `${passwordStrength * 20}%`,
+                      backgroundColor:
+                        ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759'][
+                          passwordStrength - 1
+                        ] || '#E0E0E0',
+                    },
+                  ]}
                 />
               </View>
             </>
@@ -354,15 +425,17 @@ export default function EnhancedAuthScreen({
             <View style={styles.termsContainer}>
               <TouchableOpacity
                 style={styles.checkboxContainer}
-                onPress={() => setAgreedToTerms(!agreedToTerms)}
-              >
-                <View style={[styles.checkbox, agreedToTerms && styles.checkboxChecked]}>
+                onPress={() => setAgreedToTerms(!agreedToTerms)}>
+                <View
+                  style={[
+                    styles.checkbox,
+                    agreedToTerms && styles.checkboxChecked,
+                  ]}>
                   {agreedToTerms && <Text style={styles.checkmark}>✓</Text>}
                 </View>
                 <Text style={styles.termsText}>
                   I agree to the{' '}
-                  <Text style={styles.link}>Terms of Service</Text>
-                  {' '}and{' '}
+                  <Text style={styles.link}>Terms of Service</Text> and{' '}
                   <Text style={styles.link}>Privacy Policy</Text>
                 </Text>
               </TouchableOpacity>
@@ -371,12 +444,14 @@ export default function EnhancedAuthScreen({
 
           <TouchableOpacity
             style={[
-              styles.authButton, 
-              (loading || (currentMode === 'signup' && !isPasswordValid())) && styles.disabledButton
+              styles.authButton,
+              (loading || (currentMode === 'signup' && !isPasswordValid())) &&
+                styles.disabledButton,
             ]}
             onPress={handleAuth}
-            disabled={loading || (currentMode === 'signup' && !isPasswordValid())}
-          >
+            disabled={
+              loading || (currentMode === 'signup' && !isPasswordValid())
+            }>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -388,14 +463,14 @@ export default function EnhancedAuthScreen({
 
           <TouchableOpacity
             style={styles.switchModeButton}
-            onPress={() => setCurrentMode(currentMode === 'signup' ? 'signin' : 'signup')}
-            disabled={loading}
-          >
+            onPress={() =>
+              setCurrentMode(currentMode === 'signup' ? 'signin' : 'signup')
+            }
+            disabled={loading}>
             <Text style={styles.switchModeText}>
-              {currentMode === 'signup' 
-                ? 'Already have an account? Sign In' 
-                : 'Need an account? Sign Up'
-              }
+              {currentMode === 'signup'
+                ? 'Already have an account? Sign In'
+                : 'Need an account? Sign Up'}
             </Text>
           </TouchableOpacity>
         </View>

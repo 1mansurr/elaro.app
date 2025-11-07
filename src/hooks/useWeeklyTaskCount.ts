@@ -1,6 +1,10 @@
 import { useMemo } from 'react';
-import { useAssignments, useLectures, useStudySessions } from './useDataQueries';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import {
+  useAssignments,
+  useLectures,
+  useStudySessions,
+} from './useDataQueries';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MONTHLY_TASK_LIMITS = {
   free: 15,
@@ -9,9 +13,11 @@ const MONTHLY_TASK_LIMITS = {
 
 export const useMonthlyTaskCount = () => {
   const { user } = useAuth();
-  const { data: assignments = [], isLoading: isLoadingAssignments } = useAssignments();
+  const { data: assignments = [], isLoading: isLoadingAssignments } =
+    useAssignments();
   const { data: lectures = [], isLoading: isLoadingLectures } = useLectures();
-  const { data: studySessions = [], isLoading: isLoadingStudySessions } = useStudySessions();
+  const { data: studySessions = [], isLoading: isLoadingStudySessions } =
+    useStudySessions();
 
   const monthlyTaskCount = useMemo(() => {
     const oneMonthAgo = new Date();
@@ -28,7 +34,8 @@ export const useMonthlyTaskCount = () => {
   }, [assignments, lectures, studySessions]);
 
   const userTier = user?.subscription_tier || 'free';
-  const monthlyLimit = MONTHLY_TASK_LIMITS[userTier] || MONTHLY_TASK_LIMITS.free;
+  const monthlyLimit =
+    MONTHLY_TASK_LIMITS[userTier] || MONTHLY_TASK_LIMITS.free;
   const isPremium = userTier !== 'free';
   const limitReached = !isPremium && monthlyTaskCount >= monthlyLimit;
 
@@ -37,7 +44,8 @@ export const useMonthlyTaskCount = () => {
     monthlyLimit,
     isPremium,
     limitReached,
-    isLoading: isLoadingAssignments || isLoadingLectures || isLoadingStudySessions,
+    isLoading:
+      isLoadingAssignments || isLoadingLectures || isLoadingStudySessions,
   };
 };
 

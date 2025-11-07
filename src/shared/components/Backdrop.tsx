@@ -8,21 +8,17 @@ interface BackdropProps {
   opacity?: Animated.Value;
 }
 
-export const Backdrop: React.FC<BackdropProps> = ({ 
-  isVisible, 
-  onPress, 
-  opacity 
+export const Backdrop: React.FC<BackdropProps> = ({
+  isVisible,
+  onPress,
+  opacity,
 }) => {
   if (!isVisible) return null;
 
   return (
     <TouchableWithoutFeedback onPress={onPress}>
       <Animated.View style={[styles.backdrop, { opacity: opacity || 1 }]}>
-        <BlurView
-          intensity={40}
-          tint="dark"
-          style={StyleSheet.absoluteFill}
-        />
+        <BlurView intensity={40} tint="dark" style={StyleSheet.absoluteFill} />
       </Animated.View>
     </TouchableWithoutFeedback>
   );

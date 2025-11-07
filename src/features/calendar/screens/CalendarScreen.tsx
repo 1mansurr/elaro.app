@@ -1,9 +1,17 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, FlatList, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  FlatList,
+  ScrollView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Calendar, DateData } from 'react-native-calendars';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useCalendarTasksWithLockState } from '../hooks/useCalendarTasksWithLockState';
 import { useCalendarData, useCalendarMonthData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -11,13 +19,28 @@ import { Task, RootStackParamList } from '@/types';
 import { WeekStrip, Timeline, WeekGridView } from '../components';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { QueryStateWrapper } from '@/shared/components';
-import { startOfWeek, isSameDay, format, addDays, subDays, startOfMonth, endOfMonth } from 'date-fns';
+import {
+  startOfWeek,
+  isSameDay,
+  format,
+  addDays,
+  subDays,
+  startOfMonth,
+  endOfMonth,
+} from 'date-fns';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useDeleteTask, useCompleteTask, useRestoreTask } from '@/hooks/useTaskMutations';
+import {
+  useDeleteTask,
+  useCompleteTask,
+  useRestoreTask,
+} from '@/hooks/useTaskMutations';
 import { useToast } from '@/contexts/ToastContext';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
+import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
+import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
+import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 type ViewMode = 'month' | 'week' | 'agenda';
@@ -30,38 +53,75 @@ const CalendarScreen = () => {
 
   // const { offerings, purchasePackage } = useSubscription();
   const { purchasePackage } = useSubscription();
-  
+
   // Mock offerings for now
-  const offerings = { current: null as any };
-  
+  const offerings = { current: null as PurchasesOffering | null };
+
   // Mutations for task actions
   const deleteTaskMutation = useDeleteTask();
   const completeTaskMutation = useCompleteTask();
   const restoreTaskMutation = useRestoreTask();
   const { showToast } = useToast();
 
+  // JS Thread monitoring (dev only)
+  const jsThreadMetrics = useJSThreadMonitor({
+    enabled: __DEV__,
+    logSlowFrames: true,
+    slowFrameThreshold: 20,
+  });
+
+  // Memory monitoring (dev only)
+  useMemoryMonitor(__DEV__, 50, 30000); // 50% threshold, check every 30s
+
+  // Log warnings in dev if too many slow frames
+  React.useEffect(() => {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+      console.warn(
+        `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+      );
+    }
+  }, [jsThreadMetrics.slowFrameCount, jsThreadMetrics.averageFrameTime]);
+
   // View mode state
   const [viewMode, setViewMode] = useState<ViewMode>('agenda');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [currentWeekStart, setCurrentWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [currentWeekStart, setCurrentWeekStart] = useState(
+    startOfWeek(new Date(), { weekStartsOn: 1 }),
+  );
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const scrollLock = useRef({ top: false, bottom: false });
 
   // Fetch data based on view mode
   const currentMonth = selectedDate.getMonth();
   const currentYear = selectedDate.getFullYear();
-  
-  const { data: weekCalendarData, isLoading: isLoadingWeek, isError: isErrorWeek, error: errorWeek, refetch: refetchWeek, isRefetching: isRefetchingWeek } = useCalendarData(currentDate);
-  const { data: monthCalendarData, isLoading: isLoadingMonth, isError: isErrorMonth, error: errorMonth, refetch: refetchMonth, isRefetching: isRefetchingMonth } = useCalendarMonthData(currentYear, currentMonth);
+
+  const {
+    data: weekCalendarData,
+    isLoading: isLoadingWeek,
+    isError: isErrorWeek,
+    error: errorWeek,
+    refetch: refetchWeek,
+    isRefetching: isRefetchingWeek,
+  } = useCalendarData(currentDate);
+  const {
+    data: monthCalendarData,
+    isLoading: isLoadingMonth,
+    isError: isErrorMonth,
+    error: errorMonth,
+    refetch: refetchMonth,
+    isRefetching: isRefetchingMonth,
+  } = useCalendarMonthData(currentYear, currentMonth);
 
   // Select appropriate data based on view mode
-  const calendarData = viewMode === 'month' ? monthCalendarData : weekCalendarData;
+  const calendarData =
+    viewMode === 'month' ? monthCalendarData : weekCalendarData;
   const isLoading = viewMode === 'month' ? isLoadingMonth : isLoadingWeek;
   const isError = viewMode === 'month' ? isErrorMonth : isErrorWeek;
   const error = viewMode === 'month' ? errorMonth : errorWeek;
   const refetch = viewMode === 'month' ? refetchMonth : refetchWeek;
-  const isRefetching = viewMode === 'month' ? isRefetchingMonth : isRefetchingWeek;
+  const isRefetching =
+    viewMode === 'month' ? isRefetchingMonth : isRefetchingWeek;
 
   // Get all tasks for the week (for week grid view)
   const weekTasks = useMemo(() => {
@@ -69,16 +129,19 @@ const CalendarScreen = () => {
     return Object.values(calendarData).flat();
   }, [calendarData]);
 
-  const handleDateSelect = useCallback((newDate: Date) => {
-    if (isGuest) return;
-    
-    const newWeekStart = startOfWeek(newDate, { weekStartsOn: 1 });
-    if (!isSameDay(newWeekStart, currentWeekStart)) {
-      setCurrentWeekStart(newWeekStart);
-      setCurrentDate(newWeekStart);
-    }
-    setSelectedDate(newDate);
-  }, [isGuest, currentWeekStart]);
+  const handleDateSelect = useCallback(
+    (newDate: Date) => {
+      if (isGuest) return;
+
+      const newWeekStart = startOfWeek(newDate, { weekStartsOn: 1 });
+      if (!isSameDay(newWeekStart, currentWeekStart)) {
+        setCurrentWeekStart(newWeekStart);
+        setCurrentDate(newWeekStart);
+      }
+      setSelectedDate(newDate);
+    },
+    [isGuest, currentWeekStart],
+  );
 
   const handleMonthDayPress = useCallback((day: DateData) => {
     const newDate = new Date(day.year, day.month - 1, day.day);
@@ -102,8 +165,11 @@ const CalendarScreen = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-    
-    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
+
+    let modalName:
+      | 'AddLectureFlow'
+      | 'AddAssignmentFlow'
+      | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
         modalName = 'AddLectureFlow';
@@ -118,23 +184,23 @@ const CalendarScreen = () => {
         Alert.alert('Error', 'Cannot edit this type of task.');
         return;
     }
-    
+
     handleCloseSheet();
-    navigation.navigate(modalName, { 
-      initialData: { taskToEdit: selectedTask } 
+    navigation.navigate(modalName, {
+      initialData: { taskToEdit: selectedTask },
     });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       await completeTaskMutation.mutateAsync({
         taskId: selectedTask.id,
         taskType: selectedTask.type,
         taskTitle: selectedTask.name || selectedTask.title || 'Untitled Task',
       });
-      
+
       Alert.alert('Success', 'Task marked as complete!');
       handleCloseSheet();
     } catch (error) {
@@ -144,22 +210,22 @@ const CalendarScreen = () => {
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     handleCloseSheet();
-    
+
     const taskInfo = {
       id: selectedTask.id,
       type: selectedTask.type,
       title: selectedTask.name || selectedTask.title,
     };
-    
+
     try {
       await deleteTaskMutation.mutateAsync({
         taskId: taskInfo.id,
         taskType: taskInfo.type,
         taskTitle: taskInfo.title || 'Untitled Task',
       });
-      
+
       showToast({
         message: `${taskInfo.title} moved to Recycle Bin`,
         onUndo: async () => {
@@ -178,35 +244,55 @@ const CalendarScreen = () => {
     } catch (error) {
       console.error('Error deleting task:', error);
     }
-  }, [selectedTask, deleteTaskMutation, restoreTaskMutation, showToast, handleCloseSheet]);
+  }, [
+    selectedTask,
+    deleteTaskMutation,
+    restoreTaskMutation,
+    showToast,
+    handleCloseSheet,
+  ]);
 
-  const handleScroll = useCallback((event: any) => {
-    const { layoutMeasurement, contentOffset, contentSize } = event.nativeEvent;
-    const isAtTop = contentOffset.y <= 0;
-    const isAtBottom = layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
+  const handleScroll = useCallback(
+    (event: {
+      nativeEvent: {
+        layoutMeasurement: { height: number };
+        contentOffset: { y: number };
+        contentSize: { height: number };
+      };
+    }) => {
+      const { layoutMeasurement, contentOffset, contentSize } =
+        event.nativeEvent;
+      const isAtTop = contentOffset.y <= 0;
+      const isAtBottom =
+        layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;
 
-    if (isAtTop && !scrollLock.current.top) {
-      scrollLock.current.top = true;
-      handleDateSelect(subDays(selectedDate, 1));
-    } else if (!isAtTop) {
-      scrollLock.current.top = false;
-    }
+      if (isAtTop && !scrollLock.current.top) {
+        scrollLock.current.top = true;
+        handleDateSelect(subDays(selectedDate, 1));
+      } else if (!isAtTop) {
+        scrollLock.current.top = false;
+      }
 
-    if (isAtBottom && !scrollLock.current.bottom) {
-      scrollLock.current.bottom = true;
-      handleDateSelect(addDays(selectedDate, 1));
-    } else if (!isAtBottom) {
-      scrollLock.current.bottom = false;
-    }
-  }, [selectedDate, handleDateSelect]);
+      if (isAtBottom && !scrollLock.current.bottom) {
+        scrollLock.current.bottom = true;
+        handleDateSelect(addDays(selectedDate, 1));
+      } else if (!isAtBottom) {
+        scrollLock.current.bottom = false;
+      }
+    },
+    [selectedDate, handleDateSelect],
+  );
 
-  const { tasksWithLockState, isLoading: isLockStateLoading } = useCalendarTasksWithLockState(calendarData, user);
+  const { tasksWithLockState, isLoading: isLockStateLoading } =
+    useCalendarTasksWithLockState(calendarData, user);
 
   const tasksForSelectedDay = useMemo(() => {
     if (isGuest) return [];
-    
+
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    const tasksOnDay = tasksWithLockState.filter(task => format(new Date(task.date), 'yyyy-MM-dd') === dateKey);
+    const tasksOnDay = tasksWithLockState.filter(
+      task => format(new Date(task.date), 'yyyy-MM-dd') === dateKey,
+    );
     return tasksOnDay;
   }, [selectedDate, tasksWithLockState, isGuest]);
 
@@ -214,7 +300,15 @@ const CalendarScreen = () => {
   const markedDates = useMemo(() => {
     if (viewMode !== 'month' || !calendarData) return {};
 
-    const marked: any = {};
+    const marked: Record<
+      string,
+      {
+        marked?: boolean;
+        dots?: Array<{ color: string }>;
+        selected?: boolean;
+        selectedColor?: string;
+      }
+    > = {};
     const allTasks = Object.values(calendarData).flat();
 
     allTasks.forEach(task => {
@@ -225,13 +319,15 @@ const CalendarScreen = () => {
           dots: [],
         };
       }
-      
+
       // Add color-coded dots based on task type
-      const dotColor = 
-        task.type === 'lecture' ? COLORS.primary :
-        task.type === 'assignment' ? '#FF9500' :
-        '#34C759'; // study_session
-      
+      const dotColor =
+        task.type === 'lecture'
+          ? COLORS.primary
+          : task.type === 'assignment'
+            ? '#FF9500'
+            : '#34C759'; // study_session
+
       if (marked[dateKey].dots.length < 3) {
         marked[dateKey].dots.push({ color: dotColor });
       }
@@ -254,83 +350,123 @@ const CalendarScreen = () => {
 
   const handleUpgrade = useCallback(async () => {
     if (!offerings?.current) {
-      Alert.alert('Error', 'Subscription offerings are not available at the moment.');
+      Alert.alert(
+        'Error',
+        'Subscription offerings are not available at the moment.',
+      );
       return;
     }
     try {
-      const oddityPackage = offerings.current.availablePackages.find((pkg: any) => pkg.identifier === 'oddity_monthly');
+      const oddityPackage = offerings.current.availablePackages.find(
+        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
+      );
       if (!oddityPackage) {
         Alert.alert('Error', 'The Oddity plan is not available.');
         return;
       }
       await purchasePackage(oddityPackage);
-      Alert.alert('Success!', 'You have successfully become an Oddity. Your locked content is now accessible.');
+      Alert.alert(
+        'Success!',
+        'You have successfully become an Oddity. Your locked content is now accessible.',
+      );
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
       await queryClient.invalidateQueries({ queryKey: ['calendarMonthData'] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Upgrade error:', error);
-      if (!error?.userCancelled) {
-        const errorTitle = getErrorTitle(error);
-        const errorMessage = mapErrorCodeToMessage(error);
+      const err = error as {
+        userCancelled?: boolean;
+        message?: string;
+        code?: string;
+      };
+      if (!err?.userCancelled) {
+        const errorTitle = getErrorTitle(err);
+        const errorMessage = mapErrorCodeToMessage(err);
         Alert.alert(errorTitle, errorMessage);
       }
     }
   }, [offerings, purchasePackage, queryClient]);
 
-  const handleLockedTaskPress = useCallback((task: Task) => {
-    const taskTypeName = task.type === 'study_session' ? 'study sessions' : `${task.type}s`;
-    
-    Alert.alert(
-      '🔒 Locked Content',
-      `This ${task.type.replace('_', ' ')} is locked. Become an Oddity to access all your ${taskTypeName}.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Become an Oddity', onPress: handleUpgrade }
-      ]
-    );
-  }, [handleUpgrade]);
+  const handleLockedTaskPress = useCallback(
+    (task: Task) => {
+      const taskTypeName =
+        task.type === 'study_session' ? 'study sessions' : `${task.type}s`;
 
-  const renderTaskItem = useCallback(({ item }: { item: Task }) => {
-    const taskTime = format(new Date(item.date), 'h:mm a');
-    const isLocked = item.isLocked;
-    const isExample = (item as any).is_example === true;
-    
-    return (
-      <TouchableOpacity
-        style={[styles.taskItem, isLocked && styles.taskItemLocked]}
-        onPress={() => isLocked ? handleLockedTaskPress(item) : handleTaskPress(item)}
-      >
-        <View style={styles.taskItemContent}>
-          <View style={[styles.taskTypeBadge, { backgroundColor: getTaskColor(item.type) }]}>
-            <Text style={styles.taskTypeBadgeText}>
-              {item.type === 'study_session' ? 'Study' : item.type}
-            </Text>
-          </View>
-          <View style={styles.taskItemDetails}>
-            <View style={styles.taskTitleRow}>
-              <Text style={[styles.taskItemTitle, isLocked && styles.taskItemTitleLocked]} numberOfLines={2}>
-                {item.name || item.title}
+      Alert.alert(
+        '🔒 Locked Content',
+        `This ${task.type.replace('_', ' ')} is locked. Become an Oddity to access all your ${taskTypeName}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Become an Oddity', onPress: handleUpgrade },
+        ],
+      );
+    },
+    [handleUpgrade],
+  );
+
+  const renderTaskItem = useCallback(
+    ({ item }: { item: Task }) => {
+      const taskTime = format(new Date(item.date), 'h:mm a');
+      const isLocked = item.isLocked;
+      const isExample =
+        'is_example' in item &&
+        (item as Task & { is_example?: boolean }).is_example === true;
+
+      return (
+        <TouchableOpacity
+          style={[styles.taskItem, isLocked && styles.taskItemLocked]}
+          onPress={() =>
+            isLocked ? handleLockedTaskPress(item) : handleTaskPress(item)
+          }
+          accessibilityLabel={`${item.name || item.title}, ${item.type}, ${taskTime}`}
+          accessibilityHint={
+            isLocked
+              ? 'This task is locked. Upgrade to access.'
+              : 'Opens task details'
+          }
+          accessibilityRole="button"
+          accessibilityState={{ disabled: isLocked }}>
+          <View style={styles.taskItemContent}>
+            <View
+              style={[
+                styles.taskTypeBadge,
+                { backgroundColor: getTaskColor(item.type) },
+              ]}>
+              <Text style={styles.taskTypeBadgeText}>
+                {item.type === 'study_session' ? 'Study' : item.type}
               </Text>
-              {isExample && (
-                <View style={styles.exampleBadgeSmall}>
-                  <Text style={styles.exampleBadgeText}>EXAMPLE</Text>
-                </View>
+            </View>
+            <View style={styles.taskItemDetails}>
+              <View style={styles.taskTitleRow}>
+                <Text
+                  style={[
+                    styles.taskItemTitle,
+                    isLocked && styles.taskItemTitleLocked,
+                  ]}
+                  numberOfLines={2}>
+                  {item.name || item.title}
+                </Text>
+                {isExample && (
+                  <View style={styles.exampleBadgeSmall}>
+                    <Text style={styles.exampleBadgeText}>EXAMPLE</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.taskItemTime}>{taskTime}</Text>
+              {item.courses && (
+                <Text style={styles.taskItemCourse} numberOfLines={1}>
+                  {item.courses.courseName}
+                </Text>
               )}
             </View>
-            <Text style={styles.taskItemTime}>{taskTime}</Text>
-            {item.courses && (
-              <Text style={styles.taskItemCourse} numberOfLines={1}>
-                {item.courses.courseName}
-              </Text>
+            {isLocked && (
+              <Ionicons name="lock-closed" size={20} color={COLORS.gray} />
             )}
           </View>
-          {isLocked && (
-            <Ionicons name="lock-closed" size={20} color={COLORS.gray} />
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  }, [handleTaskPress, handleLockedTaskPress]);
+        </TouchableOpacity>
+      );
+    },
+    [handleTaskPress, handleLockedTaskPress],
+  );
 
   const getTaskColor = (type: string) => {
     switch (type) {
@@ -353,7 +489,9 @@ const CalendarScreen = () => {
         <TouchableOpacity
           style={styles.guestButton}
           onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
-        >
+          accessibilityLabel="Sign in"
+          accessibilityHint="Opens the sign in screen"
+          accessibilityRole="button">
           <Text style={styles.guestButtonText}>Sign In</Text>
         </TouchableOpacity>
       </View>
@@ -371,49 +509,78 @@ const CalendarScreen = () => {
       onRefresh={refetch}
       emptyTitle="No tasks scheduled"
       emptyMessage={`You don't have any tasks scheduled for this ${viewMode === 'month' ? 'month' : 'week'}. Add a lecture, assignment, or study session to get started!`}
-      emptyIcon="calendar-outline"
-    >
+      emptyIcon="calendar-outline">
       <View style={styles.container}>
         {/* View Switcher */}
         <View style={styles.viewSwitcher}>
           <TouchableOpacity
-            style={[styles.viewButton, viewMode === 'month' && styles.viewButtonActive]}
+            style={[
+              styles.viewButton,
+              viewMode === 'month' && styles.viewButtonActive,
+            ]}
             onPress={() => setViewMode('month')}
-          >
+            accessibilityLabel="Month view"
+            accessibilityHint="Switches calendar to month view"
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'month' }}>
             <Ionicons
               name="calendar"
               size={18}
               color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
             />
-            <Text style={[styles.viewButtonText, viewMode === 'month' && styles.viewButtonTextActive]}>
+            <Text
+              style={[
+                styles.viewButtonText,
+                viewMode === 'month' && styles.viewButtonTextActive,
+              ]}>
               Month
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.viewButton, viewMode === 'week' && styles.viewButtonActive]}
+            style={[
+              styles.viewButton,
+              viewMode === 'week' && styles.viewButtonActive,
+            ]}
             onPress={() => setViewMode('week')}
-          >
+            accessibilityLabel="Week view"
+            accessibilityHint="Switches calendar to week view"
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'week' }}>
             <Ionicons
               name="grid"
               size={18}
               color={viewMode === 'week' ? COLORS.primary : COLORS.gray}
             />
-            <Text style={[styles.viewButtonText, viewMode === 'week' && styles.viewButtonTextActive]}>
+            <Text
+              style={[
+                styles.viewButtonText,
+                viewMode === 'week' && styles.viewButtonTextActive,
+              ]}>
               Week
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.viewButton, viewMode === 'agenda' && styles.viewButtonActive]}
+            style={[
+              styles.viewButton,
+              viewMode === 'agenda' && styles.viewButtonActive,
+            ]}
             onPress={() => setViewMode('agenda')}
-          >
+            accessibilityLabel="Agenda view"
+            accessibilityHint="Switches calendar to agenda list view"
+            accessibilityRole="button"
+            accessibilityState={{ selected: viewMode === 'agenda' }}>
             <Ionicons
               name="list"
               size={18}
               color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
             />
-            <Text style={[styles.viewButtonText, viewMode === 'agenda' && styles.viewButtonTextActive]}>
+            <Text
+              style={[
+                styles.viewButtonText,
+                viewMode === 'agenda' && styles.viewButtonTextActive,
+              ]}>
               Agenda
             </Text>
           </TouchableOpacity>
@@ -458,9 +625,15 @@ const CalendarScreen = () => {
                 <FlatList
                   data={tasksForSelectedDay}
                   renderItem={renderTaskItem}
-                  keyExtractor={(item) => item.id}
+                  keyExtractor={item => item.id}
                   contentContainerStyle={styles.taskList}
                   showsVerticalScrollIndicator={false}
+                  // Performance optimizations
+                  removeClippedSubviews={true}
+                  maxToRenderPerBatch={10}
+                  windowSize={5}
+                  updateCellsBatchingPeriod={50}
+                  initialNumToRender={10}
                 />
               )}
             </View>
@@ -480,20 +653,20 @@ const CalendarScreen = () => {
         {/* Agenda View */}
         {viewMode === 'agenda' && (
           <>
-            <WeekStrip 
-              selectedDate={selectedDate} 
-              onDateSelect={handleDateSelect} 
+            <WeekStrip
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
             />
-            
-            <Timeline 
-              tasks={tasksForSelectedDay} 
+
+            <Timeline
+              tasks={tasksForSelectedDay}
               onTaskPress={handleTaskPress}
               onLockedTaskPress={handleLockedTaskPress}
               onScroll={handleScroll}
             />
           </>
         )}
-        
+
         <TaskDetailSheet
           task={selectedTask}
           isVisible={!!selectedTask}
@@ -536,12 +709,12 @@ const styles = StyleSheet.create({
   },
   viewButtonText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
+    fontWeight: FONT_WEIGHTS.medium,
     color: COLORS.gray,
   },
   viewButtonTextActive: {
     color: COLORS.primary,
-    fontWeight: FONT_WEIGHTS.semibold as any,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
   monthViewContainer: {
     flex: 1,
@@ -552,7 +725,7 @@ const styles = StyleSheet.create({
   },
   selectedDateTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
     marginBottom: SPACING.md,
   },
@@ -587,7 +760,7 @@ const styles = StyleSheet.create({
   },
   taskTypeBadgeText: {
     fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.background,
     textTransform: 'capitalize',
   },
@@ -602,7 +775,7 @@ const styles = StyleSheet.create({
   },
   taskItemTitle: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.text,
     flex: 1,
   },
@@ -662,7 +835,7 @@ const styles = StyleSheet.create({
   },
   guestButtonText: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.background,
   },
 });

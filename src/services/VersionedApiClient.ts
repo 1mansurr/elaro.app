@@ -1,6 +1,6 @@
 /**
  * Versioned API Client
- * 
+ *
  * Provides a versioned interface to the ELARO API with automatic
  * version management and compatibility checking.
  */
@@ -101,20 +101,35 @@ export class VersionedApiClient {
     return apiVersioningService.get<Course>(`api-v2/courses/get/${courseId}`);
   }
 
-  async createCourse(courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>): Promise<ApiResponse<Course>> {
-    return apiVersioningService.post<Course>('api-v2/courses/create', courseData);
+  async createCourse(
+    courseData: Omit<Course, 'id' | 'created_at' | 'updated_at'>,
+  ): Promise<ApiResponse<Course>> {
+    return apiVersioningService.post<Course>(
+      'api-v2/courses/create',
+      courseData,
+    );
   }
 
-  async updateCourse(courseId: string, updates: Partial<Course>): Promise<ApiResponse<Course>> {
-    return apiVersioningService.put<Course>(`api-v2/courses/update/${courseId}`, updates);
+  async updateCourse(
+    courseId: string,
+    updates: Partial<Course>,
+  ): Promise<ApiResponse<Course>> {
+    return apiVersioningService.put<Course>(
+      `api-v2/courses/update/${courseId}`,
+      updates,
+    );
   }
 
   async deleteCourse(courseId: string): Promise<ApiResponse<Course>> {
-    return apiVersioningService.delete<Course>(`api-v2/courses/delete/${courseId}`);
+    return apiVersioningService.delete<Course>(
+      `api-v2/courses/delete/${courseId}`,
+    );
   }
 
   async restoreCourse(courseId: string): Promise<ApiResponse<Course>> {
-    return apiVersioningService.post<Course>(`api-v2/courses/restore/${courseId}`);
+    return apiVersioningService.post<Course>(
+      `api-v2/courses/restore/${courseId}`,
+    );
   }
 
   // ============================================================================
@@ -126,23 +141,44 @@ export class VersionedApiClient {
   }
 
   async getAssignment(assignmentId: string): Promise<ApiResponse<Assignment>> {
-    return apiVersioningService.get<Assignment>(`api-v2/assignments/get/${assignmentId}`);
+    return apiVersioningService.get<Assignment>(
+      `api-v2/assignments/get/${assignmentId}`,
+    );
   }
 
-  async createAssignment(assignmentData: Omit<Assignment, 'id' | 'created_at'>): Promise<ApiResponse<Assignment>> {
-    return apiVersioningService.post<Assignment>('api-v2/assignments/create', assignmentData);
+  async createAssignment(
+    assignmentData: Omit<Assignment, 'id' | 'created_at'>,
+  ): Promise<ApiResponse<Assignment>> {
+    return apiVersioningService.post<Assignment>(
+      'api-v2/assignments/create',
+      assignmentData,
+    );
   }
 
-  async updateAssignment(assignmentId: string, updates: Partial<Assignment>): Promise<ApiResponse<Assignment>> {
-    return apiVersioningService.put<Assignment>(`api-v2/assignments/update/${assignmentId}`, updates);
+  async updateAssignment(
+    assignmentId: string,
+    updates: Partial<Assignment>,
+  ): Promise<ApiResponse<Assignment>> {
+    return apiVersioningService.put<Assignment>(
+      `api-v2/assignments/update/${assignmentId}`,
+      updates,
+    );
   }
 
-  async deleteAssignment(assignmentId: string): Promise<ApiResponse<Assignment>> {
-    return apiVersioningService.delete<Assignment>(`api-v2/assignments/delete/${assignmentId}`);
+  async deleteAssignment(
+    assignmentId: string,
+  ): Promise<ApiResponse<Assignment>> {
+    return apiVersioningService.delete<Assignment>(
+      `api-v2/assignments/delete/${assignmentId}`,
+    );
   }
 
-  async restoreAssignment(assignmentId: string): Promise<ApiResponse<Assignment>> {
-    return apiVersioningService.post<Assignment>(`api-v2/assignments/restore/${assignmentId}`);
+  async restoreAssignment(
+    assignmentId: string,
+  ): Promise<ApiResponse<Assignment>> {
+    return apiVersioningService.post<Assignment>(
+      `api-v2/assignments/restore/${assignmentId}`,
+    );
   }
 
   // ============================================================================
@@ -154,23 +190,40 @@ export class VersionedApiClient {
   }
 
   async getLecture(lectureId: string): Promise<ApiResponse<Lecture>> {
-    return apiVersioningService.get<Lecture>(`api-v2/lectures/get/${lectureId}`);
+    return apiVersioningService.get<Lecture>(
+      `api-v2/lectures/get/${lectureId}`,
+    );
   }
 
-  async createLecture(lectureData: Omit<Lecture, 'id' | 'created_at'>): Promise<ApiResponse<Lecture>> {
-    return apiVersioningService.post<Lecture>('api-v2/lectures/create', lectureData);
+  async createLecture(
+    lectureData: Omit<Lecture, 'id' | 'created_at'>,
+  ): Promise<ApiResponse<Lecture>> {
+    return apiVersioningService.post<Lecture>(
+      'api-v2/lectures/create',
+      lectureData,
+    );
   }
 
-  async updateLecture(lectureId: string, updates: Partial<Lecture>): Promise<ApiResponse<Lecture>> {
-    return apiVersioningService.put<Lecture>(`api-v2/lectures/update/${lectureId}`, updates);
+  async updateLecture(
+    lectureId: string,
+    updates: Partial<Lecture>,
+  ): Promise<ApiResponse<Lecture>> {
+    return apiVersioningService.put<Lecture>(
+      `api-v2/lectures/update/${lectureId}`,
+      updates,
+    );
   }
 
   async deleteLecture(lectureId: string): Promise<ApiResponse<Lecture>> {
-    return apiVersioningService.delete<Lecture>(`api-v2/lectures/delete/${lectureId}`);
+    return apiVersioningService.delete<Lecture>(
+      `api-v2/lectures/delete/${lectureId}`,
+    );
   }
 
   async restoreLecture(lectureId: string): Promise<ApiResponse<Lecture>> {
-    return apiVersioningService.post<Lecture>(`api-v2/lectures/restore/${lectureId}`);
+    return apiVersioningService.post<Lecture>(
+      `api-v2/lectures/restore/${lectureId}`,
+    );
   }
 
   // ============================================================================
@@ -178,27 +231,50 @@ export class VersionedApiClient {
   // ============================================================================
 
   async getStudySessions(): Promise<ApiResponse<StudySession[]>> {
-    return apiVersioningService.get<StudySession[]>('api-v2/study-sessions/list');
+    return apiVersioningService.get<StudySession[]>(
+      'api-v2/study-sessions/list',
+    );
   }
 
   async getStudySession(sessionId: string): Promise<ApiResponse<StudySession>> {
-    return apiVersioningService.get<StudySession>(`api-v2/study-sessions/get/${sessionId}`);
+    return apiVersioningService.get<StudySession>(
+      `api-v2/study-sessions/get/${sessionId}`,
+    );
   }
 
-  async createStudySession(sessionData: Omit<StudySession, 'id' | 'created_at'>): Promise<ApiResponse<StudySession>> {
-    return apiVersioningService.post<StudySession>('api-v2/study-sessions/create', sessionData);
+  async createStudySession(
+    sessionData: Omit<StudySession, 'id' | 'created_at'>,
+  ): Promise<ApiResponse<StudySession>> {
+    return apiVersioningService.post<StudySession>(
+      'api-v2/study-sessions/create',
+      sessionData,
+    );
   }
 
-  async updateStudySession(sessionId: string, updates: Partial<StudySession>): Promise<ApiResponse<StudySession>> {
-    return apiVersioningService.put<StudySession>(`api-v2/study-sessions/update/${sessionId}`, updates);
+  async updateStudySession(
+    sessionId: string,
+    updates: Partial<StudySession>,
+  ): Promise<ApiResponse<StudySession>> {
+    return apiVersioningService.put<StudySession>(
+      `api-v2/study-sessions/update/${sessionId}`,
+      updates,
+    );
   }
 
-  async deleteStudySession(sessionId: string): Promise<ApiResponse<StudySession>> {
-    return apiVersioningService.delete<StudySession>(`api-v2/study-sessions/delete/${sessionId}`);
+  async deleteStudySession(
+    sessionId: string,
+  ): Promise<ApiResponse<StudySession>> {
+    return apiVersioningService.delete<StudySession>(
+      `api-v2/study-sessions/delete/${sessionId}`,
+    );
   }
 
-  async restoreStudySession(sessionId: string): Promise<ApiResponse<StudySession>> {
-    return apiVersioningService.post<StudySession>(`api-v2/study-sessions/restore/${sessionId}`);
+  async restoreStudySession(
+    sessionId: string,
+  ): Promise<ApiResponse<StudySession>> {
+    return apiVersioningService.post<StudySession>(
+      `api-v2/study-sessions/restore/${sessionId}`,
+    );
   }
 
   // ============================================================================
@@ -224,7 +300,10 @@ export class VersionedApiClient {
     type: string;
     data?: any;
   }): Promise<ApiResponse<any>> {
-    return apiVersioningService.post('notification-system/send', notificationData);
+    return apiVersioningService.post(
+      'notification-system/send',
+      notificationData,
+    );
   }
 
   async scheduleNotification(reminderData: {
@@ -235,11 +314,16 @@ export class VersionedApiClient {
     type: string;
     data?: any;
   }): Promise<ApiResponse<any>> {
-    return apiVersioningService.post('notification-system/schedule', reminderData);
+    return apiVersioningService.post(
+      'notification-system/schedule',
+      reminderData,
+    );
   }
 
   async cancelNotification(reminderId: string): Promise<ApiResponse<any>> {
-    return apiVersioningService.post('notification-system/cancel', { reminder_id: reminderId });
+    return apiVersioningService.post('notification-system/cancel', {
+      reminder_id: reminderId,
+    });
   }
 
   // ============================================================================
@@ -251,7 +335,9 @@ export class VersionedApiClient {
   }
 
   async getCalendarData(weekStart: string): Promise<ApiResponse<any>> {
-    return apiVersioningService.get(`api-v2/analytics/calendar?week_start=${weekStart}`);
+    return apiVersioningService.get(
+      `api-v2/analytics/calendar?week_start=${weekStart}`,
+    );
   }
 
   async getStreakInfo(): Promise<ApiResponse<any>> {
@@ -266,13 +352,15 @@ export class VersionedApiClient {
   // BATCH OPERATIONS
   // ============================================================================
 
-  async batchOperations(operations: Array<{
-    type: string;
-    table: string;
-    action: string;
-    data?: any;
-    filters?: Record<string, any>;
-  }>): Promise<ApiResponse<any>> {
+  async batchOperations(
+    operations: Array<{
+      type: string;
+      table: string;
+      action: string;
+      data?: any;
+      filters?: Record<string, any>;
+    }>,
+  ): Promise<ApiResponse<any>> {
     return apiVersioningService.post('batch-operations', { operations });
   }
 

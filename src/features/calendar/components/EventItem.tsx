@@ -1,11 +1,22 @@
 import React, { memo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { format } from 'date-fns';
 
 // Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -18,13 +29,13 @@ interface Props {
   isLocked?: boolean;
 }
 
-const EventItem: React.FC<Props> = ({ 
-  task, 
-  position, 
-  onPress, 
+const EventItem: React.FC<Props> = ({
+  task,
+  position,
+  onPress,
   onViewDetails,
   isExpanded,
-  isLocked = false 
+  isLocked = false,
 }) => {
   const eventColor = {
     lecture: '#007AFF',
@@ -32,18 +43,22 @@ const EventItem: React.FC<Props> = ({
     assignment: '#FF9500',
   };
 
-  const backgroundColor = isLocked ? '#8E8E93' : (eventColor[task.type] || '#8E8E93');
+  const backgroundColor = isLocked
+    ? '#8E8E93'
+    : eventColor[task.type] || '#8E8E93';
   const isCompleted = task.status === 'completed';
-  const isExample = (task as any).is_example === true;
+  const isExample =
+    'is_example' in task &&
+    (task as Task & { is_example?: boolean }).is_example === true;
 
   // Calculate duration and time range
   const startTime = new Date(task.startTime || task.date);
   const endTime = task.endTime ? new Date(task.endTime) : null;
-  
-  const timeRange = endTime 
+
+  const timeRange = endTime
     ? `${format(startTime, 'h:mm a')} - ${format(endTime, 'h:mm a')}`
     : format(startTime, 'h:mm a');
-  
+
   const durationMinutes = endTime
     ? Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60))
     : null;
@@ -54,10 +69,10 @@ const EventItem: React.FC<Props> = ({
   };
 
   return (
-    <TouchableOpacity 
-      onPress={handlePress} 
+    <TouchableOpacity
+      onPress={handlePress}
       style={[
-        styles.container, 
+        styles.container,
         {
           top: position.top,
           left: position.left,
@@ -69,26 +84,24 @@ const EventItem: React.FC<Props> = ({
         isLocked && styles.lockedContainer,
         isCompleted && styles.completedContainer,
       ]}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       {isLocked && (
         <View style={styles.lockIconContainer}>
           <Ionicons name="lock-closed" size={14} color="#fff" />
         </View>
       )}
-      
+
       {/* Main Content */}
       <View style={styles.content}>
         {/* Header Row */}
         <View style={styles.headerRow}>
-          <Text 
+          <Text
             style={[
-              styles.title, 
+              styles.title,
               isCompleted && styles.completedText,
-              isLocked && styles.lockedText
-            ]} 
-            numberOfLines={isExpanded ? undefined : 1}
-          >
+              isLocked && styles.lockedText,
+            ]}
+            numberOfLines={isExpanded ? undefined : 1}>
             {task.name || task.title}
           </Text>
           <View style={styles.badges}>
@@ -114,14 +127,22 @@ const EventItem: React.FC<Props> = ({
 
         {/* Time Range */}
         <View style={styles.infoRow}>
-          <Ionicons name="time-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+          <Ionicons
+            name="time-outline"
+            size={12}
+            color="rgba(255, 255, 255, 0.8)"
+          />
           <Text style={styles.timeRange}>{timeRange}</Text>
         </View>
 
         {/* Location (for lectures) */}
         {task.type === 'lecture' && (task as any).location && (
           <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+            <Ionicons
+              name="location-outline"
+              size={12}
+              color="rgba(255, 255, 255, 0.8)"
+            />
             <Text style={styles.locationText} numberOfLines={1}>
               {(task as any).location}
             </Text>
@@ -146,7 +167,11 @@ const EventItem: React.FC<Props> = ({
             {/* Submission Method (Assignments) */}
             {task.type === 'assignment' && (task as any).submission_method && (
               <View style={styles.metadataRow}>
-                <Ionicons name="send-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+                <Ionicons
+                  name="send-outline"
+                  size={12}
+                  color="rgba(255, 255, 255, 0.8)"
+                />
                 <Text style={styles.metadataText}>
                   {(task as any).submission_method}
                 </Text>
@@ -156,7 +181,11 @@ const EventItem: React.FC<Props> = ({
             {/* Recurrence (Lectures) */}
             {task.type === 'lecture' && (task as any).recurrence_rule && (
               <View style={styles.metadataRow}>
-                <Ionicons name="repeat-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
+                <Ionicons
+                  name="repeat-outline"
+                  size={12}
+                  color="rgba(255, 255, 255, 0.8)"
+                />
                 <Text style={styles.metadataText}>
                   Recurring: {(task as any).recurrence_rule}
                 </Text>
@@ -164,23 +193,27 @@ const EventItem: React.FC<Props> = ({
             )}
 
             {/* Spaced Repetition (Study Sessions) */}
-            {task.type === 'study_session' && (task as any).has_spaced_repetition && (
-              <View style={styles.metadataRow}>
-                <Ionicons name="refresh-outline" size={12} color="rgba(255, 255, 255, 0.8)" />
-                <Text style={styles.metadataText}>
-                  Spaced Repetition Enabled
-                </Text>
-              </View>
-            )}
+            {task.type === 'study_session' &&
+              (task as any).has_spaced_repetition && (
+                <View style={styles.metadataRow}>
+                  <Ionicons
+                    name="refresh-outline"
+                    size={12}
+                    color="rgba(255, 255, 255, 0.8)"
+                  />
+                  <Text style={styles.metadataText}>
+                    Spaced Repetition Enabled
+                  </Text>
+                </View>
+              )}
 
             {/* View Full Details Button */}
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.viewDetailsButton}
-              onPress={(e) => {
+              onPress={e => {
                 e.stopPropagation();
                 onViewDetails();
-              }}
-            >
+              }}>
               <Text style={styles.viewDetailsText}>View Full Details</Text>
               <Ionicons name="arrow-forward" size={14} color="#fff" />
             </TouchableOpacity>
@@ -189,10 +222,10 @@ const EventItem: React.FC<Props> = ({
 
         {/* Chevron */}
         <View style={styles.chevronContainer}>
-          <Ionicons 
-            name={isExpanded ? 'chevron-up' : 'chevron-down'} 
-            size={16} 
-            color="rgba(255, 255, 255, 0.7)" 
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={16}
+            color="rgba(255, 255, 255, 0.7)"
           />
         </View>
       </View>

@@ -1,83 +1,109 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types/navigation';
 import { Ionicons } from '@expo/vector-icons';
 import Card from '@/shared/components/Card';
 import { Button } from '@/shared/components/Button';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/hooks/useTheme';
 import { showToast } from '@/utils/showToast';
-import { PostChatModal } from '@/features/support/components/PostChatModal';
-import { getSecureChatLink } from '@/features/support/utils/getSecureChatLink';
+import { PostChatModal } from '@/shared/components/PostChatModal';
+import { getSecureChatLink } from '@/shared/utils/getSecureChatLink';
 import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
+import { LEGAL_URLS } from '@/constants/legal';
 
-const ListItem = ({ label, onPress, isDestructive = false, testID }: { label: string; onPress: () => void; isDestructive?: boolean; testID?: string }) => {
+const ListItem = ({
+  label,
+  onPress,
+  isDestructive = false,
+  testID,
+}: {
+  label: string;
+  onPress: () => void;
+  isDestructive?: boolean;
+  testID?: string;
+}) => {
   const { theme } = useTheme();
   return (
-    <TouchableOpacity 
+    <TouchableOpacity
       onPress={onPress}
-      testID={testID} 
+      testID={testID}
       style={[
-        styles.listItem, 
-        { 
+        styles.listItem,
+        {
           backgroundColor: theme.surface,
           borderColor: theme.border,
-        }
+        },
       ]}
-      activeOpacity={0.7}
-    >
-      <Text style={[
-        styles.listItemText, 
-        { 
-          color: isDestructive ? theme.error : theme.text,
-          fontWeight: '500',
-        }
-      ]}>
+      activeOpacity={0.7}>
+      <Text
+        style={[
+          styles.listItemText,
+          {
+            color: isDestructive ? theme.error : theme.text,
+            fontWeight: '500',
+          },
+        ]}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 };
 
-const SettingItem = ({ 
-  label, 
-  description, 
-  onPress, 
+const SettingItem = ({
+  label,
+  description,
+  onPress,
   icon,
   disabled = false,
   rightContent,
-}: { 
-  label: string; 
-  description?: string; 
-  onPress: () => void; 
+}: {
+  label: string;
+  description?: string;
+  onPress: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
   disabled?: boolean;
   rightContent?: React.ReactNode;
 }) => {
   const { theme } = useTheme();
-  
+
   return (
-    <TouchableOpacity 
-      onPress={onPress} 
+    <TouchableOpacity
+      onPress={onPress}
       style={[styles.settingItem, disabled && styles.settingItemDisabled]}
-      disabled={disabled}
-    >
+      disabled={disabled}>
       {icon && (
         <View style={styles.iconContainer}>
           <Ionicons name={icon} size={22} color={theme.accent} />
         </View>
       )}
       <View style={styles.settingContent}>
-        <Text style={[styles.settingLabel, { color: theme.text }]}>{label}</Text>
+        <Text style={[styles.settingLabel, { color: theme.text }]}>
+          {label}
+        </Text>
         {description && (
-          <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+          <Text
+            style={[styles.settingDescription, { color: theme.textSecondary }]}>
             {description}
           </Text>
         )}
       </View>
-      {rightContent || <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />}
+      {rightContent || (
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={theme.textSecondary}
+        />
+      )}
     </TouchableOpacity>
   );
 };
@@ -94,7 +120,10 @@ export function AccountScreen() {
     setSupportChatLoading(true);
     try {
       const secureUrl = await getSecureChatLink(user);
-      navigation.navigate('InAppBrowserScreen', { url: secureUrl, title: 'Support Chat' });
+      navigation.navigate('InAppBrowserScreen', {
+        url: secureUrl,
+        title: 'Support Chat',
+      });
     } catch (error) {
       showToast({ type: 'error', message: 'Could not open support chat.' });
     } finally {
@@ -106,11 +135,16 @@ export function AccountScreen() {
     <ScrollView style={styles.container}>
       <Card title="Profile">
         <View style={styles.guestProfileContainer}>
-          <Text style={[styles.guestTitle, { color: theme.text }]}>Join ELARO</Text>
+          <Text style={[styles.guestTitle, { color: theme.text }]}>
+            Join ELARO
+          </Text>
           <Text style={[styles.guestSubtitle, { color: theme.textSecondary }]}>
             Log in or create an account to manage your academic life.
           </Text>
-          <Button title="Login or Sign Up" onPress={() => navigation.navigate('Auth', { mode: 'signin' })} />
+          <Button
+            title="Login or Sign Up"
+            onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
+          />
         </View>
       </Card>
 
@@ -119,37 +153,45 @@ export function AccountScreen() {
           label="How ELARO Works"
           description="Learn how to get the most out of ELARO"
           icon="school-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/how-it-works',
-            title: 'How ELARO Works'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: 'https://elaro.app/how-it-works',
+              title: 'How ELARO Works',
+            })
+          }
         />
         <SettingItem
           label="FAQs"
           description="Find answers to common questions"
           icon="help-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/faq',
-            title: 'FAQs'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: 'https://elaro.app/faq',
+              title: 'FAQs',
+            })
+          }
         />
         <SettingItem
           label="Terms of Service"
           description="Read our terms and conditions"
           icon="document-text-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/terms',
-            title: 'Terms of Service'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.TERMS_OF_SERVICE,
+              title: 'Terms of Service',
+            })
+          }
         />
         <SettingItem
           label="Privacy Policy"
           description="Learn how we protect your data"
           icon="shield-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/privacy',
-            title: 'Privacy Policy'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.PRIVACY_POLICY,
+              title: 'Privacy Policy',
+            })
+          }
         />
       </Card>
     </ScrollView>
@@ -159,18 +201,34 @@ export function AccountScreen() {
     <ScrollView style={styles.container}>
       {user?.role === 'admin' && (
         <Card title="Admin">
-          <Button title="Admin Dashboard" onPress={() => navigation.navigate('AnalyticsAdmin')} />
+          <Button
+            title="Admin Dashboard"
+            onPress={() => navigation.navigate('AnalyticsAdmin')}
+          />
         </Card>
       )}
 
       <Card title="Profile">
         <View style={styles.profileInfo}>
-          <Text style={[styles.profileName, { color: theme.text }]}>{user?.user_metadata?.first_name} {user?.user_metadata?.last_name}</Text>
-          <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>{user?.email}</Text>
+          <Text style={[styles.profileName, { color: theme.text }]}>
+            {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+          </Text>
+          <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>
+            {user?.email}
+          </Text>
         </View>
-        <Button title="View Profile" onPress={() => navigation.navigate('Profile')} />
-        <Button title="My Courses" onPress={() => navigation.navigate('Courses')} />
-        <Button title="Add a Course" onPress={() => navigation.navigate('AddCourseFlow')} />
+        <Button
+          title="View Profile"
+          onPress={() => navigation.navigate('Profile')}
+        />
+        <Button
+          title="My Courses"
+          onPress={() => navigation.navigate('Courses')}
+        />
+        <Button
+          title="Add a Course"
+          onPress={() => navigation.navigate('AddCourseFlow')}
+        />
       </Card>
 
       <Card title="Subscription">
@@ -194,19 +252,23 @@ export function AccountScreen() {
           label="FAQs"
           description="Find answers to common questions"
           icon="help-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/faq',
-            title: 'FAQs'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: 'https://elaro.app/faq',
+              title: 'FAQs',
+            })
+          }
         />
         <SettingItem
           label="How ELARO Works"
           description="Learn how to get the most out of ELARO"
           icon="school-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/how-it-works',
-            title: 'How ELARO Works'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: 'https://elaro.app/how-it-works',
+              title: 'How ELARO Works',
+            })
+          }
         />
         <SettingItem
           label="Templates"
@@ -218,24 +280,32 @@ export function AccountScreen() {
           label="Terms of Service"
           description="Read our terms and conditions"
           icon="document-text-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/terms',
-            title: 'Terms of Service'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.TERMS_OF_SERVICE,
+              title: 'Terms of Service',
+            })
+          }
         />
         <SettingItem
           label="Privacy Policy"
           description="Learn how we protect your data"
           icon="shield-outline"
-          onPress={() => navigation.navigate('InAppBrowserScreen', { 
-            url: 'https://elaro.app/privacy',
-            title: 'Privacy Policy'
-          })}
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.PRIVACY_POLICY,
+              title: 'Privacy Policy',
+            })
+          }
         />
       </Card>
 
       <Card title="Settings">
-        <ListItem label="Settings" onPress={() => navigation.navigate('Settings')} testID="settings-navigation-button" />
+        <ListItem
+          label="Settings"
+          onPress={() => navigation.navigate('Settings')}
+          testID="settings-navigation-button"
+        />
       </Card>
 
       {/* Premium Features - Analytics Dashboard for Oddity users */}
@@ -243,42 +313,73 @@ export function AccountScreen() {
         {user?.subscription_tier === 'oddity' || user?.role === 'admin' ? (
           <View style={styles.premiumFeatureItem}>
             <View style={styles.premiumFeatureLeft}>
-              <Ionicons name="analytics-outline" size={20} color={theme.accent} style={styles.premiumFeatureIcon} />
+              <Ionicons
+                name="analytics-outline"
+                size={20}
+                color={theme.accent}
+                style={styles.premiumFeatureIcon}
+              />
               <View style={styles.premiumFeatureText}>
-                <Text style={[styles.premiumFeatureTitle, { color: theme.text }]}>Weekly Analytics</Text>
-                <Text style={[styles.premiumFeatureDescription, { color: theme.textSecondary }]}>
-                  Comprehensive insights into your academic progress and study patterns
+                <Text
+                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
+                  Weekly Analytics
+                </Text>
+                <Text
+                  style={[
+                    styles.premiumFeatureDescription,
+                    { color: theme.textSecondary },
+                  ]}>
+                  Comprehensive insights into your academic progress and study
+                  patterns
                 </Text>
               </View>
             </View>
             <TouchableOpacity
-              style={[styles.premiumFeatureButton, { backgroundColor: theme.accent }]}
-              onPress={() => navigation.navigate('InAppBrowserScreen', { 
-                url: 'https://elaro.app/analytics',
-                title: 'Analytics'
-              })}
-            >
+              style={[
+                styles.premiumFeatureButton,
+                { backgroundColor: theme.accent },
+              ]}
+              onPress={() =>
+                navigation.navigate('InAppBrowserScreen', {
+                  url: 'https://elaro.app/analytics',
+                  title: 'Analytics',
+                })
+              }>
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.premiumFeatureItem}>
             <View style={styles.premiumFeatureLeft}>
-              <Ionicons name="star-outline" size={20} color="#FFD700" style={styles.premiumFeatureIcon} />
+              <Ionicons
+                name="star-outline"
+                size={20}
+                color="#FFD700"
+                style={styles.premiumFeatureIcon}
+              />
               <View style={styles.premiumFeatureText}>
-                <Text style={[styles.premiumFeatureTitle, { color: theme.text }]}>Become an Oddity</Text>
-                <Text style={[styles.premiumFeatureDescription, { color: theme.textSecondary }]}>
+                <Text
+                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
+                  Become an Oddity
+                </Text>
+                <Text
+                  style={[
+                    styles.premiumFeatureDescription,
+                    { color: theme.textSecondary },
+                  ]}>
                   Unlock comprehensive weekly analytics and academic insights
                 </Text>
               </View>
             </View>
             <TouchableOpacity
-              style={[styles.premiumFeatureButton, { backgroundColor: '#FFD700' }]}
+              style={[
+                styles.premiumFeatureButton,
+                { backgroundColor: '#FFD700' },
+              ]}
               onPress={() => {
                 // Navigate to subscription/upgrade flow
                 console.log('Navigate to subscription upgrade');
-              }}
-            >
+              }}>
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
           </View>
@@ -290,18 +391,36 @@ export function AccountScreen() {
         <Card title="Admin Features">
           <View style={styles.premiumFeatureItem}>
             <View style={styles.premiumFeatureLeft}>
-              <Ionicons name="settings-outline" size={20} color="#9C27B0" style={styles.premiumFeatureIcon} />
+              <Ionicons
+                name="settings-outline"
+                size={20}
+                color="#9C27B0"
+                style={styles.premiumFeatureIcon}
+              />
               <View style={styles.premiumFeatureText}>
-                <Text style={[styles.premiumFeatureTitle, { color: theme.text }]}>Analytics Admin</Text>
-                <Text style={[styles.premiumFeatureDescription, { color: theme.textSecondary }]}>
-                  Manage templates, monitor batch processing, and view system logs
+                <Text
+                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
+                  Analytics Admin
+                </Text>
+                <Text
+                  style={[
+                    styles.premiumFeatureDescription,
+                    { color: theme.textSecondary },
+                  ]}>
+                  Manage templates, monitor batch processing, and view system
+                  logs
                 </Text>
               </View>
             </View>
             <TouchableOpacity
-              style={[styles.premiumFeatureButton, { backgroundColor: '#9C27B0' }]}
+              style={[
+                styles.premiumFeatureButton,
+                { backgroundColor: '#9C27B0' },
+              ]}
               onPress={() => navigation.navigate('AnalyticsAdmin')}
-            >
+              accessibilityLabel="Open Analytics Admin"
+              accessibilityHint="Opens the analytics administration dashboard"
+              accessibilityRole="button">
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
           </View>
@@ -313,9 +432,9 @@ export function AccountScreen() {
         onClose={() => setPostChatModalVisible(false)}
         onFaqPress={() => {
           setPostChatModalVisible(false);
-          navigation.navigate('InAppBrowserScreen', { 
+          navigation.navigate('InAppBrowserScreen', {
             url: 'https://elaro.app/faq',
-            title: 'FAQs'
+            title: 'FAQs',
           });
         }}
       />

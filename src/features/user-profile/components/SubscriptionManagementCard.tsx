@@ -1,9 +1,18 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Platform, Linking, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+  Linking,
+  Alert,
+} from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
 import { showToast } from '@/utils/showToast';
+import { formatDate } from '@/i18n';
 
 export function SubscriptionManagementCard() {
   const { theme } = useTheme();
@@ -18,7 +27,7 @@ export function SubscriptionManagementCard() {
     purchasePackage,
     restorePurchases,
   } = useSubscription();
-  
+
   // Mock offerings for now
   const offerings = { current: null as any };
 
@@ -29,7 +38,10 @@ export function SubscriptionManagementCard() {
     });
 
     if (!url) {
-      showToast({ type: 'error', message: 'Unable to open subscription management on this platform.' });
+      showToast({
+        type: 'error',
+        message: 'Unable to open subscription management on this platform.',
+      });
       return;
     }
 
@@ -38,17 +50,29 @@ export function SubscriptionManagementCard() {
       if (canOpen) {
         await Linking.openURL(url);
       } else {
-        showToast({ type: 'error', message: 'Unable to open subscription management.' });
+        showToast({
+          type: 'error',
+          message: 'Unable to open subscription management.',
+        });
       }
     } catch (error) {
       console.error('Error opening subscription management:', error);
-      showToast({ type: 'error', message: 'Failed to open subscription management.' });
+      showToast({
+        type: 'error',
+        message: 'Failed to open subscription management.',
+      });
     }
   }, []);
 
   const handleUpgrade = useCallback(async () => {
-    if (!offerings?.current?.availablePackages || offerings.current.availablePackages.length === 0) {
-      showToast({ type: 'error', message: 'No subscription packages available.' });
+    if (
+      !offerings?.current?.availablePackages ||
+      offerings.current.availablePackages.length === 0
+    ) {
+      showToast({
+        type: 'error',
+        message: 'No subscription packages available.',
+      });
       return;
     }
 
@@ -56,7 +80,10 @@ export function SubscriptionManagementCard() {
       // Get the first available package (or you could implement logic to choose a specific package)
       const packageToPurchase = offerings.current.availablePackages[0];
       await purchasePackage(packageToPurchase);
-      showToast({ type: 'success', message: 'Subscription activated successfully!' });
+      showToast({
+        type: 'success',
+        message: 'Subscription activated successfully!',
+      });
     } catch (error) {
       // Error is already handled by the hook
       console.error('Purchase error:', error);
@@ -66,7 +93,10 @@ export function SubscriptionManagementCard() {
   const handleRestore = useCallback(async () => {
     try {
       await restorePurchases();
-      showToast({ type: 'success', message: 'Purchases restored successfully!' });
+      showToast({
+        type: 'success',
+        message: 'Purchases restored successfully!',
+      });
     } catch (error) {
       // Error is already handled by the hook
       console.error('Restore error:', error);
@@ -77,7 +107,7 @@ export function SubscriptionManagementCard() {
     if (!dateString) return null;
     try {
       const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
+      return formatDate(date, {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -119,9 +149,7 @@ export function SubscriptionManagementCard() {
       </View>
 
       {error && (
-        <Text style={[styles.errorText, { color: theme.error }]}>
-          {error}
-        </Text>
+        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
       )}
 
       <View style={styles.buttonContainer}>
@@ -138,7 +166,7 @@ export function SubscriptionManagementCard() {
             variant="primary"
           />
         )}
-        
+
         <Button
           title="Restore Purchases"
           onPress={handleRestore}
@@ -183,4 +211,3 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
-

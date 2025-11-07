@@ -1,6 +1,6 @@
 /**
  * HTML Report Generator Script
- * 
+ *
  * Generates an HTML version of the E2E test report
  * Usage: node scripts/generate-html-report.js
  */
@@ -13,16 +13,24 @@ const path = require('path');
 async function generateHTMLReport() {
   try {
     // Check if JSON report exists
-    const jsonReportPath = path.join(__dirname, '..', 'e2e', 'reports', 'e2e-report.json');
-    
+    const jsonReportPath = path.join(
+      __dirname,
+      '..',
+      'e2e',
+      'reports',
+      'e2e-report.json',
+    );
+
     if (!fs.existsSync(jsonReportPath)) {
-      console.log('⚠️  No JSON report found. Run E2E tests first to generate report.');
+      console.log(
+        '⚠️  No JSON report found. Run E2E tests first to generate report.',
+      );
       console.log('   Expected location:', jsonReportPath);
       return;
     }
 
     const report = JSON.parse(fs.readFileSync(jsonReportPath, 'utf-8'));
-    
+
     // Generate HTML (same template as in testReporter.ts)
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -83,72 +91,101 @@ async function generateHTMLReport() {
       </div>
     </div>
 
-    ${report.passes.map(pass => `
+    ${report.passes
+      .map(
+        pass => `
       <div class="pass-section">
         <h2>Pass ${pass.pass}: ${pass.name}</h2>
         <p><strong>Status:</strong> <span style="color: ${pass.status === 'passed' ? '#28a745' : pass.status === 'failed' ? '#dc3545' : '#ffc107'};">${pass.status.toUpperCase()}</span></p>
         <p><strong>Tests:</strong> ${pass.summary.total} | Passed: ${pass.summary.passed} | Failed: ${pass.summary.failed} | Skipped: ${pass.summary.skipped}</p>
         
-        ${pass.screens && pass.screens.length > 0 ? `
+        ${
+          pass.screens && pass.screens.length > 0
+            ? `
           <div style="margin-top: 15px;">
             <strong>Screens Visited:</strong>
             <div class="screens-list">
               ${pass.screens.map(s => `<span class="screen-tag">${s}</span>`).join('')}
             </div>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
         <div style="margin-top: 20px;">
           <strong>Test Results:</strong>
-          ${Object.values(pass.tests || {}).map(test => `
+          ${Object.values(pass.tests || {})
+            .map(
+              test => `
             <div class="test-item ${test.status} ${test.manual ? 'manual' : ''}">
               <strong>${test.name}</strong>
               ${test.manual ? '<span class="badge badge-manual">MANUAL</span>' : ''}
               <span style="float: right;">${test.duration}ms</span>
               ${test.error ? `<div class="error-box">❌ ${test.error}</div>` : ''}
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
         
-        ${pass.errors && pass.errors.length > 0 ? `
+        ${
+          pass.errors && pass.errors.length > 0
+            ? `
           <div style="margin-top: 15px; padding: 10px; background: #f8d7da; border-radius: 4px;">
             <strong>Errors:</strong>
             <ul style="margin: 5px 0;">
               ${pass.errors.map(e => `<li>${e}</li>`).join('')}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
         
-        ${pass.warnings && pass.warnings.length > 0 ? `
+        ${
+          pass.warnings && pass.warnings.length > 0
+            ? `
           <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 4px;">
             <strong>Warnings:</strong>
             <ul style="margin: 5px 0;">
               ${pass.warnings.map(w => `<li>${w}</li>`).join('')}
             </ul>
           </div>
-        ` : ''}
+        `
+            : ''
+        }
       </div>
-    `).join('')}
+    `,
+      )
+      .join('')}
     
-    ${report.overall.allScreens && report.overall.allScreens.length > 0 ? `
+    ${
+      report.overall.allScreens && report.overall.allScreens.length > 0
+        ? `
       <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #eee;">
         <h2>All Screens Visited</h2>
         <div class="screens-list">
           ${report.overall.allScreens.map(s => `<span class="screen-tag">${s}</span>`).join('')}
         </div>
       </div>
-    ` : ''}
+    `
+        : ''
+    }
   </div>
 </body>
 </html>`;
 
     // Save HTML report
-    const htmlReportPath = path.join(__dirname, '..', 'e2e', 'reports', 'e2e-report.html');
+    const htmlReportPath = path.join(
+      __dirname,
+      '..',
+      'e2e',
+      'reports',
+      'e2e-report.html',
+    );
     fs.writeFileSync(htmlReportPath, html, 'utf-8');
-    
+
     console.log(`✅ HTML report generated: ${htmlReportPath}`);
     console.log(`📊 Open in browser: file://${htmlReportPath}`);
-    
   } catch (error) {
     console.error('❌ Error generating HTML report:', error);
     process.exit(1);
@@ -156,4 +193,3 @@ async function generateHTMLReport() {
 }
 
 generateHTMLReport();
-

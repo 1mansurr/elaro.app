@@ -1,32 +1,49 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, Modal, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  Modal,
+  ScrollView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Course } from '@/types';
 import { Button } from '@/shared/components';
 
-type SelectCourseScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'SelectCourse'>;
+type SelectCourseScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'SelectCourse'
+>;
 
 const SelectCourseScreen = () => {
   const navigation = useNavigation<SelectCourseScreenNavigationProp>();
   // const { assignmentData, updateAssignmentData } = useAddAssignment();
   // Mock data for now - proper structure
-  const assignmentData = { 
-    courseId: null, 
-    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
-    title: "Mock Assignment", 
-    description: "Mock description", 
-    dueDate: new Date(), 
-    submissionMethod: null, 
-    reminders: [] 
+  const assignmentData = {
+    courseId: null,
+    course: {
+      id: 'mock-course-id',
+      courseName: 'Mock Course',
+      courseCode: 'MOCK101',
+    },
+    title: 'Mock Assignment',
+    description: 'Mock description',
+    dueDate: new Date(),
+    submissionMethod: null,
+    reminders: [],
   };
-  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
+  const updateAssignmentData = (data: any) => {
+    console.log('Mock updateAssignmentData:', data);
+  };
   const { session, user } = useAuth();
-  
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -36,16 +53,18 @@ const SelectCourseScreen = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       if (isGuest) return; // Don't fetch for guests
-      
+
       setIsLoading(true);
       try {
-        const { data, error } = await supabase.from('courses').select('id, course_name, course_code, about_course');
-        
+        const { data, error } = await supabase
+          .from('courses')
+          .select('id, course_name, course_code, about_course');
+
         if (error) {
           Alert.alert('Error', 'Could not fetch your courses.');
           return;
         }
-        
+
         const formattedCourses = (data || []).map(course => ({
           id: course.id,
           courseName: course.course_name,
@@ -55,7 +74,7 @@ const SelectCourseScreen = () => {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })) as Course[];
-        
+
         setCourses(formattedCourses);
       } catch (error) {
         console.error('Error fetching courses:', error);
@@ -64,7 +83,7 @@ const SelectCourseScreen = () => {
         setIsLoading(false);
       }
     };
-    
+
     fetchCourses();
   }, [isGuest, user?.id]);
 
@@ -78,24 +97,27 @@ const SelectCourseScreen = () => {
       Alert.alert('Error', 'Please select a course to continue.');
       return;
     }
-    
+
     navigation.navigate('AssignmentTitle');
   };
 
   const handleAddCourse = () => {
     // Navigate to add course flow
     setShowCourseDropdown(false);
-    Alert.alert('Add Course', 'Please use the main menu to add a course first.');
+    Alert.alert(
+      'Add Course',
+      'Please use the main menu to add a course first.',
+    );
   };
 
   const handleGuestSignUp = () => {
     // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', { 
+    navigation.getParent()?.navigate('Auth', {
       mode: 'signup',
       onAuthSuccess: () => {
         // After successful auth, user will have courses and can continue
         // The screen will automatically refresh and show course selection
-      }
+      },
     } as any);
   };
 
@@ -106,15 +128,12 @@ const SelectCourseScreen = () => {
           <Text style={styles.title}>Select Course</Text>
           <Text style={styles.subtitle}>Step 1 of 6</Text>
         </View>
-        
+
         <View style={styles.guestContainer}>
           <Text style={styles.guestText}>
             Create an account to save your assignments and get reminders.
           </Text>
-          <Button 
-            title="Sign Up" 
-            onPress={handleGuestSignUp}
-          />
+          <Button title="Sign Up" onPress={handleGuestSignUp} />
         </View>
       </View>
     );
@@ -129,17 +148,22 @@ const SelectCourseScreen = () => {
 
       <View style={styles.content}>
         <Text style={styles.label}>Choose a course for your assignment *</Text>
-        
+
         <TouchableOpacity
           style={styles.courseInput}
           onPress={() => setShowCourseDropdown(true)}
-          disabled={isLoading}
-        >
-          <Text style={[styles.courseInputText, !assignmentData.course && styles.placeholderText]}>
-            {isLoading 
-              ? 'Loading courses...' 
-              : assignmentData.course?.courseName || (courses.length === 0 ? 'Please add a course first' : 'Select a course')
-            }
+          disabled={isLoading}>
+          <Text
+            style={[
+              styles.courseInputText,
+              !assignmentData.course && styles.placeholderText,
+            ]}>
+            {isLoading
+              ? 'Loading courses...'
+              : assignmentData.course?.courseName ||
+                (courses.length === 0
+                  ? 'Please add a course first'
+                  : 'Select a course')}
           </Text>
           <Text style={styles.dropdownArrow}>▼</Text>
         </TouchableOpacity>
@@ -148,21 +172,18 @@ const SelectCourseScreen = () => {
           visible={showCourseDropdown}
           transparent={true}
           animationType="fade"
-          onRequestClose={() => setShowCourseDropdown(false)}
-        >
+          onRequestClose={() => setShowCourseDropdown(false)}>
           <TouchableOpacity
             style={styles.modalOverlay}
             activeOpacity={1}
-            onPress={() => setShowCourseDropdown(false)}
-          >
+            onPress={() => setShowCourseDropdown(false)}>
             <View style={styles.dropdownContainer}>
               {courses.length === 0 ? (
                 <View style={styles.noCoursesContainer}>
                   <Text style={styles.noCoursesText}>You have no courses.</Text>
                   <TouchableOpacity
                     style={styles.addCourseButton}
-                    onPress={handleAddCourse}
-                  >
+                    onPress={handleAddCourse}>
                     <Text style={styles.addCourseButtonText}>Add a Course</Text>
                   </TouchableOpacity>
                 </View>
@@ -173,13 +194,17 @@ const SelectCourseScreen = () => {
                       key={course.id}
                       style={[
                         styles.dropdownOption,
-                        assignmentData.course?.id === course.id && styles.selectedOption
+                        assignmentData.course?.id === course.id &&
+                          styles.selectedOption,
                       ]}
-                      onPress={() => handleCourseSelect(course)}
-                    >
-                      <Text style={styles.dropdownOptionText}>{course.courseName}</Text>
+                      onPress={() => handleCourseSelect(course)}>
+                      <Text style={styles.dropdownOptionText}>
+                        {course.courseName}
+                      </Text>
                       {course.courseCode && (
-                        <Text style={styles.courseCode}>{course.courseCode}</Text>
+                        <Text style={styles.courseCode}>
+                          {course.courseCode}
+                        </Text>
                       )}
                     </TouchableOpacity>
                   ))}
@@ -192,17 +217,21 @@ const SelectCourseScreen = () => {
         {assignmentData.course && (
           <View style={styles.selectedCourseInfo}>
             <Text style={styles.selectedCourseTitle}>Selected Course:</Text>
-            <Text style={styles.selectedCourseName}>{assignmentData.course.courseName}</Text>
+            <Text style={styles.selectedCourseName}>
+              {assignmentData.course.courseName}
+            </Text>
             {assignmentData.course.courseCode && (
-              <Text style={styles.selectedCourseCode}>{assignmentData.course.courseCode}</Text>
+              <Text style={styles.selectedCourseCode}>
+                {assignmentData.course.courseCode}
+              </Text>
             )}
           </View>
         )}
       </View>
 
       <View style={styles.footer}>
-        <Button 
-          title="Continue" 
+        <Button
+          title="Continue"
           onPress={handleContinue}
           disabled={!assignmentData.course}
         />

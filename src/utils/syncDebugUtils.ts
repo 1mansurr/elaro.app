@@ -1,6 +1,6 @@
 /**
  * Sync Debug Utilities
- * 
+ *
  * Dev-only utilities for debugging and testing sync services
  */
 
@@ -35,14 +35,15 @@ export async function clearAllSyncState(): Promise<void> {
 
     // Clear all AsyncStorage keys with sync prefixes
     const keys = await AsyncStorage.getAllKeys();
-    const syncKeys = keys.filter(key =>
-      key.startsWith('@elaro_') ||
-      key.startsWith('@elaro_auth_') ||
-      key.startsWith('@elaro_navigation_') ||
-      key.startsWith('@elaro_active_session_') ||
-      key.startsWith('@elaro_srs_') ||
-      key.startsWith('@elaro_session_progress_') ||
-      key.startsWith('@elaro_settings_')
+    const syncKeys = keys.filter(
+      key =>
+        key.startsWith('@elaro_') ||
+        key.startsWith('@elaro_auth_') ||
+        key.startsWith('@elaro_navigation_') ||
+        key.startsWith('@elaro_active_session_') ||
+        key.startsWith('@elaro_srs_') ||
+        key.startsWith('@elaro_session_progress_') ||
+        key.startsWith('@elaro_settings_'),
     );
 
     if (syncKeys.length > 0) {
@@ -187,7 +188,7 @@ export async function exportSyncState(): Promise<string> {
   try {
     const keys = await AsyncStorage.getAllKeys();
     const syncKeys = keys.filter(key => key.startsWith('@elaro_'));
-    
+
     const state: any = {};
     for (const key of syncKeys) {
       const value = await AsyncStorage.getItem(key);
@@ -244,5 +245,7 @@ if (__DEV__ && typeof global !== 'undefined') {
     import: importSyncState,
   };
 
-  console.log('🔧 Sync debug utilities available at global.__ELARO_SYNC_DEBUG__');
+  console.log(
+    '🔧 Sync debug utilities available at global.__ELARO_SYNC_DEBUG__',
+  );
 }

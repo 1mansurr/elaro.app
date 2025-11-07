@@ -14,6 +14,11 @@
       "distribution": "internal",
       "channel": "preview"
     },
+    "staging": {
+      "developmentClient": false,
+      "distribution": "internal",
+      "channel": "staging"
+    },
     "production": {
       "developmentClient": false,
       "distribution": "store",

@@ -1,5 +1,9 @@
 import { Alert } from 'react-native';
-import { isSessionExpired, clearLastActiveTimestamp, updateLastActiveTimestamp } from '@/utils/sessionTimeout';
+import {
+  isSessionExpired,
+  clearLastActiveTimestamp,
+  updateLastActiveTimestamp,
+} from '@/utils/sessionTimeout';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 
@@ -14,7 +18,7 @@ export class SessionTimeoutService {
   private config: SessionTimeoutConfig = {
     timeoutDays: 30,
     showAlert: true,
-    trackAnalytics: true
+    trackAnalytics: true,
   };
 
   public static getInstance(): SessionTimeoutService {
@@ -30,13 +34,15 @@ export class SessionTimeoutService {
   async checkAndHandleTimeout(): Promise<boolean> {
     try {
       const expired = await isSessionExpired();
-      
+
       if (expired) {
-        console.log('⏰ Session expired due to inactivity. Handling timeout...');
+        console.log(
+          '⏰ Session expired due to inactivity. Handling timeout...',
+        );
         await this.handleTimeout();
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('❌ Error checking session timeout:', error);
@@ -56,16 +62,16 @@ export class SessionTimeoutService {
           timeout_days: this.config.timeoutDays,
         });
       }
-      
+
       // Clear the last active timestamp
       await clearLastActiveTimestamp();
-      
+
       // Show alert to user
       if (this.config.showAlert) {
         Alert.alert(
           'Session Expired',
           'Your session has expired due to inactivity. Please log in again.',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       }
     } catch (error) {

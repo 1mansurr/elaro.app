@@ -1,6 +1,6 @@
 /**
  * Pass 5: Error and Edge Cases
- * 
+ *
  * Tests error handling and edge cases:
  * - Navigate while session expired → Should redirect to Login
  * - Simulate missing Supabase connection → Should show offline state
@@ -52,14 +52,18 @@ describe('Pass 5: Error and Edge Cases', () => {
         await waitFor(element(by.id('guest-home-screen')))
           .toBeVisible()
           .withTimeout(5000);
-        console.log('✅ App correctly returns to guest state after session expiration');
+        console.log(
+          '✅ App correctly returns to guest state after session expiration',
+        );
       } catch {
         // Might be on auth screen instead
         try {
           await waitFor(element(by.id('auth-screen')))
             .toBeVisible()
             .withTimeout(5000);
-          console.log('✅ App correctly shows auth screen after session expiration');
+          console.log(
+            '✅ App correctly shows auth screen after session expiration',
+          );
         } catch {
           console.log('ℹ️ Session expiration handling - app behavior verified');
         }
@@ -71,12 +75,14 @@ describe('Pass 5: Error and Edge Cases', () => {
     it('should handle missing Supabase connection gracefully', async () => {
       // This test verifies that the app doesn't crash when offline
       // In mock auth, we don't actually make network calls
-      
+
       // Try to login - should work with mock (no network needed)
       try {
         await TestHelpers.loginWithTestUser();
         await TestHelpers.wait(3000);
-        console.log('✅ App handles mock auth state correctly (offline simulation)');
+        console.log(
+          '✅ App handles mock auth state correctly (offline simulation)',
+        );
       } catch (error) {
         console.log('ℹ️ Offline handling test completed');
       }
@@ -98,7 +104,7 @@ describe('Pass 5: Error and Edge Cases', () => {
 
       // Try to find tab navigation elements
       const tabs = ['Home', 'Calendar', 'Courses', 'Account'];
-      
+
       for (let i = 0; i < 5; i++) {
         try {
           const randomTab = tabs[Math.floor(Math.random() * tabs.length)];
@@ -153,11 +159,13 @@ describe('Pass 5: Error and Edge Cases', () => {
     it('should handle missing or invalid route parameters', async () => {
       // This test verifies that navigation with invalid params doesn't crash
       // Example: navigating to StudySessionReview without sessionId
-      
+
       // The app should handle missing params gracefully
       // Most routes have required params, so invalid navigation would fail safely
-      
-      console.log('ℹ️ Invalid parameters handled by navigation stack (type-safe)');
+
+      console.log(
+        'ℹ️ Invalid parameters handled by navigation stack (type-safe)',
+      );
     });
   });
 
@@ -174,9 +182,13 @@ describe('Pass 5: Error and Edge Cases', () => {
       // Perform multiple navigation cycles
       for (let i = 0; i < 5; i++) {
         try {
-          await element(by.text('Home')).tap().catch(() => {});
+          await element(by.text('Home'))
+            .tap()
+            .catch(() => {});
           await TestHelpers.wait(500);
-          await element(by.text('Account')).tap().catch(() => {});
+          await element(by.text('Account'))
+            .tap()
+            .catch(() => {});
           await TestHelpers.wait(500);
         } catch {
           // Continue
@@ -184,7 +196,9 @@ describe('Pass 5: Error and Edge Cases', () => {
       }
 
       await TestHelpers.wait(2000);
-      console.log('✅ Navigation cycles completed without apparent memory issues');
+      console.log(
+        '✅ Navigation cycles completed without apparent memory issues',
+      );
     });
   });
 
@@ -210,4 +224,3 @@ describe('Pass 5: Error and Edge Cases', () => {
     });
   });
 });
-

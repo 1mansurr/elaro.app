@@ -8,7 +8,9 @@ interface HomeScreenEmptyStateProps {
   onAddActivity: () => void;
 }
 
-export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({ onAddActivity }) => {
+export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
+  onAddActivity,
+}) => {
   return (
     <View style={styles.container}>
       {/* Illustration using Ionicons */}
@@ -30,7 +32,8 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({ onAd
       {/* Content */}
       <Text style={styles.title}>Your Schedule Awaits!</Text>
       <Text style={styles.subtitle}>
-        Start your academic journey by adding your first lecture, assignment, or study session.
+        Start your academic journey by adding your first lecture, assignment, or
+        study session.
       </Text>
 
       {/* CTA Button */}
@@ -42,7 +45,11 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({ onAd
 
       {/* Additional tip */}
       <View style={styles.tipContainer}>
-        <Ionicons name="information-circle-outline" size={20} color={COLORS.gray} />
+        <Ionicons
+          name="information-circle-outline"
+          size={20}
+          color={COLORS.gray}
+        />
         <Text style={styles.tipText}>
           Tip: You can also swipe right on tasks to mark them complete!
         </Text>
@@ -135,4 +142,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-

@@ -22,7 +22,11 @@ interface BaseModalProps {
   closeOnBackdropPress?: boolean;
   modalStyle?: ViewStyle;
   overlayStyle?: ViewStyle;
-  presentationStyle?: 'fullScreen' | 'pageSheet' | 'formSheet' | 'overFullScreen';
+  presentationStyle?:
+    | 'fullScreen'
+    | 'pageSheet'
+    | 'formSheet'
+    | 'overFullScreen';
 }
 
 export const BaseModal: React.FC<BaseModalProps> = ({
@@ -39,7 +43,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
   presentationStyle = 'overFullScreen',
 }) => {
   const { theme } = useTheme();
-  
+
   // Animation refs for smooth modal interactions
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(0.95)).current;
@@ -126,11 +130,10 @@ export const BaseModal: React.FC<BaseModalProps> = ({
       transparent
       animationType="none" // We handle animations manually
       onRequestClose={onClose}
-      presentationStyle={presentationStyle as any}
-    >
+      presentationStyle={presentationStyle as any}>
       <View style={styles.container}>
         {renderBackdrop()}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.modalContainer,
             {
@@ -140,8 +143,7 @@ export const BaseModal: React.FC<BaseModalProps> = ({
               ...SHADOWS.lg,
             },
             modalStyle,
-          ]}
-        >
+          ]}>
           {children}
         </Animated.View>
       </View>

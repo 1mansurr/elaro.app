@@ -1,41 +1,65 @@
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createSupabaseClient } from '../_shared/supabase-client.ts';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-serve(async (req) => {
-  try {
-    const supabase = createSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'User not authenticated' }), { status: 401 });
-    }
-
-    // Set a long expiration date for the free premium access, e.g., 100 years from now.
-    const expirationDate = new Date();
-    expirationDate.setFullYear(expirationDate.getFullYear() + 100);
-
-    const { data, error } = await supabase
-      .from('users')
-      .update({
-        subscription_tier: 'oddity',
-        subscription_status: 'active',
-        subscription_expires_at: expirationDate.toISOString(),
-      })
-      .eq('id', user.id)
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    return new Response(JSON.stringify({ message: 'Premium access granted successfully.', user: data }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+// Optional schema - user can optionally pass a custom expiration date
+const GrantPremiumSchema = z.object({
+  expirationDate: z
+    .string()
+    .datetime('Invalid expiration date format')
+    .optional(),
 });
+
+async function handleGrantPremium(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  await logger.info(
+    'Granting premium access',
+    { user_id: user.id },
+    traceContext,
+  );
+
+  // Use provided expiration date or default to 100 years from now
+  const expirationDate = body.expirationDate
+    ? new Date(body.expirationDate).toISOString()
+    : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error: updateError } = await supabaseClient
+    .from('users')
+    .update({
+      subscription_tier: 'oddity',
+      subscription_status: 'active',
+      subscription_expires_at: expirationDate,
+    })
+    .eq('id', user.id)
+    .select()
+    .single();
+
+  if (updateError) throw handleDbError(updateError);
+
+  await logger.info(
+    'Successfully granted premium access',
+    { user_id: user.id, expiration_date: expirationDate },
+    traceContext,
+  );
+
+  // Maintain backward compatibility with existing response format
+  return { message: 'Premium access granted successfully.', user: data };
+}
+
+serve(
+  createAuthenticatedHandler(handleGrantPremium, {
+    rateLimitName: 'grant-premium-access',
+    schema: GrantPremiumSchema,
+    requireIdempotency: true,
+  }),
+);

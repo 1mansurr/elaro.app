@@ -1,83 +1,85 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  createAdminHandler,
+  AuthenticatedRequest,
+} from '../_shared/admin-handler.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 
 // Define the shape of the final export
 interface FullExport {
   exportedAt: string;
-  users: any[];
-  courses: any[];
-  assignments: any[];
-  lectures: any[];
-  studySessions: any[];
-  reminders: any[];
+  users: unknown[];
+  courses: unknown[];
+  assignments: unknown[];
+  lectures: unknown[];
+  studySessions: unknown[];
+  reminders: unknown[];
 }
 
-serve(async (req) => {
-  try {
-    // 1. Create a Supabase client with the service_role key to bypass RLS
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+async function handleAdminExport(req: AuthenticatedRequest) {
+  const { supabaseClient, user } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
 
-    // 2. Authenticate the user making the request
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401 });
-    }
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(jwt);
+  await logger.info(
+    'Admin initiating data export',
+    { admin_id: user.id },
+    traceContext,
+  );
 
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: 'Invalid JWT' }), { status: 401 });
-    }
-
-    // 3. SECURITY CHECK: Verify the user is an admin
-    // Check if the user's email is in the list of admin emails
-    const adminEmails = Deno.env.get('ADMIN_EMAILS')?.split(',') || [];
-    
-    if (!adminEmails.includes(user.email || '')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized: User is not an admin.' }), { status: 403 });
-    }
-
-    console.log(`Admin user ${user.id} initiated data export.`);
-
-    // 4. Fetch all data from all critical tables
-    const [
-      users,
-      courses,
-      assignments,
-      lectures,
-      studySessions,
-      reminders,
-    ] = await Promise.all([
-      supabaseAdmin.from('users').select('*'),
-      supabaseAdmin.from('courses').select('*'),
-      supabaseAdmin.from('assignments').select('*'),
-      supabaseAdmin.from('lectures').select('*'),
-      supabaseAdmin.from('study_sessions').select('*'),
-      supabaseAdmin.from('reminders').select('*'),
+  // Fetch all data from all critical tables
+  const [users, courses, assignments, lectures, studySessions, reminders] =
+    await Promise.all([
+      supabaseClient.from('users').select('*'),
+      supabaseClient.from('courses').select('*'),
+      supabaseClient.from('assignments').select('*'),
+      supabaseClient.from('lectures').select('*'),
+      supabaseClient.from('study_sessions').select('*'),
+      supabaseClient.from('reminders').select('*'),
     ]);
 
-    // 5. Construct the final JSON output
-    const exportData: FullExport = {
-      exportedAt: new Date().toISOString(),
-      users: users.data || [],
-      courses: courses.data || [],
-      assignments: assignments.data || [],
-      lectures: lectures.data || [],
-      studySessions: studySessions.data || [],
-      reminders: reminders.data || [],
-    };
+  // Check for errors - use first error found
+  if (users.error) throw handleDbError(users.error);
+  if (courses.error) throw handleDbError(courses.error);
+  if (assignments.error) throw handleDbError(assignments.error);
+  if (lectures.error) throw handleDbError(lectures.error);
+  if (studySessions.error) throw handleDbError(studySessions.error);
+  if (reminders.error) throw handleDbError(reminders.error);
 
-    // Return the data as a JSON response
-    return new Response(JSON.stringify(exportData), {
-      headers: { 'Content-Type': 'application/json' },
-      status: 200,
-    });
+  // Construct the final JSON output
+  const exportData: FullExport = {
+    exportedAt: new Date().toISOString(),
+    users: users.data || [],
+    courses: courses.data || [],
+    assignments: assignments.data || [],
+    lectures: lectures.data || [],
+    studySessions: studySessions.data || [],
+    reminders: reminders.data || [],
+  };
 
-  } catch (error) {
-    console.error('Error during admin data export:', error);
-    return new Response(JSON.stringify({ error: 'An internal error occurred.' }), { status: 500 });
-  }
-});
+  await logger.info(
+    'Admin data export completed',
+    {
+      admin_id: user.id,
+      user_count: users.data?.length || 0,
+      course_count: courses.data?.length || 0,
+      assignment_count: assignments.data?.length || 0,
+      lecture_count: lectures.data?.length || 0,
+      study_session_count: studySessions.data?.length || 0,
+      reminder_count: reminders.data?.length || 0,
+    },
+    traceContext,
+  );
+
+  return exportData;
+}
+
+serve(
+  createAdminHandler(
+    handleAdminExport,
+    'admin-export-all-data',
+    undefined, // No schema needed for read operation
+    false, // No idempotency needed for read operation
+  ),
+);

@@ -15,7 +15,9 @@ export interface PasswordValidationResult {
  * @param password - The password to validate
  * @returns Validation result with strength score and individual checks
  */
-export const validatePassword = (password: string): PasswordValidationResult => {
+export const validatePassword = (
+  password: string,
+): PasswordValidationResult => {
   const checks = {
     hasMinLength: password.length >= 8,
     hasLowercase: /[a-z]/.test(password),
@@ -54,7 +56,13 @@ export const getPasswordStrengthLabel = (strength: number): string => {
  * @returns Hex color string
  */
 export const getPasswordStrengthColor = (strength: number): string => {
-  const colors = ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#34C759', '#34C759'];
+  const colors = [
+    '#FF3B30',
+    '#FF9500',
+    '#FFCC00',
+    '#34C759',
+    '#34C759',
+    '#34C759',
+  ];
   return colors[strength - 1] || '#E0E0E0';
 };
-

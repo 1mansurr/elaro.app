@@ -75,8 +75,28 @@ CREATE TABLE IF NOT EXISTS notification_deliveries (
 
 -- Indexes for notification tracking
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_user_id ON notification_deliveries(user_id);
-CREATE INDEX IF NOT EXISTS idx_notification_deliveries_report_id ON notification_deliveries(report_id);
-CREATE INDEX IF NOT EXISTS idx_notification_deliveries_status ON notification_deliveries(delivery_status);
+-- Only create report_id index if column exists (table may have been created without this column)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'notification_deliveries' 
+        AND column_name = 'report_id'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_deliveries_report_id ON notification_deliveries(report_id);
+    END IF;
+END $$;
+-- Only create delivery_status index if column exists (table may have been created without this column)
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'notification_deliveries' 
+        AND column_name = 'delivery_status'
+    ) THEN
+        CREATE INDEX IF NOT EXISTS idx_notification_deliveries_status ON notification_deliveries(delivery_status);
+    END IF;
+END $$;
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_created_at ON notification_deliveries(created_at);
 
 -- ============================================================================

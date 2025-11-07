@@ -1,9 +1,12 @@
-import { TransitionSpecs, CardStyleInterpolators } from '@react-navigation/stack';
+import {
+  TransitionSpecs,
+  CardStyleInterpolators,
+} from '@react-navigation/stack';
 import { COLORS } from '@/constants/theme';
 
 /**
  * Navigation Constants for ELARO App
- * 
+ *
  * This module provides consistent navigation configurations including:
  * - Transition animations
  * - Gesture options

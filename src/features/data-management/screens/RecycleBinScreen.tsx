@@ -1,5 +1,12 @@
 import React, { useState, useCallback, useLayoutEffect } from 'react';
-import { View, FlatList, StyleSheet, Alert, TouchableOpacity, Text } from 'react-native';
+import {
+  View,
+  FlatList,
+  StyleSheet,
+  Alert,
+  TouchableOpacity,
+  Text,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDeletedItemsQuery } from '@/hooks/useDeletedItemsQuery';
@@ -11,9 +18,16 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 const RecycleBinScreen = () => {
   const navigation = useNavigation();
-  const { data: items, isLoading, isError, error, refetch, isRefetching } = useDeletedItemsQuery();
+  const {
+    data: items,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useDeletedItemsQuery();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
-  
+
   // Selection mode state
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -36,8 +50,7 @@ const RecycleBinScreen = () => {
               setIsSelectionMode(true);
             }
           }}
-          style={{ marginRight: 16 }}
-        >
+          style={{ marginRight: 16 }}>
           <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>
             {isSelectionMode ? 'Cancel' : 'Select'}
           </Text>
@@ -105,7 +118,7 @@ const RecycleBinScreen = () => {
               } else {
                 Alert.alert(
                   'Partially Complete',
-                  `${result.results.succeeded} items restored successfully.\n${result.results.failed} items failed.`
+                  `${result.results.succeeded} items restored successfully.\n${result.results.failed} items failed.`,
                 );
               }
 
@@ -119,7 +132,7 @@ const RecycleBinScreen = () => {
             }
           },
         },
-      ]
+      ],
     );
   }, [selectedIds, items, batchMutation]);
 
@@ -158,7 +171,7 @@ const RecycleBinScreen = () => {
               } else {
                 Alert.alert(
                   'Partially Complete',
-                  `${result.results.succeeded} items deleted successfully.\n${result.results.failed} items failed.`
+                  `${result.results.succeeded} items deleted successfully.\n${result.results.failed} items failed.`,
                 );
               }
 
@@ -172,84 +185,103 @@ const RecycleBinScreen = () => {
             }
           },
         },
-      ]
+      ],
     );
   }, [selectedIds, items, batchMutation]);
 
-  const handleRestore = useCallback(async (itemId: string, itemType: string) => {
-    setActionLoading(itemId);
-    const functionName = `restore-${itemType.replace('_', '-')}`;
-    
-    // Map item type to the correct parameter name expected by backend
-    const getParameterName = (type: string) => {
-      switch (type) {
-        case 'course': return 'courseId';
-        case 'assignment': return 'assignmentId';
-        case 'lecture': return 'lectureId';
-        case 'study_session': return 'studySessionId';
-        default: return 'id';
-      }
-    };
-    
-    const parameterName = getParameterName(itemType);
-    const { error } = await supabase.functions.invoke(functionName, { 
-      body: { [parameterName]: itemId } 
-    });
-    
-    if (error) {
-      const errorTitle = getErrorTitle(error);
-      const errorMessage = mapErrorCodeToMessage(error);
-      Alert.alert(errorTitle, errorMessage);
-    } else {
-      Alert.alert('Success', `${itemType.replace('_', ' ')} restored.`);
-      await refetch(); // Refresh list
-    }
-    setActionLoading(null);
-  }, [refetch]);
+  const handleRestore = useCallback(
+    async (itemId: string, itemType: string) => {
+      setActionLoading(itemId);
+      const functionName = `restore-${itemType.replace('_', '-')}`;
 
-  const handleDeletePermanently = useCallback((itemId: string, itemType: string) => {
-    Alert.alert(
-      'Delete Permanently',
-      'This action is irreversible. Are you sure?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setActionLoading(itemId);
-            const functionName = `delete-${itemType.replace('_', '-')}-permanently`;
-            
-            // Map item type to the correct parameter name expected by backend
-            const getParameterName = (type: string) => {
-              switch (type) {
-                case 'course': return 'courseId';
-                case 'assignment': return 'assignmentId';
-                case 'lecture': return 'lectureId';
-                case 'study_session': return 'studySessionId';
-                default: return 'id';
+      // Map item type to the correct parameter name expected by backend
+      const getParameterName = (type: string) => {
+        switch (type) {
+          case 'course':
+            return 'courseId';
+          case 'assignment':
+            return 'assignmentId';
+          case 'lecture':
+            return 'lectureId';
+          case 'study_session':
+            return 'studySessionId';
+          default:
+            return 'id';
+        }
+      };
+
+      const parameterName = getParameterName(itemType);
+      const { error } = await supabase.functions.invoke(functionName, {
+        body: { [parameterName]: itemId },
+      });
+
+      if (error) {
+        const errorTitle = getErrorTitle(error);
+        const errorMessage = mapErrorCodeToMessage(error);
+        Alert.alert(errorTitle, errorMessage);
+      } else {
+        Alert.alert('Success', `${itemType.replace('_', ' ')} restored.`);
+        await refetch(); // Refresh list
+      }
+      setActionLoading(null);
+    },
+    [refetch],
+  );
+
+  const handleDeletePermanently = useCallback(
+    (itemId: string, itemType: string) => {
+      Alert.alert(
+        'Delete Permanently',
+        'This action is irreversible. Are you sure?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              setActionLoading(itemId);
+              const functionName = `delete-${itemType.replace('_', '-')}-permanently`;
+
+              // Map item type to the correct parameter name expected by backend
+              const getParameterName = (type: string) => {
+                switch (type) {
+                  case 'course':
+                    return 'courseId';
+                  case 'assignment':
+                    return 'assignmentId';
+                  case 'lecture':
+                    return 'lectureId';
+                  case 'study_session':
+                    return 'studySessionId';
+                  default:
+                    return 'id';
+                }
+              };
+
+              const parameterName = getParameterName(itemType);
+              const { error } = await supabase.functions.invoke(functionName, {
+                body: { [parameterName]: itemId },
+              });
+
+              if (error) {
+                const errorTitle = getErrorTitle(error);
+                const errorMessage = mapErrorCodeToMessage(error);
+                Alert.alert(errorTitle, errorMessage);
+              } else {
+                Alert.alert(
+                  'Success',
+                  `${itemType.replace('_', ' ')} permanently deleted.`,
+                );
+                await refetch(); // Refresh list
               }
-            };
-            
-            const parameterName = getParameterName(itemType);
-            const { error } = await supabase.functions.invoke(functionName, { 
-              body: { [parameterName]: itemId } 
-            });
-            
-            if (error) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-            } else {
-              Alert.alert('Success', `${itemType.replace('_', ' ')} permanently deleted.`);
-              await refetch(); // Refresh list
-            }
-            setActionLoading(null);
+              setActionLoading(null);
+            },
           },
-        },
-      ]
-    );
-  }, [refetch]);
+        ],
+      );
+    },
+    [refetch],
+  );
 
   return (
     <QueryStateWrapper
@@ -262,17 +294,20 @@ const RecycleBinScreen = () => {
       onRefresh={refetch}
       emptyTitle="Trash can is empty"
       emptyMessage="Deleted items will appear here. Items are automatically deleted after 30 days."
-      emptyIcon="trash-outline"
-    >
+      emptyIcon="trash-outline">
       <View style={styles.container}>
         {/* Selection toolbar */}
         {isSelectionMode && (
           <View style={styles.selectionToolbar}>
             <View style={styles.toolbarLeft}>
-              <TouchableOpacity onPress={handleSelectAll} style={styles.toolbarButton}>
+              <TouchableOpacity
+                onPress={handleSelectAll}
+                style={styles.toolbarButton}>
                 <Text style={styles.toolbarButtonText}>Select All</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleDeselectAll} style={styles.toolbarButton}>
+              <TouchableOpacity
+                onPress={handleDeselectAll}
+                style={styles.toolbarButton}>
                 <Text style={styles.toolbarButtonText}>Deselect All</Text>
               </TouchableOpacity>
               <Text style={styles.selectedCount}>
@@ -285,7 +320,9 @@ const RecycleBinScreen = () => {
         {/* List */}
         <FlatList
           data={items}
-          keyExtractor={(item, index) => `${(item as any).type || 'unknown'}-${item.id || index}`}
+          keyExtractor={(item, index) =>
+            `${(item as any).type || 'unknown'}-${item.id || index}`
+          }
           renderItem={({ item }) => (
             <DeletedItemCard
               item={item as any}
@@ -298,6 +335,12 @@ const RecycleBinScreen = () => {
             />
           )}
           contentContainerStyle={styles.list}
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
         />
 
         {/* Batch action buttons */}
@@ -306,8 +349,7 @@ const RecycleBinScreen = () => {
             <TouchableOpacity
               style={[styles.batchButton, styles.restoreBatchButton]}
               onPress={handleBatchRestore}
-              disabled={batchMutation.isPending}
-            >
+              disabled={batchMutation.isPending}>
               <Ionicons name="refresh" size={20} color="#fff" />
               <Text style={styles.batchButtonText}>
                 Restore ({selectedIds.size})
@@ -317,8 +359,7 @@ const RecycleBinScreen = () => {
             <TouchableOpacity
               style={[styles.batchButton, styles.deleteBatchButton]}
               onPress={handleBatchDelete}
-              disabled={batchMutation.isPending}
-            >
+              disabled={batchMutation.isPending}>
               <Ionicons name="trash" size={20} color="#fff" />
               <Text style={styles.batchButtonText}>
                 Delete ({selectedIds.size})

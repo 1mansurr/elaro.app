@@ -1,6 +1,6 @@
 /**
  * Crash Simulation Utilities for E2E Recovery Tests
- * 
+ *
  * Provides utilities to simulate app crashes and validate recovery behavior
  */
 
@@ -21,30 +21,30 @@ export async function simulateCrash(): Promise<void> {
  */
 export async function crashMidOperation<T>(
   operation: () => Promise<T>,
-  captureState?: () => Promise<any>
+  captureState?: () => Promise<any>,
 ): Promise<{ stateBeforeCrash: any | null; crashed: boolean }> {
   let stateBeforeCrash: any | null = null;
-  
+
   try {
     // Capture state before crash (if provided)
     if (captureState) {
       stateBeforeCrash = await captureState();
     }
-    
+
     // Start operation
     const operationPromise = operation();
-    
+
     // Wait a bit, then crash
     await new Promise(resolve => setTimeout(resolve, 100));
     await simulateCrash();
-    
+
     // Wait for operation (which will fail due to crash)
     try {
       await operationPromise;
     } catch (error) {
       // Expected - operation interrupted by crash
     }
-    
+
     return { stateBeforeCrash, crashed: true };
   } catch (error) {
     console.warn('⚠️ Crash simulation error:', error);
@@ -65,17 +65,17 @@ export async function restartAfterCrash(): Promise<void> {
  * Simulate crash during sync operation
  */
 export async function crashDuringSync(
-  syncOperation: () => Promise<void>
+  syncOperation: () => Promise<void>,
 ): Promise<void> {
   console.log('💥 Simulating crash during sync...');
-  
+
   // Start sync
   const syncPromise = syncOperation();
-  
+
   // Wait briefly, then crash
   await new Promise(resolve => setTimeout(resolve, 200));
   await simulateCrash();
-  
+
   // Sync will be interrupted (handled by try/catch in operation)
   try {
     await syncPromise;
@@ -88,12 +88,12 @@ export async function crashDuringSync(
  * Measure recovery time after crash
  */
 export async function measureRecoveryTime<T>(
-  recoveryOperation: () => Promise<T>
+  recoveryOperation: () => Promise<T>,
 ): Promise<{ result: T; recoveryTime: number }> {
   const startTime = Date.now();
   const result = await recoveryOperation();
   const recoveryTime = Date.now() - startTime;
-  
+
   return { result, recoveryTime };
 }
 
@@ -108,7 +108,7 @@ export interface OperationLog {
 
 class OperationTracker {
   private operations: Map<string, OperationLog[]> = new Map();
-  
+
   logOperation(operationId: string, type: string): void {
     if (!this.operations.has(operationId)) {
       this.operations.set(operationId, []);
@@ -119,11 +119,11 @@ class OperationTracker {
       type,
     });
   }
-  
+
   getOperationCount(operationId: string): number {
     return this.operations.get(operationId)?.length || 0;
   }
-  
+
   getDuplicates(): Array<{ operationId: string; count: number }> {
     const duplicates: Array<{ operationId: string; count: number }> = [];
     for (const [operationId, logs] of this.operations.entries()) {
@@ -133,11 +133,10 @@ class OperationTracker {
     }
     return duplicates;
   }
-  
+
   reset(): void {
     this.operations.clear();
   }
 }
 
 export const operationTracker = new OperationTracker();
-

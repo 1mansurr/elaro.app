@@ -1,6 +1,6 @@
 /**
  * SyncIndicator Component
- * 
+ *
  * Displays a syncing indicator when the SyncManager is actively processing
  * the offline queue. Subscribes to SyncManager state changes for real-time updates.
  */
@@ -18,7 +18,7 @@ export const SyncIndicator: React.FC = () => {
 
   useEffect(() => {
     // Subscribe to queue changes
-    const unsubscribe = syncManager.subscribe((newStats) => {
+    const unsubscribe = syncManager.subscribe(newStats => {
       setStats(newStats);
       setIsSyncing(syncManager.getIsSyncing());
     });
@@ -43,14 +43,12 @@ export const SyncIndicator: React.FC = () => {
     <View style={[styles.container, { backgroundColor: theme.accent }]}>
       <ActivityIndicator size="small" color="#FFFFFF" />
       <Text style={styles.text}>
-        {isSyncing 
+        {isSyncing
           ? `🔄 Syncing ${stats.pending} ${stats.pending === 1 ? 'item' : 'items'}...`
           : `⏳ ${stats.pending} ${stats.pending === 1 ? 'item' : 'items'} waiting to sync`}
       </Text>
       {stats.failed > 0 && (
-        <Text style={styles.failedText}>
-          ({stats.failed} failed)
-        </Text>
+        <Text style={styles.failedText}>({stats.failed} failed)</Text>
       )}
     </View>
   );
@@ -76,4 +74,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-

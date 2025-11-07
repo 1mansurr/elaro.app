@@ -1,8 +1,19 @@
 /**
  * Mixpanel Analytics Service
+ *
+ * ⚠️ STATUS: PARKED - Currently using MockMixpanel implementation
  * 
- * Privacy-focused analytics service using Mixpanel.
- * Automatically sanitizes PII and provides centralized event tracking.
+ * This service is intentionally disabled but kept in codebase for potential
+ * future re-enablement. All tracking calls are no-ops.
+ * 
+ * To re-enable:
+ * 1. Uncomment real Mixpanel import (if available)
+ * 2. Replace MockMixpanel with real Mixpanel instance
+ * 3. Update App.tsx initialization
+ * 4. Verify EXPO_PUBLIC_MIXPANEL_TOKEN is set in environment variables
+ * 5. Test tracking functionality
+ * 
+ * See MIXPANEL_STATUS.md for more details.
  */
 
 // Mock Mixpanel implementation
@@ -13,7 +24,11 @@ const MockMixpanel = {
   getDistinctId: () => 'mock-user-id',
   getPeople: () => ({ set: (_props?: Record<string, any>) => {} }),
   timeEvent: (_event?: string) => {},
-  trackWithGroups: (_event?: string, _props?: Record<string, any>, _groups?: Record<string, any>) => {},
+  trackWithGroups: (
+    _event?: string,
+    _props?: Record<string, any>,
+    _groups?: Record<string, any>,
+  ) => {},
 };
 
 // const Mixpanel = MockMixpanel;
@@ -25,7 +40,11 @@ interface MixpanelService {
   reset: () => void;
   setUserProperties: (properties: Record<string, any>) => void;
   timeEvent: (event: string) => void;
-  trackWithGroups: (event: string, properties?: Record<string, any>, groups?: Record<string, any>) => void;
+  trackWithGroups: (
+    event: string,
+    properties?: Record<string, any>,
+    groups?: Record<string, any>,
+  ) => void;
 }
 
 class MixpanelAnalyticsService implements MixpanelService {
@@ -39,8 +58,9 @@ class MixpanelAnalyticsService implements MixpanelService {
    */
   async initialize(token?: string): Promise<void> {
     try {
-      this.projectToken = token || process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || null;
-      
+      this.projectToken =
+        token || process.env.EXPO_PUBLIC_MIXPANEL_TOKEN || null;
+
       if (!this.projectToken) {
         console.warn('⚠️ Mixpanel token not provided, analytics disabled');
         return;
@@ -48,7 +68,7 @@ class MixpanelAnalyticsService implements MixpanelService {
 
       this.mixpanel = MockMixpanel;
       this.isInitialized = true;
-      
+
       console.log('✅ Mixpanel initialized successfully');
     } catch (error) {
       console.error('❌ Mixpanel initialization failed:', error);
@@ -59,19 +79,21 @@ class MixpanelAnalyticsService implements MixpanelService {
   /**
    * Sanitize properties to remove PII
    */
-  private sanitizeProperties(properties: Record<string, any> = {}): Record<string, any> {
+  private sanitizeProperties(
+    properties: Record<string, any> = {},
+  ): Record<string, any> {
     const sanitized: Record<string, any> = {};
-    
+
     for (const [key, value] of Object.entries(properties)) {
       // Skip PII fields
       if (this.isPIIField(key)) {
         continue;
       }
-      
+
       // Sanitize values
       sanitized[key] = this.sanitizeValue(value);
     }
-    
+
     return sanitized;
   }
 
@@ -80,37 +102,50 @@ class MixpanelAnalyticsService implements MixpanelService {
    */
   private isPIIField(fieldName: string): boolean {
     const piiFields = [
-      'email', 'name', 'firstName', 'lastName', 'phone', 'address',
-      'password', 'ssn', 'creditCard', 'bankAccount', 'personalId'
+      'email',
+      'name',
+      'firstName',
+      'lastName',
+      'phone',
+      'address',
+      'password',
+      'ssn',
+      'creditCard',
+      'bankAccount',
+      'personalId',
     ];
-    
-    return piiFields.some(pii => 
-      fieldName.toLowerCase().includes(pii.toLowerCase())
+
+    return piiFields.some(pii =>
+      fieldName.toLowerCase().includes(pii.toLowerCase()),
     );
   }
 
   /**
    * Sanitize individual values
    */
-  private sanitizeValue(value: any): any {
+  private sanitizeValue(value: unknown): unknown {
     if (typeof value === 'string') {
       // Hash user IDs
-      if (value.match(/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i)) {
+      if (
+        value.match(
+          /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i,
+        )
+      ) {
         return this.simpleHash(value);
       }
-      
+
       // Truncate long strings
       if (value.length > 50) {
         return value.substring(0, 50) + '...';
       }
-      
+
       return value;
     }
-    
+
     if (Array.isArray(value)) {
       return value.map(item => this.sanitizeValue(item));
     }
-    
+
     if (typeof value === 'object' && value !== null) {
       const sanitized: Record<string, any> = {};
       for (const [key, val] of Object.entries(value)) {
@@ -120,7 +155,7 @@ class MixpanelAnalyticsService implements MixpanelService {
       }
       return sanitized;
     }
-    
+
     return value;
   }
 
@@ -131,7 +166,7 @@ class MixpanelAnalyticsService implements MixpanelService {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return Math.abs(hash).toString(36);
@@ -228,7 +263,11 @@ class MixpanelAnalyticsService implements MixpanelService {
   /**
    * Track event with groups
    */
-  trackWithGroups(event: string, properties?: Record<string, any>, groups?: Record<string, any>): void {
+  trackWithGroups(
+    event: string,
+    properties?: Record<string, any>,
+    groups?: Record<string, any>,
+  ): void {
     if (!this.isInitialized || !this.mixpanel || !this.userConsent) {
       console.warn('Mixpanel not initialized, event not tracked');
       return;
@@ -237,8 +276,12 @@ class MixpanelAnalyticsService implements MixpanelService {
     try {
       const sanitizedProperties = this.sanitizeProperties(properties);
       const sanitizedGroups = this.sanitizeProperties(groups);
-      
-      this.mixpanel.trackWithGroups(event, sanitizedProperties, sanitizedGroups);
+
+      this.mixpanel.trackWithGroups(
+        event,
+        sanitizedProperties,
+        sanitizedGroups,
+      );
     } catch (error) {
       console.error('Error tracking event with groups:', error);
     }

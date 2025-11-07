@@ -1,13 +1,28 @@
-import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback, Alert } from 'react-native';
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Animated,
+  TouchableWithoutFeedback,
+  Alert,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { FONT_WEIGHTS } from '@/constants/theme';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
-import { NotificationBell } from '@/features/notifications/components/NotificationBell';
-import { NotificationHistoryModal } from '@/features/notifications/components/NotificationHistoryModal';
+import { NotificationBell } from '@/shared/components/NotificationBell';
+import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 
 // Performance optimization imports
 import { useExpensiveMemo, useStableCallback } from '@/hooks/useMemoization';
@@ -15,7 +30,7 @@ import { requestDeduplicationService } from '@/services/RequestDeduplicationServ
 import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 
 import { RootStackParamList, Task } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import TrialBanner from '../components/TrialBanner';
 import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
@@ -23,10 +38,19 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
-import { PrimaryButton, QueryStateWrapper, QuickAddModal } from '@/shared/components';
+import {
+  PrimaryButton,
+  QueryStateWrapper,
+  QuickAddModal,
+} from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS as FONT_WEIGHTS_ALL, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS as FONT_WEIGHTS_ALL,
+  SPACING,
+} from '@/constants/theme';
 import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
@@ -42,7 +66,7 @@ const HomeScreen = () => {
   const { user, isGuest } = useAuth();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
-  
+
   // Performance monitoring
   useEffect(() => {
     performanceMonitoringService.startTimer('home-screen-render');
@@ -57,25 +81,26 @@ const HomeScreen = () => {
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
-  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] = useState(false);
+  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
+    useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   // Optimized data fetching with memoization
   const { data: homeData, isLoading, error } = useHomeScreenData();
   const { monthlyTaskCount } = useMonthlyTaskCount();
-  
+
   // Memoized calculations for expensive operations
   const processedHomeData = useExpensiveMemo(() => {
     performanceMonitoringService.startTimer('data-processing');
-    
+
     if (!homeData) return null;
-    
+
     const result = {
       nextUpcomingTask: homeData.nextUpcomingTask,
       todayOverview: homeData.todayOverview,
       // Add any other processing here
     };
-    
+
     performanceMonitoringService.endTimer('data-processing');
     return result;
   }, [homeData]);
@@ -88,10 +113,10 @@ const HomeScreen = () => {
   // Performance-optimized callbacks
   const handleCompleteTask = useStableCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       performanceMonitoringService.startTimer('task-completion');
-      
+
       // Use request deduplication to prevent duplicate completions
       await requestDeduplicationService.deduplicateRequest(
         `complete-task-${selectedTask.id}`,
@@ -101,9 +126,9 @@ const HomeScreen = () => {
             taskType: selectedTask.type,
             taskTitle: selectedTask.title || selectedTask.name,
           });
-        }
+        },
       );
-      
+
       performanceMonitoringService.endTimer('task-completion');
       Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
@@ -114,10 +139,10 @@ const HomeScreen = () => {
 
   const handleDeleteTask = useStableCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       performanceMonitoringService.startTimer('task-deletion');
-      
+
       await requestDeduplicationService.deduplicateRequest(
         `delete-task-${selectedTask.id}`,
         async () => {
@@ -126,9 +151,9 @@ const HomeScreen = () => {
             taskType: selectedTask.type,
             taskTitle: selectedTask.title || 'Untitled Task',
           });
-        }
+        },
       );
-      
+
       performanceMonitoringService.endTimer('task-deletion');
       setSelectedTask(null);
       Alert.alert('Success', 'Task deleted successfully!');
@@ -140,10 +165,10 @@ const HomeScreen = () => {
 
   const handleRestoreTask = useStableCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       performanceMonitoringService.startTimer('task-restoration');
-      
+
       await requestDeduplicationService.deduplicateRequest(
         `restore-task-${selectedTask.id}`,
         async () => {
@@ -152,9 +177,9 @@ const HomeScreen = () => {
             taskType: selectedTask.type,
             taskTitle: selectedTask.title || 'Untitled Task',
           });
-        }
+        },
       );
-      
+
       performanceMonitoringService.endTimer('task-restoration');
       setSelectedTask(null);
       Alert.alert('Success', 'Task restored successfully!');
@@ -167,11 +192,11 @@ const HomeScreen = () => {
   // Memoized UI components
   const MemoizedNextTaskCard = useMemo(() => {
     return (
-      <NextTaskCard 
-        task={processedHomeData?.nextUpcomingTask || null} 
+      <NextTaskCard
+        task={processedHomeData?.nextUpcomingTask || null}
         isGuestMode={isGuest}
         onAddActivity={() => setIsFabOpen(true)}
-        onViewDetails={(task) => setSelectedTask(task)}
+        onViewDetails={task => setSelectedTask(task)}
       />
     );
   }, [processedHomeData?.nextUpcomingTask, isGuest]);
@@ -184,7 +209,11 @@ const HomeScreen = () => {
         subscriptionTier={user?.subscription_tier || 'free'}
       />
     );
-  }, [processedHomeData?.todayOverview, monthlyTaskCount, user?.subscription_tier]);
+  }, [
+    processedHomeData?.todayOverview,
+    monthlyTaskCount,
+    user?.subscription_tier,
+  ]);
 
   // Performance monitoring for render times
   useEffect(() => {
@@ -205,18 +234,30 @@ const HomeScreen = () => {
 
   const shouldShowBanner = useMemo(() => {
     if (isGuest || isBannerDismissed) return false;
-    if (!user?.subscription_tier || user.subscription_tier === 'oddity') return false;
-    
-    const trialDaysRemaining = user.subscription_expires_at 
-      ? differenceInCalendarDays(new Date(user.subscription_expires_at), new Date())
+    if (!user?.subscription_tier || user.subscription_tier === 'oddity')
+      return false;
+
+    const trialDaysRemaining = user.subscription_expires_at
+      ? differenceInCalendarDays(
+          new Date(user.subscription_expires_at),
+          new Date(),
+        )
       : 0;
-    
+
     return trialDaysRemaining > 0 && trialDaysRemaining <= 7;
-  }, [isGuest, isBannerDismissed, user?.subscription_tier, user?.subscription_expires_at]);
+  }, [
+    isGuest,
+    isBannerDismissed,
+    user?.subscription_tier,
+    user?.subscription_expires_at,
+  ]);
 
   const trialDaysRemaining = useMemo(() => {
     if (!user?.subscription_expires_at) return 0;
-    return differenceInCalendarDays(new Date(user.subscription_expires_at), new Date());
+    return differenceInCalendarDays(
+      new Date(user.subscription_expires_at),
+      new Date(),
+    );
   }, [user?.subscription_expires_at]);
 
   const handleSubscribePress = useCallback(() => {
@@ -239,13 +280,21 @@ const HomeScreen = () => {
     setSelectedTask(null);
   }, []);
 
-  const handleEditTask = useCallback((task: Task) => {
-    setSelectedTask(null);
-    const modalName = task.type === 'assignment' ? 'AddAssignmentFlow' :
-                     task.type === 'lecture' ? 'AddLectureFlow' :
-                     task.type === 'study_session' ? 'AddStudySessionFlow' : 'AddAssignmentFlow';
-    (navigation as any).navigate(modalName, { taskToEdit: task });
-  }, [navigation]);
+  const handleEditTask = useCallback(
+    (task: Task) => {
+      setSelectedTask(null);
+      const modalName =
+        task.type === 'assignment'
+          ? 'AddAssignmentFlow'
+          : task.type === 'lecture'
+            ? 'AddLectureFlow'
+            : task.type === 'study_session'
+              ? 'AddStudySessionFlow'
+              : 'AddAssignmentFlow';
+      (navigation as any).navigate(modalName, { taskToEdit: task });
+    },
+    [navigation],
+  );
 
   const handleSwipeComplete = useCallback((task: Task) => {
     setSelectedTask(task);
@@ -254,7 +303,7 @@ const HomeScreen = () => {
   // Performance-optimized refresh handler
   const handleRefresh = useStableCallback(async () => {
     performanceMonitoringService.startTimer('home-screen-refresh');
-    
+
     try {
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
       performanceMonitoringService.endTimer('home-screen-refresh');
@@ -270,22 +319,20 @@ const HomeScreen = () => {
       {!isGuest && (
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
-          <NotificationBell onPress={() => setIsNotificationHistoryVisible(true)} />
+          <NotificationBell
+            onPress={() => setIsNotificationHistoryVisible(true)}
+          />
         </View>
       )}
-      
+
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
           !isGuest ? (
-            <RefreshControl 
-              refreshing={isLoading} 
-              onRefresh={handleRefresh}
-            />
+            <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
           ) : undefined
         }
-        scrollEnabled={!isFabOpen}
-      >
+        scrollEnabled={!isFabOpen}>
         {shouldShowBanner && (
           <TrialBanner
             daysRemaining={trialDaysRemaining as number}
@@ -293,18 +340,20 @@ const HomeScreen = () => {
             onDismiss={handleDismissBanner}
           />
         )}
-        
+
         {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
-        
+
         <SwipeableTaskCard
-          onSwipeComplete={() => processedHomeData?.nextUpcomingTask && handleSwipeComplete(processedHomeData.nextUpcomingTask)}
-          enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}
-        >
+          onSwipeComplete={() =>
+            processedHomeData?.nextUpcomingTask &&
+            handleSwipeComplete(processedHomeData.nextUpcomingTask)
+          }
+          enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}>
           {MemoizedNextTaskCard}
         </SwipeableTaskCard>
-        
+
         {MemoizedTodayOverviewCard}
-        
+
         <PrimaryButton
           title="View Full Calendar"
           onPress={() => navigation.navigate('Calendar')}

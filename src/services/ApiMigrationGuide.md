@@ -5,6 +5,7 @@ This guide helps you migrate from the existing API structure to the new versione
 ## Overview
 
 The new versioned API system provides:
+
 - **Automatic version management** with backward compatibility
 - **Deprecation warnings** and migration guidance
 - **Consolidated Edge Functions** (reduced from 73 to 4 main functions)
@@ -16,15 +17,25 @@ The new versioned API system provides:
 ### 1. Update API Client Usage
 
 **Before (Legacy):**
+
 ```typescript
 import { api } from '@/services/api';
 
-// Direct API calls
-const courses = await api.courses.getAll();
-const assignments = await api.assignments.getAll();
+// ⚠️ DEPRECATED: getAll() methods now return paginated results
+// Old code may break - getAll() returns CoursesPage, not Course[]
+const coursesPage = await api.courses.getAll({ pageParam: 0, pageSize: 50 });
+const courses = coursesPage.courses; // Extract array from paginated response
+
+// For assignments, lectures, study sessions, use listPage() instead
+const assignmentsPage = await api.assignments.listPage({
+  pageParam: 0,
+  pageSize: 50,
+});
+const assignments = assignmentsPage.assignments;
 ```
 
 **After (Versioned):**
+
 ```typescript
 import { versionedApiClient } from '@/services/VersionedApiClient';
 
@@ -36,16 +47,21 @@ const assignments = await versionedApiClient.getAssignments();
 ### 2. Use React Hooks for State Management
 
 **Before (Legacy):**
+
 ```typescript
 import { useQuery } from '@tanstack/react-query';
 
-const { data: courses, isLoading } = useQuery({
+// ⚠️ DEPRECATED: getAll() now returns paginated results
+const { data: coursesPage, isLoading } = useQuery({
   queryKey: ['courses'],
-  queryFn: () => api.courses.getAll(),
+  queryFn: () => api.courses.getAll({ pageParam: 0, pageSize: 50 }),
 });
+// Extract courses array from paginated response
+const courses = coursesPage?.courses || [];
 ```
 
 **After (Versioned):**
+
 ```typescript
 import { useCourses } from '@/hooks/useVersionedApi';
 
@@ -55,14 +71,12 @@ const { data, loading, error, deprecationWarning } = useCourses();
 ### 3. Handle Version Warnings
 
 **New Feature - Version Warnings:**
+
 ```typescript
 import { useApiVersion } from '@/hooks/useVersionedApi';
 
-const { 
-  currentVersion, 
-  migrationRecommendations, 
-  upgradeToLatest 
-} = useApiVersion();
+const { currentVersion, migrationRecommendations, upgradeToLatest } =
+  useApiVersion();
 
 // Check for deprecation warnings
 if (migrationRecommendations.length > 0) {
@@ -75,6 +89,7 @@ if (migrationRecommendations.length > 0) {
 ### 4. Batch Operations
 
 **New Feature - Batch Operations:**
+
 ```typescript
 import { useBatchOperations } from '@/hooks/useVersionedApi';
 
@@ -83,7 +98,12 @@ const { executeBatch } = useBatchOperations();
 // Execute multiple operations in a single request
 const result = await executeBatch([
   { type: 'course', table: 'courses', action: 'create', data: courseData },
-  { type: 'assignment', table: 'assignments', action: 'create', data: assignmentData },
+  {
+    type: 'assignment',
+    table: 'assignments',
+    action: 'create',
+    data: assignmentData,
+  },
   { type: 'lecture', table: 'lectures', action: 'create', data: lectureData },
 ]);
 ```
@@ -91,14 +111,17 @@ const result = await executeBatch([
 ### 5. Update Component Usage
 
 **Before (Legacy):**
+
 ```typescript
 import { useQuery } from '@tanstack/react-query';
 
 function CoursesScreen() {
-  const { data: courses, isLoading } = useQuery({
+  // ⚠️ DEPRECATED: Use useCourses() hook instead (see After section)
+  const { data: coursesPage, isLoading } = useQuery({
     queryKey: ['courses'],
-    queryFn: () => api.courses.getAll(),
+    queryFn: () => api.courses.getAll({ pageParam: 0, pageSize: 50 }),
   });
+  const courses = coursesPage?.courses || [];
 
   if (isLoading) return <LoadingSpinner />;
   return <CoursesList courses={courses} />;
@@ -106,6 +129,7 @@ function CoursesScreen() {
 ```
 
 **After (Versioned):**
+
 ```typescript
 import { useCourses } from '@/hooks/useVersionedApi';
 import { VersionInfo } from '@/components/VersionInfo';
@@ -129,27 +153,27 @@ function CoursesScreen() {
 
 ### Consolidated Edge Functions
 
-| Legacy Function | New Consolidated Function | Endpoint |
-|----------------|---------------------------|----------|
-| `create-course` | `api-v2` | `/api-v2/courses/create` |
-| `update-course` | `api-v2` | `/api-v2/courses/update/{id}` |
-| `delete-course` | `api-v2` | `/api-v2/courses/delete/{id}` |
-| `create-assignment` | `api-v2` | `/api-v2/assignments/create` |
-| `update-assignment` | `api-v2` | `/api-v2/assignments/update/{id}` |
-| `delete-assignment` | `api-v2` | `/api-v2/assignments/delete/{id}` |
-| `send-notification` | `notification-system` | `/notification-system/send` |
-| `schedule-reminder` | `notification-system` | `/notification-system/schedule` |
-| `admin-export` | `admin-system` | `/admin-system/export` |
-| `health-check` | `admin-system` | `/admin-system/health` |
+| Legacy Function     | New Consolidated Function | Endpoint                          |
+| ------------------- | ------------------------- | --------------------------------- |
+| `create-course`     | `api-v2`                  | `/api-v2/courses/create`          |
+| `update-course`     | `api-v2`                  | `/api-v2/courses/update/{id}`     |
+| `delete-course`     | `api-v2`                  | `/api-v2/courses/delete/{id}`     |
+| `create-assignment` | `api-v2`                  | `/api-v2/assignments/create`      |
+| `update-assignment` | `api-v2`                  | `/api-v2/assignments/update/{id}` |
+| `delete-assignment` | `api-v2`                  | `/api-v2/assignments/delete/{id}` |
+| `send-notification` | `notification-system`     | `/notification-system/send`       |
+| `schedule-reminder` | `notification-system`     | `/notification-system/schedule`   |
+| `admin-export`      | `admin-system`            | `/admin-system/export`            |
+| `health-check`      | `admin-system`            | `/admin-system/health`            |
 
 ### Batch Operations
 
-| Operation | Endpoint | Method |
-|-----------|----------|--------|
-| Multiple operations | `/batch-operations` | POST |
-| Batch create | `/batch-operations` | POST |
-| Batch update | `/batch-operations` | POST |
-| Batch delete | `/batch-operations` | POST |
+| Operation           | Endpoint            | Method |
+| ------------------- | ------------------- | ------ |
+| Multiple operations | `/batch-operations` | POST   |
+| Batch create        | `/batch-operations` | POST   |
+| Batch update        | `/batch-operations` | POST   |
+| Batch delete        | `/batch-operations` | POST   |
 
 ## Version Headers
 
@@ -167,6 +191,7 @@ X-Migration-Guide: https://docs.elaro.app/migration/v1-to-v2
 ## Error Handling
 
 **Before (Legacy):**
+
 ```typescript
 try {
   const result = await api.courses.create(courseData);
@@ -176,8 +201,10 @@ try {
 ```
 
 **After (Versioned):**
+
 ```typescript
-const { data, error, deprecationWarning } = await versionedApiClient.createCourse(courseData);
+const { data, error, deprecationWarning } =
+  await versionedApiClient.createCourse(courseData);
 
 if (error) {
   console.error('API Error:', error);
@@ -212,6 +239,7 @@ if (deprecationWarning) {
 ## Support
 
 For questions about the migration:
+
 - Check the API documentation: `/docs/api-versioning`
 - Review migration examples in `/examples/api-migration`
 - Contact the development team for assistance

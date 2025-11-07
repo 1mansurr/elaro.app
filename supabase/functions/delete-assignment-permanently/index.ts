@@ -1,64 +1,69 @@
-// FILE: supabase/functions/delete-assignment-permanently/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { DeleteAssignmentPermanentlySchema } from '../_shared/schemas/deletePermanently.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
+async function handleDeleteAssignmentPermanently(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  // Schema transformation ensures assignment_id is always present
+  const assignmentId = body.assignment_id;
+
+  await logger.warn(
+    'Permanent deletion requested',
+    { user_id: user.id, assignment_id: assignmentId, type: 'assignment' },
+    traceContext,
   );
-};
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  // SECURITY: Verify ownership before permanent deletion
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('assignments')
+    .select('id')
+    .eq('id', assignmentId)
+    .eq('user_id', user.id)
+    .single();
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    const { assignmentId } = await req.json();
-
-    if (!assignmentId) {
-      return new Response(
-        JSON.stringify({ error: 'assignmentId is required.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
     }
-
-    const { error } = await supabase
-      .from('assignments')
-      .delete() // This is a permanent delete
-      .eq('id', assignmentId)
-      .eq('user_id', user.id);
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify({ message: 'Assignment permanently deleted.' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    throw new AppError(
+      'Assignment not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
     );
   }
-});
+
+  // Permanently delete
+  const { error: deleteError } = await supabaseClient
+    .from('assignments')
+    .delete()
+    .eq('id', assignmentId);
+
+  if (deleteError) throw handleDbError(deleteError);
+
+  await logger.warn(
+    'Assignment permanently deleted',
+    { user_id: user.id, assignment_id: assignmentId },
+    traceContext,
+  );
+
+  // Maintain backward compatibility with existing response format
+  return { message: 'Assignment permanently deleted.' };
+}
+
+serve(
+  createAuthenticatedHandler(handleDeleteAssignmentPermanently, {
+    rateLimitName: 'delete-assignment-permanently',
+    schema: DeleteAssignmentPermanentlySchema,
+    requireIdempotency: true,
+  }),
+);

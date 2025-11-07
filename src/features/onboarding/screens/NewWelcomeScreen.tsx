@@ -1,5 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -8,17 +15,25 @@ import { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Button } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import { formatDate } from '@/i18n';
 
-type ScreenNavigationProp = StackNavigationProp<OnboardingStackParamList, 'Welcome'>;
+type ScreenNavigationProp = StackNavigationProp<
+  OnboardingStackParamList,
+  'Welcome'
+>;
 
 const NewWelcomeScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
   const { onboardingData, updateOnboardingData } = useOnboarding();
 
   const [dateOfBirth, setDateOfBirth] = useState<Date>(
-    onboardingData.dateOfBirth ? new Date(onboardingData.dateOfBirth) : new Date(2000, 0, 1)
+    onboardingData.dateOfBirth
+      ? new Date(onboardingData.dateOfBirth)
+      : new Date(2000, 0, 1),
   );
-  const [hasParentalConsent, setHasParentalConsent] = useState(onboardingData.hasParentalConsent);
+  const [hasParentalConsent, setHasParentalConsent] = useState(
+    onboardingData.hasParentalConsent,
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
 
@@ -27,16 +42,19 @@ const NewWelcomeScreen = () => {
     const today = new Date();
     let calculatedAge = today.getFullYear() - dateOfBirth.getFullYear();
     const monthDiff = today.getMonth() - dateOfBirth.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())) {
+
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < dateOfBirth.getDate())
+    ) {
       calculatedAge--;
     }
-    
+
     return calculatedAge;
   }, [dateOfBirth]);
 
   // Format date for display
-  const formattedDate = dateOfBirth.toLocaleDateString('en-US', {
+  const formattedDate = formatDate(dateOfBirth, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -49,13 +67,14 @@ const NewWelcomeScreen = () => {
   const needsParentalConsent = age >= 13 && age < 18;
 
   // Check if continue button should be enabled
-  const canContinue = age >= 13 && (!needsParentalConsent || hasParentalConsent);
+  const canContinue =
+    age >= 13 && (!needsParentalConsent || hasParentalConsent);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
-    
+
     if (selectedDate) {
       setDateOfBirth(selectedDate);
     }
@@ -66,12 +85,12 @@ const NewWelcomeScreen = () => {
 
     // Format date as YYYY-MM-DD for backend
     const formattedDateOfBirth = dateOfBirth.toISOString().split('T')[0];
-    
+
     updateOnboardingData({
       dateOfBirth: formattedDateOfBirth,
       hasParentalConsent,
     });
-    
+
     navigation.navigate('ProfileSetup');
   };
 
@@ -86,7 +105,7 @@ const NewWelcomeScreen = () => {
           explosionSpeed={400}
         />
       )}
-      
+
       {/* Welcome Section */}
       <View style={styles.welcomeSection}>
         <Text style={styles.welcomeTitle}>Welcome to ELARO!</Text>
@@ -99,15 +118,15 @@ const NewWelcomeScreen = () => {
       <View style={styles.ageSection}>
         <Text style={styles.sectionTitle}>Age Verification</Text>
         <Text style={styles.sectionSubtitle}>
-          We need to verify your age to ensure a safe and appropriate experience.
+          We need to verify your age to ensure a safe and appropriate
+          experience.
         </Text>
 
         <View style={styles.dateSection}>
           <Text style={styles.label}>Date of Birth</Text>
           <TouchableOpacity
             style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
+            onPress={() => setShowDatePicker(true)}>
             <Text style={styles.dateButtonText}>{formattedDate}</Text>
             <Text style={styles.changeText}>Change</Text>
           </TouchableOpacity>
@@ -126,8 +145,7 @@ const NewWelcomeScreen = () => {
           {Platform.OS === 'ios' && showDatePicker && (
             <TouchableOpacity
               style={styles.doneButton}
-              onPress={() => setShowDatePicker(false)}
-            >
+              onPress={() => setShowDatePicker(false)}>
               <Text style={styles.doneButtonText}>Done</Text>
             </TouchableOpacity>
           )}
@@ -152,9 +170,12 @@ const NewWelcomeScreen = () => {
           <View style={styles.consentContainer}>
             <TouchableOpacity
               style={styles.checkboxContainer}
-              onPress={() => setHasParentalConsent(!hasParentalConsent)}
-            >
-              <View style={[styles.checkbox, hasParentalConsent && styles.checkboxChecked]}>
+              onPress={() => setHasParentalConsent(!hasParentalConsent)}>
+              <View
+                style={[
+                  styles.checkbox,
+                  hasParentalConsent && styles.checkboxChecked,
+                ]}>
                 {hasParentalConsent && <Text style={styles.checkmark}>✓</Text>}
               </View>
               <Text style={styles.consentText}>
@@ -178,11 +199,7 @@ const NewWelcomeScreen = () => {
       </View>
 
       <View style={styles.buttonContainer}>
-        <Button
-          title="Continue"
-          onPress={handleNext}
-          disabled={!canContinue}
-        />
+        <Button title="Continue" onPress={handleNext} disabled={!canContinue} />
       </View>
     </ScrollView>
   );
@@ -353,4 +370,3 @@ const styles = StyleSheet.create({
 });
 
 export default NewWelcomeScreen;
-

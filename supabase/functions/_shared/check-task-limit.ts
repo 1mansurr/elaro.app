@@ -2,7 +2,10 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const WEEKLY_TASK_LIMIT = 5; // Renamed for clarity
 
-export async function checkTaskLimit(supabaseClient: SupabaseClient, userId: string ) {
+export async function checkTaskLimit(
+  supabaseClient: SupabaseClient,
+  userId: string,
+) {
   // NOTE: We are NOT including 'courses' in this limit.
   const tablesToCount = ['study_sessions', 'lectures', 'assignments'];
   let weeklyCount = 0;
@@ -21,15 +24,21 @@ export async function checkTaskLimit(supabaseClient: SupabaseClient, userId: str
 
     if (error) {
       console.error(`Error counting ${table}:`, error);
-      return new Response(JSON.stringify({ error: `Could not verify task limits.` }), { status: 500 });
+      return new Response(
+        JSON.stringify({ error: `Could not verify task limits.` }),
+        { status: 500 },
+      );
     }
     weeklyCount += count || 0;
   }
 
   if (weeklyCount >= WEEKLY_TASK_LIMIT) {
-    return new Response(JSON.stringify({ 
-      error: `You have reached the weekly limit of ${WEEKLY_TASK_LIMIT} new activities.` 
-    }), { status: 403 });
+    return new Response(
+      JSON.stringify({
+        error: `You have reached the weekly limit of ${WEEKLY_TASK_LIMIT} new activities.`,
+      }),
+      { status: 403 },
+    );
   }
 
   // If limit is not reached, return null (no error)

@@ -81,7 +81,9 @@ export class RecurringTaskService {
   /**
    * Create a new recurring pattern
    */
-  async createPattern(request: CreatePatternRequest): Promise<RecurringPattern> {
+  async createPattern(
+    request: CreatePatternRequest,
+  ): Promise<RecurringPattern> {
     try {
       const { data: pattern, error } = await supabase
         .from('recurring_patterns')
@@ -114,14 +116,16 @@ export class RecurringTaskService {
    */
   async createRecurringTask(
     userId: string,
-    request: CreateRecurringTaskRequest
+    request: CreateRecurringTaskRequest,
   ): Promise<RecurringTask> {
     try {
       // Calculate next generation date
-      const startDate = request.startDate ? new Date(request.startDate) : new Date();
+      const startDate = request.startDate
+        ? new Date(request.startDate)
+        : new Date();
       const nextGenerationDate = await this.calculateNextGenerationDate(
         request.patternId,
-        startDate
+        startDate,
       );
 
       const { data: recurringTask, error } = await supabase
@@ -133,10 +137,12 @@ export class RecurringTaskService {
           template_data: request.templateData,
           next_generation_date: nextGenerationDate.toISOString(),
         })
-        .select(`
+        .select(
+          `
           *,
           recurring_patterns!inner(*)
-        `)
+        `,
+        )
         .single();
 
       if (error) {
@@ -157,10 +163,12 @@ export class RecurringTaskService {
     try {
       const { data: recurringTasks, error } = await supabase
         .from('recurring_tasks')
-        .select(`
+        .select(
+          `
           *,
           recurring_patterns!inner(*)
-        `)
+        `,
+        )
         .eq('user_id', userId)
         .eq('is_active', true)
         .order('created_at', { ascending: false });
@@ -169,7 +177,9 @@ export class RecurringTaskService {
         throw new Error(`Failed to get recurring tasks: ${error.message}`);
       }
 
-      return (recurringTasks || []).map(task => this.mapRecurringTaskFromDB(task));
+      return (recurringTasks || []).map(task =>
+        this.mapRecurringTaskFromDB(task),
+      );
     } catch (error) {
       console.error('❌ Error getting user recurring tasks:', error);
       throw error;
@@ -202,15 +212,15 @@ export class RecurringTaskService {
    */
   async updateRecurringTask(
     recurringTaskId: string,
-    updates: Partial<RecurringTask>
+    updates: Partial<RecurringTask>,
   ): Promise<RecurringTask> {
     try {
       const updateData: any = {};
-      
+
       if (updates.isActive !== undefined) {
         updateData.is_active = updates.isActive;
       }
-      
+
       if (updates.templateData) {
         updateData.template_data = updates.templateData;
       }
@@ -219,10 +229,12 @@ export class RecurringTaskService {
         .from('recurring_tasks')
         .update(updateData)
         .eq('id', recurringTaskId)
-        .select(`
+        .select(
+          `
           *,
           recurring_patterns!inner(*)
-        `)
+        `,
+        )
         .single();
 
       if (error) {
@@ -270,7 +282,9 @@ export class RecurringTaskService {
         throw new Error(`Failed to get generated tasks: ${error.message}`);
       }
 
-      return (generatedTasks || []).map(task => this.mapGeneratedTaskFromDB(task));
+      return (generatedTasks || []).map(task =>
+        this.mapGeneratedTaskFromDB(task),
+      );
     } catch (error) {
       console.error('❌ Error getting generated tasks:', error);
       throw error;
@@ -282,10 +296,12 @@ export class RecurringTaskService {
    */
   async generateNextTasks(recurringTaskId: string): Promise<GeneratedTask[]> {
     try {
-      const { data: result, error } = await supabase
-        .rpc('generate_tasks_from_pattern', {
-          p_recurring_task_id: recurringTaskId
-        });
+      const { data: result, error } = await supabase.rpc(
+        'generate_tasks_from_pattern',
+        {
+          p_recurring_task_id: recurringTaskId,
+        },
+      );
 
       if (error) {
         throw new Error(`Failed to generate tasks: ${error.message}`);
@@ -304,11 +320,14 @@ export class RecurringTaskService {
    */
   async processDueRecurringTasks(): Promise<number> {
     try {
-      const { data: generatedCount, error } = await supabase
-        .rpc('process_due_recurring_tasks');
+      const { data: generatedCount, error } = await supabase.rpc(
+        'process_due_recurring_tasks',
+      );
 
       if (error) {
-        throw new Error(`Failed to process due recurring tasks: ${error.message}`);
+        throw new Error(
+          `Failed to process due recurring tasks: ${error.message}`,
+        );
       }
 
       return generatedCount || 0;
@@ -323,14 +342,16 @@ export class RecurringTaskService {
    */
   private async calculateNextGenerationDate(
     patternId: string,
-    currentDate: Date
+    currentDate: Date,
   ): Promise<Date> {
     try {
-      const { data: nextDate, error } = await supabase
-        .rpc('calculate_next_generation_date', {
+      const { data: nextDate, error } = await supabase.rpc(
+        'calculate_next_generation_date',
+        {
           p_pattern_id: patternId,
-          p_current_date: currentDate.toISOString()
-        });
+          p_current_date: currentDate.toISOString(),
+        },
+      );
 
       if (error || !nextDate) {
         // Fallback: add 1 day
@@ -411,29 +432,29 @@ export class RecurringTaskService {
           name: 'Daily Study Session',
           frequency: 'daily' as const,
           intervalValue: 1,
-          timezone: 'UTC'
+          timezone: 'UTC',
         },
         {
           name: 'Weekly Assignment Review',
           frequency: 'weekly' as const,
           intervalValue: 1,
           daysOfWeek: [1, 3, 5], // Monday, Wednesday, Friday
-          timezone: 'UTC'
+          timezone: 'UTC',
         },
         {
           name: 'Monthly Project Check-in',
           frequency: 'monthly' as const,
           intervalValue: 1,
           dayOfMonth: 1,
-          timezone: 'UTC'
+          timezone: 'UTC',
         },
         {
           name: 'Bi-weekly Lecture Prep',
           frequency: 'weekly' as const,
           intervalValue: 2,
           daysOfWeek: [0], // Sunday
-          timezone: 'UTC'
-        }
+          timezone: 'UTC',
+        },
       ];
 
       for (const pattern of commonPatterns) {
@@ -457,12 +478,14 @@ export class RecurringTaskService {
     try {
       const { data: stats, error } = await supabase
         .from('recurring_tasks')
-        .select(`
+        .select(
+          `
           is_active,
           total_generated,
           next_generation_date,
           generated_tasks!inner(is_completed)
-        `)
+        `,
+        )
         .eq('user_id', userId);
 
       if (error) {
@@ -470,21 +493,30 @@ export class RecurringTaskService {
       }
 
       const totalActive = stats.filter(s => s.is_active).length;
-      const totalGenerated = stats.reduce((sum, s) => sum + s.total_generated, 0);
-      const upcomingGenerations = stats.filter(s => 
-        s.is_active && new Date(s.next_generation_date) <= new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-      ).length;
-      
-      const completedTasks = stats.reduce((sum, s) => 
-        sum + s.generated_tasks.filter((gt: any) => gt.is_completed).length, 0
+      const totalGenerated = stats.reduce(
+        (sum, s) => sum + s.total_generated,
+        0,
       );
-      const completionRate = totalGenerated > 0 ? (completedTasks / totalGenerated) * 100 : 0;
+      const upcomingGenerations = stats.filter(
+        s =>
+          s.is_active &&
+          new Date(s.next_generation_date) <=
+            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      ).length;
+
+      const completedTasks = stats.reduce(
+        (sum, s) =>
+          sum + s.generated_tasks.filter((gt: any) => gt.is_completed).length,
+        0,
+      );
+      const completionRate =
+        totalGenerated > 0 ? (completedTasks / totalGenerated) * 100 : 0;
 
       return {
         totalActive,
         totalGenerated,
         upcomingGenerations,
-        completionRate
+        completionRate,
       };
     } catch (error) {
       console.error('❌ Error getting recurring task stats:', error);

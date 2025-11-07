@@ -8,13 +8,19 @@ export interface PendingTaskData {
   timestamp: number;
 }
 
-export const savePendingTask = async (taskData: any, taskType: 'assignment' | 'study_session' | 'lecture' | 'course') => {
+export const savePendingTask = async (
+  taskData: any,
+  taskType: 'assignment' | 'study_session' | 'lecture' | 'course',
+) => {
   try {
-    await AsyncStorage.setItem(TASK_DATA_KEY, JSON.stringify({
-      taskData,
-      taskType,
-      timestamp: Date.now()
-    }));
+    await AsyncStorage.setItem(
+      TASK_DATA_KEY,
+      JSON.stringify({
+        taskData,
+        taskType,
+        timestamp: Date.now(),
+      }),
+    );
   } catch (error) {
     console.error('Failed to save pending task:', error);
   }
@@ -24,16 +30,16 @@ export const getPendingTask = async (): Promise<PendingTaskData | null> => {
   try {
     const data = await AsyncStorage.getItem(TASK_DATA_KEY);
     if (!data) return null;
-    
+
     const parsed = JSON.parse(data);
-    
+
     // Check if data is older than 1 hour (3600000 ms)
     const isExpired = Date.now() - parsed.timestamp > 3600000;
     if (isExpired) {
       await clearPendingTask();
       return null;
     }
-    
+
     return parsed;
   } catch (error) {
     console.error('Failed to get pending task:', error);

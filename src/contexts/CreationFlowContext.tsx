@@ -1,4 +1,11 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 
 // Define the shape of the context value
 interface CreationFlowContextType<T> {
@@ -8,7 +15,9 @@ interface CreationFlowContextType<T> {
 }
 
 // Create a generic context
-export const CreationFlowContext = createContext<CreationFlowContextType<any> | undefined>(undefined);
+export const CreationFlowContext = createContext<
+  CreationFlowContextType<any> | undefined
+>(undefined);
 
 // Create a generic provider component
 export function CreationFlowProvider<T>({
@@ -20,15 +29,23 @@ export function CreationFlowProvider<T>({
 }) {
   const [data, setData] = useState<T>(initialState);
 
-  const updateData = (updates: Partial<T>) => {
-    setData((prevData) => ({ ...prevData, ...updates }));
-  };
+  const updateData = useCallback((updates: Partial<T>) => {
+    setData(prevData => ({ ...prevData, ...updates }));
+  }, []);
 
-  const resetData = () => {
+  const resetData = useCallback(() => {
     setData(initialState);
-  };
+  }, [initialState]);
 
-  const value = { data, updateData, resetData };
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      data,
+      updateData,
+      resetData,
+    }),
+    [data, updateData, resetData],
+  );
 
   return (
     <CreationFlowContext.Provider value={value}>
@@ -41,7 +58,9 @@ export function CreationFlowProvider<T>({
 export function useCreationFlow<T>(): CreationFlowContextType<T> {
   const context = useContext(CreationFlowContext);
   if (context === undefined) {
-    throw new Error('useCreationFlow must be used within a CreationFlowProvider');
+    throw new Error(
+      'useCreationFlow must be used within a CreationFlowProvider',
+    );
   }
   return context;
 }

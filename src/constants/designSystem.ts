@@ -51,7 +51,7 @@ export const DESIGN_SYSTEM = {
       lineHeight: 20,
     },
   },
-  
+
   spacing: {
     xs: 4,
     sm: 8,
@@ -61,7 +61,7 @@ export const DESIGN_SYSTEM = {
     xxl: 48,
     xxxl: 64,
   },
-  
+
   layout: {
     section: {
       marginBottom: 24,
@@ -79,7 +79,7 @@ export const DESIGN_SYSTEM = {
       paddingBottom: 80,
     },
   },
-  
+
   elevation: {
     none: 0,
     low: 2,
@@ -87,7 +87,7 @@ export const DESIGN_SYSTEM = {
     high: 8,
     highest: 12,
   },
-  
+
   borderRadius: {
     none: 0,
     sm: 4,
@@ -96,7 +96,7 @@ export const DESIGN_SYSTEM = {
     xl: 16,
     full: 9999,
   },
-  
+
   shadows: {
     low: {
       shadowColor: '#000',
@@ -136,7 +136,7 @@ export const VISUAL_HIERARCHY = {
     ...DESIGN_SYSTEM.typography.h3,
     marginBottom: DESIGN_SYSTEM.spacing.sm,
   },
-  
+
   // Body styles
   bodyText: {
     ...DESIGN_SYSTEM.typography.body,
@@ -150,7 +150,7 @@ export const VISUAL_HIERARCHY = {
     ...DESIGN_SYSTEM.typography.caption,
     marginBottom: DESIGN_SYSTEM.spacing.xs,
   },
-  
+
   // Layout styles
   section: {
     ...DESIGN_SYSTEM.layout.section,
@@ -189,7 +189,7 @@ export const COMPONENT_PATTERNS = {
       borderRadius: DESIGN_SYSTEM.borderRadius.sm,
     },
   },
-  
+
   // Input patterns
   input: {
     base: {
@@ -205,7 +205,7 @@ export const COMPONENT_PATTERNS = {
       fontWeight: '500' as const,
     },
   },
-  
+
   // Card patterns
   card: {
     base: {
@@ -217,7 +217,7 @@ export const COMPONENT_PATTERNS = {
       ...DESIGN_SYSTEM.shadows.medium,
     },
   },
-  
+
   // List patterns
   listItem: {
     base: {

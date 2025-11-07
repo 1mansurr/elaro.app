@@ -1,6 +1,6 @@
 /**
  * Performance monitoring service
- * 
+ *
  * This service provides comprehensive performance monitoring including:
  * - Timer-based performance measurement
  * - Memory usage tracking
@@ -18,7 +18,8 @@ class PerformanceMonitoringService {
 
   public static getInstance(): PerformanceMonitoringService {
     if (!PerformanceMonitoringService.instance) {
-      PerformanceMonitoringService.instance = new PerformanceMonitoringService();
+      PerformanceMonitoringService.instance =
+        new PerformanceMonitoringService();
     }
     return PerformanceMonitoringService.instance;
   }
@@ -47,7 +48,7 @@ class PerformanceMonitoringService {
     const duration = Date.now() - startTime;
     this.metrics.set(label, duration);
     this.timers.delete(label);
-    
+
     console.log(`⏱️ Timer ended: ${label} took ${duration}ms`);
     return duration;
   }
@@ -60,7 +61,7 @@ class PerformanceMonitoringService {
    */
   public async measureAsync<T>(
     label: string,
-    operation: () => Promise<T>
+    operation: () => Promise<T>,
   ): Promise<T> {
     this.startTimer(label);
     try {
@@ -122,15 +123,15 @@ class PerformanceMonitoringService {
     if (!this.renderTimes.has(componentName)) {
       this.renderTimes.set(componentName, []);
     }
-    
+
     const times = this.renderTimes.get(componentName)!;
     times.push(renderTime);
-    
+
     // Keep only last 10 render times
     if (times.length > 10) {
       times.shift();
     }
-    
+
     console.log(`🎨 Render time recorded: ${componentName} = ${renderTime}ms`);
   }
 
@@ -189,7 +190,7 @@ class PerformanceMonitoringService {
     totalRequests: number;
   } {
     const timings = Array.from(this.networkTimings.entries());
-    
+
     if (timings.length === 0) {
       return {
         averageResponseTime: 0,
@@ -200,16 +201,17 @@ class PerformanceMonitoringService {
     }
 
     const times = timings.map(([, time]) => time);
-    const averageResponseTime = times.reduce((sum, time) => sum + time, 0) / times.length;
-    
-    const slowest = timings.reduce((max, [url, time]) => 
-      time > max.time ? { url, time } : max, 
-      { url: '', time: 0 }
+    const averageResponseTime =
+      times.reduce((sum, time) => sum + time, 0) / times.length;
+
+    const slowest = timings.reduce(
+      (max, [url, time]) => (time > max.time ? { url, time } : max),
+      { url: '', time: 0 },
     );
-    
-    const fastest = timings.reduce((min, [url, time]) => 
-      time < min.time ? { url, time } : min, 
-      { url: '', time: Infinity }
+
+    const fastest = timings.reduce(
+      (min, [url, time]) => (time < min.time ? { url, time } : min),
+      { url: '', time: Infinity },
     );
 
     return {
@@ -273,4 +275,5 @@ class PerformanceMonitoringService {
   }
 }
 
-export const performanceMonitoringService = PerformanceMonitoringService.getInstance();
+export const performanceMonitoringService =
+  PerformanceMonitoringService.getInstance();

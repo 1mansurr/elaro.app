@@ -8,8 +8,15 @@ export * from './interfaces/SimpleNotificationPreferences';
 export { NotificationDeliveryService } from './NotificationDeliveryService';
 export { NotificationPreferenceService } from './NotificationPreferenceService';
 export { NotificationSchedulingService } from './NotificationSchedulingService';
-export { notificationHistoryService, NotificationHistoryItem, NotificationFilter } from './NotificationHistoryService';
-export { NotificationService, notificationService } from './NotificationService';
+export {
+  notificationHistoryService,
+  NotificationHistoryItem,
+  NotificationFilter,
+} from './NotificationHistoryService';
+export {
+  NotificationService,
+  notificationService,
+} from './NotificationService';
 
 // Export types for convenience
 export type {
@@ -21,5 +28,5 @@ export type {
   ValidationResult,
   Notification,
   SmartSchedulingOptions,
-  OptimalTime
+  OptimalTime,
 } from './interfaces';

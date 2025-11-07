@@ -1,6 +1,6 @@
 /**
  * Standardized Response Utilities
- * 
+ *
  * Provides consistent response formats across all Edge Functions
  * following a standard envelope pattern.
  */
@@ -28,14 +28,14 @@ export interface StandardResponse<T = unknown> {
 
 /**
  * Create a successful response
- * 
+ *
  * @param data - Response data
  * @param additionalHeaders - Additional headers to include
  * @returns Response object with standardized format
  */
 export function successResponse<T>(
   data: T,
-  additionalHeaders: Record<string, string> = {}
+  additionalHeaders: Record<string, string> = {},
 ): Response {
   const response: StandardResponse<T> = {
     success: true,
@@ -46,7 +46,7 @@ export function successResponse<T>(
       requestId: crypto.randomUUID(),
     },
   };
-  
+
   return new Response(JSON.stringify(response), {
     status: 200,
     headers: {
@@ -60,7 +60,7 @@ export function successResponse<T>(
 
 /**
  * Create an error response
- * 
+ *
  * @param error - Error object (AppError or standard Error)
  * @param statusCode - HTTP status code (default: 500)
  * @param additionalHeaders - Additional headers to include
@@ -69,9 +69,14 @@ export function successResponse<T>(
 export function errorResponse(
   error: unknown,
   statusCode: number = 500,
-  additionalHeaders: Record<string, string> = {}
+  additionalHeaders: Record<string, string> = {},
 ): Response {
-  const err = error as { code?: string; message?: string; details?: unknown; statusCode?: number };
+  const err = error as {
+    code?: string;
+    message?: string;
+    details?: unknown;
+    statusCode?: number;
+  };
   const response: StandardResponse = {
     success: false,
     error: {
@@ -85,7 +90,7 @@ export function errorResponse(
       requestId: crypto.randomUUID(),
     },
   };
-  
+
   return new Response(JSON.stringify(response), {
     status: err.statusCode || statusCode,
     headers: {
@@ -99,7 +104,7 @@ export function errorResponse(
 
 /**
  * Create a paginated response
- * 
+ *
  * @param data - Array of data items
  * @param total - Total count of items
  * @param page - Current page number
@@ -112,12 +117,12 @@ export function paginatedResponse<T>(
   total: number,
   page: number,
   pageSize: number,
-  additionalHeaders: Record<string, string> = {}
+  additionalHeaders: Record<string, string> = {},
 ): Response {
   const totalPages = Math.ceil(total / pageSize);
   const hasNextPage = page < totalPages;
   const hasPrevPage = page > 1;
-  
+
   const response = {
     success: true,
     data,
@@ -134,7 +139,7 @@ export function paginatedResponse<T>(
       version: 'v1',
     },
   };
-  
+
   return new Response(JSON.stringify(response), {
     status: 200,
     headers: {
@@ -146,3 +151,38 @@ export function paginatedResponse<T>(
   });
 }
 
+/**
+ * Legacy compatibility function for api-v2 migration
+ * Wraps successResponse/errorResponse for backward compatibility
+ *
+ * @deprecated Use successResponse or errorResponse directly
+ * @param data - Response object with data or error property
+ * @param statusCode - HTTP status code (default: 200)
+ * @returns Response object with standardized format
+ */
+export function createResponse(
+  data: { data?: unknown; error?: unknown } | unknown,
+  statusCode: number = 200,
+): Response {
+  // If data has an error property, return error response
+  if (data && typeof data === 'object' && 'error' in data && data.error) {
+    return errorResponse(data.error as Error, statusCode);
+  }
+
+  // Extract data property if it exists, otherwise use the whole object
+  const responseData =
+    data && typeof data === 'object' && 'data' in data
+      ? (data as { data: unknown }).data
+      : data;
+
+  // For non-200 status codes without error, still return successResponse but with status code
+  if (statusCode >= 200 && statusCode < 300) {
+    return successResponse(responseData, {});
+  } else {
+    // For error status codes, create error response
+    return errorResponse(
+      new Error(responseData ? String(responseData) : 'Unknown error'),
+      statusCode,
+    );
+  }
+}

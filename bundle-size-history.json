@@ -1,0 +1,62 @@
+[
+  {
+    "timestamp": "2025-11-05T07:29:59.340Z",
+    "bundles": {},
+    "assets": {},
+    "totals": {
+      "total": 0,
+      "totalAssets": 0
+    },
+    "budgets": {},
+    "violations": [],
+    "warnings": []
+  },
+  {
+    "timestamp": "2025-11-05T07:30:23.735Z",
+    "bundles": {},
+    "assets": {},
+    "totals": {
+      "total": 0,
+      "totalAssets": 0
+    },
+    "budgets": {},
+    "violations": [],
+    "warnings": [],
+    "comparison": {
+      "previous": "2025-11-05T07:29:59.340Z",
+      "changes": {}
+    }
+  },
+  {
+    "timestamp": "2025-11-05T08:51:18.597Z",
+    "bundles": {},
+    "assets": {},
+    "totals": {
+      "total": 0,
+      "totalAssets": 0
+    },
+    "budgets": {},
+    "violations": [],
+    "warnings": [],
+    "comparison": {
+      "previous": "2025-11-05T07:30:23.735Z",
+      "changes": {}
+    }
+  },
+  {
+    "timestamp": "2025-11-05T09:04:53.727Z",
+    "bundles": {},
+    "assets": {},
+    "totals": {
+      "total": 0,
+      "totalAssets": 0
+    },
+    "budgets": {},
+    "violations": [],
+    "warnings": [],
+    "comparison": {
+      "previous": "2025-11-05T08:51:18.597Z",
+      "changes": {}
+    }
+  }
+]

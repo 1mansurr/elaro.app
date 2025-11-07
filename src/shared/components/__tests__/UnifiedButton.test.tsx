@@ -28,24 +28,20 @@ describe('UnifiedButton', () => {
   });
 
   const renderWithTheme = (component: React.ReactElement) => {
-    return render(
-      <ThemeProvider>
-        {component}
-      </ThemeProvider>
-    );
+    return render(<ThemeProvider>{component}</ThemeProvider>);
   };
 
   describe('Basic Functionality', () => {
     it('should render with default props', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Test Button" onPress={mockOnPress} />
+        <UnifiedButton title="Test Button" onPress={mockOnPress} />,
       );
       expect(getByText('Test Button')).toBeTruthy();
     });
 
     it('should call onPress when pressed', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Test Button" onPress={mockOnPress} />
+        <UnifiedButton title="Test Button" onPress={mockOnPress} />,
       );
       fireEvent.press(getByText('Test Button'));
       expect(mockOnPress).toHaveBeenCalledTimes(1);
@@ -53,7 +49,7 @@ describe('UnifiedButton', () => {
 
     it('should not call onPress when disabled', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Test Button" onPress={mockOnPress} disabled />
+        <UnifiedButton title="Test Button" onPress={mockOnPress} disabled />,
       );
       fireEvent.press(getByText('Test Button'));
       expect(mockOnPress).not.toHaveBeenCalled();
@@ -61,7 +57,7 @@ describe('UnifiedButton', () => {
 
     it('should show loading state', () => {
       const { queryByText } = renderWithTheme(
-        <UnifiedButton title="Test Button" onPress={mockOnPress} loading />
+        <UnifiedButton title="Test Button" onPress={mockOnPress} loading />,
       );
       expect(queryByText('Test Button')).toBeNull();
     });
@@ -70,35 +66,47 @@ describe('UnifiedButton', () => {
   describe('Variants', () => {
     it('should render primary variant by default', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Primary" onPress={mockOnPress} variant="primary" />
+        <UnifiedButton
+          title="Primary"
+          onPress={mockOnPress}
+          variant="primary"
+        />,
       );
       expect(getByText('Primary')).toBeTruthy();
     });
 
     it('should render secondary variant', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Secondary" onPress={mockOnPress} variant="secondary" />
+        <UnifiedButton
+          title="Secondary"
+          onPress={mockOnPress}
+          variant="secondary"
+        />,
       );
       expect(getByText('Secondary')).toBeTruthy();
     });
 
     it('should render outline variant', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Outline" onPress={mockOnPress} variant="outline" />
+        <UnifiedButton
+          title="Outline"
+          onPress={mockOnPress}
+          variant="outline"
+        />,
       );
       expect(getByText('Outline')).toBeTruthy();
     });
 
     it('should render ghost variant', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Ghost" onPress={mockOnPress} variant="ghost" />
+        <UnifiedButton title="Ghost" onPress={mockOnPress} variant="ghost" />,
       );
       expect(getByText('Ghost')).toBeTruthy();
     });
 
     it('should render danger variant', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Danger" onPress={mockOnPress} variant="danger" />
+        <UnifiedButton title="Danger" onPress={mockOnPress} variant="danger" />,
       );
       expect(getByText('Danger')).toBeTruthy();
     });
@@ -107,21 +115,21 @@ describe('UnifiedButton', () => {
   describe('Sizes', () => {
     it('should render small size', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Small" onPress={mockOnPress} size="small" />
+        <UnifiedButton title="Small" onPress={mockOnPress} size="small" />,
       );
       expect(getByText('Small')).toBeTruthy();
     });
 
     it('should render medium size (default)', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Medium" onPress={mockOnPress} size="medium" />
+        <UnifiedButton title="Medium" onPress={mockOnPress} size="medium" />,
       );
       expect(getByText('Medium')).toBeTruthy();
     });
 
     it('should render large size', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Large" onPress={mockOnPress} size="large" />
+        <UnifiedButton title="Large" onPress={mockOnPress} size="large" />,
       );
       expect(getByText('Large')).toBeTruthy();
     });
@@ -130,35 +138,35 @@ describe('UnifiedButton', () => {
   describe('Convenience Components', () => {
     it('should render PrimaryButton', () => {
       const { getByText } = renderWithTheme(
-        <PrimaryButton title="Primary" onPress={mockOnPress} />
+        <PrimaryButton title="Primary" onPress={mockOnPress} />,
       );
       expect(getByText('Primary')).toBeTruthy();
     });
 
     it('should render SecondaryButton', () => {
       const { getByText } = renderWithTheme(
-        <SecondaryButton title="Secondary" onPress={mockOnPress} />
+        <SecondaryButton title="Secondary" onPress={mockOnPress} />,
       );
       expect(getByText('Secondary')).toBeTruthy();
     });
 
     it('should render OutlineButton', () => {
       const { getByText } = renderWithTheme(
-        <OutlineButton title="Outline" onPress={mockOnPress} />
+        <OutlineButton title="Outline" onPress={mockOnPress} />,
       );
       expect(getByText('Outline')).toBeTruthy();
     });
 
     it('should render GhostButton', () => {
       const { getByText } = renderWithTheme(
-        <GhostButton title="Ghost" onPress={mockOnPress} />
+        <GhostButton title="Ghost" onPress={mockOnPress} />,
       );
       expect(getByText('Ghost')).toBeTruthy();
     });
 
     it('should render DangerButton', () => {
       const { getByText } = renderWithTheme(
-        <DangerButton title="Danger" onPress={mockOnPress} />
+        <DangerButton title="Danger" onPress={mockOnPress} />,
       );
       expect(getByText('Danger')).toBeTruthy();
     });
@@ -171,14 +179,14 @@ describe('UnifiedButton', () => {
           title="Test Button"
           onPress={mockOnPress}
           accessibilityLabel="Custom Label"
-        />
+        />,
       );
       expect(getByLabelText('Custom Label')).toBeTruthy();
     });
 
     it('should use title as fallback accessibility label', () => {
       const { getByLabelText } = renderWithTheme(
-        <UnifiedButton title="Test Button" onPress={mockOnPress} />
+        <UnifiedButton title="Test Button" onPress={mockOnPress} />,
       );
       expect(getByLabelText('Test Button')).toBeTruthy();
     });
@@ -189,7 +197,7 @@ describe('UnifiedButton', () => {
           title="Test Button"
           onPress={mockOnPress}
           accessibilityHint="Double tap to activate"
-        />
+        />,
       );
       expect(getByHintText('Double tap to activate')).toBeTruthy();
     });
@@ -204,7 +212,7 @@ describe('UnifiedButton', () => {
           onPress={mockOnPress}
           icon={icon}
           iconPosition="left"
-        />
+        />,
       );
       expect(getByText('With Icon')).toBeTruthy();
     });
@@ -217,7 +225,7 @@ describe('UnifiedButton', () => {
           onPress={mockOnPress}
           icon={icon}
           iconPosition="right"
-        />
+        />,
       );
       expect(getByText('With Icon')).toBeTruthy();
     });
@@ -226,7 +234,7 @@ describe('UnifiedButton', () => {
   describe('Haptic Feedback', () => {
     it('should trigger haptic feedback on press', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Test" onPress={mockOnPress} hapticFeedback />
+        <UnifiedButton title="Test" onPress={mockOnPress} hapticFeedback />,
       );
       fireEvent.press(getByText('Test'));
       expect(mockOnPress).toHaveBeenCalled();
@@ -234,11 +242,15 @@ describe('UnifiedButton', () => {
 
     it('should not trigger haptic feedback when disabled', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedButton title="Test" onPress={mockOnPress} disabled hapticFeedback />
+        <UnifiedButton
+          title="Test"
+          onPress={mockOnPress}
+          disabled
+          hapticFeedback
+        />,
       );
       fireEvent.press(getByText('Test'));
       expect(mockOnPress).not.toHaveBeenCalled();
     });
   });
 });
-

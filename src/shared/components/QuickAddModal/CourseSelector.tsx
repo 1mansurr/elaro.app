@@ -1,9 +1,23 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { DialogModal } from '@/shared/components/ModalVariants';
 import { Ionicons } from '@expo/vector-icons';
 import { Course } from '@/types';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, COMPONENT_TOKENS, SHADOWS, BORDER_RADIUS } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  COMPONENT_TOKENS,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 
 interface CourseSelectorProps {
   selectedCourse: Course | null;
@@ -28,21 +42,20 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
     <>
       {/* Course Selection */}
       <Text style={styles.label}>Course *</Text>
-      <TouchableOpacity 
-        style={styles.selectButton} 
+      <TouchableOpacity
+        style={styles.selectButton}
         onPress={() => onShowCourseModal(true)}
-        disabled={isLoadingCourses}
-      >
-        <Text style={[
-          styles.selectButtonText, 
-          selectedCourse && styles.selectButtonTextSelected
-        ]}>
-          {isLoadingCourses 
-            ? 'Loading courses...' 
-            : selectedCourse 
-              ? selectedCourse.courseName 
-              : 'Select Course'
-          }
+        disabled={isLoadingCourses}>
+        <Text
+          style={[
+            styles.selectButtonText,
+            selectedCourse && styles.selectButtonTextSelected,
+          ]}>
+          {isLoadingCourses
+            ? 'Loading courses...'
+            : selectedCourse
+              ? selectedCourse.courseName
+              : 'Select Course'}
         </Text>
         <Ionicons name="chevron-down" size={20} color={COLORS.gray} />
       </TouchableOpacity>
@@ -50,8 +63,7 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
       {/* Course Selection Modal */}
       <DialogModal
         isVisible={showCourseModal}
-        onClose={() => onShowCourseModal(false)}
-      >
+        onClose={() => onShowCourseModal(false)}>
         <View style={styles.courseModalContent}>
           <Text style={styles.courseModalTitle}>Select Course</Text>
           <ScrollView style={styles.coursesList}>
@@ -68,16 +80,20 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
                   key={course.id}
                   style={[
                     styles.courseOption,
-                    selectedCourse?.id === course.id && styles.courseOptionSelected,
+                    selectedCourse?.id === course.id &&
+                      styles.courseOptionSelected,
                   ]}
                   onPress={() => {
                     onCourseSelect(course);
                     onShowCourseModal(false);
-                  }}
-                >
-                  <Text style={styles.courseOptionName}>{course.courseName}</Text>
+                  }}>
+                  <Text style={styles.courseOptionName}>
+                    {course.courseName}
+                  </Text>
                   {course.courseCode && (
-                    <Text style={styles.courseOptionCode}>{course.courseCode}</Text>
+                    <Text style={styles.courseOptionCode}>
+                      {course.courseCode}
+                    </Text>
                   )}
                 </TouchableOpacity>
               ))
@@ -86,18 +102,23 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
           <View style={styles.courseModalActions}>
             <TouchableOpacity
               style={styles.courseModalButton}
-              onPress={() => onShowCourseModal(false)}
-            >
+              onPress={() => onShowCourseModal(false)}>
               <Text style={styles.courseModalButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.courseModalButton, styles.courseModalButtonPrimary]}
+              style={[
+                styles.courseModalButton,
+                styles.courseModalButtonPrimary,
+              ]}
               onPress={() => {
                 onAddCourse();
                 onShowCourseModal(false);
-              }}
-            >
-              <Text style={[styles.courseModalButtonText, styles.courseModalButtonTextPrimary]}>
+              }}>
+              <Text
+                style={[
+                  styles.courseModalButtonText,
+                  styles.courseModalButtonTextPrimary,
+                ]}>
                 Add Course
               </Text>
             </TouchableOpacity>

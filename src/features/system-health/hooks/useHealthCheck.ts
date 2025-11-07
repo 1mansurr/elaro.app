@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { healthCheckService, HealthCheckResponse, ServiceStatus } from '@/services/healthCheckService';
+import {
+  healthCheckService,
+  HealthCheckResponse,
+  ServiceStatus,
+} from '@/services/healthCheckService';
 
 interface UseHealthCheckReturn {
   healthStatus: HealthCheckResponse | null;
@@ -17,8 +21,12 @@ interface UseHealthCheckReturn {
  * React hook for monitoring application health status.
  * Provides an easy way to check system health and handle service outages.
  */
-export const useHealthCheck = (autoCheck: boolean = true): UseHealthCheckReturn => {
-  const [healthStatus, setHealthStatus] = useState<HealthCheckResponse | null>(null);
+export const useHealthCheck = (
+  autoCheck: boolean = true,
+): UseHealthCheckReturn => {
+  const [healthStatus, setHealthStatus] = useState<HealthCheckResponse | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
@@ -37,7 +45,8 @@ export const useHealthCheck = (autoCheck: boolean = true): UseHealthCheckReturn 
       setHealthStatus(result);
       setLastChecked(new Date());
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
       console.error('Health check failed:', err);
     } finally {
@@ -48,14 +57,17 @@ export const useHealthCheck = (autoCheck: boolean = true): UseHealthCheckReturn 
   /**
    * Checks a specific service.
    */
-  const checkService = useCallback(async (serviceName: string): Promise<ServiceStatus | null> => {
-    try {
-      return await healthCheckService.checkService(serviceName);
-    } catch (err) {
-      console.error(`Failed to check service ${serviceName}:`, err);
-      return null;
-    }
-  }, []);
+  const checkService = useCallback(
+    async (serviceName: string): Promise<ServiceStatus | null> => {
+      try {
+        return await healthCheckService.checkService(serviceName);
+      } catch (err) {
+        console.error(`Failed to check service ${serviceName}:`, err);
+        return null;
+      }
+    },
+    [],
+  );
 
   /**
    * Gets detailed error information.
@@ -138,7 +150,9 @@ export const useSimpleHealthCheck = () => {
  * Useful when you only care about one service's health status.
  */
 export const useServiceHealth = (serviceName: string) => {
-  const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(null);
+  const [serviceStatus, setServiceStatus] = useState<ServiceStatus | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   const checkService = useCallback(async () => {

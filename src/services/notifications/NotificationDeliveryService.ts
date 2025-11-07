@@ -1,20 +1,27 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from '@/services/supabase';
-import { 
-  INotificationDeliveryService, 
-  NotificationPayload, 
-  LocalNotification, 
-  ScheduledNotification, 
-  DeliveryResult 
+import {
+  INotificationDeliveryService,
+  NotificationPayload,
+  LocalNotification,
+  ScheduledNotification,
+  DeliveryResult,
 } from './interfaces/INotificationDeliveryService';
-import { errorHandler, NotificationError, ERROR_CODES } from './utils/ErrorHandler';
+import {
+  errorHandler,
+  NotificationError,
+  ERROR_CODES,
+} from './utils/ErrorHandler';
+import { isWithinQuietHoursFrontend } from './utils/timezone-helpers';
 
 /**
  * Service responsible for notification delivery operations
  * Handles push notifications, local notifications, and cancellation
  */
-export class NotificationDeliveryService implements INotificationDeliveryService {
+export class NotificationDeliveryService
+  implements INotificationDeliveryService
+{
   private static instance: NotificationDeliveryService;
   private navigationRef: any = null;
 
@@ -37,32 +44,71 @@ export class NotificationDeliveryService implements INotificationDeliveryService
   /**
    * Send a push notification to a user
    */
-  async sendPushNotification(userId: string, notification: NotificationPayload): Promise<DeliveryResult> {
+  async sendPushNotification(
+    userId: string,
+    notification: NotificationPayload,
+  ): Promise<DeliveryResult> {
     try {
       // Validate input
       if (!userId || !notification.title || !notification.body) {
         throw errorHandler.createError(
           'Invalid input: userId, title, and body are required',
-          ERROR_CODES.INVALID_INPUT
+          ERROR_CODES.INVALID_INPUT,
         );
       }
 
-      // Check if user has notifications enabled
+      // Check if user has notifications enabled and quiet hours
       const { data: preferences, error: prefError } = await supabase
         .from('notification_preferences')
-        .select('master_toggle, do_not_disturb')
+        .select(
+          'master_toggle, do_not_disturb, quiet_hours_enabled, quiet_hours_start, quiet_hours_end',
+        )
         .eq('user_id', userId)
         .single();
 
-      if (prefError) {
+      if (prefError && prefError.code !== 'PGRST116') {
+        // PGRST116 = not found
         throw errorHandler.handleError(prefError, 'getUserPreferences');
       }
 
       if (!preferences?.master_toggle || preferences?.do_not_disturb) {
         return {
           success: false,
-          error: 'Notifications disabled or do not disturb enabled'
+          error: 'Notifications disabled or do not disturb enabled',
         };
+      }
+
+      // Check quiet hours if enabled
+      if (
+        preferences?.quiet_hours_enabled &&
+        preferences?.quiet_hours_start &&
+        preferences?.quiet_hours_end
+      ) {
+        // Get user timezone from profile
+        const { data: userProfile } = await supabase
+          .from('users')
+          .select('timezone')
+          .eq('id', userId)
+          .single();
+
+        const userTimezone = userProfile?.timezone || 'UTC';
+
+        // Use timezone helper for consistent calculation
+        if (
+          isWithinQuietHoursFrontend(
+            preferences.quiet_hours_enabled,
+            preferences.quiet_hours_start,
+            preferences.quiet_hours_end,
+            userTimezone,
+            new Date(),
+          )
+        ) {
+          return {
+            success: false,
+            error:
+              'Notification scheduled during quiet hours. It will be sent after quiet hours end.',
+          };
+        }
       }
 
       // Get user's push token
@@ -78,23 +124,29 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       }
 
       if (!device?.push_token) {
-        throw errorHandler.createError('No push token found for user', ERROR_CODES.DELIVERY_FAILED);
+        throw errorHandler.createError(
+          'No push token found for user',
+          ERROR_CODES.DELIVERY_FAILED,
+        );
       }
 
       // Send via Supabase function
-      const { data, error } = await supabase.functions.invoke('notification-system', {
-        body: {
-          action: 'send',
-          user_id: userId,
-          title: notification.title,
-          body: notification.body,
-          data: notification.data,
-          category: notification.category,
-          priority: notification.priority,
-          sound: notification.sound,
-          badge: notification.badge
-        }
-      });
+      const { data, error } = await supabase.functions.invoke(
+        'notification-system',
+        {
+          body: {
+            action: 'send',
+            user_id: userId,
+            title: notification.title,
+            body: notification.body,
+            data: notification.data,
+            category: notification.category,
+            priority: notification.priority,
+            sound: notification.sound,
+            badge: notification.badge,
+          },
+        },
+      );
 
       if (error) {
         throw errorHandler.handleError(error, 'sendNotification');
@@ -103,15 +155,17 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       return {
         success: true,
         notificationId: data.notification_id,
-        deliveryTime: new Date()
+        deliveryTime: new Date(),
       };
-
     } catch (error) {
-      const notificationError = errorHandler.handleError(error, 'sendPushNotification');
+      const notificationError = errorHandler.handleError(
+        error,
+        'sendPushNotification',
+      );
 
       return {
         success: false,
-        error: notificationError.message
+        error: notificationError.message,
       };
     }
   }
@@ -119,11 +173,16 @@ export class NotificationDeliveryService implements INotificationDeliveryService
   /**
    * Schedule a local notification
    */
-  async scheduleLocalNotification(notification: LocalNotification): Promise<void> {
+  async scheduleLocalNotification(
+    notification: LocalNotification,
+  ): Promise<void> {
     try {
       // Validate input
       if (!notification.id || !notification.title || !notification.body) {
-        throw errorHandler.createError('Invalid input: id, title, and body are required', ERROR_CODES.INVALID_INPUT);
+        throw errorHandler.createError(
+          'Invalid input: id, title, and body are required',
+          ERROR_CODES.INVALID_INPUT,
+        );
       }
 
       const request: Notifications.NotificationRequestInput = {
@@ -139,7 +198,6 @@ export class NotificationDeliveryService implements INotificationDeliveryService
 
       await Notifications.scheduleNotificationAsync(request);
       console.log(`Local notification scheduled: ${notification.id}`);
-
     } catch (error) {
       throw errorHandler.handleError(error, 'scheduleLocalNotification');
     }
@@ -165,7 +223,7 @@ export class NotificationDeliveryService implements INotificationDeliveryService
     try {
       // Cancel all local notifications
       await Notifications.cancelAllScheduledNotificationsAsync();
-      
+
       // Cancel scheduled notifications in database
       const { error } = await supabase
         .from('notification_queue')
@@ -187,11 +245,14 @@ export class NotificationDeliveryService implements INotificationDeliveryService
   /**
    * Get scheduled notifications for a user
    */
-  async getScheduledNotifications(userId: string): Promise<ScheduledNotification[]> {
+  async getScheduledNotifications(
+    userId: string,
+  ): Promise<ScheduledNotification[]> {
     try {
       // Get local notifications
-      const localNotifications = await Notifications.getAllScheduledNotificationsAsync();
-      
+      const localNotifications =
+        await Notifications.getAllScheduledNotificationsAsync();
+
       // Get database scheduled notifications
       const { data: dbNotifications } = await supabase
         .from('notification_queue')
@@ -208,9 +269,11 @@ export class NotificationDeliveryService implements INotificationDeliveryService
           id: notif.identifier,
           title: notif.content.title || '',
           body: notif.content.body || '',
-          scheduledFor: (notif as any)?.trigger?.date ? new Date((notif as any).trigger.date) : new Date(),
+          scheduledFor: (notif as any)?.trigger?.date
+            ? new Date((notif as any).trigger.date)
+            : new Date(),
           category: (notif.content as any)?.categoryIdentifier,
-          data: notif.content.data
+          data: notif.content.data,
         });
       });
 
@@ -222,12 +285,13 @@ export class NotificationDeliveryService implements INotificationDeliveryService
           body: notif.body,
           scheduledFor: new Date(notif.scheduled_for),
           category: notif.notification_type,
-          data: notif.data
+          data: notif.data,
         });
       });
 
-      return scheduledNotifications.sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
-
+      return scheduledNotifications.sort(
+        (a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime(),
+      );
     } catch (error) {
       console.error('Error getting scheduled notifications:', error);
       return [];
@@ -245,7 +309,9 @@ export class NotificationDeliveryService implements INotificationDeliveryService
         return { seconds: trigger.seconds };
       case 'location':
         // Location triggers are not supported in Expo Notifications
-        console.warn('Location triggers are not supported in Expo Notifications');
+        console.warn(
+          'Location triggers are not supported in Expo Notifications',
+        );
         return null;
       default:
         return null;

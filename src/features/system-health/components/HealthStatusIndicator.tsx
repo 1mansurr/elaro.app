@@ -1,8 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useHealthCheck } from '../hooks/useHealthCheck';
 import { useTheme } from '@/contexts/ThemeContext';
+import { formatDate } from '@/i18n';
 
 interface HealthStatusIndicatorProps {
   showDetails?: boolean;
@@ -13,19 +21,19 @@ interface HealthStatusIndicatorProps {
  * Component that displays the overall health status of the application.
  * Shows a simple indicator when compact, or detailed breakdown when expanded.
  */
-export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({ 
-  showDetails = false, 
-  compact = true 
+export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
+  showDetails = false,
+  compact = true,
 }) => {
-  const { 
-    healthStatus, 
-    isLoading, 
-    error, 
-    isHealthy, 
-    lastChecked, 
-    checkHealth 
+  const {
+    healthStatus,
+    isLoading,
+    error,
+    isHealthy,
+    lastChecked,
+    checkHealth,
   } = useHealthCheck();
-  
+
   const { theme } = useTheme();
 
   const getStatusColor = (status: 'ok' | 'error') => {
@@ -39,18 +47,17 @@ export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
   if (compact) {
     return (
       <View style={styles.compactContainer}>
-        <TouchableOpacity 
-          style={styles.compactButton} 
+        <TouchableOpacity
+          style={styles.compactButton}
           onPress={() => checkHealth(false)}
-          disabled={isLoading}
-        >
+          disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator size="small" color={theme.text} />
           ) : (
-            <Ionicons 
-              name={getStatusIcon(isHealthy ? 'ok' : 'error')} 
-              size={16} 
-              color={getStatusColor(isHealthy ? 'ok' : 'error')} 
+            <Ionicons
+              name={getStatusIcon(isHealthy ? 'ok' : 'error')}
+              size={16}
+              color={getStatusColor(isHealthy ? 'ok' : 'error')}
             />
           )}
         </TouchableOpacity>
@@ -62,11 +69,10 @@ export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
     <View style={[styles.container, { backgroundColor: theme.surface }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: theme.text }]}>System Health</Text>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.refreshButton, { backgroundColor: theme.accent }]}
           onPress={() => checkHealth(false)}
-          disabled={isLoading}
-        >
+          disabled={isLoading}>
           {isLoading ? (
             <ActivityIndicator size="small" color="white" />
           ) : (
@@ -76,7 +82,11 @@ export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
       </View>
 
       {error && (
-        <View style={[styles.errorContainer, { backgroundColor: theme.destructive + '20' }]}>
+        <View
+          style={[
+            styles.errorContainer,
+            { backgroundColor: theme.destructive + '20' },
+          ]}>
           <Text style={[styles.errorText, { color: theme.destructive }]}>
             Health check failed: {error}
           </Text>
@@ -86,38 +96,53 @@ export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
       {healthStatus && (
         <>
           <View style={styles.overallStatus}>
-            <Ionicons 
-              name={getStatusIcon(healthStatus.status)} 
-              size={24} 
-              color={getStatusColor(healthStatus.status)} 
+            <Ionicons
+              name={getStatusIcon(healthStatus.status)}
+              size={24}
+              color={getStatusColor(healthStatus.status)}
             />
             <Text style={[styles.overallStatusText, { color: theme.text }]}>
-              {healthStatus.status === 'ok' ? 'All Systems Operational' : 'Service Issues Detected'}
+              {healthStatus.status === 'ok'
+                ? 'All Systems Operational'
+                : 'Service Issues Detected'}
             </Text>
           </View>
 
           {showDetails && (
             <ScrollView style={styles.servicesContainer}>
               {healthStatus.services.map((service, index) => (
-                <View key={index} style={[styles.serviceItem, { borderBottomColor: theme.border }]}>
+                <View
+                  key={index}
+                  style={[
+                    styles.serviceItem,
+                    { borderBottomColor: theme.border },
+                  ]}>
                   <View style={styles.serviceHeader}>
-                    <Ionicons 
-                      name={getStatusIcon(service.status)} 
-                      size={20} 
-                      color={getStatusColor(service.status)} 
+                    <Ionicons
+                      name={getStatusIcon(service.status)}
+                      size={20}
+                      color={getStatusColor(service.status)}
                     />
                     <Text style={[styles.serviceName, { color: theme.text }]}>
                       {service.service.toUpperCase()}
                     </Text>
                     {service.responseTime && (
-                      <Text style={[styles.responseTime, { color: theme.textSecondary }]}>
+                      <Text
+                        style={[
+                          styles.responseTime,
+                          { color: theme.textSecondary },
+                        ]}>
                         {service.responseTime}ms
                       </Text>
                     )}
                   </View>
-                  
+
                   {service.message && (
-                    <Text style={[styles.serviceMessage, { color: theme.textSecondary }]}>
+                    <Text
+                      style={[
+                        styles.serviceMessage,
+                        { color: theme.textSecondary },
+                      ]}>
                       {service.message}
                     </Text>
                   )}
@@ -128,7 +153,10 @@ export const HealthStatusIndicator: React.FC<HealthStatusIndicatorProps> = ({
 
           <View style={styles.footer}>
             <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
-              Last checked: {lastChecked?.toLocaleTimeString() || 'Never'}
+              Last checked:{' '}
+              {lastChecked
+                ? formatDate(lastChecked, { timeStyle: 'short' })
+                : 'Never'}
             </Text>
             <Text style={[styles.version, { color: theme.textSecondary }]}>
               v{healthStatus.version} ({healthStatus.environment})
@@ -156,14 +184,19 @@ export const HealthStatusBadge: React.FC = () => {
   }
 
   return (
-    <View style={[
-      styles.badge, 
-      { backgroundColor: isHealthy ? theme.success + '20' : theme.destructive + '20' }
-    ]}>
-      <Ionicons 
-        name={isHealthy ? 'checkmark-circle' : 'alert-circle'} 
-        size={16} 
-        color={isHealthy ? theme.success : theme.destructive} 
+    <View
+      style={[
+        styles.badge,
+        {
+          backgroundColor: isHealthy
+            ? theme.success + '20'
+            : theme.destructive + '20',
+        },
+      ]}>
+      <Ionicons
+        name={isHealthy ? 'checkmark-circle' : 'alert-circle'}
+        size={16}
+        color={isHealthy ? theme.success : theme.destructive}
       />
     </View>
   );

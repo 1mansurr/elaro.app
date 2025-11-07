@@ -17,31 +17,36 @@ export const useUserProfile = (userId?: string): UseUserProfileReturn => {
 
   const userProfileService = UserProfileService.getInstance();
 
-  const fetchUserProfile = useCallback(async (id: string) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const userProfile = await userProfileService.fetchUserProfile(id);
-      setUser(userProfile);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch user profile';
-      setError(errorMessage);
-      console.error('❌ Error fetching user profile:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [userProfileService]);
+  const fetchUserProfile = useCallback(
+    async (id: string) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const userProfile = await userProfileService.fetchUserProfile(id);
+        setUser(userProfile);
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to fetch user profile';
+        setError(errorMessage);
+        console.error('❌ Error fetching user profile:', err);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userProfileService],
+  );
 
   const refreshUser = useCallback(async () => {
     if (!userId) return;
-    
+
     try {
       setLoading(true);
       setError(null);
       const userProfile = await userProfileService.refreshUserProfile(userId);
       setUser(userProfile);
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to refresh user profile';
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to refresh user profile';
       setError(errorMessage);
       console.error('❌ Error refreshing user profile:', err);
     } finally {
@@ -51,7 +56,7 @@ export const useUserProfile = (userId?: string): UseUserProfileReturn => {
 
   const clearCache = useCallback(async () => {
     if (!userId) return;
-    
+
     try {
       await userProfileService.clearUserProfileCache(userId);
     } catch (err) {

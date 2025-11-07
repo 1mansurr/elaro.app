@@ -10,7 +10,10 @@ export const updateLastActiveTimestamp = async (): Promise<void> => {
   try {
     const timestamp = Date.now().toString();
     await AsyncStorage.setItem(LAST_ACTIVE_TIMESTAMP_KEY, timestamp);
-    console.log('✅ Last active timestamp updated:', new Date(parseInt(timestamp)).toISOString());
+    console.log(
+      '✅ Last active timestamp updated:',
+      new Date(parseInt(timestamp)).toISOString(),
+    );
   } catch (error) {
     console.error('❌ Error updating last active timestamp:', error);
   }
@@ -36,25 +39,25 @@ export const getLastActiveTimestamp = async (): Promise<number | null> => {
 export const isSessionExpired = async (): Promise<boolean> => {
   try {
     const lastActiveTimestamp = await getLastActiveTimestamp();
-    
+
     if (!lastActiveTimestamp) {
       // If there's no timestamp, consider it as a new session and set current time
       await updateLastActiveTimestamp();
       return false;
     }
-    
+
     const now = Date.now();
     const timeDiff = now - lastActiveTimestamp;
     const daysSinceLastActive = timeDiff / (1000 * 60 * 60 * 24); // Convert to days
-    
+
     console.log(`📅 Days since last active: ${daysSinceLastActive.toFixed(2)}`);
-    
+
     // Check if more than 30 days have passed
     if (daysSinceLastActive > SESSION_TIMEOUT_DAYS) {
       console.log('⏰ Session expired due to inactivity');
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error('❌ Error checking session expiration:', error);
@@ -73,4 +76,3 @@ export const clearLastActiveTimestamp = async (): Promise<void> => {
     console.error('❌ Error clearing last active timestamp:', error);
   }
 };
-

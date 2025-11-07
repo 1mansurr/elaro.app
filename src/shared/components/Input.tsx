@@ -7,12 +7,15 @@ import {
   Animated,
   TouchableOpacity,
   TextInputProps,
+  NativeSyntheticEvent,
+  TextInputFocusEventData,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import {
   COLORS,
   SPACING,
   FONT_SIZES,
+  FONT_WEIGHTS,
   BORDER_RADIUS,
   SHADOWS,
   ANIMATIONS,
@@ -67,9 +70,9 @@ export const Input: React.FC<InputProps> = ({
         duration: ANIMATIONS.duration.fast,
         useNativeDriver: true,
       });
-      
+
       animation.start();
-      
+
       return () => {
         animation.stop();
       };
@@ -95,21 +98,21 @@ export const Input: React.FC<InputProps> = ({
           useNativeDriver: true,
         }),
       ]);
-      
+
       animation.start();
-      
+
       return () => {
         animation.stop();
       };
     }
   }, [error, animated, shakeAnim]);
 
-  const handleFocus = (e: any) => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
     props.onFocus?.(e);
   };
 
-  const handleBlur = (e: any) => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
     setIsFilled(!!props.value);
     props.onBlur?.(e);
@@ -172,7 +175,16 @@ export const Input: React.FC<InputProps> = ({
               : theme.inputBorder,
         };
     }
-  }, [variant, error, theme.destructive, theme.accent, theme.inputBorder, isFocused, theme.input, isDark]);
+  }, [
+    variant,
+    error,
+    theme.destructive,
+    theme.accent,
+    theme.inputBorder,
+    isFocused,
+    theme.input,
+    isDark,
+  ]);
 
   const inputStyle = [
     styles.input,
@@ -322,7 +334,7 @@ const styles = StyleSheet.create({
   },
   label: {
     marginBottom: SPACING.xs,
-    fontWeight: '500' as any,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   required: {
     color: COLORS.error,
@@ -336,7 +348,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.gray300,
     borderRadius: BORDER_RADIUS.md,
     color: COLORS.text,
-    fontWeight: '400' as any,
+    fontWeight: FONT_WEIGHTS.normal,
   },
   inputWithLeftIcon: {
     paddingLeft: 48,

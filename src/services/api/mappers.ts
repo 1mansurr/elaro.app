@@ -1,4 +1,9 @@
-import { Course as AppCourse, Assignment as AppAssignment, Lecture as AppLecture, StudySession as AppStudySession } from '../../types';
+import {
+  Course as AppCourse,
+  Assignment as AppAssignment,
+  Lecture as AppLecture,
+  StudySession as AppStudySession,
+} from '../../types';
 
 // Raw types representing the data directly from the Supabase DB
 type DbCourse = {
@@ -59,7 +64,9 @@ export const mapDbCourseToAppCourse = (dbCourse: DbCourse): AppCourse => ({
   deletedAt: dbCourse.deleted_at,
 });
 
-export const mapDbAssignmentToAppAssignment = (dbAssignment: DbAssignment): AppAssignment => ({
+export const mapDbAssignmentToAppAssignment = (
+  dbAssignment: DbAssignment,
+): AppAssignment => ({
   id: dbAssignment.id,
   userId: dbAssignment.user_id,
   courseId: dbAssignment.course_id,
@@ -83,7 +90,9 @@ export const mapDbLectureToAppLecture = (dbLecture: DbLecture): AppLecture => ({
   createdAt: dbLecture.created_at,
 });
 
-export const mapDbStudySessionToAppStudySession = (dbStudySession: DbStudySession): AppStudySession => ({
+export const mapDbStudySessionToAppStudySession = (
+  dbStudySession: DbStudySession,
+): AppStudySession => ({
   id: dbStudySession.id,
   userId: dbStudySession.user_id,
   courseId: dbStudySession.course_id,

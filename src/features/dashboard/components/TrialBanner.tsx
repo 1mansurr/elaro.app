@@ -11,12 +11,16 @@ interface TrialBannerProps {
   onDismiss?: () => void;
 }
 
-const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscribe, onDismiss }) => {
+const TrialBanner: React.FC<TrialBannerProps> = ({
+  daysRemaining,
+  onPressSubscribe,
+  onDismiss,
+}) => {
   if (daysRemaining === null) return null; // Early return for null
-  
+
   const isExpired = daysRemaining < 0;
   const message = isExpired
-    ? "Your Oddity trial has ended."
+    ? 'Your Oddity trial has ended.'
     : `Your Oddity trial ends in ${daysRemaining} day${daysRemaining === 1 ? '' : 's'}.`;
 
   return (
@@ -25,8 +29,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscri
         <TouchableOpacity
           onPress={onDismiss}
           style={styles.closeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="close" size={24} color="#92400e" />
         </TouchableOpacity>
       )}
@@ -36,10 +39,7 @@ const TrialBanner: React.FC<TrialBannerProps> = ({ daysRemaining, onPressSubscri
       </View>
       <View style={styles.buttonContainer}>
         <Text style={styles.priceText}>$1.99 / month</Text>
-        <TouchableOpacity
-          onPress={onPressSubscribe}
-          style={styles.button}
-        >
+        <TouchableOpacity onPress={onPressSubscribe} style={styles.button}>
           <Text style={styles.buttonText}>Join Oddity</Text>
         </TouchableOpacity>
       </View>
@@ -102,5 +102,3 @@ const styles = StyleSheet.create({
 });
 
 export default TrialBanner;
-
-

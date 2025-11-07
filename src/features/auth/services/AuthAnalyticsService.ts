@@ -112,7 +112,10 @@ export class AuthAnalyticsService {
   /**
    * Track trial-related events
    */
-  trackTrialEvent(eventName: string, properties: Record<string, any> = {}): void {
+  trackTrialEvent(
+    eventName: string,
+    properties: Record<string, any> = {},
+  ): void {
     try {
       mixpanelService.track(eventName, properties);
     } catch (error) {

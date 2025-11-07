@@ -50,7 +50,7 @@ describe('HomeScreenFAB', () => {
         onStateChange={mockOnStateChange}
         onDoubleTap={mockOnDoubleTap}
         onDraftBadgePress={mockOnDraftBadgePress}
-      />
+      />,
     );
 
     // The component should render without errors
@@ -69,7 +69,7 @@ describe('HomeScreenFAB', () => {
         onStateChange={mockOnStateChange}
         onDoubleTap={mockOnDoubleTap}
         onDraftBadgePress={mockOnDraftBadgePress}
-      />
+      />,
     );
 
     // The component should render without errors

@@ -20,9 +20,16 @@
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": ["elaro"]
+          },
+          {
+            "CFBundleURLSchemes": ["elaro"]
           }
-        ]
-      }
+        ],
+        "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized learning experiences.",
+        "NSCameraUsageDescription": "This app needs camera access for profile photos and document scanning.",
+        "NSPhotoLibraryUsageDescription": "This app needs photo library access to save and share learning materials."
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -43,7 +50,27 @@
             }
           ],
           "category": ["BROWSABLE", "DEFAULT"]
+        },
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "elaro"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
+      ],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -56,6 +83,11 @@
       "eas": {
         "projectId": "1dd584f5-6522-4df5-ad51-076b07b3d09c"
       }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": false,
+      "url": "https://u.expo.dev/1dd584f5-6522-4df5-ad51-076b07b3d09c"
     }
   }
 }

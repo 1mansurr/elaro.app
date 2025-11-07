@@ -1,12 +1,12 @@
 /**
  * Sync Debug Hook
- * 
+ *
  * Provides visibility into all sync services' states:
  * - Auth sync status
  * - Navigation sync status
  * - Study session sync status
  * - Settings sync status
- * 
+ *
  * Usage (dev mode only):
  * ```tsx
  * const syncDebug = useSyncDebug();
@@ -19,7 +19,7 @@ import { authSyncService } from '@/services/authSync';
 import { navigationSyncService } from '@/services/navigationSync';
 import { studySessionSyncService } from '@/services/studySessionSync';
 import { settingsSyncService } from '@/services/settingsSync';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface SyncDebugInfo {
   auth: {
@@ -166,10 +166,15 @@ export function useSyncHealth(): {
 
   // Check settings sync
   if (debugInfo.settings.pendingChanges > 10) {
-    issues.push(`Settings: ${debugInfo.settings.pendingChanges} pending changes (high)`);
+    issues.push(
+      `Settings: ${debugInfo.settings.pendingChanges} pending changes (high)`,
+    );
   }
 
-  if (debugInfo.settings.cacheAge && debugInfo.settings.cacheAge > 2 * 60 * 60 * 1000) {
+  if (
+    debugInfo.settings.cacheAge &&
+    debugInfo.settings.cacheAge > 2 * 60 * 60 * 1000
+  ) {
     issues.push('Settings: Cache older than 2 hours');
   }
 
@@ -189,13 +194,16 @@ export function printSyncDebug(debugInfo: SyncDebugInfo | null): void {
   }
 
   console.group('🔍 Sync Debug Information');
-  
+
   console.group('🔐 Auth Sync');
   console.log('Has Session:', debugInfo.auth.hasSession);
   console.log('User ID:', debugInfo.auth.userId);
-  console.log('Last Synced:', debugInfo.auth.lastSyncedAt
-    ? new Date(debugInfo.auth.lastSyncedAt).toISOString()
-    : 'Never');
+  console.log(
+    'Last Synced:',
+    debugInfo.auth.lastSyncedAt
+      ? new Date(debugInfo.auth.lastSyncedAt).toISOString()
+      : 'Never',
+  );
   console.log('Cache Valid:', debugInfo.auth.cacheValid);
   console.groupEnd();
 
@@ -209,20 +217,30 @@ export function printSyncDebug(debugInfo: SyncDebugInfo | null): void {
   console.group('📚 Study Session Sync');
   console.log('Has Active Session:', debugInfo.studySession.hasActiveSession);
   console.log('Session ID:', debugInfo.studySession.sessionId);
-  console.log('Time Spent:', debugInfo.studySession.timeSpentMinutes, 'minutes');
+  console.log(
+    'Time Spent:',
+    debugInfo.studySession.timeSpentMinutes,
+    'minutes',
+  );
   console.log('Status:', debugInfo.studySession.status);
   console.log('SRS Queue:', debugInfo.studySession.srsQueueLength);
   console.groupEnd();
 
   console.group('⚙️ Settings Sync');
   console.log('Has Cache:', debugInfo.settings.hasCache);
-  console.log('Last Synced:', debugInfo.settings.lastSyncedAt
-    ? new Date(debugInfo.settings.lastSyncedAt).toISOString()
-    : 'Never');
+  console.log(
+    'Last Synced:',
+    debugInfo.settings.lastSyncedAt
+      ? new Date(debugInfo.settings.lastSyncedAt).toISOString()
+      : 'Never',
+  );
   console.log('Pending Changes:', debugInfo.settings.pendingChanges);
-  console.log('Cache Age:', debugInfo.settings.cacheAge
-    ? `${Math.floor(debugInfo.settings.cacheAge / 1000 / 60)} minutes`
-    : 'N/A');
+  console.log(
+    'Cache Age:',
+    debugInfo.settings.cacheAge
+      ? `${Math.floor(debugInfo.settings.cacheAge / 1000 / 60)} minutes`
+      : 'N/A',
+  );
   console.groupEnd();
 
   console.log('Timestamp:', new Date(debugInfo.timestamp).toISOString());

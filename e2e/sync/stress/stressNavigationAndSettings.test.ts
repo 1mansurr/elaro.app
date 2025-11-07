@@ -1,6 +1,6 @@
 /**
  * Pass 9 - Chunk 3: Stress Navigation & Settings Tests
- * 
+ *
  * Stress tests for navigation and settings under load:
  * - Rapidly switch tabs and modify settings (theme, notifications) under load
  * - Trigger background/foreground transitions repeatedly
@@ -37,7 +37,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
     mockSupabaseAuth.reset();
     await network.reset();
     perfMetrics.reset();
-    
+
     // Sign in before tests
     await network.goOnline();
     await auth.signIn();
@@ -47,7 +47,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
   afterEach(async () => {
     await network.reset();
     mockSupabaseAuth.reset();
-    
+
     // Print performance summary
     if (__DEV__) {
       perfMetrics.printSummary();
@@ -61,9 +61,11 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       // Navigate to settings
       await navigation.goTo('Settings');
-      
+
       // Wait for settings screen to load
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Rapidly toggle theme
       for (let i = 0; i < toggleCount; i++) {
@@ -86,7 +88,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       // Navigate back to settings
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Verify settings persisted (last toggle state)
       // In real app, would verify actual theme state
@@ -104,7 +108,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       // Navigate to notification settings
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       try {
         await element(by.id('notification-settings-button')).tap();
@@ -127,7 +133,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
         // Reconnect and verify sync
         await network.waitForNetworkOperations(1000);
-        
+
         // Verify app didn't crash
         const isLoggedIn = await auth.isLoggedIn();
         expect(isLoggedIn).toBe(true);
@@ -146,7 +152,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       const networkSwitches = 5;
 
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       let toggleIndex = 0;
       for (let i = 0; i < toggleCount; i++) {
@@ -185,7 +193,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       for (let i = 0; i < switchCount; i++) {
         const targetTab = ['Home', 'Courses', 'Calendar', 'Profile'][i % 4];
-        
+
         try {
           await measureOperation('rapid_navigation', async () => {
             await navigation.goTo(targetTab);
@@ -207,7 +215,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       // Verify navigation state is consistent
       await device.reloadReactNative();
       await syncHelpers.waitForSync(2000);
-      
+
       const stillLoggedIn = await auth.isLoggedIn();
       expect(stillLoggedIn).toBe(true);
     });
@@ -218,7 +226,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       for (let i = 0; i < transitions; i++) {
         const screen = ['Settings', 'Profile', 'Home', 'Courses'][i % 4];
-        
+
         try {
           await navigation.goTo(screen);
           screens.push(screen);
@@ -283,7 +291,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       const states: string[] = [];
 
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Make a setting change
       try {
@@ -303,7 +313,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
           // Simulate foreground
           await device.launchApp({ newInstance: false });
           await syncHelpers.waitForSync(2000);
-          
+
           states.push(`cycle_${i}`);
         });
       }
@@ -318,7 +328,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
     it('should persist settings across app termination and restart', async () => {
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Change settings
       const toggleCount = 5;
@@ -347,7 +359,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       // Navigate back to settings (verify persistence)
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Settings should be persisted (would verify actual state in real app)
       expect(true).toBe(true); // Pass if we get here without crash
@@ -357,7 +371,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       const updateCount = 30;
 
       await navigation.goTo('Settings');
-      await waitFor(element(by.id('settings-screen'))).toBeVisible().withTimeout(3000);
+      await waitFor(element(by.id('settings-screen')))
+        .toBeVisible()
+        .withTimeout(3000);
 
       // Start rapid updates
       const updatesPromise = (async () => {
@@ -399,7 +415,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       const navigationStress = (async () => {
         while (Date.now() - startTime < duration) {
           try {
-            await navigation.goTo(['Home', 'Settings', 'Profile'][Math.floor(Math.random() * 3)]);
+            await navigation.goTo(
+              ['Home', 'Settings', 'Profile'][Math.floor(Math.random() * 3)],
+            );
             operations.push('nav');
             await new Promise(resolve => setTimeout(resolve, 100));
           } catch (error) {
@@ -451,7 +469,9 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
     it('should maintain consistency during stress mode (if enabled)', async () => {
       if (!STRESS_MODE) {
-        console.log('⏭️ Skipping extreme stress test (set STRESS_MODE=true to enable)');
+        console.log(
+          '⏭️ Skipping extreme stress test (set STRESS_MODE=true to enable)',
+        );
         return;
       }
 
@@ -491,11 +511,13 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       // Navigate to profile
       await navigation.goTo('Profile');
-      
+
       try {
         // Enter edit mode
         await element(by.id('edit-profile-button')).tap();
-        await waitFor(element(by.id('edit-profile-screen'))).toBeVisible().withTimeout(3000);
+        await waitFor(element(by.id('edit-profile-screen')))
+          .toBeVisible()
+          .withTimeout(3000);
 
         // Rapid profile updates while navigating
         const updatesPromise = (async () => {
@@ -556,7 +578,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
           // Rapid UI interactions
           await navigation.goTo('Settings');
           await new Promise(resolve => setTimeout(resolve, 50));
-          
+
           try {
             await element(by.id('theme-toggle-button')).tap();
           } catch (error) {
@@ -586,7 +608,7 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
 
       for (let i = 0; i < operations; i++) {
         const start = Date.now();
-        
+
         try {
           await navigation.goTo(['Home', 'Settings', 'Profile'][i % 3]);
           const responseTime = Date.now() - start;
@@ -597,7 +619,8 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
       }
 
       // Verify response times are reasonable (< 2 seconds per operation)
-      const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+      const avgResponseTime =
+        responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
       expect(avgResponseTime).toBeLessThan(2000);
 
       // Verify app still functional
@@ -606,4 +629,3 @@ describe('Pass 9 - Chunk 3: Stress Navigation & Settings', () => {
     });
   });
 });
-

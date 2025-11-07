@@ -1,5 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const UnsuspendAccountSchema = z.object({
@@ -8,35 +16,49 @@ const UnsuspendAccountSchema = z.object({
   adminNotes: z.string().optional(),
 });
 
-async function handleUnsuspendAccount({ user, supabaseClient, body }: AuthenticatedRequest) {
+async function handleUnsuspendAccount(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
   const { userId, reason, adminNotes } = body;
-  
+
   // SECURITY: Only admins can unsuspend accounts
   const { data: adminUser, error: adminError } = await supabaseClient
     .from('users')
     .select('role')
     .eq('id', user.id)
     .single();
-    
+
   if (adminError || adminUser?.role !== 'admin') {
-    throw new AppError('Unauthorized: Admin access required', 403, 'ADMIN_REQUIRED');
+    throw new AppError(
+      'Unauthorized: Admin access required',
+      403,
+      ERROR_CODES.FORBIDDEN,
+    );
   }
-  
+
   // Check if target user exists and is suspended
   const { data: targetUser, error: targetError } = await supabaseClient
     .from('users')
     .select('id, email, account_status, suspension_end_date')
     .eq('id', userId)
     .single();
-    
-  if (targetError) throw new AppError('Target user not found', 404, 'USER_NOT_FOUND');
-  
+
+  if (targetError) throw handleDbError(targetError);
+
   if (targetUser.account_status !== 'suspended') {
-    throw new AppError('Account is not suspended', 400, 'NOT_SUSPENDED');
+    throw new AppError(
+      'Account is not suspended',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
   }
-  
-  console.log(`Admin ${user.id} unsuspending account ${userId} (${targetUser.email})`);
-  
+
+  await logger.info(
+    'Admin unsuspending account',
+    { admin_id: user.id, target_user_id: userId, email: targetUser.email },
+    traceContext,
+  );
+
   const now = new Date().toISOString();
   const { data, error: updateError } = await supabaseClient
     .from('users')
@@ -49,8 +71,8 @@ async function handleUnsuspendAccount({ user, supabaseClient, body }: Authentica
     .select()
     .single();
 
-  if (updateError) throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
-  
+  if (updateError) throw handleDbError(updateError);
+
   // Log the unsuspension action
   const { error: logError } = await supabaseClient
     .from('admin_actions')
@@ -60,28 +82,36 @@ async function handleUnsuspendAccount({ user, supabaseClient, body }: Authentica
       action: 'unsuspend_account',
       reason,
       admin_notes: adminNotes,
-      metadata: { 
+      metadata: {
         target_user_email: targetUser.email,
-        previous_suspension_end_date: targetUser.suspension_end_date
-      }
+        previous_suspension_end_date: targetUser.suspension_end_date,
+      },
     });
-    
+
   if (logError) {
-    console.error('Error logging admin action:', logError);
+    await logger.error(
+      'Error logging admin action',
+      { admin_id: user.id, target_user_id: userId, error: logError.message },
+      traceContext,
+    );
     // Don't throw here as the main operation succeeded
   }
-  
-  console.log(`Successfully unsuspended account ${userId}`);
-  return { 
+
+  await logger.info(
+    'Successfully unsuspended account',
+    { admin_id: user.id, target_user_id: userId },
+    traceContext,
+  );
+  return {
     message: 'Account unsuspended successfully',
-    user: data
+    user: data,
   };
 }
 
-serve(createAuthenticatedHandler(
-  handleUnsuspendAccount,
-  { 
+serve(
+  createAuthenticatedHandler(handleUnsuspendAccount, {
     rateLimitName: 'unsuspend-account',
-    schema: UnsuspendAccountSchema
-  }
-));
+    schema: UnsuspendAccountSchema,
+    requireIdempotency: true,
+  }),
+);

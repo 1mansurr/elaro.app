@@ -19,20 +19,26 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { Course, RootStackParamList } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { Button } from './Button';
+import { GuestAuthModal } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { api } from '@/services/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useTotalTaskCount } from '@/hooks';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import { savePendingTask } from '@/utils/taskPersistence';
 import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
 import { EmptyStateModal } from '@/features/templates/components/EmptyStateModal';
 import { useTemplateManagement } from '@/features/templates/hooks/useTemplateManagement';
 import { useTemplateSelection } from '@/features/templates/hooks/useTemplateSelection';
-import { generateTemplateName, clearDateFields, canSaveAsTemplate } from '@/features/templates/utils/templateUtils';
+import {
+  generateTemplateName,
+  clearDateFields,
+  canSaveAsTemplate,
+} from '@/features/templates/utils/templateUtils';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
 
@@ -41,12 +47,16 @@ interface QuickAddModalProps {
   onClose: () => void;
 }
 
-export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose }) => {
+export const QuickAddModal: React.FC<QuickAddModalProps> = ({
+  isVisible,
+  onClose,
+}) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, session } = useAuth();
   const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
+  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
+    useTotalTaskCount();
 
   // Template management
   const { createTemplate, hasTemplates } = useTemplateManagement();
@@ -72,6 +82,17 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
   const [isSaving, setIsSaving] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
+  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
+
+  const isGuest = !session;
+
+  // Block Quick Add for guests - show auth modal instead
+  useEffect(() => {
+    if (isVisible && isGuest) {
+      onClose(); // Close Quick Add modal
+      setShowGuestAuthModal(true); // Show auth prompt
+    }
+  }, [isVisible, isGuest, onClose]);
 
   // Fetch courses when modal opens
   useEffect(() => {
@@ -99,9 +120,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
         .from('courses')
         .select('id, course_name, course_code, about_course')
         .order('course_name');
-      
+
       if (error) throw error;
-      
+
       const formattedCourses = (data || []).map(course => ({
         id: course.id,
         courseName: course.course_name,
@@ -111,7 +132,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })) as Course[];
-      
+
       setCourses(formattedCourses);
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -125,14 +146,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
   // Handle template selection
   const handleTemplateSelect = (template: any) => {
     selectTemplate(template);
-    
+
     // Pre-fill form with template data
     if (template.template_data) {
       const templateData = clearDateFields(template.template_data);
-      
+
       // Set task type
       setTaskType(template.task_type);
-      
+
       // Set title
       if (templateData.title) {
         setTitle(templateData.title);
@@ -141,7 +162,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
       } else if (templateData.topic) {
         setTitle(templateData.topic);
       }
-      
+
       // Set course if available
       if (templateData.course_id) {
         const course = courses.find(c => c.id === templateData.course_id);
@@ -182,8 +203,62 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
   };
 
   const handleQuickSave = async () => {
-    if (!isFormValid || !user) return;
+    if (!isFormValid) return;
 
+    // Handle guest users: save pending task and prompt auth
+    if (isGuest) {
+      const base = { course: selectedCourse, title: title.trim() };
+
+      try {
+        if (taskType === 'assignment') {
+          await savePendingTask(
+            {
+              ...base,
+              description: '',
+              dueDate: dateTime,
+              reminders: [120],
+            },
+            'assignment',
+          );
+        } else if (taskType === 'lecture') {
+          const endTime = new Date(dateTime);
+          endTime.setHours(endTime.getHours() + 1);
+          await savePendingTask(
+            {
+              ...base,
+              startTime: dateTime,
+              endTime,
+              recurrence: 'none',
+              reminders: [30],
+            },
+            'lecture',
+          );
+        } else {
+          await savePendingTask(
+            {
+              ...base,
+              topic: title.trim(),
+              description: '',
+              sessionDate: dateTime,
+              hasSpacedRepetition: false,
+              reminders: [15],
+            },
+            'study_session',
+          );
+        }
+        Alert.alert(
+          'Task Saved!',
+          'Your task is almost saved! Sign up to complete it.',
+        );
+        setShowGuestAuthModal(true);
+      } catch (error) {
+        console.error('Error saving pending task:', error);
+        Alert.alert('Error', 'Failed to save your progress. Please try again.');
+      }
+      return;
+    }
+
+    // Handle authenticated users: create task immediately
     setIsSaving(true);
 
     try {
@@ -199,13 +274,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
             due_date: dateTime.toISOString(),
             reminders: [120], // Default 2-hour reminder
           };
-          await api.mutations.assignments.create(taskData, isOnline, user.id);
+          await api.mutations.assignments.create(taskData, isOnline, user!.id);
           break;
 
         case 'lecture':
           const endTime = new Date(dateTime);
           endTime.setHours(endTime.getHours() + 1); // Default 1-hour duration
-          
+
           taskData = {
             course_id: selectedCourse!.id,
             lecture_name: title.trim(),
@@ -216,7 +291,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
             recurring_pattern: 'none',
             reminders: [30], // Default 30-min reminder
           };
-          await api.mutations.lectures.create(taskData, isOnline, user.id);
+          await api.mutations.lectures.create(taskData, isOnline, user!.id);
           break;
 
         case 'study_session':
@@ -228,7 +303,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
             has_spaced_repetition: false,
             reminders: [15], // Default 15-min reminder
           };
-          await api.mutations.studySessions.create(taskData, isOnline, user.id);
+          await api.mutations.studySessions.create(
+            taskData,
+            isOnline,
+            user!.id,
+          );
           break;
       }
 
@@ -268,9 +347,23 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
     }
   };
 
+  const handleGuestAuth = (mode: 'signup' | 'signin') => {
+    setShowGuestAuthModal(false);
+    navigation.navigate('Auth', { mode } as any);
+  };
+
   const handleAddMoreDetails = () => {
+    // Block guests from accessing full add flows
+    if (isGuest) {
+      setShowGuestAuthModal(true);
+      return;
+    }
+
     if (!isFormValid) {
-      Alert.alert('Missing Information', 'Please fill in task type, title, course, and date/time.');
+      Alert.alert(
+        'Missing Information',
+        'Please fill in task type, title, course, and date/time.',
+      );
       return;
     }
 
@@ -302,8 +395,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
       visible={isVisible}
       transparent
       animationType="slide"
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           {/* Header */}
@@ -315,52 +407,78 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
           </View>
 
           {/* My Templates Button */}
-          <TouchableOpacity style={styles.myTemplatesButton} onPress={handleMyTemplatesPress}>
+          <TouchableOpacity
+            style={styles.myTemplatesButton}
+            onPress={handleMyTemplatesPress}>
             <Text style={styles.myTemplatesButtonText}>My Templates</Text>
           </TouchableOpacity>
 
-          <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.content}>
             {/* Task Type Selector */}
             <Text style={styles.label}>Task Type *</Text>
             <View style={styles.typeSelector}>
               <TouchableOpacity
-                style={[styles.typeButton, taskType === 'assignment' && styles.typeButtonActive]}
-                onPress={() => setTaskType('assignment')}
-              >
-                <Ionicons 
-                  name="document-text-outline" 
-                  size={20} 
-                  color={taskType === 'assignment' ? COLORS.primary : COLORS.gray} 
+                style={[
+                  styles.typeButton,
+                  taskType === 'assignment' && styles.typeButtonActive,
+                ]}
+                onPress={() => setTaskType('assignment')}>
+                <Ionicons
+                  name="document-text-outline"
+                  size={20}
+                  color={
+                    taskType === 'assignment' ? COLORS.primary : COLORS.gray
+                  }
                 />
-                <Text style={[styles.typeButtonText, taskType === 'assignment' && styles.typeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    taskType === 'assignment' && styles.typeButtonTextActive,
+                  ]}>
                   Assignment
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.typeButton, taskType === 'lecture' && styles.typeButtonActive]}
-                onPress={() => setTaskType('lecture')}
-              >
-                <Ionicons 
-                  name="school-outline" 
-                  size={20} 
-                  color={taskType === 'lecture' ? COLORS.primary : COLORS.gray} 
+                style={[
+                  styles.typeButton,
+                  taskType === 'lecture' && styles.typeButtonActive,
+                ]}
+                onPress={() => setTaskType('lecture')}>
+                <Ionicons
+                  name="school-outline"
+                  size={20}
+                  color={taskType === 'lecture' ? COLORS.primary : COLORS.gray}
                 />
-                <Text style={[styles.typeButtonText, taskType === 'lecture' && styles.typeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    taskType === 'lecture' && styles.typeButtonTextActive,
+                  ]}>
                   Lecture
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.typeButton, taskType === 'study_session' && styles.typeButtonActive]}
-                onPress={() => setTaskType('study_session')}
-              >
-                <Ionicons 
-                  name="book-outline" 
-                  size={20} 
-                  color={taskType === 'study_session' ? COLORS.primary : COLORS.gray} 
+                style={[
+                  styles.typeButton,
+                  taskType === 'study_session' && styles.typeButtonActive,
+                ]}
+                onPress={() => setTaskType('study_session')}>
+                <Ionicons
+                  name="book-outline"
+                  size={20}
+                  color={
+                    taskType === 'study_session' ? COLORS.primary : COLORS.gray
+                  }
                 />
-                <Text style={[styles.typeButtonText, taskType === 'study_session' && styles.typeButtonTextActive]}>
+                <Text
+                  style={[
+                    styles.typeButtonText,
+                    taskType === 'study_session' && styles.typeButtonTextActive,
+                  ]}>
                   Study
                 </Text>
               </TouchableOpacity>
@@ -375,9 +493,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
               value={title}
               onChangeText={setTitle}
               placeholder={
-                taskType === 'assignment' ? 'e.g., Math Homework' :
-                taskType === 'lecture' ? 'e.g., Weekly Lecture' :
-                'e.g., Review Chapter 5'
+                taskType === 'assignment'
+                  ? 'e.g., Math Homework'
+                  : taskType === 'lecture'
+                    ? 'e.g., Weekly Lecture'
+                    : 'e.g., Review Chapter 5'
               }
               autoFocus
               maxLength={35}
@@ -389,33 +509,50 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
             <TouchableOpacity
               style={styles.selectButton}
               onPress={() => setShowCourseModal(true)}
-              disabled={isLoadingCourses}
-            >
-              <Text style={[styles.selectButtonText, !selectedCourse && styles.selectButtonPlaceholder]}>
-                {isLoadingCourses ? 'Loading...' : selectedCourse?.courseName || 'Select a course'}
+              disabled={isLoadingCourses}>
+              <Text
+                style={[
+                  styles.selectButtonText,
+                  !selectedCourse && styles.selectButtonPlaceholder,
+                ]}>
+                {isLoadingCourses
+                  ? 'Loading...'
+                  : selectedCourse?.courseName || 'Select a course'}
               </Text>
               <Ionicons name="chevron-down" size={20} color={COLORS.gray} />
             </TouchableOpacity>
 
             {/* Date & Time */}
             <Text style={styles.label}>
-              {taskType === 'assignment' ? 'Due Date & Time *' : 'Date & Time *'}
+              {taskType === 'assignment'
+                ? 'Due Date & Time *'
+                : 'Date & Time *'}
             </Text>
             <View style={styles.dateTimeRow}>
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowDatePicker(true)}
-              >
-                <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.dateTimeButtonText}>{format(dateTime, 'MMM dd')}</Text>
+                onPress={() => setShowDatePicker(true)}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.dateTimeButtonText}>
+                  {format(dateTime, 'MMM dd')}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowTimePicker(true)}
-              >
-                <Ionicons name="time-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.dateTimeButtonText}>{format(dateTime, 'h:mm a')}</Text>
+                onPress={() => setShowTimePicker(true)}>
+                <Ionicons
+                  name="time-outline"
+                  size={18}
+                  color={COLORS.primary}
+                />
+                <Text style={styles.dateTimeButtonText}>
+                  {format(dateTime, 'h:mm a')}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -440,9 +577,14 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
 
             {/* Info Text */}
             <View style={styles.infoBox}>
-              <Ionicons name="information-circle-outline" size={16} color={COLORS.primary} />
+              <Ionicons
+                name="information-circle-outline"
+                size={16}
+                color={COLORS.primary}
+              />
               <Text style={styles.infoText}>
-                Quick add creates a task with default settings. Tap "Add More Details" to customize reminders, descriptions, and more.
+                Quick add creates a task with default settings. Tap "Add More
+                Details" to customize reminders, descriptions, and more.
               </Text>
             </View>
 
@@ -455,7 +597,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
                   trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
                   thumbColor={saveAsTemplate ? '#FFFFFF' : '#FFFFFF'}
                 />
-                <Text style={styles.saveTemplateText}>Save as template for future use</Text>
+                <Text style={styles.saveTemplateText}>
+                  Save as template for future use
+                </Text>
               </View>
             )}
           </ScrollView>
@@ -484,13 +628,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
           visible={showCourseModal}
           transparent
           animationType="fade"
-          onRequestClose={() => setShowCourseModal(false)}
-        >
+          onRequestClose={() => setShowCourseModal(false)}>
           <TouchableOpacity
             style={styles.courseModalOverlay}
             activeOpacity={1}
-            onPress={() => setShowCourseModal(false)}
-          >
+            onPress={() => setShowCourseModal(false)}>
             <View style={styles.courseModalContent}>
               <Text style={styles.courseModalTitle}>Select Course</Text>
               <ScrollView style={styles.coursesList}>
@@ -507,16 +649,20 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
                       key={course.id}
                       style={[
                         styles.courseOption,
-                        selectedCourse?.id === course.id && styles.courseOptionSelected,
+                        selectedCourse?.id === course.id &&
+                          styles.courseOptionSelected,
                       ]}
                       onPress={() => {
                         setSelectedCourse(course);
                         setShowCourseModal(false);
-                      }}
-                    >
-                      <Text style={styles.courseOptionName}>{course.courseName}</Text>
+                      }}>
+                      <Text style={styles.courseOptionName}>
+                        {course.courseName}
+                      </Text>
                       {course.courseCode && (
-                        <Text style={styles.courseOptionCode}>{course.courseCode}</Text>
+                        <Text style={styles.courseOptionCode}>
+                          {course.courseCode}
+                        </Text>
                       )}
                     </TouchableOpacity>
                   ))
@@ -539,6 +685,21 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({ isVisible, onClose
           visible={showEmptyStateModal}
           onClose={() => setShowEmptyStateModal(false)}
           message="You don't have any templates. You can add a template using the toggle at the latter part of the task addition."
+        />
+
+        {/* Guest Auth Modal */}
+        <GuestAuthModal
+          isVisible={showGuestAuthModal}
+          onClose={() => setShowGuestAuthModal(false)}
+          onSignUp={() => handleGuestAuth('signup')}
+          onSignIn={() => handleGuestAuth('signin')}
+          actionType={
+            taskType === 'assignment'
+              ? 'Task'
+              : taskType === 'lecture'
+                ? 'Lecture'
+                : 'Study Session'
+          }
         />
       </View>
     </Modal>
@@ -785,4 +946,3 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.sm,
   },
 });
-

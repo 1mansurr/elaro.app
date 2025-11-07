@@ -19,15 +19,26 @@ export async function checkBiometricCapability(): Promise<BiometricCapability> {
   try {
     const hasHardware = await LocalAuthentication.hasHardwareAsync();
     const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-    const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    const supportedTypes =
+      await LocalAuthentication.supportedAuthenticationTypesAsync();
 
     let biometricType: 'fingerprint' | 'facial' | 'iris' | 'none' = 'none';
 
-    if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION)) {
+    if (
+      supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION,
+      )
+    ) {
       biometricType = 'facial';
-    } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT)) {
+    } else if (
+      supportedTypes.includes(
+        LocalAuthentication.AuthenticationType.FINGERPRINT,
+      )
+    ) {
       biometricType = 'fingerprint';
-    } else if (supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)) {
+    } else if (
+      supportedTypes.includes(LocalAuthentication.AuthenticationType.IRIS)
+    ) {
       biometricType = 'iris';
     }
 
@@ -51,7 +62,9 @@ export async function checkBiometricCapability(): Promise<BiometricCapability> {
 /**
  * Get user-friendly name for biometric type
  */
-export function getBiometricTypeName(type: 'fingerprint' | 'facial' | 'iris' | 'none'): string {
+export function getBiometricTypeName(
+  type: 'fingerprint' | 'facial' | 'iris' | 'none',
+): string {
   switch (type) {
     case 'facial':
       return Platform.OS === 'ios' ? 'Face ID' : 'Face Recognition';
@@ -69,7 +82,7 @@ export function getBiometricTypeName(type: 'fingerprint' | 'facial' | 'iris' | '
  * @param promptMessage - Custom message to show in the biometric prompt
  */
 export async function authenticateWithBiometric(
-  promptMessage: string = 'Authenticate to access ELARO'
+  promptMessage: string = 'Authenticate to access ELARO',
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const capability = await checkBiometricCapability();
@@ -112,7 +125,7 @@ export async function authenticateWithBiometric(
  */
 export async function storeBiometricCredentials(
   email: string,
-  userId: string
+  userId: string,
 ): Promise<boolean> {
   try {
     const credentials = JSON.stringify({ email, userId });
@@ -134,7 +147,9 @@ export async function getBiometricCredentials(): Promise<{
   userId: string;
 } | null> {
   try {
-    const credentialsStr = await SecureStore.getItemAsync(BIOMETRIC_CREDENTIALS_KEY);
+    const credentialsStr = await SecureStore.getItemAsync(
+      BIOMETRIC_CREDENTIALS_KEY,
+    );
     if (!credentialsStr) return null;
 
     const credentials = JSON.parse(credentialsStr);
@@ -163,7 +178,10 @@ export async function isBiometricLoginEnabled(): Promise<boolean> {
  * @param email - User's email
  * @param userId - User's ID
  */
-export async function enableBiometricLogin(email: string, userId: string): Promise<{
+export async function enableBiometricLogin(
+  email: string,
+  userId: string,
+): Promise<{
   success: boolean;
   error?: string;
 }> {
@@ -181,7 +199,7 @@ export async function enableBiometricLogin(email: string, userId: string): Promi
 
     // Test authentication before enabling
     const authResult = await authenticateWithBiometric(
-      `Enable ${getBiometricTypeName(capability.biometricType)}`
+      `Enable ${getBiometricTypeName(capability.biometricType)}`,
     );
 
     if (!authResult.success) {
@@ -256,7 +274,8 @@ export async function signInWithBiometric(): Promise<{
     if (!credentials) {
       return {
         success: false,
-        error: 'No stored credentials found. Please sign in with your password.',
+        error:
+          'No stored credentials found. Please sign in with your password.',
       };
     }
 
@@ -272,4 +291,3 @@ export async function signInWithBiometric(): Promise<{
     };
   }
 }
-

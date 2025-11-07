@@ -1,6 +1,6 @@
 /**
  * Integration Tests for 3rd Party Services
- * 
+ *
  * These tests verify that all external service integrations are working correctly.
  * Run with: npm run test:integration
  */
@@ -12,8 +12,10 @@ import { revenueCatService } from '../../src/services/revenueCat';
 import { isVersionCompatible } from '../../src/utils/apiVersionCheck';
 
 // Mock environment variables for testing
-process.env.EXPO_PUBLIC_SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://test.supabase.co';
-process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'test-key';
+process.env.EXPO_PUBLIC_SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://test.supabase.co';
+process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'test-key';
 
 describe('3rd Party Service Integration Tests', () => {
   describe('Supabase Integration', () => {
@@ -37,11 +39,11 @@ describe('3rd Party Service Integration Tests', () => {
       // This test verifies that timeouts are configured
       // The fetchWithTimeout should be applied to all requests
       const startTime = Date.now();
-      
+
       try {
         await supabase.from('users').select('*').limit(1);
         const duration = Date.now() - startTime;
-        
+
         // Should complete within timeout period (15s)
         expect(duration).toBeLessThan(15000);
       } catch (error: any) {
@@ -56,7 +58,7 @@ describe('3rd Party Service Integration Tests', () => {
   describe('Health Check System', () => {
     it('should perform health check', async () => {
       const health = await healthCheckService.checkHealth(false); // Don't use cache
-      
+
       expect(health).toBeDefined();
       expect(health.status).toMatch(/ok|error/);
       expect(health.timestamp).toBeDefined();
@@ -65,7 +67,7 @@ describe('3rd Party Service Integration Tests', () => {
 
     it('should return service summary', async () => {
       const summary = await healthCheckService.getServiceSummary();
-      
+
       expect(summary).toBeDefined();
       expect(summary.healthy).toBeGreaterThanOrEqual(0);
       expect(summary.unhealthy).toBeGreaterThanOrEqual(0);
@@ -77,12 +79,12 @@ describe('3rd Party Service Integration Tests', () => {
       const start1 = Date.now();
       const result1 = await healthCheckService.checkHealth(true);
       const duration1 = Date.now() - start1;
-      
+
       // Second call (should be cached)
       const start2 = Date.now();
       const result2 = await healthCheckService.checkHealth(true);
       const duration2 = Date.now() - start2;
-      
+
       // Cached call should be much faster
       expect(duration2).toBeLessThan(duration1 / 2);
       expect(result1.timestamp).toBe(result2.timestamp);
@@ -90,7 +92,7 @@ describe('3rd Party Service Integration Tests', () => {
 
     it('should handle timeout in quick check', async () => {
       const result = await healthCheckService.quickCheck(100); // Very short timeout
-      
+
       // Should either return results or null (timeout)
       expect(result === null || result.status).toBeTruthy();
     }, 5000);
@@ -99,7 +101,7 @@ describe('3rd Party Service Integration Tests', () => {
   describe('Mixpanel Integration', () => {
     it('should have Mixpanel token configured', () => {
       const token = process.env.EXPO_PUBLIC_MIXPANEL_TOKEN;
-      
+
       // Token should either be set or gracefully handled
       if (token) {
         expect(token).toHaveLength(32); // Mixpanel tokens are 32 characters
@@ -122,7 +124,7 @@ describe('3rd Party Service Integration Tests', () => {
   describe('RevenueCat Integration', () => {
     it('should have RevenueCat key configured', () => {
       const apiKey = process.env.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
-      
+
       // Key should exist or be handled gracefully
       expect(apiKey !== undefined).toBeTruthy();
     });
@@ -130,7 +132,7 @@ describe('3rd Party Service Integration Tests', () => {
     it('should handle initialization failure gracefully', async () => {
       // Initialize with invalid key should return false, not throw
       const result = await revenueCatService.initialize('invalid-key');
-      
+
       expect(typeof result).toBe('boolean');
       expect(result).toBe(false);
     });
@@ -160,7 +162,7 @@ describe('3rd Party Service Integration Tests', () => {
     it('should handle network errors gracefully', async () => {
       // Simulate network error by using invalid URL
       const invalidClient = supabase;
-      
+
       try {
         // This should fail, but should be caught gracefully
         await invalidClient.from('nonexistent_table').select('*');
@@ -173,7 +175,7 @@ describe('3rd Party Service Integration Tests', () => {
     it('should have timeout protection', async () => {
       // Verify that requests don't hang indefinitely
       const startTime = Date.now();
-      
+
       try {
         // Make a request that should timeout
         await supabase.from('users').select('*').limit(1);
@@ -184,7 +186,7 @@ describe('3rd Party Service Integration Tests', () => {
           expect(duration).toBeLessThan(20000); // Should timeout before 20s
         }
       }
-      
+
       const duration = Date.now() - startTime;
       expect(duration).toBeLessThan(30000); // Should never exceed 30s
     }, 35000);
@@ -238,8 +240,7 @@ describe('Environment Configuration', () => {
     // Check that service role keys and secrets are NOT in environment
     expect(process.env.SUPABASE_SERVICE_ROLE_KEY).toBeUndefined();
     expect(process.env.REVENUECAT_API_KEY).toBeUndefined();
-    
+
     // These should only be in backend env, not exposed to client
   });
 });
-

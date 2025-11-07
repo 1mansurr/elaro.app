@@ -1,6 +1,6 @@
 /**
  * Pass 9 - Chunk 1: High Frequency State Updates Tests
- * 
+ *
  * Stress tests for rapid state updates and queue performance:
  * - Simulate rapid study session updates (10-20 ops/sec)
  * - Queue 100+ progress updates offline, reconnect, verify order and integrity
@@ -13,7 +13,11 @@ import { mockSupabaseAuth } from '../../../mocks/mockSupabaseAuth';
 import { auth } from '../utils/auth';
 import { network } from '../utils/network';
 import { syncHelpers } from '../utils/syncHelpers';
-import { perfMetrics, measureOperation, assertPerformance } from '../utils/perfMetrics';
+import {
+  perfMetrics,
+  measureOperation,
+  assertPerformance,
+} from '../utils/perfMetrics';
 
 // Stress test configuration
 const STRESS_MODE = process.env.STRESS_MODE === 'true';
@@ -36,7 +40,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
     mockSupabaseAuth.reset();
     await network.reset();
     perfMetrics.reset();
-    
+
     // Sign in before tests
     await network.goOnline();
     await auth.signIn();
@@ -46,7 +50,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
   afterEach(async () => {
     await network.reset();
     mockSupabaseAuth.reset();
-    
+
     // Print performance summary after each test group
     if (__DEV__) {
       perfMetrics.printSummary();
@@ -64,7 +68,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
       const startTime = Date.now();
       for (let i = 0; i < updateCount; i++) {
         const opStart = Date.now();
-        
+
         // In real app, this would be actual UI interactions or API calls
         // For test, we measure the concept of rapid updates
         await measureOperation('rapid_update', async () => {
@@ -79,7 +83,9 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
         const elapsed = Date.now() - opStart;
         const targetInterval = 1000 / HIGH_FREQUENCY_OPS_PER_SEC;
         if (elapsed < targetInterval) {
-          await new Promise(resolve => setTimeout(resolve, targetInterval - elapsed));
+          await new Promise(resolve =>
+            setTimeout(resolve, targetInterval - elapsed),
+          );
         }
       }
 
@@ -88,10 +94,10 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       // Verify operations completed
       expect(operations.length).toBe(updateCount);
-      
+
       // Verify reasonable throughput (at least 10 ops/sec)
       expect(actualOpsPerSec).toBeGreaterThan(10);
-      
+
       // Verify user still logged in (no crashes)
       const isLoggedIn = await auth.isLoggedIn();
       expect(isLoggedIn).toBe(true);
@@ -120,9 +126,9 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
       // Reconnect and sync
       await network.goOnline();
       const replayStart = Date.now();
-      
+
       await network.waitForNetworkOperations(3000); // Wait for sync
-      
+
       const replayDuration = Date.now() - replayStart;
 
       // End replay measurement
@@ -133,13 +139,17 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       // Verify operations completed in order (conceptually)
       // In real implementation, would verify queue order maintained
-      
+
       // Verify user still logged in
       const isLoggedIn = await auth.isLoggedIn();
       expect(isLoggedIn).toBe(true);
 
       // Performance assertion
-      assertPerformance(MAX_REPLAY_TIME_MS, replayDuration, 'large_queue_replay');
+      assertPerformance(
+        MAX_REPLAY_TIME_MS,
+        replayDuration,
+        'large_queue_replay',
+      );
     });
 
     it('should maintain queue integrity during random network toggles', async () => {
@@ -186,16 +196,16 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       // Rapid burst of operations
       const burstStart = Date.now();
-      
+
       const promises = Array.from({ length: burstSize }, (_, i) =>
         measureOperation('burst_update', async () => {
           operations.push(i);
           await new Promise(resolve => setTimeout(resolve, 5));
-        })
+        }),
       );
 
       await Promise.all(promises);
-      
+
       const burstDuration = Date.now() - burstStart;
 
       // Verify all operations completed
@@ -238,7 +248,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       // Verify order maintained (all sequential numbers present)
       expect(order.length).toBe(cycles * operationsPerCycle);
-      
+
       // Verify sequential order (conceptually - real implementation would check queue order)
       for (let i = 0; i < order.length; i++) {
         expect(order[i]).toBe(i);
@@ -308,7 +318,11 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
       expect(isLoggedIn).toBe(true);
 
       // Performance assertion
-      assertPerformance(MAX_REPLAY_TIME_MS, replayDuration, 'queue_replay_100_ops');
+      assertPerformance(
+        MAX_REPLAY_TIME_MS,
+        replayDuration,
+        'queue_replay_100_ops',
+      );
     });
   });
 
@@ -320,15 +334,21 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
       await network.goOnline();
 
       // Simulate concurrent updates (like multiple tabs/devices)
-      const promises = Array.from({ length: concurrentUpdates }, (_, sourceIndex) =>
-        Promise.all(
-          Array.from({ length: updatesPerSource }, async (_, updateIndex) => {
-            await measureOperation('concurrent_update', async () => {
-              // Simulate update from source
-              await new Promise(resolve => setTimeout(resolve, 50));
-            }, { source: sourceIndex, update: updateIndex });
-          })
-        )
+      const promises = Array.from(
+        { length: concurrentUpdates },
+        (_, sourceIndex) =>
+          Promise.all(
+            Array.from({ length: updatesPerSource }, async (_, updateIndex) => {
+              await measureOperation(
+                'concurrent_update',
+                async () => {
+                  // Simulate update from source
+                  await new Promise(resolve => setTimeout(resolve, 50));
+                },
+                { source: sourceIndex, update: updateIndex },
+              );
+            }),
+          ),
       );
 
       await Promise.all(promises);
@@ -353,7 +373,9 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
       }
 
       // Verify duplicates detected (in real app, queue should dedupe)
-      expect(duplicateTestOperations.length).toBeGreaterThan(uniqueOperations.size);
+      expect(duplicateTestOperations.length).toBeGreaterThan(
+        uniqueOperations.size,
+      );
 
       // Reconnect
       await network.goOnline();
@@ -388,7 +410,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       // Verify sync completed eventually
       await network.waitForNetworkOperations(2000);
-      
+
       // Final state should be consistent
       const stillLoggedIn = await auth.isLoggedIn();
       expect(stillLoggedIn).toBe(true);
@@ -433,7 +455,7 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
       for (let i = 0; i < operations; i++) {
         const start = Date.now();
-        
+
         await measureOperation('latency_test', async () => {
           await new Promise(resolve => setTimeout(resolve, 20));
         });
@@ -442,7 +464,8 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
         latencies.push(latency);
       }
 
-      const avgLatency = latencies.reduce((a, b) => a + b, 0) / latencies.length;
+      const avgLatency =
+        latencies.reduce((a, b) => a + b, 0) / latencies.length;
 
       // Verify average latency is reasonable
       expect(avgLatency).toBeLessThan(50);
@@ -453,7 +476,9 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
 
     it('should handle stress mode with 200+ operations', async () => {
       if (!STRESS_MODE) {
-        console.log('⏭️ Skipping stress mode test (set STRESS_MODE=true to enable)');
+        console.log(
+          '⏭️ Skipping stress mode test (set STRESS_MODE=true to enable)',
+        );
         return;
       }
 
@@ -480,4 +505,3 @@ describe('Pass 9 - Chunk 1: High Frequency State Updates', () => {
     });
   });
 });
-

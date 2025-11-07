@@ -1,5 +1,12 @@
 import React from 'react';
-import { Modal, View, Text, StyleSheet, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import {
+  Modal,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 interface InfoModalProps {
@@ -9,14 +16,18 @@ interface InfoModalProps {
   message: string;
 }
 
-const InfoModal: React.FC<InfoModalProps> = ({ isVisible, onClose, title, message }) => {
+const InfoModal: React.FC<InfoModalProps> = ({
+  isVisible,
+  onClose,
+  title,
+  message,
+}) => {
   return (
     <Modal
       transparent={true}
       animationType="fade"
       visible={isVisible}
-      onRequestClose={onClose}
-    >
+      onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
           <TouchableWithoutFeedback>

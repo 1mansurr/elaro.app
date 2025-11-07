@@ -12,12 +12,17 @@ interface Props {
   onScroll: (event: any) => void;
 }
 
-const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onScroll }) => {
+const Timeline: React.FC<Props> = ({
+  tasks,
+  onTaskPress,
+  onLockedTaskPress,
+  onScroll,
+}) => {
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   const handleToggleExpand = (taskId: string) => {
-    setExpandedTaskId(prev => prev === taskId ? null : taskId);
+    setExpandedTaskId(prev => (prev === taskId ? null : taskId));
   };
 
   const calculatePosition = (task: Task) => {
@@ -29,7 +34,8 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onSc
     if (task.type === 'lecture' && task.endTime) {
       const endTime = new Date(task.endTime);
       if (endTime > startTime) {
-        durationMinutes = (endTime.getTime() - startTime.getTime()) / (1000 * 60);
+        durationMinutes =
+          (endTime.getTime() - startTime.getTime()) / (1000 * 60);
       }
     }
 
@@ -39,20 +45,22 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onSc
       top,
       left: 70,
       height: Math.max(height, 20),
-      width: 200
+      width: 200,
     };
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       onScroll={onScroll}
-      scrollEventThrottle={16}
-    >
+      scrollEventThrottle={16}>
       <View style={styles.timelineContainer}>
         {hours.map((_, i) => (
           <View key={`hour-slot-${i}`} style={styles.hourSlot}>
-            <Text style={styles.hourText}>{`${i.toString().padStart(2, '0')}:00`}</Text>
+            <Text
+              style={
+                styles.hourText
+              }>{`${i.toString().padStart(2, '0')}:00`}</Text>
             <View style={styles.hourLine} />
           </View>
         ))}
@@ -61,9 +69,15 @@ const Timeline: React.FC<Props> = ({ tasks, onTaskPress, onLockedTaskPress, onSc
           const position = calculatePosition(task);
           const isLocked = task.isLocked || false;
           const isExpanded = expandedTaskId === task.id;
-          
+
           return (
-            <View key={task.id} style={[styles.eventContainer, position, isExpanded && { zIndex: 10 }]}>
+            <View
+              key={task.id}
+              style={[
+                styles.eventContainer,
+                position,
+                isExpanded && { zIndex: 10 },
+              ]}>
               <EventItem
                 task={task}
                 position={position}

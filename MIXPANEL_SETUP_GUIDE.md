@@ -7,23 +7,28 @@ Mixpanel has been successfully integrated into your ELARO React Native app. This
 ## What's Been Set Up
 
 ### 1. Package Installation
+
 - ✅ Installed `react-native-mixpanel` package
 - ✅ Installed iOS pods for Mixpanel integration
 
 ### 2. Core Service
+
 - ✅ Created `src/services/mixpanel.ts` with comprehensive tracking methods
 - ✅ Configured with your project token via `EXPO_PUBLIC_MIXPANEL_TOKEN` environment variable
 - ✅ Set to use EU API host: `https://api-eu.mixpanel.com`
 
 ### 3. App Integration
+
 - ✅ Initialized Mixpanel in `App.tsx` during app startup
 - ✅ Added automatic screen tracking via `useScreenTracking` hook
 - ✅ Integrated user authentication tracking in `AuthContext`
 
 ### 4. Example Tracking
+
 - ✅ Added tracking examples to `HomeScreen.tsx` for common user actions
 
 ### 5. Centralized Event System
+
 - ✅ Created `/src/utils/analyticsEvents.ts` with all event definitions
 - ✅ Updated all tracking calls to use centralized event constants
 - ✅ Added TypeScript support for event names and properties
@@ -55,7 +60,11 @@ mixpanelService.track('Task Created', { ... });
 
 ```typescript
 import { mixpanelService } from '@/services/mixpanel';
-import { AUTH_EVENTS, FEATURE_EVENTS, ENGAGEMENT_EVENTS } from '@/utils/analyticsEvents';
+import {
+  AUTH_EVENTS,
+  FEATURE_EVENTS,
+  ENGAGEMENT_EVENTS,
+} from '@/utils/analyticsEvents';
 
 // Track authentication events
 mixpanelService.trackEvent(AUTH_EVENTS.USER_LOGGED_IN, {
@@ -177,6 +186,7 @@ All events are organized into logical categories in `/src/utils/analyticsEvents.
 ### Adding New Events
 
 1. **Add to the appropriate category** in `analyticsEvents.ts`:
+
 ```typescript
 export const NEW_EVENTS = {
   NEW_EVENT_NAME: {
@@ -191,14 +201,16 @@ export const NEW_EVENTS = {
 ```
 
 2. **Update the TypeScript union type**:
+
 ```typescript
-export type AnalyticsEventName = 
-  | typeof AUTH_EVENTS[keyof typeof AUTH_EVENTS]['name']
-  | typeof NEW_EVENTS[keyof typeof NEW_EVENTS]['name'] // Add this line
-  // ... other categories
+export type AnalyticsEventName =
+  | (typeof AUTH_EVENTS)[keyof typeof AUTH_EVENTS]['name']
+  | (typeof NEW_EVENTS)[keyof typeof NEW_EVENTS]['name']; // Add this line
+// ... other categories
 ```
 
 3. **Use the event** in your code:
+
 ```typescript
 import { NEW_EVENTS } from '@/utils/analyticsEvents';
 
@@ -216,6 +228,7 @@ In development mode, event properties are validated against the schema defined i
 ## Available Tracking Methods
 
 ### Core Methods
+
 - `track(eventName, properties)` - Track any custom event (use sparingly)
 - `trackEvent(eventConfig, properties)` - **PREFERRED**: Track using centralized definitions
 - `identify(userId)` - Identify a user (automatically called on login)
@@ -223,6 +236,7 @@ In development mode, event properties are validated against the schema defined i
 - `reset()` - Clear user data (automatically called on logout)
 
 ### Specialized Methods (Legacy - Use trackEvent instead)
+
 - `trackScreenView(screenName, properties)` - Track screen views
 - `trackUserAction(action, properties)` - Track user actions
 - `trackAppEvent(event, properties)` - Track app-level events
@@ -231,6 +245,7 @@ In development mode, event properties are validated against the schema defined i
 - `trackPaymentEvent(action, properties)` - Track payment events
 
 ### Utility Methods
+
 - `flush()` - Force send pending events to Mixpanel
 - `isReady()` - Check if Mixpanel is initialized
 
@@ -239,6 +254,7 @@ In development mode, event properties are validated against the schema defined i
 The following events are automatically tracked:
 
 ### Authentication
+
 - ✅ `User Signed Up` - When a user creates an account
 - ✅ `User Sign Up Failed` - When sign up fails
 - ✅ `User Logged In` - When a user logs in
@@ -246,10 +262,12 @@ The following events are automatically tracked:
 - ✅ User identification and properties are set on login
 
 ### App Lifecycle
+
 - ✅ `App Launched` - When the app starts
 - ✅ Screen views for all screens (automatic)
 
 ### Trial Management
+
 - ✅ `Subscription Trial Started` - When a free trial begins
 
 ## Environment Configuration
@@ -262,14 +280,18 @@ Mixpanel is configured differently for development vs production:
 ## Best Practices
 
 ### 1. Consistent Event Naming
+
 Use clear, consistent event names:
+
 - ✅ `Task Completed`
 - ✅ `Subscription Upgraded`
 - ❌ `task_completed` (use title case)
 - ❌ `userDidThing` (use descriptive names)
 
 ### 2. Meaningful Properties
+
 Always include relevant context:
+
 ```typescript
 mixpanelService.track('Course Created', {
   course_title: course.title,
@@ -280,7 +302,9 @@ mixpanelService.track('Course Created', {
 ```
 
 ### 3. Error Tracking
+
 Track both successes and failures:
+
 ```typescript
 try {
   await createTask(task);
@@ -294,7 +318,9 @@ try {
 ```
 
 ### 4. User Segmentation
+
 Use user properties for segmentation:
+
 ```typescript
 mixpanelService.setUserProperties({
   subscription_tier: 'premium',
@@ -306,6 +332,7 @@ mixpanelService.setUserProperties({
 ## Common Tracking Patterns
 
 ### Feature Usage
+
 ```typescript
 const handleFeatureUse = () => {
   mixpanelService.track('Feature Used', {
@@ -317,6 +344,7 @@ const handleFeatureUse = () => {
 ```
 
 ### Conversion Funnels
+
 ```typescript
 // Track funnel steps
 mixpanelService.track('Onboarding Step Completed', {
@@ -332,6 +360,7 @@ mixpanelService.track('Onboarding Completed', {
 ```
 
 ### Performance Metrics
+
 ```typescript
 const startTime = Date.now();
 // ... perform action
@@ -347,17 +376,21 @@ mixpanelService.track('Action Performance', {
 ## Testing Mixpanel Integration
 
 ### 1. Check Console Logs
+
 Look for these log messages:
+
 - `Mixpanel initialized successfully`
 - `Mixpanel user identified: [user_id]`
 - `Mixpanel event tracked: [event_name]`
 
 ### 2. Verify in Mixpanel Dashboard
+
 - Go to your Mixpanel project dashboard
 - Check "Live View" to see real-time events
 - Verify user properties are being set correctly
 
 ### 3. Development vs Production
+
 - In development, only 10% of sessions are recorded
 - In production, 100% of sessions are recorded
 - Autocapture is disabled in development to reduce noise
@@ -365,17 +398,20 @@ Look for these log messages:
 ## Troubleshooting
 
 ### Events Not Appearing
+
 1. Check console for error messages
 2. Verify Mixpanel is initialized: `mixpanelService.isReady()`
 3. Ensure you're looking at the correct project in Mixpanel dashboard
 4. Check if you're in development mode (only 10% of events recorded)
 
 ### User Identification Issues
+
 1. Verify `mixpanelService.identify()` is called after login
 2. Check that user properties are being set correctly
 3. Ensure `mixpanelService.reset()` is called on logout
 
 ### Performance Considerations
+
 1. Events are batched and sent automatically
 2. Use `mixpanelService.flush()` only when necessary (e.g., before app close)
 3. Avoid tracking too frequently (e.g., on every scroll)
@@ -391,6 +427,7 @@ Look for these log messages:
 ## Support
 
 For issues with the Mixpanel integration:
+
 1. Check the console logs for error messages
 2. Verify your Mixpanel project token is correct
 3. Ensure you're using the latest version of the React Native Mixpanel SDK

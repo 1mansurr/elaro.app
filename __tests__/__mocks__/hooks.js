@@ -24,5 +24,5 @@ export const useRestoreTask = () => ({
   mutateAsync: jest.fn(),
 });
 
-export const useStableCallback = (callback) => callback;
+export const useStableCallback = callback => callback;
 export const useExpensiveMemo = (fn, deps, options) => fn();

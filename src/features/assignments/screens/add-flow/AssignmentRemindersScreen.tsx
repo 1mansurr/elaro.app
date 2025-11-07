@@ -1,44 +1,70 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
 import { api } from '@/services/api';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useTotalTaskCount } from '@/hooks';
-import { savePendingTask, getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
+import {
+  savePendingTask,
+  getPendingTask,
+  clearPendingTask,
+} from '@/utils/taskPersistence';
+import { formatDate } from '@/i18n';
 
-type RemindersScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'Reminders'>;
+type RemindersScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'Reminders'
+>;
 
 const RemindersScreen = () => {
   const navigation = useNavigation<RemindersScreenNavigationProp>();
   // const { assignmentData, resetAssignmentData } = useAddAssignment();
-  
+
   // Mock data for now - proper structure
-  const assignmentData = { 
-    courseId: null, 
-    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
-    title: "Mock Assignment", 
-    description: "Mock description", 
-    dueDate: new Date(), 
-    submissionMethod: 'Online' as const, 
+  const assignmentData = {
+    courseId: null,
+    course: {
+      id: 'mock-course-id',
+      courseName: 'Mock Course',
+      courseCode: 'MOCK101',
+    },
+    title: 'Mock Assignment',
+    description: 'Mock description',
+    dueDate: new Date(),
+    submissionMethod: 'Online' as const,
     submissionLink: 'https://example.com',
-    reminders: [] 
+    reminders: [],
   };
-  const resetAssignmentData = () => { console.log("Mock resetAssignmentData"); };
+  const resetAssignmentData = () => {
+    console.log('Mock resetAssignmentData');
+  };
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
-  const { limitReached, monthlyTaskCount, monthlyLimit, isLoading: isTaskLimitLoading } = useMonthlyTaskCount();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } = useTotalTaskCount();
-  
+  const {
+    limitReached,
+    monthlyTaskCount,
+    monthlyLimit,
+    isLoading: isTaskLimitLoading,
+  } = useMonthlyTaskCount();
+  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
+    useTotalTaskCount();
+
   const [isLoading, setIsLoading] = useState(false);
   const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
-  
 
   const isGuest = !session;
   const maxReminders = 2; // This should come from a user context later
@@ -62,24 +88,34 @@ const RemindersScreen = () => {
       if (!pendingTask || pendingTask.taskType !== 'assignment') return;
 
       const { taskData } = pendingTask;
-      
+
       if (!taskData.course || !taskData.title.trim() || !taskData.dueDate) {
-        Alert.alert('Error', 'Missing required information for the saved task.');
+        Alert.alert(
+          'Error',
+          'Missing required information for the saved task.',
+        );
         return;
       }
 
       setIsLoading(true);
 
       // Create the assignment using the new API layer
-      const newAssignment = await api.mutations.assignments.create({
-        course_id: taskData.course.id,
-        title: taskData.title.trim(),
-        description: taskData.description.trim(),
-        submission_method: taskData.submissionMethod || undefined,
-        submission_link: taskData.submissionMethod === 'Online' ? taskData.submissionLink.trim() : undefined,
-        due_date: taskData.dueDate.toISOString(),
-        reminders: taskData.reminders,
-      }, true, user?.id || ''); // Add isOnline and userId parameters
+      const newAssignment = await api.mutations.assignments.create(
+        {
+          course_id: taskData.course.id,
+          title: taskData.title.trim(),
+          description: taskData.description.trim(),
+          submission_method: taskData.submissionMethod || undefined,
+          submission_link:
+            taskData.submissionMethod === 'Online'
+              ? taskData.submissionLink.trim()
+              : undefined,
+          due_date: taskData.dueDate.toISOString(),
+          reminders: taskData.reminders,
+        },
+        true,
+        user?.id || '',
+      ); // Add isOnline and userId parameters
 
       // Clear pending data
       await clearPendingTask();
@@ -95,13 +131,15 @@ const RemindersScreen = () => {
           onPress: () => {
             resetAssignmentData();
             navigation.getParent()?.goBack();
-          }
-        }
+          },
+        },
       ]);
-
     } catch (error) {
       console.error('Failed to auto-create assignment:', error);
-      Alert.alert('Error', 'Failed to save your assignment. Please try creating it again.');
+      Alert.alert(
+        'Error',
+        'Failed to save your assignment. Please try creating it again.',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -110,18 +148,18 @@ const RemindersScreen = () => {
   const handleGuestSignUp = async () => {
     setShowGuestAuthModal(false);
     // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', { 
+    navigation.getParent()?.navigate('Auth', {
       mode: 'signup',
-      onAuthSuccess: autoCreateTask
+      onAuthSuccess: autoCreateTask,
     } as any);
   };
 
   const handleGuestSignIn = async () => {
     setShowGuestAuthModal(false);
     // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', { 
+    navigation.getParent()?.navigate('Auth', {
       mode: 'signin',
-      onAuthSuccess: autoCreateTask
+      onAuthSuccess: autoCreateTask,
     } as any);
   };
 
@@ -129,18 +167,25 @@ const RemindersScreen = () => {
     if (isGuest) {
       // Save current task data before showing modal
       await savePendingTask(
-        { 
-          ...assignmentData, 
-          reminders 
-        }, 
-        'assignment'
+        {
+          ...assignmentData,
+          reminders,
+        },
+        'assignment',
       );
       setShowGuestAuthModal(true);
       return;
     }
 
-    if (!assignmentData.course || !assignmentData.title.trim() || !assignmentData.dueDate) {
-      Alert.alert('Error', 'Missing required information. Please go back and complete all steps.');
+    if (
+      !assignmentData.course ||
+      !assignmentData.title.trim() ||
+      !assignmentData.dueDate
+    ) {
+      Alert.alert(
+        'Error',
+        'Missing required information. Please go back and complete all steps.',
+      );
       return;
     }
 
@@ -148,15 +193,22 @@ const RemindersScreen = () => {
 
     try {
       // Create the assignment using the new API layer
-      const newAssignment = await api.mutations.assignments.create({
-        course_id: assignmentData.course.id,
-        title: assignmentData.title.trim(),
-        description: assignmentData.description.trim(),
-        submission_method: assignmentData.submissionMethod || undefined,
-        submission_link: assignmentData.submissionMethod === 'Online' ? assignmentData.submissionLink.trim() : undefined,
-        due_date: assignmentData.dueDate.toISOString(),
-        reminders: reminders, // Pass the array of reminder minutes
-      }, true, user?.id || ''); // Add isOnline and userId parameters
+      const newAssignment = await api.mutations.assignments.create(
+        {
+          course_id: assignmentData.course.id,
+          title: assignmentData.title.trim(),
+          description: assignmentData.description.trim(),
+          submission_method: assignmentData.submissionMethod || undefined,
+          submission_link:
+            assignmentData.submissionMethod === 'Online'
+              ? assignmentData.submissionLink.trim()
+              : undefined,
+          due_date: assignmentData.dueDate.toISOString(),
+          reminders: reminders, // Pass the array of reminder minutes
+        },
+        true,
+        user?.id || '',
+      ); // Add isOnline and userId parameters
 
       // Reminders are now handled by the backend create-assignment function
 
@@ -176,12 +228,15 @@ const RemindersScreen = () => {
           onPress: () => {
             resetAssignmentData();
             navigation.getParent()?.goBack(); // Go back to the main screen
-          }
-        }
+          },
+        },
       ]);
     } catch (error) {
       console.error('Failed to create assignment:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Failed to save assignment. Please try again.';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to save assignment. Please try again.';
       Alert.alert('Error', errorMessage);
     } finally {
       setIsLoading(false);
@@ -207,16 +262,19 @@ const RemindersScreen = () => {
           <Text style={styles.title}>Reminders</Text>
           <Text style={styles.subtitle}>Step 6 of 6</Text>
         </View>
-        
+
         <View style={styles.guestContainer}>
           <Text style={styles.guestText}>
             Create an account to save your assignments and get reminders.
           </Text>
-          <Button 
-            title="Sign Up" 
+          <Button
+            title="Sign Up"
             onPress={() => {
-              Alert.alert('Sign Up', 'Please use the main menu to create an account.');
-            }} 
+              Alert.alert(
+                'Sign Up',
+                'Please use the main menu to create an account.',
+              );
+            }}
           />
         </View>
       </View>
@@ -234,9 +292,12 @@ const RemindersScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>When would you like to be reminded?</Text>
+        <Text style={styles.sectionTitle}>
+          When would you like to be reminded?
+        </Text>
         <Text style={styles.sectionDescription}>
-          Choose up to {maxReminders} reminder{maxReminders > 1 ? 's' : ''} to help you stay on track with your assignment.
+          Choose up to {maxReminders} reminder{maxReminders > 1 ? 's' : ''} to
+          help you stay on track with your assignment.
         </Text>
 
         <ReminderSelector
@@ -250,55 +311,69 @@ const RemindersScreen = () => {
         <View style={styles.summaryContainer}>
           <Text style={styles.summaryTitle}>Assignment Summary:</Text>
           <Text style={styles.summaryText}>
-            <Text style={styles.bold}>Title:</Text> {assignmentData.title || 'Untitled Assignment'}
+            <Text style={styles.bold}>Title:</Text>{' '}
+            {assignmentData.title || 'Untitled Assignment'}
           </Text>
           <Text style={styles.summaryText}>
-            <Text style={styles.bold}>Course:</Text> {assignmentData.course?.courseName}
+            <Text style={styles.bold}>Course:</Text>{' '}
+            {assignmentData.course?.courseName}
           </Text>
           <Text style={styles.summaryText}>
-            <Text style={styles.bold}>Due:</Text> {assignmentData.dueDate?.toLocaleDateString()} at {assignmentData.dueDate?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            <Text style={styles.bold}>Due:</Text>{' '}
+            {assignmentData.dueDate
+              ? formatDate(assignmentData.dueDate, { dateStyle: 'medium' })
+              : 'Not set'}{' '}
+            at{' '}
+            {assignmentData.dueDate
+              ? formatDate(assignmentData.dueDate, {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              : ''}
           </Text>
           {assignmentData.submissionMethod && (
             <Text style={styles.summaryText}>
-              <Text style={styles.bold}>Submission:</Text> {assignmentData.submissionMethod}
+              <Text style={styles.bold}>Submission:</Text>{' '}
+              {assignmentData.submissionMethod}
             </Text>
           )}
           <Text style={styles.summaryText}>
-            <Text style={styles.bold}>Reminders:</Text> {assignmentData.reminders.length > 0 ? `${assignmentData.reminders.length} set` : 'None'}
+            <Text style={styles.bold}>Reminders:</Text>{' '}
+            {assignmentData.reminders.length > 0
+              ? `${assignmentData.reminders.length} set`
+              : 'None'}
           </Text>
         </View>
       </View>
 
       <View style={styles.footer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.skipButton}
             onPress={handleSkip}
-            disabled={isLoading}
-          >
+            disabled={isLoading}>
             <Text style={styles.skipButtonText}>Skip Reminders</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.createButtonContainer}>
             {limitReached ? (
               <View style={styles.limitReachedContainer}>
                 <Text style={styles.limitReachedText}>
-                  You have reached your monthly limit of {monthlyLimit} new tasks.
+                  You have reached your monthly limit of {monthlyLimit} new
+                  tasks.
                 </Text>
                 <Text style={styles.upgradeText}>
                   Upgrade to a premium plan for unlimited tasks.
                 </Text>
               </View>
+            ) : isLoading ? (
+              <ActivityIndicator size="large" color="#007AFF" />
             ) : (
-              isLoading ? (
-                <ActivityIndicator size="large" color="#007AFF" />
-              ) : (
-                <Button 
-                  title={isTaskLimitLoading ? 'Loading...' : 'Create Assignment'} 
-                  onPress={handleCreateAssignment}
-                  disabled={isTaskLimitLoading}
-                />
-              )
+              <Button
+                title={isTaskLimitLoading ? 'Loading...' : 'Create Assignment'}
+                onPress={handleCreateAssignment}
+                disabled={isTaskLimitLoading}
+              />
             )}
           </View>
         </View>

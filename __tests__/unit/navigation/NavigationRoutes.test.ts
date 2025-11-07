@@ -74,7 +74,9 @@ describe('Navigation Routes Validation', () => {
     });
 
     it('should accept all valid variant types', () => {
-      const variants: Array<RootStackParamList['OddityWelcomeScreen']['variant']> = [
+      const variants: Array<
+        RootStackParamList['OddityWelcomeScreen']['variant']
+      > = [
         'trial-early',
         'trial-expired',
         'direct',
@@ -94,20 +96,27 @@ describe('Navigation Routes Validation', () => {
 
   describe('Route Type Safety', () => {
     it('should validate all three routes exist in NavigationValidation', () => {
-      const routes = ['StudySessionReview', 'PaywallScreen', 'OddityWelcomeScreen'];
-      
+      const routes = [
+        'StudySessionReview',
+        'PaywallScreen',
+        'OddityWelcomeScreen',
+      ];
+
       routes.forEach(route => {
         expect(NavigationValidation.isValidRoute(route)).toBe(true);
       });
     });
 
     it('should reject invalid route names', () => {
-      const invalidRoutes = ['InvalidRoute', 'NonExistentScreen', 'OldTaskCreationFlow'];
-      
+      const invalidRoutes = [
+        'InvalidRoute',
+        'NonExistentScreen',
+        'OldTaskCreationFlow',
+      ];
+
       invalidRoutes.forEach(route => {
         expect(NavigationValidation.isValidRoute(route)).toBe(false);
       });
     });
   });
 });
-

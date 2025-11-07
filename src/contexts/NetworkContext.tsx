@@ -1,14 +1,14 @@
 /**
  * NetworkContext - Global Network Connectivity State
- * 
+ *
  * This context provides real-time network connectivity information to the entire app.
  * It uses @react-native-community/netinfo to listen for connectivity changes and
  * exposes the current online/offline state.
- * 
+ *
  * Usage:
  * ```tsx
  * const { isOnline, isOffline, networkType } = useNetwork();
- * 
+ *
  * if (isOffline) {
  *   // Queue action for later sync
  * } else {
@@ -17,8 +17,17 @@
  * ```
  */
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import NetInfo, { NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from 'react';
+import NetInfo, {
+  NetInfoState,
+  NetInfoStateType,
+} from '@react-native-community/netinfo';
 
 /**
  * Network context state interface
@@ -26,19 +35,19 @@ import NetInfo, { NetInfoState, NetInfoStateType } from '@react-native-community
 interface NetworkContextState {
   /** Whether the device is currently connected to the internet */
   isOnline: boolean;
-  
+
   /** Whether the device is currently offline (inverse of isOnline) */
   isOffline: boolean;
-  
+
   /** The type of network connection (wifi, cellular, none, etc.) */
   networkType: NetInfoStateType;
-  
+
   /** Whether we're still checking the initial network state */
   isLoading: boolean;
-  
+
   /** Detailed network information from NetInfo */
   netInfoState: NetInfoState | null;
-  
+
   /** Manually refresh the network state */
   refresh: () => Promise<void>;
 }
@@ -80,13 +89,17 @@ interface NetworkProviderProps {
 
 /**
  * NetworkProvider Component
- * 
+ *
  * Wraps the app and provides network connectivity state to all children.
  * Should be placed high in the component tree (in App.tsx).
  */
-export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) => {
+export const NetworkProvider: React.FC<NetworkProviderProps> = ({
+  children,
+}) => {
   const [isOnline, setIsOnline] = useState<boolean>(true);
-  const [networkType, setNetworkType] = useState<NetInfoStateType>('unknown' as NetInfoStateType);
+  const [networkType, setNetworkType] = useState<NetInfoStateType>(
+    'unknown' as NetInfoStateType,
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [netInfoState, setNetInfoState] = useState<NetInfoState | null>(null);
 
@@ -102,12 +115,14 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
 
     setNetInfoState(state);
     setNetworkType(state.type);
-    
+
     // Consider online if connected AND internet is reachable
     // If isInternetReachable is null, we assume online (optimistic)
-    const online = state.isConnected === true && 
-                   (state.isInternetReachable === true || state.isInternetReachable === null);
-    
+    const online =
+      state.isConnected === true &&
+      (state.isInternetReachable === true ||
+        state.isInternetReachable === null);
+
     setIsOnline(online);
     setIsLoading(false);
 
@@ -163,9 +178,7 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
   };
 
   return (
-    <NetworkContext.Provider value={value}>
-      {children}
-    </NetworkContext.Provider>
+    <NetworkContext.Provider value={value}>{children}</NetworkContext.Provider>
   );
 };
 
@@ -173,4 +186,3 @@ export const NetworkProvider: React.FC<NetworkProviderProps> = ({ children }) =>
  * Export the context itself (for advanced use cases)
  */
 export { NetworkContext };
-

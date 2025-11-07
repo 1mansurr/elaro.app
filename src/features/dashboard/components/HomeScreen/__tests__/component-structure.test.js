@@ -5,19 +5,19 @@ describe('HomeScreen Components Structure', () => {
     expect(() => {
       require('../HomeScreenHeader');
     }).not.toThrow();
-    
+
     expect(() => {
       require('../HomeScreenContent');
     }).not.toThrow();
-    
+
     expect(() => {
       require('../HomeScreenFAB');
     }).not.toThrow();
-    
+
     expect(() => {
       require('../HomeScreenModals');
     }).not.toThrow();
-    
+
     expect(() => {
       require('../HomeScreenHooks');
     }).not.toThrow();
@@ -34,7 +34,7 @@ describe('HomeScreen Components Structure', () => {
     const HomeScreenContent = require('../HomeScreenContent');
     const HomeScreenFAB = require('../HomeScreenFAB');
     const HomeScreenModals = require('../HomeScreenModals');
-    
+
     // Check that components are functions
     expect(typeof HomeScreenHeader.default).toBe('function');
     expect(typeof HomeScreenContent.default).toBe('function');

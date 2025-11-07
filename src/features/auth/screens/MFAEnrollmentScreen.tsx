@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
-  Alert, 
-  ActivityIndicator, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+  StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
-  Platform 
+  Platform,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { authService } from '@/features/auth/services/authService';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { authService } from '@/services/authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MFAEnrollmentScreen = () => {
   const [qrCode, setQrCode] = useState<string | null>(null);
@@ -35,20 +35,23 @@ const MFAEnrollmentScreen = () => {
       } catch (error: any) {
         console.error('MFA enrollment error:', error);
         Alert.alert(
-          'Enrollment Failed', 
-          error.message || 'Could not start MFA enrollment. Please try again.'
+          'Enrollment Failed',
+          error.message || 'Could not start MFA enrollment. Please try again.',
         );
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     startEnrollment();
   }, []);
 
   const handleVerify = async () => {
     if (!factorId || !code) {
-      Alert.alert('Error', 'Please enter the code from your authenticator app.');
+      Alert.alert(
+        'Error',
+        'Please enter the code from your authenticator app.',
+      );
       return;
     }
 
@@ -61,9 +64,9 @@ const MFAEnrollmentScreen = () => {
     try {
       const { challengeId } = await authService.mfa.challenge(factorId);
       await authService.mfa.verify({ factorId, challengeId, code });
-      
+
       Alert.alert(
-        'Success!', 
+        'Success!',
         'MFA has been enabled successfully! Your account is now more secure.',
         [
           {
@@ -72,15 +75,16 @@ const MFAEnrollmentScreen = () => {
               await refreshUser();
               // Navigate back to settings or profile screen
               // This would typically be handled by navigation
-            }
-          }
-        ]
+            },
+          },
+        ],
       );
     } catch (error: any) {
       console.error('MFA verification error:', error);
       Alert.alert(
-        'Verification Failed', 
-        error.message || 'Invalid code. Please check your authenticator app and try again.'
+        'Verification Failed',
+        error.message ||
+          'Invalid code. Please check your authenticator app and try again.',
       );
       setCode(''); // Clear the code input
     } finally {
@@ -98,22 +102,22 @@ const MFAEnrollmentScreen = () => {
   }
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>Enable Two-Factor Authentication</Text>
-        
+
         <Text style={styles.description}>
-          Scan the QR code below with your authenticator app to set up two-factor authentication.
+          Scan the QR code below with your authenticator app to set up
+          two-factor authentication.
         </Text>
 
         {qrCode && (
           <View style={styles.qrContainer}>
-            <QRCode 
-              value={qrCode} 
-              size={200} 
+            <QRCode
+              value={qrCode}
+              size={200}
               backgroundColor="white"
               color="black"
             />
@@ -122,13 +126,18 @@ const MFAEnrollmentScreen = () => {
 
         {secret && (
           <View style={styles.secretContainer}>
-            <Text style={styles.secretLabel}>Or enter this secret key manually:</Text>
-            <Text style={styles.secretText} selectable>{secret}</Text>
+            <Text style={styles.secretLabel}>
+              Or enter this secret key manually:
+            </Text>
+            <Text style={styles.secretText} selectable>
+              {secret}
+            </Text>
           </View>
         )}
 
         <Text style={styles.instructionText}>
-          After scanning the QR code or entering the secret key, enter the 6-digit code from your authenticator app below:
+          After scanning the QR code or entering the secret key, enter the
+          6-digit code from your authenticator app below:
         </Text>
 
         <TextInput
@@ -144,11 +153,14 @@ const MFAEnrollmentScreen = () => {
           placeholderTextColor="#999"
         />
 
-        <TouchableOpacity 
-          style={[styles.verifyButton, (!code || code.length !== 6 || isVerifying) && styles.verifyButtonDisabled]}
+        <TouchableOpacity
+          style={[
+            styles.verifyButton,
+            (!code || code.length !== 6 || isVerifying) &&
+              styles.verifyButtonDisabled,
+          ]}
           onPress={handleVerify}
-          disabled={!code || code.length !== 6 || isVerifying}
-        >
+          disabled={!code || code.length !== 6 || isVerifying}>
           {isVerifying ? (
             <ActivityIndicator color="white" size="small" />
           ) : (
@@ -157,7 +169,8 @@ const MFAEnrollmentScreen = () => {
         </TouchableOpacity>
 
         <Text style={styles.helpText}>
-          Popular authenticator apps: Google Authenticator, Authy, Microsoft Authenticator, or 1Password
+          Popular authenticator apps: Google Authenticator, Authy, Microsoft
+          Authenticator, or 1Password
         </Text>
       </ScrollView>
     </KeyboardAvoidingView>

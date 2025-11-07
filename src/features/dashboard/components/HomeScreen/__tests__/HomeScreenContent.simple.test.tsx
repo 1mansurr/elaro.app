@@ -57,9 +57,9 @@ describe('HomeScreenContent', () => {
         onFabStateChange={jest.fn()}
         onSubscribePress={jest.fn()}
         onDismissBanner={jest.fn()}
-      />
+      />,
     );
-    
+
     expect(getByText('View Full Calendar')).toBeTruthy();
   });
 
@@ -91,9 +91,9 @@ describe('HomeScreenContent', () => {
         onFabStateChange={jest.fn()}
         onSubscribePress={jest.fn()}
         onDismissBanner={jest.fn()}
-      />
+      />,
     );
-    
+
     expect(getByText('View Full Calendar')).toBeTruthy();
   });
 });

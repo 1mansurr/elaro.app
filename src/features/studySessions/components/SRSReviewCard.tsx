@@ -9,7 +9,11 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { recordSRSPerformance, getQualityRatingLabel, getQualityRatingColor } from '@/utils/reminderUtils';
+import {
+  recordSRSPerformance,
+  getQualityRatingLabel,
+  getQualityRatingColor,
+} from '@/utils/reminderUtils';
 
 interface SRSReviewCardProps {
   sessionId: string;
@@ -31,12 +35,37 @@ export function SRSReviewCard({
   const [showRating, setShowRating] = useState(true);
 
   const qualityOptions = [
-    { rating: 0, label: 'Complete Blackout', emoji: '❌', description: 'No memory at all' },
+    {
+      rating: 0,
+      label: 'Complete Blackout',
+      emoji: '❌',
+      description: 'No memory at all',
+    },
     { rating: 1, label: 'Incorrect', emoji: '😰', description: 'Wrong answer' },
-    { rating: 2, label: 'Correct with Effort', emoji: '😅', description: 'Hard to recall' },
-    { rating: 3, label: 'Correct with Hesitation', emoji: '🤔', description: 'Some hesitation' },
-    { rating: 4, label: 'Correct Easily', emoji: '😊', description: 'Easy to recall' },
-    { rating: 5, label: 'Perfect Recall', emoji: '🎯', description: 'Instant recall' },
+    {
+      rating: 2,
+      label: 'Correct with Effort',
+      emoji: '😅',
+      description: 'Hard to recall',
+    },
+    {
+      rating: 3,
+      label: 'Correct with Hesitation',
+      emoji: '🤔',
+      description: 'Some hesitation',
+    },
+    {
+      rating: 4,
+      label: 'Correct Easily',
+      emoji: '😊',
+      description: 'Easy to recall',
+    },
+    {
+      rating: 5,
+      label: 'Perfect Recall',
+      emoji: '🎯',
+      description: 'Instant recall',
+    },
   ];
 
   const handleRating = async (rating: number) => {
@@ -47,7 +76,7 @@ export function SRSReviewCard({
 
       if (result.success) {
         setShowRating(false);
-        
+
         Alert.alert(
           rating >= 3 ? '✅ Great Job!' : '💪 Keep Practicing!',
           result.message || `Next review in ${result.nextIntervalDays} days`,
@@ -62,7 +91,7 @@ export function SRSReviewCard({
                 }
               },
             },
-          ]
+          ],
         );
       } else {
         Alert.alert('Error', result.error || 'Failed to record your review');
@@ -78,7 +107,8 @@ export function SRSReviewCard({
   if (!showRating) {
     return (
       <View style={[styles.container, { backgroundColor: theme.card }]}>
-        <View style={[styles.successIcon, { backgroundColor: '#10B981' + '20' }]}>
+        <View
+          style={[styles.successIcon, { backgroundColor: '#10B981' + '20' }]}>
           <Ionicons name="checkmark-circle" size={48} color="#10B981" />
         </View>
         <Text style={[styles.successText, { color: theme.text }]}>
@@ -105,25 +135,28 @@ export function SRSReviewCard({
 
       {/* Rating Options */}
       <View style={styles.ratingsContainer}>
-        {qualityOptions.map((option) => (
+        {qualityOptions.map(option => (
           <TouchableOpacity
             key={option.rating}
             style={[
               styles.ratingButton,
-              { 
+              {
                 backgroundColor: theme.background,
                 borderColor: getQualityRatingColor(option.rating) + '40',
               },
             ]}
             onPress={() => handleRating(option.rating)}
-            disabled={loading}
-          >
+            disabled={loading}>
             <Text style={styles.emoji}>{option.emoji}</Text>
             <View style={styles.ratingInfo}>
               <Text style={[styles.ratingLabel, { color: theme.text }]}>
                 {option.label}
               </Text>
-              <Text style={[styles.ratingDescription, { color: theme.textSecondary }]}>
+              <Text
+                style={[
+                  styles.ratingDescription,
+                  { color: theme.textSecondary },
+                ]}>
                 {option.description}
               </Text>
             </View>
@@ -222,4 +255,3 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
 });
-

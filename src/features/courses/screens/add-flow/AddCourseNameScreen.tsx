@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
@@ -34,7 +34,7 @@ const AddCourseNameScreen = () => {
   useEffect(() => {
     const checkCourseCount = async () => {
       if (!user?.id) return;
-      
+
       const { count, error } = await supabase
         .from('courses')
         .select('*', { count: 'exact', head: true })
@@ -66,31 +66,44 @@ const AddCourseNameScreen = () => {
           { text: 'OK', style: 'cancel' },
           // The "Become an Oddity" button for the free upgrade flow can remain if desired,
           // but it will only be relevant for 'free' users.
-          ...(userTier === 'free' ? [{
-            text: 'Become an Oddity',
-            onPress: async () => {
-              // This should trigger the free upgrade flow
-              try {
-                const { error } = await supabase.functions.invoke('grant-premium-access');
-                if (error) throw error;
-                await queryClient.invalidateQueries({ queryKey: ['user'] });
-                await queryClient.invalidateQueries({ queryKey: ['courses'] });
-                Alert.alert('Success!', 'You now have access to all premium features.');
-              } catch (e) {
-                const errorTitle = getErrorTitle(e);
-                const errorMessage = mapErrorCodeToMessage(e);
-                Alert.alert(errorTitle, errorMessage);
-              }
-            },
-          }] : [])
-        ]
+          ...(userTier === 'free'
+            ? [
+                {
+                  text: 'Become an Oddity',
+                  onPress: async () => {
+                    // This should trigger the free upgrade flow
+                    try {
+                      const { error } = await supabase.functions.invoke(
+                        'grant-premium-access',
+                      );
+                      if (error) throw error;
+                      await queryClient.invalidateQueries({
+                        queryKey: ['user'],
+                      });
+                      await queryClient.invalidateQueries({
+                        queryKey: ['courses'],
+                      });
+                      Alert.alert(
+                        'Success!',
+                        'You now have access to all premium features.',
+                      );
+                    } catch (e) {
+                      const errorTitle = getErrorTitle(e);
+                      const errorMessage = mapErrorCodeToMessage(e);
+                      Alert.alert(errorTitle, errorMessage);
+                    }
+                  },
+                },
+              ]
+            : []),
+        ],
       );
       return;
     }
 
-    updateCourseData({ 
+    updateCourseData({
       courseName: courseName.trim(),
-      courseCode: courseCode.trim()
+      courseCode: courseCode.trim(),
     });
     navigation.navigate('AddCourseDescription');
   };
@@ -103,7 +116,7 @@ const AddCourseNameScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>What&apos;s the course name?</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="e.g., Introduction to Psychology"
@@ -131,11 +144,31 @@ const AddCourseNameScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
   label: { fontSize: 16, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  input: { borderWidth: 1, borderColor: '#ccc', padding: 15, borderRadius: 8, fontSize: 18 },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 15,
+    borderRadius: 8,
+    fontSize: 18,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 40,
+  },
 });
 
 export default AddCourseNameScreen;

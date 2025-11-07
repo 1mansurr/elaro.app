@@ -37,8 +37,7 @@ export const PrimaryButton: React.FC<ButtonProps> = ({
       style={[styles.primary, { backgroundColor: theme.accent }, style]}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      hapticFeedback={hapticFeedback}
-    >
+      hapticFeedback={hapticFeedback}>
       <Text style={[styles.text, { color: theme.white }, textStyle]}>
         {title}
       </Text>
@@ -68,8 +67,7 @@ export const SecondaryButton: React.FC<ButtonProps> = ({
       style={[styles.secondary, { backgroundColor: theme.surface }, style]}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      hapticFeedback={hapticFeedback}
-    >
+      hapticFeedback={hapticFeedback}>
       <Text style={[styles.text, { color: theme.text }, textStyle]}>
         {title}
       </Text>
@@ -107,8 +105,7 @@ export const OutlineButton: React.FC<ButtonProps> = ({
       ]}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      hapticFeedback={hapticFeedback}
-    >
+      hapticFeedback={hapticFeedback}>
       <Text style={[styles.text, { color: theme.accent }, textStyle]}>
         {title}
       </Text>
@@ -138,8 +135,7 @@ export const DangerButton: React.FC<ButtonProps> = ({
       style={[styles.danger, { backgroundColor: theme.destructive }, style]}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      hapticFeedback={hapticFeedback}
-    >
+      hapticFeedback={hapticFeedback}>
       <Text style={[styles.text, { color: theme.white }, textStyle]}>
         {title}
       </Text>
@@ -169,8 +165,7 @@ export const GhostButton: React.FC<ButtonProps> = ({
       style={[styles.ghost, { backgroundColor: 'transparent' }, style]}
       accessibilityLabel={accessibilityLabel || title}
       accessibilityHint={accessibilityHint}
-      hapticFeedback={hapticFeedback}
-    >
+      hapticFeedback={hapticFeedback}>
       <Text style={[styles.text, { color: theme.accent }, textStyle]}>
         {title}
       </Text>

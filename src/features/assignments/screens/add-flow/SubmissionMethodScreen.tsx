@@ -9,28 +9,37 @@ import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator
 type SubmissionMethod = 'file' | 'text' | 'url' | 'Online' | 'In-person';
 import { Input, Button } from '@/shared/components';
 
-type SubmissionMethodScreenNavigationProp = StackNavigationProp<AddAssignmentStackParamList, 'SubmissionMethod'>;
+type SubmissionMethodScreenNavigationProp = StackNavigationProp<
+  AddAssignmentStackParamList,
+  'SubmissionMethod'
+>;
 
 const SubmissionMethodScreen = () => {
   const navigation = useNavigation<SubmissionMethodScreenNavigationProp>();
   // const { assignmentData, updateAssignmentData } = useAddAssignment();
   // Mock data for now - proper structure
-  const assignmentData = { 
-    courseId: null, 
-    course: { id: 'mock-course-id', courseName: 'Mock Course', courseCode: 'MOCK101' }, 
-    title: "Mock Assignment", 
-    description: "Mock description", 
-    dueDate: new Date(), 
-    submissionMethod: null, 
+  const assignmentData = {
+    courseId: null,
+    course: {
+      id: 'mock-course-id',
+      courseName: 'Mock Course',
+      courseCode: 'MOCK101',
+    },
+    title: 'Mock Assignment',
+    description: 'Mock description',
+    dueDate: new Date(),
+    submissionMethod: null,
     submissionLink: '',
-    reminders: [] 
+    reminders: [],
   };
-  const updateAssignmentData = (data: any) => { console.log("Mock updateAssignmentData:", data); };
+  const updateAssignmentData = (data: any) => {
+    console.log('Mock updateAssignmentData:', data);
+  };
 
   const handleMethodSelect = (method: SubmissionMethod) => {
-    updateAssignmentData({ 
+    updateAssignmentData({
       submissionMethod: method,
-      submissionLink: method === 'Online' ? assignmentData.submissionLink : ''
+      submissionLink: method === 'Online' ? assignmentData.submissionLink : '',
     });
   };
 
@@ -52,8 +61,10 @@ const SubmissionMethodScreen = () => {
     navigation.navigate('Reminders');
   };
 
-  const isValid = !assignmentData.submissionMethod || 
-    (assignmentData.submissionMethod === 'Online' && assignmentData.submissionLink.trim()) ||
+  const isValid =
+    !assignmentData.submissionMethod ||
+    (assignmentData.submissionMethod === 'Online' &&
+      assignmentData.submissionLink.trim()) ||
     assignmentData.submissionMethod === 'In-person';
 
   return (
@@ -67,40 +78,49 @@ const SubmissionMethodScreen = () => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionTitle}>How will you submit this assignment?</Text>
+        <Text style={styles.sectionTitle}>
+          How will you submit this assignment?
+        </Text>
         <Text style={styles.sectionDescription}>
-          Choose how you plan to submit your assignment. This helps us provide better reminders.
+          Choose how you plan to submit your assignment. This helps us provide
+          better reminders.
         </Text>
 
         <View style={styles.optionsContainer}>
           <TouchableOpacity
             style={[
               styles.optionCard,
-              assignmentData.submissionMethod === 'Online' && styles.selectedOptionCard
+              assignmentData.submissionMethod === 'Online' &&
+                styles.selectedOptionCard,
             ]}
-            onPress={() => handleMethodSelect('Online')}
-          >
+            onPress={() => handleMethodSelect('Online')}>
             <View style={styles.optionContent}>
               <View style={styles.optionHeader}>
-                <Text style={[
-                  styles.optionLabel,
-                  assignmentData.submissionMethod === 'Online' && styles.selectedOptionLabel
-                ]}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    assignmentData.submissionMethod === 'Online' &&
+                      styles.selectedOptionLabel,
+                  ]}>
                   Online
                 </Text>
-                <View style={[
-                  styles.radioButton,
-                  assignmentData.submissionMethod === 'Online' && styles.selectedRadioButton
-                ]}>
+                <View
+                  style={[
+                    styles.radioButton,
+                    assignmentData.submissionMethod === 'Online' &&
+                      styles.selectedRadioButton,
+                  ]}>
                   {assignmentData.submissionMethod === 'Online' && (
                     <View style={styles.radioButtonInner} />
                   )}
                 </View>
               </View>
-              <Text style={[
-                styles.optionDescription,
-                assignmentData.submissionMethod === 'Online' && styles.selectedOptionDescription
-              ]}>
+              <Text
+                style={[
+                  styles.optionDescription,
+                  assignmentData.submissionMethod === 'Online' &&
+                    styles.selectedOptionDescription,
+                ]}>
                 Submit through an online platform (Canvas, Blackboard, etc.)
               </Text>
             </View>
@@ -109,31 +129,37 @@ const SubmissionMethodScreen = () => {
           <TouchableOpacity
             style={[
               styles.optionCard,
-              assignmentData.submissionMethod === 'In-person' && styles.selectedOptionCard
+              assignmentData.submissionMethod === 'In-person' &&
+                styles.selectedOptionCard,
             ]}
-            onPress={() => handleMethodSelect('In-person')}
-          >
+            onPress={() => handleMethodSelect('In-person')}>
             <View style={styles.optionContent}>
               <View style={styles.optionHeader}>
-                <Text style={[
-                  styles.optionLabel,
-                  assignmentData.submissionMethod === 'In-person' && styles.selectedOptionLabel
-                ]}>
+                <Text
+                  style={[
+                    styles.optionLabel,
+                    assignmentData.submissionMethod === 'In-person' &&
+                      styles.selectedOptionLabel,
+                  ]}>
                   In-person
                 </Text>
-                <View style={[
-                  styles.radioButton,
-                  assignmentData.submissionMethod === 'In-person' && styles.selectedRadioButton
-                ]}>
+                <View
+                  style={[
+                    styles.radioButton,
+                    assignmentData.submissionMethod === 'In-person' &&
+                      styles.selectedRadioButton,
+                  ]}>
                   {assignmentData.submissionMethod === 'In-person' && (
                     <View style={styles.radioButtonInner} />
                   )}
                 </View>
               </View>
-              <Text style={[
-                styles.optionDescription,
-                assignmentData.submissionMethod === 'In-person' && styles.selectedOptionDescription
-              ]}>
+              <Text
+                style={[
+                  styles.optionDescription,
+                  assignmentData.submissionMethod === 'In-person' &&
+                    styles.selectedOptionDescription,
+                ]}>
                 Submit physically (paper, presentation, etc.)
               </Text>
             </View>
@@ -163,27 +189,25 @@ const SubmissionMethodScreen = () => {
             <Text style={styles.previewText}>
               Method: {assignmentData.submissionMethod}
             </Text>
-            {assignmentData.submissionMethod === 'Online' && assignmentData.submissionLink && (
-              <Text style={styles.previewText}>
-                Link: {assignmentData.submissionLink}
-              </Text>
-            )}
+            {assignmentData.submissionMethod === 'Online' &&
+              assignmentData.submissionLink && (
+                <Text style={styles.previewText}>
+                  Link: {assignmentData.submissionLink}
+                </Text>
+              )}
           </View>
         )}
       </View>
 
       <View style={styles.footer}>
         <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.skipButton}
-            onPress={handleSkip}
-          >
+          <TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
             <Text style={styles.skipButtonText}>Skip</Text>
           </TouchableOpacity>
-          
+
           <View style={styles.continueButtonContainer}>
-            <Button 
-              title="Continue" 
+            <Button
+              title="Continue"
               onPress={handleContinue}
               disabled={!isValid}
             />

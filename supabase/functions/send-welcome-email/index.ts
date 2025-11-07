@@ -1,5 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -11,10 +13,11 @@ interface WelcomeEmailRequest {
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers':
+    'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+serve(async req => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -22,20 +25,28 @@ serve(async (req) => {
 
   try {
     // Parse the request body
-    const { userEmail, userFirstName, userId }: WelcomeEmailRequest = await req.json();
+    const { userEmail, userFirstName, userId }: WelcomeEmailRequest =
+      await req.json();
 
     // Validate required fields
     if (!userEmail || !userId) {
       return new Response(
-        JSON.stringify({ error: 'Missing required fields: userEmail and userId' }),
-        { 
-          status: 400, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({
+          error: 'Missing required fields: userEmail and userId',
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
       );
     }
 
-    console.log(`Sending welcome email to ${userEmail} for user ${userId}`);
+    const traceContext = extractTraceContext(req);
+    await logger.info(
+      'Sending welcome email',
+      { user_id: userId, user_email: userEmail },
+      traceContext,
+    );
 
     // Send the welcome email using Resend
     const { data, error } = await resend.emails.send({
@@ -129,39 +140,62 @@ serve(async (req) => {
     });
 
     if (error) {
-      console.error('Resend error:', error);
+      await logger.error(
+        'Resend error',
+        {
+          user_id: userId,
+          user_email: userEmail,
+          error: error instanceof Error ? error.message : String(error),
+        },
+        traceContext,
+      );
       return new Response(
-        JSON.stringify({ error: 'Failed to send welcome email', details: error }),
-        { 
-          status: 500, 
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-        }
+        JSON.stringify({
+          error: 'Failed to send welcome email',
+          details: error,
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        },
       );
     }
 
-    console.log(`Welcome email sent successfully to ${userEmail}`);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Welcome email sent successfully',
-        emailId: data?.id 
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+    await logger.info(
+      'Welcome email sent successfully',
+      { user_id: userId, user_email: userEmail },
+      traceContext,
     );
 
-  } catch (error) {
-    console.error('Error sending welcome email:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
+      JSON.stringify({
+        success: true,
+        message: 'Welcome email sent successfully',
+        emailId: data?.id,
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
+    );
+  } catch (error) {
+    const traceContext = extractTraceContext(req);
+    await logger.error(
+      'Error sending welcome email',
+      {
+        error: error instanceof Error ? error.message : String(error),
+      },
+      traceContext,
+    );
+    return new Response(
+      JSON.stringify({
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
     );
   }
 });
-

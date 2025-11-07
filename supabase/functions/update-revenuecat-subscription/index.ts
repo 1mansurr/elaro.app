@@ -1,23 +1,45 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { CustomerInfo } from 'https://esm.sh/react-native-purchases@7.0.0';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-interface UpdateSubscriptionRequest {
-  customerInfo: CustomerInfo;
-  userId?: string;
-}
+const UpdateSubscriptionSchema = z.object({
+  customerInfo: z.any(), // CustomerInfo is a complex type from external library
+  userId: z.string().uuid('Invalid user ID format').optional(),
+});
 
-async function handleUpdateSubscription({ user, body }: AuthenticatedRequest) {
-  const { customerInfo, userId } = body as UpdateSubscriptionRequest;
-  
+async function handleUpdateSubscription(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+  const { customerInfo, userId } = body as {
+    customerInfo: CustomerInfo;
+    userId?: string;
+  };
+
   // Use the userId from the request body if provided, otherwise use the authenticated user
   const targetUserId = userId || user.id;
-  
+
   if (!customerInfo) {
-    throw new AppError('Customer info is required', 400, 'MISSING_CUSTOMER_INFO');
+    throw new AppError(
+      'Customer info is required',
+      400,
+      ERROR_CODES.MISSING_REQUIRED_FIELD,
+    );
   }
 
-  console.log(`Updating subscription for user ${targetUserId}`);
+  await logger.info(
+    'Updating subscription',
+    { user_id: targetUserId },
+    traceContext,
+  );
 
   try {
     // Determine subscription tier based on active entitlements
@@ -32,7 +54,7 @@ async function handleUpdateSubscription({ user, body }: AuthenticatedRequest) {
     }
 
     // Update user subscription in database
-    const { error: updateError } = await supabase
+    const { error: updateError } = await supabaseClient
       .from('users')
       .update({
         subscription_tier: subscriptionTier,
@@ -41,37 +63,38 @@ async function handleUpdateSubscription({ user, body }: AuthenticatedRequest) {
       .eq('id', targetUserId);
 
     if (updateError) {
-      console.error(`Failed to update subscription for user ${targetUserId}:`, updateError);
-      throw new AppError('Failed to update user subscription', 500, 'DB_UPDATE_ERROR');
+      throw handleDbError(updateError);
     }
 
-    console.log(`Successfully updated subscription for user ${targetUserId} to ${subscriptionTier}`);
-    
+    await logger.info(
+      'Successfully updated subscription',
+      { user_id: targetUserId, tier: subscriptionTier },
+      traceContext,
+    );
+
     return {
       success: true,
       message: 'Subscription updated successfully',
       subscriptionTier,
       expirationDate,
     };
-  } catch (error) {
-    console.error(`Error updating subscription for user ${targetUserId}:`, error);
+  } catch (error: unknown) {
+    await logger.error(
+      'Error updating subscription',
+      {
+        user_id: targetUserId,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      traceContext,
+    );
     throw error;
   }
 }
 
-serve(createAuthenticatedHandler(
-  handleUpdateSubscription,
-  {
-    method: 'POST',
-    schema: {
-      body: {
-        type: 'object',
-        properties: {
-          customerInfo: { type: 'object' },
-          userId: { type: 'string' }
-        },
-        required: ['customerInfo']
-      }
-    }
-  }
-));
+serve(
+  createAuthenticatedHandler(handleUpdateSubscription, {
+    rateLimitName: 'update-revenuecat-subscription',
+    schema: UpdateSubscriptionSchema,
+    requireIdempotency: true,
+  }),
+);

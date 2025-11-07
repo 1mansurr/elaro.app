@@ -1,6 +1,6 @@
 /**
  * Pass 9 - Chunk 2: Multi-Device Session Consistency Tests
- * 
+ *
  * Tests for multi-device scenarios and conflict resolution:
  * - Mock two device contexts using separate Supabase sessions
  * - Make concurrent updates to settings and study progress
@@ -56,7 +56,7 @@ class MultiDeviceSimulator {
     deviceId: string,
     key: string,
     value: any,
-    timestamp?: number
+    timestamp?: number,
   ): Promise<{ success: boolean; conflict: boolean; resolvedValue: any }> {
     const device = this.getDevice(deviceId);
     if (!device) {
@@ -65,21 +65,30 @@ class MultiDeviceSimulator {
 
     const updateTime = timestamp || Date.now();
     const existingValue = this.sharedState.get(key);
-    const conflict = existingValue !== undefined && existingValue.timestamp > device.lastUpdateTimestamp;
+    const conflict =
+      existingValue !== undefined &&
+      existingValue.timestamp > device.lastUpdateTimestamp;
 
     if (conflict) {
       // Last-write-wins resolution
-      const resolvedValue = updateTime > existingValue.timestamp ? value : existingValue.value;
+      const resolvedValue =
+        updateTime > existingValue.timestamp ? value : existingValue.value;
       perfMetrics.recordConflictResolution('last-write-wins');
-      
+
       this.sharedState.set(key, {
         value: resolvedValue,
         timestamp: Math.max(updateTime, existingValue.timestamp),
-        deviceId: updateTime > existingValue.timestamp ? deviceId : existingValue.deviceId,
+        deviceId:
+          updateTime > existingValue.timestamp
+            ? deviceId
+            : existingValue.deviceId,
       });
-      
-      device.lastUpdateTimestamp = Math.max(updateTime, existingValue.timestamp);
-      
+
+      device.lastUpdateTimestamp = Math.max(
+        updateTime,
+        existingValue.timestamp,
+      );
+
       return { success: true, conflict: true, resolvedValue };
     }
 
@@ -136,7 +145,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     await network.reset();
     perfMetrics.reset();
     multiDeviceSim.reset();
-    
+
     // Sign in before tests
     await network.goOnline();
     await auth.signIn();
@@ -151,14 +160,33 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
   describe.parallel('Concurrent Device Updates', () => {
     it('should handle concurrent settings updates from two devices', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Both devices update theme setting concurrently
-      const update1Promise = multiDeviceSim.updateFromDevice('device1', 'theme', 'dark', Date.now());
-      const update2Promise = multiDeviceSim.updateFromDevice('device2', 'theme', 'light', Date.now() + 10);
+      const update1Promise = multiDeviceSim.updateFromDevice(
+        'device1',
+        'theme',
+        'dark',
+        Date.now(),
+      );
+      const update2Promise = multiDeviceSim.updateFromDevice(
+        'device2',
+        'theme',
+        'light',
+        Date.now() + 10,
+      );
 
-      const [result1, result2] = await Promise.all([update1Promise, update2Promise]);
+      const [result1, result2] = await Promise.all([
+        update1Promise,
+        update2Promise,
+      ]);
 
       // One should have a conflict
       const hasConflict = result1.conflict || result2.conflict;
@@ -171,19 +199,37 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
       // Verify conflict was resolved
       if (hasConflict) {
-        expect(perfMetrics.getSummary().conflicts.totalConflicts).toBeGreaterThan(0);
+        expect(
+          perfMetrics.getSummary().conflicts.totalConflicts,
+        ).toBeGreaterThan(0);
       }
     });
 
     it('should reconcile profile updates from multiple devices', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Device 1 updates first name
-      await multiDeviceSim.updateFromDevice('device1', 'firstName', 'Alice', Date.now());
-      
+      await multiDeviceSim.updateFromDevice(
+        'device1',
+        'firstName',
+        'Alice',
+        Date.now(),
+      );
+
       // Device 2 updates last name concurrently
-      await multiDeviceSim.updateFromDevice('device2', 'lastName', 'Smith', Date.now() + 20);
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'lastName',
+        'Smith',
+        Date.now() + 20,
+      );
 
       // Both updates should succeed (different keys, no conflict)
       const firstName = multiDeviceSim.getState('firstName');
@@ -197,29 +243,55 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should handle timestamp-based conflict resolution', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Device 1 updates with earlier timestamp
-      await multiDeviceSim.updateFromDevice('device1', 'notificationEnabled', true, 1000);
-      
+      await multiDeviceSim.updateFromDevice(
+        'device1',
+        'notificationEnabled',
+        true,
+        1000,
+      );
+
       // Device 2 updates with later timestamp
-      await multiDeviceSim.updateFromDevice('device2', 'notificationEnabled', false, 2000);
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'notificationEnabled',
+        false,
+        2000,
+      );
 
       // Later timestamp should win
       const finalValue = multiDeviceSim.getState('notificationEnabled');
       expect(finalValue).toBe(false); // Later timestamp wins
 
       // Conflict should be recorded
-      expect(perfMetrics.getSummary().conflicts.totalConflicts).toBeGreaterThan(0);
-      expect(perfMetrics.getSummary().conflicts.resolvedByLastWriteWins).toBeGreaterThan(0);
+      expect(perfMetrics.getSummary().conflicts.totalConflicts).toBeGreaterThan(
+        0,
+      );
+      expect(
+        perfMetrics.getSummary().conflicts.resolvedByLastWriteWins,
+      ).toBeGreaterThan(0);
     });
   });
 
   describe.parallel('Study Session Multi-Device Conflicts', () => {
     it('should handle concurrent study session progress updates', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       const sessionId = 'session-123';
 
@@ -228,7 +300,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         'device1',
         `${sessionId}:timeSpent`,
         30,
-        Date.now()
+        Date.now(),
       );
 
       // Device 2: Update time spent concurrently
@@ -236,7 +308,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         'device2',
         `${sessionId}:timeSpent`,
         45,
-        Date.now() + 50
+        Date.now() + 50,
       );
 
       // Last write should win
@@ -246,13 +318,21 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
       // Conflict should be resolved
       const conflicts = perfMetrics.getSummary().conflicts.totalConflicts;
       if (conflicts > 0) {
-        expect(perfMetrics.getSummary().conflicts.resolvedByLastWriteWins).toBeGreaterThan(0);
+        expect(
+          perfMetrics.getSummary().conflicts.resolvedByLastWriteWins,
+        ).toBeGreaterThan(0);
       }
     });
 
     it('should merge compatible session data (notes + time)', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       const sessionId = 'session-merge-test';
 
@@ -261,7 +341,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         'device1',
         `${sessionId}:notes`,
         'Device 1 notes',
-        Date.now()
+        Date.now(),
       );
 
       // Device 2: Updates time spent (compatible field)
@@ -269,7 +349,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         'device2',
         `${sessionId}:timeSpent`,
         60,
-        Date.now() + 10
+        Date.now() + 10,
       );
 
       // Both should persist (different fields)
@@ -284,8 +364,14 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should handle SRS rating conflicts from multiple devices', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       const reminderId = 'reminder-123';
 
@@ -294,14 +380,14 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         'device1',
         `${reminderId}:rating`,
         4,
-        Date.now()
+        Date.now(),
       );
 
       await multiDeviceSim.updateFromDevice(
         'device2',
         `${reminderId}:rating`,
         5,
-        Date.now() + 100
+        Date.now() + 100,
       );
 
       // Last write wins
@@ -311,15 +397,23 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
       // Conflict should be resolved
       const conflicts = perfMetrics.getSummary().conflicts.totalConflicts;
       if (conflicts > 0) {
-        expect(perfMetrics.getSummary().conflicts.resolvedByLastWriteWins).toBeGreaterThan(0);
+        expect(
+          perfMetrics.getSummary().conflicts.resolvedByLastWriteWins,
+        ).toBeGreaterThan(0);
       }
     });
   });
 
   describe.parallel('State Convergence Validation', () => {
     it('should converge to same final state after concurrent updates', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Simulate rapid concurrent updates
       const updates = [
@@ -331,7 +425,12 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
       let timestamp = Date.now();
       for (const update of updates) {
-        await multiDeviceSim.updateFromDevice(update.device, update.key, update.value, timestamp);
+        await multiDeviceSim.updateFromDevice(
+          update.device,
+          update.key,
+          update.value,
+          timestamp,
+        );
         timestamp += 10; // Increment timestamp
       }
 
@@ -348,7 +447,7 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
         setting1: multiDeviceSim.getState('setting1'),
         setting2: multiDeviceSim.getState('setting2'),
       };
-      
+
       const device2View = {
         setting1: multiDeviceSim.getState('setting1'),
         setting2: multiDeviceSim.getState('setting2'),
@@ -365,7 +464,9 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
       // Create multiple devices
       for (let i = 0; i < deviceCount; i++) {
-        devices.push(multiDeviceSim.createDevice(`device${i}`, 'test-user-id-123'));
+        devices.push(
+          multiDeviceSim.createDevice(`device${i}`, 'test-user-id-123'),
+        );
       }
 
       // All devices update same key concurrently
@@ -374,8 +475,8 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
           device.deviceId,
           'theme',
           `theme-${index}`,
-          Date.now() + index * 10
-        )
+          Date.now() + index * 10,
+        ),
       );
 
       await Promise.all(updates);
@@ -393,18 +494,33 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should maintain data integrity during multi-device sync storm', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
-      const device3 = multiDeviceSim.createDevice('device3', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
+      const device3 = multiDeviceSim.createDevice(
+        'device3',
+        'test-user-id-123',
+      );
 
       // Storm of concurrent updates
       const updatePromises: Promise<any>[] = [];
       let timestamp = Date.now();
 
       for (let i = 0; i < 50; i++) {
-        const device = i % 3 === 0 ? 'device1' : i % 3 === 1 ? 'device2' : 'device3';
+        const device =
+          i % 3 === 0 ? 'device1' : i % 3 === 1 ? 'device2' : 'device3';
         updatePromises.push(
-          multiDeviceSim.updateFromDevice(device, `key${i % 5}`, `value${i}`, timestamp)
+          multiDeviceSim.updateFromDevice(
+            device,
+            `key${i % 5}`,
+            `value${i}`,
+            timestamp,
+          ),
         );
         timestamp += 1;
       }
@@ -433,12 +549,18 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
   describe.parallel('Conflict Resolution Strategies', () => {
     it('should use last-write-wins for incompatible updates', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Device 1 writes first
       await multiDeviceSim.updateFromDevice('device1', 'setting', 'old', 1000);
-      
+
       // Device 2 writes later (incompatible)
       await multiDeviceSim.updateFromDevice('device2', 'setting', 'new', 2000);
 
@@ -454,14 +576,30 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should preserve all values for compatible concurrent updates', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Device 1: Update setting A
-      await multiDeviceSim.updateFromDevice('device1', 'settingA', 'valueA', Date.now());
-      
+      await multiDeviceSim.updateFromDevice(
+        'device1',
+        'settingA',
+        'valueA',
+        Date.now(),
+      );
+
       // Device 2: Update setting B (compatible, different key)
-      await multiDeviceSim.updateFromDevice('device2', 'settingB', 'valueB', Date.now() + 10);
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'settingB',
+        'valueB',
+        Date.now() + 10,
+      );
 
       // Both should be preserved
       expect(multiDeviceSim.getState('settingA')).toBe('valueA');
@@ -472,14 +610,30 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should resolve conflicts based on timestamp precision', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Very close timestamps (test precision)
       const baseTime = Date.now();
-      
-      await multiDeviceSim.updateFromDevice('device1', 'precise', 'first', baseTime);
-      await multiDeviceSim.updateFromDevice('device2', 'precise', 'second', baseTime + 1);
+
+      await multiDeviceSim.updateFromDevice(
+        'device1',
+        'precise',
+        'first',
+        baseTime,
+      );
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'precise',
+        'second',
+        baseTime + 1,
+      );
 
       // Later timestamp (even by 1ms) should win
       const finalValue = multiDeviceSim.getState('precise');
@@ -489,15 +643,31 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
 
   describe.parallel('Device Session Management', () => {
     it('should handle device session expiration during multi-device updates', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Simulate device 1 session expiring
       // (In real app, session would expire; for test, we simulate update failure)
-      await multiDeviceSim.updateFromDevice('device1', 'setting', 'value1', Date.now());
-      
+      await multiDeviceSim.updateFromDevice(
+        'device1',
+        'setting',
+        'value1',
+        Date.now(),
+      );
+
       // Device 2 continues updating
-      await multiDeviceSim.updateFromDevice('device2', 'setting', 'value2', Date.now() + 100);
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'setting',
+        'value2',
+        Date.now() + 100,
+      );
 
       // Device 2's update should be valid
       const finalValue = multiDeviceSim.getState('setting');
@@ -505,14 +675,25 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
 
     it('should maintain consistency when one device goes offline', async () => {
-      const device1 = multiDeviceSim.createDevice('device1', 'test-user-id-123');
-      const device2 = multiDeviceSim.createDevice('device2', 'test-user-id-123');
+      const device1 = multiDeviceSim.createDevice(
+        'device1',
+        'test-user-id-123',
+      );
+      const device2 = multiDeviceSim.createDevice(
+        'device2',
+        'test-user-id-123',
+      );
 
       // Device 1 goes offline
       await network.goOffline();
 
       // Device 2 (online) updates
-      await multiDeviceSim.updateFromDevice('device2', 'setting', 'online-value', Date.now());
+      await multiDeviceSim.updateFromDevice(
+        'device2',
+        'setting',
+        'online-value',
+        Date.now(),
+      );
 
       // Device 1 comes back online
       await network.goOnline();
@@ -523,4 +704,3 @@ describe('Pass 9 - Chunk 2: Multi-Device Session Consistency', () => {
     });
   });
 });
-

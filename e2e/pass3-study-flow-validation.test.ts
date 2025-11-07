@@ -1,6 +1,6 @@
 /**
  * Pass 3: Study Flow Validation
- * 
+ *
  * Tests study session navigation flows:
  * - Dashboard → TaskCard → StudySession → Result
  * - StudySession → Pause → Resume → Complete
@@ -29,7 +29,7 @@ describe('Pass 3: Study Flow Validation', () => {
     mockSupabaseAuth.reset();
     await device.reloadReactNative();
     await TestHelpers.wait(2000);
-    
+
     try {
       await TestHelpers.loginWithTestUser();
       await TestHelpers.wait(3000);
@@ -71,7 +71,9 @@ describe('Pass 3: Study Flow Validation', () => {
 
         console.log('✅ Navigated from dashboard to study session review');
       } catch (error) {
-        console.log('ℹ️ No study session task available for testing (expected if user has no upcoming study sessions)');
+        console.log(
+          'ℹ️ No study session task available for testing (expected if user has no upcoming study sessions)',
+        );
         // This is expected if user has no study sessions - test passes gracefully
       }
     });
@@ -80,13 +82,13 @@ describe('Pass 3: Study Flow Validation', () => {
   describe('StudySession → Result Flow', () => {
     it('should navigate from study session to result screen', async () => {
       const startTime = Date.now();
-      
+
       // First navigate to study session review
       try {
         await waitFor(element(by.id('start-study-button')))
           .toBeVisible()
           .withTimeout(5000);
-        
+
         await element(by.id('start-study-button')).tap();
         await TestHelpers.wait(2000);
 
@@ -94,17 +96,19 @@ describe('Pass 3: Study Flow Validation', () => {
           .toBeVisible()
           .withTimeout(5000);
       } catch {
-        console.log('ℹ️ No study session available - skipping result flow test');
+        console.log(
+          'ℹ️ No study session available - skipping result flow test',
+        );
         return;
       }
 
       // The SRSReviewCard component handles completion
       // In a real scenario, the user would rate cards and complete the session
       // For E2E, we'll simulate by navigating directly to result
-      
+
       // Note: Actual completion requires interaction with SRSReviewCard
       // This test verifies the navigation structure exists
-      
+
       // Record as manual test (requires manual verification)
       const { testReporter } = await import('./utils/testReporter');
       testReporter.recordTest(
@@ -113,11 +117,13 @@ describe('Pass 3: Study Flow Validation', () => {
         Date.now() - startTime,
         undefined,
         ['study-session-review-screen'],
-        true // manual flag
+        true, // manual flag
       );
-      
+
       console.log('✅ Study session review screen accessible');
-      console.log('ℹ️ Full completion flow requires SRSReviewCard interaction (manual testing recommended)');
+      console.log(
+        'ℹ️ Full completion flow requires SRSReviewCard interaction (manual testing recommended)',
+      );
     });
   });
 
@@ -125,13 +131,17 @@ describe('Pass 3: Study Flow Validation', () => {
     it('should navigate from study result back to dashboard', async () => {
       // This test would require completing a study session first
       // For now, we'll verify the result screen navigation works
-      
+
       // Try to navigate directly (in real app, this would come from completed session)
       // Since we can't easily mock a completed session in E2E without database,
       // we'll verify the screen structure exists if we can access it
-      
-      console.log('ℹ️ Study result navigation test - requires completed session');
-      console.log('ℹ️ Verify manually: Complete session → Result → Done → Dashboard');
+
+      console.log(
+        'ℹ️ Study result navigation test - requires completed session',
+      );
+      console.log(
+        'ℹ️ Verify manually: Complete session → Result → Done → Dashboard',
+      );
     });
   });
 
@@ -139,18 +149,18 @@ describe('Pass 3: Study Flow Validation', () => {
     it('should pass sessionId correctly through navigation', async () => {
       // This is verified by the fact that StudySessionReview screen
       // receives and uses the sessionId parameter
-      
+
       // The parameter is passed when navigating:
       // navigation.navigate('StudySessionReview', { sessionId: task.id })
-      
+
       // We can verify this by checking if the screen loads correctly
       try {
         await waitFor(element(by.id('start-study-button')))
           .toBeVisible()
           .withTimeout(5000);
-        
+
         await element(by.id('start-study-button')).tap();
-        
+
         // If screen loads without error, parameter was passed correctly
         await waitFor(element(by.id('study-session-review-screen')))
           .toBeVisible()
@@ -158,9 +168,10 @@ describe('Pass 3: Study Flow Validation', () => {
 
         console.log('✅ Session ID parameter passed correctly');
       } catch {
-        console.log('ℹ️ No study session available - cannot verify parameter passing');
+        console.log(
+          'ℹ️ No study session available - cannot verify parameter passing',
+        );
       }
     });
   });
 });
-

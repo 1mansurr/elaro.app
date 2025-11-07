@@ -9,7 +9,7 @@ export const useScreenTracking = () => {
   useEffect(() => {
     if (navigationState) {
       const currentRoute = navigationState.routes[navigationState.index];
-      
+
       if (currentRoute && currentRoute.name) {
         mixpanelService.track(AnalyticsEvents.SCREEN_VIEWED, {
           screen_name: currentRoute.name,

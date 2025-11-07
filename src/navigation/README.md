@@ -38,7 +38,11 @@ All navigation routes are defined in `src/types/navigation.ts`:
 ```typescript
 export type RootStackParamList = {
   Launch: undefined;
-  Auth: { onClose?: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
+  Auth: {
+    onClose?: () => void;
+    onAuthSuccess?: () => void;
+    mode?: 'signup' | 'signin';
+  };
   Main: undefined;
   GuestHome: undefined;
   OnboardingFlow: undefined;
@@ -63,7 +67,17 @@ export type RootStackParamList = {
   InAppBrowserScreen: { url: string; title?: string };
   AnalyticsAdmin: undefined;
   PaywallScreen: undefined;
-  OddityWelcomeScreen: { variant: 'trial-early' | 'trial-expired' | 'direct' | 'renewal' | 'restore' | 'promo' | 'granted' | 'plan-change' };
+  OddityWelcomeScreen: {
+    variant:
+      | 'trial-early'
+      | 'trial-expired'
+      | 'direct'
+      | 'renewal'
+      | 'restore'
+      | 'promo'
+      | 'granted'
+      | 'plan-change';
+  };
   StudyResult: { sessionId: string };
 };
 ```
@@ -75,7 +89,10 @@ export type RootStackParamList = {
 Use the `SafeNavigation` utility for type-safe navigation:
 
 ```typescript
-import { useSafeNavigation, NavigationPatterns } from '@/navigation/utils/SafeNavigation';
+import {
+  useSafeNavigation,
+  NavigationPatterns,
+} from '@/navigation/utils/SafeNavigation';
 
 const MyComponent = () => {
   const safeNav = useSafeNavigation();
@@ -83,7 +100,7 @@ const MyComponent = () => {
   const handleNavigate = () => {
     // Type-safe navigation
     safeNav.navigate('Profile');
-    
+
     // Or use predefined patterns
     NavigationPatterns.navigateToProfile(safeNav.navigation);
   };
@@ -95,11 +112,14 @@ const MyComponent = () => {
 Use navigation constants for consistent screen options:
 
 ```typescript
-import { SCREEN_CONFIGS, SCREEN_OPTIONS } from '@/navigation/constants/NavigationConstants';
+import {
+  SCREEN_CONFIGS,
+  SCREEN_OPTIONS,
+} from '@/navigation/constants/NavigationConstants';
 
 const screenConfig = {
   component: MyScreen,
-  options: SCREEN_CONFIGS.Profile // Pre-configured options
+  options: SCREEN_CONFIGS.Profile, // Pre-configured options
 };
 
 // Or customize
@@ -108,7 +128,7 @@ const customConfig = {
   options: {
     ...SCREEN_OPTIONS.standard,
     headerTitle: 'Custom Title',
-  }
+  },
 };
 ```
 
@@ -162,6 +182,7 @@ const MyScreen = () => {
 ### 1. Navigation Calls
 
 ✅ **Do:**
+
 ```typescript
 // Use type-safe navigation
 const safeNav = useSafeNavigation();
@@ -179,6 +200,7 @@ try {
 ```
 
 ❌ **Don't:**
+
 ```typescript
 // Avoid unsafe navigation
 (navigation as any).navigate('NonExistentRoute');
@@ -190,11 +212,12 @@ navigation.navigate('Profile' as any);
 ### 2. Screen Configuration
 
 ✅ **Do:**
+
 ```typescript
 // Use constants for consistency
 const config = {
   component: MyScreen,
-  options: SCREEN_CONFIGS.Profile
+  options: SCREEN_CONFIGS.Profile,
 };
 
 // Extend base options
@@ -203,11 +226,12 @@ const customConfig = {
   options: {
     ...SCREEN_OPTIONS.standard,
     headerTitle: 'Custom Title',
-  }
+  },
 };
 ```
 
 ❌ **Don't:**
+
 ```typescript
 // Avoid inline configurations
 const config = {
@@ -217,20 +241,21 @@ const config = {
     headerTitle: 'Profile',
     headerStyle: { backgroundColor: 'white' },
     // ... many more inline options
-  }
+  },
 };
 ```
 
 ### 3. Performance
 
 ✅ **Do:**
+
 ```typescript
 // Use lazy loading
 const MyScreen = lazy(() => import('./MyScreen'));
 
 // Use performance hooks
 const { preloadScreen } = useNavigationPerformance({
-  preloadScreens: ['Profile', 'Settings']
+  preloadScreens: ['Profile', 'Settings'],
 });
 
 // Batch navigation actions
@@ -241,6 +266,7 @@ batchNavigation([
 ```
 
 ❌ **Don't:**
+
 ```typescript
 // Avoid loading all screens immediately
 import MyScreen from './MyScreen';
@@ -254,6 +280,7 @@ navigation.navigate('Courses');
 ### 4. Error Handling
 
 ✅ **Do:**
+
 ```typescript
 // Use SafeNavigation for error handling
 const safeNav = useSafeNavigation();
@@ -270,6 +297,7 @@ try {
 ```
 
 ❌ **Don't:**
+
 ```typescript
 // Avoid ignoring navigation errors
 navigation.navigate('Profile'); // No error handling
@@ -281,35 +309,35 @@ navigation.navigate('Profile'); // No error handling
 
 ```typescript
 // Standard screen
-SCREEN_OPTIONS.standard
+SCREEN_OPTIONS.standard;
 
 // Modal screen
-SCREEN_OPTIONS.modal
+SCREEN_OPTIONS.modal;
 
 // Transparent modal
-SCREEN_OPTIONS.transparentModal
+SCREEN_OPTIONS.transparentModal;
 
 // Full screen
-SCREEN_OPTIONS.fullScreen
+SCREEN_OPTIONS.fullScreen;
 
 // Tab screen
-SCREEN_OPTIONS.tab
+SCREEN_OPTIONS.tab;
 
 // Auth screen
-SCREEN_OPTIONS.auth
+SCREEN_OPTIONS.auth;
 ```
 
 ### Performance Options
 
 ```typescript
 // Lazy loading
-PERFORMANCE_OPTIONS.lazy
+PERFORMANCE_OPTIONS.lazy;
 
 // Memory optimization
-PERFORMANCE_OPTIONS.memoryOptimized
+PERFORMANCE_OPTIONS.memoryOptimized;
 
 // High performance
-PERFORMANCE_OPTIONS.highPerformance
+PERFORMANCE_OPTIONS.highPerformance;
 ```
 
 ## 🐛 Debugging
@@ -321,11 +349,12 @@ import { useNavigation } from '@react-navigation/native';
 
 const MyComponent = () => {
   const navigation = useNavigation();
-  
+
   // Get current route
-  const currentRoute = navigation.getState().routes[navigation.getState().index];
+  const currentRoute =
+    navigation.getState().routes[navigation.getState().index];
   console.log('Current route:', currentRoute?.name);
-  
+
   // Check if can go back
   console.log('Can go back:', navigation.canGoBack());
 };
@@ -338,7 +367,7 @@ import { useNavigationPerformance } from '@/navigation/hooks/useNavigationPerfor
 
 const MyComponent = () => {
   const { logPerformanceMetrics } = useNavigationPerformance();
-  
+
   // Log performance metrics
   logPerformanceMetrics();
 };
@@ -390,29 +419,34 @@ NavigationPatterns.navigateToAddStudySession(navigation);
 ### From Old Navigation System
 
 1. **Replace unsafe navigation calls:**
+
    ```typescript
    // Old
    (navigation as any).navigate('Profile');
-   
+
    // New
    const safeNav = useSafeNavigation();
    safeNav.navigate('Profile');
    ```
 
 2. **Use navigation constants:**
+
    ```typescript
    // Old
    options: { headerShown: true, headerTitle: 'Profile' }
-   
+
    // New
    options: SCREEN_CONFIGS.Profile
    ```
 
 3. **Add performance optimizations:**
+
    ```typescript
    // Old
-   const MyScreen = () => { /* component */ };
-   
+   const MyScreen = () => {
+     /* component */
+   };
+
    // New
    const MyScreen = lazy(() => import('./MyScreen'));
    ```

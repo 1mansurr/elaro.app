@@ -1,5 +1,10 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { CreateCourseSchema } from '../_shared/schemas/course.ts';
 
 const COURSE_LIMITS: { [key: string]: number } = {
@@ -7,67 +12,69 @@ const COURSE_LIMITS: { [key: string]: number } = {
   oddity: 7,
 };
 
-serve(createAuthenticatedHandler(
-  async ({ user, supabaseClient, body }) => {
-    // Validation is now handled automatically by the handler using CreateCourseSchema
-    
-    // 1. Get validated data from the request body
-    const { course_name, course_code, about_course } = body;
+serve(
+  createAuthenticatedHandler(
+    async ({ user, supabaseClient, body }) => {
+      // Validation is now handled automatically by the handler using CreateCourseSchema
 
-    // 2. TIER-SPECIFIC LIMIT LOGIC
-    // Get the user's subscription tier to apply the correct limit
-    const { data: userProfile, error: profileError } = await supabaseClient
-      .from('users')
-      .select('subscription_tier')
-      .eq('id', user.id)
-      .single();
+      // 1. Get validated data from the request body
+      const { course_name, course_code, about_course } = body;
 
-    if (profileError) {
-      throw new AppError('Failed to retrieve user profile.', 500, 'PROFILE_FETCH_ERROR');
-    }
+      // 2. TIER-SPECIFIC LIMIT LOGIC
+      // Get the user's subscription tier to apply the correct limit
+      const { data: userProfile, error: profileError } = await supabaseClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
 
-    const userTier = userProfile?.subscription_tier || 'free';
-    const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
+      if (profileError) {
+        throw handleDbError(profileError);
+      }
 
-    // Check if the user has reached their course limit
-    const { count, error: countError } = await supabaseClient
-      .from('courses')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
+      const userTier = userProfile?.subscription_tier || 'free';
+      const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
 
-    if (countError) {
-      throw new AppError('Failed to count existing courses.', 500, 'COUNT_ERROR');
-    }
+      // Check if the user has reached their course limit
+      const { count, error: countError } = await supabaseClient
+        .from('courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
 
-    if (count !== null && count >= courseLimit) {
-      throw new AppError(
-        `You have reached the course limit of ${courseLimit} for the '${userTier}' plan.`,
-        403,
-        'COURSE_LIMIT_EXCEEDED'
-      );
-    }
+      if (countError) {
+        throw handleDbError(countError);
+      }
 
-    // 3. Create the course
-    const { data: newCourse, error: insertError } = await supabaseClient
-      .from('courses')
-      .insert({
-        user_id: user.id,
-        course_name,
-        course_code,
-        about_course,
-      })
-      .select()
-      .single();
+      if (count !== null && count >= courseLimit) {
+        throw new AppError(
+          `You have reached the course limit of ${courseLimit} for the '${userTier}' plan.`,
+          403,
+          ERROR_CODES.RESOURCE_LIMIT_EXCEEDED,
+        );
+      }
 
-    if (insertError) {
-      throw new AppError(insertError.message, 500, 'DB_INSERT_ERROR');
-    }
+      // 3. Create the course
+      const { data: newCourse, error: insertError } = await supabaseClient
+        .from('courses')
+        .insert({
+          user_id: user.id,
+          course_name,
+          course_code,
+          about_course,
+        })
+        .select()
+        .single();
 
-    // 4. Return the result
-    return newCourse;
-  },
-  {
-    rateLimitName: 'create-course',
-    schema: CreateCourseSchema,
-  }
-));
+      if (insertError) {
+        throw handleDbError(insertError);
+      }
+
+      // 4. Return the result
+      return newCourse;
+    },
+    {
+      rateLimitName: 'create-course',
+      schema: CreateCourseSchema,
+    },
+  ),
+);

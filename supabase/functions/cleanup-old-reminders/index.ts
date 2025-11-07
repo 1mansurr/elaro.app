@@ -1,9 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createScheduledHandler } from '../_shared/function-handler.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 async function handleCleanup(supabaseAdmin: SupabaseClient) {
-  console.log('--- Starting Old Reminders Cleanup Job ---');
+  const traceContext = extractTraceContext(
+    new Request('https://cron.internal'),
+  );
+
+  await logger.info('Starting old reminders cleanup', {}, traceContext);
+
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - 30);
 
@@ -13,10 +21,19 @@ async function handleCleanup(supabaseAdmin: SupabaseClient) {
     .eq('completed', true)
     .lt('created_at', cutoffDate.toISOString());
 
-  if (error) throw error;
+  if (error) throw handleDbError(error);
 
-  const result = { deletedCount: count ?? 0, message: `Successfully deleted ${count ?? 0} reminders.` };
-  console.log('--- Finished Cleanup Job ---', result);
+  const result = {
+    deletedCount: count ?? 0,
+    message: `Successfully deleted ${count ?? 0} reminders.`,
+  };
+
+  await logger.info(
+    'Finished cleanup job',
+    { deleted_count: count ?? 0 },
+    traceContext,
+  );
+
   return result;
 }
 

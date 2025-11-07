@@ -5,9 +5,16 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { PrimaryButton, SecondaryButton, OutlineButton } from '@/shared/components';
+import {
+  PrimaryButton,
+  SecondaryButton,
+  OutlineButton,
+} from '@/shared/components';
 
-type SimplifiedOnboardingScreenNavigationProp = StackNavigationProp<RootStackParamList, 'OnboardingFlow'>;
+type SimplifiedOnboardingScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'OnboardingFlow'
+>;
 
 interface OnboardingData {
   firstName: string;
@@ -31,7 +38,7 @@ const SimplifiedOnboardingScreen: React.FC = () => {
   const steps = [
     {
       title: 'Welcome to ELARO',
-      subtitle: 'Let\'s get you set up in just a few steps',
+      subtitle: "Let's get you set up in just a few steps",
       component: WelcomeStep,
     },
     {
@@ -46,16 +53,19 @@ const SimplifiedOnboardingScreen: React.FC = () => {
     },
   ];
 
-  const handleNext = useCallback((stepData: Partial<OnboardingData>) => {
-    setFormData(prev => ({ ...prev, ...stepData }));
-    
-    if (currentStep < steps.length - 1) {
-      setCurrentStep(prev => prev + 1);
-    } else {
-      // Complete onboarding
-      handleCompleteOnboarding();
-    }
-  }, [currentStep, steps.length]);
+  const handleNext = useCallback(
+    (stepData: Partial<OnboardingData>) => {
+      setFormData(prev => ({ ...prev, ...stepData }));
+
+      if (currentStep < steps.length - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        // Complete onboarding
+        handleCompleteOnboarding();
+      }
+    },
+    [currentStep, steps.length],
+  );
 
   const handleBack = useCallback(() => {
     if (currentStep > 0) {
@@ -77,11 +87,11 @@ const SimplifiedOnboardingScreen: React.FC = () => {
         <Text style={styles.subtitle}>{steps[currentStep].subtitle}</Text>
         <View style={styles.progressContainer}>
           <View style={styles.progressBar}>
-            <View 
+            <View
               style={[
-                styles.progressFill, 
-                { width: `${((currentStep + 1) / steps.length) * 100}%` }
-              ]} 
+                styles.progressFill,
+                { width: `${((currentStep + 1) / steps.length) * 100}%` },
+              ]}
             />
           </View>
           <Text style={styles.progressText}>
@@ -91,7 +101,7 @@ const SimplifiedOnboardingScreen: React.FC = () => {
       </View>
 
       <ScrollView style={styles.content}>
-        <CurrentStep 
+        <CurrentStep
           data={formData}
           onNext={handleNext}
           onBack={handleBack}
@@ -112,12 +122,10 @@ const WelcomeStep: React.FC<{
   <View style={styles.stepContainer}>
     <Text style={styles.stepTitle}>Welcome to ELARO!</Text>
     <Text style={styles.stepDescription}>
-      Your personal academic companion for managing courses, assignments, and study sessions.
+      Your personal academic companion for managing courses, assignments, and
+      study sessions.
     </Text>
-    <PrimaryButton
-      title="Get Started"
-      onPress={() => onNext({})}
-    />
+    <PrimaryButton title="Get Started" onPress={() => onNext({})} />
   </View>
 );
 
@@ -132,28 +140,35 @@ const ProfileStep: React.FC<{
     <Text style={styles.stepDescription}>
       This helps us personalize your experience and provide relevant features.
     </Text>
-    
+
     <View style={styles.formContainer}>
       <Text style={styles.formLabel}>First Name</Text>
-      <Text style={styles.formInput}>{data.firstName || 'Enter your first name'}</Text>
-      
+      <Text style={styles.formInput}>
+        {data.firstName || 'Enter your first name'}
+      </Text>
+
       <Text style={styles.formLabel}>Last Name</Text>
-      <Text style={styles.formInput}>{data.lastName || 'Enter your last name'}</Text>
-      
+      <Text style={styles.formInput}>
+        {data.lastName || 'Enter your last name'}
+      </Text>
+
       <Text style={styles.formLabel}>University</Text>
-      <Text style={styles.formInput}>{data.university || 'Enter your university'}</Text>
+      <Text style={styles.formInput}>
+        {data.university || 'Enter your university'}
+      </Text>
     </View>
 
     <View style={styles.buttonContainer}>
-      {canGoBack && (
-        <SecondaryButton
-          title="Back"
-          onPress={onBack}
-        />
-      )}
+      {canGoBack && <SecondaryButton title="Back" onPress={onBack} />}
       <PrimaryButton
         title="Continue"
-        onPress={() => onNext({ firstName: 'John', lastName: 'Doe', university: 'Example University' })}
+        onPress={() =>
+          onNext({
+            firstName: 'John',
+            lastName: 'Doe',
+            university: 'Example University',
+          })
+        }
       />
     </View>
   </View>
@@ -170,7 +185,7 @@ const CourseStep: React.FC<{
     <Text style={styles.stepDescription}>
       Start by adding your current courses. You can always add more later.
     </Text>
-    
+
     <View style={styles.courseContainer}>
       <Text style={styles.courseItem}>📚 Computer Science 101</Text>
       <Text style={styles.courseItem}>📚 Mathematics 201</Text>
@@ -178,12 +193,7 @@ const CourseStep: React.FC<{
     </View>
 
     <View style={styles.buttonContainer}>
-      {canGoBack && (
-        <SecondaryButton
-          title="Back"
-          onPress={onBack}
-        />
-      )}
+      {canGoBack && <SecondaryButton title="Back" onPress={onBack} />}
       <PrimaryButton
         title="Complete Setup"
         onPress={() => onNext({ courses: ['CS101', 'MATH201', 'PHYS301'] })}

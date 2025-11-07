@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Modal,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,13 +16,23 @@ import * as Sentry from '@sentry/react-native';
 
 import { PrimaryButton } from '@/shared/components';
 import { useSubscription } from '@/hooks/useSubscription';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 import { RootStackParamList } from '@/types/navigation';
 
 type PaywallScreenRouteProp = RouteProp<RootStackParamList, 'PaywallScreen'>;
-type PaywallScreenNavigationProp = StackNavigationProp<RootStackParamList, 'PaywallScreen'>;
+type PaywallScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'PaywallScreen'
+>;
 
 export const PaywallScreen: React.FC = () => {
   const route = useRoute<PaywallScreenRouteProp>();
@@ -32,7 +42,7 @@ export const PaywallScreen: React.FC = () => {
   const { user } = useAuth();
   // const { offerings, purchasePackage, isLoading, error } = useSubscription();
   const { purchasePackage, isLoading, error } = useSubscription();
-  
+
   // Mock offerings for now
   const offerings = { current: null as any };
 
@@ -42,47 +52,67 @@ export const PaywallScreen: React.FC = () => {
       icon: 'school-outline',
       title: '10 Courses',
       description: 'vs 2 on free plan',
-      color: 'COLORS.blue500'
+      color: 'COLORS.blue500',
     },
     {
-      icon: 'flash-outline', 
+      icon: 'flash-outline',
       title: '70 Activities/Month',
       description: 'vs 15 on free plan',
-      color: 'COLORS.yellow500'
+      color: 'COLORS.yellow500',
     },
     {
       icon: 'alarm-outline',
       title: '112 Spaced Repetition Reminders/Month',
       description: 'vs 15 on free plan',
-      color: 'COLORS.green500'
+      color: 'COLORS.green500',
     },
     {
       icon: 'analytics-outline',
       title: 'Weekly Analytics',
       description: 'Oddity exclusive',
-      color: 'COLORS.purple500'
-    }
+      color: 'COLORS.purple500',
+    },
   ];
 
   // Helper function to determine welcome screen variant
-  const determineWelcomeVariant = async (userId: string | undefined): Promise<'trial-early' | 'trial-expired' | 'direct' | 'renewal' | 'restore' | 'promo' | 'granted' | 'plan-change'> => {
+  const determineWelcomeVariant = async (
+    userId: string | undefined,
+  ): Promise<
+    | 'trial-early'
+    | 'trial-expired'
+    | 'direct'
+    | 'renewal'
+    | 'restore'
+    | 'promo'
+    | 'granted'
+    | 'plan-change'
+  > => {
     if (!userId) return 'direct'; // Fallback
 
     try {
       const { data: userData, error } = await supabase
         .from('users')
-        .select('trial_start_date, subscription_expires_at, subscription_status')
+        .select(
+          'trial_start_date, subscription_expires_at, subscription_status',
+        )
         .eq('id', userId)
         .single();
 
       if (error || !userData) {
-        console.error('Failed to fetch user data for variant detection:', error);
+        console.error(
+          'Failed to fetch user data for variant detection:',
+          error,
+        );
         return 'direct'; // Fallback
       }
 
       const now = new Date();
-      const trialStart = userData.trial_start_date ? new Date(userData.trial_start_date) : null;
-      const trialExpires = userData.subscription_expires_at ? new Date(userData.subscription_expires_at) : null;
+      const trialStart = userData.trial_start_date
+        ? new Date(userData.trial_start_date)
+        : null;
+      const trialExpires = userData.subscription_expires_at
+        ? new Date(userData.subscription_expires_at)
+        : null;
       const previousStatus = userData.subscription_status;
 
       // Check if this is a renewal (previously expired/canceled)
@@ -113,7 +143,6 @@ export const PaywallScreen: React.FC = () => {
 
       // Default to direct if no trial data
       return 'direct';
-
     } catch (error) {
       console.error('Error determining welcome variant:', error);
       return 'direct'; // Fallback
@@ -122,62 +151,69 @@ export const PaywallScreen: React.FC = () => {
 
   const handlePurchase = useCallback(async () => {
     if (!offerings?.current) {
-      Alert.alert('Error', 'Subscription offerings are not available at the moment.');
+      Alert.alert(
+        'Error',
+        'Subscription offerings are not available at the moment.',
+      );
       return;
     }
 
     try {
       const oddityPackage = offerings.current.availablePackages.find(
-        (pkg: any) => pkg.identifier === 'oddity_monthly'
+        (pkg: any) => pkg.identifier === 'oddity_monthly',
       );
-      
+
       if (!oddityPackage) {
         Alert.alert('Error', 'The Oddity plan is not available.');
         return;
       }
 
       await purchasePackage(oddityPackage);
-      
+
       // Determine welcome screen variant and navigate
       const welcomeVariant = await determineWelcomeVariant(user?.id);
       navigation.navigate('OddityWelcomeScreen', { variant: welcomeVariant });
-      
     } catch (error: any) {
       console.error('Purchase error:', error);
-      
+
       // Handle different error types
       if (error.message?.includes('cancelled')) {
         // User cancelled - no need to show error
         return;
       }
-      
-      if (error.message?.includes('network') || error.message?.includes('connection')) {
+
+      if (
+        error.message?.includes('network') ||
+        error.message?.includes('connection')
+      ) {
         // User's fault - show friendly message
         Alert.alert(
           'Connection Issue',
           'Please check your internet connection and try again.',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       } else {
         // Server error - log to Sentry and show user-friendly message
         Sentry.captureException(error, {
           tags: {
             feature: 'paywall_purchase',
-            variant: variant
-          }
+            variant: variant,
+          },
         });
-        
+
         Alert.alert(
           'Something went wrong',
-          'We\'ve been notified and are fixing this issue. Please try again in a few minutes.',
-          [{ text: 'OK' }]
+          "We've been notified and are fixing this issue. Please try again in a few minutes.",
+          [{ text: 'OK' }],
         );
       }
     }
   }, [offerings, purchasePackage, variant, navigation, user]);
 
   const getTitle = () => {
-    return variant === 'locked' ? 'Become an Oddity to Access This' : 'Become an Oddity';
+    return variant === 'locked'
+      ? 'Become an Oddity to Access This'
+      : 'Become an Oddity';
   };
 
   const getSubtitle = () => {
@@ -188,29 +224,43 @@ export const PaywallScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}>
       {/* Hero Image Card */}
       <View style={styles.heroCard}>
-        <Image 
-          source={require('@/assets/focus.png')} 
+        <Image
+          source={require('@/assets/focus.png')}
           style={styles.heroImage}
-          resizeMode="contain"
+          contentFit="contain"
         />
       </View>
 
       {/* Benefits Card */}
       <View style={styles.benefitsCard}>
-        <Text style={styles.benefitsTitle}>What you&apos;ll get with Oddity:</Text>
-        
+        <Text style={styles.benefitsTitle}>
+          What you&apos;ll get with Oddity:
+        </Text>
+
         <View style={styles.benefitsGrid}>
           {benefits.map((benefit, index) => (
             <View key={index} style={styles.benefitItem}>
-              <View style={[styles.benefitIcon, { backgroundColor: benefit.color + '20' }]}>
-                <Ionicons name={benefit.icon as any} size={24} color={benefit.color} />
+              <View
+                style={[
+                  styles.benefitIcon,
+                  { backgroundColor: benefit.color + '20' },
+                ]}>
+                <Ionicons
+                  name={benefit.icon as any}
+                  size={24}
+                  color={benefit.color}
+                />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                <Text style={styles.benefitDescription}>{benefit.description}</Text>
+                <Text style={styles.benefitDescription}>
+                  {benefit.description}
+                </Text>
               </View>
             </View>
           ))}
@@ -225,7 +275,7 @@ export const PaywallScreen: React.FC = () => {
           loading={isLoading}
           style={styles.purchaseButton}
         />
-        
+
         <Text style={styles.ctaSubtext}>
           Cancel anytime • No commitment required
         </Text>

@@ -7,6 +7,7 @@ Now that path aliasing is configured, here are practical examples of how to use 
 ## 📱 Component Examples
 
 ### **Creating a New Component**
+
 ```typescript
 // src/components/NewFeature.tsx
 import React from 'react';
@@ -42,6 +43,7 @@ const styles = StyleSheet.create({
 ```
 
 ### **Screen Component**
+
 ```typescript
 // src/screens/NewScreen.tsx
 import React from 'react';
@@ -67,6 +69,7 @@ export const NewScreen: React.FC = () => {
 ## 🔧 Service Layer Examples
 
 ### **Creating a New Service**
+
 ```typescript
 // src/services/newService.ts
 import { supabase } from '@/services/supabase';
@@ -94,6 +97,7 @@ export const newService = new NewService();
 ```
 
 ### **API Integration**
+
 ```typescript
 // src/services/api/queries/newFeature.ts
 import { supabase } from '@/services/supabase';
@@ -102,9 +106,7 @@ import { handleApiError } from '@/services/api/errors';
 export const newFeatureApi = {
   async getData(): Promise<any[]> {
     try {
-      const { data, error } = await supabase
-        .from('new_table')
-        .select('*');
+      const { data, error } = await supabase.from('new_table').select('*');
 
       if (error) throw error;
       return data || [];
@@ -118,6 +120,7 @@ export const newFeatureApi = {
 ## 🎣 Hook Examples
 
 ### **Creating a Custom Hook**
+
 ```typescript
 // src/hooks/useNewFeature.ts
 import { useState, useEffect } from 'react';
@@ -161,6 +164,7 @@ export const useNewFeature = () => {
 ### **Before and After Comparison**
 
 #### **Complex Nested Component**
+
 ```typescript
 // Before: src/screens/nested/deep/DeepComponent.tsx
 import { Button } from '../../../../components/Button';
@@ -176,6 +180,7 @@ import { User } from '@/types';
 ```
 
 #### **Hook with Multiple Dependencies**
+
 ```typescript
 // Before: src/hooks/useComplexFeature.ts
 import { useState } from 'react';
@@ -197,6 +202,7 @@ import { User, Course } from '@/types';
 ## 🎯 Common Import Patterns
 
 ### **Component Imports**
+
 ```typescript
 // UI Components
 import { Button } from '@/components/Button';
@@ -215,6 +221,7 @@ import { HealthStatusIndicator } from '@/components/HealthStatusIndicator';
 ```
 
 ### **Context Imports**
+
 ```typescript
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -223,6 +230,7 @@ import { SoftLaunchProvider } from '@/contexts/SoftLaunchContext';
 ```
 
 ### **Service Imports**
+
 ```typescript
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
@@ -232,6 +240,7 @@ import { notificationService } from '@/services/notificationService';
 ```
 
 ### **Hook Imports**
+
 ```typescript
 import { useHealthCheck } from '@/hooks/useHealthCheck';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -240,6 +249,7 @@ import { useDataQueries } from '@/hooks/useDataQueries';
 ```
 
 ### **Type Imports**
+
 ```typescript
 import { User } from '@/types';
 import { Course } from '@/types';
@@ -250,12 +260,14 @@ import { NotificationPreferences } from '@/types';
 ```
 
 ### **Constant Imports**
+
 ```typescript
 import { COLORS } from '@/constants/theme';
 import { TYPOGRAPHY } from '@/constants/theme';
 ```
 
 ### **Utility Imports**
+
 ```typescript
 import { formatDate } from '@/utils/dateUtils';
 import { validateEmail } from '@/utils/validation';
@@ -265,30 +277,33 @@ import { debounce } from '@/utils/debounce';
 ## 🔄 Refactoring Examples
 
 ### **Moving a Component**
+
 When you move a component from one directory to another, only the imports **to** that component need to be updated, not the imports **from** that component:
 
 ```typescript
 // Before: src/components/OldLocation.tsx
-import { Button } from '@/components/Button';  // ✅ This stays the same
-import { useAuth } from '@/contexts/AuthContext';  // ✅ This stays the same
+import { Button } from '@/components/Button'; // ✅ This stays the same
+import { useAuth } from '@/contexts/AuthContext'; // ✅ This stays the same
 
 // After moving to: src/components/new/location/OldLocation.tsx
-import { Button } from '@/components/Button';  // ✅ Still works!
-import { useAuth } from '@/contexts/AuthContext';  // ✅ Still works!
+import { Button } from '@/components/Button'; // ✅ Still works!
+import { useAuth } from '@/contexts/AuthContext'; // ✅ Still works!
 ```
 
 ### **Restructuring Directories**
+
 ```typescript
 // Before: src/features/auth/AuthButton.tsx
-import { Button } from '../../../components/Button';  // ❌ Breaks if moved
+import { Button } from '../../../components/Button'; // ❌ Breaks if moved
 
 // After: src/features/auth/AuthButton.tsx
-import { Button } from '@/components/Button';  // ✅ Always works!
+import { Button } from '@/components/Button'; // ✅ Always works!
 ```
 
 ## 🎨 Best Practices
 
 ### **1. Consistent Import Order**
+
 ```typescript
 // 1. React and React Native imports first
 import React from 'react';
@@ -305,6 +320,7 @@ import { User } from '@/types';
 ```
 
 ### **2. Group Related Imports**
+
 ```typescript
 // Group by functionality
 import { Button } from '@/components/Button';
@@ -318,13 +334,14 @@ import { supabase } from '@/services/supabase';
 ```
 
 ### **3. Use Descriptive Paths**
+
 ```typescript
 // Good: Specific and clear
 import { NotificationSettings } from '@/components/settings/NotificationSettings';
 import { useHealthCheck } from '@/hooks/useHealthCheck';
 
 // Avoid: Too generic
-import { Settings } from '@/components/Settings';  // Less clear
+import { Settings } from '@/components/Settings'; // Less clear
 ```
 
 ## 🚀 Getting Started
@@ -337,6 +354,7 @@ import { Settings } from '@/components/Settings';  // Less clear
 ## 🎉 Benefits in Action
 
 With path aliasing configured, your code is now:
+
 - ✅ **Cleaner**: No more `../../../` confusion
 - ✅ **Robust**: Files can be moved without breaking imports
 - ✅ **Readable**: Import paths are self-documenting

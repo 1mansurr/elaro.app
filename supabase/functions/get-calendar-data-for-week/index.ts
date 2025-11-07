@@ -1,59 +1,41 @@
-// FILE: supabase/functions/get-calendar-data-for-week/index.ts
+/**
+ * Get Calendar Data for Week
+ * Returns all tasks (lectures, study sessions, assignments) for a given week
+ */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import { decrypt } from '../_shared/encryption.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
-const getSupabaseClient = (req: Request ): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: {
-          Authorization: req.headers.get('Authorization')!
-        }
-      }
-    }
+const GetCalendarDataSchema = z.object({
+  date: z.string().datetime(),
+});
+
+async function handleGetCalendarData(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  await logger.info(
+    'Fetching calendar data for week',
+    { user_id: user.id },
+    traceContext,
   );
-};
-
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
 
   try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabase, user.id, 'get-calendar-data-for-week');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-    const { date } = await req.json();
+    const { date } = body;
     if (!date) {
-      return new Response(
-        JSON.stringify({ error: 'Date parameter is required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
+      throw new AppError(
+        'Date parameter is required.',
+        400,
+        ERROR_CODES.MISSING_REQUIRED_FIELD,
       );
     }
 
@@ -71,24 +53,26 @@ serve(async (req) => {
     weekEnd.setUTCHours(23, 59, 59, 999);
 
     // --- Run all queries in parallel ---
-    const [
-      lecturesPromise,
-      studySessionsPromise,
-      assignmentsPromise,
-    ] = [
-      supabase
+    const [lecturesPromise, studySessionsPromise, assignmentsPromise] = [
+      supabaseClient
         .from('lectures')
         .select('*, courses(course_name)')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
         .gte('lecture_date', weekStart.toISOString())
         .lte('lecture_date', weekEnd.toISOString()),
-      supabase
+      supabaseClient
         .from('study_sessions')
         .select('*, courses(course_name)')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
         .gte('session_date', weekStart.toISOString())
         .lte('session_date', weekEnd.toISOString()),
-      supabase
+      supabaseClient
         .from('assignments')
         .select('*, courses(course_name)')
+        .eq('user_id', user.id)
+        .is('deleted_at', null)
         .gte('due_date', weekStart.toISOString())
         .lte('due_date', weekEnd.toISOString()),
     ];
@@ -103,17 +87,18 @@ serve(async (req) => {
       assignmentsPromise,
     ]);
 
-    if (lecturesError) throw lecturesError;
-    if (studySessionsError) throw studySessionsError;
-    if (assignmentsError) throw assignmentsError;
+    if (lecturesError) throw handleDbError(lecturesError);
+    if (studySessionsError) throw handleDbError(studySessionsError);
+    if (assignmentsError) throw handleDbError(assignmentsError);
 
     // Encryption key from environment for decryption
     const ENCRYPTION_KEY = Deno.env.get('ENCRYPTION_KEY');
     if (!ENCRYPTION_KEY) {
-      return new Response('Encryption key not configured.', {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      });
+      throw new AppError(
+        'Encryption key not configured.',
+        500,
+        ERROR_CODES.CONFIG_ERROR,
+      );
     }
 
     // --- Process and normalize results (without setting conflicting name fields) ---
@@ -136,12 +121,26 @@ serve(async (req) => {
     ];
 
     // Decrypt sensitive fields and standardize to { name, description }
-    async function decryptTask(task: any) {
+    interface Task {
+      lecture_name?: string;
+      title?: string;
+      topic?: string;
+      description?: string;
+      notes?: string;
+      date: string;
+      [key: string]: unknown;
+    }
+
+    const decryptTask = async (task: Task) => {
       const nameField = task.lecture_name || task.title || task.topic || '';
       const descField = task.description ?? task.notes ?? null;
 
-      const decryptedName = nameField ? await decrypt(nameField as string, ENCRYPTION_KEY!) : nameField;
-      const decryptedDescription = descField ? await decrypt(descField as string, ENCRYPTION_KEY!) : null;
+      const decryptedName = nameField
+        ? await decrypt(nameField as string, ENCRYPTION_KEY!)
+        : nameField;
+      const decryptedDescription = descField
+        ? await decrypt(descField as string, ENCRYPTION_KEY!)
+        : null;
 
       return {
         ...task,
@@ -152,39 +151,56 @@ serve(async (req) => {
         topic: undefined,
         notes: undefined,
       };
-    }
+    };
 
     const decryptedTasks = await Promise.all(allTasks.map(decryptTask));
 
     // Group tasks by date
-    const groupedByDay = decryptedTasks.reduce((acc: Record<string, any[]>, task: any) => {
-      const taskDate = new Date(task.date).toISOString().split('T')[0]; // Get YYYY-MM-DD
-      if (!acc[taskDate]) {
-        acc[taskDate] = [];
-      }
-      acc[taskDate].push(task);
-      return acc;
-    }, {} as Record<string, any[]>);
+    const groupedByDay = decryptedTasks.reduce(
+      (acc: Record<string, Task[]>, task: Task) => {
+        const taskDate = new Date(task.date).toISOString().split('T')[0]; // Get YYYY-MM-DD
+        if (!acc[taskDate]) {
+          acc[taskDate] = [];
+        }
+        acc[taskDate].push(task);
+        return acc;
+      },
+      {} as Record<string, Task[]>,
+    );
 
     // Sort tasks within each day
     for (const day in groupedByDay) {
-      groupedByDay[day].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      groupedByDay[day].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      );
     }
 
-    return new Response(
-      JSON.stringify(groupedByDay),
+    await logger.info(
+      'Successfully fetched calendar data',
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
+        user_id: user.id,
+        task_count: decryptedTasks.length,
+      },
+      traceContext,
     );
+
+    return groupedByDay;
   } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
+    await logger.error(
+      'Error fetching calendar data',
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+        user_id: user.id,
+        error: error instanceof Error ? error.message : String(error),
+      },
+      traceContext,
     );
+    throw error;
   }
-});
+}
+
+serve(
+  createAuthenticatedHandler(handleGetCalendarData, {
+    rateLimitName: 'get-calendar-data-for-week',
+    schema: GetCalendarDataSchema,
+  }),
+);

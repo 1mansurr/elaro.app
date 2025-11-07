@@ -1,6 +1,6 @@
 /**
  * Pass 10 - Chunk 3: Long Idle Session Recovery Tests
- * 
+ *
  * Validates app recovery and sync reconciliation after extended idle periods:
  * - Simulate user leaving the app idle for hours (mock suspended state)
  * - Reopen app → trigger background sync reconciliation
@@ -47,7 +47,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     await network.reset();
     perfMetrics.reset();
     lifecycleTracker.reset();
-    
+
     // Sign in before tests
     await network.goOnline();
     await auth.signIn();
@@ -119,7 +119,9 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
       // 4. Verify user still authenticated (session refreshed)
       const userAfter = await auth.getSupabaseUser();
       // Session should be refreshed or user re-authenticated
-      expect(typeof userAfter?.id === 'string' || userAfter === null).toBeTruthy();
+      expect(
+        typeof userAfter?.id === 'string' || userAfter === null,
+      ).toBeTruthy();
     });
   });
 
@@ -167,7 +169,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
         await simulateSuspendedState();
         await resumeFromSuspended();
         await syncHelpers.waitForSync(2000);
-        
+
         // Verify app still functional
         const isLoggedIn = await auth.isLoggedIn();
         expect(typeof isLoggedIn).toBe('boolean');
@@ -183,7 +185,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     it('should restore settings state after extended idle', async () => {
       // 1. Simulate settings were set before idle
       // (In real app, would navigate to settings and change theme)
-      
+
       // 2. Simulate idle
       await simulateExtendedIdle(2);
 
@@ -200,17 +202,17 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     it('should sync pending settings changes after idle', async () => {
       // 1. Simulate pending changes before idle
       await network.goOffline();
-      
+
       // Simulate offline changes queued
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // 2. Simulate idle (changes still pending)
       await simulateSuspendedState();
 
       // 3. Resume and reconnect
       await resumeFromSuspended();
       await network.goOnline();
-      
+
       // 4. Verify pending changes sync
       await network.waitForNetworkOperations(3000);
       await syncHelpers.waitForSync(2000);
@@ -225,7 +227,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     it('should handle study session state after idle period', async () => {
       // 1. Simulate active session before idle
       // (In real app, would start a study session)
-      
+
       // 2. Simulate idle
       await simulateExtendedIdle(1);
 
@@ -271,7 +273,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
       // 2. Verify state preserved
       const userAfter = await auth.getSupabaseUser();
       expect(userAfter).not.toBeNull();
-      
+
       const isLoggedIn = await auth.isLoggedIn();
       expect(typeof isLoggedIn).toBe('boolean');
     });
@@ -303,7 +305,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
       // 3. Verify recovery
       await network.goOnline();
       const userAfter = await auth.getSupabaseUser();
-      
+
       // Should either restore from Supabase or prompt re-auth
       expect(userAfter !== null || true).toBeTruthy(); // Either valid user or null (prompt re-auth)
     });
@@ -336,7 +338,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
 
       // 2. Warm start (app in background)
       await simulateWarmStart();
-      
+
       // 3. Measure recovery time
       const catchUpTime = await measureSyncCatchUpTime(async () => {
         await network.goOnline();
@@ -378,7 +380,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
 
       // 3. Verify performance
       expect(catchUpTime).toBeLessThan(MAX_CATCH_UP_TIME_MS);
-      
+
       // Track via perfMetrics
       perfMetrics.recordSyncOperation('catch_up_sync', catchUpTime, true);
     });
@@ -386,7 +388,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     it('should handle multiple pending syncs after idle efficiently', async () => {
       // 1. Queue operations offline
       await network.goOffline();
-      
+
       // Simulate queued operations
       for (let i = 0; i < 5; i++) {
         await new Promise(resolve => setTimeout(resolve, 50));
@@ -429,7 +431,7 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     it('should handle idle during offline mode', async () => {
       // 1. Go offline
       await network.goOffline();
-      
+
       // 2. Idle while offline
       await simulateExtendedIdle(2);
 
@@ -444,4 +446,3 @@ describe('Pass 10 - Chunk 3: Long Idle Session Recovery', () => {
     });
   });
 });
-

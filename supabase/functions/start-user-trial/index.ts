@@ -1,8 +1,23 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 
-async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedRequest) {
-  console.log(`Starting trial for user: ${user.id}`);
+async function handleStartUserTrial(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const traceContext = extractTraceContext(req as any);
+
+  await logger.info(
+    'Starting trial for user',
+    { user_id: user.id },
+    traceContext,
+  );
 
   // Fetch the user's current subscription tier
   const { data: userProfile, error: profileError } = await supabaseClient
@@ -12,11 +27,11 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
     .single();
 
   if (profileError) {
-    throw new AppError(profileError.message, 500, 'DB_QUERY_ERROR');
+    throw handleDbError(profileError);
   }
 
   if (!userProfile) {
-    throw new AppError('User profile not found', 404, 'USER_NOT_FOUND');
+    throw new AppError('User profile not found', 404, ERROR_CODES.DB_NOT_FOUND);
   }
 
   // Only start a trial if the user is currently on the 'free' tier.
@@ -37,31 +52,47 @@ async function handleStartUserTrial({ user, supabaseClient }: AuthenticatedReque
       .eq('id', user.id);
 
     if (updateError) {
-      throw new AppError(updateError.message, 500, 'DB_UPDATE_ERROR');
+      throw handleDbError(updateError);
     }
 
-    console.log(`Trial started successfully for user: ${user.id}, started: ${trialStartDate.toISOString()}, expires: ${trialEndDate.toISOString()}`);
-    return { 
-      success: true, 
+    await logger.info(
+      'Trial started successfully',
+      {
+        user_id: user.id,
+        trial_start_date: trialStartDate.toISOString(),
+        trial_expires_at: trialEndDate.toISOString(),
+      },
+      traceContext,
+    );
+
+    return {
+      success: true,
       message: 'Trial started successfully.',
       trial_start_date: trialStartDate.toISOString(),
-      trial_expires_at: trialEndDate.toISOString()
+      trial_expires_at: trialEndDate.toISOString(),
     };
   }
 
   // If the user is not on the 'free' tier, do nothing and return a success message.
-  console.log(`User ${user.id} is not on free tier (current: ${userProfile.subscription_tier}). No action taken.`);
-  return { 
-    success: true, 
+  await logger.info(
+    'User not on free tier, no action taken',
+    {
+      user_id: user.id,
+      current_tier: userProfile.subscription_tier,
+    },
+    traceContext,
+  );
+
+  return {
+    success: true,
     message: 'User is not on the free tier. No action taken.',
-    current_tier: userProfile.subscription_tier
+    current_tier: userProfile.subscription_tier,
   };
 }
 
-serve(createAuthenticatedHandler(
-  handleStartUserTrial,
-  {
+serve(
+  createAuthenticatedHandler(handleStartUserTrial, {
     rateLimitName: 'start-user-trial',
     // No schema needed since this function doesn't require any input body
-  }
-));
+  }),
+);

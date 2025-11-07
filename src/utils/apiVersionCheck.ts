@@ -9,7 +9,8 @@ interface Version {
   patch: number;
 }
 
-const APP_VERSION = Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_VERSION || '1.0.0';
+const APP_VERSION =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_VERSION || '1.0.0';
 const MIN_API_VERSION = '1.0.0';
 const MAX_API_VERSION = '2.0.0'; // Breaking changes at v2
 
@@ -41,14 +42,16 @@ function compareVersions(v1: Version, v2: Version): number {
 export function isVersionCompatible(
   currentVersion: string,
   minVersion: string,
-  maxVersion: string
+  maxVersion: string,
 ): boolean {
   const current = parseVersion(currentVersion);
   const min = parseVersion(minVersion);
   const max = parseVersion(maxVersion);
 
   // Current must be >= min and < max
-  return compareVersions(current, min) >= 0 && compareVersions(current, max) < 0;
+  return (
+    compareVersions(current, min) >= 0 && compareVersions(current, max) < 0
+  );
 }
 
 /**
@@ -77,7 +80,11 @@ export async function checkAPIVersionCompatibility(): Promise<{
     }
 
     const apiVersion = data.version || '1.0.0';
-    const compatible = isVersionCompatible(apiVersion, MIN_API_VERSION, MAX_API_VERSION);
+    const compatible = isVersionCompatible(
+      apiVersion,
+      MIN_API_VERSION,
+      MAX_API_VERSION,
+    );
 
     if (!compatible) {
       const apiVer = parseVersion(apiVersion);
@@ -102,7 +109,8 @@ export async function checkAPIVersionCompatibility(): Promise<{
           apiVersion,
           appVersion: APP_VERSION,
           action: 'update_required',
-          message: 'Your app version is outdated. Please update to the latest version.',
+          message:
+            'Your app version is outdated. Please update to the latest version.',
         };
       }
     }
@@ -117,7 +125,8 @@ export async function checkAPIVersionCompatibility(): Promise<{
         apiVersion,
         appVersion: APP_VERSION,
         action: 'update_recommended',
-        message: 'A new version of ELARO is available with improvements and bug fixes.',
+        message:
+          'A new version of ELARO is available with improvements and bug fixes.',
       };
     }
 
@@ -157,7 +166,7 @@ export async function promptForUpdateIfNeeded(): Promise<void> {
           },
         },
       ],
-      { cancelable: false }
+      { cancelable: false },
     );
   } else if (result.action === 'update_recommended') {
     Alert.alert(
@@ -174,7 +183,7 @@ export async function promptForUpdateIfNeeded(): Promise<void> {
             console.log('Would open app store');
           },
         },
-      ]
+      ],
     );
   }
 }
@@ -193,4 +202,3 @@ export function getVersionInfo(): {
     environment: Constants.expoConfig?.extra?.NODE_ENV || 'development',
   };
 }
-

@@ -3,11 +3,13 @@
 ## 📋 Pre-Testing Setup
 
 ### Step 1: Prepare Your Test Account
+
 - [ ] Create a test user account or identify existing test email
 - [ ] Update all SQL scripts: Replace `'your-test-email@example.com'` with your actual test email
 - [ ] Ensure RevenueCat is configured in sandbox/test mode
 
 ### Step 2: Start the App
+
 ```bash
 # iOS
 npm run ios
@@ -23,8 +25,9 @@ npm run android
 ### ✅ TEST 1: Trial-Early Variant
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'oddity',
     subscription_status = 'trialing',
     trial_start_date = NOW(),
@@ -34,11 +37,13 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to any locked feature OR Profile → "Upgrade to Oddity"
 3. [ ] Complete purchase flow (use test card/sandbox mode)
 
 **Expected Results**:
+
 - [ ] Confetti animation plays (full screen, ~3 seconds)
 - [ ] Modal appears (70% width/height, centered)
 - [ ] Blurred background visible
@@ -50,15 +55,16 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Tapping Continue navigates to Home screen
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 ---
 
 ### ✅ TEST 2: Trial-Expired Variant
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'free',
     subscription_status = 'expired',
     trial_start_date = NOW() - INTERVAL '9 days',
@@ -68,11 +74,13 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to PaywallScreen
 3. [ ] Complete purchase flow
 
 **Expected Results**:
+
 - [ ] Confetti animation plays
 - [ ] Headline: **"Congratulations!"**
 - [ ] Subheadline: **"You're now An Oddity"**
@@ -80,15 +88,16 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Continue button → Home screen
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 ---
 
 ### ✅ TEST 3: Direct Purchase Variant
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'free',
     subscription_status = 'expired',
     trial_start_date = NOW() - INTERVAL '15 days',
@@ -98,11 +107,13 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to PaywallScreen
 3. [ ] Complete purchase flow
 
 **Expected Results**:
+
 - [ ] Confetti animation plays
 - [ ] Headline: **"Welcome!"** (different from Trial-Early/Expired!)
 - [ ] Subheadline: **"You're now An Oddity"**
@@ -110,15 +121,16 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Continue button → Home screen
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 ---
 
 ### ✅ TEST 4: Renewal Variant
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'free',
     subscription_status = 'canceled',
     trial_start_date = NOW() - INTERVAL '30 days',
@@ -128,11 +140,13 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to PaywallScreen
 3. [ ] Complete purchase flow
 
 **Expected Results**:
+
 - [ ] Confetti animation plays
 - [ ] Headline: **"Welcome back!"** (different!)
 - [ ] Subheadline: **"You're an Oddity Once again"**
@@ -140,15 +154,16 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Continue button → Home screen
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 ---
 
 ### ✅ TEST 5: Restore Variant
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'free',
     subscription_status = 'expired',
     trial_start_date = NOW() - INTERVAL '30 days',
@@ -158,12 +173,14 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to **Account Screen**
 3. [ ] Scroll to **Subscription Management** section
 4. [ ] Tap **"Restore Purchases"** button
 
 **Expected Results**:
+
 - [ ] Confetti animation plays
 - [ ] Headline: **"Your membership has been restored!"**
 - [ ] Subheadline: **"You're now An Oddity again"**
@@ -172,9 +189,10 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Toast message: "Purchases restored successfully!"
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 **⚠️ Note**: This test requires a valid previous purchase in RevenueCat. If you don't have one:
+
 - Use RevenueCat sandbox mode
 - Or test on a real account that had a subscription
 
@@ -183,8 +201,9 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ### ✅ TEST 6: Generic Fallback
 
 **Setup** (Run in Supabase SQL Editor):
+
 ```sql
-UPDATE users 
+UPDATE users
 SET subscription_tier = 'free',
     subscription_status = NULL,
     trial_start_date = NULL,
@@ -194,11 +213,13 @@ WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Test Steps**:
+
 1. [ ] Run the SQL script above
 2. [ ] In app: Navigate to PaywallScreen
 3. [ ] Complete purchase flow
 
 **Expected Results**:
+
 - [ ] **Small modal** appears (not full screen)
 - [ ] **NO confetti** animation
 - [ ] Simple text: **"You're now An Oddity"**
@@ -206,20 +227,23 @@ WHERE email = 'YOUR_TEST_EMAIL';
 - [ ] Continue button → Home screen
 
 **Status**: ⬜ Pass / ⬜ Fail  
-**Notes**: _______________________________________________
+**Notes**: **********\*\***********\_\_\_**********\*\***********
 
 ---
 
 ## 🔍 Additional Testing
 
 ### Single Display Test
+
 **Verify welcome screen only shows once**:
 
 1. [ ] Complete any variant test above
 2. [ ] Verify `last_welcome_shown_at` is set:
+
 ```sql
 SELECT last_welcome_shown_at FROM users WHERE email = 'YOUR_TEST_EMAIL';
 ```
+
 3. [ ] Try to trigger the same purchase scenario again
 4. [ ] Welcome screen should **NOT** appear (because it already showed)
 
@@ -266,18 +290,21 @@ SELECT last_welcome_shown_at FROM users WHERE email = 'YOUR_TEST_EMAIL';
 ### If Welcome Screen Doesn't Appear:
 
 **Check 1: Navigation Setup**
+
 ```sql
 -- Verify user state
-SELECT subscription_tier, subscription_status, trial_start_date, subscription_expires_at 
+SELECT subscription_tier, subscription_status, trial_start_date, subscription_expires_at
 FROM users WHERE email = 'YOUR_TEST_EMAIL';
 ```
 
 **Check 2: Console Logs**
+
 - Open React Native debugger
 - Look for logs from `determineWelcomeVariant()`
 - Check for navigation errors
 
 **Check 3: Welcome Screen Already Shown?**
+
 ```sql
 -- Check if welcome was already displayed
 SELECT last_welcome_shown_at FROM users WHERE email = 'YOUR_TEST_EMAIL';
@@ -289,19 +316,21 @@ UPDATE users SET last_welcome_shown_at = NULL WHERE email = 'YOUR_TEST_EMAIL';
 ### If Wrong Variant Appears:
 
 Add this console.log to `PaywallScreen.tsx` in `determineWelcomeVariant()`:
+
 ```typescript
 console.log('🔍 Variant Detection Debug:', {
   now: now.toISOString(),
   trialStart: trialStart?.toISOString(),
   trialExpires: trialExpires?.toISOString(),
   previousStatus,
-  detectedVariant: 'XXX' // add at return point
+  detectedVariant: 'XXX', // add at return point
 });
 ```
 
 ### If Confetti Doesn't Show:
 
 Check package installation:
+
 ```bash
 npm list react-native-confetti-cannon
 ```
@@ -313,6 +342,7 @@ Should show: `react-native-confetti-cannon@1.5.2`
 ## 📊 Final Results
 
 ### Summary:
+
 - Trial-Early: ⬜ Pass / ⬜ Fail
 - Trial-Expired: ⬜ Pass / ⬜ Fail
 - Direct: ⬜ Pass / ⬜ Fail
@@ -327,14 +357,18 @@ Should show: `react-native-confetti-cannon@1.5.2`
 ### Overall Status: ⬜ ALL PASSED / ⬜ NEEDS FIXES
 
 ### Issues Found:
-1. _______________________________________________
-2. _______________________________________________
-3. _______________________________________________
+
+1. ***
+2. ***
+3. ***
 
 ### Notes:
-_______________________________________________
-_______________________________________________
-_______________________________________________
+
+---
+
+---
+
+---
 
 ---
 

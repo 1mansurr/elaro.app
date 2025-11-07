@@ -182,13 +182,13 @@ export const Button: React.FC<ButtonProps> = ({
 
   const renderContent = () => {
     if (loading) {
-      return <ActivityIndicator color={textVariantStyle?.color || theme.white} />;
+      return (
+        <ActivityIndicator color={textVariantStyle?.color || theme.white} />
+      );
     }
 
     const iconElement = icon ? (
-      <View style={styles.iconWrapper}>
-        {icon}
-      </View>
+      <View style={styles.iconWrapper}>{icon}</View>
     ) : null;
 
     return (
@@ -203,20 +203,25 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   const buttonContent = (
-    <View style={[
-      styles.base,
-      sizeStyle,
-      variantStyle,
-      disabledStyle,
-      style,
-      iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
-    ]}>
+    <View
+      style={[
+        styles.base,
+        sizeStyle,
+        variantStyle,
+        disabledStyle,
+        style,
+        iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {},
+      ]}>
       {renderContent()}
     </View>
   );
 
   if (gradient && !disabled) {
-    const finalGradientColors = gradientColors || (variant === 'primary' ? [theme.elaroGradientStart, theme.elaroGradientEnd] : [theme.oddityGradientStart, theme.oddityGradientEnd]);
+    const finalGradientColors =
+      gradientColors ||
+      (variant === 'primary'
+        ? [theme.elaroGradientStart, theme.elaroGradientEnd]
+        : [theme.oddityGradientStart, theme.oddityGradientEnd]);
     return (
       <TouchableOpacity
         onPress={handlePress}
@@ -226,20 +231,19 @@ export const Button: React.FC<ButtonProps> = ({
         accessibilityHint={accessibilityHint}
         accessibilityRole="button"
         accessibilityState={{ disabled: disabled || loading }}
-        testID={testID}
-      >
+        testID={testID}>
         <LinearGradient
           colors={finalGradientColors}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={[styles.base, sizeStyle, style]}
-        >
-          <View style={[
-            styles.base,
-            sizeStyle,
-            styles.gradientContent,
-            iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
-          ]}>
+          style={[styles.base, sizeStyle, style]}>
+          <View
+            style={[
+              styles.base,
+              sizeStyle,
+              styles.gradientContent,
+              iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {},
+            ]}>
             {renderContent()}
           </View>
         </LinearGradient>
@@ -257,12 +261,12 @@ export const Button: React.FC<ButtonProps> = ({
       accessibilityHint={accessibilityHint}
       accessibilityRole="button"
       accessibilityState={{ disabled: disabled || loading }}
-      testID={testID}
-    >
-      <View style={[
-        styles.contentWrapper,
-        iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {}
-      ]}>
+      testID={testID}>
+      <View
+        style={[
+          styles.contentWrapper,
+          iconPosition === 'right' ? { flexDirection: 'row-reverse' } : {},
+        ]}>
         {renderContent()}
       </View>
     </TouchableOpacity>

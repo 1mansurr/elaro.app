@@ -3,7 +3,7 @@ export class ApiError extends Error {
     message: string,
     public code?: string,
     public details?: any,
-    public originalError?: Error
+    public originalError?: Error,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -20,9 +20,19 @@ export const handleApiError = (error: any): ApiError => {
 
   // Handle generic network errors
   if (error?.name === 'NetworkError') {
-    return new ApiError('Network error. Please check your connection.', 'NETWORK_ERROR', undefined, error);
+    return new ApiError(
+      'Network error. Please check your connection.',
+      'NETWORK_ERROR',
+      undefined,
+      error,
+    );
   }
 
   // Fallback for any other unexpected errors
-  return new ApiError('An unexpected error occurred.', 'UNKNOWN_ERROR', undefined, error);
+  return new ApiError(
+    'An unexpected error occurred.',
+    'UNKNOWN_ERROR',
+    undefined,
+    error,
+  );
 };

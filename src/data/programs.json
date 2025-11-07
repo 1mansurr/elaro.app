@@ -1050,9 +1050,7 @@
         {
           "id": "other_programs",
           "name": "Other Programs",
-          "programs": [
-            "Other (please specify)"
-          ]
+          "programs": ["Other (please specify)"]
         }
       ]
     }

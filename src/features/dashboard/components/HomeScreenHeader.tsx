@@ -6,10 +6,10 @@ interface HomeScreenHeaderProps {
   title: string;
 }
 
-export const HomeScreenHeader: React.FC<HomeScreenHeaderProps> = ({ title }) => {
-  return (
-    <Text style={styles.title}>{title}</Text>
-  );
+export const HomeScreenHeader: React.FC<HomeScreenHeaderProps> = ({
+  title,
+}) => {
+  return <Text style={styles.title}>{title}</Text>;
 };
 
 const styles = StyleSheet.create({

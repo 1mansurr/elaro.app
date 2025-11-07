@@ -1,6 +1,6 @@
 /**
  * Version Info Component
- * 
+ *
  * Displays API version information and migration recommendations
  * to help users understand version status and upgrade paths.
  */
@@ -9,16 +9,23 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useApiVersion } from '../hooks/useVersionedApi';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, BORDER_RADIUS, SHADOWS } from '../constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '../constants/theme';
 
 interface VersionInfoProps {
   showDetails?: boolean;
   onUpgrade?: () => void;
 }
 
-export const VersionInfo: React.FC<VersionInfoProps> = ({ 
-  showDetails = false, 
-  onUpgrade 
+export const VersionInfo: React.FC<VersionInfoProps> = ({
+  showDetails = false,
+  onUpgrade,
 }) => {
   const {
     currentVersion,
@@ -37,21 +44,21 @@ export const VersionInfo: React.FC<VersionInfoProps> = ({
         Alert.alert(
           'API Upgraded',
           'Your API has been upgraded to the latest version.',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
         onUpgrade?.();
       } else {
         Alert.alert(
           'No Upgrade Available',
           'You are already using the latest API version.',
-          [{ text: 'OK' }]
+          [{ text: 'OK' }],
         );
       }
     } catch (error) {
       Alert.alert(
         'Upgrade Failed',
         'Failed to upgrade API version. Please try again.',
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     }
   };
@@ -71,28 +78,22 @@ export const VersionInfo: React.FC<VersionInfoProps> = ({
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.versionInfo}>
-          <Ionicons 
-            name="information-circle" 
-            size={16} 
-            color={COLORS.textSecondary} 
+          <Ionicons
+            name="information-circle"
+            size={16}
+            color={COLORS.textSecondary}
           />
-          <Text style={styles.versionText}>
-            API Version: {currentVersion}
-          </Text>
+          <Text style={styles.versionText}>API Version: {currentVersion}</Text>
         </View>
-        
+
         {hasRecommendations && (
           <TouchableOpacity
             style={styles.warningButton}
-            onPress={() => setShowRecommendations(!showRecommendations)}
-          >
-            <Ionicons 
-              name="warning" 
-              size={16} 
-              color={COLORS.warning} 
-            />
+            onPress={() => setShowRecommendations(!showRecommendations)}>
+            <Ionicons name="warning" size={16} color={COLORS.warning} />
             <Text style={styles.warningText}>
-              {migrationRecommendations.length} recommendation{migrationRecommendations.length !== 1 ? 's' : ''}
+              {migrationRecommendations.length} recommendation
+              {migrationRecommendations.length !== 1 ? 's' : ''}
             </Text>
           </TouchableOpacity>
         )}
@@ -100,44 +101,36 @@ export const VersionInfo: React.FC<VersionInfoProps> = ({
 
       {showRecommendations && hasRecommendations && (
         <View style={styles.recommendationsContainer}>
-          <Text style={styles.recommendationsTitle}>Migration Recommendations:</Text>
+          <Text style={styles.recommendationsTitle}>
+            Migration Recommendations:
+          </Text>
           {migrationRecommendations.map((recommendation, index) => (
             <View key={index} style={styles.recommendationItem}>
-              <Ionicons 
-                name="arrow-forward" 
-                size={12} 
-                color={COLORS.textSecondary} 
+              <Ionicons
+                name="arrow-forward"
+                size={12}
+                color={COLORS.textSecondary}
               />
               <Text style={styles.recommendationText}>{recommendation}</Text>
             </View>
           ))}
-          
+
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.upgradeButton}
               onPress={handleUpgrade}
-              disabled={checkingCompatibility}
-            >
-              <Ionicons 
-                name="arrow-up" 
-                size={16} 
-                color={COLORS.white} 
-              />
+              disabled={checkingCompatibility}>
+              <Ionicons name="arrow-up" size={16} color={COLORS.white} />
               <Text style={styles.upgradeButtonText}>
                 {checkingCompatibility ? 'Checking...' : 'Upgrade API'}
               </Text>
             </TouchableOpacity>
-            
+
             <TouchableOpacity
               style={styles.checkButton}
               onPress={handleCheckCompatibility}
-              disabled={checkingCompatibility}
-            >
-              <Ionicons 
-                name="refresh" 
-                size={16} 
-                color={COLORS.primary} 
-              />
+              disabled={checkingCompatibility}>
+              <Ionicons name="refresh" size={16} color={COLORS.primary} />
               <Text style={styles.checkButtonText}>
                 {checkingCompatibility ? 'Checking...' : 'Check Again'}
               </Text>
@@ -151,13 +144,8 @@ export const VersionInfo: React.FC<VersionInfoProps> = ({
           <TouchableOpacity
             style={styles.detailsButton}
             onPress={handleCheckCompatibility}
-            disabled={checkingCompatibility}
-          >
-            <Ionicons 
-              name="settings" 
-              size={16} 
-              color={COLORS.primary} 
-            />
+            disabled={checkingCompatibility}>
+            <Ionicons name="settings" size={16} color={COLORS.primary} />
             <Text style={styles.detailsButtonText}>
               {checkingCompatibility ? 'Checking...' : 'API Settings'}
             </Text>

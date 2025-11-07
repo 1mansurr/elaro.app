@@ -14,23 +14,45 @@ export const useDeletedItemsQuery = () => {
   return useQuery<DeletedItem[], Error>({
     queryKey: ['deletedItems'],
     queryFn: async () => {
-      const [courses, assignments, lectures, studySessions] = await Promise.all([
-        supabase.from('courses').select('*').not('deleted_at', 'is', null),
-        supabase.from('assignments').select('*').not('deleted_at', 'is', null),
-        supabase.from('lectures').select('*').not('deleted_at', 'is', null),
-        supabase.from('study_sessions').select('*').not('deleted_at', 'is', null),
-      ]);
+      const [courses, assignments, lectures, studySessions] = await Promise.all(
+        [
+          supabase.from('courses').select('*').not('deleted_at', 'is', null),
+          supabase
+            .from('assignments')
+            .select('*')
+            .not('deleted_at', 'is', null),
+          supabase.from('lectures').select('*').not('deleted_at', 'is', null),
+          supabase
+            .from('study_sessions')
+            .select('*')
+            .not('deleted_at', 'is', null),
+        ],
+      );
 
       const allItems: DeletedItem[] = [
-        ...(courses.data || []).map(item => ({ ...item, type: 'course' as const })),
-        ...(assignments.data || []).map(item => ({ ...item, type: 'assignment' as const })),
-        ...(lectures.data || []).map(item => ({ ...item, type: 'lecture' as const })),
-        ...(studySessions.data || []).map(item => ({ ...item, type: 'study_session' as const })),
-      ].sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime());
+        ...(courses.data || []).map(item => ({
+          ...item,
+          type: 'course' as const,
+        })),
+        ...(assignments.data || []).map(item => ({
+          ...item,
+          type: 'assignment' as const,
+        })),
+        ...(lectures.data || []).map(item => ({
+          ...item,
+          type: 'lecture' as const,
+        })),
+        ...(studySessions.data || []).map(item => ({
+          ...item,
+          type: 'study_session' as const,
+        })),
+      ].sort(
+        (a, b) =>
+          new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime(),
+      );
 
       return allItems;
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
-

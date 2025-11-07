@@ -9,40 +9,66 @@
 //    - Free users: 48 hours
 //    - Premium users: 120 hours
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createScheduledHandler } from '../_shared/function-handler.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const RETENTION_PERIOD_FREE_HOURS = 48;
 const RETENTION_PERIOD_PREMIUM_HOURS = 120;
-const TABLES_TO_CLEAN = ['courses', 'assignments', 'lectures', 'study_sessions'];
+const TABLES_TO_CLEAN = [
+  'courses',
+  'assignments',
+  'lectures',
+  'study_sessions',
+];
 
-serve(async (req) => {
-  try {
-    // Use the Service Role Key for admin-level access to all user data
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+async function handleCleanupDeletedItems(supabaseAdmin: SupabaseClient) {
+  const traceContext = extractTraceContext(
+    new Request('https://cron.internal'),
+  );
 
-    // 1. Fetch all users with their subscription tier
-    const { data: users, error: usersError } = await supabaseAdmin
-      .from('users')
-      .select('id, subscription_tier');
+  await logger.info('Starting cleanup of deleted items', {}, traceContext);
 
-    if (usersError) throw usersError;
+  // 1. Fetch all users with their subscription tier
+  const { data: users, error: usersError } = await supabaseAdmin
+    .from('users')
+    .select('id, subscription_tier');
 
-    console.log(`Found ${users.length} users to process.`);
+  if (usersError) throw handleDbError(usersError);
 
-    // 2. Process each user individually
-    for (const user of users) {
+  await logger.info(
+    'Found users to process',
+    { user_count: users?.length || 0 },
+    traceContext,
+  );
+
+  let totalDeleted = 0;
+  const errors: string[] = [];
+
+  // 2. Process each user individually
+  for (const user of users || []) {
+    try {
       const isPremium = user.subscription_tier !== 'free';
-      const retentionHours = isPremium ? RETENTION_PERIOD_PREMIUM_HOURS : RETENTION_PERIOD_FREE_HOURS;
-      
+      const retentionHours = isPremium
+        ? RETENTION_PERIOD_PREMIUM_HOURS
+        : RETENTION_PERIOD_FREE_HOURS;
+
       const cutoffDate = new Date();
       cutoffDate.setHours(cutoffDate.getHours() - retentionHours);
       const cutoffTimestamp = cutoffDate.toISOString();
 
-      console.log(`Processing user ${user.id} (Premium: ${isPremium}). Deleting items older than ${cutoffTimestamp}`);
+      await logger.info(
+        'Processing user cleanup',
+        {
+          user_id: user.id,
+          is_premium: isPremium,
+          cutoff_timestamp: cutoffTimestamp,
+        },
+        traceContext,
+      );
 
       // 3. For each user, iterate through tables and delete old items
       for (const table of TABLES_TO_CLEAN) {
@@ -54,22 +80,55 @@ serve(async (req) => {
           .lt('deleted_at', cutoffTimestamp); // The core retention logic
 
         if (deleteError) {
-          console.error(`Error cleaning table ${table} for user ${user.id}:`, deleteError.message);
+          const errorMsg = `Error cleaning table ${table} for user ${user.id}: ${deleteError.message}`;
+          await logger.error(
+            'Error during table cleanup',
+            {
+              user_id: user.id,
+              table,
+              error: deleteError.message,
+            },
+            traceContext,
+          );
+          errors.push(errorMsg);
           // Continue to next table/user even if one fails
         }
       }
+
+      totalDeleted++;
+    } catch (error: unknown) {
+      const errorMsg = `Error processing user ${user.id}: ${error instanceof Error ? error.message : String(error)}`;
+      await logger.error(
+        'Error processing user cleanup',
+        {
+          user_id: user.id,
+          error: errorMsg,
+        },
+        traceContext,
+      );
+      errors.push(errorMsg);
     }
-
-    return new Response(JSON.stringify({ message: 'Cleanup process completed successfully.' }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-
-  } catch (error) {
-    console.error('Critical error in cleanup function:', error.message);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
   }
-});
+
+  await logger.info(
+    'Cleanup process completed',
+    {
+      users_processed: totalDeleted,
+      error_count: errors.length,
+    },
+    traceContext,
+  );
+
+  return {
+    message: 'Cleanup process completed successfully.',
+    usersProcessed: totalDeleted,
+    errors: errors.length > 0 ? errors : undefined,
+  };
+}
+
+serve(
+  createScheduledHandler(handleCleanupDeletedItems, {
+    requireSecret: true,
+    secretEnvVar: 'CRON_SECRET',
+  }),
+);

@@ -7,14 +7,17 @@ interface ProgressHeaderProps {
   totalSteps: number;
 }
 
-export const ProgressHeader: React.FC<ProgressHeaderProps> = ({ currentStep, totalSteps }) => {
+export const ProgressHeader: React.FC<ProgressHeaderProps> = ({
+  currentStep,
+  totalSteps,
+}) => {
   return (
     <View style={styles.container}>
       {/* Step text */}
       <Text style={styles.stepText}>
         Step {currentStep} of {totalSteps}
       </Text>
-      
+
       {/* Progress dots */}
       <View style={styles.dotsContainer}>
         {Array.from({ length: totalSteps }).map((_, index) => (
@@ -27,14 +30,14 @@ export const ProgressHeader: React.FC<ProgressHeaderProps> = ({ currentStep, tot
           />
         ))}
       </View>
-      
+
       {/* Progress bar */}
       <View style={styles.progressBarContainer}>
-        <View 
+        <View
           style={[
             styles.progressBarFill,
-            { width: `${(currentStep / totalSteps) * 100}%` }
-          ]} 
+            { width: `${(currentStep / totalSteps) * 100}%` },
+          ]}
         />
       </View>
     </View>
@@ -85,4 +88,3 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
 });
-

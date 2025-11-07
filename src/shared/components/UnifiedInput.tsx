@@ -13,7 +13,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, COMPONENT_TOKENS, SHADOWS, ANIMATIONS } from '@/constants/theme';
+import {
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  COMPONENT_TOKENS,
+  SHADOWS,
+  ANIMATIONS,
+} from '@/constants/theme';
 import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 
 interface UnifiedInputProps extends TextInputProps {
@@ -57,7 +65,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isFilled, setIsFilled] = useState(false);
-  
+
   // Animation refs for smooth focus interactions
   const focusAnim = useRef(new Animated.Value(0)).current;
   const shadowAnim = useRef(new Animated.Value(0)).current;
@@ -70,7 +78,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
   });
 
   // Optimized themed styles with memoization
-  const themedStyles = useThemedStyles((theme) => ({
+  const themedStyles = useThemedStyles(theme => ({
     getBorderColor: () => {
       if (error) return theme.destructive;
       if (success) return theme.success;
@@ -94,7 +102,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
 
   const handleFocus = (e: any) => {
     setIsFocused(true);
-    
+
     // Smooth focus animation
     Animated.parallel([
       Animated.timing(focusAnim, {
@@ -110,14 +118,14 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
         useNativeDriver: false,
       }),
     ]).start();
-    
+
     props.onFocus?.(e);
   };
 
   const handleBlur = (e: any) => {
     setIsFocused(false);
     setIsFilled(!!props.value);
-    
+
     // Smooth blur animation
     Animated.parallel([
       Animated.timing(focusAnim, {
@@ -133,7 +141,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
         useNativeDriver: false,
       }),
     ]).start();
-    
+
     props.onBlur?.(e);
   };
 
@@ -180,13 +188,19 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
       case 'filled':
         return {
           ...baseStyles,
-          backgroundColor: themedStyles.textSecondary === '#757575' ? '#F8F9FA' : 'rgba(0,0,0,0.05)', // Use theme-aware background
+          backgroundColor:
+            themedStyles.textSecondary === '#757575'
+              ? '#F8F9FA'
+              : 'rgba(0,0,0,0.05)', // Use theme-aware background
           borderWidth: 0,
         };
       default: // default
         return {
           ...baseStyles,
-          backgroundColor: themedStyles.textSecondary === '#757575' ? '#F8F9FA' : 'rgba(0,0,0,0.05)', // Use theme-aware background
+          backgroundColor:
+            themedStyles.textSecondary === '#757575'
+              ? '#F8F9FA'
+              : 'rgba(0,0,0,0.05)', // Use theme-aware background
           borderWidth: COMPONENT_TOKENS.input.borderWidth,
         };
     }
@@ -196,7 +210,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
   const getShadowStyle = () => {
     const baseShadow = SHADOWS.xs; // Subtle shadow for inputs
     const focusedShadow = SHADOWS.sm; // Enhanced shadow when focused
-    
+
     return {
       ...baseShadow,
       shadowOpacity: shadowAnim.interpolate({
@@ -223,7 +237,13 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
       {label && (
         <Text style={[styles.label, { color: getLabelColor() }, labelStyle]}>
           {label}
-          {required && <Text style={[styles.required, { color: themedStyles.destructive }]}> *</Text>}
+          {required && (
+            <Text
+              style={[styles.required, { color: themedStyles.destructive }]}>
+              {' '}
+              *
+            </Text>
+          )}
         </Text>
       )}
 
@@ -234,15 +254,10 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
           sizeStyles,
           getShadowStyle(),
           inputContainerStyle,
-        ]}
-      >
+        ]}>
         {leftIcon && (
           <View style={styles.iconContainer}>
-            <Ionicons
-              name={leftIcon}
-              size={20}
-              color={getTextColor()}
-            />
+            <Ionicons name={leftIcon} size={20} color={getTextColor()} />
           </View>
         )}
 
@@ -252,7 +267,9 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
             styles.input,
             {
               paddingLeft: leftIcon ? SPACING.lg : sizeStyles.paddingHorizontal,
-              paddingRight: rightIcon ? SPACING.lg : sizeStyles.paddingHorizontal,
+              paddingRight: rightIcon
+                ? SPACING.lg
+                : sizeStyles.paddingHorizontal,
               color: themedStyles.text,
             },
             { fontSize: sizeStyles.fontSize },
@@ -263,18 +280,22 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
           onChangeText={handleChangeText}
           placeholderTextColor={themedStyles.textSecondary}
           maxLength={maxLength}
+          accessibilityLabel={label || props.accessibilityLabel || 'Text input'}
+          accessibilityHint={error || helperText || props.accessibilityHint}
+          accessibilityRole="textbox"
         />
 
         {rightIcon && (
           <TouchableOpacity
             style={styles.iconContainer}
             onPress={onRightIconPress}
-            disabled={!onRightIconPress}
-          >
+            disabled={!onRightIconPress}>
             <Ionicons
               name={rightIcon}
               size={20}
-              color={onRightIconPress ? getTextColor() : themedStyles.textSecondary}
+              color={
+                onRightIconPress ? getTextColor() : themedStyles.textSecondary
+              }
             />
           </TouchableOpacity>
         )}
@@ -289,20 +310,29 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
                 size={14}
                 color={themedStyles.destructive}
               />
-              <Text style={[styles.errorText, { color: themedStyles.destructive }]}>
+              <Text
+                style={[styles.errorText, { color: themedStyles.destructive }]}>
                 {error}
               </Text>
             </View>
           )}
 
           {helperText && !error && (
-            <Text style={[styles.helperText, { color: themedStyles.textSecondary }]}>
+            <Text
+              style={[
+                styles.helperText,
+                { color: themedStyles.textSecondary },
+              ]}>
               {helperText}
             </Text>
           )}
 
           {characterCount && maxLength && (
-            <Text style={[styles.characterCount, { color: themedStyles.textSecondary }]}>
+            <Text
+              style={[
+                styles.characterCount,
+                { color: themedStyles.textSecondary },
+              ]}>
               {props.value?.length || 0}/{maxLength}
             </Text>
           )}
@@ -364,5 +394,3 @@ const styles = StyleSheet.create({
 });
 
 export default UnifiedInput;
-
-

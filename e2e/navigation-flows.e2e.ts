@@ -2,10 +2,10 @@ import { by, device, element, waitFor } from 'detox';
 
 /**
  * Navigation Flows E2E Tests
- * 
+ *
  * These tests validate end-to-end navigation flows in the actual app.
  * Run with: npm run e2e:test:ios or npm run e2e:test:android
- * 
+ *
  * Prerequisites:
  * - Device/emulator must be running
  * - App must be built and installed
@@ -43,7 +43,9 @@ describe('Navigation Flows E2E', () => {
           .withTimeout(3000);
       } catch (error) {
         // If no study session task exists, this is expected
-        console.log('No study session task found - this is expected if user has no upcoming study sessions');
+        console.log(
+          'No study session task found - this is expected if user has no upcoming study sessions',
+        );
         // Test is skipped gracefully
       }
     });
@@ -65,7 +67,9 @@ describe('Navigation Flows E2E', () => {
           .withTimeout(3000);
       } catch (error) {
         // If study session not available, skip this test
-        console.log('Study session review screen not accessible - skipping test');
+        console.log(
+          'Study session review screen not accessible - skipping test',
+        );
       }
     });
   });
@@ -75,27 +79,29 @@ describe('Navigation Flows E2E', () => {
       // Navigate to a screen that triggers paywall
       // This depends on where PaywallScreen is triggered in your app
       // Examples: locked content, settings, upgrade prompt
-      
+
       try {
         // Option 1: If there's a specific button/trigger
         await waitFor(element(by.id('paywall-trigger')))
           .toBeVisible()
           .withTimeout(5000);
-        
+
         await element(by.id('paywall-trigger')).tap();
 
         // Option 2: Or look for upgrade/premium related text
         // await waitFor(element(by.text(/Upgrade|Premium|Subscribe/i)))
         //   .toBeVisible()
         //   .withTimeout(5000);
-        
+
         // Verify PaywallScreen is shown
         await waitFor(element(by.text(/Become an Oddity/i)))
           .toBeVisible()
           .withTimeout(3000);
       } catch (error) {
         // If paywall trigger not found, user may already be premium or feature not accessible
-        console.log('Paywall trigger not found - user may already have premium access');
+        console.log(
+          'Paywall trigger not found - user may already have premium access',
+        );
       }
     });
 
@@ -111,7 +117,9 @@ describe('Navigation Flows E2E', () => {
         // await expect(element(by.text(/10 Courses/i))).toBeVisible();
         // await expect(element(by.text(/Activities/i))).toBeVisible();
       } catch (error) {
-        console.log('PaywallScreen not accessible - skipping content verification');
+        console.log(
+          'PaywallScreen not accessible - skipping content verification',
+        );
       }
     });
   });
@@ -120,7 +128,7 @@ describe('Navigation Flows E2E', () => {
     it('should navigate from PaywallScreen to OddityWelcomeScreen after purchase', async () => {
       // Note: In a real test, you'd mock the purchase flow or use test mode
       // This test documents the expected behavior
-      
+
       try {
         // Navigate to PaywallScreen first
         await waitFor(element(by.text(/Become an Oddity/i)))
@@ -129,15 +137,19 @@ describe('Navigation Flows E2E', () => {
 
         // In test mode, you might mock the purchase or have a test purchase button
         // await element(by.id('test-purchase-button')).tap();
-        
+
         // Verify OddityWelcomeScreen is shown
         // await waitFor(element(by.text(/Welcome/i)))
         //   .toBeVisible()
         //   .withTimeout(3000);
 
-        console.log('Purchase flow test skipped - requires test purchase setup');
+        console.log(
+          'Purchase flow test skipped - requires test purchase setup',
+        );
       } catch (error) {
-        console.log('Purchase flow test skipped - PaywallScreen or purchase not accessible');
+        console.log(
+          'Purchase flow test skipped - PaywallScreen or purchase not accessible',
+        );
       }
     });
 
@@ -154,7 +166,9 @@ describe('Navigation Flows E2E', () => {
           .toBeVisible()
           .withTimeout(2000);
       } catch (error) {
-        console.log('OddityWelcomeScreen not accessible - skipping confetti test');
+        console.log(
+          'OddityWelcomeScreen not accessible - skipping confetti test',
+        );
       }
     });
   });
@@ -181,4 +195,3 @@ describe('Navigation Flows E2E', () => {
     });
   });
 });
-

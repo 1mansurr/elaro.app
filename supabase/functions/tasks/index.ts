@@ -1,9 +1,9 @@
 /**
  * Consolidated Tasks Edge Function
- * 
+ *
  * This function consolidates all task-related operations (assignments, lectures, study sessions)
  * that were previously spread across 20+ separate Edge Functions.
- * 
+ *
  * Routes:
  * - POST /tasks/assignments - Create assignment
  * - PUT /tasks/assignments/:id - Update assignment
@@ -18,12 +18,16 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createAuthenticatedHandler, AppError } from '../_shared/function-handler.ts';
+import {
+  createAuthenticatedHandler,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
-import { 
-  initializeEventDrivenArchitecture, 
+import {
+  initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
-  EventUtils 
+  EventUtils,
 } from '../_shared/event-driven-architecture.ts';
 
 // Schemas for validation
@@ -33,7 +37,7 @@ const CreateAssignmentSchema = z.object({
   description: z.string().optional(),
   due_date: z.string().datetime(),
   priority: z.enum(['low', 'medium', 'high']).default('medium'),
-  reminders: z.array(z.number()).optional()
+  reminders: z.array(z.number()).optional(),
 });
 
 const UpdateAssignmentSchema = CreateAssignmentSchema.partial();
@@ -45,7 +49,7 @@ const CreateLectureSchema = z.object({
   start_time: z.string().datetime(),
   end_time: z.string().datetime(),
   location: z.string().optional(),
-  reminders: z.array(z.number()).optional()
+  reminders: z.array(z.number()).optional(),
 });
 
 const UpdateLectureSchema = CreateLectureSchema.partial();
@@ -55,18 +59,20 @@ const CreateStudySessionSchema = z.object({
   duration_minutes: z.number().min(1).max(480), // Max 8 hours
   session_date: z.string().datetime(),
   notes: z.string().optional(),
-  reminders: z.array(z.number()).optional()
+  reminders: z.array(z.number()).optional(),
 });
 
 const UpdateStudySessionSchema = CreateStudySessionSchema.partial();
 
 const BatchOperationSchema = z.object({
-  operations: z.array(z.object({
-    type: z.enum(['create', 'update', 'delete']),
-    table: z.enum(['assignments', 'lectures', 'study_sessions']),
-    data: z.record(z.any()),
-    id: z.string().uuid().optional()
-  }))
+  operations: z.array(
+    z.object({
+      type: z.enum(['create', 'update', 'delete']),
+      table: z.enum(['assignments', 'lectures', 'study_sessions']),
+      data: z.record(z.any()),
+      id: z.string().uuid().optional(),
+    }),
+  ),
 });
 
 // Task service class
@@ -81,12 +87,13 @@ class TaskService {
         ...data,
         user_id: userId,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
 
-    if (error) throw new AppError(error.message, 500, 'ASSIGNMENT_CREATE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'ASSIGNMENT_CREATE_ERROR');
 
     // Emit event
     const eventEmitter = new DatabaseEventEmitter(this.supabaseClient);
@@ -94,7 +101,7 @@ class TaskService {
       taskId: assignment.id,
       taskType: 'assignment',
       userId,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     });
 
     return assignment;
@@ -105,26 +112,31 @@ class TaskService {
       .from('assignments')
       .update({
         ...data,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .eq('user_id', userId)
       .select()
       .single();
 
-    if (error) throw new AppError(error.message, 500, 'ASSIGNMENT_UPDATE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'ASSIGNMENT_UPDATE_ERROR');
     return assignment;
   }
 
   async deleteAssignment(id: string, userId: string) {
     // Use centralized soft delete function
-    const { data, error } = await this.supabaseClient.rpc('soft_delete_record', {
-      table_name: 'assignments',
-      record_id: id,
-      user_id: userId
-    });
+    const { data, error } = await this.supabaseClient.rpc(
+      'soft_delete_record',
+      {
+        table_name: 'assignments',
+        record_id: id,
+        user_id: userId,
+      },
+    );
 
-    if (error) throw new AppError(error.message, 500, 'ASSIGNMENT_DELETE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'ASSIGNMENT_DELETE_ERROR');
     return { success: true };
   }
 
@@ -136,7 +148,7 @@ class TaskService {
         ...data,
         user_id: userId,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
@@ -149,7 +161,7 @@ class TaskService {
       taskId: lecture.id,
       taskType: 'lecture',
       userId,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     });
 
     return lecture;
@@ -160,7 +172,7 @@ class TaskService {
       .from('lectures')
       .update({
         ...data,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .eq('user_id', userId)
@@ -172,11 +184,14 @@ class TaskService {
   }
 
   async deleteLecture(id: string, userId: string) {
-    const { data, error } = await this.supabaseClient.rpc('soft_delete_record', {
-      table_name: 'lectures',
-      record_id: id,
-      user_id: userId
-    });
+    const { data, error } = await this.supabaseClient.rpc(
+      'soft_delete_record',
+      {
+        table_name: 'lectures',
+        record_id: id,
+        user_id: userId,
+      },
+    );
 
     if (error) throw new AppError(error.message, 500, 'LECTURE_DELETE_ERROR');
     return { success: true };
@@ -190,12 +205,13 @@ class TaskService {
         ...data,
         user_id: userId,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .select()
       .single();
 
-    if (error) throw new AppError(error.message, 500, 'STUDY_SESSION_CREATE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'STUDY_SESSION_CREATE_ERROR');
 
     // Emit event
     const eventEmitter = new DatabaseEventEmitter(this.supabaseClient);
@@ -203,7 +219,7 @@ class TaskService {
       taskId: session.id,
       taskType: 'study_session',
       userId,
-      completedAt: new Date().toISOString()
+      completedAt: new Date().toISOString(),
     });
 
     return session;
@@ -214,36 +230,41 @@ class TaskService {
       .from('study_sessions')
       .update({
         ...data,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', id)
       .eq('user_id', userId)
       .select()
       .single();
 
-    if (error) throw new AppError(error.message, 500, 'STUDY_SESSION_UPDATE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'STUDY_SESSION_UPDATE_ERROR');
     return session;
   }
 
   async deleteStudySession(id: string, userId: string) {
-    const { data, error } = await this.supabaseClient.rpc('soft_delete_record', {
-      table_name: 'study_sessions',
-      record_id: id,
-      user_id: userId
-    });
+    const { data, error } = await this.supabaseClient.rpc(
+      'soft_delete_record',
+      {
+        table_name: 'study_sessions',
+        record_id: id,
+        user_id: userId,
+      },
+    );
 
-    if (error) throw new AppError(error.message, 500, 'STUDY_SESSION_DELETE_ERROR');
+    if (error)
+      throw new AppError(error.message, 500, 'STUDY_SESSION_DELETE_ERROR');
     return { success: true };
   }
 
   // Batch operations
   async batchOperations(operations: any[], userId: string) {
     const results = [];
-    
+
     for (const operation of operations) {
       try {
         let result;
-        
+
         switch (operation.type) {
           case 'create':
             if (operation.table === 'assignments') {
@@ -254,17 +275,29 @@ class TaskService {
               result = await this.createStudySession(operation.data, userId);
             }
             break;
-            
+
           case 'update':
             if (operation.table === 'assignments') {
-              result = await this.updateAssignment(operation.id!, operation.data, userId);
+              result = await this.updateAssignment(
+                operation.id!,
+                operation.data,
+                userId,
+              );
             } else if (operation.table === 'lectures') {
-              result = await this.updateLecture(operation.id!, operation.data, userId);
+              result = await this.updateLecture(
+                operation.id!,
+                operation.data,
+                userId,
+              );
             } else if (operation.table === 'study_sessions') {
-              result = await this.updateStudySession(operation.id!, operation.data, userId);
+              result = await this.updateStudySession(
+                operation.id!,
+                operation.data,
+                userId,
+              );
             }
             break;
-            
+
           case 'delete':
             if (operation.table === 'assignments') {
               result = await this.deleteAssignment(operation.id!, userId);
@@ -275,13 +308,13 @@ class TaskService {
             }
             break;
         }
-        
+
         results.push({ success: true, operation, result });
       } catch (error) {
         results.push({ success: false, operation, error: error.message });
       }
     }
-    
+
     return results;
   }
 }
@@ -341,18 +374,21 @@ async function handleTasksRequest({ user, supabaseClient, body, url }: any) {
   if (path.includes('/batch')) {
     if (method === 'POST') {
       const validatedData = BatchOperationSchema.parse(body);
-      return await taskService.batchOperations(validatedData.operations, user.id);
+      return await taskService.batchOperations(
+        validatedData.operations,
+        user.id,
+      );
     }
   }
 
-  throw new AppError('Invalid route or method', 404, 'INVALID_ROUTE');
+  throw new AppError('Invalid route or method', 404, ERROR_CODES.NOT_FOUND);
 }
 
 // Serve the function
-serve(createAuthenticatedHandler(
-  handleTasksRequest,
-  {
+serve(
+  createAuthenticatedHandler(handleTasksRequest, {
     rateLimitName: 'tasks',
-    checkTaskLimit: true
-  }
-));
+    checkTaskLimit: true,
+    requireIdempotency: true,
+  }),
+);

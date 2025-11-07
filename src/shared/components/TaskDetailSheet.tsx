@@ -2,7 +2,14 @@
 // Create this new file for the bottom sheet component.
 
 import React from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, TouchableWithoutFeedback } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur'; // Make sure expo-blur is installed
 import { Task } from '@/types';
@@ -16,18 +23,31 @@ interface TaskDetailSheetProps {
   onDelete: (task: Task) => Promise<void>;
 }
 
-const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({ task, isVisible, onClose, onEdit, onComplete, onDelete }) => {
+const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({
+  task,
+  isVisible,
+  onClose,
+  onEdit,
+  onComplete,
+  onDelete,
+}) => {
   if (!task) return null;
 
   return (
-    <Modal transparent visible={isVisible} animationType="slide" onRequestClose={onClose}>
+    <Modal
+      transparent
+      visible={isVisible}
+      animationType="slide"
+      onRequestClose={onClose}>
       <TouchableWithoutFeedback onPress={onClose}>
         <BlurView intensity={20} tint="dark" style={StyleSheet.absoluteFill} />
       </TouchableWithoutFeedback>
       <View style={styles.sheetContainer}>
         {/* Header with Edit and Close buttons */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => onEdit(task)} style={styles.iconButton}>
+          <TouchableOpacity
+            onPress={() => onEdit(task)}
+            style={styles.iconButton}>
             <Ionicons name="pencil-outline" size={24} color="#333" />
           </TouchableOpacity>
           <TouchableOpacity onPress={onClose} style={styles.iconButton}>
@@ -37,15 +57,21 @@ const TaskDetailSheet: React.FC<TaskDetailSheetProps> = ({ task, isVisible, onCl
 
         <View style={styles.content}>
           <Text style={styles.taskTitle}>{task.name}</Text>
-          <Text style={styles.taskDescription}>{task.description || 'No description.'}</Text>
+          <Text style={styles.taskDescription}>
+            {task.description || 'No description.'}
+          </Text>
         </View>
 
         {/* Footer with action buttons */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.completeButton} onPress={() => onComplete(task)}>
+          <TouchableOpacity
+            style={styles.completeButton}
+            onPress={() => onComplete(task)}>
             <Text style={styles.buttonText}>Mark as Complete</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.deleteButton} onPress={() => onDelete(task)}>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => onDelete(task)}>
             <Text style={styles.buttonText}>Delete</Text>
           </TouchableOpacity>
         </View>

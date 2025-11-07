@@ -7,12 +7,14 @@ This guide documents the standardized modal animation system implemented across 
 ## 🎯 Animation Standards
 
 ### Core Principles
+
 - **Consistent Duration**: All modals use 300ms animation duration
 - **Appropriate Easing**: Different easing functions for different interaction types
 - **Backdrop Consistency**: Proper backdrop types per modal variant
 - **Performance**: Optimized animations with proper cleanup
 
 ### Animation Configuration
+
 All modal animations are defined in `src/constants/theme.ts`:
 
 ```typescript
@@ -49,6 +51,7 @@ export const ANIMATIONS = {
 ## 🧩 Modal Variants
 
 ### 1. DialogModal
+
 **Use Case**: Centered dialogs, confirmations, forms
 **Animation**: Fade in/out with blur backdrop
 **Backdrop**: Blur effect with 40% intensity
@@ -67,11 +70,13 @@ import { DialogModal } from '@/shared/components';
 ```
 
 **Characteristics:**
+
 - Slides in from center
 - Blur backdrop for focus
 - Best for: Confirmations, forms, important dialogs
 
 ### 2. SheetModal
+
 **Use Case**: Bottom sheets, action menus, quick forms
 **Animation**: Slide up from bottom with opacity backdrop
 **Backdrop**: Semi-transparent overlay
@@ -90,11 +95,13 @@ import { SheetModal } from '@/shared/components';
 ```
 
 **Characteristics:**
+
 - Slides up from bottom
 - Opacity backdrop
 - Best for: Action menus, quick forms, bottom sheets
 
 ### 3. SimpleModal
+
 **Use Case**: Simple overlays, info modals, basic dialogs
 **Animation**: Fade in/out with opacity backdrop
 **Backdrop**: Semi-transparent overlay
@@ -113,11 +120,13 @@ import { SimpleModal } from '@/shared/components';
 ```
 
 **Characteristics:**
+
 - Fades in/out
 - Opacity backdrop
 - Best for: Info modals, simple overlays
 
 ### 4. FullScreenModal
+
 **Use Case**: Full-screen experiences, immersive content
 **Animation**: Slide in/out with no backdrop
 **Backdrop**: None (full screen)
@@ -136,6 +145,7 @@ import { FullScreenModal } from '@/shared/components';
 ```
 
 **Characteristics:**
+
 - Takes entire screen
 - No backdrop
 - Best for: Immersive experiences, full-screen forms
@@ -143,6 +153,7 @@ import { FullScreenModal } from '@/shared/components';
 ## 🔧 Implementation Details
 
 ### BaseModal Component
+
 All modal variants extend from `BaseModal`:
 
 ```typescript
@@ -157,17 +168,23 @@ interface BaseModalProps {
   closeOnBackdropPress?: boolean;
   modalStyle?: ViewStyle;
   overlayStyle?: ViewStyle;
-  presentationStyle?: 'fullScreen' | 'pageSheet' | 'formSheet' | 'overFullScreen';
+  presentationStyle?:
+    | 'fullScreen'
+    | 'pageSheet'
+    | 'formSheet'
+    | 'overFullScreen';
 }
 ```
 
 ### Animation Timing
+
 - **Duration**: 300ms for all modals
-- **Easing**: 
+- **Easing**:
   - `ease-out` for sheet and full-screen modals (feels responsive)
   - `ease-in-out` for dialog and simple modals (feels smooth)
 
 ### Backdrop Types
+
 - **Blur**: Used for dialogs to create focus
 - **Opacity**: Used for sheets and simple modals
 - **None**: Used for full-screen modals
@@ -175,6 +192,7 @@ interface BaseModalProps {
 ## 📱 Usage Examples
 
 ### Confirmation Dialog
+
 ```typescript
 const [showConfirm, setShowConfirm] = useState(false);
 
@@ -200,6 +218,7 @@ const [showConfirm, setShowConfirm] = useState(false);
 ```
 
 ### Action Sheet
+
 ```typescript
 const [showActions, setShowActions] = useState(false);
 
@@ -223,6 +242,7 @@ const [showActions, setShowActions] = useState(false);
 ```
 
 ### Quick Form
+
 ```typescript
 const [showForm, setShowForm] = useState(false);
 
@@ -248,6 +268,7 @@ const [showForm, setShowForm] = useState(false);
 ## 🚫 Migration from Custom Modals
 
 ### Before (Custom Modal)
+
 ```typescript
 // OLD - Custom modal implementation
 <Modal
@@ -269,6 +290,7 @@ const [showForm, setShowForm] = useState(false);
 ```
 
 ### After (Standardized Modal)
+
 ```typescript
 // NEW - Standardized modal variant
 <DialogModal
@@ -282,6 +304,7 @@ const [showForm, setShowForm] = useState(false);
 ```
 
 ### Migration Benefits
+
 - **Reduced Code**: No need for manual backdrop handling
 - **Consistent UX**: All modals behave the same way
 - **Better Performance**: Optimized animations
@@ -290,6 +313,7 @@ const [showForm, setShowForm] = useState(false);
 ## 🎨 Styling Guidelines
 
 ### Content Styling
+
 ```typescript
 const styles = StyleSheet.create({
   content: {
@@ -310,17 +334,20 @@ const styles = StyleSheet.create({
 ```
 
 ### Backdrop Styling
+
 Backdrop styling is handled automatically by the modal variants. Custom backdrop styling should be avoided unless absolutely necessary.
 
 ## 🔍 Testing Modal Animations
 
 ### Manual Testing
+
 1. **Open Modal**: Verify smooth animation in
 2. **Close Modal**: Verify smooth animation out
 3. **Backdrop Press**: Verify modal closes on backdrop press
 4. **Hardware Back**: Verify modal closes on hardware back button
 
 ### Automated Testing
+
 ```typescript
 // Example test for modal animation
 test('DialogModal animates correctly', async () => {
@@ -329,7 +356,7 @@ test('DialogModal animates correctly', async () => {
       <Text>Test Content</Text>
     </DialogModal>
   );
-  
+
   expect(getByText('Test Content')).toBeTruthy();
   // Add animation-specific assertions
 });
@@ -338,11 +365,13 @@ test('DialogModal animates correctly', async () => {
 ## 📊 Performance Considerations
 
 ### Animation Performance
+
 - **Hardware Acceleration**: All animations use native driver when possible
 - **Memory Management**: Proper cleanup of animation listeners
 - **Frame Rate**: Maintains 60fps during animations
 
 ### Best Practices
+
 - **Avoid Nested Modals**: Don't open modals from within modals
 - **Proper Cleanup**: Always call `onClose` when modal should close
 - **Memory Leaks**: Ensure animation listeners are properly cleaned up
@@ -350,12 +379,14 @@ test('DialogModal animates correctly', async () => {
 ## 🚀 Future Enhancements
 
 ### Planned Improvements
+
 - **Gesture Support**: Swipe-to-dismiss for sheet modals
 - **Accessibility**: Enhanced screen reader support
 - **Theme Integration**: Dark mode support for backdrop effects
 - **Custom Animations**: Support for custom animation curves
 
 ### Migration Path
+
 - **Phase 1**: ✅ Standardize existing modals
 - **Phase 2**: Add gesture support
 - **Phase 3**: Enhanced accessibility features

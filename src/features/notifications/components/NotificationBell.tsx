@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
   Dimensions,
-  Animated
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { notificationHistoryService } from '@/services/notifications/NotificationHistoryService';
 import { supabase } from '@/services/supabase';
 
@@ -22,7 +22,9 @@ interface NotificationCount {
   lastUpdated: string;
 }
 
-export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) => {
+export const NotificationBell: React.FC<NotificationBellProps> = ({
+  onPress,
+}) => {
   const { theme } = useTheme();
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
@@ -44,12 +46,12 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) =
           event: '*',
           schema: 'public',
           table: 'notification_deliveries',
-          filter: `user_id=eq.${user.id}`
+          filter: `user_id=eq.${user.id}`,
         },
-        (payload) => {
+        payload => {
           console.log('Notification bell update:', payload);
           loadUnreadCount();
-        }
+        },
       )
       .subscribe();
 
@@ -63,7 +65,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) =
 
     try {
       setLoading(true);
-      
+
       // Get unread count using the notification service
       const count = await notificationHistoryService.getUnreadCount(user.id);
       setUnreadCount(count);
@@ -78,7 +80,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) =
           friction: 8,
         }).start();
       }
-
     } catch (error) {
       console.error('Error loading unread count:', error);
     } finally {
@@ -96,30 +97,21 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ onPress }) =
 
   return (
     <TouchableOpacity
-      style={[
-        styles.bellContainer,
-        { marginLeft: getResponsiveSpacing() }
-      ]}
+      style={[styles.bellContainer, { marginLeft: getResponsiveSpacing() }]}
       onPress={onPress}
-      activeOpacity={0.7}
-    >
+      activeOpacity={0.7}>
       <View style={styles.bellWrapper}>
-        <Ionicons 
-          name="notifications-outline" 
-          size={32} 
-          color={theme.text} 
-        />
-        
+        <Ionicons name="notifications-outline" size={32} color={theme.text} />
+
         {unreadCount > 0 && (
           <Animated.View
             style={[
               styles.badge,
-              { 
+              {
                 backgroundColor: '#FF3B30',
-                transform: [{ scale: badgeAnimation }]
-              }
-            ]}
-          >
+                transform: [{ scale: badgeAnimation }],
+              },
+            ]}>
             <Text style={styles.badgeText}>
               {unreadCount > 99 ? '99+' : unreadCount.toString()}
             </Text>

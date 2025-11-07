@@ -1,6 +1,6 @@
 /**
  * Pass 10 - Chunk 1: Crash Recovery & Reload Tests
- * 
+ *
  * Validates app recovery from forced terminations and crash scenarios:
  * - Simulate forced app termination during sync
  * - Restart app → verify last known valid state restored
@@ -15,7 +15,14 @@ import { auth } from '../utils/auth';
 import { network } from '../utils/network';
 import { syncHelpers } from '../utils/syncHelpers';
 import { perfMetrics, measureOperation } from '../utils/perfMetrics';
-import { simulateCrash, restartAfterCrash, crashMidOperation, crashDuringSync, measureRecoveryTime, operationTracker } from '../utils/crashSim';
+import {
+  simulateCrash,
+  restartAfterCrash,
+  crashMidOperation,
+  crashDuringSync,
+  measureRecoveryTime,
+  operationTracker,
+} from '../utils/crashSim';
 
 const MAX_RECOVERY_TIME_MS = 3000; // Recovery should be < 3 seconds
 const MAX_REPLAY_TIME_MS = 2000; // Queue replay should be < 2 seconds
@@ -36,7 +43,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     await network.reset();
     perfMetrics.reset();
     operationTracker.reset();
-    
+
     // Sign in before tests
     await network.goOnline();
     await auth.signIn();
@@ -53,7 +60,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should recover gracefully from forced termination during sync', async () => {
       // 1. Start sync operation
       await network.goOffline();
-      
+
       // Simulate queuing operations
       for (let i = 0; i < 5; i++) {
         operationTracker.logOperation(`op_${i}`, 'sync');
@@ -81,7 +88,10 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
       // 6. Verify queue replay completed
       await network.waitForNetworkOperations(2000);
-      const isOnline = await network.waitForNetworkOperations(1000).then(() => true).catch(() => false);
+      const isOnline = await network
+        .waitForNetworkOperations(1000)
+        .then(() => true)
+        .catch(() => false);
       expect(isOnline || true).toBe(true); // Queue should have replayed
     });
 
@@ -115,7 +125,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should automatically resume queue replay after crash', async () => {
       // 1. Queue operations offline
       await network.goOffline();
-      
+
       const operationCount = 10;
       for (let i = 0; i < operationCount; i++) {
         operationTracker.logOperation(`queue_op_${i}`, 'queue');
@@ -128,11 +138,11 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
       // 3. Restart app
       const replayStart = Date.now();
       await restartAfterCrash();
-      
+
       // 4. Reconnect and wait for replay
       await network.goOnline();
       await network.waitForNetworkOperations(3000);
-      
+
       const replayDuration = Date.now() - replayStart;
 
       // 5. Verify replay completed quickly
@@ -145,16 +155,16 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
     it('should not create duplicate sync operations after recovery', async () => {
       const operationId = 'test_op_123';
-      
+
       // 1. Log initial operation
       operationTracker.logOperation(operationId, 'sync');
-      
+
       // 2. Crash during sync
       await crashMidOperation(
         async () => {
           await network.waitForNetworkOperations(500);
         },
-        async () => ({ operationId, timestamp: Date.now() })
+        async () => ({ operationId, timestamp: Date.now() }),
       );
 
       // 3. Restart and recover
@@ -218,7 +228,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
           // Simulate session update
           await new Promise(resolve => setTimeout(resolve, 200));
         },
-        async () => sessionProgress
+        async () => sessionProgress,
       );
 
       // 3. Restart and verify recovery
@@ -235,7 +245,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should complete recovery in < 3 seconds', async () => {
       // 1. Set up state
       await network.goOnline();
-      
+
       // 2. Crash
       await simulateCrash();
 
@@ -247,7 +257,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
       // 4. Verify performance benchmark
       expect(recoveryTime).toBeLessThan(MAX_RECOVERY_TIME_MS);
-      
+
       // 5. Verify app is functional
       const isLoggedIn = await auth.isLoggedIn();
       expect(isLoggedIn).toBe(true);
@@ -256,7 +266,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should replay queued operations in < 2 seconds after recovery', async () => {
       // 1. Queue operations offline
       await network.goOffline();
-      
+
       const queueSize = 10;
       for (let i = 0; i < queueSize; i++) {
         await new Promise(resolve => setTimeout(resolve, 20));
@@ -267,7 +277,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
       // 3. Restart and measure replay
       await restartAfterCrash();
-      
+
       const replayStart = Date.now();
       await network.goOnline();
       await network.waitForNetworkOperations(3000);
@@ -275,7 +285,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
       // 4. Verify replay performance
       expect(replayDuration).toBeLessThan(MAX_REPLAY_TIME_MS + 1000); // Buffer for network delays
-      
+
       // Use perfMetrics to track
       const queueStats = perfMetrics.getQueueReplayStats();
       if (queueStats.totalReplays > 0) {
@@ -285,18 +295,18 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
 
     it('should handle multiple crash/recovery cycles gracefully', async () => {
       const crashCycles = 3;
-      
+
       for (let cycle = 0; cycle < crashCycles; cycle++) {
         // Simulate some activity
         await network.waitForNetworkOperations(500);
-        
+
         // Crash
         await simulateCrash();
-        
+
         // Recover
         await restartAfterCrash();
         await syncHelpers.waitForSync(2000);
-        
+
         // Verify still functional
         const isLoggedIn = await auth.isLoggedIn();
         expect(isLoggedIn).toBe(true);
@@ -312,7 +322,7 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should resume queue replay automatically after restart', async () => {
       // 1. Queue operations
       await network.goOffline();
-      
+
       const queuedOps: number[] = [];
       for (let i = 0; i < 5; i++) {
         queuedOps.push(i);
@@ -335,10 +345,10 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     it('should handle partial sync completion before crash', async () => {
       // 1. Start sync
       await network.goOnline();
-      
+
       // Simulate partial sync
       await new Promise(resolve => setTimeout(resolve, 200));
-      
+
       // 2. Crash mid-sync
       await crashDuringSync(async () => {
         await network.waitForNetworkOperations(500);
@@ -355,4 +365,3 @@ describe('Pass 10 - Chunk 1: Crash Recovery & Reload', () => {
     });
   });
 });
-

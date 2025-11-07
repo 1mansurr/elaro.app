@@ -17,7 +17,7 @@ export const useCourseDetail = (courseId: string) => {
         .eq('id', courseId)
         .is('deleted_at', null) // Only fetch active courses
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -25,4 +25,3 @@ export const useCourseDetail = (courseId: string) => {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };
-

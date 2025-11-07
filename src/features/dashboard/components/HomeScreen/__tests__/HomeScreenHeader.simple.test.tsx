@@ -25,24 +25,20 @@ jest.mock('@/services/PerformanceMonitoringService', () => ({
 describe('HomeScreenHeader', () => {
   it('renders guest title for guest users', () => {
     const { getByText } = render(
-      <HomeScreenHeader 
-        isGuest={true} 
-        onNotificationPress={jest.fn()} 
-      />
+      <HomeScreenHeader isGuest={true} onNotificationPress={jest.fn()} />,
     );
-    
+
     expect(getByText("Let's Make Today Count")).toBeTruthy();
   });
 
   it('renders personalized title for authenticated users', () => {
     const { getByText } = render(
-      <HomeScreenHeader 
-        isGuest={false} 
-        onNotificationPress={jest.fn()} 
-      />
+      <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />,
     );
-    
+
     // Should contain a greeting with the username
-    expect(getByText(/Good (morning|afternoon|evening), testuser!/)).toBeTruthy();
+    expect(
+      getByText(/Good (morning|afternoon|evening), testuser!/),
+    ).toBeTruthy();
   });
 });

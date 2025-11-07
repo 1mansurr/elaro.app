@@ -6,7 +6,10 @@ export interface INotificationSchedulingService {
   /**
    * Schedule a notification with smart timing
    */
-  scheduleWithSmartTiming(notification: Notification, options: SmartSchedulingOptions): Promise<void>;
+  scheduleWithSmartTiming(
+    notification: Notification,
+    options: SmartSchedulingOptions,
+  ): Promise<void>;
 
   /**
    * Find optimal time for a notification based on user behavior
@@ -16,7 +19,10 @@ export interface INotificationSchedulingService {
   /**
    * Batch multiple notifications for a user
    */
-  batchNotifications(userId: string, notifications: Notification[]): Promise<void>;
+  batchNotifications(
+    userId: string,
+    notifications: Notification[],
+  ): Promise<void>;
 
   /**
    * Handle notification rescheduling
@@ -54,7 +60,7 @@ export interface SmartSchedulingOptions {
     optimalHours: number[];
     avoidHours: number[];
   };
-  
+
   // Frequency Control
   frequency: {
     type: 'immediate' | 'batched' | 'smart';
@@ -62,7 +68,7 @@ export interface SmartSchedulingOptions {
     maxPerDay: number;
     cooldownPeriod: number; // minutes between notifications
   };
-  
+
   // Context Awareness
   context: {
     locationAware: boolean;
@@ -70,7 +76,7 @@ export interface SmartSchedulingOptions {
     timezoneAware: boolean;
     weekendBehavior: 'same' | 'reduced' | 'disabled';
   };
-  
+
   // Rescheduling
   rescheduling: {
     autoReschedule: boolean;
@@ -86,14 +92,14 @@ export interface OptimalTime {
   context: string; // 'morning', 'evening', 'weekend', etc.
 }
 
-export type NotificationType = 
-  | 'reminder' 
-  | 'assignment' 
-  | 'lecture' 
-  | 'srs' 
-  | 'achievement' 
-  | 'update' 
-  | 'marketing' 
+export type NotificationType =
+  | 'reminder'
+  | 'assignment'
+  | 'lecture'
+  | 'srs'
+  | 'achievement'
+  | 'update'
+  | 'marketing'
   | 'daily_summary';
 
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';

@@ -3,29 +3,47 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { NavigationContainerRef } from '@react-navigation/native';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
 import { supabase } from './supabase';
 import { NotificationPreferenceService } from '@/services/notifications/NotificationPreferenceService';
-import { SimpleNotificationPreferences, SimpleNotificationPreferencesUpdate } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
+import {
+  SimpleNotificationPreferences,
+  SimpleNotificationPreferencesUpdate,
+} from '@/services/notifications/interfaces/SimpleNotificationPreferences';
 import { NotificationPreferences } from '@/services/notifications/interfaces/INotificationPreferenceService';
+import { RootStackParamList } from '@/types/navigation';
+import { Task } from '@/types/entities';
+
+// Notification data interface
+interface NotificationData {
+  url?: string;
+  itemId?: string;
+  taskType?: 'lecture' | 'assignment' | 'study_session';
+  [key: string]: unknown;
+}
 
 // Navigation reference for handling notification taps
-let navigationRef: any = null;
+let navigationRef: NavigationContainerRef<RootStackParamList> | null = null;
 
 // Service locator pattern for accessing NotificationContext
-let _setTaskToShow: (task: any) => void;
+let _setTaskToShow: (task: Task) => void;
 
-export function setNotificationTaskHandler(handler: (task: any) => void) {
+export function setNotificationTaskHandler(handler: (task: Task) => void) {
   _setTaskToShow = handler;
 }
 
 // Helper function to get table name from task type
 function getTableName(taskType: string): string {
   switch (taskType) {
-    case 'lecture': return 'lectures';
-    case 'assignment': return 'assignments';
-    case 'study_session': return 'study_sessions';
-    default: throw new Error(`Unknown task type: ${taskType}`);
+    case 'lecture':
+      return 'lectures';
+    case 'assignment':
+      return 'assignments';
+    case 'study_session':
+      return 'study_sessions';
+    default:
+      throw new Error(`Unknown task type: ${taskType}`);
   }
 }
 
@@ -110,7 +128,7 @@ export async function sendTestPushNotification(
 
 export const notificationService = {
   // Set navigation reference for handling notification taps
-  setNavigationRef(ref: any) {
+  setNavigationRef(ref: NavigationContainerRef<RootStackParamList> | null) {
     navigationRef = ref;
   },
 
@@ -205,8 +223,7 @@ export const notificationService = {
 
   // Setup notification listeners
   setupNotificationListeners() {
-    Notifications.addNotificationReceivedListener(notification => {
-    });
+    Notifications.addNotificationReceivedListener(notification => {});
 
     Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
@@ -215,7 +232,7 @@ export const notificationService = {
   },
 
   // Handle notification tap with deep linking support
-  async handleNotificationTap(data: any) {
+  async handleNotificationTap(data: NotificationData) {
     const { url, itemId, taskType } = data;
 
     // If a deep link URL is provided, use it
@@ -228,7 +245,9 @@ export const notificationService = {
           navigationRef.current.navigate(url as never);
           console.log('Successfully navigated to:', url);
         } else {
-          console.warn('Navigation ref not available, falling back to legacy method');
+          console.warn(
+            'Navigation ref not available, falling back to legacy method',
+          );
           await this.handleNotificationTapLegacy(data);
         }
       } catch (error) {
@@ -245,7 +264,7 @@ export const notificationService = {
   },
 
   // Legacy notification tap handler (fallback)
-  async handleNotificationTapLegacy(data: any) {
+  async handleNotificationTapLegacy(data: NotificationData) {
     const { itemId, taskType } = data;
 
     if (!itemId || !taskType) {
@@ -270,7 +289,9 @@ export const notificationService = {
       if (_setTaskToShow) {
         _setTaskToShow(task);
       } else {
-        console.warn('Notification task handler not set. Make sure NotificationProvider is properly initialized.');
+        console.warn(
+          'Notification task handler not set. Make sure NotificationProvider is properly initialized.',
+        );
       }
     } catch (error) {
       console.error('Error handling notification tap:', error);
@@ -318,7 +339,7 @@ export const notificationService = {
     body: string;
     triggerDate: Date;
     type?: 'reminder' | 'spaced_repetition';
-    data?: any;
+    data?: Record<string, unknown>;
   }) {
     const enabled = await this.areNotificationsEnabled();
     if (!enabled) return;
@@ -393,7 +414,7 @@ export const notificationService = {
 
   // Functions using deleted types removed:
   // - scheduleRepeatingReminders
-  // - generateRepeatOccurrences  
+  // - generateRepeatOccurrences
   // - getNextCustomDay
   // - calculateReminderTime
   // - getReminderTimeText
@@ -421,13 +442,18 @@ export const notificationService = {
 
   // Preferences proxy exposing a simplified interface used by UI components
   preferences: {
-    async getUserPreferences(userId: string): Promise<SimpleNotificationPreferences> {
+    async getUserPreferences(
+      userId: string,
+    ): Promise<SimpleNotificationPreferences> {
       const svc = NotificationPreferenceService.getInstance();
       const fullPrefs = await svc.getUserPreferences(userId);
       return mapFullToSimple(userId, fullPrefs);
     },
 
-    async updateUserPreferences(userId: string, update: SimpleNotificationPreferencesUpdate): Promise<void> {
+    async updateUserPreferences(
+      userId: string,
+      update: SimpleNotificationPreferencesUpdate,
+    ): Promise<void> {
       const svc = NotificationPreferenceService.getInstance();
       const fullUpdate = mapSimpleUpdateToFull(update);
       await svc.updatePreferences(userId, fullUpdate);
@@ -437,12 +463,18 @@ export const notificationService = {
   async getScheduledNotifications(userId: string) {
     // Proxy to delivery service if available, otherwise return empty array
     try {
-      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      const notifications =
+        await Notifications.getAllScheduledNotificationsAsync();
       return notifications.map(notif => ({
         id: notif.identifier,
         title: notif.content.title || '',
         body: notif.content.body || '',
-        scheduledFor: notif.trigger ? new Date(notif.trigger as any) : new Date(),
+        scheduledFor: notif.trigger
+          ? typeof notif.trigger === 'number' ||
+            typeof notif.trigger === 'string'
+            ? new Date(notif.trigger)
+            : new Date()
+          : new Date(),
         category: notif.content.data?.category || 'reminder',
       }));
     } catch (error) {
@@ -460,7 +492,13 @@ export const notificationService = {
     }
   },
 
-  async sendSmartNotification(userId: string, title: string, body: string, type: string, priority: string) {
+  async sendSmartNotification(
+    userId: string,
+    title: string,
+    body: string,
+    type: string,
+    priority: string,
+  ) {
     // Use the existing sendTestNotification for now
     try {
       await this.sendTestNotification();
@@ -475,7 +513,10 @@ export const notificationService = {
 // ======================
 // Mapping helpers
 // ======================
-function mapFullToSimple(userId: string, prefs: NotificationPreferences): SimpleNotificationPreferences {
+function mapFullToSimple(
+  userId: string,
+  prefs: NotificationPreferences,
+): SimpleNotificationPreferences {
   return {
     enabled: prefs.masterToggle && !prefs.doNotDisturb,
     reminders: prefs.notificationTypes.reminders || prefs.notificationTypes.srs,
@@ -494,8 +535,10 @@ function mapFullToSimple(userId: string, prefs: NotificationPreferences): Simple
   };
 }
 
-function mapSimpleUpdateToFull(update: SimpleNotificationPreferencesUpdate): Partial<NotificationPreferences> {
-  const full: Partial<NotificationPreferences> = {} as any;
+function mapSimpleUpdateToFull(
+  update: SimpleNotificationPreferencesUpdate,
+): Partial<NotificationPreferences> {
+  const full: Partial<NotificationPreferences> = {};
 
   if (update.enabled !== undefined) {
     full.masterToggle = update.enabled;
@@ -511,23 +554,23 @@ function mapSimpleUpdateToFull(update: SimpleNotificationPreferencesUpdate): Par
     update.marketing !== undefined
   ) {
     full.notificationTypes = {
-      reminders: update.reminders ?? undefined as any,
-      achievements: undefined as any,
-      updates: undefined as any,
-      marketing: update.marketing ?? undefined as any,
-      assignments: update.assignments ?? undefined as any,
-      lectures: update.lectures ?? undefined as any,
-      srs: update.studySessions ?? (update.reminders as any),
-      dailySummaries: update.dailySummaries ?? undefined as any,
-    } as any;
+      reminders: update.reminders ?? undefined,
+      achievements: undefined,
+      updates: undefined,
+      marketing: update.marketing ?? undefined,
+      assignments: update.assignments ?? undefined,
+      lectures: update.lectures ?? undefined,
+      srs: update.studySessions ?? update.reminders,
+      dailySummaries: update.dailySummaries ?? undefined,
+    };
   }
 
   if (update.quietHours) {
     full.quietHours = {
-      enabled: update.quietHours.enabled ?? undefined as any,
-      start: update.quietHours.start ?? undefined as any,
-      end: update.quietHours.end ?? undefined as any,
-    } as any;
+      enabled: update.quietHours.enabled ?? undefined,
+      start: update.quietHours.start ?? undefined,
+      end: update.quietHours.end ?? undefined,
+    };
   }
 
   return full;

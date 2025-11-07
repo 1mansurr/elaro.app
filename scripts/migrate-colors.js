@@ -54,17 +54,18 @@ const EXTENDED_COLOR_MAPPINGS = {
   '#A78BFA': 'COLORS.purple400',
 };
 
-const getThemeColor = (hex) => {
+const getThemeColor = hex => {
   const normalized = hex.toUpperCase();
   if (COLOR_MAPPINGS[normalized]) return COLOR_MAPPINGS[normalized];
-  if (EXTENDED_COLOR_MAPPINGS[normalized]) return EXTENDED_COLOR_MAPPINGS[normalized];
+  if (EXTENDED_COLOR_MAPPINGS[normalized])
+    return EXTENDED_COLOR_MAPPINGS[normalized];
   return hex;
 };
 
-const replaceHardcodedColors = (content) => {
+const replaceHardcodedColors = content => {
   const matches = content.match(/#[0-9A-Fa-f]{3,6}/g) || [];
   let updated = content;
-  [...new Set(matches)].forEach((hex) => {
+  [...new Set(matches)].forEach(hex => {
     const replacement = getThemeColor(hex);
     if (replacement !== hex) {
       // Replace hex colors with COLORS references (without quotes)
@@ -74,11 +75,11 @@ const replaceHardcodedColors = (content) => {
   return updated;
 };
 
-const getColorStats = (content) => {
+const getColorStats = content => {
   const all = content.match(/#[0-9A-Fa-f]{3,6}/g) || [];
   const unique = [...new Set(all)];
-  const unmapped = unique.filter((hex) => getThemeColor(hex) === hex);
-  const mapped = unique.filter((hex) => getThemeColor(hex) !== hex);
+  const unmapped = unique.filter(hex => getThemeColor(hex) === hex);
+  const mapped = unique.filter(hex => getThemeColor(hex) !== hex);
   return {
     totalColors: all.length,
     hardcodedColors: unmapped.length,
@@ -141,7 +142,7 @@ const main = () => {
   let totalBefore = 0;
   let totalAfter = 0;
 
-  files.forEach((filePath) => {
+  files.forEach(filePath => {
     const content = fs.readFileSync(filePath, 'utf8');
     const before = getColorStats(content);
     if (statsOnly && before.hardcodedColors > 0) {
@@ -167,7 +168,8 @@ const main = () => {
     console.log(`Total hardcoded colors before: ${totalBefore}`);
     console.log(`Total hardcoded colors after: ${totalAfter}`);
     console.log(`Total colors migrated: ${totalBefore - totalAfter}`);
-    if (dryRun) console.log('\n🔍 This was a dry run. Use --fix to apply changes.');
+    if (dryRun)
+      console.log('\n🔍 This was a dry run. Use --fix to apply changes.');
     if (fix) console.log('\n✅ Migration completed!');
   }
 };
@@ -176,6 +178,9 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { getThemeColor, replaceHardcodedColors, getColorStats, processFile };
-
-
+module.exports = {
+  getThemeColor,
+  replaceHardcodedColors,
+  getColorStats,
+  processFile,
+};

@@ -1,8 +1,10 @@
 // Mock for utility functions
-export const createExampleData = jest.fn(() => Promise.resolve({ success: true }));
+export const createExampleData = jest.fn(() =>
+  Promise.resolve({ success: true }),
+);
 export const getDraftCount = jest.fn(() => Promise.resolve(0));
-export const mapErrorCodeToMessage = jest.fn((error) => 'Error message');
-export const getErrorTitle = jest.fn((error) => 'Error');
+export const mapErrorCodeToMessage = jest.fn(error => 'Error message');
+export const getErrorTitle = jest.fn(error => 'Error');
 export const TASK_EVENTS = {
   TASK_EDIT_INITIATED: 'task_edit_initiated',
 };

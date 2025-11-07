@@ -1,7 +1,19 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING, COMPONENT_TOKENS } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  COMPONENT_TOKENS,
+} from '@/constants/theme';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
 
@@ -24,43 +36,63 @@ export const TaskDetailsSection: React.FC<TaskDetailsSectionProps> = ({
       <Text style={styles.label}>Task Type *</Text>
       <View style={styles.typeSelector}>
         <TouchableOpacity
-          style={[styles.typeButton, taskType === 'assignment' && styles.typeButtonActive]}
-          onPress={() => onTaskTypeChange('assignment')}
-        >
-          <Ionicons 
-            name="document-text-outline" 
-            size={20} 
-            color={taskType === 'assignment' ? COLORS.primary : 'COLORS.gray'} 
+          style={[
+            styles.typeButton,
+            taskType === 'assignment' && styles.typeButtonActive,
+          ]}
+          onPress={() => onTaskTypeChange('assignment')}>
+          <Ionicons
+            name="document-text-outline"
+            size={20}
+            color={taskType === 'assignment' ? COLORS.primary : 'COLORS.gray'}
           />
-          <Text style={[styles.typeButtonText, taskType === 'assignment' && styles.typeButtonTextActive]}>
+          <Text
+            style={[
+              styles.typeButtonText,
+              taskType === 'assignment' && styles.typeButtonTextActive,
+            ]}>
             Assignment
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[styles.typeButton, taskType === 'lecture' && styles.typeButtonActive]}
-          onPress={() => onTaskTypeChange('lecture')}
-        >
-          <Ionicons 
-            name="school-outline" 
-            size={20} 
-            color={taskType === 'lecture' ? COLORS.primary : 'COLORS.gray'} 
+          style={[
+            styles.typeButton,
+            taskType === 'lecture' && styles.typeButtonActive,
+          ]}
+          onPress={() => onTaskTypeChange('lecture')}>
+          <Ionicons
+            name="school-outline"
+            size={20}
+            color={taskType === 'lecture' ? COLORS.primary : 'COLORS.gray'}
           />
-          <Text style={[styles.typeButtonText, taskType === 'lecture' && styles.typeButtonTextActive]}>
+          <Text
+            style={[
+              styles.typeButtonText,
+              taskType === 'lecture' && styles.typeButtonTextActive,
+            ]}>
             Lecture
           </Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
-          style={[styles.typeButton, taskType === 'study_session' && styles.typeButtonActive]}
-          onPress={() => onTaskTypeChange('study_session')}
-        >
-          <Ionicons 
-            name="book-outline" 
-            size={20} 
-            color={taskType === 'study_session' ? COLORS.primary : 'COLORS.gray'} 
+          style={[
+            styles.typeButton,
+            taskType === 'study_session' && styles.typeButtonActive,
+          ]}
+          onPress={() => onTaskTypeChange('study_session')}>
+          <Ionicons
+            name="book-outline"
+            size={20}
+            color={
+              taskType === 'study_session' ? COLORS.primary : 'COLORS.gray'
+            }
           />
-          <Text style={[styles.typeButtonText, taskType === 'study_session' && styles.typeButtonTextActive]}>
+          <Text
+            style={[
+              styles.typeButtonText,
+              taskType === 'study_session' && styles.typeButtonTextActive,
+            ]}>
             Study Session
           </Text>
         </TouchableOpacity>

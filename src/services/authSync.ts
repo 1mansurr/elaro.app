@@ -1,6 +1,6 @@
 /**
  * Auth State Synchronization Service
- * 
+ *
  * Manages synchronization between:
  * - Supabase auth session
  * - Global AuthContext state
@@ -46,8 +46,11 @@ class AuthSyncService {
 
     try {
       // 1. Get session from Supabase (primary source of truth)
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
         await this.clearAuthState();
@@ -63,7 +66,10 @@ class AuthSyncService {
       }
 
       this.isInitialized = true;
-      console.log('✅ AuthSync: Initialized', session ? `(user: ${session.user.id})` : '(no session)');
+      console.log(
+        '✅ AuthSync: Initialized',
+        session ? `(user: ${session.user.id})` : '(no session)',
+      );
 
       return session;
     } catch (error) {
@@ -85,12 +91,15 @@ class AuthSyncService {
       };
 
       // Save non-sensitive state to AsyncStorage
-      await AsyncStorage.setItem(AUTH_STATE_KEY, JSON.stringify({
-        userId: snapshot.userId,
-        lastSyncedAt: snapshot.lastSyncedAt,
-        version: snapshot.version,
-        expiresAt: session?.expires_at || null,
-      }));
+      await AsyncStorage.setItem(
+        AUTH_STATE_KEY,
+        JSON.stringify({
+          userId: snapshot.userId,
+          lastSyncedAt: snapshot.lastSyncedAt,
+          version: snapshot.version,
+          expiresAt: session?.expires_at || null,
+        }),
+      );
 
       // Save sensitive token to SecureStore (if session exists)
       if (session?.access_token) {
@@ -115,7 +124,10 @@ class AuthSyncService {
    */
   async getCurrentSession(): Promise<Session | null> {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
         return null;
@@ -130,13 +142,16 @@ class AuthSyncService {
   /**
    * Get cached auth state (for fast initial load)
    */
-  async getCachedAuthState(): Promise<{ userId: string | null; lastSyncedAt: number } | null> {
+  async getCachedAuthState(): Promise<{
+    userId: string | null;
+    lastSyncedAt: number;
+  } | null> {
     try {
       const cached = await AsyncStorage.getItem(AUTH_STATE_KEY);
       if (!cached) return null;
 
       const state = JSON.parse(cached);
-      
+
       // Check version
       if (state.version !== AUTH_STATE_VERSION) {
         console.log('⚠️ AuthSync: Version mismatch, clearing old state');
@@ -181,7 +196,7 @@ class AuthSyncService {
    */
   onAuthChange(callback: (session: Session | null) => void): () => void {
     this.listeners.add(callback);
-    
+
     // Return unsubscribe function
     return () => {
       this.listeners.delete(callback);
@@ -206,11 +221,11 @@ class AuthSyncService {
    */
   async refreshSession(): Promise<Session | null> {
     console.log('🔄 AuthSync: Refreshing session...');
-    
+
     try {
       // Supabase auto-refreshes, so just get the latest
       const session = await this.getCurrentSession();
-      
+
       if (session) {
         await this.saveAuthState(session);
         await this.notifyListeners(session);
@@ -230,9 +245,9 @@ class AuthSyncService {
    */
   async onAppResume(): Promise<Session | null> {
     console.log('📱 AuthSync: App resumed, checking session...');
-    
+
     const cached = await this.getCachedAuthState();
-    
+
     if (!cached) {
       // No cached state, verify with Supabase
       return await this.refreshSession();
@@ -247,7 +262,7 @@ class AuthSyncService {
 
     // Quick path: get session from Supabase (but don't force full refresh)
     const session = await this.getCurrentSession();
-    
+
     if (session && session.user.id === cached.userId) {
       // Still valid, update cache timestamp
       await this.saveAuthState(session);

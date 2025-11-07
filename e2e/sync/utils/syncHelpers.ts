@@ -1,6 +1,6 @@
 /**
  * Sync Helper Utilities for E2E Tests
- * 
+ *
  * Provides utilities to verify state synchronization
  */
 
@@ -46,7 +46,7 @@ export const syncHelpers = {
     try {
       await device.reloadReactNative();
       await new Promise(resolve => setTimeout(resolve, 3000));
-      
+
       // Try to verify we're on the expected screen
       // Implementation depends on your navigation structure
       return true; // Will be enhanced with actual screen verification
@@ -111,4 +111,3 @@ export const syncHelpers = {
     await device.takeScreenshot(name);
   },
 };
-

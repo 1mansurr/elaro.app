@@ -3,13 +3,17 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { View, ActivityIndicator } from 'react-native';
 
 import { RootStackParamList } from '../types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
 import { OnboardingProvider } from '../contexts/OnboardingContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '../hooks/useSmartPreloading';
-import { SCREEN_CONFIGS, TRANSITIONS, GESTURES } from './constants/NavigationConstants';
+import {
+  SCREEN_CONFIGS,
+  TRANSITIONS,
+  GESTURES,
+} from './constants/NavigationConstants';
 
 // Critical screens - loaded immediately
 import LaunchScreen from '@/shared/screens/LaunchScreen';
@@ -20,40 +24,112 @@ import DraftsScreen from '@/features/dashboard/screens/DraftsScreen';
 import TemplatesScreen from '@/features/dashboard/screens/TemplatesScreen';
 
 // Lazy-loaded screens using bundle system for better performance
-const CalendarScreen = lazy(() => import('@/navigation/bundles/CalendarBundle').then(module => ({ default: module.CalendarScreen })));
-const ProfileScreen = lazy(() => import('@/features/user-profile/screens/ProfileScreen'));
-const SettingsScreen = lazy(() => import('@/features/user-profile/screens').then(module => ({ default: module.SettingsScreen })));
-const DeleteAccountScreen = lazy(() => import('@/features/user-profile/screens/DeleteAccountScreen'));
-const DeviceManagementScreen = lazy(() => import('@/features/user-profile/screens/DeviceManagementScreen').then(module => ({ default: module.DeviceManagementScreen })));
-const LoginHistoryScreen = lazy(() => import('@/features/user-profile/screens/LoginHistoryScreen').then(module => ({ default: module.LoginHistoryScreen })));
-const CoursesScreen = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.CoursesScreen })));
-const EditCourseModal = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.EditCourseModal })));
-const CourseDetailScreen = lazy(() => import('@/navigation/bundles/CoursesBundle').then(module => ({ default: module.CourseDetailScreen })));
-const TaskDetailModal = lazy(() => import('@/shared/components/TaskDetailModal'));
-const RecycleBinScreen = lazy(() => import('@/features/data-management/screens/RecycleBinScreen'));
-const MFAEnrollmentScreen = lazy(() => import('@/navigation/bundles/AuthBundle').then(module => ({ default: module.MFAEnrollmentScreen })));
-const MFAVerificationScreen = lazy(() => import('@/navigation/bundles/AuthBundle').then(module => ({ default: module.MFAVerificationScreen })));
-const InAppBrowserScreen = lazy(() => import('@/shared/screens').then(module => ({ default: module.InAppBrowserScreen })));
-const AnalyticsAdminScreen = lazy(() => import('@/features/admin/components/AnalyticsAdminDashboard'));
-const StudyResultScreen = lazy(() => import('@/features/studySessions/screens/StudyResultScreen'));
-const StudySessionReviewScreen = lazy(() => import('@/features/studySessions/screens/StudySessionReviewScreen'));
-const PaywallScreen = lazy(() => import('@/features/subscription/screens/PaywallScreen').then(module => ({ default: module.PaywallScreen })));
-const OddityWelcomeScreen = lazy(() => import('@/features/subscription/screens/OddityWelcomeScreen'));
+const CalendarScreen = lazy(() =>
+  import('@/navigation/bundles/CalendarBundle').then(module => ({
+    default: module.CalendarScreen,
+  })),
+);
+const ProfileScreen = lazy(
+  () => import('@/features/user-profile/screens/ProfileScreen'),
+);
+const SettingsScreen = lazy(() =>
+  import('@/features/user-profile/screens').then(module => ({
+    default: module.SettingsScreen,
+  })),
+);
+const DeleteAccountScreen = lazy(
+  () => import('@/features/user-profile/screens/DeleteAccountScreen'),
+);
+const DeviceManagementScreen = lazy(() =>
+  import('@/features/user-profile/screens/DeviceManagementScreen').then(
+    module => ({ default: module.DeviceManagementScreen }),
+  ),
+);
+const LoginHistoryScreen = lazy(() =>
+  import('@/features/user-profile/screens/LoginHistoryScreen').then(module => ({
+    default: module.LoginHistoryScreen,
+  })),
+);
+const CoursesScreen = lazy(() =>
+  import('@/navigation/bundles/CoursesBundle').then(module => ({
+    default: module.CoursesScreen,
+  })),
+);
+const EditCourseModal = lazy(() =>
+  import('@/navigation/bundles/CoursesBundle').then(module => ({
+    default: module.EditCourseModal,
+  })),
+);
+const CourseDetailScreen = lazy(() =>
+  import('@/navigation/bundles/CoursesBundle').then(module => ({
+    default: module.CourseDetailScreen,
+  })),
+);
+const TaskDetailModal = lazy(
+  () => import('@/shared/components/TaskDetailModal'),
+);
+const RecycleBinScreen = lazy(
+  () => import('@/features/data-management/screens/RecycleBinScreen'),
+);
+const MFAEnrollmentScreen = lazy(() =>
+  import('@/navigation/bundles/AuthBundle').then(module => ({
+    default: module.MFAEnrollmentScreen,
+  })),
+);
+const MFAVerificationScreen = lazy(() =>
+  import('@/navigation/bundles/AuthBundle').then(module => ({
+    default: module.MFAVerificationScreen,
+  })),
+);
+const InAppBrowserScreen = lazy(() =>
+  import('@/shared/screens').then(module => ({
+    default: module.InAppBrowserScreen,
+  })),
+);
+const AnalyticsAdminScreen = lazy(
+  () => import('@/features/admin/components/AnalyticsAdminDashboard'),
+);
+const StudyResultScreen = lazy(
+  () => import('@/features/studySessions/screens/StudyResultScreen'),
+);
+const StudySessionReviewScreen = lazy(
+  () => import('@/features/studySessions/screens/StudySessionReviewScreen'),
+);
+const PaywallScreen = lazy(() =>
+  import('@/features/subscription/screens/PaywallScreen').then(module => ({
+    default: module.PaywallScreen,
+  })),
+);
+const OddityWelcomeScreen = lazy(
+  () => import('@/features/subscription/screens/OddityWelcomeScreen'),
+);
 
 // Lazy-loaded navigators
 const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
 const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
 
 // Lazy-loaded single screens for simplified flows
-const AddAssignmentScreen = lazy(() => import('@/features/assignments/screens/AddAssignmentScreen'));
-const AddLectureScreen = lazy(() => import('@/features/lectures/screens/AddLectureScreen'));
-const AddStudySessionScreen = lazy(() => import('@/features/studySessions/screens/AddStudySessionScreen'));
+const AddAssignmentScreen = lazy(
+  () => import('@/features/assignments/screens/AddAssignmentScreen'),
+);
+const AddLectureScreen = lazy(
+  () => import('@/features/lectures/screens/AddLectureScreen'),
+);
+const AddStudySessionScreen = lazy(
+  () => import('@/features/studySessions/screens/AddStudySessionScreen'),
+);
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 // Loading fallback component
 const LoadingFallback = () => (
-  <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8f9fa' }}>
+  <View
+    style={{
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#f8f9fa',
+    }}>
     <ActivityIndicator size="large" color="#007AFF" />
   </View>
 );
@@ -123,184 +199,186 @@ const OnboardingFlow = () => (
 
 // Modal flows configuration
 const modalFlows = {
-  AddCourseFlow: { 
+  AddCourseFlow: {
     component: AddCourseFlow,
-    options: SCREEN_CONFIGS.AddCourseFlow
+    options: SCREEN_CONFIGS.AddCourseFlow,
   },
-  AddLectureFlow: { 
+  AddLectureFlow: {
     component: AddLectureFlow,
-    options: SCREEN_CONFIGS.AddLectureFlow
+    options: SCREEN_CONFIGS.AddLectureFlow,
   },
-  AddAssignmentFlow: { 
+  AddAssignmentFlow: {
     component: AddAssignmentFlow,
-    options: SCREEN_CONFIGS.AddAssignmentFlow
+    options: SCREEN_CONFIGS.AddAssignmentFlow,
   },
-  AddStudySessionFlow: { 
+  AddStudySessionFlow: {
     component: AddStudySessionFlow,
-    options: SCREEN_CONFIGS.AddStudySessionFlow
+    options: SCREEN_CONFIGS.AddStudySessionFlow,
   },
-  TaskDetailModal: { 
+  TaskDetailModal: {
     component: TaskDetailModal,
-    options: SCREEN_CONFIGS.TaskDetailModal
+    options: SCREEN_CONFIGS.TaskDetailModal,
   },
-  EditCourseModal: { 
+  EditCourseModal: {
     component: EditCourseModal,
-    options: SCREEN_CONFIGS.EditCourseModal
+    options: SCREEN_CONFIGS.EditCourseModal,
   },
-  InAppBrowserScreen: { 
+  InAppBrowserScreen: {
     component: InAppBrowserScreen,
-    options: SCREEN_CONFIGS.InAppBrowserScreen
+    options: SCREEN_CONFIGS.InAppBrowserScreen,
   },
-  PaywallScreen: { 
+  PaywallScreen: {
     component: PaywallScreen,
-    options: SCREEN_CONFIGS.PaywallScreen
+    options: SCREEN_CONFIGS.PaywallScreen,
   },
-  OddityWelcomeScreen: { 
+  OddityWelcomeScreen: {
     component: OddityWelcomeScreen,
-    options: SCREEN_CONFIGS.OddityWelcomeScreen
+    options: SCREEN_CONFIGS.OddityWelcomeScreen,
   },
 };
 
 // Helper function to render screens with type safety
 const renderScreens = (screens: ScreensConfig) => {
-  return Object.entries(screens).map(([name, config]) => {
-    // Type narrowing: ensure name is a valid route
-    const routeName = name as keyof RootStackParamList;
-    if (!config) return null;
-    
-    return (
-      <Stack.Screen 
-        key={name} 
-        name={routeName}
-        component={config.component} 
-        options={config.options || {}}
-      />
-    );
-  }).filter(Boolean); // Remove any null entries
+  return Object.entries(screens)
+    .map(([name, config]) => {
+      // Type narrowing: ensure name is a valid route
+      const routeName = name as keyof RootStackParamList;
+      if (!config) return null;
+
+      return (
+        <Stack.Screen
+          key={name}
+          name={routeName}
+          component={config.component}
+          options={config.options || {}}
+        />
+      );
+    })
+    .filter(Boolean); // Remove any null entries
 };
 
 // Main screens configuration
 // Merge SCREEN_CONFIGS with header titles where needed
 const mainScreens = {
-  Main: { 
+  Main: {
     component: MainTabNavigator,
-    options: SCREEN_CONFIGS.Main
+    options: SCREEN_CONFIGS.Main,
   },
   Drafts: {
     component: DraftsScreen,
     options: {
       ...SCREEN_CONFIGS.Drafts,
       headerTitle: 'Drafts',
-    }
+    },
   },
   Templates: {
     component: TemplatesScreen,
     options: {
       ...SCREEN_CONFIGS.Templates,
       headerTitle: 'Templates',
-    }
+    },
   },
-  Courses: { 
+  Courses: {
     component: CoursesScreen,
-    options: SCREEN_CONFIGS.Courses
+    options: SCREEN_CONFIGS.Courses,
   },
-  CourseDetail: { 
+  CourseDetail: {
     component: CourseDetailScreen,
     options: {
       ...SCREEN_CONFIGS.CourseDetail,
       headerTitle: 'Course Details',
-    }
+    },
   },
-  Calendar: { 
+  Calendar: {
     component: CalendarScreen,
     options: {
       ...SCREEN_CONFIGS.Calendar,
       headerTitle: 'Calendar',
-    }
+    },
   },
-  RecycleBin: { 
+  RecycleBin: {
     component: RecycleBinScreen,
     options: {
       ...SCREEN_CONFIGS.RecycleBin,
       headerTitle: 'Recycle Bin',
-    }
+    },
   },
-  MFAEnrollmentScreen: { 
+  MFAEnrollmentScreen: {
     component: MFAEnrollmentScreen,
     options: {
       ...SCREEN_CONFIGS.MFAEnrollmentScreen,
       headerTitle: 'Enable MFA',
-    }
+    },
   },
-  MFAVerificationScreen: { 
+  MFAVerificationScreen: {
     component: MFAVerificationScreen,
     options: {
       ...SCREEN_CONFIGS.MFAVerificationScreen,
       headerTitle: 'Verify Your Identity',
-    }
+    },
   },
-  Profile: { 
+  Profile: {
     component: ProfileScreen,
     options: {
       ...SCREEN_CONFIGS.Profile,
       headerTitle: 'Edit Profile',
-    }
+    },
   },
-  Settings: { 
+  Settings: {
     component: SettingsScreen,
     options: {
       ...SCREEN_CONFIGS.Settings,
       headerTitle: 'Settings',
-    }
+    },
   },
-  DeleteAccountScreen: { 
+  DeleteAccountScreen: {
     component: DeleteAccountScreen,
     options: {
       ...SCREEN_CONFIGS.DeleteAccountScreen,
       headerTitle: 'Delete Account',
-    }
+    },
   },
   DeviceManagement: {
     component: DeviceManagementScreen,
     options: {
       ...SCREEN_CONFIGS.DeviceManagement,
       headerTitle: 'Device Management',
-    }
+    },
   },
   LoginHistory: {
     component: LoginHistoryScreen,
     options: {
       ...SCREEN_CONFIGS.LoginHistory,
       headerTitle: 'Login History',
-    }
+    },
   },
   OnboardingFlow: { component: OnboardingFlow },
-  AnalyticsAdmin: { 
+  AnalyticsAdmin: {
     component: AnalyticsAdminScreen,
     options: {
       ...SCREEN_CONFIGS.AnalyticsAdmin,
       headerTitle: 'Analytics Admin',
-    }
+    },
   },
   StudyResult: {
     component: StudyResultScreen,
     options: {
       ...SCREEN_CONFIGS.StudyResult,
       headerTitle: 'Study Results',
-    }
+    },
   },
   StudySessionReview: {
     component: StudySessionReviewScreen,
     options: {
       ...SCREEN_CONFIGS.StudySessionReview,
       headerTitle: 'Review Study Session',
-    }
+    },
   },
 };
 
 export const AuthenticatedNavigator: React.FC = () => {
   const { user } = useAuth();
-  
+
   // Enable smart preloading for better performance
   useSmartPreloading();
 
@@ -320,34 +398,34 @@ export const AuthenticatedNavigator: React.FC = () => {
     <Suspense fallback={<LoadingFallback />}>
       <Stack.Navigator screenOptions={sharedScreenOptions}>
         {/* Always show Launch screen */}
-        <Stack.Screen 
-          name="Launch" 
+        <Stack.Screen
+          name="Launch"
           component={LaunchScreen}
           options={SCREEN_CONFIGS.Launch}
         />
-        
+
         {/* Main app screens */}
         {renderScreens(mainScreens)}
-        
+
         {/* Modal flows */}
         <Stack.Group>
           {/* Auth screen - available for switching accounts */}
-          <Stack.Screen 
+          <Stack.Screen
             name="Auth"
             component={AuthScreen}
             options={SCREEN_CONFIGS.Auth}
           />
-          
+
           {Object.entries(modalFlows)
             .filter(([name]) => name !== 'InAppBrowserScreen')
             .map(([name, config]) => {
               // Type narrowing: ensure name is a valid route
               const routeName = name as keyof RootStackParamList;
               return (
-                <Stack.Screen 
-                  key={name} 
+                <Stack.Screen
+                  key={name}
                   name={routeName}
-                  component={config.component} 
+                  component={config.component}
                   options={config.options}
                 />
               );

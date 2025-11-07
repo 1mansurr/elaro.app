@@ -12,7 +12,7 @@ interface EmptyStateProps {
 
 /**
  * A reusable component for displaying empty states throughout the app.
- * 
+ *
  * @example
  * ```tsx
  * <EmptyState
@@ -25,20 +25,14 @@ interface EmptyStateProps {
 export const EmptyState: React.FC<EmptyStateProps> = ({
   title,
   message,
-  icon = "document-outline",
+  icon = 'document-outline',
 }) => {
   const { theme } = useTheme();
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <Ionicons 
-        name={icon} 
-        size={64} 
-        color={theme.textSecondary} 
-      />
-      <Text style={[styles.title, { color: theme.text }]}>
-        {title}
-      </Text>
+      <Ionicons name={icon} size={64} color={theme.textSecondary} />
+      <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
       <Text style={[styles.message, { color: theme.textSecondary }]}>
         {message}
       </Text>
@@ -56,7 +50,7 @@ const styles = StyleSheet.create({
   title: {
     marginTop: SPACING.lg,
     fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     textAlign: 'center',
   },
   message: {
@@ -66,4 +60,3 @@ const styles = StyleSheet.create({
     maxWidth: 300,
   },
 });
-

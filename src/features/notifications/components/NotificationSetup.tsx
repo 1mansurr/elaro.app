@@ -8,7 +8,8 @@ import { useTheme } from '@/contexts/ThemeContext';
  * This component automatically registers for push notifications when mounted.
  */
 export const NotificationSetup: React.FC = () => {
-  const { registerForPushNotifications, isLoading } = useSimplePushNotifications();
+  const { registerForPushNotifications, isLoading } =
+    useSimplePushNotifications();
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -30,7 +31,8 @@ export const NotificationSetup: React.FC = () => {
  * Shows how to handle user interaction for notification setup.
  */
 export const NotificationSettingsButton: React.FC = () => {
-  const { registerForPushNotifications, isLoading } = useSimplePushNotifications();
+  const { registerForPushNotifications, isLoading } =
+    useSimplePushNotifications();
   const { theme } = useTheme();
 
   const handlePress = () => {
@@ -41,14 +43,13 @@ export const NotificationSettingsButton: React.FC = () => {
     <TouchableOpacity
       style={[
         styles.button,
-        { 
+        {
           backgroundColor: theme.accent,
-          opacity: isLoading ? 0.6 : 1 
-        }
+          opacity: isLoading ? 0.6 : 1,
+        },
       ]}
       onPress={handlePress}
-      disabled={isLoading}
-    >
+      disabled={isLoading}>
       <Text style={[styles.buttonText, { color: 'white' }]}>
         {isLoading ? 'Setting up...' : 'Enable Notifications'}
       </Text>

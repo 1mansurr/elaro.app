@@ -1,0 +1,37 @@
+name: Performance Budgets
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  enforce-budgets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Analyze bundle size
+        run: npm run analyze:bundle
+        continue-on-error: true
+      
+      - name: Enforce performance budgets
+        run: node scripts/enforce-performance-budgets.js
+      
+      - name: Upload bundle size report
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: bundle-size-report
+          path: bundle-size-report.json
+

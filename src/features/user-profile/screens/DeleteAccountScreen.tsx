@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/shared/components/Button';
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
@@ -22,13 +22,14 @@ import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 const DeleteAccountScreen = () => {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
-  
+
   const [confirmationText, setConfirmationText] = useState('');
   const [reason, setReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasAcknowledged, setHasAcknowledged] = useState(false);
 
-  const isConfirmationValid = confirmationText.trim().toUpperCase() === 'DELETE';
+  const isConfirmationValid =
+    confirmationText.trim().toUpperCase() === 'DELETE';
   const canDelete = isConfirmationValid && hasAcknowledged;
 
   const handleDeleteAccount = async () => {
@@ -45,12 +46,17 @@ const DeleteAccountScreen = () => {
           onPress: async () => {
             setIsDeleting(true);
             try {
-              const { data, error } = await supabase.functions.invoke('soft-delete-account', {
-                body: { reason: reason.trim() || 'User requested account deletion' },
-              });
-              
+              const { data, error } = await supabase.functions.invoke(
+                'soft-delete-account',
+                {
+                  body: {
+                    reason: reason.trim() || 'User requested account deletion',
+                  },
+                },
+              );
+
               if (error) throw new AppError('Failed to delete account.');
-              
+
               Alert.alert(
                 'Account Scheduled for Deletion',
                 'Your account has been scheduled for deletion. You have 7 days to change your mind. Simply log in again within 7 days to cancel the deletion.',
@@ -61,20 +67,23 @@ const DeleteAccountScreen = () => {
                       await signOut();
                     },
                   },
-                ]
+                ],
               );
             } catch (error) {
               console.error('Error deleting account:', error);
               showToast({
                 type: 'error',
-                message: error instanceof Error ? error.message : 'Failed to delete account',
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to delete account',
               });
             } finally {
               setIsDeleting(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -85,7 +94,8 @@ const DeleteAccountScreen = () => {
         <Ionicons name="warning" size={64} color="#FF3B30" />
         <Text style={styles.warningTitle}>Delete Account</Text>
         <Text style={styles.warningSubtitle}>
-          This action will permanently delete your account and all associated data
+          This action will permanently delete your account and all associated
+          data
         </Text>
       </View>
 
@@ -95,19 +105,27 @@ const DeleteAccountScreen = () => {
         <View style={styles.infoList}>
           <View style={styles.infoItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>All your courses and academic data</Text>
+            <Text style={styles.infoItemText}>
+              All your courses and academic data
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>All assignments, lectures, and study sessions</Text>
+            <Text style={styles.infoItemText}>
+              All assignments, lectures, and study sessions
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>Your profile and account settings</Text>
+            <Text style={styles.infoItemText}>
+              Your profile and account settings
+            </Text>
           </View>
           <View style={styles.infoItem}>
             <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>All reminders and notifications</Text>
+            <Text style={styles.infoItemText}>
+              All reminders and notifications
+            </Text>
           </View>
         </View>
       </View>
@@ -118,7 +136,9 @@ const DeleteAccountScreen = () => {
         <View style={styles.gracePeriodText}>
           <Text style={styles.gracePeriodTitle}>7-Day Grace Period</Text>
           <Text style={styles.gracePeriodDescription}>
-            Your account will be scheduled for deletion but not immediately removed. You have 7 days to log back in and cancel the deletion if you change your mind.
+            Your account will be scheduled for deletion but not immediately
+            removed. You have 7 days to log back in and cancel the deletion if
+            you change your mind.
           </Text>
         </View>
       </View>
@@ -141,13 +161,16 @@ const DeleteAccountScreen = () => {
       {/* Acknowledgment Checkbox */}
       <TouchableOpacity
         style={styles.checkboxContainer}
-        onPress={() => setHasAcknowledged(!hasAcknowledged)}
-      >
-        <View style={[styles.checkbox, hasAcknowledged && styles.checkboxChecked]}>
-          {hasAcknowledged && <Ionicons name="checkmark" size={18} color={COLORS.background} />}
+        onPress={() => setHasAcknowledged(!hasAcknowledged)}>
+        <View
+          style={[styles.checkbox, hasAcknowledged && styles.checkboxChecked]}>
+          {hasAcknowledged && (
+            <Ionicons name="checkmark" size={18} color={COLORS.background} />
+          )}
         </View>
         <Text style={styles.checkboxLabel}>
-          I understand that this action will delete all my data and cannot be undone after 7 days
+          I understand that this action will delete all my data and cannot be
+          undone after 7 days
         </Text>
       </TouchableOpacity>
 
@@ -159,7 +182,9 @@ const DeleteAccountScreen = () => {
         <TextInput
           style={[
             styles.confirmationInput,
-            confirmationText && !isConfirmationValid ? styles.confirmationInputInvalid : undefined,
+            confirmationText && !isConfirmationValid
+              ? styles.confirmationInputInvalid
+              : undefined,
             isConfirmationValid ? styles.confirmationInputValid : undefined,
           ]}
           value={confirmationText}
@@ -189,16 +214,21 @@ const DeleteAccountScreen = () => {
           loading={isDeleting}
           style={{
             ...styles.deleteButton,
-            backgroundColor: canDelete ? '#FF3B30' : COLORS.gray
+            backgroundColor: canDelete ? '#FF3B30' : COLORS.gray,
           }}
         />
       </View>
 
       {/* Additional warning */}
       <View style={styles.finalWarning}>
-        <Ionicons name="information-circle-outline" size={20} color={COLORS.gray} />
+        <Ionicons
+          name="information-circle-outline"
+          size={20}
+          color={COLORS.gray}
+        />
         <Text style={styles.finalWarningText}>
-          Need help? Contact our support team before deleting your account. We're here to help resolve any issues.
+          Need help? Contact our support team before deleting your account.
+          We're here to help resolve any issues.
         </Text>
       </View>
     </ScrollView>
@@ -394,4 +424,3 @@ const styles = StyleSheet.create({
 });
 
 export default DeleteAccountScreen;
-

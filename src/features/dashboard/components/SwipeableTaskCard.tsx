@@ -1,5 +1,11 @@
 import React, { useRef } from 'react';
-import { View, StyleSheet, Animated, Dimensions, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+} from 'react-native';
 import { PanGestureHandler, State } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,8 +18,8 @@ interface SwipeableTaskCardProps {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.4; // 40% of screen width
 
-export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({ 
-  children, 
+export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
+  children,
   onSwipeComplete,
   enabled = true,
 }) => {
@@ -22,15 +28,17 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
 
   const onGestureEvent = Animated.event(
     [{ nativeEvent: { translationX: translateX } }],
-    { useNativeDriver: true }
+    { useNativeDriver: true },
   );
 
-  const onHandlerStateChange = (event: any) => {
+  const onHandlerStateChange = (event: {
+    nativeEvent: { state: number; translationX: number };
+  }) => {
     if (!enabled) return;
 
     if (event.nativeEvent.state === State.END) {
       const { translationX } = event.nativeEvent;
-      
+
       // If swiped past threshold, trigger complete action
       if (translationX > SWIPE_THRESHOLD) {
         // Animate off screen
@@ -76,12 +84,8 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
   return (
     <View style={styles.container}>
       {/* Background that reveals on swipe */}
-      <Animated.View 
-        style={[
-          styles.background,
-          { opacity: backgroundOpacity }
-        ]}
-      >
+      <Animated.View
+        style={[styles.background, { opacity: backgroundOpacity }]}>
         <Animated.View style={{ transform: [{ scale: iconScale }] }}>
           <Ionicons name="checkmark-circle" size={48} color="#FFF" />
         </Animated.View>
@@ -91,14 +95,9 @@ export const SwipeableTaskCard: React.FC<SwipeableTaskCardProps> = ({
       <PanGestureHandler
         onGestureEvent={onGestureEvent}
         onHandlerStateChange={onHandlerStateChange}
-        activeOffsetX={10}
-      >
+        activeOffsetX={10}>
         <Animated.View
-          style={[
-            styles.swipeableCard,
-            { transform: [{ translateX }] }
-          ]}
-        >
+          style={[styles.swipeableCard, { transform: [{ translateX }] }]}>
           {children}
         </Animated.View>
       </PanGestureHandler>
@@ -126,4 +125,3 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
 });
-

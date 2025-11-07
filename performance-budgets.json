@@ -1,0 +1,6 @@
+{
+  "jsBundle": 2097152,
+  "totalAssets": 10485760,
+  "initialLoad": 3145728,
+  "description": "Performance budgets in bytes. JS Bundle: 2MB, Total Assets: 10MB, Initial Load: 3MB"
+}

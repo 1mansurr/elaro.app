@@ -1,24 +1,35 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, TouchableWithoutFeedback } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Animated,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getDraftCount } from '@/utils/draftStorage';
 import { COLORS } from '@/constants/theme';
 
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 
-type HomeScreenFABNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+type HomeScreenFABNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Main'
+>;
 
 interface HomeScreenFABProps {
   onStateChange: (state: { isOpen: boolean }) => void;
   onQuickAddPress?: () => void; // Callback for quick add modal (optional)
 }
 
-export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange, onQuickAddPress }) => {
+export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
+  onStateChange,
+  onQuickAddPress,
+}) => {
   const navigation = useNavigation<HomeScreenFABNavigationProp>();
   const { session } = useAuth();
   const isGuest = !session;
@@ -32,7 +43,7 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange, onQ
       const count = await getDraftCount();
       setDraftCount(count);
     };
-    
+
     loadDraftCount();
   }, []);
 
@@ -83,8 +94,10 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange, onQ
   return (
     <>
       {isFabOpen && (
-        <TouchableWithoutFeedback onPress={() => handleFabStateChange({ isOpen: false })}>
-          <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <TouchableWithoutFeedback
+          onPress={() => handleFabStateChange({ isOpen: false })}>
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropOpacity }]}>
             <BlurView
               intensity={40}
               tint="dark"
@@ -94,7 +107,7 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({ onStateChange, onQ
         </TouchableWithoutFeedback>
       )}
 
-      <FloatingActionButton 
+      <FloatingActionButton
         actions={fabActions}
         onStateChange={handleFabStateChange}
         onDoubleTap={handleQuickAdd}

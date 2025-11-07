@@ -54,20 +54,29 @@ export class TaskDependencyService {
    */
   async createTaskWithDependencies(
     task: EnhancedTask,
-    userId: string
+    userId: string,
   ): Promise<EnhancedTask> {
     try {
       // 1. Validate dependencies
-      const validation = await this.validateDependencies(task.dependencies, userId);
+      const validation = await this.validateDependencies(
+        task.dependencies,
+        userId,
+      );
       if (!validation.isValid) {
-        throw new Error(`Invalid dependencies: ${validation.errors.join(', ')}`);
+        throw new Error(
+          `Invalid dependencies: ${validation.errors.join(', ')}`,
+        );
       }
 
       // 2. Create the task based on type
       const createdTask = await this.createTask(task, userId);
 
       // 3. Create dependency relationships
-      await this.createDependencies(createdTask.id, task.dependencies, task.type);
+      await this.createDependencies(
+        createdTask.id,
+        task.dependencies,
+        task.type,
+      );
 
       // 4. Update dependent task statuses
       await this.updateDependentTaskStatuses(createdTask.id, task.type);
@@ -82,7 +91,10 @@ export class TaskDependencyService {
   /**
    * Complete a task and handle dependencies
    */
-  async completeTask(taskId: string, taskType: 'assignment' | 'lecture' | 'study_session'): Promise<void> {
+  async completeTask(
+    taskId: string,
+    taskType: 'assignment' | 'lecture' | 'study_session',
+  ): Promise<void> {
     try {
       // 1. Mark task as completed
       await this.markTaskCompleted(taskId, taskType);
@@ -103,17 +115,18 @@ export class TaskDependencyService {
    */
   async getTaskDependencies(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<TaskDependency[]> {
     try {
       let dependencies: any[] = [];
 
       switch (taskType) {
         case 'assignment':
-          const { data: assignmentDeps, error: assignmentError } = await supabase
-            .from('task_dependencies')
-            .select('*')
-            .eq('task_id', taskId);
+          const { data: assignmentDeps, error: assignmentError } =
+            await supabase
+              .from('task_dependencies')
+              .select('*')
+              .eq('task_id', taskId);
 
           if (assignmentError) throw assignmentError;
           dependencies = assignmentDeps || [];
@@ -160,7 +173,7 @@ export class TaskDependencyService {
    */
   async getDependentTasks(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<EnhancedTask[]> {
     try {
       // This is a complex query that needs to check all dependency tables
@@ -175,7 +188,9 @@ export class TaskDependencyService {
 
       if (assignmentDeps) {
         for (const dep of assignmentDeps) {
-          const assignment = Array.isArray(dep.assignments) ? dep.assignments[0] : dep.assignments;
+          const assignment = Array.isArray(dep.assignments)
+            ? dep.assignments[0]
+            : dep.assignments;
           dependentTasks.push({
             id: assignment?.id,
             type: 'assignment',
@@ -200,7 +215,7 @@ export class TaskDependencyService {
    */
   async validateDependencies(
     dependencies: TaskDependency[],
-    userId: string
+    userId: string,
   ): Promise<DependencyValidationResult> {
     try {
       const errors: string[] = [];
@@ -218,14 +233,18 @@ export class TaskDependencyService {
       const circular = this.detectCircularDependencies(dependencies);
       if (circular.length > 0) {
         circularDependencies.push(...circular);
-        errors.push(`Circular dependencies detected: ${circular.map(c => c.join(' -> ')).join(', ')}`);
+        errors.push(
+          `Circular dependencies detected: ${circular.map(c => c.join(' -> ')).join(', ')}`,
+        );
       }
 
       // Check if dependent tasks exist and belong to user
       for (const dep of dependencies) {
         const exists = await this.checkTaskExists(dep.dependsOnTaskId, userId);
         if (!exists) {
-          errors.push(`Dependent task does not exist or access denied: ${dep.dependsOnTaskId}`);
+          errors.push(
+            `Dependent task does not exist or access denied: ${dep.dependsOnTaskId}`,
+          );
         }
       }
 
@@ -252,44 +271,38 @@ export class TaskDependencyService {
   private async createDependencies(
     taskId: string,
     dependencies: TaskDependency[],
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<void> {
     try {
       for (const dep of dependencies) {
         switch (taskType) {
           case 'assignment':
-            await supabase
-              .from('task_dependencies')
-              .insert({
-                task_id: taskId,
-                depends_on_task_id: dep.dependsOnTaskId,
-                dependency_type: dep.dependencyType,
-                auto_complete: dep.autoComplete,
-              });
+            await supabase.from('task_dependencies').insert({
+              task_id: taskId,
+              depends_on_task_id: dep.dependsOnTaskId,
+              dependency_type: dep.dependencyType,
+              auto_complete: dep.autoComplete,
+            });
             break;
 
           case 'lecture':
-            await supabase
-              .from('lecture_dependencies')
-              .insert({
-                lecture_id: taskId,
-                depends_on_id: dep.dependsOnTaskId,
-                depends_on_type: 'assignment', // Simplified for now
-                dependency_type: dep.dependencyType,
-                auto_complete: dep.autoComplete,
-              });
+            await supabase.from('lecture_dependencies').insert({
+              lecture_id: taskId,
+              depends_on_id: dep.dependsOnTaskId,
+              depends_on_type: 'assignment', // Simplified for now
+              dependency_type: dep.dependencyType,
+              auto_complete: dep.autoComplete,
+            });
             break;
 
           case 'study_session':
-            await supabase
-              .from('study_session_dependencies')
-              .insert({
-                study_session_id: taskId,
-                depends_on_id: dep.dependsOnTaskId,
-                depends_on_type: 'assignment', // Simplified for now
-                dependency_type: dep.dependencyType,
-                auto_complete: dep.autoComplete,
-              });
+            await supabase.from('study_session_dependencies').insert({
+              study_session_id: taskId,
+              depends_on_id: dep.dependsOnTaskId,
+              depends_on_type: 'assignment', // Simplified for now
+              dependency_type: dep.dependencyType,
+              auto_complete: dep.autoComplete,
+            });
             break;
         }
       }
@@ -302,11 +315,14 @@ export class TaskDependencyService {
   /**
    * Create a task based on type
    */
-  private async createTask(task: EnhancedTask, userId: string): Promise<EnhancedTask> {
+  private async createTask(
+    task: EnhancedTask,
+    userId: string,
+  ): Promise<EnhancedTask> {
     try {
       // This is a simplified implementation
       // In a real scenario, you'd call the appropriate task creation function
-      
+
       const baseTask = {
         id: task.id,
         type: task.type,
@@ -329,7 +345,7 @@ export class TaskDependencyService {
    */
   private async markTaskCompleted(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<void> {
     try {
       const tableName = this.getTableName(taskType);
@@ -355,7 +371,7 @@ export class TaskDependencyService {
    */
   private async unlockDependentTasks(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<void> {
     try {
       // Get all tasks that depend on this one
@@ -363,14 +379,19 @@ export class TaskDependencyService {
 
       for (const dependentTask of dependentTasks) {
         // Check if all prerequisites are now completed
-        const allPrerequisitesComplete = await this.checkAllPrerequisitesComplete(
-          dependentTask.id,
-          dependentTask.type
-        );
+        const allPrerequisitesComplete =
+          await this.checkAllPrerequisitesComplete(
+            dependentTask.id,
+            dependentTask.type,
+          );
 
         if (allPrerequisitesComplete) {
           // Update task status to available
-          await this.updateTaskStatus(dependentTask.id, dependentTask.type, 'available');
+          await this.updateTaskStatus(
+            dependentTask.id,
+            dependentTask.type,
+            'available',
+          );
         }
       }
     } catch (error) {
@@ -384,7 +405,7 @@ export class TaskDependencyService {
    */
   private async processAutoCompletions(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<void> {
     try {
       // Get dependencies where auto_complete is true
@@ -404,16 +425,39 @@ export class TaskDependencyService {
   /**
    * Check if a task exists and belongs to the user
    */
-  private async checkTaskExists(taskId: string, userId: string): Promise<boolean> {
+  private async checkTaskExists(
+    taskId: string,
+    userId: string,
+  ): Promise<boolean> {
     try {
       // Check all task tables
-      const [assignmentResult, lectureResult, sessionResult] = await Promise.all([
-        supabase.from('assignments').select('id').eq('id', taskId).eq('user_id', userId).single(),
-        supabase.from('lectures').select('id').eq('id', taskId).eq('user_id', userId).single(),
-        supabase.from('study_sessions').select('id').eq('id', taskId).eq('user_id', userId).single(),
-      ]);
+      const [assignmentResult, lectureResult, sessionResult] =
+        await Promise.all([
+          supabase
+            .from('assignments')
+            .select('id')
+            .eq('id', taskId)
+            .eq('user_id', userId)
+            .single(),
+          supabase
+            .from('lectures')
+            .select('id')
+            .eq('id', taskId)
+            .eq('user_id', userId)
+            .single(),
+          supabase
+            .from('study_sessions')
+            .select('id')
+            .eq('id', taskId)
+            .eq('user_id', userId)
+            .single(),
+        ]);
 
-      return !!(assignmentResult.data || lectureResult.data || sessionResult.data);
+      return !!(
+        assignmentResult.data ||
+        lectureResult.data ||
+        sessionResult.data
+      );
     } catch (error) {
       console.error('❌ Error checking task existence:', error);
       return false;
@@ -423,7 +467,9 @@ export class TaskDependencyService {
   /**
    * Detect circular dependencies
    */
-  private detectCircularDependencies(dependencies: TaskDependency[]): string[][] {
+  private detectCircularDependencies(
+    dependencies: TaskDependency[],
+  ): string[][] {
     const graph = new Map<string, string[]>();
     const circular: string[][] = [];
 
@@ -474,14 +520,19 @@ export class TaskDependencyService {
    */
   private async checkAllPrerequisitesComplete(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<boolean> {
     try {
       const dependencies = await this.getTaskDependencies(taskId, taskType);
-      const blockingDeps = dependencies.filter(dep => dep.dependencyType === 'blocking');
+      const blockingDeps = dependencies.filter(
+        dep => dep.dependencyType === 'blocking',
+      );
 
       for (const dep of blockingDeps) {
-        const isCompleted = await this.isTaskCompleted(dep.dependsOnTaskId, taskType);
+        const isCompleted = await this.isTaskCompleted(
+          dep.dependsOnTaskId,
+          taskType,
+        );
         if (!isCompleted) {
           return false;
         }
@@ -499,7 +550,7 @@ export class TaskDependencyService {
    */
   private async isTaskCompleted(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<boolean> {
     try {
       const tableName = this.getTableName(taskType);
@@ -526,7 +577,7 @@ export class TaskDependencyService {
   private async updateTaskStatus(
     taskId: string,
     taskType: 'assignment' | 'lecture' | 'study_session',
-    status: string
+    status: string,
   ): Promise<void> {
     try {
       const tableName = this.getTableName(taskType);
@@ -547,7 +598,9 @@ export class TaskDependencyService {
   /**
    * Get table name for task type
    */
-  private getTableName(taskType: 'assignment' | 'lecture' | 'study_session'): string {
+  private getTableName(
+    taskType: 'assignment' | 'lecture' | 'study_session',
+  ): string {
     switch (taskType) {
       case 'assignment':
         return 'assignments';
@@ -565,7 +618,7 @@ export class TaskDependencyService {
    */
   private async updateDependentTaskStatuses(
     taskId: string,
-    taskType: 'assignment' | 'lecture' | 'study_session'
+    taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<void> {
     try {
       // This would update the status of tasks that depend on the newly created task

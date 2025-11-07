@@ -1,12 +1,12 @@
 import { User } from '@/types';
-import { 
-  checkBiometricCapability, 
-  authenticateWithBiometric, 
-  enableBiometricLogin, 
-  disableBiometricLogin, 
+import {
+  checkBiometricCapability,
+  authenticateWithBiometric,
+  enableBiometricLogin,
+  disableBiometricLogin,
   signInWithBiometric,
   isBiometricLoginEnabled,
-  BiometricCapability 
+  BiometricCapability,
 } from '@/utils/biometricAuth';
 
 export interface BiometricAuthState {
@@ -55,7 +55,7 @@ export class BiometricAuthService {
       return {
         isAvailable: capability.isAvailable,
         isEnabled,
-        capability
+        capability,
       };
     } catch (error) {
       console.error('❌ Error getting biometric auth state:', error);
@@ -67,7 +67,7 @@ export class BiometricAuthService {
           biometricType: 'none',
           hasHardware: false,
           isEnrolled: false,
-        }
+        },
       };
     }
   }
@@ -75,19 +75,25 @@ export class BiometricAuthService {
   /**
    * Enable biometric authentication for user
    */
-  async enableBiometricAuth(user: User): Promise<{ success: boolean; error?: string }> {
+  async enableBiometricAuth(
+    user: User,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       if (!user.email) {
-        return { success: false, error: 'User email is required for biometric authentication' };
+        return {
+          success: false,
+          error: 'User email is required for biometric authentication',
+        };
       }
 
       const result = await enableBiometricLogin(user.email, user.id);
       return result;
     } catch (error) {
       console.error('❌ Error enabling biometric auth:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error occurred' 
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : 'Unknown error occurred',
       };
     }
   }
@@ -106,15 +112,17 @@ export class BiometricAuthService {
   /**
    * Authenticate with biometrics
    */
-  async authenticateWithBiometric(promptMessage?: string): Promise<{ success: boolean; error?: string }> {
+  async authenticateWithBiometric(
+    promptMessage?: string,
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const result = await authenticateWithBiometric(promptMessage);
       return result;
     } catch (error) {
       console.error('❌ Error during biometric authentication:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Authentication failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Authentication failed',
       };
     }
   }
@@ -122,19 +130,19 @@ export class BiometricAuthService {
   /**
    * Sign in with biometric credentials
    */
-  async signInWithBiometric(): Promise<{ 
-    success: boolean; 
-    credentials?: { email: string; userId: string }; 
-    error?: string 
+  async signInWithBiometric(): Promise<{
+    success: boolean;
+    credentials?: { email: string; userId: string };
+    error?: string;
   }> {
     try {
       const result = await signInWithBiometric();
       return result;
     } catch (error) {
       console.error('❌ Error during biometric sign in:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Sign in failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Sign in failed',
       };
     }
   }

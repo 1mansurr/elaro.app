@@ -4,7 +4,7 @@ import { InteractionManager, AppState, AppStateStatus } from 'react-native';
 
 /**
  * Navigation Performance Optimization Hook
- * 
+ *
  * This hook provides performance optimizations for navigation including:
  * - Screen preloading
  * - Memory management
@@ -19,7 +19,9 @@ interface NavigationPerformanceOptions {
   enableBackgroundOptimization?: boolean;
 }
 
-export const useNavigationPerformance = (options: NavigationPerformanceOptions = {}) => {
+export const useNavigationPerformance = (
+  options: NavigationPerformanceOptions = {},
+) => {
   const navigation = useNavigation();
   const preloadedScreens = useRef<Set<string>>(new Set());
   const isAppActive = useRef<boolean>(true);
@@ -32,26 +34,30 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
   } = options;
 
   // Preload screens for better performance
-  const preloadScreen = useCallback((screenName: string) => {
-    if (preloadedScreens.current.has(screenName)) {
-      return;
-    }
-
-    // Use InteractionManager to preload during idle time
-    InteractionManager.runAfterInteractions(() => {
-      try {
-        // Preload the screen by navigating to it and immediately going back
-        // This is a common pattern for React Navigation preloading
-        const currentRoute = navigation.getState()?.routes[navigation.getState()?.index || 0];
-        if (currentRoute?.name !== screenName) {
-          preloadedScreens.current.add(screenName);
-          console.log(`📱 Preloaded screen: ${screenName}`);
-        }
-      } catch (error) {
-        console.warn(`Failed to preload screen ${screenName}:`, error);
+  const preloadScreen = useCallback(
+    (screenName: string) => {
+      if (preloadedScreens.current.has(screenName)) {
+        return;
       }
-    });
-  }, [navigation]);
+
+      // Use InteractionManager to preload during idle time
+      InteractionManager.runAfterInteractions(() => {
+        try {
+          // Preload the screen by navigating to it and immediately going back
+          // This is a common pattern for React Navigation preloading
+          const currentRoute =
+            navigation.getState()?.routes[navigation.getState()?.index || 0];
+          if (currentRoute?.name !== screenName) {
+            preloadedScreens.current.add(screenName);
+            console.log(`📱 Preloaded screen: ${screenName}`);
+          }
+        } catch (error) {
+          console.warn(`Failed to preload screen ${screenName}:`, error);
+        }
+      });
+    },
+    [navigation],
+  );
 
   // Preload all specified screens
   useEffect(() => {
@@ -74,27 +80,30 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
           global.gc();
         }
       };
-    }, [enableMemoryOptimization])
+    }, [enableMemoryOptimization]),
   );
 
   // Interaction batching for smoother animations
-  const batchNavigation = useCallback((navigationActions: (() => void)[]) => {
-    if (!enableInteractionBatching) {
-      navigationActions.forEach(action => action());
-      return;
-    }
+  const batchNavigation = useCallback(
+    (navigationActions: (() => void)[]) => {
+      if (!enableInteractionBatching) {
+        navigationActions.forEach(action => action());
+        return;
+      }
 
-    // Batch all navigation actions to run after interactions complete
-    InteractionManager.runAfterInteractions(() => {
-      navigationActions.forEach(action => {
-        try {
-          action();
-        } catch (error) {
-          console.error('Navigation action failed:', error);
-        }
+      // Batch all navigation actions to run after interactions complete
+      InteractionManager.runAfterInteractions(() => {
+        navigationActions.forEach(action => {
+          try {
+            action();
+          } catch (error) {
+            console.error('Navigation action failed:', error);
+          }
+        });
       });
-    });
-  }, [enableInteractionBatching]);
+    },
+    [enableInteractionBatching],
+  );
 
   // Background optimization
   useEffect(() => {
@@ -102,7 +111,7 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
 
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       isAppActive.current = nextAppState === 'active';
-      
+
       if (nextAppState === 'background') {
         // Reduce memory usage when app goes to background
         if (global.gc) {
@@ -114,7 +123,10 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
       }
     };
 
-    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    const subscription = AppState.addEventListener(
+      'change',
+      handleAppStateChange,
+    );
     return () => subscription?.remove();
   }, [enableBackgroundOptimization]);
 
@@ -122,7 +134,7 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
   const logPerformanceMetrics = useCallback(() => {
     const state = navigation.getState();
     const currentRoute = state?.routes[state?.index];
-    
+
     console.log('📊 Navigation Performance Metrics:', {
       currentRoute: currentRoute?.name,
       totalRoutes: state?.routes.length,
@@ -132,7 +144,12 @@ export const useNavigationPerformance = (options: NavigationPerformanceOptions =
       interactionBatching: enableInteractionBatching,
       backgroundOptimization: enableBackgroundOptimization,
     });
-  }, [navigation, enableMemoryOptimization, enableInteractionBatching, enableBackgroundOptimization]);
+  }, [
+    navigation,
+    enableMemoryOptimization,
+    enableInteractionBatching,
+    enableBackgroundOptimization,
+  ]);
 
   return {
     preloadScreen,
@@ -157,7 +174,7 @@ export const useScreenTransitionOptimization = () => {
   const endTransition = useCallback((screenName: string) => {
     const duration = Date.now() - transitionStartTime.current;
     console.log(`🔄 Transition to ${screenName} took ${duration}ms`);
-    
+
     // Log slow transitions
     if (duration > 300) {
       console.warn(`⚠️ Slow transition to ${screenName}: ${duration}ms`);
@@ -176,19 +193,22 @@ export const useScreenTransitionOptimization = () => {
 export const useLazyLoadingOptimization = () => {
   const loadedComponents = useRef<Set<string>>(new Set());
 
-  const loadComponent = useCallback(async (componentName: string, loader: () => Promise<any>) => {
-    if (loadedComponents.current.has(componentName)) {
-      return;
-    }
+  const loadComponent = useCallback(
+    async (componentName: string, loader: () => Promise<any>) => {
+      if (loadedComponents.current.has(componentName)) {
+        return;
+      }
 
-    try {
-      await loader();
-      loadedComponents.current.add(componentName);
-      console.log(`📦 Lazy loaded component: ${componentName}`);
-    } catch (error) {
-      console.error(`Failed to lazy load ${componentName}:`, error);
-    }
-  }, []);
+      try {
+        await loader();
+        loadedComponents.current.add(componentName);
+        console.log(`📦 Lazy loaded component: ${componentName}`);
+      } catch (error) {
+        console.error(`Failed to lazy load ${componentName}:`, error);
+      }
+    },
+    [],
+  );
 
   const isComponentLoaded = useCallback((componentName: string) => {
     return loadedComponents.current.has(componentName);

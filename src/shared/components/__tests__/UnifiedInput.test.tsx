@@ -13,24 +13,26 @@ describe('UnifiedInput', () => {
   });
 
   const renderWithTheme = (component: React.ReactElement) => {
-    return render(
-      <ThemeProvider>
-        {component}
-      </ThemeProvider>
-    );
+    return render(<ThemeProvider>{component}</ThemeProvider>);
   };
 
   describe('Basic Functionality', () => {
     it('should render with default props', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
 
     it('should call onChangeText when text changes', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       const input = getByPlaceholderText('Test Input');
       fireEvent.changeText(input, 'Test Value');
@@ -39,14 +41,23 @@ describe('UnifiedInput', () => {
 
     it('should display label when provided', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedInput label="Test Label" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          label="Test Label"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByText('Test Label')).toBeTruthy();
     });
 
     it('should display required indicator', () => {
       const { getByText } = renderWithTheme(
-        <UnifiedInput label="Test Label" required placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          label="Test Label"
+          required
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByText('Test Label')).toBeTruthy();
     });
@@ -55,21 +66,33 @@ describe('UnifiedInput', () => {
   describe('Variants', () => {
     it('should render default variant', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput variant="default" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          variant="default"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
 
     it('should render outlined variant', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput variant="outlined" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          variant="outlined"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
 
     it('should render filled variant', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput variant="filled" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          variant="filled"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -78,21 +101,33 @@ describe('UnifiedInput', () => {
   describe('Sizes', () => {
     it('should render small size', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput size="small" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          size="small"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
 
     it('should render medium size (default)', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput size="medium" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          size="medium"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
 
     it('should render large size', () => {
       const { getByPlaceholderText } = renderWithTheme(
-        <UnifiedInput size="large" placeholder="Test Input" onChangeText={mockOnChangeText} />
+        <UnifiedInput
+          size="large"
+          placeholder="Test Input"
+          onChangeText={mockOnChangeText}
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -105,7 +140,7 @@ describe('UnifiedInput', () => {
           leftIcon="mail"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -116,7 +151,7 @@ describe('UnifiedInput', () => {
           rightIcon="eye"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -128,7 +163,7 @@ describe('UnifiedInput', () => {
           onRightIconPress={mockOnRightIconPress}
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -141,7 +176,7 @@ describe('UnifiedInput', () => {
           error="This is an error"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByText('This is an error')).toBeTruthy();
     });
@@ -153,7 +188,7 @@ describe('UnifiedInput', () => {
           error="This is an error"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByText('Test Label')).toBeTruthy();
     });
@@ -166,7 +201,7 @@ describe('UnifiedInput', () => {
           helperText="This is helper text"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByText('This is helper text')).toBeTruthy();
     });
@@ -178,7 +213,7 @@ describe('UnifiedInput', () => {
           helperText="This is helper text"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(queryByText('This is helper text')).toBeNull();
     });
@@ -193,7 +228,7 @@ describe('UnifiedInput', () => {
           value="Test"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByText('4/100')).toBeTruthy();
     });
@@ -205,7 +240,7 @@ describe('UnifiedInput', () => {
           maxLength={100}
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       const input = getByPlaceholderText('Test Input');
       fireEvent.changeText(input, 'New Value');
@@ -219,7 +254,7 @@ describe('UnifiedInput', () => {
         <UnifiedInput
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       const input = getByPlaceholderText('Test Input');
       fireEvent(input, 'focus');
@@ -231,7 +266,7 @@ describe('UnifiedInput', () => {
         <UnifiedInput
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       const input = getByPlaceholderText('Test Input');
       fireEvent(input, 'blur');
@@ -247,7 +282,7 @@ describe('UnifiedInput', () => {
           accessibilityHint="Enter your email address"
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       expect(getByPlaceholderText('Test Input')).toBeTruthy();
     });
@@ -260,7 +295,7 @@ describe('UnifiedInput', () => {
           maxLength={10}
           placeholder="Test Input"
           onChangeText={mockOnChangeText}
-        />
+        />,
       );
       const input = getByPlaceholderText('Test Input');
       fireEvent.changeText(input, 'This is too long');
@@ -268,5 +303,3 @@ describe('UnifiedInput', () => {
     });
   });
 });
-
-

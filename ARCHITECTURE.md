@@ -28,6 +28,7 @@ src/
 ## 🎨 Design System Architecture
 
 ### Centralized Theme System
+
 All design tokens are consolidated in `src/constants/theme.ts`:
 
 ```typescript
@@ -46,7 +47,12 @@ export const TYPOGRAPHY = {
 
 // Spacing
 export const SPACING = {
-  xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48
+  xs: 4,
+  sm: 8,
+  md: 16,
+  lg: 24,
+  xl: 32,
+  xxl: 48,
 };
 
 // Animations
@@ -55,13 +61,14 @@ export const ANIMATIONS = {
     sheet: { duration: 300, easing: 'ease-out', backdropType: 'opacity' },
     dialog: { duration: 300, easing: 'ease-in-out', backdropType: 'blur' },
     // ... standardized animation configs
-  }
+  },
 };
 ```
 
 ### Component Architecture Patterns
 
 #### 1. Simplified Component Interfaces
+
 Complex components are broken down using grouped props:
 
 ```typescript
@@ -85,13 +92,14 @@ interface ComplexInputProps {
 // After: 4 grouped prop objects
 interface SimplifiedInputProps {
   label?: string;
-  config?: InputConfig;      // variant, size, required
-  state?: InputState;        // error, success, helperText
-  icons?: InputIcons;        // leftIcon, rightIcon, onPress
+  config?: InputConfig; // variant, size, required
+  state?: InputState; // error, success, helperText
+  icons?: InputIcons; // leftIcon, rightIcon, onPress
 }
 ```
 
 #### 2. Focused Sub-Components
+
 Large components are broken into focused sub-components:
 
 ```typescript
@@ -108,18 +116,21 @@ const SimplifiedHomeScreenContent = ({ data, uiState, eventHandlers }) => (
 ## 🔧 Component System Architecture
 
 ### Button System
+
 - **Focused Variants**: `PrimaryButton`, `SecondaryButton`, `OutlineButton`, `DangerButton`, `GhostButton`
 - **Consistent API**: All variants share the same core props (`title`, `onPress`, `loading`, `disabled`)
 - **Theme Integration**: All styling uses centralized theme tokens
 - **ESLint Enforcement**: Rules prevent generic Button imports
 
 ### Modal System
+
 - **Standardized Variants**: `DialogModal`, `SheetModal`, `SimpleModal`, `FullScreenModal`
 - **Consistent Animations**: All modals use 300ms duration with appropriate easing
 - **Backdrop Types**: Proper backdrop handling per modal type
 - **Base Implementation**: `BaseModal` provides common functionality
 
 ### Input System
+
 - **Grouped Props**: Configuration, state, and icon props are grouped
 - **Sub-Components**: `InputLabel`, `InputIcon`, `InputHelper` for focused concerns
 - **Validation States**: Error, success, and helper text handling
@@ -128,6 +139,7 @@ const SimplifiedHomeScreenContent = ({ data, uiState, eventHandlers }) => (
 ## 🎬 Animation Architecture
 
 ### Modal Animations
+
 All modals follow standardized animation patterns:
 
 ```typescript
@@ -146,11 +158,12 @@ export const ANIMATIONS = {
       backdropIntensity: 40,
     },
     // ... other modal types
-  }
+  },
 };
 ```
 
 ### Animation Principles
+
 - **Consistent Duration**: 300ms for all modal animations
 - **Appropriate Easing**: Different easing functions for different interaction types
 - **Backdrop Consistency**: Proper backdrop types per modal variant
@@ -159,12 +172,14 @@ export const ANIMATIONS = {
 ## 📱 State Management Architecture
 
 ### React Query Integration
+
 - **Server State**: Managed by React Query with proper caching
 - **Optimistic Updates**: Immediate UI updates with rollback on failure
 - **Error Handling**: Centralized error handling with user-friendly messages
 - **Loading States**: Consistent loading patterns across the app
 
 ### Local State Management
+
 - **React Context**: For global app state (auth, theme)
 - **Component State**: For local UI state
 - **Custom Hooks**: For complex state logic and side effects
@@ -172,12 +187,14 @@ export const ANIMATIONS = {
 ## 🔒 Security Architecture
 
 ### Authentication
+
 - **Supabase Auth**: Secure authentication with JWT tokens
 - **Session Management**: Automatic token refresh and session persistence
 - **Permission System**: Role-based access control
 - **Guest Mode**: Limited functionality for unauthenticated users
 
 ### Data Protection
+
 - **Input Validation**: Client and server-side validation
 - **SQL Injection Prevention**: Parameterized queries
 - **XSS Protection**: Proper data sanitization
@@ -186,16 +203,19 @@ export const ANIMATIONS = {
 ## 🚀 Performance Architecture
 
 ### Code Splitting
+
 - **Feature-Based Splitting**: Each feature is loaded on demand
 - **Component Lazy Loading**: Heavy components are loaded as needed
 - **Bundle Optimization**: Tree shaking and dead code elimination
 
 ### Caching Strategy
+
 - **React Query Cache**: Intelligent caching of server data
 - **Image Caching**: Optimized image loading and caching
 - **Static Asset Caching**: Proper cache headers for static assets
 
 ### Performance Monitoring
+
 - **Performance Metrics**: Core Web Vitals monitoring
 - **Error Tracking**: Comprehensive error reporting
 - **User Analytics**: Performance impact on user experience
@@ -203,12 +223,14 @@ export const ANIMATIONS = {
 ## 🧪 Testing Architecture
 
 ### Testing Strategy
+
 - **Unit Tests**: Component and utility function testing
 - **Integration Tests**: Feature-level testing
 - **E2E Tests**: Critical user flow testing
 - **Performance Tests**: Load and performance testing
 
 ### Testing Tools
+
 - **Jest**: Unit testing framework
 - **React Native Testing Library**: Component testing
 - **Detox**: E2E testing for React Native
@@ -217,12 +239,14 @@ export const ANIMATIONS = {
 ## 📦 Build and Deployment Architecture
 
 ### Build System
+
 - **Expo**: React Native development and build platform
 - **TypeScript**: Type-safe development
 - **ESLint**: Code quality enforcement
 - **Prettier**: Code formatting
 
 ### Deployment Pipeline
+
 - **EAS Build**: Cloud-based builds for iOS and Android
 - **App Store**: Automated deployment to app stores
 - **Environment Management**: Separate configs for dev/staging/prod
@@ -231,11 +255,13 @@ export const ANIMATIONS = {
 ## 🔄 Migration and Compatibility
 
 ### Backward Compatibility
+
 - **Legacy Wrappers**: Old component APIs are maintained with wrappers
 - **Gradual Migration**: Phased approach to component updates
 - **Deprecation Warnings**: Clear migration paths for deprecated APIs
 
 ### Version Management
+
 - **Semantic Versioning**: Clear version numbering
 - **Breaking Changes**: Documented breaking changes with migration guides
 - **Feature Flags**: Safe rollout of new features
@@ -243,18 +269,21 @@ export const ANIMATIONS = {
 ## 📚 Development Guidelines
 
 ### Code Organization
+
 - **Feature-Based**: Organize code by features, not by file type
 - **Shared Resources**: Common components and utilities in shared folders
 - **Type Safety**: Comprehensive TypeScript coverage
 - **Documentation**: Inline documentation for complex logic
 
 ### Component Development
+
 - **Single Responsibility**: Each component has one clear purpose
 - **Prop Grouping**: Group related props into objects
 - **Sub-Components**: Break complex components into focused pieces
 - **Theme Integration**: Always use design tokens, never hardcoded values
 
 ### Performance Guidelines
+
 - **Memoization**: Use React.memo and useMemo appropriately
 - **Lazy Loading**: Load components and data on demand
 - **Image Optimization**: Optimize images for mobile performance

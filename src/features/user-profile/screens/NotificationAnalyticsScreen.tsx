@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getNotificationAnalytics } from '@/utils/notificationQueue';
 
 export function NotificationAnalyticsScreen() {
@@ -47,7 +47,12 @@ export function NotificationAnalyticsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          { backgroundColor: theme.background },
+        ]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -81,7 +86,9 @@ export function NotificationAnalyticsScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -93,9 +100,12 @@ export function NotificationAnalyticsScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.primary} />
-        }
-      >
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+          />
+        }>
         {analytics ? (
           <>
             {/* Overall Stats */}
@@ -105,7 +115,8 @@ export function NotificationAnalyticsScreen() {
                 <Text style={[styles.statValue, { color: theme.text }]}>
                   {analytics.total_sent}
                 </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                <Text
+                  style={[styles.statLabel, { color: theme.textSecondary }]}>
                   Total Sent
                 </Text>
               </View>
@@ -115,17 +126,23 @@ export function NotificationAnalyticsScreen() {
                 <Text style={[styles.statValue, { color: theme.text }]}>
                   {analytics.total_opened}
                 </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                <Text
+                  style={[styles.statLabel, { color: theme.textSecondary }]}>
                   Opened
                 </Text>
               </View>
 
               <View style={[styles.statCard, { backgroundColor: theme.card }]}>
-                <Ionicons name="stats-chart-outline" size={24} color="#F59E0B" />
+                <Ionicons
+                  name="stats-chart-outline"
+                  size={24}
+                  color="#F59E0B"
+                />
                 <Text style={[styles.statValue, { color: theme.text }]}>
                   {analytics.open_rate.toFixed(0)}%
                 </Text>
-                <Text style={[styles.statLabel, { color: theme.textSecondary }]}>
+                <Text
+                  style={[styles.statLabel, { color: theme.textSecondary }]}>
                   Open Rate
                 </Text>
               </View>
@@ -137,35 +154,49 @@ export function NotificationAnalyticsScreen() {
                 By Notification Type
               </Text>
 
-              {Object.entries(analytics.by_type).map(([type, stats]: [string, any]) => (
-                <View key={type} style={styles.typeRow}>
-                  <View style={[styles.typeIcon, { backgroundColor: theme.primary + '20' }]}>
-                    <Ionicons
-                      name={getTypeIcon(type) as any}
-                      size={20}
-                      color={theme.primary}
-                    />
+              {Object.entries(analytics.by_type).map(
+                ([type, stats]: [string, any]) => (
+                  <View key={type} style={styles.typeRow}>
+                    <View
+                      style={[
+                        styles.typeIcon,
+                        { backgroundColor: theme.primary + '20' },
+                      ]}>
+                      <Ionicons
+                        name={getTypeIcon(type) as any}
+                        size={20}
+                        color={theme.primary}
+                      />
+                    </View>
+                    <View style={styles.typeInfo}>
+                      <Text style={[styles.typeName, { color: theme.text }]}>
+                        {getTypeLabel(type)}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.typeStats,
+                          { color: theme.textSecondary },
+                        ]}>
+                        {stats.sent} sent • {stats.opened} opened
+                        {stats.best_hour && ` • Best: ${stats.best_hour}:00`}
+                      </Text>
+                    </View>
+                    <View style={styles.typeRate}>
+                      <Text style={[styles.rateValue, { color: theme.text }]}>
+                        {stats.open_rate?.toFixed(0) || 0}%
+                      </Text>
+                    </View>
                   </View>
-                  <View style={styles.typeInfo}>
-                    <Text style={[styles.typeName, { color: theme.text }]}>
-                      {getTypeLabel(type)}
-                    </Text>
-                    <Text style={[styles.typeStats, { color: theme.textSecondary }]}>
-                      {stats.sent} sent • {stats.opened} opened
-                      {stats.best_hour && ` • Best: ${stats.best_hour}:00`}
-                    </Text>
-                  </View>
-                  <View style={styles.typeRate}>
-                    <Text style={[styles.rateValue, { color: theme.text }]}>
-                      {stats.open_rate?.toFixed(0) || 0}%
-                    </Text>
-                  </View>
-                </View>
-              ))}
+                ),
+              )}
             </View>
 
             {/* Insights */}
-            <View style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
+            <View
+              style={[
+                styles.infoBox,
+                { backgroundColor: theme.primary + '10' },
+              ]}>
               <Ionicons name="bulb-outline" size={20} color={theme.primary} />
               <View style={styles.infoContent}>
                 <Text style={[styles.infoTitle, { color: theme.text }]}>
@@ -175,15 +206,19 @@ export function NotificationAnalyticsScreen() {
                   {analytics.open_rate > 50
                     ? 'Great engagement! Your notifications are working well.'
                     : analytics.open_rate > 20
-                    ? 'Good engagement. Consider adjusting notification timing for better results.'
-                    : 'Low engagement. Try adjusting when notifications are sent or review your quiet hours settings.'}
+                      ? 'Good engagement. Consider adjusting notification timing for better results.'
+                      : 'Low engagement. Try adjusting when notifications are sent or review your quiet hours settings.'}
                 </Text>
               </View>
             </View>
           </>
         ) : (
           <View style={styles.emptyContainer}>
-            <Ionicons name="analytics-outline" size={64} color={theme.textSecondary} />
+            <Ionicons
+              name="analytics-outline"
+              size={64}
+              color={theme.textSecondary}
+            />
             <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
               No analytics data yet
             </Text>
@@ -325,4 +360,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-

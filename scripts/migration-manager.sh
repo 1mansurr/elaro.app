@@ -62,15 +62,15 @@ validate_migrations() {
         if [[ -f "$file" ]]; then
             # Check if file has proper naming convention
             filename=$(basename "$file")
-            if [[ ! "$filename" =~ ^[0-9]{8}_[0-9]{6}_.*\.sql$ ]]; then
-                warning "Migration file '$filename' doesn't follow naming convention: YYYYMMDD_HHMMSS_description.sql"
+            if [[ ! "$filename" =~ ^[0-9]{14}_.+\.sql$ ]]; then
+                warning "Migration file '$filename' doesn't follow naming convention: YYYYMMDDHHMMSS_description.sql"
                 invalid_files+=("$filename")
             fi
             
-            # Check for SQL syntax issues
-            if ! psql --dry-run -f "$file" 2>/dev/null; then
-                error "SQL syntax error in migration file: $filename"
-            fi
+            # Note: psql has no --dry-run flag. SQL syntax validation should be done via:
+            # 1. Testing migrations in a local/staging environment first
+            # 2. Using supabase db push which validates before applying
+            # 3. Manual review of migration files before committing
         fi
     done
     

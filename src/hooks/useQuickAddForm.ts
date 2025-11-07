@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Course } from '@/types';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
@@ -35,7 +35,9 @@ interface QuickAddFormActions {
   resetForm: () => void;
 }
 
-export const useQuickAddForm = (isVisible: boolean): QuickAddFormState & QuickAddFormActions => {
+export const useQuickAddForm = (
+  isVisible: boolean,
+): QuickAddFormState & QuickAddFormActions => {
   const { user } = useAuth();
   // const { resetTemplateSelection } = useTemplateSelection();
   const resetTemplateSelection = () => {}; // Mock implementation
@@ -46,13 +48,13 @@ export const useQuickAddForm = (isVisible: boolean): QuickAddFormState & QuickAd
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [dateTime, setDateTime] = useState<Date>(new Date());
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
-  
+
   // Modal state
   const [showCourseModal, setShowCourseModal] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
-  
+
   // Data state
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
@@ -61,7 +63,7 @@ export const useQuickAddForm = (isVisible: boolean): QuickAddFormState & QuickAd
   // Fetch courses when modal opens
   const fetchCourses = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoadingCourses(true);
     try {
       const { data, error } = await supabase
@@ -116,7 +118,7 @@ export const useQuickAddForm = (isVisible: boolean): QuickAddFormState & QuickAd
     isLoadingCourses,
     isSaving,
     showEmptyStateModal,
-    
+
     // Actions
     setTaskType,
     setTitle,

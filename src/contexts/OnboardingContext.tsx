@@ -1,4 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  ReactNode,
+  useMemo,
+  useCallback,
+} from 'react';
 import { Course } from '../types'; // Assuming Course type is available
 
 // Define the shape of our onboarding data
@@ -21,7 +28,9 @@ interface OnboardingContextType {
 }
 
 // Create the context
-const OnboardingContext = createContext<OnboardingContextType | undefined>(undefined);
+const OnboardingContext = createContext<OnboardingContextType | undefined>(
+  undefined,
+);
 
 // Define the initial state
 const initialState: OnboardingData = {
@@ -37,21 +46,29 @@ const initialState: OnboardingData = {
 
 // Create the provider component
 export const OnboardingProvider = ({ children }: { children: ReactNode }) => {
-  const [onboardingData, setOnboardingData] = useState<OnboardingData>(initialState);
+  const [onboardingData, setOnboardingData] =
+    useState<OnboardingData>(initialState);
 
-  const updateOnboardingData = (updates: Partial<OnboardingData>) => {
-    setOnboardingData(prevData => ({ ...prevData, ...updates }));
-  };
+  const updateOnboardingData = useCallback(
+    (updates: Partial<OnboardingData>) => {
+      setOnboardingData(prevData => ({ ...prevData, ...updates }));
+    },
+    [],
+  );
 
-  const resetOnboardingData = () => {
+  const resetOnboardingData = useCallback(() => {
     setOnboardingData(initialState);
-  };
+  }, []);
 
-  const value = {
-    onboardingData,
-    updateOnboardingData,
-    resetOnboardingData,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(
+    () => ({
+      onboardingData,
+      updateOnboardingData,
+      resetOnboardingData,
+    }),
+    [onboardingData, updateOnboardingData, resetOnboardingData],
+  );
 
   return (
     <OnboardingContext.Provider value={value}>

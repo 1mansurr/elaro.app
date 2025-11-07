@@ -1,6 +1,12 @@
 // Export all analytics services
-export { weeklyAnalyticsService, WeeklyAnalyticsService } from './WeeklyAnalyticsService';
-export { batchProcessingService, BatchProcessingService } from './BatchProcessingService';
+export {
+  weeklyAnalyticsService,
+  WeeklyAnalyticsService,
+} from './WeeklyAnalyticsService';
+export {
+  batchProcessingService,
+  BatchProcessingService,
+} from './BatchProcessingService';
 
 // Export types for convenience
 export type {
@@ -10,10 +16,10 @@ export type {
   CompletionRates,
   DailyActivity,
   Achievement,
-  ReportTemplate
+  ReportTemplate,
 } from './WeeklyAnalyticsService';
 
 export type {
   BatchProcessingLog,
-  ProcessingUser
+  ProcessingUser,
 } from './BatchProcessingService';

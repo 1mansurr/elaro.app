@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { RootStackParamList } from '@/types';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
-type GuestHomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'GuestHome'>;
+type GuestHomeScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'GuestHome'
+>;
 
 const GuestHomeScreen: React.FC = () => {
   const navigation = useNavigation<GuestHomeScreenNavigationProp>();
@@ -22,14 +31,15 @@ const GuestHomeScreen: React.FC = () => {
   };
 
   return (
-    <ScrollView 
-      style={styles.container} 
+    <ScrollView
+      style={styles.container}
       contentContainerStyle={styles.contentContainer}
       testID="guest-home-screen">
       <View style={styles.header}>
         <Text style={styles.title}>Welcome to ELARO</Text>
         <Text style={styles.subtitle}>
-          Your personal academic companion for managing courses, assignments, and study sessions.
+          Your personal academic companion for managing courses, assignments,
+          and study sessions.
         </Text>
       </View>
 
@@ -60,15 +70,15 @@ const GuestHomeScreen: React.FC = () => {
       </View>
 
       <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={styles.primaryButton} 
+        <TouchableOpacity
+          style={styles.primaryButton}
           onPress={handleGetStarted}
           testID="get-started-button">
           <Text style={styles.primaryButtonText}>Get Started</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.secondaryButton} 
+        <TouchableOpacity
+          style={styles.secondaryButton}
           onPress={handleLearnMore}
           testID="learn-more-button">
           <Text style={styles.secondaryButtonText}>Learn More</Text>
@@ -77,7 +87,8 @@ const GuestHomeScreen: React.FC = () => {
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>
-          Join thousands of students who are already using ELARO to stay organized and succeed academically.
+          Join thousands of students who are already using ELARO to stay
+          organized and succeed academically.
         </Text>
       </View>
     </ScrollView>
@@ -99,7 +110,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: (FONT_WEIGHTS.bold as any),
+    fontWeight: FONT_WEIGHTS.bold as any,
     color: COLORS.textPrimary,
     textAlign: 'center',
     marginBottom: SPACING.md,
@@ -122,7 +133,7 @@ const styles = StyleSheet.create({
   },
   featureTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: (FONT_WEIGHTS.semibold as any),
+    fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.textPrimary,
     marginTop: SPACING.sm,
     marginBottom: SPACING.xs,
@@ -147,7 +158,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: FONT_SIZES.lg,
-    fontWeight: (FONT_WEIGHTS.semibold as any),
+    fontWeight: FONT_WEIGHTS.semibold as any,
   },
   secondaryButton: {
     borderColor: COLORS.primary,
@@ -160,7 +171,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: COLORS.primary,
     fontSize: FONT_SIZES.lg,
-    fontWeight: (FONT_WEIGHTS.semibold as any),
+    fontWeight: FONT_WEIGHTS.semibold as any,
   },
   footer: {
     alignItems: 'center',

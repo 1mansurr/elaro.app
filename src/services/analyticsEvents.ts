@@ -47,4 +47,5 @@ export const AnalyticsEvents = {
   ANALYTICS_CONSENT_CHANGED: 'Analytics Consent Changed',
 } as const;
 
-export type AnalyticsEvent = typeof AnalyticsEvents[keyof typeof AnalyticsEvents];
+export type AnalyticsEvent =
+  (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

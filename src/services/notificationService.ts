@@ -27,7 +27,8 @@ const notificationService = {
    */
   async getPermissions(): Promise<boolean> {
     try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
 
       if (existingStatus !== 'granted') {
@@ -49,7 +50,7 @@ const notificationService = {
           lightColor: '#FF231F7C',
         });
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error getting notification permissions:', error);
@@ -65,21 +66,28 @@ const notificationService = {
     try {
       // Get project ID from Expo config
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-      
+
       if (!projectId) {
         // Fallback: try to get from legacy config structure
-        const legacyProjectId = Constants.expoConfig?.extra?.eas?.projectId || 
-                               (Constants.manifest as any)?.extra?.eas?.projectId;
-        
+        const legacyProjectId =
+          Constants.expoConfig?.extra?.eas?.projectId ||
+          (Constants.manifest as any)?.extra?.eas?.projectId;
+
         if (!legacyProjectId) {
-          throw new Error('EAS project ID not found in app config. Make sure your app.config.js includes the eas.projectId.');
+          throw new Error(
+            'EAS project ID not found in app config. Make sure your app.config.js includes the eas.projectId.',
+          );
         }
-        
-        const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: legacyProjectId });
+
+        const tokenData = await Notifications.getExpoPushTokenAsync({
+          projectId: legacyProjectId,
+        });
         return tokenData.data;
       }
 
-      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId,
+      });
       return tokenData.data;
     } catch (error) {
       console.error('Error getting push token:', error);
@@ -98,22 +106,20 @@ const notificationService = {
       const platform = Platform.OS;
       const updated_at = new Date().toISOString();
 
-      const { error } = await supabase
-        .from('user_devices')
-        .upsert(
-          {
-            user_id: userId,
-            push_token: token,
-            platform,
-            updated_at,
-          },
-          { onConflict: 'user_id,platform' }
-        );
+      const { error } = await supabase.from('user_devices').upsert(
+        {
+          user_id: userId,
+          push_token: token,
+          platform,
+          updated_at,
+        },
+        { onConflict: 'user_id,platform' },
+      );
 
       if (error) {
         throw error;
       }
-      
+
       console.log('Push token saved successfully to user_devices table.');
     } catch (error) {
       console.error('Error saving push token:', error);
@@ -126,9 +132,12 @@ const notificationService = {
    * @param {Function} listener - The function to call when a notification is tapped.
    * @returns {Function} - Cleanup function to remove the listener.
    */
-  addNotificationListener(listener: (notification: Notifications.Notification) => void): () => void {
-    const subscription = Notifications.addNotificationReceivedListener(listener);
-    
+  addNotificationListener(
+    listener: (notification: Notifications.Notification) => void,
+  ): () => void {
+    const subscription =
+      Notifications.addNotificationReceivedListener(listener);
+
     return () => {
       subscription.remove();
     };
@@ -140,10 +149,11 @@ const notificationService = {
    * @returns {Function} - Cleanup function to remove the listener.
    */
   addNotificationResponseListener(
-    listener: (response: Notifications.NotificationResponse) => void
+    listener: (response: Notifications.NotificationResponse) => void,
   ): () => void {
-    const subscription = Notifications.addNotificationResponseReceivedListener(listener);
-    
+    const subscription =
+      Notifications.addNotificationResponseReceivedListener(listener);
+
     return () => {
       subscription.remove();
     };
@@ -182,9 +192,10 @@ const notificationService = {
         },
         trigger: notification.trigger || null, // Use null as default trigger
       };
-      
-      const notificationId = await Notifications.scheduleNotificationAsync(request);
-      
+
+      const notificationId =
+        await Notifications.scheduleNotificationAsync(request);
+
       console.log(`Local notification scheduled with ID: ${notificationId}`);
       return notificationId;
     } catch (error) {
@@ -211,9 +222,12 @@ const notificationService = {
    * Gets all scheduled notifications.
    * @returns {Promise<Notifications.NotificationRequest[]>}
    */
-  async getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+  async getScheduledNotifications(): Promise<
+    Notifications.NotificationRequest[]
+  > {
     try {
-      const notifications = await Notifications.getAllScheduledNotificationsAsync();
+      const notifications =
+        await Notifications.getAllScheduledNotificationsAsync();
       return notifications;
     } catch (error) {
       console.error('Error getting scheduled notifications:', error);

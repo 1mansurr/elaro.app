@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,35 +24,34 @@ const TrialWelcomeScreen = () => {
 
   const handleContinue = async () => {
     setIsLoading(true);
-    
+
     try {
       // Start the user's trial
       const { error } = await supabase.functions.invoke('start-user-trial');
-      
+
       if (error) {
         console.error('Failed to start trial:', error);
         // Log to Sentry for monitoring
         Sentry.captureException(error, {
           tags: {
             feature: 'trial_welcome',
-            action: 'start_trial'
-          }
+            action: 'start_trial',
+          },
         });
       }
-      
+
       // Navigate to main app regardless of trial start success/failure
       navigation.navigate('Main');
-      
     } catch (error) {
       console.error('Unexpected error starting trial:', error);
       // Log to Sentry
       Sentry.captureException(error, {
         tags: {
           feature: 'trial_welcome',
-          action: 'start_trial_unexpected'
-        }
+          action: 'start_trial_unexpected',
+        },
       });
-      
+
       // Still navigate to main app
       navigation.navigate('Main');
     } finally {
@@ -58,26 +64,26 @@ const TrialWelcomeScreen = () => {
       icon: 'school-outline',
       title: 'More Courses',
       description: 'Track up to 10 courses (vs 2 on free plan)',
-      color: 'COLORS.blue500'
+      color: 'COLORS.blue500',
     },
     {
-      icon: 'flash-outline', 
+      icon: 'flash-outline',
       title: 'More Tasks',
       description: 'Create 70 tasks/month (vs 15 on free plan)',
-      color: 'COLORS.yellow500'
+      color: 'COLORS.yellow500',
     },
     {
       icon: 'alarm-outline',
-      title: 'More Reminders', 
+      title: 'More Reminders',
       description: 'Get 112 SRS reminders/month (vs 15 on free plan)',
-      color: 'COLORS.green500'
+      color: 'COLORS.green500',
     },
     {
       icon: 'analytics-outline',
       title: 'Weekly Analytics',
       description: 'Advanced study insights and performance tracking',
-      color: 'COLORS.purple500'
-    }
+      color: 'COLORS.purple500',
+    },
   ];
 
   return (
@@ -86,7 +92,8 @@ const TrialWelcomeScreen = () => {
       <View style={styles.headerSection}>
         <Text style={styles.title}>Welcome to ELARO!</Text>
         <Text style={styles.subtitle}>
-          🎉 We&apos;re giving you a 7-day free trial of our premium Oddity experience!
+          🎉 We&apos;re giving you a 7-day free trial of our premium Oddity
+          experience!
         </Text>
         <Text style={styles.giftText}>
           No credit card required • Experience everything ELARO has to offer
@@ -95,16 +102,28 @@ const TrialWelcomeScreen = () => {
 
       {/* Benefits Grid */}
       <View style={styles.benefitsSection}>
-        <Text style={styles.benefitsTitle}>What you&apos;ll get with Oddity:</Text>
-        
+        <Text style={styles.benefitsTitle}>
+          What you&apos;ll get with Oddity:
+        </Text>
+
         {benefits.map((benefit, index) => (
           <View key={index} style={styles.benefitCard}>
-            <View style={[styles.benefitIcon, { backgroundColor: benefit.color + '20' }]}>
-              <Ionicons name={benefit.icon as any} size={24} color={benefit.color} />
+            <View
+              style={[
+                styles.benefitIcon,
+                { backgroundColor: benefit.color + '20' },
+              ]}>
+              <Ionicons
+                name={benefit.icon as any}
+                size={24}
+                color={benefit.color}
+              />
             </View>
             <View style={styles.benefitContent}>
               <Text style={styles.benefitTitle}>{benefit.title}</Text>
-              <Text style={styles.benefitDescription}>{benefit.description}</Text>
+              <Text style={styles.benefitDescription}>
+                {benefit.description}
+              </Text>
             </View>
           </View>
         ))}

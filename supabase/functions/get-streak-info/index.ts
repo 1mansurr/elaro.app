@@ -1,92 +1,40 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
-import { initSentry, captureException } from '../_shared/sentry.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+} from '../_shared/function-handler.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
 
-serve(async req => {
-  // This is needed for browser-based invocations.
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+/**
+ * Handler for getting user streak information
+ * Returns current_streak and longest_streak, or 0,0 if no streak exists yet
+ */
+async function handleGetStreakInfo(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+
+  // Fetch the user's streak information
+  const { data: streakData, error: streakError } = await supabaseClient
+    .from('streaks')
+    .select('current_streak, longest_streak')
+    .eq('user_id', user.id)
+    .single();
+
+  if (streakError) {
+    // If no row was found (PGRST116), user hasn't started a streak yet - return default values
+    if (streakError.code === 'PGRST116') {
+      return { current_streak: 0, longest_streak: 0 };
+    }
+    // For any other error, use standard error handling
+    throw handleDbError(streakError);
   }
 
-  // Initialize Sentry for error monitoring
-  initSentry();
-  try {
-    // Create a Supabase client with the Auth context of the user.
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      },
-    );
+  // If data is null but there was no error, default to 0
+  return streakData || { current_streak: 0, longest_streak: 0 };
+}
 
-    // Get the user from the auth header.
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 401,
-      });
-    }
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabaseClient, user.id, 'get-streak-info');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
-    }
-
-    // Fetch the user's streak information.
-    const { data: streakData, error: streakError } = await supabaseClient
-      .from('streaks')
-      .select('current_streak, longest_streak')
-      .eq('user_id', user.id)
-      .single();
-    // .single() expects exactly one row or returns an error.
-    if (streakError) {
-      // If the error is because no row was found, that's not a server error.
-      // It just means the user hasn't started a streak yet.
-      if (streakError.code === 'PGRST116') {
-        return new Response(
-          JSON.stringify({ current_streak: 0, longest_streak: 0 }),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200,
-          },
-        );
-      }
-      // For any other error, we throw it to be caught by Sentry.
-      throw streakError;
-    }
-
-    // If data is null but there was no error, default to 0.
-    const responseData = streakData || { current_streak: 0, longest_streak: 0 };
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-  } catch (error) {
-    // Capture the error with Sentry and return a generic error response.
-    captureException(error);
-    return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
+serve(
+  createAuthenticatedHandler(handleGetStreakInfo, {
+    rateLimitName: 'get-streak-info',
+    // No schema needed - GET request with no body
+  }),
+);

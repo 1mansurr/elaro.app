@@ -58,8 +58,12 @@ export const getThemeColor = (hardcodedColor: string): string => {
   if (COLOR_MAPPINGS[normalized as keyof typeof COLOR_MAPPINGS]) {
     return COLOR_MAPPINGS[normalized as keyof typeof COLOR_MAPPINGS];
   }
-  if (EXTENDED_COLOR_MAPPINGS[normalized as keyof typeof EXTENDED_COLOR_MAPPINGS]) {
-    return EXTENDED_COLOR_MAPPINGS[normalized as keyof typeof EXTENDED_COLOR_MAPPINGS];
+  if (
+    EXTENDED_COLOR_MAPPINGS[normalized as keyof typeof EXTENDED_COLOR_MAPPINGS]
+  ) {
+    return EXTENDED_COLOR_MAPPINGS[
+      normalized as keyof typeof EXTENDED_COLOR_MAPPINGS
+    ];
   }
   return hardcodedColor;
 };
@@ -71,7 +75,7 @@ export const isHardcodedColor = (color: string): boolean => {
 export const replaceHardcodedColors = (content: string): string => {
   const matches = content.match(/#[0-9A-Fa-f]{3,6}/g) || [];
   let updated = content;
-  [...new Set(matches)].forEach((hex) => {
+  [...new Set(matches)].forEach(hex => {
     const replacement = getThemeColor(hex);
     if (replacement !== hex) {
       updated = updated.replace(new RegExp(hex, 'g'), replacement);
@@ -80,15 +84,17 @@ export const replaceHardcodedColors = (content: string): string => {
   return updated;
 };
 
-export const getMigrationSuggestions = (
-  filePath: string,
-  content: string,
-) => {
-  const suggestions: Array<{ line: number; original: string; suggestion: string; reason: string }> = [];
+export const getMigrationSuggestions = (filePath: string, content: string) => {
+  const suggestions: Array<{
+    line: number;
+    original: string;
+    suggestion: string;
+    reason: string;
+  }> = [];
   const lines = content.split('\n');
   lines.forEach((line, idx) => {
     const matches = line.match(/#[0-9A-Fa-f]{3,6}/g) || [];
-    matches.forEach((hex) => {
+    matches.forEach(hex => {
       const suggestion = getThemeColor(hex);
       if (suggestion !== hex) {
         suggestions.push({
@@ -104,11 +110,12 @@ export const getMigrationSuggestions = (
 };
 
 export const validateThemeUsage = (content: string) => {
-  const violations: Array<{ line: number; color: string; suggestion: string }> = [];
+  const violations: Array<{ line: number; color: string; suggestion: string }> =
+    [];
   const lines = content.split('\n');
   lines.forEach((line, idx) => {
     const matches = line.match(/#[0-9A-Fa-f]{3,6}/g) || [];
-    matches.forEach((hex) => {
+    matches.forEach(hex => {
       const suggestion = getThemeColor(hex);
       if (suggestion !== hex) {
         violations.push({ line: idx + 1, color: hex, suggestion });
@@ -121,8 +128,8 @@ export const validateThemeUsage = (content: string) => {
 export const getColorStats = (content: string) => {
   const all = content.match(/#[0-9A-Fa-f]{3,6}/g) || [];
   const unique = [...new Set(all)];
-  const unmapped = unique.filter((hex) => getThemeColor(hex) === hex);
-  const mapped = unique.filter((hex) => getThemeColor(hex) !== hex);
+  const unmapped = unique.filter(hex => getThemeColor(hex) === hex);
+  const mapped = unique.filter(hex => getThemeColor(hex) !== hex);
   return {
     totalColors: all.length,
     hardcodedColors: unmapped.length,
@@ -130,5 +137,3 @@ export const getColorStats = (content: string) => {
     unmappedColors: unmapped,
   };
 };
-
-

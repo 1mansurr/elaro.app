@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/theme';
 
 import { useHomeScreenState } from '../hooks/useHomeScreenState';
@@ -13,13 +13,16 @@ import HomeScreenContent from '../components/HomeScreenContent';
 import HomeScreenFAB from '../components/HomeScreenFAB';
 import HomeScreenModals from '../components/HomeScreenModals';
 
-type RefactoredHomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
+type RefactoredHomeScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Main'
+>;
 
 const RefactoredHomeScreen: React.FC = () => {
   const navigation = useNavigation<RefactoredHomeScreenNavigationProp>();
   const { session } = useAuth();
   const isGuest = !session;
-  
+
   const {
     selectedTask,
     isFabOpen,
@@ -39,16 +42,12 @@ const RefactoredHomeScreen: React.FC = () => {
   return (
     <View style={styles.container}>
       <HomeScreenHeader title={getPersonalizedTitle()} />
-      
-      <HomeScreenContent 
-        onFabStateChange={handleFabStateChange}
-      />
-      
-      <HomeScreenFAB 
-        onStateChange={handleFabStateChange}
-      />
-      
-      <HomeScreenModals 
+
+      <HomeScreenContent onFabStateChange={handleFabStateChange} />
+
+      <HomeScreenFAB onStateChange={handleFabStateChange} />
+
+      <HomeScreenModals
         selectedTask={selectedTask}
         onCloseSheet={handleCloseSheet}
       />

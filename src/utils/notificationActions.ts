@@ -7,7 +7,7 @@ import * as Notifications from 'expo-notifications';
  */
 export async function handleNotificationAction(
   actionIdentifier: string,
-  notification: Notifications.Notification
+  notification: Notifications.Notification,
 ): Promise<void> {
   const data = notification.request.content.data;
   const reminderId = data?.reminderId as string | undefined;
@@ -55,7 +55,7 @@ export async function handleNotificationAction(
 async function handleCompleteAction(
   taskId?: string,
   taskType?: string,
-  reminderId?: string
+  reminderId?: string,
 ): Promise<void> {
   console.log('Completing task:', taskId, taskType);
 
@@ -67,7 +67,7 @@ async function handleCompleteAction(
   try {
     // Mark task as completed in database
     const table = getTableName(taskType);
-    
+
     // For assignments, we could add a 'completed' field
     // For now, just log the action
     console.log(`Would mark ${taskType} ${taskId} as complete`);
@@ -170,7 +170,7 @@ function getTableName(taskType: string): string {
  */
 export async function trackNotificationOpened(
   notificationId: string,
-  reminderId?: string
+  reminderId?: string,
 ): Promise<void> {
   try {
     const now = new Date().toISOString();
@@ -209,4 +209,3 @@ export async function trackNotificationOpened(
     console.error('Error tracking notification open:', error);
   }
 }
-

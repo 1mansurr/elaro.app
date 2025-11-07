@@ -1,5 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Dimensions,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 
@@ -10,7 +17,12 @@ interface UndoToastProps {
   onDismiss: () => void;
 }
 
-export const UndoToast: React.FC<UndoToastProps> = ({ visible, message, onUndo, onDismiss }) => {
+export const UndoToast: React.FC<UndoToastProps> = ({
+  visible,
+  message,
+  onUndo,
+  onDismiss,
+}) => {
   const { theme } = useTheme();
   const slideAnim = useRef(new Animated.Value(100)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -64,29 +76,31 @@ export const UndoToast: React.FC<UndoToastProps> = ({ visible, message, onUndo, 
           transform: [{ translateY: slideAnim }],
           opacity: opacityAnim,
         },
-      ]}
-    >
+      ]}>
       <View style={styles.contentContainer}>
-        <Ionicons name="trash-outline" size={20} color={theme.text} style={styles.icon} />
+        <Ionicons
+          name="trash-outline"
+          size={20}
+          color={theme.text}
+          style={styles.icon}
+        />
         <Text style={[styles.message, { color: theme.text }]} numberOfLines={2}>
           {message}
         </Text>
       </View>
-      
+
       <View style={styles.actions}>
         <TouchableOpacity
           onPress={onUndo}
           style={[styles.undoButton, { backgroundColor: theme.accent }]}
-          activeOpacity={0.8}
-        >
+          activeOpacity={0.8}>
           <Text style={[styles.undoText, { color: theme.white }]}>UNDO</Text>
         </TouchableOpacity>
-        
+
         <TouchableOpacity
           onPress={onDismiss}
           style={styles.closeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
           <Ionicons name="close" size={20} color={theme.textSecondary} />
         </TouchableOpacity>
       </View>
@@ -149,4 +163,3 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 });
-

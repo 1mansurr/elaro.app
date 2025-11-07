@@ -6,15 +6,18 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { RootStackParamList } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/shared/components';
 
 type StudyResultScreenRouteProp = RouteProp<RootStackParamList, 'StudyResult'>;
-type StudyResultScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StudyResult'>;
+type StudyResultScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'StudyResult'
+>;
 
 /**
  * StudyResultScreen - Placeholder for study session results
- * 
+ *
  * This screen will display results and completion information after a study session.
  * Currently a placeholder implementation - to be enhanced with actual results data.
  */
@@ -33,10 +36,14 @@ const StudyResultScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]} testID="study-result-screen">
+    <View
+      style={[styles.container, { backgroundColor: theme.background }]}
+      testID="study-result-screen">
       <View style={styles.header}>
         <Ionicons name="checkmark-circle" size={64} color={theme.primary} />
-        <Text style={[styles.title, { color: theme.text }]}>Study Session Complete!</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Study Session Complete!
+        </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
           Great work on completing your study session.
         </Text>
@@ -44,7 +51,9 @@ const StudyResultScreen: React.FC = () => {
 
       <ScrollView style={styles.content}>
         <View style={[styles.card, { backgroundColor: theme.card }]}>
-          <Text style={[styles.cardTitle, { color: theme.text }]}>Session Summary</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>
+            Session Summary
+          </Text>
           <Text style={[styles.cardText, { color: theme.textSecondary }]}>
             Session ID: {sessionId}
           </Text>
@@ -69,8 +78,8 @@ const StudyResultScreen: React.FC = () => {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button 
-          title="Done" 
+        <Button
+          title="Done"
           onPress={handleDone}
           style={styles.doneButton}
           testID="study-result-done-button"
@@ -138,4 +147,3 @@ const styles = StyleSheet.create({
 });
 
 export default StudyResultScreen;
-

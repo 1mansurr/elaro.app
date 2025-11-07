@@ -68,9 +68,9 @@ describe('HomeScreenContent', () => {
           onSubscribePress={jest.fn()}
           onDismissBanner={jest.fn()}
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
-    
+
     expect(getByText('View Full Calendar')).toBeTruthy();
   });
 
@@ -104,9 +104,9 @@ describe('HomeScreenContent', () => {
           onSubscribePress={jest.fn()}
           onDismissBanner={jest.fn()}
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
-    
+
     expect(getByText('View Full Calendar')).toBeTruthy();
   });
 
@@ -127,9 +127,9 @@ describe('HomeScreenContent', () => {
           onSubscribePress={jest.fn()}
           onDismissBanner={jest.fn()}
         />
-      </QueryClientProvider>
+      </QueryClientProvider>,
     );
-    
+
     // The TrialBanner component should be rendered
     // Note: This test would need the TrialBanner to have testable content
     expect(getByText('View Full Calendar')).toBeTruthy();

@@ -10,15 +10,17 @@ Your Edge Functions are now instrumented with metrics collection using StatsD. T
 
 **Recommended: Datadog (Free Tier)**
 
-Sign up at [Datadog.com](https://www.datadoghq.com/free-datadog-trial/ )
+Sign up at [Datadog.com](https://www.datadoghq.com/free-datadog-trial/)
 
 After signing up:
+
 1. Go to **Organization Settings** → **API Keys**
 2. Note the statsd endpoint: `statsd.datadoghq.com` (port 8125)
 
 ### 2. Set Environment Variables
 
 **Using Supabase CLI:**
+
 ```bash
 # Set metrics host
 supabase secrets set METRICS_HOST=statsd.datadoghq.com
@@ -28,6 +30,7 @@ supabase secrets set METRICS_PORT=8125
 ```
 
 **Using Supabase Dashboard:**
+
 1. Go to **Project Settings** → **Edge Functions** → **Secrets**
 2. Add secret: `METRICS_HOST` = `statsd.datadoghq.com`
 3. Add secret: `METRICS_PORT` = `8125`
@@ -42,30 +45,35 @@ supabase functions deploy
 ## Metrics Collected
 
 ### 1. Request Count
+
 - **Metric**: `elaro.api.requests.count`
 - **Type**: Counter
 - **Tags**: `function:<function-name>`
 - **Description**: Incremented for every function call
 
 ### 2. Execution Time
+
 - **Metric**: `elaro.api.execution_time`
 - **Type**: Timing/Histogram
 - **Tags**: `function:<function-name>`
 - **Description**: Time from request start to end in milliseconds
 
 ### 3. Status Code Count
+
 - **Metric**: `elaro.api.status.<code>.count`
 - **Type**: Counter
 - **Tags**: `function:<function-name>`
 - **Description**: Incremented for each status code (200, 400, 500, etc.)
 
 ### 4. Status Category Count
+
 - **Metric**: `elaro.api.status.<category>.count`
 - **Type**: Counter
 - **Tags**: `function:<function-name>`
 - **Description**: Groups status codes (2xx, 3xx, 4xx, 5xx)
 
 ### 5. Error Count
+
 - **Metric**: `elaro.api.errors.count`
 - **Type**: Counter
 - **Tags**: `function:<function-name>`, `error_type:<type>`
@@ -79,29 +87,34 @@ supabase functions deploy
 2. Add these widgets:
 
 **Widget 1: Request Count**
+
 - Type: Time Series
 - Metric: `elaro.api.requests.count`
 - Aggregation: `sum`
 - Group by: `function`
 
 **Widget 2: Execution Time**
+
 - Type: Time Series
 - Metric: `elaro.api.execution_time`
 - Aggregation: `avg`, `max`, `p95`
 - Group by: `function`
 
 **Widget 3: Error Rate**
+
 - Type: Time Series
 - Metric: `elaro.api.status.500.count`
 - Aggregation: `sum`
 - Group by: `function`
 
 **Widget 4: Status Code Distribution**
+
 - Type: Pie Chart
 - Metrics: `elaro.api.status.200.count`, `elaro.api.status.400.count`, `elaro.api.status.500.count`
 - Aggregation: `sum`
 
 **Widget 5: Top Slow Functions**
+
 - Type: Top List
 - Metric: `elaro.api.execution_time`
 - Aggregation: `avg`
@@ -150,11 +163,13 @@ supabase secrets set METRICS_PORT=8125
 ### Metrics Not Appearing
 
 1. Check environment variables are set:
+
    ```bash
    supabase secrets list
    ```
 
 2. Check function logs:
+
    ```bash
    supabase functions logs create-assignment
    ```
@@ -167,6 +182,7 @@ supabase secrets set METRICS_PORT=8125
 ### Metrics Service Unavailable
 
 The system is designed to gracefully degrade if metrics service is unavailable:
+
 - Functions continue to work normally
 - Metrics are logged as warnings
 - No errors are thrown
@@ -196,4 +212,3 @@ The system is designed to gracefully degrade if metrics service is unavailable:
 6. ✅ Monitor and optimize based on metrics
 
 Your Edge Functions are now fully instrumented with metrics! 📊
-

@@ -74,7 +74,10 @@ export const trackSubscriptionStart = (subscriptionData: {
 };
 
 // Example 5: Tracking feature usage
-export const trackFeatureUsage = (featureName: string, additionalData?: Record<string, any>) => {
+export const trackFeatureUsage = (
+  featureName: string,
+  additionalData?: Record<string, any>,
+) => {
   const sanitizedData = {
     feature_name: featureName,
     ...additionalData,
@@ -85,7 +88,10 @@ export const trackFeatureUsage = (featureName: string, additionalData?: Record<s
 };
 
 // Example 6: Tracking screen views (for navigation analytics)
-export const trackScreenView = (screenName: string, additionalData?: Record<string, any>) => {
+export const trackScreenView = (
+  screenName: string,
+  additionalData?: Record<string, any>,
+) => {
   mixpanelService.track('Screen Viewed', {
     screen_name: screenName,
     ...additionalData,
@@ -93,7 +99,11 @@ export const trackScreenView = (screenName: string, additionalData?: Record<stri
 };
 
 // Example 7: Tracking errors (non-PII)
-export const trackError = (errorType: string, errorMessage: string, context?: Record<string, any>) => {
+export const trackError = (
+  errorType: string,
+  errorMessage: string,
+  context?: Record<string, any>,
+) => {
   mixpanelService.track(AnalyticsEvents.ERROR_OCCURRED, {
     error_type: errorType,
     error_message: errorMessage.substring(0, 100), // Limit message length
@@ -102,7 +112,10 @@ export const trackError = (errorType: string, errorMessage: string, context?: Re
 };
 
 // Example 8: Tracking notification interactions
-export const trackNotificationInteraction = (notificationType: string, action: string) => {
+export const trackNotificationInteraction = (
+  notificationType: string,
+  action: string,
+) => {
   mixpanelService.track(AnalyticsEvents.NOTIFICATION_OPENED, {
     notification_type: notificationType,
     action: action,
@@ -110,10 +123,15 @@ export const trackNotificationInteraction = (notificationType: string, action: s
 };
 
 // Example 9: Tracking app lifecycle events
-export const trackAppLifecycle = (event: 'opened' | 'backgrounded' | 'foregrounded') => {
-  const eventName = event === 'opened' ? AnalyticsEvents.APP_OPENED : 
-                   event === 'backgrounded' ? AnalyticsEvents.APP_BACKGROUNDED : 
-                   'App Foregrounded';
+export const trackAppLifecycle = (
+  event: 'opened' | 'backgrounded' | 'foregrounded',
+) => {
+  const eventName =
+    event === 'opened'
+      ? AnalyticsEvents.APP_OPENED
+      : event === 'backgrounded'
+        ? AnalyticsEvents.APP_BACKGROUNDED
+        : 'App Foregrounded';
 
   mixpanelService.track(eventName, {
     timestamp: new Date().toISOString(),

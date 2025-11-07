@@ -23,7 +23,13 @@ export interface NotificationHistoryItem {
 }
 
 export interface NotificationFilter {
-  type: 'all' | 'assignments' | 'lectures' | 'study_sessions' | 'analytics' | 'summaries';
+  type:
+    | 'all'
+    | 'assignments'
+    | 'lectures'
+    | 'study_sessions'
+    | 'analytics'
+    | 'summaries';
   label: string;
   icon: string;
 }
@@ -71,7 +77,7 @@ export class NotificationHistoryService {
       { type: 'lectures', label: 'Lectures', icon: 'person-outline' },
       { type: 'study_sessions', label: 'Study Sessions', icon: 'book-outline' },
       { type: 'analytics', label: 'Analytics', icon: 'trending-up-outline' },
-      { type: 'summaries', label: 'Summaries', icon: 'bar-chart-outline' }
+      { type: 'summaries', label: 'Summaries', icon: 'bar-chart-outline' },
     ];
   }
 
@@ -83,16 +89,11 @@ export class NotificationHistoryService {
    * Get notification history for a user
    */
   async getNotificationHistory(
-    userId: string, 
-    options: NotificationHistoryOptions = {}
+    userId: string,
+    options: NotificationHistoryOptions = {},
   ): Promise<NotificationHistoryItem[]> {
     try {
-      const {
-        limit = 50,
-        offset = 0,
-        filter,
-        includeRead = true
-      } = options;
+      const { limit = 50, offset = 0, filter, includeRead = true } = options;
 
       // Check cache first
       const cachedData = await this.getCachedHistory(userId);
@@ -125,7 +126,7 @@ export class NotificationHistoryService {
           `Failed to get notification history: ${error.message}`,
           500,
           'NOTIFICATION_HISTORY_ERROR',
-          { userId, options }
+          { userId, options },
         );
       }
 
@@ -136,19 +137,21 @@ export class NotificationHistoryService {
 
       // Apply filters
       return this.filterNotifications(notifications, filter);
-
     } catch (error) {
       // Try to return cached data if available
       const cachedData = await this.getCachedHistory(userId);
       if (cachedData) {
-        return this.filterNotifications(cachedData.notifications, options.filter);
+        return this.filterNotifications(
+          cachedData.notifications,
+          options.filter,
+        );
       }
 
       throw new AppError(
         `Error getting notification history: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'NOTIFICATION_HISTORY_ERROR',
-        { userId, options }
+        { userId, options },
       );
     }
   }
@@ -169,7 +172,7 @@ export class NotificationHistoryService {
           `Failed to get unread count: ${error.message}`,
           500,
           'UNREAD_COUNT_ERROR',
-          { userId }
+          { userId },
         );
       }
 
@@ -179,7 +182,7 @@ export class NotificationHistoryService {
         `Error getting unread count: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'UNREAD_COUNT_ERROR',
-        { userId }
+        { userId },
       );
     }
   }
@@ -200,13 +203,12 @@ export class NotificationHistoryService {
           `Failed to mark notification as read: ${error.message}`,
           500,
           'MARK_READ_ERROR',
-          { notificationId, userId }
+          { notificationId, userId },
         );
       }
 
       // Clear cache to force refresh
       await this.clearCache(userId);
-
     } catch (error) {
       // Store offline action if network fails
       await this.storeOfflineAction({
@@ -214,14 +216,14 @@ export class NotificationHistoryService {
         action: 'mark_read',
         notificationId,
         timestamp: new Date().toISOString(),
-        synced: false
+        synced: false,
       });
 
       throw new AppError(
         `Error marking notification as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'MARK_READ_ERROR',
-        { notificationId, userId }
+        { notificationId, userId },
       );
     }
   }
@@ -242,19 +244,18 @@ export class NotificationHistoryService {
           `Failed to mark all notifications as read: ${error.message}`,
           500,
           'MARK_ALL_READ_ERROR',
-          { userId }
+          { userId },
         );
       }
 
       // Clear cache to force refresh
       await this.clearCache(userId);
-
     } catch (error) {
       throw new AppError(
         `Error marking all notifications as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'MARK_ALL_READ_ERROR',
-        { userId }
+        { userId },
       );
     }
   }
@@ -262,7 +263,10 @@ export class NotificationHistoryService {
   /**
    * Delete notification
    */
-  async deleteNotification(notificationId: string, userId: string): Promise<void> {
+  async deleteNotification(
+    notificationId: string,
+    userId: string,
+  ): Promise<void> {
     try {
       const { error } = await supabase
         .from('notification_deliveries')
@@ -275,13 +279,12 @@ export class NotificationHistoryService {
           `Failed to delete notification: ${error.message}`,
           500,
           'DELETE_NOTIFICATION_ERROR',
-          { notificationId, userId }
+          { notificationId, userId },
         );
       }
 
       // Clear cache to force refresh
       await this.clearCache(userId);
-
     } catch (error) {
       // Store offline action if network fails
       await this.storeOfflineAction({
@@ -289,14 +292,14 @@ export class NotificationHistoryService {
         action: 'delete',
         notificationId,
         timestamp: new Date().toISOString(),
-        synced: false
+        synced: false,
       });
 
       throw new AppError(
         `Error deleting notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'DELETE_NOTIFICATION_ERROR',
-        { notificationId, userId }
+        { notificationId, userId },
       );
     }
   }
@@ -304,7 +307,10 @@ export class NotificationHistoryService {
   /**
    * Complete task from notification
    */
-  async completeTaskFromNotification(notificationId: string, userId: string): Promise<void> {
+  async completeTaskFromNotification(
+    notificationId: string,
+    userId: string,
+  ): Promise<void> {
     try {
       // Get notification metadata to find task ID
       const { data: notification, error: fetchError } = await supabase
@@ -319,14 +325,13 @@ export class NotificationHistoryService {
           'Task ID not found in notification metadata',
           500,
           'TASK_NOT_FOUND',
-          { notificationId, userId }
+          { notificationId, userId },
         );
       }
 
       // Mark task as complete (this would integrate with your existing task service)
       // For now, we'll just mark the notification as read
       await this.markAsRead(notificationId, userId);
-
     } catch (error) {
       // Store offline action if network fails
       await this.storeOfflineAction({
@@ -334,14 +339,14 @@ export class NotificationHistoryService {
         action: 'complete_task',
         notificationId,
         timestamp: new Date().toISOString(),
-        synced: false
+        synced: false,
       });
 
       throw new AppError(
         `Error completing task from notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
         500,
         'COMPLETE_TASK_ERROR',
-        { notificationId, userId }
+        { notificationId, userId },
       );
     }
   }
@@ -351,8 +356,8 @@ export class NotificationHistoryService {
   // ============================================================================
 
   private filterNotifications(
-    notifications: NotificationHistoryItem[], 
-    filter?: NotificationFilter
+    notifications: NotificationHistoryItem[],
+    filter?: NotificationFilter,
   ): NotificationHistoryItem[] {
     if (!filter || filter.type === 'all') {
       return notifications;
@@ -360,18 +365,26 @@ export class NotificationHistoryService {
 
     return notifications.filter(notification => {
       const type = notification.notification_type;
-      
+
       switch (filter.type) {
         case 'assignments':
           return type === 'assignment' || type === 'assignment_reminder';
         case 'lectures':
           return type === 'lecture' || type === 'lecture_reminder';
         case 'study_sessions':
-          return type === 'srs' || type === 'study_session' || type === 'srs_reminder';
+          return (
+            type === 'srs' ||
+            type === 'study_session' ||
+            type === 'srs_reminder'
+          );
         case 'analytics':
           return type === 'weekly_report' || type === 'analytics';
         case 'summaries':
-          return type === 'daily_summary' || type === 'achievement' || type === 'update';
+          return (
+            type === 'daily_summary' ||
+            type === 'achievement' ||
+            type === 'update'
+          );
         default:
           return true;
       }
@@ -382,26 +395,34 @@ export class NotificationHistoryService {
   // CACHING METHODS
   // ============================================================================
 
-  private async cacheHistory(userId: string, notifications: NotificationHistoryItem[]): Promise<void> {
+  private async cacheHistory(
+    userId: string,
+    notifications: NotificationHistoryItem[],
+  ): Promise<void> {
     try {
       const cacheData = {
         notifications,
         timestamp: Date.now(),
-        userId
+        userId,
       };
-      
+
       await AsyncStorage.setItem(
         `${NotificationHistoryService.CACHE_KEY}_${userId}`,
-        JSON.stringify(cacheData)
+        JSON.stringify(cacheData),
       );
     } catch (error) {
       console.error('Error caching notification history:', error);
     }
   }
 
-  private async getCachedHistory(userId: string): Promise<{ notifications: NotificationHistoryItem[], timestamp: number } | null> {
+  private async getCachedHistory(userId: string): Promise<{
+    notifications: NotificationHistoryItem[];
+    timestamp: number;
+  } | null> {
     try {
-      const cachedData = await AsyncStorage.getItem(`${NotificationHistoryService.CACHE_KEY}_${userId}`);
+      const cachedData = await AsyncStorage.getItem(
+        `${NotificationHistoryService.CACHE_KEY}_${userId}`,
+      );
       if (cachedData) {
         return JSON.parse(cachedData);
       }
@@ -418,7 +439,9 @@ export class NotificationHistoryService {
 
   private async clearCache(userId: string): Promise<void> {
     try {
-      await AsyncStorage.removeItem(`${NotificationHistoryService.CACHE_KEY}_${userId}`);
+      await AsyncStorage.removeItem(
+        `${NotificationHistoryService.CACHE_KEY}_${userId}`,
+      );
     } catch (error) {
       console.error('Error clearing notification cache:', error);
     }
@@ -432,10 +455,10 @@ export class NotificationHistoryService {
     try {
       const existingActions = await this.getOfflineActions();
       const updatedActions = [...existingActions, action];
-      
+
       await AsyncStorage.setItem(
         NotificationHistoryService.OFFLINE_ACTIONS_KEY,
-        JSON.stringify(updatedActions)
+        JSON.stringify(updatedActions),
       );
     } catch (error) {
       console.error('Error storing offline action:', error);
@@ -444,7 +467,9 @@ export class NotificationHistoryService {
 
   private async getOfflineActions(): Promise<OfflineAction[]> {
     try {
-      const actions = await AsyncStorage.getItem(NotificationHistoryService.OFFLINE_ACTIONS_KEY);
+      const actions = await AsyncStorage.getItem(
+        NotificationHistoryService.OFFLINE_ACTIONS_KEY,
+      );
       return actions ? JSON.parse(actions) : [];
     } catch (error) {
       console.error('Error getting offline actions:', error);
@@ -470,7 +495,10 @@ export class NotificationHistoryService {
               await this.deleteNotification(action.notificationId, userId);
               break;
             case 'complete_task':
-              await this.completeTaskFromNotification(action.notificationId, userId);
+              await this.completeTaskFromNotification(
+                action.notificationId,
+                userId,
+              );
               break;
           }
 
@@ -484,9 +512,8 @@ export class NotificationHistoryService {
       // Update stored actions
       await AsyncStorage.setItem(
         NotificationHistoryService.OFFLINE_ACTIONS_KEY,
-        JSON.stringify(offlineActions)
+        JSON.stringify(offlineActions),
       );
-
     } catch (error) {
       console.error('Error syncing offline actions:', error);
     }
@@ -516,4 +543,5 @@ export class NotificationHistoryService {
 }
 
 // Export singleton instance
-export const notificationHistoryService = NotificationHistoryService.getInstance();
+export const notificationHistoryService =
+  NotificationHistoryService.getInstance();

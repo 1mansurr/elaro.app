@@ -1,10 +1,10 @@
 import { useMemo, useState, useEffect } from 'react';
-import { User } from '@/types';
-import { usePermissions } from '@/features/auth/hooks/usePermissions';
+import { User, CalendarData } from '@/types';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 
 export const useCalendarTasksWithLockState = (
-  calendarData: Record<string, any[]> | undefined,
-  user: User | null
+  calendarData: CalendarData | undefined,
+  user: User | null,
 ) => {
   const { isPremium } = usePermissions(user);
   const [premiumStatus, setPremiumStatus] = useState<boolean | null>(null);
@@ -30,11 +30,13 @@ export const useCalendarTasksWithLockState = (
 
   const tasksWithLockState = useMemo(() => {
     if (!calendarData || !user || premiumStatus === true) {
-      return Object.values(calendarData || {}).flat().map(task => ({ ...task, isLocked: false }));
+      return Object.values(calendarData || {})
+        .flat()
+        .map(task => ({ ...task, isLocked: false }));
     }
 
     const allTasks = Object.values(calendarData).flat();
-    
+
     const limits: Record<string, number> = {
       assignment: 15,
       lecture: 15,
@@ -44,12 +46,15 @@ export const useCalendarTasksWithLockState = (
     return allTasks.map(task => {
       const taskType = task.type as keyof typeof limits;
       const limit = limits[taskType] || 15;
-      
+
       // Check if task is within limit based on creation order
       const tasksOfSameType = allTasks
         .filter(t => t.type === task.type)
-        .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-      
+        .sort(
+          (a, b) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+        );
+
       const taskIndex = tasksOfSameType.findIndex(t => t.id === task.id);
       const isLocked = taskIndex >= limit;
 

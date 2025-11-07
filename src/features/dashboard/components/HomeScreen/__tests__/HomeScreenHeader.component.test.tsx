@@ -3,7 +3,10 @@ import { render } from '@testing-library/react-native';
 import HomeScreenHeader from '../HomeScreenHeader';
 
 // Mock all the dependencies
-jest.mock('@/features/notifications/components/NotificationBell', () => 'NotificationBell');
+jest.mock(
+  '@/features/notifications/components/NotificationBell',
+  () => 'NotificationBell',
+);
 jest.mock('@/constants/theme', () => ({
   COLORS: {
     background: 'COLORS.white',
@@ -62,17 +65,17 @@ describe('HomeScreenHeader Component', () => {
 
   it('renders guest mode correctly', () => {
     const { getByText } = render(
-      <HomeScreenHeader isGuest={true} onNotificationPress={jest.fn()} />
+      <HomeScreenHeader isGuest={true} onNotificationPress={jest.fn()} />,
     );
-    
+
     expect(getByText("Let's Make Today Count")).toBeTruthy();
   });
 
   it('renders authenticated mode correctly', () => {
     const { getByText } = render(
-      <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />
+      <HomeScreenHeader isGuest={false} onNotificationPress={jest.fn()} />,
     );
-    
+
     // Should contain a greeting with the user's name
     expect(getByText(/Good/)).toBeTruthy();
   });

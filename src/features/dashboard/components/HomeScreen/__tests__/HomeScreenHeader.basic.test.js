@@ -4,7 +4,7 @@ describe('HomeScreenHeader Basic Test', () => {
     const fs = require('fs');
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
-    
+
     expect(fs.existsSync(componentPath)).toBe(true);
   });
 
@@ -13,7 +13,7 @@ describe('HomeScreenHeader Basic Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for basic React component structure
     expect(content).toContain('import React');
     expect(content).toContain('export default');
@@ -25,7 +25,7 @@ describe('HomeScreenHeader Basic Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for React component patterns
     expect(content).toContain('React.FC');
     expect(content).toContain('memo');

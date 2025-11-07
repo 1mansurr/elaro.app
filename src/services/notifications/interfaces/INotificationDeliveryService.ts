@@ -6,7 +6,10 @@ export interface INotificationDeliveryService {
   /**
    * Send a push notification to a user
    */
-  sendPushNotification(userId: string, notification: NotificationPayload): Promise<DeliveryResult>;
+  sendPushNotification(
+    userId: string,
+    notification: NotificationPayload,
+  ): Promise<DeliveryResult>;
 
   /**
    * Schedule a local notification

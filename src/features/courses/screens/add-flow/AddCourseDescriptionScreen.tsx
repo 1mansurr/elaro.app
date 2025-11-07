@@ -14,7 +14,9 @@ const AddCourseDescriptionScreen = () => {
   const navigation = useNavigation<AddCourseDescriptionScreenNavigationProp>();
   const { courseData, updateCourseData } = useAddCourse();
 
-  const [description, setDescription] = useState(courseData.courseDescription || '');
+  const [description, setDescription] = useState(
+    courseData.courseDescription || '',
+  );
 
   const handleNext = () => {
     updateCourseData({ courseDescription: description.trim() });
@@ -36,7 +38,7 @@ const AddCourseDescriptionScreen = () => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Add a description (Optional)</Text>
-      
+
       <TextInput
         style={styles.input}
         placeholder="e.g., A study of the human mind and behavior..."
@@ -57,8 +59,18 @@ const AddCourseDescriptionScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, justifyContent: 'center', backgroundColor: '#fff' },
-  title: { fontSize: 24, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 },
+  container: {
+    flex: 1,
+    padding: 20,
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 30,
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -68,7 +80,11 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 40 },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 40,
+  },
 });
 
 export default AddCourseDescriptionScreen;

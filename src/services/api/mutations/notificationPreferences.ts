@@ -1,11 +1,15 @@
 import { supabase } from '../../supabase';
 import { handleApiError } from '../errors';
-import { NotificationPreferences } from '../../../types';
+import { NotificationPreferences } from '@/types';
 
 export const notificationPreferencesApiMutations = {
-  async update(preferences: Partial<NotificationPreferences>): Promise<NotificationPreferences> {
+  async update(
+    preferences: Partial<NotificationPreferences>,
+  ): Promise<NotificationPreferences> {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
 
       const updates = {

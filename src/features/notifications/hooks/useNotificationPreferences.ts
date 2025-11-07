@@ -5,7 +5,11 @@ import { SimpleNotificationPreferences } from '@/services/notifications/interfac
 export const useNotificationPreferences = () => {
   const queryClient = useQueryClient();
 
-  const { data: preferences, isLoading, isError } = useQuery<SimpleNotificationPreferences | null, Error>({
+  const {
+    data: preferences,
+    isLoading,
+    isError,
+  } = useQuery<SimpleNotificationPreferences | null, Error>({
     queryKey: ['notificationPreferences'],
     queryFn: async () => {
       // Mock implementation - replace with actual API call
@@ -20,20 +24,24 @@ export const useNotificationPreferences = () => {
         quietHours: {
           enabled: false,
           start: '22:00',
-          end: '08:00'
+          end: '08:00',
         },
         userId: 'mock-user-id',
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
     },
   });
 
-  const updateMutation = useMutation<SimpleNotificationPreferences, Error, Partial<SimpleNotificationPreferences>>({
-    mutationFn: async (newPreferences) => {
+  const updateMutation = useMutation<
+    SimpleNotificationPreferences,
+    Error,
+    Partial<SimpleNotificationPreferences>
+  >({
+    mutationFn: async newPreferences => {
       // Mock implementation - replace with actual API call
       return { ...preferences!, ...newPreferences };
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       // When the mutation is successful, update the query cache with the latest data
       queryClient.setQueryData(['notificationPreferences'], data);
     },

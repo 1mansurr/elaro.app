@@ -1,22 +1,25 @@
 import { supabase } from '@/services/supabase';
-import { 
-  INotificationPreferenceService, 
-  NotificationPreferences, 
-  ValidationResult 
+import {
+  INotificationPreferenceService,
+  NotificationPreferences,
+  ValidationResult,
 } from './interfaces/INotificationPreferenceService';
 
 /**
  * Service responsible for notification preference management
  * Handles user settings, validation, and preference optimization
  */
-export class NotificationPreferenceService implements INotificationPreferenceService {
+export class NotificationPreferenceService
+  implements INotificationPreferenceService
+{
   private static instance: NotificationPreferenceService;
 
   private constructor() {}
 
   public static getInstance(): NotificationPreferenceService {
     if (!NotificationPreferenceService.instance) {
-      NotificationPreferenceService.instance = new NotificationPreferenceService();
+      NotificationPreferenceService.instance =
+        new NotificationPreferenceService();
     }
     return NotificationPreferenceService.instance;
   }
@@ -32,7 +35,8 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // Not found error
+      if (error && error.code !== 'PGRST116') {
+        // Not found error
         throw error;
       }
 
@@ -43,7 +47,6 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
 
       // Convert database format to our interface
       return this.convertFromDatabase(data);
-
     } catch (error) {
       console.error('Error getting user preferences:', error);
       return this.getDefaultPreferences();
@@ -53,10 +56,15 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
   /**
    * Update user notification preferences
    */
-  async updatePreferences(userId: string, preferences: Partial<NotificationPreferences>): Promise<void> {
+  async updatePreferences(
+    userId: string,
+    preferences: Partial<NotificationPreferences>,
+  ): Promise<void> {
     try {
       // Validate preferences before saving
-      const validation = await this.validatePreferences(preferences as NotificationPreferences);
+      const validation = await this.validatePreferences(
+        preferences as NotificationPreferences,
+      );
       if (!validation.isValid) {
         throw new Error(`Invalid preferences: ${validation.errors.join(', ')}`);
       }
@@ -64,22 +72,22 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
       // Convert to database format
       const dbPreferences = this.convertToDatabase(preferences);
 
-      const { error } = await supabase
-        .from('notification_preferences')
-        .upsert({
+      const { error } = await supabase.from('notification_preferences').upsert(
+        {
           user_id: userId,
           ...dbPreferences,
-          updated_at: new Date().toISOString()
-        }, {
-          onConflict: 'user_id'
-        });
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        },
+      );
 
       if (error) {
         throw error;
       }
 
       console.log('Notification preferences updated successfully');
-
     } catch (error) {
       console.error('Error updating preferences:', error);
       throw error;
@@ -89,7 +97,9 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
   /**
    * Validate notification preferences
    */
-  async validatePreferences(preferences: NotificationPreferences): Promise<ValidationResult> {
+  async validatePreferences(
+    preferences: NotificationPreferences,
+  ): Promise<ValidationResult> {
     const errors: string[] = [];
     const warnings: string[] = [];
 
@@ -97,7 +107,7 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
     if (preferences.quietHours.enabled) {
       const startTime = this.parseTime(preferences.quietHours.start);
       const endTime = this.parseTime(preferences.quietHours.end);
-      
+
       if (startTime >= endTime) {
         errors.push('Quiet hours start time must be before end time');
       }
@@ -106,18 +116,26 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
     // Validate preferred times
     const morningTime = this.parseTime(preferences.preferredTimes.morning);
     const eveningTime = this.parseTime(preferences.preferredTimes.evening);
-    
+
     if (morningTime >= eveningTime) {
       warnings.push('Morning preferred time should be before evening time');
     }
 
     // Validate frequency settings
-    if (preferences.frequency.maxPerDay < 1 || preferences.frequency.maxPerDay > 50) {
+    if (
+      preferences.frequency.maxPerDay < 1 ||
+      preferences.frequency.maxPerDay > 50
+    ) {
       errors.push('Max notifications per day must be between 1 and 50');
     }
 
-    if (preferences.frequency.cooldownPeriod < 0 || preferences.frequency.cooldownPeriod > 1440) {
-      errors.push('Cooldown period must be between 0 and 1440 minutes (24 hours)');
+    if (
+      preferences.frequency.cooldownPeriod < 0 ||
+      preferences.frequency.cooldownPeriod > 1440
+    ) {
+      errors.push(
+        'Cooldown period must be between 0 and 1440 minutes (24 hours)',
+      );
     }
 
     // Check for potential notification fatigue
@@ -126,15 +144,19 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
     }
 
     // Validate that at least one notification type is enabled
-    const hasEnabledTypes = Object.values(preferences.notificationTypes).some(enabled => enabled);
+    const hasEnabledTypes = Object.values(preferences.notificationTypes).some(
+      enabled => enabled,
+    );
     if (!hasEnabledTypes && preferences.masterToggle) {
-      warnings.push('Master toggle is enabled but no notification types are selected');
+      warnings.push(
+        'Master toggle is enabled but no notification types are selected',
+      );
     }
 
     return {
       isValid: errors.length === 0,
       errors,
-      warnings
+      warnings,
     };
   }
 
@@ -146,19 +168,19 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
       // Master Controls
       masterToggle: true,
       doNotDisturb: false,
-      
+
       // Timing Preferences
       quietHours: {
         enabled: true,
         start: '22:00',
-        end: '08:00'
+        end: '08:00',
       },
       preferredTimes: {
         morning: '09:00',
         evening: '18:00',
-        weekend: true
+        weekend: true,
       },
-      
+
       // Notification Types
       notificationTypes: {
         reminders: true,
@@ -168,18 +190,18 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
         assignments: true,
         lectures: true,
         srs: true,
-        dailySummaries: true
+        dailySummaries: true,
       },
-      
+
       // Frequency Settings
       frequency: {
         reminders: 'immediate',
         summaries: 'daily',
         updates: 'immediate',
         maxPerDay: 10,
-        cooldownPeriod: 30
+        cooldownPeriod: 30,
       },
-      
+
       // Advanced Settings
       advanced: {
         vibration: true,
@@ -187,13 +209,13 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
         badges: true,
         preview: true,
         locationAware: false,
-        activityAware: false
+        activityAware: false,
       },
-      
+
       // Metadata
       userId: '',
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
   }
 
@@ -212,62 +234,70 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
 
   /**
    * Convert database format to our interface
+   * Handles missing columns gracefully with defaults
    */
   private convertFromDatabase(data: any): NotificationPreferences {
+    // Handle master toggle - check master_toggle first, fallback to reminders_enabled
+    const masterToggle = data.master_toggle ?? data.reminders_enabled ?? true;
+
     return {
-      masterToggle: data.master_toggle ?? true,
+      masterToggle,
       doNotDisturb: data.do_not_disturb ?? false,
-      
+
       quietHours: {
-        enabled: data.quiet_hours_enabled ?? true,
+        enabled:
+          data.quiet_hours_enabled ??
+          (data.quiet_hours_start != null && data.quiet_hours_end != null),
         start: data.quiet_hours_start ?? '22:00',
-        end: data.quiet_hours_end ?? '08:00'
+        end: data.quiet_hours_end ?? '08:00',
       },
-      
+
       preferredTimes: {
-        morning: data.morning_time ?? '09:00',
-        evening: data.evening_time ?? '18:00',
-        weekend: data.weekend_notifications_enabled ?? true
+        morning: data.preferred_morning_time ?? data.morning_time ?? '09:00',
+        evening: data.preferred_evening_time ?? data.evening_time ?? '18:00',
+        weekend: data.weekend_notifications_enabled ?? true,
       },
-      
+
       notificationTypes: {
         reminders: data.reminders_enabled ?? true,
-        achievements: data.achievements_enabled ?? true,
-        updates: data.updates_enabled ?? true,
-        marketing: data.marketing_enabled ?? false,
+        achievements: data.achievements_enabled ?? false, // Not in DB, default false
+        updates: data.updates_enabled ?? false, // Not in DB, default false
+        marketing: data.marketing_notifications ?? false,
         assignments: data.assignment_reminders_enabled ?? true,
         lectures: data.lecture_reminders_enabled ?? true,
         srs: data.srs_reminders_enabled ?? true,
-        dailySummaries: data.daily_summaries_enabled ?? true
+        dailySummaries: data.morning_summary_enabled ?? true,
       },
-      
+
       frequency: {
         reminders: data.reminder_frequency ?? 'immediate',
         summaries: data.summary_frequency ?? 'daily',
         updates: data.update_frequency ?? 'immediate',
         maxPerDay: data.max_per_day ?? 10,
-        cooldownPeriod: data.cooldown_period ?? 30
+        cooldownPeriod: data.cooldown_period ?? 30,
       },
-      
+
       advanced: {
         vibration: data.vibration_enabled ?? true,
         sound: data.sound_enabled ?? true,
         badges: data.badges_enabled ?? true,
         preview: data.preview_enabled ?? true,
         locationAware: data.location_aware ?? false,
-        activityAware: data.activity_aware ?? false
+        activityAware: data.activity_aware ?? false,
       },
-      
+
       userId: data.user_id,
-      createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      createdAt: data.created_at ? new Date(data.created_at) : new Date(),
+      updatedAt: new Date(data.updated_at ?? Date.now()),
     };
   }
 
   /**
    * Convert our interface to database format
    */
-  private convertToDatabase(preferences: Partial<NotificationPreferences>): any {
+  private convertToDatabase(
+    preferences: Partial<NotificationPreferences>,
+  ): any {
     const dbData: any = {};
 
     if (preferences.masterToggle !== undefined) {
@@ -291,13 +321,14 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
 
     if (preferences.notificationTypes) {
       dbData.reminders_enabled = preferences.notificationTypes.reminders;
-      dbData.achievements_enabled = preferences.notificationTypes.achievements;
-      dbData.updates_enabled = preferences.notificationTypes.updates;
-      dbData.marketing_enabled = preferences.notificationTypes.marketing;
-      dbData.assignment_reminders_enabled = preferences.notificationTypes.assignments;
+      // Note: achievements_enabled, updates_enabled don't exist in DB schema yet
+      dbData.marketing_notifications = preferences.notificationTypes.marketing;
+      dbData.assignment_reminders_enabled =
+        preferences.notificationTypes.assignments;
       dbData.lecture_reminders_enabled = preferences.notificationTypes.lectures;
       dbData.srs_reminders_enabled = preferences.notificationTypes.srs;
-      dbData.daily_summaries_enabled = preferences.notificationTypes.dailySummaries;
+      dbData.morning_summary_enabled =
+        preferences.notificationTypes.dailySummaries;
     }
 
     if (preferences.frequency) {

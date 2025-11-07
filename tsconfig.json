@@ -10,9 +10,9 @@
     }
   },
   "exclude": [
-    "node_modules", 
-    "**/__tests__/*", 
-    "**/*.spec.ts", 
+    "node_modules",
+    "**/__tests__/*",
+    "**/*.spec.ts",
     "**/*.spec.tsx",
     "supabase/**/*",
     "src/future-features/**/*"

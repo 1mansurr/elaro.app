@@ -4,7 +4,7 @@ describe('HomeScreenHeader Structure Test', () => {
     const fs = require('fs');
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
-    
+
     expect(fs.existsSync(componentPath)).toBe(true);
   });
 
@@ -13,7 +13,7 @@ describe('HomeScreenHeader Structure Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for basic React component structure
     expect(content).toContain('import React');
     expect(content).toContain('export default');
@@ -25,7 +25,7 @@ describe('HomeScreenHeader Structure Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for React component patterns
     expect(content).toContain('React.FC');
     expect(content).toContain('memo');
@@ -38,11 +38,13 @@ describe('HomeScreenHeader Structure Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for required imports
     expect(content).toContain('import React');
-    expect(content).toContain('from \'react-native\'');
-    expect(content).toContain('@/features/notifications/components/NotificationBell');
+    expect(content).toContain("from 'react-native'");
+    expect(content).toContain(
+      '@/features/notifications/components/NotificationBell',
+    );
     expect(content).toContain('@/constants/theme');
     expect(content).toContain('@/features/auth/contexts/AuthContext');
     expect(content).toContain('@/services/PerformanceMonitoringService');
@@ -53,7 +55,7 @@ describe('HomeScreenHeader Structure Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for component logic
     expect(content).toContain('getGreeting');
     expect(content).toContain('personalizedTitle');
@@ -66,7 +68,7 @@ describe('HomeScreenHeader Structure Test', () => {
     const path = require('path');
     const componentPath = path.resolve(__dirname, '../HomeScreenHeader.tsx');
     const content = fs.readFileSync(componentPath, 'utf8');
-    
+
     // Check for StyleSheet usage
     expect(content).toContain('StyleSheet.create');
     expect(content).toContain('styles.');

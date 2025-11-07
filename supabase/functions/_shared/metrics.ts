@@ -12,7 +12,9 @@ export function getStatsDClient(): StatsD | null {
   const metricsPort = Deno.env.get('METRICS_PORT');
 
   if (!metricsHost || !metricsPort) {
-    console.warn('Metrics not configured: METRICS_HOST and METRICS_PORT environment variables not set');
+    console.warn(
+      'Metrics not configured: METRICS_HOST and METRICS_PORT environment variables not set',
+    );
     return null;
   }
 
@@ -45,7 +47,7 @@ export class MetricsCollector {
   // Increment request counter
   incrementRequest(): void {
     if (!this.client) return;
-    
+
     try {
       this.client.increment('api.requests.count', {
         function: this.functionName,
@@ -60,7 +62,7 @@ export class MetricsCollector {
     if (!this.client) return;
 
     const duration = Date.now() - this.startTime;
-    
+
     try {
       this.client.timing('api.execution_time', duration, {
         function: this.functionName,
@@ -75,7 +77,7 @@ export class MetricsCollector {
     if (!this.client) return;
 
     const statusCategory = Math.floor(statusCode / 100) * 100;
-    
+
     try {
       // Increment specific status code counter
       this.client.increment(`api.status.${statusCode}.count`, {
@@ -106,7 +108,11 @@ export class MetricsCollector {
   }
 
   // Record custom metric
-  recordMetric(metricName: string, value: number, tags?: Record<string, string>): void {
+  recordMetric(
+    metricName: string,
+    value: number,
+    tags?: Record<string, string>,
+  ): void {
     if (!this.client) return;
 
     try {
@@ -135,4 +141,3 @@ export class MetricsCollector {
 export function createMetricsCollector(functionName: string): MetricsCollector {
   return new MetricsCollector(functionName);
 }
-

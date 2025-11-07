@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { getSRSStatistics } from '@/utils/reminderUtils';
 
 interface SRSStats {
@@ -74,7 +74,12 @@ export function SRSStatisticsScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.centered, { backgroundColor: theme.background }]}>
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          { backgroundColor: theme.background },
+        ]}>
         <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
@@ -84,14 +89,22 @@ export function SRSStatisticsScreen() {
     return (
       <View style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>SRS Statistics</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>
+            SRS Statistics
+          </Text>
           <View style={styles.backButton} />
         </View>
         <View style={styles.emptyContainer}>
-          <Ionicons name="analytics-outline" size={64} color={theme.textSecondary} />
+          <Ionicons
+            name="analytics-outline"
+            size={64}
+            color={theme.textSecondary}
+          />
           <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             No SRS data yet
           </Text>
@@ -107,19 +120,26 @@ export function SRSStatisticsScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>SRS Statistics</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          SRS Statistics
+        </Text>
         <View style={styles.backButton} />
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.primary} />
-        }
-      >
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={theme.primary}
+          />
+        }>
         {/* Overview Stats */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: theme.card }]}>
@@ -175,7 +195,8 @@ export function SRSStatisticsScreen() {
             {stats.strongest_topics.map((topic, index) => (
               <View key={topic.session_id} style={styles.topicRow}>
                 <View style={styles.topicRank}>
-                  <Text style={[styles.rankText, { color: theme.textSecondary }]}>
+                  <Text
+                    style={[styles.rankText, { color: theme.textSecondary }]}>
                     {index + 1}
                   </Text>
                 </View>
@@ -183,17 +204,25 @@ export function SRSStatisticsScreen() {
                   <Text style={[styles.topicName, { color: theme.text }]}>
                     {topic.topic}
                   </Text>
-                  <Text style={[styles.topicStats, { color: theme.textSecondary }]}>
-                    Quality: {topic.avg_quality?.toFixed(1)} • Ease: {topic.ease_factor?.toFixed(1)}
+                  <Text
+                    style={[styles.topicStats, { color: theme.textSecondary }]}>
+                    Quality: {topic.avg_quality?.toFixed(1)} • Ease:{' '}
+                    {topic.ease_factor?.toFixed(1)}
                   </Text>
                 </View>
                 <View
                   style={[
                     styles.qualityBadge,
-                    { backgroundColor: getQualityColor(topic.avg_quality) + '20' },
-                  ]}
-                >
-                  <Text style={{ color: getQualityColor(topic.avg_quality), fontWeight: '600' }}>
+                    {
+                      backgroundColor:
+                        getQualityColor(topic.avg_quality) + '20',
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: getQualityColor(topic.avg_quality),
+                      fontWeight: '600',
+                    }}>
                     {topic.avg_quality?.toFixed(1)}
                   </Text>
                 </View>
@@ -214,7 +243,8 @@ export function SRSStatisticsScreen() {
             {stats.weakest_topics.map((topic, index) => (
               <View key={topic.session_id} style={styles.topicRow}>
                 <View style={styles.topicRank}>
-                  <Text style={[styles.rankText, { color: theme.textSecondary }]}>
+                  <Text
+                    style={[styles.rankText, { color: theme.textSecondary }]}>
                     {index + 1}
                   </Text>
                 </View>
@@ -222,17 +252,25 @@ export function SRSStatisticsScreen() {
                   <Text style={[styles.topicName, { color: theme.text }]}>
                     {topic.topic}
                   </Text>
-                  <Text style={[styles.topicStats, { color: theme.textSecondary }]}>
-                    Quality: {topic.avg_quality?.toFixed(1)} • Ease: {topic.ease_factor?.toFixed(1)}
+                  <Text
+                    style={[styles.topicStats, { color: theme.textSecondary }]}>
+                    Quality: {topic.avg_quality?.toFixed(1)} • Ease:{' '}
+                    {topic.ease_factor?.toFixed(1)}
                   </Text>
                 </View>
                 <View
                   style={[
                     styles.qualityBadge,
-                    { backgroundColor: getQualityColor(topic.avg_quality) + '20' },
-                  ]}
-                >
-                  <Text style={{ color: getQualityColor(topic.avg_quality), fontWeight: '600' }}>
+                    {
+                      backgroundColor:
+                        getQualityColor(topic.avg_quality) + '20',
+                    },
+                  ]}>
+                  <Text
+                    style={{
+                      color: getQualityColor(topic.avg_quality),
+                      fontWeight: '600',
+                    }}>
                     {topic.avg_quality?.toFixed(1)}
                   </Text>
                 </View>
@@ -242,15 +280,21 @@ export function SRSStatisticsScreen() {
         )}
 
         {/* Info Box */}
-        <View style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
-          <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
+        <View
+          style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
+          <Ionicons
+            name="information-circle-outline"
+            size={20}
+            color={theme.primary}
+          />
           <View style={styles.infoContent}>
             <Text style={[styles.infoTitle, { color: theme.text }]}>
               How SRS Works
             </Text>
             <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-              Our adaptive system adjusts review intervals based on your performance. Topics you find
-              easy get longer intervals, while challenging topics are reviewed more frequently.
+              Our adaptive system adjusts review intervals based on your
+              performance. Topics you find easy get longer intervals, while
+              challenging topics are reviewed more frequently.
             </Text>
           </View>
         </View>
@@ -399,4 +443,3 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 });
-

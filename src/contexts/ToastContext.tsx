@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, useCallback, useRef, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  ReactNode,
+  useMemo,
+} from 'react';
 import { UndoToast } from '@/shared/components/UndoToast';
 
 interface ToastOptions {
@@ -67,10 +75,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     hideToast();
   }, [onUndo, hideToast]);
 
-  const value: ToastContextValue = {
-    showToast,
-    hideToast,
-  };
+  // Memoize context value to prevent unnecessary re-renders
+  const value: ToastContextValue = useMemo(
+    () => ({
+      showToast,
+      hideToast,
+    }),
+    [showToast, hideToast],
+  );
 
   return (
     <ToastContext.Provider value={value}>
@@ -84,4 +96,3 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     </ToastContext.Provider>
   );
 };
-

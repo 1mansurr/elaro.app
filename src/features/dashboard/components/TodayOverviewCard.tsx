@@ -15,14 +15,21 @@ interface Props {
   subscriptionTier: 'free' | 'oddity' | null;
 }
 
-const StatItem: React.FC<{ label: string; count: number }> = ({ label, count }) => (
+const StatItem: React.FC<{ label: string; count: number }> = ({
+  label,
+  count,
+}) => (
   <View style={styles.statItem}>
     <Text style={styles.statCount}>{count}</Text>
     <Text style={styles.statLabel}>{label}</Text>
   </View>
 );
 
-const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscriptionTier }) => {
+const TodayOverviewCard: React.FC<Props> = ({
+  overview,
+  monthlyTaskCount,
+  subscriptionTier,
+}) => {
   const TASK_LIMITS = {
     free: 15,
     oddity: 70,
@@ -32,35 +39,43 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscr
   if (subscriptionTier === 'free') {
     limitText = (
       <Text style={styles.limitText}>
-        of <Text style={styles.bold}>{TASK_LIMITS.free}</Text> activities used this month
+        of <Text style={styles.bold}>{TASK_LIMITS.free}</Text> activities used
+        this month
       </Text>
     );
   } else if (subscriptionTier === 'oddity') {
     limitText = (
       <Text style={styles.limitText}>
-        of <Text style={styles.bold}>{TASK_LIMITS.oddity}</Text> activities used this month
+        of <Text style={styles.bold}>{TASK_LIMITS.oddity}</Text> activities used
+        this month
       </Text>
     );
   } else {
     // Fallback for any other case (e.g., null, or future tiers)
-    limitText = <Text style={styles.limitText}>activities used this month</Text>;
+    limitText = (
+      <Text style={styles.limitText}>activities used this month</Text>
+    );
   }
 
   return (
     <View style={styles.card}>
       <Text style={styles.header}>Today at a Glance</Text>
-      
+
       <View style={styles.statsRow}>
         <View style={styles.statCompact}>
           <Text style={styles.statCountCompact}>{overview?.lectures || 0}</Text>
           <Text style={styles.statLabelCompact}>Lectures</Text>
         </View>
         <View style={styles.statCompact}>
-          <Text style={styles.statCountCompact}>{overview?.studySessions || 0}</Text>
+          <Text style={styles.statCountCompact}>
+            {overview?.studySessions || 0}
+          </Text>
           <Text style={styles.statLabelCompact}>Study</Text>
         </View>
         <View style={styles.statCompact}>
-          <Text style={styles.statCountCompact}>{overview?.assignments || 0}</Text>
+          <Text style={styles.statCountCompact}>
+            {overview?.assignments || 0}
+          </Text>
           <Text style={styles.statLabelCompact}>Assignments</Text>
         </View>
         <View style={styles.statCompact}>
@@ -68,7 +83,7 @@ const TodayOverviewCard: React.FC<Props> = ({ overview, monthlyTaskCount, subscr
           <Text style={styles.statLabelCompact}>Reviews</Text>
         </View>
       </View>
-      
+
       <View style={styles.monthlyCountContainer}>
         <Text style={styles.monthlyCountText}>
           <Text style={styles.bold}>{monthlyTaskCount} </Text>

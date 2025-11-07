@@ -12,7 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
 import { sendTestPushNotification } from '@/services/notifications';
 
@@ -22,7 +22,9 @@ export function NotificationTestScreen() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [customTitle, setCustomTitle] = useState('Test Notification');
-  const [customBody, setCustomBody] = useState('This is a test notification from ELARO');
+  const [customBody, setCustomBody] = useState(
+    'This is a test notification from ELARO',
+  );
   const [pushToken, setPushToken] = useState('');
 
   React.useEffect(() => {
@@ -73,21 +75,36 @@ export function NotificationTestScreen() {
 
     setLoading(true);
     try {
-      const presets: Record<string, { title: string; body: string; data?: any }> = {
+      const presets: Record<
+        string,
+        { title: string; body: string; data?: any }
+      > = {
         assignment: {
           title: '📚 Assignment Due Tomorrow',
           body: 'Your assignment "Introduction to Psychology Essay" is due tomorrow at 11:59 PM',
-          data: { taskType: 'assignment', itemId: 'test-123', url: 'elaro://assignment/test-123' },
+          data: {
+            taskType: 'assignment',
+            itemId: 'test-123',
+            url: 'elaro://assignment/test-123',
+          },
         },
         lecture: {
           title: '🎓 Lecture Starting Soon',
           body: 'Your lecture "Advanced Mathematics" starts in 15 minutes',
-          data: { taskType: 'lecture', itemId: 'test-456', url: 'elaro://lecture/test-456' },
+          data: {
+            taskType: 'lecture',
+            itemId: 'test-456',
+            url: 'elaro://lecture/test-456',
+          },
         },
         srs: {
           title: '🧠 Time to Review',
           body: 'Review your study session on "Quantum Physics" to strengthen your memory',
-          data: { taskType: 'study_session', itemId: 'test-789', url: 'elaro://study-session/test-789' },
+          data: {
+            taskType: 'study_session',
+            itemId: 'test-789',
+            url: 'elaro://study-session/test-789',
+          },
         },
         daily_summary: {
           title: '☀️ Your Day at a Glance',
@@ -104,7 +121,10 @@ export function NotificationTestScreen() {
       const preset = presets[type];
       if (preset) {
         await sendTestPushNotification(pushToken, preset.title, preset.body);
-        Alert.alert('Test Sent!', `${type} notification sent. Check your device.`);
+        Alert.alert(
+          'Test Sent!',
+          `${type} notification sent. Check your device.`,
+        );
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to send test');
@@ -117,7 +137,9 @@ export function NotificationTestScreen() {
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -128,7 +150,8 @@ export function NotificationTestScreen() {
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Warning Banner */}
-        <View style={[styles.warningBanner, { backgroundColor: '#F59E0B' + '20' }]}>
+        <View
+          style={[styles.warningBanner, { backgroundColor: '#F59E0B' + '20' }]}>
           <Ionicons name="warning-outline" size={20} color="#F59E0B" />
           <Text style={[styles.warningText, { color: theme.text }]}>
             Development/Testing Only - Not for production use
@@ -140,7 +163,9 @@ export function NotificationTestScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Your Push Token
           </Text>
-          <Text style={[styles.tokenText, { color: theme.textSecondary }]} numberOfLines={2}>
+          <Text
+            style={[styles.tokenText, { color: theme.textSecondary }]}
+            numberOfLines={2}>
             {pushToken || 'No push token found'}
           </Text>
           {!pushToken && (
@@ -155,10 +180,13 @@ export function NotificationTestScreen() {
           <Text style={[styles.sectionTitle, { color: theme.text }]}>
             Custom Test
           </Text>
-          
+
           <Text style={[styles.label, { color: theme.text }]}>Title</Text>
           <TextInput
-            style={[styles.input, { backgroundColor: theme.background, color: theme.text }]}
+            style={[
+              styles.input,
+              { backgroundColor: theme.background, color: theme.text },
+            ]}
             value={customTitle}
             onChangeText={setCustomTitle}
             placeholder="Notification title"
@@ -167,7 +195,11 @@ export function NotificationTestScreen() {
 
           <Text style={[styles.label, { color: theme.text }]}>Body</Text>
           <TextInput
-            style={[styles.input, styles.textArea, { backgroundColor: theme.background, color: theme.text }]}
+            style={[
+              styles.input,
+              styles.textArea,
+              { backgroundColor: theme.background, color: theme.text },
+            ]}
             value={customBody}
             onChangeText={setCustomBody}
             placeholder="Notification message"
@@ -179,8 +211,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.primary }]}
             onPress={sendCustomTest}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             {loading ? (
               <ActivityIndicator color="#fff" />
             ) : (
@@ -198,8 +229,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.presetButton, { backgroundColor: theme.background }]}
             onPress={() => testPreset('assignment')}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             <Text style={styles.presetEmoji}>📚</Text>
             <Text style={[styles.presetText, { color: theme.text }]}>
               Assignment Reminder
@@ -209,8 +239,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.presetButton, { backgroundColor: theme.background }]}
             onPress={() => testPreset('lecture')}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             <Text style={styles.presetEmoji}>🎓</Text>
             <Text style={[styles.presetText, { color: theme.text }]}>
               Lecture Reminder
@@ -220,8 +249,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.presetButton, { backgroundColor: theme.background }]}
             onPress={() => testPreset('srs')}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             <Text style={styles.presetEmoji}>🧠</Text>
             <Text style={[styles.presetText, { color: theme.text }]}>
               SRS Review
@@ -231,8 +259,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.presetButton, { backgroundColor: theme.background }]}
             onPress={() => testPreset('daily_summary')}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             <Text style={styles.presetEmoji}>☀️</Text>
             <Text style={[styles.presetText, { color: theme.text }]}>
               Daily Summary
@@ -242,8 +269,7 @@ export function NotificationTestScreen() {
           <TouchableOpacity
             style={[styles.presetButton, { backgroundColor: theme.background }]}
             onPress={() => testPreset('streak')}
-            disabled={loading || !pushToken}
-          >
+            disabled={loading || !pushToken}>
             <Text style={styles.presetEmoji}>🔥</Text>
             <Text style={[styles.presetText, { color: theme.text }]}>
               Streak Reminder
@@ -252,10 +278,16 @@ export function NotificationTestScreen() {
         </View>
 
         {/* Info */}
-        <View style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
-          <Ionicons name="information-circle-outline" size={20} color={theme.primary} />
+        <View
+          style={[styles.infoBox, { backgroundColor: theme.primary + '10' }]}>
+          <Ionicons
+            name="information-circle-outline"
+            size={20}
+            color={theme.primary}
+          />
           <Text style={[styles.infoText, { color: theme.textSecondary }]}>
-            Test notifications will appear on your device. Tap them to test deep linking navigation.
+            Test notifications will appear on your device. Tap them to test deep
+            linking navigation.
           </Text>
         </View>
       </ScrollView>
@@ -377,4 +409,3 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 });
-

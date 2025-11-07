@@ -39,57 +39,81 @@ describe('PermissionService', () => {
 
   describe('hasPermission', () => {
     it('should allow free users to create assignments', async () => {
-      const result = await permissionService.hasPermission(mockFreeUser, PERMISSIONS.CREATE_ASSIGNMENT);
+      const result = await permissionService.hasPermission(
+        mockFreeUser,
+        PERMISSIONS.CREATE_ASSIGNMENT,
+      );
       expect(result.allowed).toBe(true);
     });
 
     it('should not allow free users to access premium features', async () => {
-      const result = await permissionService.hasPermission(mockFreeUser, PERMISSIONS.VIEW_PREMIUM_FEATURES);
+      const result = await permissionService.hasPermission(
+        mockFreeUser,
+        PERMISSIONS.VIEW_PREMIUM_FEATURES,
+      );
       expect(result.allowed).toBe(false);
     });
 
     it('should allow premium users to access premium features', async () => {
-      const result = await permissionService.hasPermission(mockPremiumUser, PERMISSIONS.VIEW_PREMIUM_FEATURES);
+      const result = await permissionService.hasPermission(
+        mockPremiumUser,
+        PERMISSIONS.VIEW_PREMIUM_FEATURES,
+      );
       expect(result.allowed).toBe(true);
     });
 
     it('should allow admin users to access admin features', async () => {
-      const result = await permissionService.hasPermission(mockAdminUser, PERMISSIONS.ADMIN_ACCESS);
+      const result = await permissionService.hasPermission(
+        mockAdminUser,
+        PERMISSIONS.ADMIN_ACCESS,
+      );
       expect(result.allowed).toBe(true);
     });
   });
 
   describe('canCreateTask', () => {
     it('should allow free users to create tasks within limits', async () => {
-      const result = await permissionService.canCreateTask(mockFreeUser, 'assignments');
+      const result = await permissionService.canCreateTask(
+        mockFreeUser,
+        'assignments',
+      );
       expect(result.allowed).toBe(true);
     });
 
     it('should allow premium users unlimited task creation', async () => {
-      const result = await permissionService.canCreateTask(mockPremiumUser, 'assignments');
+      const result = await permissionService.canCreateTask(
+        mockPremiumUser,
+        'assignments',
+      );
       expect(result.allowed).toBe(true);
     });
 
     it('should allow admin users unlimited task creation', async () => {
-      const result = await permissionService.canCreateTask(mockAdminUser, 'assignments');
+      const result = await permissionService.canCreateTask(
+        mockAdminUser,
+        'assignments',
+      );
       expect(result.allowed).toBe(true);
     });
   });
 
   describe('canCreateSRSReminders', () => {
     it('should not allow free users to create SRS reminders', async () => {
-      const result = await permissionService.canCreateSRSReminders(mockFreeUser);
+      const result =
+        await permissionService.canCreateSRSReminders(mockFreeUser);
       expect(result.allowed).toBe(false);
       expect(result.reason).toContain('Monthly SRS reminder limit reached');
     });
 
     it('should allow premium users to create SRS reminders', async () => {
-      const result = await permissionService.canCreateSRSReminders(mockPremiumUser);
+      const result =
+        await permissionService.canCreateSRSReminders(mockPremiumUser);
       expect(result.allowed).toBe(true);
     });
 
     it('should allow admin users to create SRS reminders', async () => {
-      const result = await permissionService.canCreateSRSReminders(mockAdminUser);
+      const result =
+        await permissionService.canCreateSRSReminders(mockAdminUser);
       expect(result.allowed).toBe(true);
     });
   });
@@ -132,7 +156,7 @@ describe('PermissionService', () => {
     it('should return correct limits for free users', async () => {
       const limits = await permissionService.getTaskLimits(mockFreeUser);
       expect(limits).toHaveLength(5);
-      
+
       const assignmentsLimit = limits.find(l => l.limit === 15);
       expect(assignmentsLimit).toBeDefined();
     });
@@ -140,7 +164,7 @@ describe('PermissionService', () => {
     it('should return unlimited limits for premium users', async () => {
       const limits = await permissionService.getTaskLimits(mockPremiumUser);
       expect(limits).toHaveLength(5);
-      
+
       const unlimitedLimits = limits.filter(l => l.limit === -1);
       expect(unlimitedLimits).toHaveLength(0); // Premium users still have limits, but higher
     });
@@ -148,7 +172,7 @@ describe('PermissionService', () => {
     it('should return unlimited limits for admin users', async () => {
       const limits = await permissionService.getTaskLimits(mockAdminUser);
       expect(limits).toHaveLength(5);
-      
+
       const unlimitedLimits = limits.filter(l => l.limit === -1);
       expect(unlimitedLimits).toHaveLength(5); // Admin users have unlimited access
     });

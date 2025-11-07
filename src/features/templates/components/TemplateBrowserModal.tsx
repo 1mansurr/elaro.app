@@ -25,20 +25,24 @@ interface FilterButtonProps {
   onPress: () => void;
 }
 
-const FilterButton: React.FC<FilterButtonProps> = ({ title, isSelected, onPress }) => (
+const FilterButton: React.FC<FilterButtonProps> = ({
+  title,
+  isSelected,
+  onPress,
+}) => (
   <TouchableOpacity
     style={[
       styles.filterButton,
       isSelected ? styles.filterButtonSelected : styles.filterButtonUnselected,
     ]}
-    onPress={onPress}
-  >
+    onPress={onPress}>
     <Text
       style={[
         styles.filterButtonText,
-        isSelected ? styles.filterButtonTextSelected : styles.filterButtonTextUnselected,
-      ]}
-    >
+        isSelected
+          ? styles.filterButtonTextSelected
+          : styles.filterButtonTextUnselected,
+      ]}>
       {title}
     </Text>
   </TouchableOpacity>
@@ -50,7 +54,11 @@ interface TemplateItemProps {
   onDelete: (template: TaskTemplate) => void;
 }
 
-const TemplateItem: React.FC<TemplateItemProps> = ({ template, onSelect, onDelete }) => {
+const TemplateItem: React.FC<TemplateItemProps> = ({
+  template,
+  onSelect,
+  onDelete,
+}) => {
   const getTaskTypeIcon = (taskType: string) => {
     switch (taskType) {
       case 'assignment':
@@ -78,7 +86,7 @@ const TemplateItem: React.FC<TemplateItemProps> = ({ template, onSelect, onDelet
           style: 'destructive',
           onPress: () => onDelete(template),
         },
-      ]
+      ],
     );
   };
 
@@ -86,9 +94,10 @@ const TemplateItem: React.FC<TemplateItemProps> = ({ template, onSelect, onDelet
     <TouchableOpacity
       style={styles.templateItem}
       onPress={() => onSelect(template)}
-      onLongPress={handleLongPress}
-    >
-      <Text style={styles.templateIcon}>{getTaskTypeIcon(template.task_type)}</Text>
+      onLongPress={handleLongPress}>
+      <Text style={styles.templateIcon}>
+        {getTaskTypeIcon(template.task_type)}
+      </Text>
       <Text style={styles.templateName}>{template.template_name}</Text>
     </TouchableOpacity>
   );
@@ -101,19 +110,28 @@ export const TemplateBrowserModal: React.FC<TemplateBrowserModalProps> = ({
   currentTaskType,
 }) => {
   const { data: templates, isLoading: loading } = useTemplates();
-  const [selectedFilter, setSelectedFilter] = useState<'all' | 'assignment' | 'lecture' | 'study_session'>('all');
-  const [filteredTemplates, setFilteredTemplates] = useState<TaskTemplate[]>([]);
+  const [selectedFilter, setSelectedFilter] = useState<
+    'all' | 'assignment' | 'lecture' | 'study_session'
+  >('all');
+  const [filteredTemplates, setFilteredTemplates] = useState<TaskTemplate[]>(
+    [],
+  );
 
   // Filter templates based on selected filter
   useEffect(() => {
     if (selectedFilter === 'all') {
       setFilteredTemplates(templates || []);
     } else {
-      setFilteredTemplates(templates?.filter(template => template.task_type === selectedFilter) || []);
+      setFilteredTemplates(
+        templates?.filter(template => template.task_type === selectedFilter) ||
+          [],
+      );
     }
   }, [templates, selectedFilter]);
 
-  const handleFilterChange = (filter: 'all' | 'assignment' | 'lecture' | 'study_session') => {
+  const handleFilterChange = (
+    filter: 'all' | 'assignment' | 'lecture' | 'study_session',
+  ) => {
     setSelectedFilter(filter);
   };
 
@@ -136,13 +154,18 @@ export const TemplateBrowserModal: React.FC<TemplateBrowserModalProps> = ({
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
-            You don't have any templates. You can add a template using the toggle at the latter part of the task addition.
+            You don't have any templates. You can add a template using the
+            toggle at the latter part of the task addition.
           </Text>
         </View>
       );
     } else {
-      const taskTypeName = selectedFilter === 'assignment' ? 'Assignments' : 
-                          selectedFilter === 'lecture' ? 'Lectures' : 'Study Sessions';
+      const taskTypeName =
+        selectedFilter === 'assignment'
+          ? 'Assignments'
+          : selectedFilter === 'lecture'
+            ? 'Lectures'
+            : 'Study Sessions';
       return (
         <View style={styles.emptyState}>
           <Text style={styles.emptyStateText}>
@@ -162,7 +185,10 @@ export const TemplateBrowserModal: React.FC<TemplateBrowserModalProps> = ({
   );
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen">
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -208,9 +234,15 @@ export const TemplateBrowserModal: React.FC<TemplateBrowserModalProps> = ({
             <FlatList
               data={filteredTemplates}
               renderItem={renderTemplateItem}
-              keyExtractor={(item) => item.id}
+              keyExtractor={item => item.id}
               style={styles.templateList}
               showsVerticalScrollIndicator={false}
+              // Performance optimizations
+              removeClippedSubviews={true}
+              maxToRenderPerBatch={10}
+              windowSize={5}
+              updateCellsBatchingPeriod={50}
+              initialNumToRender={10}
             />
           )}
         </View>

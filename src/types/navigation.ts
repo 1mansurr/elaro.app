@@ -15,7 +15,11 @@ export type FlowInitialData = {
 export type RootStackParamList = {
   // Core navigation
   Launch: undefined;
-  Auth: { onClose?: () => void; onAuthSuccess?: () => void; mode?: 'signup' | 'signin' };
+  Auth: {
+    onClose?: () => void;
+    onAuthSuccess?: () => void;
+    mode?: 'signup' | 'signin';
+  };
   Main: undefined;
   GuestHome: undefined;
   OnboardingFlow: undefined;
@@ -58,8 +62,20 @@ export type RootStackParamList = {
 
   // Special screens
   AnalyticsAdmin: undefined;
-  PaywallScreen: { variant?: 'locked' | 'general', lockedContent?: string } | undefined;
-  OddityWelcomeScreen: { variant: 'trial-early' | 'trial-expired' | 'direct' | 'renewal' | 'restore' | 'promo' | 'granted' | 'plan-change' };
+  PaywallScreen:
+    | { variant?: 'locked' | 'general'; lockedContent?: string }
+    | undefined;
+  OddityWelcomeScreen: {
+    variant:
+      | 'trial-early'
+      | 'trial-expired'
+      | 'direct'
+      | 'renewal'
+      | 'restore'
+      | 'promo'
+      | 'granted'
+      | 'plan-change';
+  };
   StudyResult: { sessionId: string };
   StudySessionReview: { sessionId: string };
 };

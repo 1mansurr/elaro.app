@@ -1,11 +1,11 @@
 /**
  * Settings and Profile Synchronization Service
- * 
+ *
  * Manages synchronization between:
  * - Local settings cache (fast reads)
  * - Supabase profile and preferences (source of truth)
  * - Pending changes queue (offline support)
- * 
+ *
  * Features:
  * - Local-first writes (instant UI updates)
  * - Background sync with Supabase
@@ -18,6 +18,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { User } from '@/types';
+import { SettingsCache, PendingChange } from '@/types/settings';
 
 // Storage keys
 const SETTINGS_CACHE_KEY = '@elaro_settings_cache_v1';
@@ -26,24 +27,7 @@ const SETTINGS_VERSION_KEY = '@elaro_settings_version_v1';
 
 const SETTINGS_VERSION = 'v1';
 
-interface SettingsCache {
-  userId: string;
-  profile: Partial<User>;
-  notificationPreferences: any;
-  srsPreferences: any;
-  lastSyncedAt: number;
-  version: string;
-}
-
-interface PendingChange {
-  id: string;
-  type: 'profile' | 'notification_preferences' | 'srs_preferences';
-  field: string;
-  value: any;
-  timestamp: number;
-  retryCount: number;
-  maxRetries: number;
-}
+// Types moved to @/types/settings.ts
 
 /**
  * SettingsSyncService - Centralized settings and profile synchronization
@@ -148,12 +132,12 @@ class SettingsSyncService {
     userId: string,
     type: 'profile' | 'notification_preferences' | 'srs_preferences',
     field: string,
-    value: any
+    value: any,
   ): Promise<void> {
     try {
       // Load current cache
       let settings = await this.loadFromCache(userId);
-      
+
       if (!settings) {
         // If no cache, load from server first
         settings = await this.loadFromServer(userId);
@@ -183,7 +167,10 @@ class SettingsSyncService {
 
       // Try to sync immediately (non-blocking)
       this.syncPendingChanges(userId).catch(err => {
-        console.error('❌ SettingsSync: Immediate sync failed, will retry:', err);
+        console.error(
+          '❌ SettingsSync: Immediate sync failed, will retry:',
+          err,
+        );
       });
 
       console.log('💾 SettingsSync: Setting updated locally', { type, field });
@@ -196,7 +183,9 @@ class SettingsSyncService {
   /**
    * Sync all pending changes to Supabase
    */
-  async syncPendingChanges(userId: string): Promise<{ synced: number; failed: number }> {
+  async syncPendingChanges(
+    userId: string,
+  ): Promise<{ synced: number; failed: number }> {
     if (this.isSyncing) {
       console.log('⏳ SettingsSync: Already syncing, skipping');
       return { synced: 0, failed: 0 };
@@ -215,13 +204,16 @@ class SettingsSyncService {
       const remaining: PendingChange[] = [];
 
       // Group changes by type
-      const changesByType = pending.reduce((acc, change) => {
-        if (!acc[change.type]) {
-          acc[change.type] = [];
-        }
-        acc[change.type].push(change);
-        return acc;
-      }, {} as Record<string, PendingChange[]>);
+      const changesByType = pending.reduce(
+        (acc, change) => {
+          if (!acc[change.type]) {
+            acc[change.type] = [];
+          }
+          acc[change.type].push(change);
+          return acc;
+        },
+        {} as Record<string, PendingChange[]>,
+      );
 
       // Sync each type
       for (const [type, changes] of Object.entries(changesByType)) {
@@ -251,12 +243,15 @@ class SettingsSyncService {
 
             const { error } = await supabase
               .from('notification_preferences')
-              .upsert({
-                user_id: userId,
-                ...updates,
-              }, {
-                onConflict: 'user_id',
-              });
+              .upsert(
+                {
+                  user_id: userId,
+                  ...updates,
+                },
+                {
+                  onConflict: 'user_id',
+                },
+              );
 
             if (error) throw error;
             synced += changes.length;
@@ -290,7 +285,7 @@ class SettingsSyncService {
           }
         } catch (error) {
           console.error(`❌ SettingsSync: Failed to sync ${type}:`, error);
-          
+
           // Check retry counts
           for (const change of changes) {
             change.retryCount++;
@@ -311,7 +306,11 @@ class SettingsSyncService {
         await this.refreshSettings(userId);
       }
 
-      console.log('🔄 SettingsSync: Sync complete', { synced, failed, remaining: remaining.length });
+      console.log('🔄 SettingsSync: Sync complete', {
+        synced,
+        failed,
+        remaining: remaining.length,
+      });
       return { synced, failed };
     } catch (error) {
       console.error('❌ SettingsSync: Sync failed:', error);
@@ -344,14 +343,14 @@ class SettingsSyncService {
     userId: string,
     type: 'profile' | 'notification_preferences' | 'srs_preferences',
     field: string,
-    value: any
+    value: any,
   ): Promise<void> {
     try {
       const pending = await this.getPendingChanges(userId);
 
       // Check if there's already a pending change for this field
       const existingIndex = pending.findIndex(
-        c => c.type === type && c.field === field
+        c => c.type === type && c.field === field,
       );
 
       const change: PendingChange = {
@@ -396,7 +395,10 @@ class SettingsSyncService {
   /**
    * Save pending changes
    */
-  private async savePendingChanges(userId: string, changes: PendingChange[]): Promise<void> {
+  private async savePendingChanges(
+    userId: string,
+    changes: PendingChange[],
+  ): Promise<void> {
     try {
       const key = `${PENDING_CHANGES_KEY}:${userId}`;
       await AsyncStorage.setItem(key, JSON.stringify(changes));
@@ -412,7 +414,7 @@ class SettingsSyncService {
     try {
       const key = `${SETTINGS_CACHE_KEY}:${settings.userId}`;
       await AsyncStorage.setItem(key, JSON.stringify(settings));
-      
+
       // Also cache in CacheManager for consistency
       await cache.setMedium(`settings:${settings.userId}`, settings);
     } catch (error) {
@@ -449,7 +451,9 @@ class SettingsSyncService {
   /**
    * Subscribe to settings changes
    */
-  onSettingsChange(callback: (settings: SettingsCache | null) => void): () => void {
+  onSettingsChange(
+    callback: (settings: SettingsCache | null) => void,
+  ): () => void {
     this.listeners.add(callback);
     return () => {
       this.listeners.delete(callback);

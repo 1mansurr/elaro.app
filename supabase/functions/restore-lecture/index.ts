@@ -1,82 +1,69 @@
-// FILE: supabase/functions/restore-lecture/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkRateLimit, RateLimitError } from '../_shared/rate-limiter.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { RestoreLectureSchema } from '../_shared/schemas/restore.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
+async function handleRestoreLecture(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  // Schema transformation ensures lecture_id is always present
+  const lectureId = body.lecture_id;
+
+  await logger.info(
+    'Verifying lecture ownership',
+    { user_id: user.id, lecture_id: lectureId },
+    traceContext,
   );
-};
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  // SECURITY: Verify ownership before restoring
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('lectures')
+    .select('id')
+    .eq('id', lectureId)
+    .eq('user_id', user.id)
+    .single();
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Apply rate limiting check
-    try {
-      await checkRateLimit(supabase, user.id, 'restore-lecture');
-    } catch (error) {
-      if (error instanceof RateLimitError) {
-        return new Response(JSON.stringify({ error: error.message }), {
-          status: 429,
-          headers: corsHeaders,
-        });
-      }
-      console.error('An unexpected error occurred during rate limit check:', error);
-      return new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-        status: 500,
-        headers: corsHeaders,
-      });
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
     }
-
-    const { lectureId } = await req.json();
-
-    if (!lectureId) {
-      return new Response(
-        JSON.stringify({ error: 'lectureId is required.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const { error } = await supabase
-      .from('lectures')
-      .update({ deleted_at: null }) // Set deleted_at to NULL to restore
-      .eq('id', lectureId)
-      .eq('user_id', user.id);
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify({ message: 'Lecture restored successfully.' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Internal server error' }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    throw new AppError(
+      'Lecture not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
     );
   }
-});
+
+  // Restore by setting deleted_at to null
+  const { error: restoreError } = await supabaseClient
+    .from('lectures')
+    .update({ deleted_at: null })
+    .eq('id', lectureId);
+
+  if (restoreError) throw handleDbError(restoreError);
+
+  await logger.info(
+    'Successfully restored lecture',
+    { user_id: user.id, lecture_id: lectureId },
+    traceContext,
+  );
+
+  // Maintain backward compatibility with existing response format
+  return { message: 'Lecture restored successfully.' };
+}
+
+serve(
+  createAuthenticatedHandler(handleRestoreLecture, {
+    rateLimitName: 'restore-lecture',
+    schema: RestoreLectureSchema,
+    requireIdempotency: true,
+  }),
+);

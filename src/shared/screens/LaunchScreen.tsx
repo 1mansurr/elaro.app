@@ -3,11 +3,14 @@ import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList } from '@/types';
 import { COLORS } from '@/constants/theme';
 
-type LaunchScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Launch'>;
+type LaunchScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'Launch'
+>;
 
 const LaunchScreen = () => {
   const { loading } = useAuth();
@@ -27,7 +30,11 @@ const LaunchScreen = () => {
 
   return (
     <View style={styles.container} testID="launch-screen">
-      <ActivityIndicator size="large" color={COLORS.primary} testID="launch-activity-indicator" />
+      <ActivityIndicator
+        size="large"
+        color={COLORS.primary}
+        testID="launch-activity-indicator"
+      />
     </View>
   );
 };

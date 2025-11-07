@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
-import { usePermissions } from '@/features/auth/hooks/usePermissions';
+import { useAuth } from '@/contexts/AuthContext';
+import { usePermissions } from '@/shared/hooks/usePermissions';
 
 const FREE_TIER_LIMITS = {
   courses: 2,
@@ -35,7 +35,7 @@ export const useLockedItemsCount = (itemType: ItemType) => {
       if (premium) {
         return { totalCount, lockedCount: 0 }; // No locked items for premium users
       }
-      
+
       const limit = FREE_TIER_LIMITS[itemType];
       const lockedCount = Math.max(0, totalCount - limit);
       return { totalCount, lockedCount };
@@ -43,4 +43,3 @@ export const useLockedItemsCount = (itemType: ItemType) => {
     enabled: !!user,
   });
 };
-

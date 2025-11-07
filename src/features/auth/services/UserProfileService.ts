@@ -1,5 +1,8 @@
 import { User } from '@/types';
-import { supabase, authService as supabaseAuthService } from '@/services/supabase';
+import {
+  supabase,
+  authService as supabaseAuthService,
+} from '@/services/supabase';
 import { cache } from '@/utils/cache';
 
 export class UserProfileService {
@@ -20,27 +23,27 @@ export class UserProfileService {
       // Try to get from cache first for instant load
       const cacheKey = `user_profile:${userId}`;
       const cachedProfile = await cache.get<User>(cacheKey);
-      
+
       if (cachedProfile) {
         console.log('📱 Using cached user profile');
-        
+
         // Still fetch fresh data in background to stay up-to-date
         this.refreshProfileInBackground(userId, cachedProfile, cacheKey);
-        
+
         return cachedProfile;
       }
 
       // No cache - fetch from server
       console.log('🌐 Fetching user profile from server');
       const userProfile = await supabaseAuthService.getUserProfile(userId);
-      
+
       if (!userProfile) {
         return null;
       }
-      
+
       // Cache the profile (24 hours) for future use
       await cache.setLong(cacheKey, userProfile);
-      
+
       return userProfile as User;
     } catch (error) {
       console.error('❌ Error fetching user profile:', error);
@@ -52,13 +55,16 @@ export class UserProfileService {
    * Refresh profile in background while using cached data
    */
   private async refreshProfileInBackground(
-    userId: string, 
-    cachedProfile: User, 
-    cacheKey: string
+    userId: string,
+    cachedProfile: User,
+    cacheKey: string,
   ): Promise<void> {
     try {
       const freshProfile = await supabaseAuthService.getUserProfile(userId);
-      if (freshProfile && JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)) {
+      if (
+        freshProfile &&
+        JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)
+      ) {
         console.log('🔄 Updating user profile from server');
         await cache.setLong(cacheKey, freshProfile);
       }
@@ -75,12 +81,12 @@ export class UserProfileService {
     try {
       const cacheKey = `user_profile:${userId}`;
       const userProfile = await supabaseAuthService.getUserProfile(userId);
-      
+
       if (userProfile) {
         await cache.setLong(cacheKey, userProfile);
         return userProfile as User;
       }
-      
+
       return null;
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);

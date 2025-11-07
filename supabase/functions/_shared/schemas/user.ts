@@ -1,31 +1,47 @@
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
+// Schema for updating user profile
 export const UpdateUserProfileSchema = z.object({
-  first_name: z.string().min(1, 'First name is required').max(100, 'First name too long').optional(),
-  last_name: z.string().min(1, 'Last name is required').max(100, 'Last name too long').optional(),
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50, 'Username too long').regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores.").optional(),
-  university: z.string().max(200, 'University name too long').optional(),
-  program: z.string().max(200, 'Program name too long').optional(),
-  country: z.string().max(100, 'Country name too long').optional(),
+  first_name: z
+    .string()
+    .min(1, 'First name is required')
+    .max(50, 'First name must be 50 characters or less')
+    .optional(),
+  last_name: z
+    .string()
+    .max(50, 'Last name must be 50 characters or less')
+    .optional(),
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be 30 characters or less')
+    .regex(
+      /^[a-zA-Z0-9_]+$/,
+      'Username can only contain letters, numbers, and underscores',
+    )
+    .optional(),
+  university: z
+    .string()
+    .max(100, 'University name must be 100 characters or less')
+    .optional(),
+  bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
 });
 
-export const CheckUsernameSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50, 'Username too long').regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
+// Schema for suspending a user
+export const SuspendUserSchema = z.object({
+  user_id: z.string().uuid('Invalid user ID format'),
+  reason: z
+    .string()
+    .max(500, 'Reason must be 500 characters or less')
+    .optional(),
 });
 
-// Define a schema for a single course within the onboarding payload
-const OnboardingCourseSchema = z.object({
-  course_name: z.string().min(1, 'Course name is required').max(200, 'Course name too long'),
-  course_code: z.string().max(50, 'Course code too long').optional(),
+// Schema for unsuspending a user
+export const UnsuspendUserSchema = z.object({
+  user_id: z.string().uuid('Invalid user ID format'),
 });
 
-export const CompleteOnboardingSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(50, 'Username too long').regex(/^[a-zA-Z0-9_]+$/, "Username can only contain letters, numbers, and underscores."),
-  university: z.string().max(200, 'University name too long').optional(),
-  program: z.string().max(200, 'Program name too long').optional(),
-  country: z.string().max(100, 'Country name too long').optional(),
-  courses: z.array(OnboardingCourseSchema).optional(),
-  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must be in YYYY-MM-DD format'),
-  hasParentalConsent: z.boolean(),
-  marketingOptIn: z.boolean(),
+// Schema for deleting a user
+export const DeleteUserSchema = z.object({
+  user_id: z.string().uuid('Invalid user ID format'),
 });

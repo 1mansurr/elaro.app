@@ -5,7 +5,10 @@ import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
 import { RouteProp } from '@react-navigation/native';
 
-type TaskDetailModalRouteProp = RouteProp<RootStackParamList, 'TaskDetailModal'>;
+type TaskDetailModalRouteProp = RouteProp<
+  RootStackParamList,
+  'TaskDetailModal'
+>;
 
 const TaskDetailModal = () => {
   const route = useRoute<TaskDetailModalRouteProp>();
@@ -24,7 +27,8 @@ const TaskDetailModal = () => {
       }
 
       // Map taskType to Supabase table name
-      const tableName = taskType === 'study_session' ? 'study_sessions' : taskType;
+      const tableName =
+        taskType === 'study_session' ? 'study_sessions' : taskType;
 
       try {
         const { data, error: dbError } = await supabase
@@ -51,7 +55,9 @@ const TaskDetailModal = () => {
       {error && <Text style={styles.errorText}>Error: {error}</Text>}
       {task && (
         <View>
-          <Text style={styles.title}>{task.topic || task.title || task.lecture_name}</Text>
+          <Text style={styles.title}>
+            {task.topic || task.title || task.lecture_name}
+          </Text>
           <Text style={styles.detail}>Type: {taskType.replace('_', ' ')}</Text>
           {/* Add more task details here as needed */}
         </View>

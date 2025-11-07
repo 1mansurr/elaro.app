@@ -1,6 +1,6 @@
 /**
  * Performance Metrics Utilities for E2E Stress Tests
- * 
+ *
  * Provides instrumentation for measuring sync performance:
  * - Queue replay latency
  * - Sync operation timing
@@ -47,7 +47,10 @@ class PerformanceMetricsCollector {
   /**
    * Start timing an operation
    */
-  startOperation(operationType: string, metadata?: Record<string, any>): string {
+  startOperation(
+    operationType: string,
+    metadata?: Record<string, any>,
+  ): string {
     const operationId = `op_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const metric: PerformanceMetrics = {
       operationType,
@@ -73,7 +76,11 @@ class PerformanceMetricsCollector {
   /**
    * Record a sync operation timing
    */
-  recordSyncOperation(operationType: string, durationMs: number, success: boolean): void {
+  recordSyncOperation(
+    operationType: string,
+    durationMs: number,
+    success: boolean,
+  ): void {
     const metric: PerformanceMetrics = {
       operationType,
       startTime: Date.now() - durationMs,
@@ -114,9 +121,10 @@ class PerformanceMetricsCollector {
         replay.replayDuration = replay.replayEndTime - replay.replayStartTime;
         replay.operationsSynced = synced;
         replay.operationsFailed = failed;
-        
+
         if (replay.operationsSynced > 0) {
-          replay.averageLatency = replay.replayDuration / replay.operationsSynced;
+          replay.averageLatency =
+            replay.replayDuration / replay.operationsSynced;
         }
       }
     }
@@ -125,7 +133,9 @@ class PerformanceMetricsCollector {
   /**
    * Record conflict resolution
    */
-  recordConflictResolution(method: 'last-write-wins' | 'merge' | 'remote-overwrite'): void {
+  recordConflictResolution(
+    method: 'last-write-wins' | 'merge' | 'remote-overwrite',
+  ): void {
     this.conflicts.totalConflicts++;
     if (method === 'last-write-wins') {
       this.conflicts.resolvedByLastWriteWins++;
@@ -147,12 +157,15 @@ class PerformanceMetricsCollector {
     queueReplays: QueueReplayMetrics[];
     conflicts: ConflictMetrics;
   } {
-    const successful = this.metrics.filter(m => m.success && m.duration !== null);
+    const successful = this.metrics.filter(
+      m => m.success && m.duration !== null,
+    );
     const failed = this.metrics.filter(m => !m.success);
     const durations = successful.map(m => m.duration!).filter(d => d > 0);
-    const averageDuration = durations.length > 0
-      ? durations.reduce((a, b) => a + b, 0) / durations.length
-      : 0;
+    const averageDuration =
+      durations.length > 0
+        ? durations.reduce((a, b) => a + b, 0) / durations.length
+        : 0;
 
     return {
       totalOperations: this.metrics.length,
@@ -175,8 +188,10 @@ class PerformanceMetricsCollector {
     totalSynced: number;
     totalFailed: number;
   } {
-    const completedReplays = this.queueReplays.filter(r => r.replayDuration !== null);
-    
+    const completedReplays = this.queueReplays.filter(
+      r => r.replayDuration !== null,
+    );
+
     if (completedReplays.length === 0) {
       return {
         totalReplays: 0,
@@ -188,13 +203,25 @@ class PerformanceMetricsCollector {
       };
     }
 
-    const avgReplayTime = completedReplays.reduce((sum, r) => sum + (r.replayDuration || 0), 0) / completedReplays.length;
-    const avgQueueSize = completedReplays.reduce((sum, r) => sum + r.queueSize, 0) / completedReplays.length;
-    const avgLatency = completedReplays
-      .filter(r => r.averageLatency !== null)
-      .reduce((sum, r) => sum + (r.averageLatency || 0), 0) / completedReplays.filter(r => r.averageLatency !== null).length;
-    const totalSynced = completedReplays.reduce((sum, r) => sum + r.operationsSynced, 0);
-    const totalFailed = completedReplays.reduce((sum, r) => sum + r.operationsFailed, 0);
+    const avgReplayTime =
+      completedReplays.reduce((sum, r) => sum + (r.replayDuration || 0), 0) /
+      completedReplays.length;
+    const avgQueueSize =
+      completedReplays.reduce((sum, r) => sum + r.queueSize, 0) /
+      completedReplays.length;
+    const avgLatency =
+      completedReplays
+        .filter(r => r.averageLatency !== null)
+        .reduce((sum, r) => sum + (r.averageLatency || 0), 0) /
+      completedReplays.filter(r => r.averageLatency !== null).length;
+    const totalSynced = completedReplays.reduce(
+      (sum, r) => sum + r.operationsSynced,
+      0,
+    );
+    const totalFailed = completedReplays.reduce(
+      (sum, r) => sum + r.operationsFailed,
+      0,
+    );
 
     return {
       totalReplays: completedReplays.length,
@@ -228,7 +255,7 @@ class PerformanceMetricsCollector {
     const queueStats = this.getQueueReplayStats();
 
     console.group('📊 Performance Metrics Summary');
-    
+
     console.group('Operations');
     console.log(`Total: ${summary.totalOperations}`);
     console.log(`Successful: ${summary.successfulOperations}`);
@@ -238,18 +265,28 @@ class PerformanceMetricsCollector {
 
     console.group('Queue Replays');
     console.log(`Total Replays: ${queueStats.totalReplays}`);
-    console.log(`Average Replay Time: ${queueStats.averageReplayTime.toFixed(2)}ms`);
-    console.log(`Average Queue Size: ${queueStats.averageQueueSize.toFixed(0)}`);
-    console.log(`Average Latency: ${queueStats.averageLatency.toFixed(2)}ms per operation`);
+    console.log(
+      `Average Replay Time: ${queueStats.averageReplayTime.toFixed(2)}ms`,
+    );
+    console.log(
+      `Average Queue Size: ${queueStats.averageQueueSize.toFixed(0)}`,
+    );
+    console.log(
+      `Average Latency: ${queueStats.averageLatency.toFixed(2)}ms per operation`,
+    );
     console.log(`Total Synced: ${queueStats.totalSynced}`);
     console.log(`Total Failed: ${queueStats.totalFailed}`);
     console.groupEnd();
 
     console.group('Conflict Resolution');
     console.log(`Total Conflicts: ${summary.conflicts.totalConflicts}`);
-    console.log(`Last-Write-Wins: ${summary.conflicts.resolvedByLastWriteWins}`);
+    console.log(
+      `Last-Write-Wins: ${summary.conflicts.resolvedByLastWriteWins}`,
+    );
     console.log(`Merged: ${summary.conflicts.resolvedByMerge}`);
-    console.log(`Remote Overwrite: ${summary.conflicts.resolvedByRemoteOverwrite}`);
+    console.log(
+      `Remote Overwrite: ${summary.conflicts.resolvedByRemoteOverwrite}`,
+    );
     console.groupEnd();
 
     console.groupEnd();
@@ -265,11 +302,11 @@ export const perfMetrics = new PerformanceMetricsCollector();
 export async function measureOperation<T>(
   operationType: string,
   operation: () => Promise<T>,
-  metadata?: Record<string, any>
+  metadata?: Record<string, any>,
 ): Promise<T> {
   const startTime = Date.now();
   let success = false;
-  
+
   try {
     const result = await operation();
     success = true;
@@ -286,13 +323,12 @@ export async function measureOperation<T>(
 export function assertPerformance(
   expectedMaxDuration: number,
   actualDuration: number,
-  operationType: string
+  operationType: string,
 ): void {
   if (actualDuration > expectedMaxDuration) {
     console.warn(
       `⚠️ Performance warning: ${operationType} took ${actualDuration}ms ` +
-      `(expected < ${expectedMaxDuration}ms)`
+        `(expected < ${expectedMaxDuration}ms)`,
     );
   }
 }
-

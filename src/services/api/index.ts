@@ -19,7 +19,7 @@ export const api = {
   homeScreen: homeScreenApi,
   calendar: calendarApi,
   notificationPreferences: notificationPreferencesApi,
-  
+
   // Mutations
   mutations: {
     assignments: assignmentsApiMutations,

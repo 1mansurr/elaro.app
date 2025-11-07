@@ -10,7 +10,14 @@ import {
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useThemedStyles } from '@/hooks/useThemedStyles';
-import { SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS, ANIMATIONS } from '@/constants/theme';
+import {
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+  ANIMATIONS,
+} from '@/constants/theme';
 import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 import * as Haptics from 'expo-haptics';
 
@@ -57,7 +64,7 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
   });
 
   // Optimized themed styles with memoization
-  const themedStyles = useThemedStyles((theme) => ({
+  const themedStyles = useThemedStyles(theme => ({
     getVariantStyles: () => {
       switch (variant) {
         case 'primary':
@@ -154,7 +161,7 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
 
   const handlePressIn = () => {
     if (disabled || loading) return;
-    
+
     // Smooth press-in animation
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -174,7 +181,7 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
 
   const handlePressOut = () => {
     if (disabled || loading) return;
-    
+
     // Smooth press-out animation
     Animated.parallel([
       Animated.timing(scaleAnim, {
@@ -201,7 +208,7 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
   const getShadowStyle = () => {
     const baseShadow = SHADOWS.sm; // Base shadow for all buttons
     const pressedShadow = SHADOWS.xs; // Reduced shadow when pressed
-    
+
     return {
       ...baseShadow,
       shadowOpacity: shadowAnim.interpolate({
@@ -222,8 +229,7 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
           transform: [{ scale: scaleAnim }],
         },
         getShadowStyle(),
-      ]}
-    >
+      ]}>
       <TouchableOpacity
         onPress={handlePress}
         onPressIn={handlePressIn}
@@ -240,28 +246,26 @@ export const UnifiedButton: React.FC<UnifiedButtonProps> = ({
         accessibilityLabel={accessibilityLabel || title}
         accessibilityHint={accessibilityHint}
         accessibilityRole="button"
-        accessibilityState={{ disabled: disabled || loading }}
-      >
-      {loading ? (
-        <ActivityIndicator color={textColor} />
-      ) : (
-        <>
-          {iconPosition === 'left' && icon}
-          <Text
-            style={[
-              styles.text,
-              {
-                color: textColor,
-                fontSize: textSize,
-              },
-              textStyle,
-            ]}
-          >
-            {title}
-          </Text>
-          {iconPosition === 'right' && icon}
-        </>
-      )}
+        accessibilityState={{ disabled: disabled || loading }}>
+        {loading ? (
+          <ActivityIndicator color={textColor} />
+        ) : (
+          <>
+            {iconPosition === 'left' && icon}
+            <Text
+              style={[
+                styles.text,
+                {
+                  color: textColor,
+                  fontSize: textSize,
+                },
+                textStyle,
+              ]}>
+              {title}
+            </Text>
+            {iconPosition === 'right' && icon}
+          </>
+        )}
       </TouchableOpacity>
     </Animated.View>
   );
@@ -286,25 +290,24 @@ const styles = StyleSheet.create({
 });
 
 // Export convenience variants for easier usage
-export const PrimaryButton: React.FC<Omit<UnifiedButtonProps, 'variant'>> = (props) => (
-  <UnifiedButton {...props} variant="primary" />
-);
+export const PrimaryButton: React.FC<
+  Omit<UnifiedButtonProps, 'variant'>
+> = props => <UnifiedButton {...props} variant="primary" />;
 
-export const SecondaryButton: React.FC<Omit<UnifiedButtonProps, 'variant'>> = (props) => (
-  <UnifiedButton {...props} variant="secondary" />
-);
+export const SecondaryButton: React.FC<
+  Omit<UnifiedButtonProps, 'variant'>
+> = props => <UnifiedButton {...props} variant="secondary" />;
 
-export const OutlineButton: React.FC<Omit<UnifiedButtonProps, 'variant'>> = (props) => (
-  <UnifiedButton {...props} variant="outline" />
-);
+export const OutlineButton: React.FC<
+  Omit<UnifiedButtonProps, 'variant'>
+> = props => <UnifiedButton {...props} variant="outline" />;
 
-export const GhostButton: React.FC<Omit<UnifiedButtonProps, 'variant'>> = (props) => (
-  <UnifiedButton {...props} variant="ghost" />
-);
+export const GhostButton: React.FC<
+  Omit<UnifiedButtonProps, 'variant'>
+> = props => <UnifiedButton {...props} variant="ghost" />;
 
-export const DangerButton: React.FC<Omit<UnifiedButtonProps, 'variant'>> = (props) => (
-  <UnifiedButton {...props} variant="danger" />
-);
+export const DangerButton: React.FC<
+  Omit<UnifiedButtonProps, 'variant'>
+> = props => <UnifiedButton {...props} variant="danger" />;
 
 export default UnifiedButton;
-

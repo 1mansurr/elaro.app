@@ -4,12 +4,12 @@ import { NotificationSchedulingService } from './NotificationSchedulingService';
 import { notificationHistoryService } from './NotificationHistoryService';
 import { weeklyAnalyticsService } from '../analytics/WeeklyAnalyticsService';
 import { batchProcessingService } from '../analytics/BatchProcessingService';
-import { 
-  INotificationDeliveryService, 
-  INotificationPreferenceService, 
+import {
+  INotificationDeliveryService,
+  INotificationPreferenceService,
   INotificationSchedulingService,
   NotificationType,
-  NotificationPriority
+  NotificationPriority,
 } from './interfaces';
 
 /**
@@ -18,7 +18,7 @@ import {
  */
 export class NotificationService {
   private static instance: NotificationService;
-  
+
   public readonly delivery: INotificationDeliveryService;
   public readonly preferences: INotificationPreferenceService;
   public readonly scheduling: INotificationSchedulingService;
@@ -51,7 +51,7 @@ export class NotificationService {
       // Set up notification categories and channels
       await this.delivery?.setupNotificationCategories?.();
       await this.delivery?.setupAndroidChannels?.();
-      
+
       console.log('✅ Notification system initialized successfully');
     } catch (error) {
       console.error('❌ Failed to initialize notification system:', error);
@@ -75,7 +75,7 @@ export class NotificationService {
     body: string,
     type: string = 'reminder',
     priority: string = 'normal',
-    data?: Record<string, any>
+    data?: Record<string, any>,
   ): Promise<boolean> {
     try {
       // Check if user has notifications enabled
@@ -93,7 +93,7 @@ export class NotificationService {
         type: type as NotificationType,
         priority: priority as NotificationPriority,
         userId,
-        data
+        data,
       };
 
       // Schedule with smart timing
@@ -102,29 +102,28 @@ export class NotificationService {
           enabled: true,
           learningPattern: 'mixed',
           optimalHours: [],
-          avoidHours: []
+          avoidHours: [],
         },
         frequency: {
           type: 'smart',
           batchWindow: 30,
           maxPerDay: 10,
-          cooldownPeriod: 30
+          cooldownPeriod: 30,
         },
         context: {
           locationAware: false,
           activityAware: false,
           timezoneAware: true,
-          weekendBehavior: 'same'
+          weekendBehavior: 'same',
         },
         rescheduling: {
           autoReschedule: true,
           maxReschedules: 3,
-          rescheduleDelay: 60
-        }
+          rescheduleDelay: 60,
+        },
       });
 
       return true;
-
     } catch (error) {
       console.error('Error sending smart notification:', error);
       return false;
@@ -144,7 +143,6 @@ export class NotificationService {
   async updateUserPreferences(userId: string, preferences: any) {
     return await this.preferences.updatePreferences(userId, preferences);
   }
-
 }
 
 // Export singleton instance

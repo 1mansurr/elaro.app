@@ -25,7 +25,7 @@ class HealthCheckService {
     data: null,
     timestamp: 0,
   };
-  
+
   private readonly CACHE_DURATION = 30000; // 30 seconds cache
 
   /**
@@ -35,16 +35,20 @@ class HealthCheckService {
    */
   async checkHealth(useCache: boolean = true): Promise<HealthCheckResponse> {
     const now = Date.now();
-    
+
     // Return cached result if it's still valid and caching is enabled
-    if (useCache && this.cache.data && (now - this.cache.timestamp) < this.CACHE_DURATION) {
+    if (
+      useCache &&
+      this.cache.data &&
+      now - this.cache.timestamp < this.CACHE_DURATION
+    ) {
       console.log('Returning cached health check result');
       return this.cache.data;
     }
 
     try {
       console.log('Performing fresh health check...');
-      
+
       const { data, error } = await supabase.functions.invoke('health-check', {
         method: 'GET',
       });
@@ -59,7 +63,7 @@ class HealthCheckService {
       }
 
       const healthResponse = data as HealthCheckResponse;
-      
+
       // Cache the result
       this.cache = {
         data: healthResponse,
@@ -69,16 +73,19 @@ class HealthCheckService {
       return healthResponse;
     } catch (error) {
       console.error('Health check failed:', error);
-      
+
       // Return a fallback response indicating the health check itself failed
       const fallbackResponse: HealthCheckResponse = {
         status: 'error',
         timestamp: new Date().toISOString(),
-        services: [{
-          service: 'health-check',
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Unknown error occurred'
-        }],
+        services: [
+          {
+            service: 'health-check',
+            status: 'error',
+            message:
+              error instanceof Error ? error.message : 'Unknown error occurred',
+          },
+        ],
         version: '1.0.0',
         environment: 'unknown',
       };
@@ -110,11 +117,19 @@ class HealthCheckService {
    * Gets a summary of service statuses.
    * @returns Promise<{ healthy: number; unhealthy: number; services: ServiceStatus[] }>
    */
-  async getServiceSummary(): Promise<{ healthy: number; unhealthy: number; services: ServiceStatus[] }> {
+  async getServiceSummary(): Promise<{
+    healthy: number;
+    unhealthy: number;
+    services: ServiceStatus[];
+  }> {
     const healthResponse = await this.checkHealth();
-    const healthy = healthResponse.services.filter(s => s.status === 'ok').length;
-    const unhealthy = healthResponse.services.filter(s => s.status === 'error').length;
-    
+    const healthy = healthResponse.services.filter(
+      s => s.status === 'ok',
+    ).length;
+    const unhealthy = healthResponse.services.filter(
+      s => s.status === 'error',
+    ).length;
+
     return {
       healthy,
       unhealthy,
@@ -147,7 +162,9 @@ class HealthCheckService {
    * @param timeoutMs - Timeout in milliseconds (default: 5000)
    * @returns Promise<HealthCheckResponse | null>
    */
-  async quickCheck(timeoutMs: number = 5000): Promise<HealthCheckResponse | null> {
+  async quickCheck(
+    timeoutMs: number = 5000,
+  ): Promise<HealthCheckResponse | null> {
     try {
       const timeoutPromise = new Promise<never>((_, reject) => {
         setTimeout(() => reject(new Error('Health check timeout')), timeoutMs);

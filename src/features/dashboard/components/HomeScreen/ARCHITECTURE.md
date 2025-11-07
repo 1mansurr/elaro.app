@@ -6,13 +6,13 @@ The HomeScreen has been refactored from a monolithic 693-line component into a m
 
 ### **Before vs After**
 
-| Aspect | Before | After |
-|--------|--------|-------|
-| **File Size** | 693 lines | 85 lines (main) + 4 components |
-| **Components** | 1 monolithic | 4 focused components |
-| **Performance** | No optimization | Memoization + monitoring |
-| **Testing** | Difficult | Component-level testing |
-| **Maintainability** | Complex | Clear separation |
+| Aspect              | Before          | After                          |
+| ------------------- | --------------- | ------------------------------ |
+| **File Size**       | 693 lines       | 85 lines (main) + 4 components |
+| **Components**      | 1 monolithic    | 4 focused components           |
+| **Performance**     | No optimization | Memoization + monitoring       |
+| **Testing**         | Difficult       | Component-level testing        |
+| **Maintainability** | Complex         | Clear separation               |
 
 ## 📁 **Component Structure**
 
@@ -33,14 +33,16 @@ src/features/dashboard/components/HomeScreen/
 ## 🧩 **Component Responsibilities**
 
 ### **1. HomeScreenHeader**
+
 - **Purpose**: Personalized greeting and notification bell
 - **Props**: `isGuest`, `onNotificationPress`
-- **Optimizations**: 
+- **Optimizations**:
   - `useExpensiveMemo` for title calculation
   - `useStableCallback` for notification press
   - Performance monitoring for mount/unmount
 
 ### **2. HomeScreenContent**
+
 - **Purpose**: Main scrollable content area
 - **Props**: `homeData`, `isLoading`, `onSwipeComplete`, etc.
 - **Optimizations**:
@@ -49,6 +51,7 @@ src/features/dashboard/components/HomeScreen/
   - Scroll state management
 
 ### **3. HomeScreenFAB**
+
 - **Purpose**: Floating Action Button with actions
 - **Props**: `isFabOpen`, `draftCount`, `onStateChange`
 - **Optimizations**:
@@ -57,6 +60,7 @@ src/features/dashboard/components/HomeScreen/
   - Stable callbacks for interactions
 
 ### **4. HomeScreenModals**
+
 - **Purpose**: Modal components and sheets
 - **Props**: `selectedTask`, `isQuickAddVisible`, etc.
 - **Optimizations**:
@@ -69,17 +73,17 @@ src/features/dashboard/components/HomeScreen/
 graph TD
     A[HomeScreen] --> B[useHomeScreenState]
     A --> C[useHomeScreenActions]
-    
+
     B --> D[HomeScreenHeader]
     B --> E[HomeScreenContent]
     B --> F[HomeScreenFAB]
     B --> G[HomeScreenModals]
-    
+
     C --> H[Action Handlers]
     H --> I[Performance Monitoring]
     H --> J[Request Deduplication]
     H --> K[Analytics Tracking]
-    
+
     D --> L[useExpensiveMemo]
     E --> M[useStableCallback]
     F --> N[Animation Performance]
@@ -89,14 +93,19 @@ graph TD
 ## ⚡ **Performance Optimizations**
 
 ### **1. Memoization Strategy**
+
 ```typescript
 // Expensive calculations cached with useExpensiveMemo
-const personalizedTitle = useExpensiveMemo(() => {
-  // Complex title calculation
-}, [dependencies], {
-  maxAge: 30000, // 30 second cache
-  equalityFn: (prev, next) => prev === next
-});
+const personalizedTitle = useExpensiveMemo(
+  () => {
+    // Complex title calculation
+  },
+  [dependencies],
+  {
+    maxAge: 30000, // 30 second cache
+    equalityFn: (prev, next) => prev === next,
+  },
+);
 
 // Stable callbacks prevent unnecessary re-renders
 const handleNotificationPress = useStableCallback(() => {
@@ -105,15 +114,17 @@ const handleNotificationPress = useStableCallback(() => {
 ```
 
 ### **2. Request Deduplication**
+
 ```typescript
 // Prevents duplicate API calls
 await requestDeduplicationService.deduplicateRequest(
   'home-screen-refresh',
-  () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
+  () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }),
 );
 ```
 
 ### **3. Performance Monitoring**
+
 ```typescript
 // Tracks component performance
 useEffect(() => {
@@ -127,16 +138,19 @@ useEffect(() => {
 ## 🧪 **Testing Strategy**
 
 ### **1. Unit Tests**
+
 - Individual component testing
 - Hook testing with isolated logic
 - Performance optimization validation
 
 ### **2. Integration Tests**
+
 - Component interaction testing
 - State synchronization testing
 - User flow testing
 
 ### **3. Performance Tests**
+
 - Mount time tracking
 - Memoization effectiveness
 - Request deduplication validation
@@ -145,12 +159,14 @@ useEffect(() => {
 ## 📊 **Performance Metrics**
 
 ### **Component Mount Times**
+
 - **Header**: ~5ms (optimized with memoization)
 - **Content**: ~8ms (with data processing)
 - **FAB**: ~3ms (lightweight with animations)
 - **Modals**: ~2ms (lazy loaded)
 
 ### **Memory Optimization**
+
 - **Memoization**: Reduces recalculations by 80%
 - **Stable Callbacks**: Prevents unnecessary re-renders
 - **Request Deduplication**: Reduces API calls by 60%
@@ -158,6 +174,7 @@ useEffect(() => {
 ## 🔧 **Usage Examples**
 
 ### **Basic Usage**
+
 ```typescript
 import HomeScreen from '../screens/HomeScreen';
 
@@ -166,19 +183,20 @@ import HomeScreen from '../screens/HomeScreen';
 ```
 
 ### **Component-Level Usage**
+
 ```typescript
-import { 
-  HomeScreenHeader, 
+import {
+  HomeScreenHeader,
   HomeScreenContent,
-  useHomeScreenState 
+  useHomeScreenState
 } from '../components/HomeScreen';
 
 const CustomHomeScreen = () => {
   const state = useHomeScreenState();
-  
+
   return (
     <View>
-      <HomeScreenHeader 
+      <HomeScreenHeader
         isGuest={state.isGuest}
         onNotificationPress={handleNotificationPress}
       />
@@ -189,6 +207,7 @@ const CustomHomeScreen = () => {
 ```
 
 ### **Performance Monitoring**
+
 ```typescript
 import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 
@@ -200,21 +219,25 @@ console.log('Component mount times:', metrics);
 ## 🚀 **Best Practices**
 
 ### **1. Component Composition**
+
 - Keep components focused on single responsibility
 - Use composition over inheritance
 - Leverage custom hooks for shared logic
 
 ### **2. Performance Optimization**
+
 - Use `useExpensiveMemo` for complex calculations
 - Use `useStableCallback` for event handlers
 - Monitor performance with built-in tracking
 
 ### **3. Testing**
+
 - Test components in isolation
 - Test integration between components
 - Monitor performance regressions
 
 ### **4. Maintenance**
+
 - Keep components under 200 lines
 - Use TypeScript for type safety
 - Document component interfaces
@@ -236,6 +259,7 @@ console.log('Component mount times:', metrics);
    - Check hook dependencies
 
 ### **Debug Tools**
+
 ```typescript
 // Enable performance monitoring
 performanceMonitoringService.enableDebugMode();
@@ -248,12 +272,14 @@ console.log('Performance metrics:', metrics);
 ## 📈 **Future Enhancements**
 
 ### **Planned Improvements**
+
 1. **Virtual Scrolling** for large task lists
 2. **Progressive Loading** for better perceived performance
 3. **Advanced Caching** with React Query
 4. **Real-time Updates** with WebSocket integration
 
 ### **Monitoring & Analytics**
+
 - Component performance tracking
 - User interaction analytics
 - Error boundary integration

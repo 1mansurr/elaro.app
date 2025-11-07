@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  SafeAreaView,
+  ActivityIndicator,
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -7,8 +14,14 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/navigation';
 
-type InAppBrowserScreenNavigationProp = StackNavigationProp<RootStackParamList, 'InAppBrowserScreen'>;
-type InAppBrowserScreenRouteProp = RouteProp<RootStackParamList, 'InAppBrowserScreen'>;
+type InAppBrowserScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  'InAppBrowserScreen'
+>;
+type InAppBrowserScreenRouteProp = RouteProp<
+  RootStackParamList,
+  'InAppBrowserScreen'
+>;
 
 const InAppBrowserScreen = () => {
   const navigation = useNavigation<InAppBrowserScreenNavigationProp>();
@@ -24,10 +37,14 @@ const InAppBrowserScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.closeButton}>
           <Ionicons name="close" size={28} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{title || 'Browser'}</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {title || 'Browser'}
+        </Text>
       </View>
       <WebView
         source={{ uri: url }}

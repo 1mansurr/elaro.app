@@ -1,15 +1,30 @@
-import React, { useRef, useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl, Animated, TouchableWithoutFeedback, Alert } from 'react-native';
+import React, {
+  useRef,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Animated,
+  TouchableWithoutFeedback,
+  Alert,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
-import { NotificationBell } from '@/features/notifications/components/NotificationBell';
-import { NotificationHistoryModal } from '@/features/notifications/components/NotificationHistoryModal';
+import { NotificationBell } from '@/shared/components/NotificationBell';
+import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 
 import { RootStackParamList, Task } from '@/types';
-import { useAuth } from '@/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import TrialBanner from '../components/TrialBanner';
 import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
@@ -33,6 +48,8 @@ import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { TASK_EVENTS } from '@/utils/analyticsEvents';
 import { createExampleData } from '@/utils/exampleData';
 import { getDraftCount } from '@/utils/draftStorage';
+import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
+import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
@@ -48,7 +65,14 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { session, user } = useAuth();
   const isGuest = !session;
-  const { data: homeData, isLoading, isError, error, refetch, isRefetching } = useHomeScreenData(!isGuest);
+  const {
+    data: homeData,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isRefetching,
+  } = useHomeScreenData(!isGuest);
   const { monthlyTaskCount } = useMonthlyTaskCount();
   const queryClient = useQueryClient();
   const [isFabOpen, setIsFabOpen] = useState(false);
@@ -56,7 +80,8 @@ const HomeScreen = () => {
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
-  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] = useState(false);
+  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
+    useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   // Optimistic mutation hooks
@@ -65,13 +90,32 @@ const HomeScreen = () => {
   const restoreTaskMutation = useRestoreTask();
   const { showToast } = useToast();
 
+  // JS Thread monitoring (dev only)
+  const jsThreadMetrics = useJSThreadMonitor({
+    enabled: __DEV__,
+    logSlowFrames: true,
+    slowFrameThreshold: 20,
+  });
+
+  // Memory monitoring (dev only)
+  useMemoryMonitor(__DEV__, 50, 30000); // 50% threshold, check every 30s
+
+  // Log warnings in dev if too many slow frames
+  useEffect(() => {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+      console.warn(
+        `⚠️ HomeScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+      );
+    }
+  }, [jsThreadMetrics.slowFrameCount, jsThreadMetrics.averageFrameTime]);
+
   // Load draft count on mount
   useEffect(() => {
     const loadDraftCount = async () => {
       const count = await getDraftCount();
       setDraftCount(count);
     };
-    
+
     loadDraftCount();
   }, []);
 
@@ -82,9 +126,9 @@ const HomeScreen = () => {
         const count = await getDraftCount();
         setDraftCount(count);
       };
-      
+
       loadDraftCount();
-    }, [])
+    }, []),
   );
 
   const promptSignUp = () => {
@@ -97,47 +141,50 @@ const HomeScreen = () => {
     navigation.navigate('Auth', { mode: 'signup' });
   };
 
-  const fabActions = useMemo(() => [
-    {
-      icon: 'book-outline' as any,
-      label: 'Add Study Session',
-      onPress: () => {
-        mixpanelService.track(AnalyticsEvents.STUDY_SESSION_CREATED, {
-          task_type: 'study_session',
-          source: 'home_screen_fab',
-          creation_method: 'manual',
-          timestamp: new Date().toISOString(),
-        });
-        navigation.navigate('AddStudySessionFlow');
-      }
-    },
-    {
-      icon: 'document-text-outline' as any,
-      label: 'Add Assignment',
-      onPress: () => {
-        mixpanelService.track(AnalyticsEvents.ASSIGNMENT_CREATED, {
-          task_type: 'assignment',
-          source: 'home_screen_fab',
-          creation_method: 'manual',
-          timestamp: new Date().toISOString(),
-        });
-        navigation.navigate('AddAssignmentFlow');
-      }
-    },
-    {
-      icon: 'school-outline' as any,
-      label: 'Add Lecture',
-      onPress: () => {
-        mixpanelService.track(AnalyticsEvents.LECTURE_CREATED, {
-          task_type: 'lecture',
-          source: 'home_screen_fab',
-          creation_method: 'manual',
-          timestamp: new Date().toISOString(),
-        });
-        navigation.navigate('AddLectureFlow');
-      }
-    },
-  ], [navigation]);
+  const fabActions = useMemo(
+    () => [
+      {
+        icon: 'book-outline' as const,
+        label: 'Add Study Session',
+        onPress: () => {
+          mixpanelService.track(AnalyticsEvents.STUDY_SESSION_CREATED, {
+            task_type: 'study_session',
+            source: 'home_screen_fab',
+            creation_method: 'manual',
+            timestamp: new Date().toISOString(),
+          });
+          navigation.navigate('AddStudySessionFlow');
+        },
+      },
+      {
+        icon: 'document-text-outline' as const,
+        label: 'Add Assignment',
+        onPress: () => {
+          mixpanelService.track(AnalyticsEvents.ASSIGNMENT_CREATED, {
+            task_type: 'assignment',
+            source: 'home_screen_fab',
+            creation_method: 'manual',
+            timestamp: new Date().toISOString(),
+          });
+          navigation.navigate('AddAssignmentFlow');
+        },
+      },
+      {
+        icon: 'school-outline' as const,
+        label: 'Add Lecture',
+        onPress: () => {
+          mixpanelService.track(AnalyticsEvents.LECTURE_CREATED, {
+            task_type: 'lecture',
+            source: 'home_screen_fab',
+            creation_method: 'manual',
+            timestamp: new Date().toISOString(),
+          });
+          navigation.navigate('AddLectureFlow');
+        },
+      },
+    ],
+    [navigation],
+  );
 
   const backdropOpacity = fabAnimation.interpolate({
     inputRange: [0, 1],
@@ -147,12 +194,11 @@ const HomeScreen = () => {
   const handleFabStateChange = ({ isOpen }: { isOpen: boolean }) => {
     setIsFabOpen(isOpen);
     Animated.spring(fabAnimation, {
-        toValue: isOpen ? 1 : 0,
-        friction: 7,
-        useNativeDriver: false,
+      toValue: isOpen ? 1 : 0,
+      friction: 7,
+      useNativeDriver: false,
     }).start();
   };
-
 
   const handleViewDetails = useCallback((task: Task) => {
     mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
@@ -171,16 +217,19 @@ const HomeScreen = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-    
+
     mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
       task_id: selectedTask.id,
       task_type: selectedTask.type,
       task_title: selectedTask.title,
       source: 'task_detail_sheet',
     });
-    
+
     // Determine which modal to navigate to based on task type
-    let modalName: 'AddLectureFlow' | 'AddAssignmentFlow' | 'AddStudySessionFlow';
+    let modalName:
+      | 'AddLectureFlow'
+      | 'AddAssignmentFlow'
+      | 'AddStudySessionFlow';
     switch (selectedTask.type) {
       case 'lecture':
         modalName = 'AddLectureFlow';
@@ -195,16 +244,16 @@ const HomeScreen = () => {
         Alert.alert('Error', 'Cannot edit this type of task.');
         return;
     }
-    
+
     handleCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, { 
-      initialData: { taskToEdit: selectedTask } 
+    navigation.navigate(modalName, {
+      initialData: { taskToEdit: selectedTask },
     });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     try {
       // The mutation handles optimistic updates automatically
       await completeTaskMutation.mutateAsync({
@@ -212,14 +261,14 @@ const HomeScreen = () => {
         taskType: selectedTask.type,
         taskTitle: selectedTask.title || selectedTask.name,
       });
-      
+
       // Show success message
       Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
       // Error is already handled by the mutation hook
       console.error('Error completing task:', error);
     }
-    
+
     handleCloseSheet();
   }, [selectedTask, completeTaskMutation, handleCloseSheet]);
 
@@ -227,14 +276,14 @@ const HomeScreen = () => {
   const handleSwipeComplete = useCallback(async () => {
     const nextTask = homeData?.nextUpcomingTask;
     if (!nextTask || isGuest) return;
-    
+
     try {
       await completeTaskMutation.mutateAsync({
         taskId: nextTask.id,
         taskType: nextTask.type,
         taskTitle: nextTask.title || nextTask.name,
       });
-      
+
       // Show success toast
       showToast({
         message: `${nextTask.name} completed! 🎉`,
@@ -247,17 +296,17 @@ const HomeScreen = () => {
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
-    
+
     // Close the sheet first
     handleCloseSheet();
-    
+
     // Store task info for undo
     const taskInfo = {
       id: selectedTask.id,
       type: selectedTask.type,
       title: selectedTask.title || selectedTask.name,
     };
-    
+
     try {
       // Delete the task (optimistic update)
       await deleteTaskMutation.mutateAsync({
@@ -265,7 +314,7 @@ const HomeScreen = () => {
         taskType: taskInfo.type,
         taskTitle: taskInfo.title,
       });
-      
+
       // Show undo toast
       showToast({
         message: `${taskInfo.title} moved to Recycle Bin`,
@@ -286,11 +335,20 @@ const HomeScreen = () => {
       // Error is already handled by the mutation hook
       console.error('Error deleting task:', error);
     }
-  }, [selectedTask, deleteTaskMutation, restoreTaskMutation, showToast, handleCloseSheet]);
+  }, [
+    selectedTask,
+    deleteTaskMutation,
+    restoreTaskMutation,
+    showToast,
+    handleCloseSheet,
+  ]);
 
   // Trial banner logic
   const getTrialDaysRemaining = () => {
-    if (user?.subscription_status !== 'trialing' || !user?.subscription_expires_at) {
+    if (
+      user?.subscription_status !== 'trialing' ||
+      !user?.subscription_expires_at
+    ) {
       return null;
     }
     const today = new Date();
@@ -299,12 +357,15 @@ const HomeScreen = () => {
   };
 
   const trialDaysRemaining = getTrialDaysRemaining();
-  const shouldShowBanner = trialDaysRemaining !== null && trialDaysRemaining <= 3 && !isBannerDismissed;
+  const shouldShowBanner =
+    trialDaysRemaining !== null &&
+    trialDaysRemaining <= 3 &&
+    !isBannerDismissed;
 
   // Check AsyncStorage for banner dismissal state
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkBannerDismissal = async () => {
       if (!user?.id || trialDaysRemaining === null) {
         if (isMounted) setIsBannerDismissed(false);
@@ -322,7 +383,7 @@ const HomeScreen = () => {
     };
 
     checkBannerDismissal();
-    
+
     return () => {
       isMounted = false;
     };
@@ -350,24 +411,36 @@ const HomeScreen = () => {
           text: 'Upgrade for Free',
           onPress: async () => {
             try {
-              const { error } = await supabase.functions.invoke('grant-premium-access');
+              const { error } = await supabase.functions.invoke(
+                'grant-premium-access',
+              );
               if (error) throw new Error(error.message);
 
               // Invalidate user data to refresh their subscription status and unlock features.
               queryClient.invalidateQueries({ queryKey: ['user'] });
               queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }); // Also refresh home screen data
 
-              Alert.alert('Success!', 'You now have access to all premium features.');
-
-            } catch (error: any) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-              console.error('Free upgrade error:', error);
+              Alert.alert(
+                'Success!',
+                'You now have access to all premium features.',
+              );
+            } catch (error: unknown) {
+              if (error instanceof Error) {
+                const errorTitle = getErrorTitle(error);
+                const errorMessage = mapErrorCodeToMessage(error);
+                Alert.alert(errorTitle, errorMessage);
+                console.error('Free upgrade error:', error);
+              } else {
+                Alert.alert(
+                  'Error',
+                  'An unknown error occurred. Please try again.',
+                );
+                console.error('Free upgrade error:', error);
+              }
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -376,7 +449,7 @@ const HomeScreen = () => {
     if (isGuest) {
       return "Let's Make Today Count";
     }
-    
+
     const name = user?.username || user?.first_name || 'there';
     return `${getGreeting()}, ${name}!`;
   };
@@ -386,14 +459,16 @@ const HomeScreen = () => {
     const checkAndShowWelcomePrompt = async () => {
       // Only show for authenticated users
       if (isGuest || !user) return;
-      
+
       try {
-        const hasSeenPrompt = await AsyncStorage.getItem('hasSeenHowItWorksPrompt');
-        
+        const hasSeenPrompt = await AsyncStorage.getItem(
+          'hasSeenHowItWorksPrompt',
+        );
+
         if (!hasSeenPrompt) {
           // Set the flag immediately to prevent showing again
           await AsyncStorage.setItem('hasSeenHowItWorksPrompt', 'true');
-          
+
           // Small delay to let the screen render first
           setTimeout(() => {
             Alert.alert(
@@ -413,7 +488,7 @@ const HomeScreen = () => {
                           params: {
                             screen: 'Account',
                           },
-                        })
+                        }),
                       );
                     }, 100);
                   },
@@ -422,7 +497,7 @@ const HomeScreen = () => {
                   text: 'Got It',
                   style: 'cancel',
                 },
-              ]
+              ],
             );
           }, 500);
         }
@@ -439,43 +514,51 @@ const HomeScreen = () => {
     const checkAndCreateExampleData = async () => {
       // Only for authenticated users
       if (isGuest || !user || isLoading) return;
-      
+
       try {
-        const hasCreatedExamples = await AsyncStorage.getItem('hasCreatedExampleData');
-        
-        // Check if user has any data
-        const hasAnyData = homeData && (
-          (homeData.nextUpcomingTask) ||
-          (homeData.todayOverview && (
-            homeData.todayOverview.lectures > 0 ||
-            homeData.todayOverview.assignments > 0 ||
-            homeData.todayOverview.studySessions > 0
-          ))
+        const hasCreatedExamples = await AsyncStorage.getItem(
+          'hasCreatedExampleData',
         );
+
+        // Check if user has any data
+        const hasAnyData =
+          homeData &&
+          (homeData.nextUpcomingTask ||
+            (homeData.todayOverview &&
+              (homeData.todayOverview.lectures > 0 ||
+                homeData.todayOverview.assignments > 0 ||
+                homeData.todayOverview.studySessions > 0)));
 
         // If user has no data and we haven't created examples yet
         if (!hasAnyData && !hasCreatedExamples) {
-          console.log('📚 New user with no data detected. Creating example data...');
-          
+          console.log(
+            '📚 New user with no data detected. Creating example data...',
+          );
+
           // Set flag immediately to prevent duplicate creation
           await AsyncStorage.setItem('hasCreatedExampleData', 'true');
-          
+
           // Create example data
           const result = await createExampleData(user.id);
-          
+
           if (result.success) {
             console.log('✅ Example data created successfully');
-            
+
             // Refresh home screen data to show examples
-            await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+            await queryClient.invalidateQueries({
+              queryKey: ['homeScreenData'],
+            });
             await queryClient.invalidateQueries({ queryKey: ['courses'] });
             await queryClient.invalidateQueries({ queryKey: ['assignments'] });
             await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-            await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
-            
+            await queryClient.invalidateQueries({
+              queryKey: ['studySessions'],
+            });
+
             // Show a subtle toast notification
             showToast({
-              message: '📚 We\'ve added some example tasks to help you get started!',
+              message:
+                "📚 We've added some example tasks to help you get started!",
               duration: 4000,
             });
           } else {
@@ -504,22 +587,25 @@ const HomeScreen = () => {
       {!isGuest && (
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
-          <NotificationBell onPress={() => setIsNotificationHistoryVisible(true)} />
+          <NotificationBell
+            onPress={() => setIsNotificationHistoryVisible(true)}
+          />
         </View>
       )}
-      
+
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
           !isGuest ? (
-            <RefreshControl 
-              refreshing={isLoading} 
-              onRefresh={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
+            <RefreshControl
+              refreshing={isLoading}
+              onRefresh={() =>
+                queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
+              }
             />
           ) : undefined
         }
-        scrollEnabled={!isFabOpen}
-      >
+        scrollEnabled={!isFabOpen}>
         {shouldShowBanner && (
           <TrialBanner
             daysRemaining={trialDaysRemaining as number}
@@ -530,17 +616,16 @@ const HomeScreen = () => {
         {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
         <SwipeableTaskCard
           onSwipeComplete={handleSwipeComplete}
-          enabled={!isGuest && !!homeData?.nextUpcomingTask}
-        >
-          <NextTaskCard 
-            task={isGuest ? null : (homeData?.nextUpcomingTask || null)} 
+          enabled={!isGuest && !!homeData?.nextUpcomingTask}>
+          <NextTaskCard
+            task={isGuest ? null : homeData?.nextUpcomingTask || null}
             isGuestMode={isGuest}
             onAddActivity={() => handleFabStateChange({ isOpen: true })}
             onViewDetails={handleViewDetails}
           />
         </SwipeableTaskCard>
         <TodayOverviewCard
-          overview={isGuest ? null : (homeData?.todayOverview || null)}
+          overview={isGuest ? null : homeData?.todayOverview || null}
           monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
           subscriptionTier={user?.subscription_tier || 'free'}
         />
@@ -551,8 +636,10 @@ const HomeScreen = () => {
       </ScrollView>
 
       {isFabOpen && (
-        <TouchableWithoutFeedback onPress={() => handleFabStateChange({ isOpen: false })}>
-          <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+        <TouchableWithoutFeedback
+          onPress={() => handleFabStateChange({ isOpen: false })}>
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropOpacity }]}>
             <BlurView
               intensity={40}
               tint="dark"
@@ -562,7 +649,7 @@ const HomeScreen = () => {
         </TouchableWithoutFeedback>
       )}
 
-      <FloatingActionButton 
+      <FloatingActionButton
         actions={fabActions}
         onStateChange={handleFabStateChange}
         onDoubleTap={() => setIsQuickAddVisible(true)}
@@ -588,7 +675,6 @@ const HomeScreen = () => {
         isVisible={isNotificationHistoryVisible}
         onClose={() => setIsNotificationHistoryVisible(false)}
       />
-
     </View>
   );
 
@@ -600,15 +686,18 @@ const HomeScreen = () => {
         isError={isError}
         error={error}
         data={homeData}
-        refetch={() => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })}
+        refetch={() =>
+          queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
+        }
         isRefetching={isRefetching}
         onRefresh={refetch}
         emptyStateComponent={
-          <HomeScreenEmptyState onAddActivity={() => handleFabStateChange({ isOpen: true })} />
+          <HomeScreenEmptyState
+            onAddActivity={() => handleFabStateChange({ isOpen: true })}
+          />
         }
         skeletonComponent={<TaskCardSkeleton />}
-        skeletonCount={3}
-      >
+        skeletonCount={3}>
         {content}
       </QueryStateWrapper>
     );
@@ -633,7 +722,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.textPrimary,
     flex: 1,
   },
@@ -643,7 +732,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.textPrimary,
     marginBottom: SPACING.lg,
   },
@@ -664,7 +753,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: FONT_SIZES.lg,
     color: COLORS.textSecondary,
-    fontWeight: FONT_WEIGHTS.medium as any,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   errorContainer: {
     flex: 1,
@@ -675,7 +764,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: FONT_SIZES.xl,
     color: COLORS.textPrimary,
-    fontWeight: FONT_WEIGHTS.bold as any,
+    fontWeight: FONT_WEIGHTS.bold,
     marginBottom: SPACING.sm,
     textAlign: 'center',
   },

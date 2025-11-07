@@ -7,6 +7,7 @@ This guide documents the typography token enforcement system implemented across 
 ## 🎯 Enforcement Rules
 
 ### ESLint Rules
+
 The following ESLint rules prevent hardcoded typography values:
 
 ```javascript
@@ -45,6 +46,7 @@ rules: {
 ## 🎨 Typography System
 
 ### Font Weights
+
 ```typescript
 export const FONT_WEIGHTS = {
   light: '300' as any,
@@ -56,6 +58,7 @@ export const FONT_WEIGHTS = {
 ```
 
 ### Font Sizes
+
 ```typescript
 export const FONT_SIZES = {
   xs: 12,
@@ -69,6 +72,7 @@ export const FONT_SIZES = {
 ```
 
 ### Typography Utilities
+
 ```typescript
 export const TYPOGRAPHY_UTILS = {
   // Common font weight mappings
@@ -120,12 +124,20 @@ export const TYPOGRAPHY_UTILS = {
   // Helper functions
   getFontWeight: (weight: string | number) => {
     const weightStr = String(weight);
-    return TYPOGRAPHY_UTILS.fontWeight[weightStr as keyof typeof TYPOGRAPHY_UTILS.fontWeight] || FONT_WEIGHTS.normal;
+    return (
+      TYPOGRAPHY_UTILS.fontWeight[
+        weightStr as keyof typeof TYPOGRAPHY_UTILS.fontWeight
+      ] || FONT_WEIGHTS.normal
+    );
   },
 
   getFontSize: (size: string | number) => {
     const sizeStr = String(size);
-    return TYPOGRAPHY_UTILS.fontSize[sizeStr as keyof typeof TYPOGRAPHY_UTILS.fontSize] || FONT_SIZES.md;
+    return (
+      TYPOGRAPHY_UTILS.fontSize[
+        sizeStr as keyof typeof TYPOGRAPHY_UTILS.fontSize
+      ] || FONT_SIZES.md
+    );
   },
 };
 ```
@@ -133,6 +145,7 @@ export const TYPOGRAPHY_UTILS = {
 ## ✅ Correct Usage Examples
 
 ### Font Weights
+
 ```typescript
 // ✅ CORRECT - Using theme tokens
 const styles = StyleSheet.create({
@@ -159,6 +172,7 @@ const styles = StyleSheet.create({
 ```
 
 ### Font Sizes
+
 ```typescript
 // ✅ CORRECT - Using theme tokens
 const styles = StyleSheet.create({
@@ -185,6 +199,7 @@ const styles = StyleSheet.create({
 ```
 
 ### Colors
+
 ```typescript
 // ✅ CORRECT - Using theme tokens
 const styles = StyleSheet.create({
@@ -201,6 +216,7 @@ const styles = StyleSheet.create({
 ```
 
 ### Spacing
+
 ```typescript
 // ✅ CORRECT - Using theme tokens
 const styles = StyleSheet.create({
@@ -217,63 +233,67 @@ const styles = StyleSheet.create({
 ## ❌ Incorrect Usage Examples
 
 ### Font Weights
+
 ```typescript
 // ❌ INCORRECT - Hardcoded values
 const styles = StyleSheet.create({
   title: {
-    fontWeight: 'bold',        // Should use FONT_WEIGHTS.bold
+    fontWeight: 'bold', // Should use FONT_WEIGHTS.bold
   },
   subtitle: {
-    fontWeight: '600',         // Should use FONT_WEIGHTS.semibold
+    fontWeight: '600', // Should use FONT_WEIGHTS.semibold
   },
   body: {
-    fontWeight: 'normal',     // Should use FONT_WEIGHTS.normal
+    fontWeight: 'normal', // Should use FONT_WEIGHTS.normal
   },
 });
 ```
 
 ### Font Sizes
+
 ```typescript
 // ❌ INCORRECT - Hardcoded values
 const styles = StyleSheet.create({
   title: {
-    fontSize: 18,              // Should use FONT_SIZES.lg
+    fontSize: 18, // Should use FONT_SIZES.lg
   },
   subtitle: {
-    fontSize: 16,              // Should use FONT_SIZES.md
+    fontSize: 16, // Should use FONT_SIZES.md
   },
   caption: {
-    fontSize: 14,              // Should use FONT_SIZES.sm
+    fontSize: 14, // Should use FONT_SIZES.sm
   },
 });
 ```
 
 ### Colors
+
 ```typescript
 // ❌ INCORRECT - Hardcoded values
 const styles = StyleSheet.create({
   title: {
-    color: '#333333',          // Should use COLORS.textPrimary
+    color: '#333333', // Should use COLORS.textPrimary
   },
   subtitle: {
-    color: '#666666',          // Should use COLORS.textSecondary
+    color: '#666666', // Should use COLORS.textSecondary
   },
   error: {
-    color: '#FF3B30',          // Should use COLORS.error
+    color: '#FF3B30', // Should use COLORS.error
   },
 });
 ```
 
 ### Spacing
+
 ```typescript
 // ❌ INCORRECT - Hardcoded values
 const styles = StyleSheet.create({
   container: {
-    padding: 16,               // Should use SPACING.md
-    margin: 24,                // Should use SPACING.lg
+    padding: 16, // Should use SPACING.md
+    margin: 24, // Should use SPACING.lg
   },
   title: {
-    marginBottom: 8,           // Should use SPACING.sm
+    marginBottom: 8, // Should use SPACING.sm
   },
 });
 ```
@@ -281,6 +301,7 @@ const styles = StyleSheet.create({
 ## 🔄 Migration Examples
 
 ### Before Migration
+
 ```typescript
 // OLD - Hardcoded values
 const styles = StyleSheet.create({
@@ -304,6 +325,7 @@ const styles = StyleSheet.create({
 ```
 
 ### After Migration
+
 ```typescript
 // NEW - Theme tokens
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -331,18 +353,20 @@ const styles = StyleSheet.create({
 ## 🛠️ Migration Tools
 
 ### Typography Utilities
+
 Use the helper functions for easier migration:
 
 ```typescript
 import { TYPOGRAPHY_UTILS } from '@/constants/theme';
 
 // Convert common hardcoded values
-const fontWeight = TYPOGRAPHY_UTILS.getFontWeight('bold');     // Returns FONT_WEIGHTS.bold
-const fontSize = TYPOGRAPHY_UTILS.getFontSize(16);            // Returns FONT_SIZES.md
-const color = TYPOGRAPHY_UTILS.getColor('#333');             // Returns COLORS.textPrimary
+const fontWeight = TYPOGRAPHY_UTILS.getFontWeight('bold'); // Returns FONT_WEIGHTS.bold
+const fontSize = TYPOGRAPHY_UTILS.getFontSize(16); // Returns FONT_SIZES.md
+const color = TYPOGRAPHY_UTILS.getColor('#333'); // Returns COLORS.textPrimary
 ```
 
 ### ESLint Auto-fix
+
 Some ESLint rules can be auto-fixed:
 
 ```bash
@@ -356,6 +380,7 @@ npx eslint src/ --format=compact
 ## 📊 Audit Results
 
 ### Typography Audit Summary
+
 - **Total Hardcoded Values Found**: 711 instances
 - **Font Weights**: 156 instances
 - **Font Sizes**: 203 instances
@@ -363,6 +388,7 @@ npx eslint src/ --format=compact
 - **Spacing**: 163 instances
 
 ### Migration Progress
+
 - **Phase 1**: ✅ ESLint rules implemented
 - **Phase 2**: ✅ Typography utilities created
 - **Phase 3**: 🔄 Ongoing migration (AuthScreen completed)
@@ -371,6 +397,7 @@ npx eslint src/ --format=compact
 ## 🎯 Best Practices
 
 ### 1. Always Use Theme Tokens
+
 ```typescript
 // ✅ Good
 fontSize: FONT_SIZES.lg,
@@ -384,6 +411,7 @@ color: '#333333',
 ```
 
 ### 2. Use Utility Functions for Dynamic Values
+
 ```typescript
 // ✅ Good
 const dynamicSize = TYPOGRAPHY_UTILS.getFontSize(userPreference);
@@ -393,6 +421,7 @@ const dynamicSize = userPreference === 'large' ? 20 : 16;
 ```
 
 ### 3. Calculate Line Heights
+
 ```typescript
 // ✅ Good
 lineHeight: FONT_SIZES.md * 1.4,
@@ -402,6 +431,7 @@ lineHeight: 22,
 ```
 
 ### 4. Group Related Styles
+
 ```typescript
 // ✅ Good
 const textStyles = {
@@ -421,12 +451,14 @@ const textStyles = {
 ## 🚀 Future Enhancements
 
 ### Planned Improvements
+
 - **Dynamic Typography**: Support for user font size preferences
 - **Accessibility**: Enhanced contrast ratios and readability
 - **Theme Variants**: Dark mode typography support
 - **Responsive Typography**: Size adjustments based on screen size
 
 ### Migration Roadmap
+
 - **Phase 1**: ✅ ESLint enforcement rules
 - **Phase 2**: ✅ Typography utilities
 - **Phase 3**: 🔄 Component migration (in progress)
