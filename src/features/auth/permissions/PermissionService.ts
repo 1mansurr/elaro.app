@@ -331,17 +331,122 @@ export class PermissionService {
   }
 
   /**
-   * Get current task count for user
+   * Get current task count for user by task type
+   * Counts tasks created in the last 30 days, excluding soft-deleted tasks
+   * 
+   * @param user - User object
+   * @param taskType - Type of task: 'assignments', 'lectures', 'study_sessions', 'courses', or 'srs_reminders'
+   * @returns Number of tasks of the specified type created in the last 30 days
    */
   async getTaskCount(user: User, taskType: string): Promise<number> {
     try {
-      // TODO: Implement actual database query to get task count
-      // For now, return 0 as placeholder
-      // This should query the database for the user's current task count
-      return 0;
+      // Calculate date 30 days ago (for weekly limits, use 7 days)
+      const sinceDate = new Date();
+      // For weekly limits (assignments, lectures, study_sessions), use 7 days
+      // For monthly limits (srs_reminders), use 30 days
+      const daysBack = taskType === 'srs_reminders' ? 30 : 7;
+      sinceDate.setDate(sinceDate.getDate() - daysBack);
+      
+      const { supabase } = await import('@/services/supabase');
+      
+      // Query based on task type
+      let count = 0;
+      
+      switch (taskType) {
+        case 'assignments': {
+          // Count assignments created since the date, excluding soft-deleted ones
+          const { count: assignmentCount, error } = await supabase
+            .from('assignments')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', sinceDate.toISOString())
+            .is('deleted_at', null);
+          
+          if (error) {
+            console.error('❌ Error counting assignments:', error);
+            return 0;
+          }
+          count = assignmentCount || 0;
+          break;
+        }
+        
+        case 'lectures': {
+          // Count lectures created since the date, excluding soft-deleted ones
+          const { count: lectureCount, error } = await supabase
+            .from('lectures')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', sinceDate.toISOString())
+            .is('deleted_at', null);
+          
+          if (error) {
+            console.error('❌ Error counting lectures:', error);
+            return 0;
+          }
+          count = lectureCount || 0;
+          break;
+        }
+        
+        case 'study_sessions': {
+          // Count study sessions created since the date, excluding soft-deleted ones
+          const { count: sessionCount, error } = await supabase
+            .from('study_sessions')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', sinceDate.toISOString())
+            .is('deleted_at', null);
+          
+          if (error) {
+            console.error('❌ Error counting study sessions:', error);
+            return 0;
+          }
+          count = sessionCount || 0;
+          break;
+        }
+        
+        case 'courses': {
+          const { count: courseCount, error } = await supabase
+            .from('courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', sinceDate.toISOString());
+          
+          if (error) {
+            console.error('❌ Error counting courses:', error);
+            return 0;
+          }
+          count = courseCount || 0;
+          break;
+        }
+        
+        case 'srs_reminders': {
+          // For SRS reminders, count reminders created in the last 30 days
+          const { count: reminderCount, error } = await supabase
+            .from('reminders')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('reminder_type', 'spaced_repetition')
+            .gte('created_at', sinceDate.toISOString())
+            .eq('completed', false);
+          
+          if (error) {
+            console.error('❌ Error counting SRS reminders:', error);
+            return 0;
+          }
+          count = reminderCount || 0;
+          break;
+        }
+        
+        default:
+          console.warn(`⚠️ Unknown task type: ${taskType}`);
+          return 0;
+      }
+      
+      return count;
     } catch (error) {
-      console.error('❌ Error getting task count:', error);
-      throw error;
+      console.error('❌ Exception getting task count:', error);
+      // Fail open - allow task creation on error
+      return 0;
     }
   }
 

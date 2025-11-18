@@ -17,7 +17,7 @@ BEGIN
     PERFORM cron.schedule(
       'cleanup-deleted-items',
       '0 2 * * *', -- Daily at 2:00 AM UTC
-      $$
+      $sql$
       SELECT
         net.http_post(
           url := 'https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/cleanup-deleted-items',
@@ -26,7 +26,7 @@ BEGIN
             'Authorization', 'Bearer ' || current_setting('app.settings.cron_secret', true)
           )
         ) AS request_id;
-      $$
+      $sql$
     );
     
     RAISE NOTICE 'Cron job cleanup-deleted-items scheduled successfully (daily at 2 AM UTC)';

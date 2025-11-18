@@ -13,20 +13,24 @@ type LaunchScreenNavigationProp = StackNavigationProp<
 >;
 
 const LaunchScreen = () => {
-  const { loading } = useAuth();
+  const { loading, session } = useAuth();
   const navigation = useNavigation<LaunchScreenNavigationProp>();
 
   useEffect(() => {
-    // This effect runs when the `loading` state from AuthContext changes.
-    // `loading` is true while Supabase checks for a session, and false once it's done.
+    // Wait for auth initialization to complete
     if (!loading) {
-      // Once the check is complete, navigate to the main app interface.
-      // This works for both logged-in users (who will have a session)
-      // and guest users (who won't). The rest of the app already handles
-      // the guest state UI.
-      navigation.replace('Main');
+      // Let AppNavigator handle routing based on auth state
+      // For unauthenticated users, navigate to Auth
+      // For authenticated users, AppNavigator will handle onboarding check
+      if (!session) {
+        // Unauthenticated user - navigate to Auth
+        navigation.replace('Auth');
+      }
+      // Authenticated users: AppNavigator will automatically show
+      // OnboardingNavigator or Main based on onboarding_completed status
+      // No need to navigate here - the navigator handles it
     }
-  }, [loading, navigation]);
+  }, [loading, session, navigation]);
 
   return (
     <View style={styles.container} testID="launch-screen">

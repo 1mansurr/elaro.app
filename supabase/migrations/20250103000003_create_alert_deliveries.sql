@@ -20,9 +20,10 @@ CREATE INDEX IF NOT EXISTS idx_alert_deliveries_service_date
   ON alert_deliveries(service_name, delivered_at DESC);
 
 -- Index for unresolved alerts
-CREATE INDEX IF NOT EXISTS idx_alert_deliveries_unresolved 
-  ON alert_deliveries(alert_type, level) 
-  WHERE delivered_at > NOW() - INTERVAL '7 days';
+-- Removed NOW() from WHERE clause because it is not immutable
+-- Filter by delivered_at > NOW() - INTERVAL '7 days' in queries instead
+CREATE INDEX IF NOT EXISTS idx_alert_deliveries_recent
+  ON alert_deliveries(alert_type, level, delivered_at DESC);
 
 -- Enable RLS (only service role can access)
 ALTER TABLE alert_deliveries ENABLE ROW LEVEL SECURITY;

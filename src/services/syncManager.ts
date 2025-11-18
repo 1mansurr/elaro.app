@@ -263,15 +263,76 @@ class SyncManager {
     // Monitor queue size
     this.monitorQueueSize();
 
-    // If syncImmediately is true, trigger sync (will be implemented in Phase 3)
+    // Phase 3: Check if online and start sync immediately if requested
     if (options?.syncImmediately !== false) {
-      // TODO: Phase 3 - Check if online and start sync
-      console.log(
-        '🔄 SyncManager: syncImmediately requested (will be implemented in Phase 3)',
-      );
+      this.syncImmediately().catch(err => {
+        console.error('❌ SyncManager: Error in syncImmediately:', err);
+        // Don't throw - queue will be processed on next network event
+      });
     }
 
     return action;
+  }
+
+  /**
+   * Sync immediately if online (Phase 3 implementation)
+   * Checks network connectivity and processes queue if online
+   */
+  async syncImmediately(): Promise<void> {
+    try {
+      // Check if online
+      const netInfo = await NetInfo.fetch();
+      if (!netInfo.isConnected) {
+        console.log('📱 SyncManager: Offline, cannot sync immediately');
+        return;
+      }
+
+      // Check if already syncing
+      if (this.isSyncing) {
+        console.log('⚠️ SyncManager: Already syncing, skipping immediate sync');
+        return;
+      }
+
+      // Check if queue has pending items
+      const pendingCount = this.queue.filter(a => a.status === 'pending').length;
+      if (pendingCount === 0) {
+        console.log('✅ SyncManager: No pending items to sync');
+        return;
+      }
+
+      // Start sync
+      console.log(
+        `🔄 SyncManager: Starting immediate sync for ${pendingCount} pending items`,
+      );
+      await this.processQueue();
+    } catch (error) {
+      console.error('❌ SyncManager: Error in syncImmediately:', error);
+      // Don't throw - allow queue to be processed on next network event
+    }
+  }
+
+  /**
+   * Get current queue length
+   */
+  getQueueLength(): number {
+    return this.queue.length;
+  }
+
+  /**
+   * Get detailed queue status
+   */
+  getQueueStatus(): {
+    length: number;
+    pending: number;
+    processing: number;
+    failed: number;
+  } {
+    return {
+      length: this.queue.length,
+      pending: this.queue.filter(item => item.status === 'pending').length,
+      processing: this.queue.filter(item => item.status === 'processing').length,
+      failed: this.queue.filter(item => item.status === 'failed').length,
+    };
   }
 
   /**
@@ -693,19 +754,34 @@ class SyncManager {
       throw new Error('Invalid payload type for UPDATE operation');
     }
 
+    // Support both old format (resourceId/updates) and new format (id/data)
     const updatePayload = payload as {
       type: 'UPDATE';
-      resourceId: string;
-      updates: Record<string, unknown>;
+      resourceId?: string;
+      id?: string;
+      updates?: Record<string, unknown>;
+      data?: Record<string, unknown>;
     };
-    const resourceId = this.resolveId(updatePayload.resourceId);
+    
+    // Use new format (id/data) if available, fallback to old format (resourceId/updates)
+    const resourceId = this.resolveId(updatePayload.id || updatePayload.resourceId || '');
+    const updates = updatePayload.data || updatePayload.updates || {};
+    
+    // Validate that we have both ID and updates
+    if (!resourceId) {
+      throw new Error('UPDATE payload must include either "id" or "resourceId"');
+    }
+    if (!updates || Object.keys(updates).length === 0) {
+      throw new Error('UPDATE payload must include either "data" or "updates"');
+    }
+    
     const functionName = `update-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
 
     const { data, error } = await supabase.functions.invoke(functionName, {
       body: {
         [`${resourceType}Id`]: resourceId,
-        updates: updatePayload.updates,
+        ...updates, // Spread updates directly instead of wrapping in 'updates' key
       },
     });
 
@@ -839,6 +915,14 @@ class SyncManager {
   }
 
   /**
+   * Public method to resolve a temp ID to a real ID
+   * Used by external code to check if a temp ID has been synced
+   */
+  public resolveTempId(id: string): string {
+    return this.resolveId(id);
+  }
+
+  /**
    * Handle temporary ID replacement after successful CREATE
    * Maps temp ID to real ID and updates all references in queue and cache
    */
@@ -857,12 +941,23 @@ class SyncManager {
     this.queue.forEach(action => {
       if (action.status === 'pending') {
         // Check if payload contains the temp ID and replace it
-        if (
-          action.payload.type === 'UPDATE' &&
-          action.payload.resourceId === tempId
-        ) {
-          action.payload.resourceId = realId;
-          console.log(`  ↪️ Updated UPDATE action to use real ID`);
+        if (action.payload.type === 'UPDATE') {
+          const updatePayload = action.payload as {
+            type: 'UPDATE';
+            id?: string;
+            resourceId?: string;
+            data?: Record<string, any>;
+            updates?: Record<string, any>;
+          };
+          
+          // Check both new format (id) and old format (resourceId)
+          if (updatePayload.id === tempId) {
+            updatePayload.id = realId;
+            console.log(`  ↪️ Updated UPDATE action to use real ID (new format)`);
+          } else if (updatePayload.resourceId === tempId) {
+            updatePayload.resourceId = realId;
+            console.log(`  ↪️ Updated UPDATE action to use real ID (old format)`);
+          }
         } else if (
           action.payload.type === 'DELETE' &&
           action.payload.resourceId === tempId

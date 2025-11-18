@@ -17,7 +17,7 @@ BEGIN
     PERFORM cron.schedule(
       'process-due-reminders',
       '*/5 * * * *', -- Every 5 minutes
-      $$
+      $sql$
       SELECT
         net.http_post(
           url := 'https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/process-due-reminders',
@@ -27,7 +27,7 @@ BEGIN
           ),
           body := '{}'::jsonb
         ) AS request_id;
-      $$
+      $sql$
     );
     
     RAISE NOTICE 'Cron job process-due-reminders scheduled successfully (every 5 minutes)';

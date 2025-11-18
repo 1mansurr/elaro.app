@@ -154,15 +154,16 @@ export const useCompleteTask = () => {
     },
 
     // Refetch after success to ensure consistency (skip when offline)
-    onSettled: () => {
+    onSettled: async () => {
       // Only invalidate when online - offline changes are in the queue
       if (isOnline) {
-        queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+        const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+        await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
       }
     },
 
-    // On success, track the event
-    onSuccess: (data, { taskId, taskType, taskTitle }) => {
+    // On success, track the event and cancel notifications
+    onSuccess: async (data, { taskId, taskType, taskTitle }) => {
       // Track successful completion (includes both online and offline modes)
       mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED.name, {
         task_id: taskId,
@@ -172,6 +173,15 @@ export const useCompleteTask = () => {
         source: 'task_detail_sheet',
         offline_mode: !isOnline,
       });
+
+      // Cancel local notifications for this task
+      try {
+        const { notificationService } = await import('@/services/notifications');
+        await notificationService.cancelItemReminders(taskId);
+      } catch (error) {
+        console.error('Error cancelling notifications for completed task:', error);
+        // Don't block completion if notification cancellation fails
+      }
     },
   });
 };
@@ -286,15 +296,16 @@ export const useDeleteTask = () => {
     },
 
     // Refetch after success to ensure consistency (skip when offline)
-    onSettled: () => {
+    onSettled: async () => {
       // Only invalidate when online - offline changes are in the queue
       if (isOnline) {
-        queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+        const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+        await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
       }
     },
 
-    // On success, track the event
-    onSuccess: (data, { taskId, taskType, taskTitle }) => {
+    // On success, track the event and cancel notifications
+    onSuccess: async (data, { taskId, taskType, taskTitle }) => {
       // Track successful deletion (includes both online and offline modes)
       mixpanelService.trackEvent(TASK_EVENTS.TASK_DELETED.name, {
         task_id: taskId,
@@ -304,6 +315,15 @@ export const useDeleteTask = () => {
         was_completed: false,
         offline_mode: !isOnline,
       });
+
+      // Cancel local notifications for this task
+      try {
+        const { notificationService } = await import('@/services/notifications');
+        await notificationService.cancelItemReminders(taskId);
+      } catch (error) {
+        console.error('Error cancelling notifications for deleted task:', error);
+        // Don't block deletion if notification cancellation fails
+      }
     },
   });
 };

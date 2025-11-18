@@ -125,7 +125,7 @@ const SimplifiedHomeScreenContent = ({ data, uiState, eventHandlers }) => (
 ### Modal System
 
 - **Standardized Variants**: `DialogModal`, `SheetModal`, `SimpleModal`, `FullScreenModal`
-- **Consistent Animations**: All modals use 300ms duration with appropriate easing
+- **Optimized Animations**: Different durations per modal type (200-350ms) with appropriate easing
 - **Backdrop Types**: Proper backdrop handling per modal type
 - **Base Implementation**: `BaseModal` provides common functionality
 
@@ -152,19 +152,33 @@ export const ANIMATIONS = {
       backdropOpacity: 0.5,
     },
     dialog: {
-      duration: 300,
-      easing: 'ease-in-out',
+      duration: 250,
+      easing: 'ease-out',
       backdropType: 'blur',
       backdropIntensity: 40,
     },
-    // ... other modal types
+    simple: {
+      duration: 200,
+      easing: 'ease-out',
+      backdropType: 'opacity',
+      backdropOpacity: 0.5,
+    },
+    fullScreen: {
+      duration: 350,
+      easing: 'ease-out',
+      backdropType: 'none',
+    },
   },
 };
 ```
 
 ### Animation Principles
 
-- **Consistent Duration**: 300ms for all modal animations
+- **Optimized Durations**: Different durations per modal type (200-350ms) for optimal UX
+  - Sheet: 300ms (standard bottom sheet)
+  - Dialog: 250ms (quick confirmation dialogs)
+  - Simple: 200ms (lightweight overlays)
+  - FullScreen: 350ms (smooth full-screen transitions)
 - **Appropriate Easing**: Different easing functions for different interaction types
 - **Backdrop Consistency**: Proper backdrop types per modal variant
 - **Performance**: Optimized animations with proper cleanup

@@ -1,6 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { StudySession } from '@/types';
-import { CreateStudySessionRequest } from '@/types/api';
+import { CreateStudySessionRequest, UpdateStudySessionRequest } from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
@@ -65,6 +65,77 @@ export const studySessionsApiMutations = {
       const { data, error } = await supabase.functions.invoke(
         'create-study-session',
         { body: request },
+      );
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /**
+   * Update an existing study session
+   *
+   * OFFLINE SUPPORT:
+   * - When online: Executes server mutation immediately
+   * - When offline: Adds to sync queue for later sync
+   */
+  async update(
+    sessionId: string,
+    request: UpdateStudySessionRequest,
+    isOnline: boolean,
+    userId: string,
+  ): Promise<StudySession> {
+    try {
+      // OFFLINE MODE: Queue for later sync and return optimistic data
+      if (!isOnline) {
+        console.log('📴 Offline: Queueing UPDATE study_session action');
+
+        // Get cached task data
+        const { getCachedTask, mergeTaskUpdates } = await import('@/utils/taskCache');
+        const cachedTask = await getCachedTask(sessionId, 'study_session');
+
+        if (!cachedTask) {
+          throw new Error(
+            'Study session not found in cache. Please sync and try again.',
+          );
+        }
+
+        // Merge updates with cached data
+        const optimisticTask = mergeTaskUpdates(
+          cachedTask as StudySession,
+          request,
+        );
+
+        // Add to sync queue
+        await syncManager.addToQueue(
+          'UPDATE',
+          'study_session',
+          {
+            type: 'UPDATE',
+            id: sessionId,
+            data: request,
+          },
+          userId,
+          { syncImmediately: false },
+        );
+
+        console.log(
+          `✅ Created optimistic update for study session ${sessionId}`,
+        );
+        return optimisticTask as StudySession;
+      }
+
+      // ONLINE MODE: Execute server mutation
+      console.log('🌐 Online: Updating study session on server');
+      const { data, error } = await supabase.functions.invoke(
+        'update-study-session',
+        {
+          body: {
+            study_session_id: sessionId,
+            ...request,
+          },
+        },
       );
       if (error) throw error;
       return data;

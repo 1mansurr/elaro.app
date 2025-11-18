@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { RootStackParamList } from '@/types';
 import { useQueryClient } from '@tanstack/react-query';
 import { getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { useAuth } from '@/contexts/AuthContext';
 
 type OnboardingCoursesScreenNavigationProp =
   StackNavigationProp<RootStackParamList>;
@@ -33,10 +34,13 @@ const CourseItem = memo<{ item: any }>(({ item }) => (
   </View>
 ));
 
+const COURSE_ITEM_HEIGHT = 72;
+
 const OnboardingCoursesScreen = () => {
   const navigation = useNavigation<OnboardingCoursesScreenNavigationProp>();
   const { onboardingData } = useOnboarding();
   const queryClient = useQueryClient();
+  const { refreshUser } = useAuth();
 
   // Get courses directly from React Query with full result object
   const {
@@ -126,6 +130,11 @@ const OnboardingCoursesScreen = () => {
         throw error;
       }
 
+      // Refresh user profile to get updated onboarding_completed status
+      // Wait a moment for backend to process the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await refreshUser();
+
       const message = skipCourses
         ? 'Your profile has been saved! You can add courses anytime from the home screen.'
         : 'Your profile has been saved successfully.';
@@ -133,6 +142,7 @@ const OnboardingCoursesScreen = () => {
 
       // Navigate to main app after successful onboarding completion
       // Use CommonActions.reset() to properly reset navigation stack from nested navigator
+      // The AuthenticatedNavigator will automatically show Main when onboarding_completed is true
       navigation.dispatch(
         CommonActions.reset({
           index: 0,
@@ -157,10 +167,28 @@ const OnboardingCoursesScreen = () => {
     navigation.goBack();
   };
 
+  const listRef = useRef<FlatList<any>>(null);
+
   const renderCourseItem = useCallback(
     ({ item }: { item: any }) => <CourseItem item={item} />,
     [],
   );
+
+  const handleScrollToIndexFailed = useCallback(info => {
+    const wait = new Promise(resolve => setTimeout(resolve, 100));
+    wait.then(() => {
+      if (listRef.current) {
+        const targetIndex = Math.min(
+          info.highestMeasuredFrameIndex + 1,
+          info.index,
+        );
+        listRef.current.scrollToIndex({
+          index: targetIndex,
+          animated: true,
+        });
+      }
+    });
+  }, []);
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -180,6 +208,7 @@ const OnboardingCoursesScreen = () => {
         emptyMessage="Start by adding your first course using the button below."
         emptyIcon="school-outline">
         <FlatList
+          ref={listRef}
           style={styles.list}
           data={courses || []}
           renderItem={renderCourseItem}
@@ -191,6 +220,12 @@ const OnboardingCoursesScreen = () => {
           windowSize={5}
           updateCellsBatchingPeriod={50}
           initialNumToRender={10}
+          getItemLayout={(_, index) => ({
+            length: COURSE_ITEM_HEIGHT,
+            offset: COURSE_ITEM_HEIGHT * index,
+            index,
+          })}
+          onScrollToIndexFailed={handleScrollToIndexFailed}
         />
       </QueryStateWrapper>
 

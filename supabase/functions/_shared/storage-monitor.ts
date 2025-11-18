@@ -1,6 +1,6 @@
 /**
  * Storage Monitoring Service
- * 
+ *
  * Monitors Supabase storage usage against Free Plan limits:
  * - Database size: 500 MB
  * - File storage: 1 GB
@@ -36,14 +36,18 @@ export interface StorageQuotaStatus {
  * Get current database size
  * Note: This requires a database function to be created
  */
-async function getDatabaseSize(supabaseClient: SupabaseClient): Promise<number> {
+async function getDatabaseSize(
+  supabaseClient: SupabaseClient,
+): Promise<number> {
   try {
     // Use a database function to get database size
     // This function should be created in a migration
     const { data, error } = await supabaseClient.rpc('get_database_size');
 
     if (error) {
-      await logger.error('Failed to get database size', { error: error.message });
+      await logger.error('Failed to get database size', {
+        error: error.message,
+      });
       return 0;
     }
 
@@ -167,9 +171,12 @@ export async function getStorageQuotaStatus(
   storageType: keyof typeof STORAGE_LIMITS,
 ): Promise<StorageQuotaStatus | null> {
   try {
-    const { data, error } = await supabaseClient.rpc('get_storage_quota_status', {
-      p_storage_type: storageType,
-    });
+    const { data, error } = await supabaseClient.rpc(
+      'get_storage_quota_status',
+      {
+        p_storage_type: storageType,
+      },
+    );
 
     if (error) {
       await logger.warn('Failed to get storage quota status', {
@@ -232,4 +239,3 @@ function formatBytes(bytes: number): string {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
-

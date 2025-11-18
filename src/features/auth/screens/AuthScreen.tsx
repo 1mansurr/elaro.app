@@ -245,12 +245,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       } else {
         if (mode === 'signup') {
           Alert.alert(
-            'Verify your email',
-            'We sent a confirmation link to your email. You can continue using the app once verified.',
+            'Check your email',
+            'We sent a confirmation link to your email. Verifying your email helps keep your account secure, but you can continue using the app right away.',
           );
         }
+        
+        // Call onAuthSuccess callback
         onAuthSuccess?.();
+        
+        // For signup, wait longer for sign-in to complete and session to be created
+        // AppNavigator will automatically switch to AuthenticatedNavigator when session is available
+        // AuthenticatedNavigator will then show OnboardingNavigator if onboarding_completed is false
+        setTimeout(() => {
         navigation.goBack();
+        }, mode === 'signup' ? 1500 : 500); // Wait 1.5s for signup (to allow sign-in), 500ms for signin
       }
     } catch (err) {
       const errorTitle = getErrorTitle(err);
@@ -490,9 +498,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
                   and{' '}
                   <Text
                     style={styles.linkText}
-                    onPress={() =>
-                      Linking.openURL(LEGAL_URLS.PRIVACY_POLICY)
-                    }>
+                    onPress={() => Linking.openURL(LEGAL_URLS.PRIVACY_POLICY)}>
                     Privacy Policy
                   </Text>
                 </Text>
@@ -507,6 +513,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               style={styles.authButton}
               testID="submit-button"
             />
+
+            {/* Forgot Password Link - Only show for signin mode */}
+            {mode === 'signin' && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgotPasswordContainer}
+                testID="forgot-password-button"
+                accessibilityLabel="Forgot password"
+                accessibilityHint="Navigate to password reset screen"
+                accessibilityRole="button">
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+            )}
 
             <View style={styles.footer}>
               <Text style={styles.footerText}>
@@ -638,6 +657,18 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold as any,
     color: '#2C5EFF',
+  },
+  forgotPasswordContainer: {
+    alignItems: 'center',
+    marginTop: SPACING.md,
+    marginBottom: SPACING.md,
+    paddingVertical: SPACING.xs,
+  },
+  forgotPasswordText: {
+    fontSize: FONT_SIZES.sm,
+    color: '#2C5EFF',
+    fontWeight: FONT_WEIGHTS.medium as any,
+    textDecorationLine: 'underline',
   },
   strengthContainer: {
     height: 5,

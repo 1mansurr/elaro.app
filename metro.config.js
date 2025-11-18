@@ -1,4 +1,4 @@
-const { getDefaultConfig } = require('@expo/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
@@ -20,5 +20,24 @@ config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 
 // Optimize asset handling
 config.resolver.assetExts.push('svg', 'ttf', 'otf', 'woff', 'woff2');
+
+// Get the default source extensions and add support for .mjs and .cjs
+const defaultSourceExts = config.resolver.sourceExts || [];
+config.resolver.sourceExts = [
+  ...defaultSourceExts,
+  'mjs', // Add .mjs for ES modules
+  'cjs', // Add .cjs for CommonJS modules
+];
+
+// Add transformer configuration to handle module formats
+config.transformer = {
+  ...config.transformer,
+  getTransformOptions: async () => ({
+    transform: {
+      experimentalImportSupport: false,
+      inlineRequires: false,
+    },
+  }),
+};
 
 module.exports = config;

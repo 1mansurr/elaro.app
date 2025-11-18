@@ -27,6 +27,11 @@ jobs:
       
       - name: Enforce performance budgets
         run: node scripts/enforce-performance-budgets.js
+        env:
+          # yamllint disable-line rule:context-access
+          # yamllint disable-line rule:context-access
+          BUILD_PROFILE: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.profile) || 'production' }}
+        # Only fail for production builds
       
       - name: Upload bundle size report
         uses: actions/upload-artifact@v3

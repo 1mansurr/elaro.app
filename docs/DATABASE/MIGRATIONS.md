@@ -9,28 +9,33 @@ This guide covers database migration procedures, best practices, and troubleshoo
 ### Standard Workflow
 
 1. **Make changes locally**
+
    ```bash
    # Make changes to your local database via Supabase Studio or CLI
    ```
 
 2. **Generate migration**
+
    ```bash
    supabase db diff -f descriptive_migration_name
    ```
 
 3. **Review migration**
+
    ```bash
    # Open the generated migration file
    # Verify the SQL is correct
    ```
 
 4. **Test migration**
+
    ```bash
    # Reset local database and apply migration
    supabase db reset
    ```
 
 5. **Commit migration**
+
    ```bash
    git add supabase/migrations/
    git commit -m "Add new feature migration"
@@ -54,11 +59,11 @@ supabase db push
 
 ```sql
 -- Check migration history
-SELECT * FROM supabase_migrations.schema_migrations 
+SELECT * FROM supabase_migrations.schema_migrations
 ORDER BY version DESC LIMIT 10;
 
 -- Verify specific migration
-SELECT * FROM supabase_migrations.schema_migrations 
+SELECT * FROM supabase_migrations.schema_migrations
 WHERE version = '20250131000005';
 ```
 
@@ -142,20 +147,20 @@ See [Rollback Procedure](../ROLLBACK_PROCEDURE.md) for detailed steps.
 
 ```sql
 -- Verify tables exist
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
 ORDER BY table_name;
 
 -- Check functions exist
-SELECT proname FROM pg_proc 
+SELECT proname FROM pg_proc
 WHERE proname LIKE '%your_function%';
 
 -- Verify indexes
-SELECT indexname FROM pg_indexes 
+SELECT indexname FROM pg_indexes
 WHERE schemaname = 'public';
 
 -- Check constraints
-SELECT conname, contype FROM pg_constraint 
+SELECT conname, contype FROM pg_constraint
 WHERE connamespace = 'public'::regnamespace;
 ```
 
@@ -168,6 +173,7 @@ YYYYMMDDHHMMSS_descriptive_name.sql
 ```
 
 **Examples:**
+
 - `20250131000005_schedule_monitoring_functions.sql`
 - `20251022000004_add_adaptive_srs.sql`
 - `20251021000001_add_idempotency_keys.sql`
@@ -177,7 +183,7 @@ YYYYMMDDHHMMSS_descriptive_name.sql
 ### Adding a Column
 
 ```sql
-ALTER TABLE users 
+ALTER TABLE users
 ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ```
 
@@ -198,7 +204,7 @@ CREATE TABLE IF NOT EXISTS user_preferences (
 ### Adding an Index
 
 ```sql
-CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id 
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id
 ON user_preferences(user_id);
 ```
 
@@ -235,4 +241,3 @@ This verifies that foreign key constraints match migration expectations.
 - [Supabase Migrations Documentation](https://supabase.com/docs/guides/cli/local-development#database-migrations)
 - [PostgreSQL ALTER TABLE](https://www.postgresql.org/docs/current/sql-altertable.html)
 - [Database Operations Runbook](../DATABASE/OPERATIONS_RUNBOOK.md)
-

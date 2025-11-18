@@ -30,7 +30,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts';
 
 const CancelReminderSchema = z.object({

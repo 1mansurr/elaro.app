@@ -1,9 +1,9 @@
 /**
  * Monitor Storage Usage Function
- * 
+ *
  * Scheduled function that checks storage usage against Supabase Free Plan limits
  * and creates alerts when thresholds are exceeded.
- * 
+ *
  * Runs: Daily (via cron or scheduled trigger)
  */
 
@@ -37,7 +37,7 @@ serve(async (req: Request) => {
     const summary = {
       checkedAt: new Date().toISOString(),
       totalChecked: results.length,
-      statuses: results.map((status) => ({
+      statuses: results.map(status => ({
         storageType: status.storageType,
         usageReadable: status.usageReadable,
         limitReadable: status.limitReadable,
@@ -50,16 +50,21 @@ serve(async (req: Request) => {
               ? 'warning'
               : 'ok',
       })),
-      warnings: results.filter((r) => r.usagePercentage >= 70 && r.usagePercentage < 90)
-        .length,
-      critical: results.filter((r) => r.usagePercentage >= 90).length,
+      warnings: results.filter(
+        r => r.usagePercentage >= 70 && r.usagePercentage < 90,
+      ).length,
+      critical: results.filter(r => r.usagePercentage >= 90).length,
     };
 
-    await logger.info('Storage quota check completed', {
-      total_checked: results.length,
-      warnings: summary.warnings,
-      critical: summary.critical,
-    }, traceContext);
+    await logger.info(
+      'Storage quota check completed',
+      {
+        total_checked: results.length,
+        warnings: summary.warnings,
+        critical: summary.critical,
+      },
+      traceContext,
+    );
 
     return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -86,4 +91,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

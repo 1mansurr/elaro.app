@@ -2,13 +2,17 @@
 
 ## 🎬 Overview
 
-This guide documents the standardized modal animation system implemented across ELARO. All modals now use consistent 300ms animations with appropriate backdrop types and easing functions.
+This guide documents the standardized modal animation system implemented across ELARO. All modals use optimized animation durations (200-350ms) with appropriate backdrop types and easing functions.
 
 ## 🎯 Animation Standards
 
 ### Core Principles
 
-- **Consistent Duration**: All modals use 300ms animation duration
+- **Optimized Durations**: Different durations per modal type for optimal UX
+  - Sheet: 300ms (standard bottom sheet)
+  - Dialog: 250ms (quick confirmation dialogs)
+  - Simple: 200ms (lightweight overlays)
+  - FullScreen: 350ms (smooth full-screen transitions)
 - **Appropriate Easing**: Different easing functions for different interaction types
 - **Backdrop Consistency**: Proper backdrop types per modal variant
 - **Performance**: Optimized animations with proper cleanup
@@ -27,19 +31,19 @@ export const ANIMATIONS = {
       backdropOpacity: 0.5,
     },
     dialog: {
-      duration: 300,
-      easing: 'ease-in-out',
+      duration: 250,
+      easing: 'ease-out',
       backdropType: 'blur',
       backdropIntensity: 40,
     },
     simple: {
-      duration: 300,
-      easing: 'ease-in-out',
+      duration: 200,
+      easing: 'ease-out',
       backdropType: 'opacity',
       backdropOpacity: 0.5,
     },
     fullScreen: {
-      duration: 300,
+      duration: 350,
       easing: 'ease-out',
       backdropType: 'none',
       backdropOpacity: 0,
@@ -178,10 +182,13 @@ interface BaseModalProps {
 
 ### Animation Timing
 
-- **Duration**: 300ms for all modals
+- **Duration**: Optimized per modal type
+  - Sheet: 300ms (standard bottom sheet)
+  - Dialog: 250ms (quick confirmation dialogs)
+  - Simple: 200ms (lightweight overlays)
+  - FullScreen: 350ms (smooth full-screen transitions)
 - **Easing**:
-  - `ease-out` for sheet and full-screen modals (feels responsive)
-  - `ease-in-out` for dialog and simple modals (feels smooth)
+  - `ease-out` for all modals (consistent, responsive feel)
 
 ### Backdrop Types
 

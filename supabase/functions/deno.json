@@ -1,7 +1,9 @@
 {
+  "importMap": "./import_map.json",
   "compilerOptions": {
-    "lib": ["deno.window"],
-    "strict": true
+    "lib": ["deno.window", "deno.ns"],
+    "strict": true,
+    "types": ["./supabase-js.d.ts", "./deno.d.ts"]
   },
   "lint": {
     "rules": {

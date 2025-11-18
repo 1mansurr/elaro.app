@@ -1,6 +1,6 @@
 /**
  * Supabase Query Wrapper with Circuit Breaker Protection
- * 
+ *
  * Provides circuit breaker protection for all Supabase operations
  * to prevent cascading failures during service outages.
  */
@@ -35,22 +35,23 @@ export async function executeSupabaseQuery<T>(
   // Wrap operation with retry logic if enabled
   const operationWithRetry = retryOnFailure
     ? async () => {
-        const retryResult = await retryWithBackoff(
-          operation,
-          {
-            maxRetries,
-            baseDelay: 1000,
-            retryCondition: (error) => {
-              // Don't retry client errors (4xx)
-              const err = error as { statusCode?: number; code?: string };
-              if (err.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
-                return false;
-              }
-              // Retry network errors and server errors (5xx)
-              return true;
-            },
+        const retryResult = await retryWithBackoff(operation, {
+          maxRetries,
+          baseDelay: 1000,
+          retryCondition: error => {
+            // Don't retry client errors (4xx)
+            const err = error as { statusCode?: number; code?: string };
+            if (
+              err.statusCode &&
+              err.statusCode >= 400 &&
+              err.statusCode < 500
+            ) {
+              return false;
+            }
+            // Retry network errors and server errors (5xx)
+            return true;
           },
-        );
+        });
 
         if (!retryResult.success) {
           throw retryResult.error;
@@ -124,22 +125,23 @@ export async function executeSupabaseQueryNullable<T>(
   // Wrap operation with retry logic if enabled
   const operationWithRetry = retryOnFailure
     ? async () => {
-        const retryResult = await retryWithBackoff(
-          operation,
-          {
-            maxRetries,
-            baseDelay: 1000,
-            retryCondition: (error) => {
-              // Don't retry client errors (4xx)
-              const err = error as { statusCode?: number; code?: string };
-              if (err.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
-                return false;
-              }
-              // Retry network errors and server errors (5xx)
-              return true;
-            },
+        const retryResult = await retryWithBackoff(operation, {
+          maxRetries,
+          baseDelay: 1000,
+          retryCondition: error => {
+            // Don't retry client errors (4xx)
+            const err = error as { statusCode?: number; code?: string };
+            if (
+              err.statusCode &&
+              err.statusCode >= 400 &&
+              err.statusCode < 500
+            ) {
+              return false;
+            }
+            // Retry network errors and server errors (5xx)
+            return true;
           },
-        );
+        });
 
         if (!retryResult.success) {
           throw retryResult.error;
@@ -185,4 +187,3 @@ export function getSupabaseCircuitBreakerStats() {
 export function resetSupabaseCircuitBreaker() {
   supabaseCircuitBreaker.reset();
 }
-

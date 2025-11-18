@@ -254,8 +254,12 @@ describe('PermissionService', () => {
     it('should return current task count for user', async () => {
       const freeUser = createMockUser();
 
-      // Mock the database call
-      jest.spyOn(permissionService, 'getTaskCount').mockResolvedValue(5);
+      // Mock Supabase RPC call
+      const { supabase } = require('@/services/supabase');
+      jest.spyOn(supabase.rpc, 'count_tasks_since').mockResolvedValue({
+        data: 5,
+        error: null,
+      });
 
       const count = await permissionService.getTaskCount(
         freeUser,
@@ -263,19 +267,69 @@ describe('PermissionService', () => {
       );
 
       expect(count).toBe(5);
+      expect(supabase.rpc).toHaveBeenCalledWith(
+        'count_tasks_since',
+        expect.objectContaining({
+          since_date: expect.any(String),
+        }),
+      );
     });
 
-    it('should handle database errors gracefully', async () => {
+    it('should handle database errors gracefully (fail open)', async () => {
       const freeUser = createMockUser();
 
       // Mock database error
-      jest
-        .spyOn(permissionService, 'getTaskCount')
-        .mockRejectedValue(new Error('Database error'));
+      const { supabase } = require('@/services/supabase');
+      jest.spyOn(supabase.rpc, 'count_tasks_since').mockResolvedValue({
+        data: null,
+        error: { message: 'Database error' },
+      });
 
-      await expect(
-        permissionService.getTaskCount(freeUser, 'assignments'),
-      ).rejects.toThrow('Database error');
+      const count = await permissionService.getTaskCount(
+        freeUser,
+        'assignments',
+      );
+
+      // Should fail open - return 0 to allow task creation
+      expect(count).toBe(0);
+    });
+
+    it('should handle exceptions gracefully (fail open)', async () => {
+      const freeUser = createMockUser();
+
+      // Mock exception
+      const { supabase } = require('@/services/supabase');
+      jest.spyOn(supabase.rpc, 'count_tasks_since').mockRejectedValue(
+        new Error('Network error'),
+      );
+
+      const count = await permissionService.getTaskCount(
+        freeUser,
+        'assignments',
+      );
+
+      // Should fail open - return 0 to allow task creation
+      expect(count).toBe(0);
+    });
+
+    it('should calculate date 30 days ago correctly', async () => {
+      const freeUser = createMockUser();
+      const { supabase } = require('@/services/supabase');
+      
+      jest.spyOn(supabase.rpc, 'count_tasks_since').mockResolvedValue({
+        data: 3,
+        error: null,
+      });
+
+      await permissionService.getTaskCount(freeUser, 'assignments');
+
+      const callArgs = (supabase.rpc as jest.Mock).mock.calls[0];
+      const sinceDate = new Date(callArgs[1].since_date);
+      const expectedDate = new Date();
+      expectedDate.setDate(expectedDate.getDate() - 30);
+
+      // Allow 1 second difference for execution time
+      expect(Math.abs(sinceDate.getTime() - expectedDate.getTime())).toBeLessThan(1000);
     });
   });
 

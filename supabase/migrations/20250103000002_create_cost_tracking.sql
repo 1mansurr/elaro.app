@@ -23,9 +23,15 @@ CREATE TABLE IF NOT EXISTS api_cost_tracking (
 CREATE INDEX IF NOT EXISTS idx_api_cost_service_date 
   ON api_cost_tracking(service_name, date DESC);
 
-CREATE INDEX IF NOT EXISTS idx_api_cost_current_month 
-  ON api_cost_tracking(service_name, date) 
-  WHERE date >= date_trunc('month', CURRENT_DATE);
+-- Add immutable month_start column for monthly indexing
+ALTER TABLE api_cost_tracking
+ADD COLUMN IF NOT EXISTS month_start DATE GENERATED ALWAYS AS (
+  make_date(EXTRACT(YEAR FROM date)::int, EXTRACT(MONTH FROM date)::int, 1)
+) STORED;
+
+-- Create index for current month filtering
+CREATE INDEX IF NOT EXISTS idx_api_cost_current_month
+  ON api_cost_tracking(service_name, month_start);
 
 -- ============================================================================
 -- BUDGET CONFIGURATION TABLE
@@ -126,13 +132,13 @@ DECLARE
   v_month_start DATE;
   v_total_spend NUMERIC;
 BEGIN
-  v_month_start := date_trunc('month', CURRENT_DATE);
+  v_month_start := date_trunc('month', CURRENT_DATE)::date;
   
   SELECT COALESCE(SUM(cost_usd), 0)
   INTO v_total_spend
   FROM api_cost_tracking
   WHERE service_name = p_service_name
-    AND date >= v_month_start;
+    AND month_start = v_month_start;
   
   RETURN v_total_spend;
 END;

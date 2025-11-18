@@ -109,7 +109,8 @@ export default createAuthenticatedHandler(async (req, user) => {
 import { z } from 'zod';
 
 const emailSchema = z.string().email('Invalid email address');
-const passwordSchema = z.string()
+const passwordSchema = z
+  .string()
   .min(8, 'Password must be at least 8 characters')
   .regex(/[A-Z]/, 'Password must contain uppercase letter')
   .regex(/[a-z]/, 'Password must contain lowercase letter')
@@ -131,8 +132,8 @@ All tables have RLS enabled with policies that:
 
 ```sql
 -- Check RLS is enabled
-SELECT tablename, rowsecurity 
-FROM pg_tables 
+SELECT tablename, rowsecurity
+FROM pg_tables
 WHERE schemaname = 'public';
 
 -- Check policies
@@ -280,4 +281,3 @@ See [Incident Response Guide](../OPERATIONS/INCIDENT_RESPONSE.md) for detailed p
 - [Supabase Security Documentation](https://supabase.com/docs/guides/auth/row-level-security)
 - [OWASP Mobile Security](https://owasp.org/www-project-mobile-security/)
 - [React Native Security Best Practices](https://reactnative.dev/docs/security)
-

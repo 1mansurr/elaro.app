@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
-import { Button, ReminderSelector, GuestAuthModal } from '@/shared/components';
+import { Button, ReminderSelector } from '@/shared/components';
 import { api } from '@/services/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -64,7 +64,6 @@ const RemindersScreen = () => {
     useTotalTaskCount();
 
   const [isLoading, setIsLoading] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
   const isGuest = !session;
   const maxReminders = 2; // This should come from a user context later
@@ -77,9 +76,6 @@ const RemindersScreen = () => {
     await createAssignment([]); // Create assignment with no reminders
   };
 
-  const handleCloseGuestAuthModal = () => {
-    setShowGuestAuthModal(false);
-  };
 
   // Add auto-save function
   const autoCreateTask = async () => {
@@ -120,10 +116,9 @@ const RemindersScreen = () => {
       // Clear pending data
       await clearPendingTask();
 
-      // Invalidate queries
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
+      // Invalidate queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success!', 'Your assignment has been saved successfully!', [
         {
@@ -145,23 +140,6 @@ const RemindersScreen = () => {
     }
   };
 
-  const handleGuestSignUp = async () => {
-    setShowGuestAuthModal(false);
-    // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', {
-      mode: 'signup',
-      onAuthSuccess: autoCreateTask,
-    } as any);
-  };
-
-  const handleGuestSignIn = async () => {
-    setShowGuestAuthModal(false);
-    // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', {
-      mode: 'signin',
-      onAuthSuccess: autoCreateTask,
-    } as any);
-  };
 
   const createAssignment = async (reminders: number[]) => {
     if (isGuest) {
@@ -173,7 +151,11 @@ const RemindersScreen = () => {
         },
         'assignment',
       );
-      setShowGuestAuthModal(true);
+      // Navigate to Auth screen
+      navigation.getParent()?.navigate('Auth', {
+        mode: 'signup',
+        onAuthSuccess: autoCreateTask,
+      } as any);
       return;
     }
 
@@ -217,10 +199,9 @@ const RemindersScreen = () => {
         await notificationService.registerForPushNotifications(session.user.id);
       }
 
-      // Invalidate all relevant queries
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
+      // Invalidate all relevant queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success', 'Assignment created successfully!', [
         {
@@ -378,14 +359,6 @@ const RemindersScreen = () => {
           </View>
         </View>
       </View>
-
-      <GuestAuthModal
-        isVisible={showGuestAuthModal}
-        onClose={handleCloseGuestAuthModal}
-        onSignUp={handleGuestSignUp}
-        onSignIn={handleGuestSignIn}
-        actionType="Assignment"
-      />
     </View>
   );
 };

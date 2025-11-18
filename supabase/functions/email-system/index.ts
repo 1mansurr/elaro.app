@@ -25,7 +25,7 @@ import {
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));

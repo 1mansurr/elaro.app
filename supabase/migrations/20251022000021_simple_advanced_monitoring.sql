@@ -46,13 +46,19 @@ CREATE TABLE IF NOT EXISTS public.maintenance_tasks (
 CREATE OR REPLACE FUNCTION collect_basic_metrics()
 RETURNS VOID AS $$
 DECLARE
-  query_count INTEGER;
+  query_count INTEGER := 0;
   index_count INTEGER;
   table_count INTEGER;
   total_size BIGINT;
 BEGIN
   -- Get basic counts
-  SELECT COUNT(*) INTO query_count FROM pg_stat_statements;
+  -- pg_stat_statements might not be available, so handle gracefully
+  BEGIN
+    SELECT COUNT(*) INTO query_count FROM pg_stat_statements;
+  EXCEPTION WHEN OTHERS THEN
+    query_count := 0;
+  END;
+  
   SELECT COUNT(*) INTO index_count FROM pg_stat_user_indexes;
   SELECT COUNT(*) INTO table_count FROM pg_stat_user_tables;
   SELECT SUM(pg_total_relation_size(relid)) INTO total_size FROM pg_stat_user_tables;

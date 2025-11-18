@@ -106,7 +106,7 @@ export function useSyncDebug(enabled: boolean = __DEV__): SyncDebugInfo | null {
               ? Math.floor(activeSession.timeSpentSeconds / 60)
               : 0,
             status: activeSession?.status || null,
-            srsQueueLength: 0, // TODO: Add method to get queue length
+            srsQueueLength: syncManager.getQueueLength(),
           },
           settings: settingsStats,
           timestamp: Date.now(),

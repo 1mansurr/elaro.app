@@ -8,7 +8,7 @@ import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 
 // Optional schema - user can optionally pass a custom expiration date
 const GrantPremiumSchema = z.object({

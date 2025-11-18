@@ -190,14 +190,6 @@ export const NavigationPatterns = {
   },
 
   /**
-   * Navigate to guest home for non-authenticated users
-   */
-  navigateToGuestHome: (navigation: AppNavigationProp) => {
-    const safeNav = new SafeNavigation(navigation);
-    safeNav.reset('GuestHome');
-  },
-
-  /**
    * Navigate to onboarding flow
    */
   navigateToOnboarding: (navigation: AppNavigationProp) => {
@@ -335,7 +327,6 @@ export const NavigationValidation = {
       'Launch',
       'Auth',
       'Main',
-      'GuestHome',
       'OnboardingFlow',
       'Courses',
       'Drafts',

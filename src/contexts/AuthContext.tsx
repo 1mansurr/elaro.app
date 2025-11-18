@@ -221,14 +221,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshUser = async () => {
     if (session?.user) {
+      // Clear cache to ensure fresh data (especially after onboarding completion)
+      const cacheKey = `user_profile:${session.user.id}`;
+      await cache.delete(cacheKey);
+      
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);
-
-      // Clear cache to ensure fresh data after onboarding completion
-      if (userProfile?.onboarding_completed) {
-        const cacheKey = `user_profile:${session.user.id}`;
-        // await cache.delete(cacheKey);
-      }
     }
   };
 
@@ -301,7 +299,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               const isOnline = true; // Server writes only happen when online
 
               try {
+                let taskCreated = false;
+                let taskTypeName = '';
+
                 if (pending.taskType === 'assignment') {
+                  taskTypeName = 'assignment';
                   const {
                     course,
                     title,
@@ -329,9 +331,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                       userId,
                     );
                     await clearPendingTask();
+                    taskCreated = true;
                     console.log('✅ Pending assignment created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending assignment missing required fields:',
+                      { hasCourse: !!course?.id, hasDueDate: !!dueDate, hasTitle: !!title },
+                    );
                   }
                 } else if (pending.taskType === 'lecture') {
+                  taskTypeName = 'lecture';
                   const {
                     course,
                     title,
@@ -358,9 +367,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                       userId,
                     );
                     await clearPendingTask();
+                    taskCreated = true;
                     console.log('✅ Pending lecture created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending lecture missing required fields:',
+                      {
+                        hasCourse: !!course?.id,
+                        hasStartTime: !!startTime,
+                        hasEndTime: !!endTime,
+                        hasTitle: !!title,
+                      },
+                    );
                   }
                 } else if (pending.taskType === 'study_session') {
+                  taskTypeName = 'study session';
                   const {
                     course,
                     topic,
@@ -383,15 +404,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                       userId,
                     );
                     await clearPendingTask();
+                    taskCreated = true;
                     console.log('✅ Pending study session created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending study session missing required fields:',
+                      {
+                        hasCourse: !!course?.id,
+                        hasSessionDate: !!sessionDate,
+                        hasTopic: !!topic,
+                      },
+                    );
                   }
+                }
+
+                if (!taskCreated && pending.taskType) {
+                  // Task data was incomplete - clear it to prevent retry loops
+                  console.warn(
+                    `⚠️ Pending ${pending.taskType} had incomplete data, clearing it`,
+                  );
+                  await clearPendingTask();
                 }
               } catch (createError) {
                 // Don't block auth flow if pending task creation fails
+                // Log error with more context for debugging
                 console.error(
-                  '❌ Failed to create pending task after auth:',
+                  `❌ Failed to create pending ${pending.taskType} after auth:`,
                   createError,
                 );
+                // Note: We keep the pending task so user can try again manually
+                // This is better than losing their data
               }
             }
           } catch (importError) {
@@ -609,7 +651,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signUp = async (credentials: SignUpCredentials) => {
     try {
-      await authService.signUp(credentials);
+      const signUpResponse = await authService.signUp(credentials);
+
+      // Check if signup returned a session (auto-confirm enabled)
+      // If session exists, update auth state immediately
+      if (signUpResponse?.session) {
+        console.log('✅ Signup returned session immediately');
+        // Use authSyncService to properly sync and notify all listeners
+        await authSyncService.saveAuthState(signUpResponse.session);
+        setSession(signUpResponse.session);
+        if (signUpResponse.session.user) {
+          const userProfile = await fetchUserProfile(signUpResponse.session.user.id);
+          setUser(userProfile);
+        }
+      } else {
+        // No session in response - immediately sign in to create a session
+        // This is more reliable than waiting for async session creation
+        // Since email confirmation is disabled, sign in should work immediately
+        console.log('⏳ No session in signup response, signing in to create session...');
+        try {
+          const signInResponse = await authService.login({
+            email: credentials.email,
+            password: credentials.password,
+          });
+          
+          if (signInResponse?.session) {
+            console.log('✅ Session created via sign in');
+            await authSyncService.saveAuthState(signInResponse.session);
+            setSession(signInResponse.session);
+            if (signInResponse.session.user) {
+              const userProfile = await fetchUserProfile(signInResponse.session.user.id);
+              setUser(userProfile);
+            }
+          } else {
+            console.log('⚠️ Sign in did not return a session');
+          }
+        } catch (signInError) {
+          console.error('❌ Error signing in after signup:', signInError);
+          // If sign in fails, try refreshing session as fallback
+          setTimeout(async () => {
+            try {
+              const session = await authSyncService.refreshSession();
+              if (session) {
+                console.log('✅ Session found after refresh fallback');
+                setSession(session);
+                if (session.user) {
+                  const userProfile = await fetchUserProfile(session.user.id);
+                  setUser(userProfile);
+                }
+              }
+            } catch (refreshError) {
+              console.error('❌ Error in refresh fallback:', refreshError);
+            }
+          }, 1000);
+        }
+      }
 
       // Track sign up event
       mixpanelService.track(AnalyticsEvents.USER_SIGNED_UP, {

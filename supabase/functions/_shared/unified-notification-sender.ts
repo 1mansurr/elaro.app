@@ -3,6 +3,8 @@
  * Respects user preferences for each channel
  */
 
+/// <reference path="../global.d.ts" />
+// @ts-ignore - ESM imports are valid in Deno runtime
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { sendPushNotification } from './send-push-notification.ts';
 import { logger } from './logging.ts';

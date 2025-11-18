@@ -16,18 +16,16 @@ AppNavigator
 │       ├── MainTabNavigator (Home, Account)
 │       ├── Main Screens (Courses, Calendar, Profile, Settings, etc.)
 │       └── Modal Flows (Add Course, Add Lecture, Add Assignment, etc.)
-└── GuestNavigator (for non-authenticated users)
+└── AuthNavigator (for unauthenticated users)
     ├── LaunchScreen
-    ├── GuestHomeScreen
-    └── Auth Modal
+    └── Auth Screen
 ```
 
 ### Key Components
 
 - **AuthenticatedNavigator**: Main navigator for authenticated users (handles onboarding and main app screens)
-- **AuthNavigator**: Dedicated auth flows (sign up, sign in, MFA)
+- **AuthNavigator**: Dedicated auth flows (sign up, sign in, MFA) - also used for unauthenticated users
 - **OnboardingNavigator**: User onboarding flow
-- **GuestNavigator**: Guest user experience
 
 ## 📱 Navigation Types
 
@@ -44,7 +42,6 @@ export type RootStackParamList = {
     mode?: 'signup' | 'signin';
   };
   Main: undefined;
-  GuestHome: undefined;
   OnboardingFlow: undefined;
   Courses: undefined;
   Drafts: undefined;

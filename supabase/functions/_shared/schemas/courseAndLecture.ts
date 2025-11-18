@@ -1,4 +1,4 @@
-import { z } from 'https://deno.land/x/zod/mod.ts';
+import { z } from 'zod';
 
 export const CreateCourseAndLectureSchema = z.object({
   courseName: z.string().min(1, 'Course name is required').max(200),

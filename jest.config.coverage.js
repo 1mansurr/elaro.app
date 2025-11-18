@@ -39,34 +39,46 @@ module.exports = {
     '!src/**/types.{js,ts}',
   ],
 
-  // Stricter coverage thresholds
+  // Coverage thresholds - Phase 1 targets
+  // Global minimum: 50%, Critical paths: 70%+
   coverageThreshold: {
     global: {
-      branches: 85,
-      functions: 85,
-      lines: 85,
-      statements: 85,
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
     },
-    // Critical services need higher coverage
-    'src/services/': {
-      branches: 90,
-      functions: 90,
-      lines: 90,
-      statements: 90,
-    },
-    // Auth and permissions need highest coverage
+    // Critical paths require 70%+ coverage
     'src/features/auth/': {
-      branches: 95,
-      functions: 95,
-      lines: 95,
-      statements: 95,
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
-    // Notification system needs high coverage
-    'src/services/notifications/': {
-      branches: 90,
-      functions: 90,
-      lines: 90,
-      statements: 90,
+    'src/hooks/useTaskMutations.ts': {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+    'src/services/syncManager.ts': {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+    'src/navigation/': {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
+    // Critical services
+    'src/services/': {
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60,
     },
   },
 

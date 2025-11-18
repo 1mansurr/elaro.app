@@ -97,16 +97,16 @@ supabase db push --include-all
 
 ```sql
 -- Check migration history
-SELECT * FROM supabase_migrations.schema_migrations 
+SELECT * FROM supabase_migrations.schema_migrations
 ORDER BY version DESC LIMIT 10;
 
 -- Verify tables exist
-SELECT table_name FROM information_schema.tables 
-WHERE table_schema = 'public' 
+SELECT table_name FROM information_schema.tables
+WHERE table_schema = 'public'
 ORDER BY table_name;
 
 -- Check functions exist
-SELECT proname FROM pg_proc 
+SELECT proname FROM pg_proc
 WHERE proname LIKE '%reminder%';
 ```
 
@@ -285,4 +285,3 @@ For production deployments, use manual process:
 - [EAS Build Documentation](https://docs.expo.dev/build/introduction/)
 - [Supabase Migrations Guide](https://supabase.com/docs/guides/cli/local-development#database-migrations)
 - [Expo Deployment Guide](https://docs.expo.dev/distribution/introduction/)
-

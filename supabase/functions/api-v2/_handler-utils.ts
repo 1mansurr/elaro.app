@@ -10,7 +10,7 @@ import {
   AuthenticatedRequest,
   AppError,
 } from '../_shared/function-handler.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 import {
   ERROR_CODES,
   ERROR_MESSAGES,

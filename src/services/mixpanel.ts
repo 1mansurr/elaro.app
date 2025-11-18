@@ -2,17 +2,17 @@
  * Mixpanel Analytics Service
  *
  * ⚠️ STATUS: PARKED - Currently using MockMixpanel implementation
- * 
+ *
  * This service is intentionally disabled but kept in codebase for potential
  * future re-enablement. All tracking calls are no-ops.
- * 
+ *
  * To re-enable:
  * 1. Uncomment real Mixpanel import (if available)
  * 2. Replace MockMixpanel with real Mixpanel instance
  * 3. Update App.tsx initialization
  * 4. Verify EXPO_PUBLIC_MIXPANEL_TOKEN is set in environment variables
  * 5. Test tracking functionality
- * 
+ *
  * See MIXPANEL_STATUS.md for more details.
  */
 

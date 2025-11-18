@@ -13,7 +13,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import { GuestAuthModal } from '@/shared/components';
 import {
   savePendingTask,
   getPendingTask,
@@ -38,7 +37,6 @@ const AddLectureRemindersScreen = () => {
     courseData.reminders,
   );
   const [isLoading, setIsLoading] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
   const toggleReminder = (value: number) => {
     setSelectedReminders(prev =>
@@ -106,24 +104,6 @@ const AddLectureRemindersScreen = () => {
     }
   };
 
-  // Add modal handlers
-  const handleGuestSignUp = async () => {
-    setShowGuestAuthModal(false);
-    // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', {
-      mode: 'signup',
-      onAuthSuccess: autoCreateTask,
-    } as any);
-  };
-
-  const handleGuestSignIn = async () => {
-    setShowGuestAuthModal(false);
-    // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', {
-      mode: 'signin',
-      onAuthSuccess: autoCreateTask,
-    } as any);
-  };
 
   const handleFinish = async () => {
     setIsLoading(true);
@@ -144,9 +124,13 @@ const AddLectureRemindersScreen = () => {
 
     // Check if guest user
     if (isGuest) {
-      // Save current task data before showing modal
+      // Save current task data before navigating to Auth
       await savePendingTask(finalPayload, 'course');
-      setShowGuestAuthModal(true);
+      // Navigate to Auth screen
+      navigation.getParent()?.navigate('Auth', {
+        mode: 'signup',
+        onAuthSuccess: autoCreateTask,
+      } as any);
       setIsLoading(false);
       return;
     }
@@ -228,14 +212,6 @@ const AddLectureRemindersScreen = () => {
           <Button title="Finish Setup" onPress={handleFinish} />
         )}
       </View>
-
-      <GuestAuthModal
-        isVisible={showGuestAuthModal}
-        onClose={() => setShowGuestAuthModal(false)}
-        onSignUp={handleGuestSignUp}
-        onSignIn={handleGuestSignIn}
-        actionType="Course"
-      />
     </View>
   );
 };

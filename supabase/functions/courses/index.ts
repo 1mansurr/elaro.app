@@ -18,7 +18,7 @@ import {
   AppError,
 } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,

@@ -112,34 +112,22 @@ COMMENT ON FUNCTION "public"."can_create_task"("p_user_id" "uuid") IS 'Checks if
 CREATE OR REPLACE FUNCTION "public"."check_and_send_reminders"() RETURNS "void"
     LANGUAGE "plpgsql"
     AS $$
-DECLARE
-  reminder_row RECORD; -- This is the correct place to declare the loop variable
-  supabase_url TEXT := 'https://oqwyoucchbjiyddnznwf.supabase.co';
-  service_role_key TEXT := 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9xd3lvdWNjaGJqaXlkZG56bndmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTcxODg0MSwiZXhwIjoyMDY1Mjk0ODQxfQ.DkL-1UK1wBxrgCJU6tm00cgl6xEcFLDjnm0MHRHwuNw'; -- REMEMBER TO REPLACE THIS AND WRAP IN QUOTES
 BEGIN
-  -- Find all reminders that are due and still pending
-  FOR reminder_row IN SELECT * FROM public.reminders WHERE send_at <= NOW( ) AND status = 'pending' LIMIT 10
-  LOOP
-    -- Call our 'send-push-notification' Edge Function for each due reminder
-    PERFORM net.http_post(
-      url := supabase_url || '/functions/v1/send-push-notification',
-      headers := jsonb_build_object(
-        'Content-Type', 'application/json',
-        'Authorization', 'Bearer ' || service_role_key
-       ),
-      body := jsonb_build_object(
-        'userId', reminder_row.user_id,
-        'title', reminder_row.title,
-        'body', reminder_row.body,
-        'data', reminder_row.data
-      )
-    );
-
-    -- Update the status of the reminder to 'sent'
-    UPDATE public.reminders
-    SET status = 'sent'
-    WHERE id = reminder_row.id;
-  END LOOP;
+  -- SECURITY NOTE: This function is deprecated and disabled for security reasons.
+  -- The original implementation contained hardcoded service role keys which is a security risk.
+  -- 
+  -- All reminder processing should use the Edge Function 'process-due-reminders' instead,
+  -- which properly accesses the service role key via environment variables:
+  --   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  --
+  -- The service role key should be set as an Edge Function secret in Supabase Dashboard:
+  --   Dashboard → Edge Functions → Secrets → Add: SUPABASE_SERVICE_ROLE_KEY
+  --
+  -- This function is kept as a stub to prevent breaking any potential callers.
+  -- Migration 20251101000000_remove_leaked_service_key_from_db.sql already disabled this function.
+  
+  RAISE NOTICE 'check_and_send_reminders() is deprecated. Use Edge Function process-due-reminders instead.';
+  -- Function intentionally does nothing
 END;
 $$;
 
@@ -463,7 +451,7 @@ CREATE OR REPLACE FUNCTION "public"."schedule_daily_cleanup"() RETURNS "void"
   -- Perform an HTTP request to our Edge Function
   SELECT net.http_post(
     -- The URL of the Edge Function to call
-    url:='https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/cleanup-old-reminders',
+    url:= secrets.get('SUPABASE_URL') || '/functions/v1/cleanup-old-reminders',
     -- The headers for the request
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
@@ -967,103 +955,154 @@ COMMENT ON COLUMN "public"."users"."marketing_opt_in" IS 'User consent to receiv
 
 
 
-ALTER TABLE ONLY "public"."admin_actions"
-    ADD CONSTRAINT "admin_actions_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'admin_actions_pkey' 
+    AND conrelid = 'public.admin_actions'::regclass
+  ) THEN
+    ALTER TABLE ONLY "public"."admin_actions"
+      ADD CONSTRAINT "admin_actions_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."assignments"
-    ADD CONSTRAINT "assignments_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'assignments_pkey' AND conrelid = 'public.assignments'::regclass) THEN
+    ALTER TABLE ONLY "public"."assignments" ADD CONSTRAINT "assignments_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'courses_pkey' AND conrelid = 'public.courses'::regclass) THEN
+    ALTER TABLE ONLY "public"."courses" ADD CONSTRAINT "courses_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lectures_pkey' AND conrelid = 'public.lectures'::regclass) THEN
+    ALTER TABLE ONLY "public"."lectures" ADD CONSTRAINT "lectures_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'notification_preferences_pkey' AND conrelid = 'public.notification_preferences'::regclass) THEN
+    ALTER TABLE ONLY "public"."notification_preferences" ADD CONSTRAINT "notification_preferences_pkey" PRIMARY KEY ("user_id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_pkey' AND conrelid = 'public.profiles'::regclass) THEN
+    ALTER TABLE ONLY "public"."profiles" ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reminders_pkey' AND conrelid = 'public.reminders'::regclass) THEN
+    ALTER TABLE ONLY "public"."reminders" ADD CONSTRAINT "reminders_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."courses"
-    ADD CONSTRAINT "courses_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'srs_schedules_name_key' AND conrelid = 'public.srs_schedules'::regclass) THEN
+    ALTER TABLE ONLY "public"."srs_schedules" ADD CONSTRAINT "srs_schedules_name_key" UNIQUE ("name");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."lectures"
-    ADD CONSTRAINT "lectures_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'srs_schedules_pkey' AND conrelid = 'public.srs_schedules'::regclass) THEN
+    ALTER TABLE ONLY "public"."srs_schedules" ADD CONSTRAINT "srs_schedules_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'streaks_pkey' AND conrelid = 'public.streaks'::regclass) THEN
+    ALTER TABLE ONLY "public"."streaks" ADD CONSTRAINT "streaks_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'study_sessions_pkey' AND conrelid = 'public.study_sessions'::regclass) THEN
+    ALTER TABLE ONLY "public"."study_sessions" ADD CONSTRAINT "study_sessions_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tasks_events_pkey' AND conrelid = 'public.tasks_events'::regclass) THEN
+    ALTER TABLE ONLY "public"."tasks_events" ADD CONSTRAINT "tasks_events_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_devices_pkey' AND conrelid = 'public.user_devices'::regclass) THEN
+    ALTER TABLE ONLY "public"."user_devices" ADD CONSTRAINT "user_devices_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."notification_preferences"
-    ADD CONSTRAINT "notification_preferences_pkey" PRIMARY KEY ("user_id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_devices_user_id_platform_key' AND conrelid = 'public.user_devices'::regclass) THEN
+    ALTER TABLE ONLY "public"."user_devices" ADD CONSTRAINT "user_devices_user_id_platform_key" UNIQUE ("user_id", "platform");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_pkey' AND conrelid = 'public.users'::regclass) THEN
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_pkey" PRIMARY KEY ("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_username_key' AND conrelid = 'public.users'::regclass) THEN
+    ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_username_key" UNIQUE ("username");
+  END IF;
+END $$;
 
 
 
-ALTER TABLE ONLY "public"."srs_schedules"
-    ADD CONSTRAINT "srs_schedules_name_key" UNIQUE ("name");
+CREATE INDEX IF NOT EXISTS "idx_admin_actions_action" ON "public"."admin_actions" USING "btree" ("action");
 
 
 
-ALTER TABLE ONLY "public"."srs_schedules"
-    ADD CONSTRAINT "srs_schedules_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_admin_actions_admin_id" ON "public"."admin_actions" USING "btree" ("admin_id");
 
 
 
-ALTER TABLE ONLY "public"."streaks"
-    ADD CONSTRAINT "streaks_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_admin_actions_created_at" ON "public"."admin_actions" USING "btree" ("created_at");
 
 
 
-ALTER TABLE ONLY "public"."study_sessions"
-    ADD CONSTRAINT "study_sessions_pkey" PRIMARY KEY ("id");
+CREATE INDEX IF NOT EXISTS "idx_admin_actions_target_user_id" ON "public"."admin_actions" USING "btree" ("target_user_id");
 
 
 
-ALTER TABLE ONLY "public"."tasks_events"
-    ADD CONSTRAINT "tasks_events_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."user_devices"
-    ADD CONSTRAINT "user_devices_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."user_devices"
-    ADD CONSTRAINT "user_devices_user_id_platform_key" UNIQUE ("user_id", "platform");
-
-
-
-ALTER TABLE ONLY "public"."users"
-    ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
-
-
-
-ALTER TABLE ONLY "public"."users"
-    ADD CONSTRAINT "users_username_key" UNIQUE ("username");
-
-
-
-CREATE INDEX "idx_admin_actions_action" ON "public"."admin_actions" USING "btree" ("action");
-
-
-
-CREATE INDEX "idx_admin_actions_admin_id" ON "public"."admin_actions" USING "btree" ("admin_id");
-
-
-
-CREATE INDEX "idx_admin_actions_created_at" ON "public"."admin_actions" USING "btree" ("created_at");
-
-
-
-CREATE INDEX "idx_admin_actions_target_user_id" ON "public"."admin_actions" USING "btree" ("target_user_id");
-
-
-
-CREATE INDEX "idx_assignments_deleted_at" ON "public"."assignments" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_assignments_deleted_at" ON "public"."assignments" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
 
 
 
@@ -1071,11 +1110,11 @@ COMMENT ON INDEX "public"."idx_assignments_deleted_at" IS 'Partial index for eff
 
 
 
-CREATE INDEX "idx_assignments_user_created" ON "public"."assignments" USING "btree" ("user_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_assignments_user_created" ON "public"."assignments" USING "btree" ("user_id", "created_at" DESC);
 
 
 
-CREATE INDEX "idx_assignments_user_due_date" ON "public"."assignments" USING "btree" ("user_id", "due_date");
+CREATE INDEX IF NOT EXISTS "idx_assignments_user_due_date" ON "public"."assignments" USING "btree" ("user_id", "due_date");
 
 
 
@@ -1083,11 +1122,11 @@ COMMENT ON INDEX "public"."idx_assignments_user_due_date" IS 'Improves performan
 
 
 
-CREATE INDEX "idx_courses_user_created" ON "public"."courses" USING "btree" ("user_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_courses_user_created" ON "public"."courses" USING "btree" ("user_id", "created_at" DESC);
 
 
 
-CREATE INDEX "idx_lectures_deleted_at" ON "public"."lectures" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_lectures_deleted_at" ON "public"."lectures" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
 
 
 
@@ -1095,11 +1134,11 @@ COMMENT ON INDEX "public"."idx_lectures_deleted_at" IS 'Partial index for effici
 
 
 
-CREATE INDEX "idx_lectures_user_created" ON "public"."lectures" USING "btree" ("user_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_lectures_user_created" ON "public"."lectures" USING "btree" ("user_id", "created_at" DESC);
 
 
 
-CREATE INDEX "idx_lectures_user_start_time" ON "public"."lectures" USING "btree" ("user_id", "start_time");
+CREATE INDEX IF NOT EXISTS "idx_lectures_user_start_time" ON "public"."lectures" USING "btree" ("user_id", "start_time");
 
 
 
@@ -1107,11 +1146,11 @@ COMMENT ON INDEX "public"."idx_lectures_user_start_time" IS 'Improves performanc
 
 
 
-CREATE INDEX "idx_reminders_assignment_id" ON "public"."reminders" USING "btree" ("assignment_id");
+CREATE INDEX IF NOT EXISTS "idx_reminders_assignment_id" ON "public"."reminders" USING "btree" ("assignment_id");
 
 
 
-CREATE INDEX "idx_reminders_completed_created_at" ON "public"."reminders" USING "btree" ("completed", "created_at") WHERE ("completed" = true);
+CREATE INDEX IF NOT EXISTS "idx_reminders_completed_created_at" ON "public"."reminders" USING "btree" ("completed", "created_at") WHERE ("completed" = true);
 
 
 
@@ -1119,23 +1158,23 @@ COMMENT ON INDEX "public"."idx_reminders_completed_created_at" IS 'Partial compo
 
 
 
-CREATE INDEX "idx_reminders_lecture_id" ON "public"."reminders" USING "btree" ("lecture_id");
+CREATE INDEX IF NOT EXISTS "idx_reminders_lecture_id" ON "public"."reminders" USING "btree" ("lecture_id");
 
 
 
-CREATE INDEX "idx_reminders_reminder_time" ON "public"."reminders" USING "btree" ("reminder_time");
+CREATE INDEX IF NOT EXISTS "idx_reminders_reminder_time" ON "public"."reminders" USING "btree" ("reminder_time");
 
 
 
-CREATE INDEX "idx_reminders_user_id" ON "public"."reminders" USING "btree" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_reminders_user_id" ON "public"."reminders" USING "btree" ("user_id");
 
 
 
-CREATE INDEX "idx_streaks_user_id" ON "public"."streaks" USING "btree" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_streaks_user_id" ON "public"."streaks" USING "btree" ("user_id");
 
 
 
-CREATE INDEX "idx_study_sessions_deleted_at" ON "public"."study_sessions" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
+CREATE INDEX IF NOT EXISTS "idx_study_sessions_deleted_at" ON "public"."study_sessions" USING "btree" ("deleted_at") WHERE ("deleted_at" IS NOT NULL);
 
 
 
@@ -1143,11 +1182,11 @@ COMMENT ON INDEX "public"."idx_study_sessions_deleted_at" IS 'Partial index for 
 
 
 
-CREATE INDEX "idx_study_sessions_user_created" ON "public"."study_sessions" USING "btree" ("user_id", "created_at" DESC);
+CREATE INDEX IF NOT EXISTS "idx_study_sessions_user_created" ON "public"."study_sessions" USING "btree" ("user_id", "created_at" DESC);
 
 
 
-CREATE INDEX "idx_study_sessions_user_session_date" ON "public"."study_sessions" USING "btree" ("user_id", "session_date");
+CREATE INDEX IF NOT EXISTS "idx_study_sessions_user_session_date" ON "public"."study_sessions" USING "btree" ("user_id", "session_date");
 
 
 
@@ -1155,287 +1194,257 @@ COMMENT ON INDEX "public"."idx_study_sessions_user_session_date" IS 'Improves pe
 
 
 
-CREATE INDEX "idx_tasks_events_date" ON "public"."tasks_events" USING "btree" ("due_date");
+CREATE INDEX IF NOT EXISTS "idx_tasks_events_date" ON "public"."tasks_events" USING "btree" ("due_date");
 
 
 
-CREATE INDEX "idx_tasks_events_user_id" ON "public"."tasks_events" USING "btree" ("user_id");
+CREATE INDEX IF NOT EXISTS "idx_tasks_events_user_id" ON "public"."tasks_events" USING "btree" ("user_id");
 
 
 
-CREATE INDEX "idx_users_account_status" ON "public"."users" USING "btree" ("account_status");
+CREATE INDEX IF NOT EXISTS "idx_users_account_status" ON "public"."users" USING "btree" ("account_status");
 
 
 
-CREATE INDEX "idx_users_date_of_birth" ON "public"."users" USING "btree" ("date_of_birth");
+CREATE INDEX IF NOT EXISTS "idx_users_date_of_birth" ON "public"."users" USING "btree" ("date_of_birth");
 
 
 
-CREATE INDEX "idx_users_deleted_at" ON "public"."users" USING "btree" ("deleted_at");
+CREATE INDEX IF NOT EXISTS "idx_users_deleted_at" ON "public"."users" USING "btree" ("deleted_at");
 
 
 
-CREATE INDEX "idx_users_deletion_scheduled_at" ON "public"."users" USING "btree" ("deletion_scheduled_at");
+CREATE INDEX IF NOT EXISTS "idx_users_deletion_scheduled_at" ON "public"."users" USING "btree" ("deletion_scheduled_at");
 
 
 
-CREATE INDEX "idx_users_marketing_opt_in" ON "public"."users" USING "btree" ("marketing_opt_in");
+CREATE INDEX IF NOT EXISTS "idx_users_marketing_opt_in" ON "public"."users" USING "btree" ("marketing_opt_in");
 
 
 
-CREATE INDEX "idx_users_subscription_expires" ON "public"."users" USING "btree" ("subscription_expires_at");
+CREATE INDEX IF NOT EXISTS "idx_users_subscription_expires" ON "public"."users" USING "btree" ("subscription_expires_at");
 
 
 
-CREATE INDEX "idx_users_subscription_tier" ON "public"."users" USING "btree" ("subscription_tier");
+CREATE INDEX IF NOT EXISTS "idx_users_subscription_tier" ON "public"."users" USING "btree" ("subscription_tier");
 
 
 
-CREATE INDEX "idx_users_suspension_end_date" ON "public"."users" USING "btree" ("suspension_end_date");
+CREATE INDEX IF NOT EXISTS "idx_users_suspension_end_date" ON "public"."users" USING "btree" ("suspension_end_date");
 
 
 
-ALTER TABLE ONLY "public"."admin_actions"
-    ADD CONSTRAINT "admin_actions_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."users"("id");
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'admin_actions_admin_id_fkey' AND conrelid = 'public.admin_actions'::regclass) THEN
+    ALTER TABLE ONLY "public"."admin_actions" ADD CONSTRAINT "admin_actions_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."users"("id");
+  END IF;
+END $$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'admin_actions_target_user_id_fkey' AND conrelid = 'public.admin_actions'::regclass) THEN
+    ALTER TABLE ONLY "public"."admin_actions" ADD CONSTRAINT "admin_actions_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "public"."users"("id");
+  END IF;
+END $$;
 
 
-ALTER TABLE ONLY "public"."admin_actions"
-    ADD CONSTRAINT "admin_actions_target_user_id_fkey" FOREIGN KEY ("target_user_id") REFERENCES "public"."users"("id");
 
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'assignments_course_id_fkey' AND conrelid = 'public.assignments'::regclass) THEN ALTER TABLE ONLY "public"."assignments" ADD CONSTRAINT "assignments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'assignments_user_id_fkey' AND conrelid = 'public.assignments'::regclass) THEN ALTER TABLE ONLY "public"."assignments" ADD CONSTRAINT "assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'courses_user_id_fkey' AND conrelid = 'public.courses'::regclass) THEN ALTER TABLE ONLY "public"."courses" ADD CONSTRAINT "courses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lectures_course_id_fkey' AND conrelid = 'public.lectures'::regclass) THEN ALTER TABLE ONLY "public"."lectures" ADD CONSTRAINT "lectures_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lectures_user_id_fkey' AND conrelid = 'public.lectures'::regclass) THEN ALTER TABLE ONLY "public"."lectures" ADD CONSTRAINT "lectures_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'notification_preferences_user_id_fkey' AND conrelid = 'public.notification_preferences'::regclass) THEN ALTER TABLE ONLY "public"."notification_preferences" ADD CONSTRAINT "notification_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_id_fkey' AND conrelid = 'public.profiles'::regclass) THEN ALTER TABLE ONLY "public"."profiles" ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reminders_assignment_id_fkey' AND conrelid = 'public.reminders'::regclass) THEN ALTER TABLE ONLY "public"."reminders" ADD CONSTRAINT "reminders_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignments"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reminders_lecture_id_fkey' AND conrelid = 'public.reminders'::regclass) THEN ALTER TABLE ONLY "public"."reminders" ADD CONSTRAINT "reminders_lecture_id_fkey" FOREIGN KEY ("lecture_id") REFERENCES "public"."lectures"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reminders_session_id_fkey' AND conrelid = 'public.reminders'::regclass) THEN ALTER TABLE ONLY "public"."reminders" ADD CONSTRAINT "reminders_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reminders_user_id_fkey' AND conrelid = 'public.reminders'::regclass) THEN ALTER TABLE ONLY "public"."reminders" ADD CONSTRAINT "reminders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'streaks_user_id_fkey' AND conrelid = 'public.streaks'::regclass) THEN ALTER TABLE ONLY "public"."streaks" ADD CONSTRAINT "streaks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'study_sessions_course_id_fkey' AND conrelid = 'public.study_sessions'::regclass) THEN ALTER TABLE ONLY "public"."study_sessions" ADD CONSTRAINT "study_sessions_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'study_sessions_user_id_fkey' AND conrelid = 'public.study_sessions'::regclass) THEN ALTER TABLE ONLY "public"."study_sessions" ADD CONSTRAINT "study_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tasks_events_user_id_fkey' AND conrelid = 'public.tasks_events'::regclass) THEN ALTER TABLE ONLY "public"."tasks_events" ADD CONSTRAINT "tasks_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'user_devices_user_id_fkey' AND conrelid = 'public.user_devices'::regclass) THEN ALTER TABLE ONLY "public"."user_devices" ADD CONSTRAINT "user_devices_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE; END IF; END $$;
+DO $$ BEGIN IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_id_fkey' AND conrelid = 'public.users'::regclass) THEN ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id"); END IF; END $$;
 
 
-ALTER TABLE ONLY "public"."assignments"
-    ADD CONSTRAINT "assignments_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE;
 
-
-
-ALTER TABLE ONLY "public"."assignments"
-    ADD CONSTRAINT "assignments_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."courses"
-    ADD CONSTRAINT "courses_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."lectures"
-    ADD CONSTRAINT "lectures_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."lectures"
-    ADD CONSTRAINT "lectures_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."notification_preferences"
-    ADD CONSTRAINT "notification_preferences_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."profiles"
-    ADD CONSTRAINT "profiles_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_assignment_id_fkey" FOREIGN KEY ("assignment_id") REFERENCES "public"."assignments"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_lecture_id_fkey" FOREIGN KEY ("lecture_id") REFERENCES "public"."lectures"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_session_id_fkey" FOREIGN KEY ("session_id") REFERENCES "public"."study_sessions"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."reminders"
-    ADD CONSTRAINT "reminders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."streaks"
-    ADD CONSTRAINT "streaks_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."study_sessions"
-    ADD CONSTRAINT "study_sessions_course_id_fkey" FOREIGN KEY ("course_id") REFERENCES "public"."courses"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."study_sessions"
-    ADD CONSTRAINT "study_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."tasks_events"
-    ADD CONSTRAINT "tasks_events_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."user_devices"
-    ADD CONSTRAINT "user_devices_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY "public"."users"
-    ADD CONSTRAINT "users_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id");
-
-
-
+DROP POLICY IF EXISTS "Admins can insert admin actions" ON "public"."admin_actions";
 CREATE POLICY "Admins can insert admin actions" ON "public"."admin_actions" FOR INSERT WITH CHECK ((( SELECT "users"."role"
    FROM "public"."users"
   WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
 
 
 
+DROP POLICY IF EXISTS "Admins can view all admin actions" ON "public"."admin_actions";
 CREATE POLICY "Admins can view all admin actions" ON "public"."admin_actions" FOR SELECT USING ((( SELECT "users"."role"
    FROM "public"."users"
   WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text"));
 
 
 
+DROP POLICY IF EXISTS "Authenticated users can read SRS schedules" ON "public"."srs_schedules";
 CREATE POLICY "Authenticated users can read SRS schedules" ON "public"."srs_schedules" FOR SELECT TO "authenticated" USING (true);
 
 
 
-CREATE POLICY "Users can delete their own accessible courses" ON "public"."courses" FOR DELETE USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id"
-   FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
+DROP POLICY IF EXISTS "Users can delete their own accessible courses" ON "public"."courses";
+CREATE POLICY "Users can delete their own accessible courses" ON "public"."courses" FOR DELETE USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id" FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
 
 
 
+DROP POLICY IF EXISTS "Users can delete their own active assignments" ON "public"."assignments";
 CREATE POLICY "Users can delete their own active assignments" ON "public"."assignments" FOR DELETE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can delete their own active lectures" ON "public"."lectures";
 CREATE POLICY "Users can delete their own active lectures" ON "public"."lectures" FOR DELETE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can delete their own active study sessions" ON "public"."study_sessions";
 CREATE POLICY "Users can delete their own active study sessions" ON "public"."study_sessions" FOR DELETE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can insert own profile" ON "public"."users";
 CREATE POLICY "Users can insert own profile" ON "public"."users" FOR INSERT WITH CHECK (("auth"."uid"() = "id"));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own assignments" ON "public"."assignments";
 CREATE POLICY "Users can insert their own assignments" ON "public"."assignments" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."can_create_task"("auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own courses" ON "public"."courses";
 CREATE POLICY "Users can insert their own courses" ON "public"."courses" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own lectures" ON "public"."lectures";
 CREATE POLICY "Users can insert their own lectures" ON "public"."lectures" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."can_create_task"("auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own notification preferences" ON "public"."notification_preferences";
 CREATE POLICY "Users can insert their own notification preferences" ON "public"."notification_preferences" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own streaks" ON "public"."streaks";
 CREATE POLICY "Users can insert their own streaks" ON "public"."streaks" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can insert their own study sessions" ON "public"."study_sessions";
 CREATE POLICY "Users can insert their own study sessions" ON "public"."study_sessions" FOR INSERT WITH CHECK ((("auth"."uid"() = "user_id") AND "public"."can_create_task"("auth"."uid"())));
 
 
 
+DROP POLICY IF EXISTS "Users can manage own reminders" ON "public"."reminders";
 CREATE POLICY "Users can manage own reminders" ON "public"."reminders" USING (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can manage own streaks" ON "public"."streaks";
 CREATE POLICY "Users can manage own streaks" ON "public"."streaks" USING (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can manage own tasks" ON "public"."tasks_events";
 CREATE POLICY "Users can manage own tasks" ON "public"."tasks_events" USING (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Users can update their own accessible courses" ON "public"."courses" FOR UPDATE USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id"
-   FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
+DROP POLICY IF EXISTS "Users can update their own accessible courses" ON "public"."courses";
+CREATE POLICY "Users can update their own accessible courses" ON "public"."courses" FOR UPDATE USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id" FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own active assignments" ON "public"."assignments";
 CREATE POLICY "Users can update their own active assignments" ON "public"."assignments" FOR UPDATE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own active lectures" ON "public"."lectures";
 CREATE POLICY "Users can update their own active lectures" ON "public"."lectures" FOR UPDATE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own active study sessions" ON "public"."study_sessions";
 CREATE POLICY "Users can update their own active study sessions" ON "public"."study_sessions" FOR UPDATE USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own lectures" ON "public"."lectures";
 CREATE POLICY "Users can update their own lectures" ON "public"."lectures" FOR UPDATE USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own notification preferences" ON "public"."notification_preferences";
 CREATE POLICY "Users can update their own notification preferences" ON "public"."notification_preferences" FOR UPDATE USING (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own profile." ON "public"."profiles";
 CREATE POLICY "Users can update their own profile." ON "public"."profiles" FOR UPDATE USING (("auth"."uid"() = "id")) WITH CHECK (("auth"."uid"() = "id"));
 
 
 
+DROP POLICY IF EXISTS "Users can update their own streaks" ON "public"."streaks";
 CREATE POLICY "Users can update their own streaks" ON "public"."streaks" FOR UPDATE USING (("auth"."uid"() = "user_id"));
 
 
 
-CREATE POLICY "Users can view courses based on their role" ON "public"."courses" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (( SELECT "users"."role"
-   FROM "public"."users"
-  WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text")));
+DROP POLICY IF EXISTS "Users can view courses based on their role" ON "public"."courses";
+CREATE POLICY "Users can view courses based on their role" ON "public"."courses" FOR SELECT USING ((("auth"."uid"() = "user_id") OR (( SELECT "users"."role" FROM "public"."users" WHERE ("users"."id" = "auth"."uid"())) = 'admin'::"text")));
 
 
 
+DROP POLICY IF EXISTS "Users can view own profile" ON "public"."users";
 CREATE POLICY "Users can view own profile" ON "public"."users" USING (("auth"."uid"() = "id"));
 
 
 
-CREATE POLICY "Users can view their own accessible assignments" ON "public"."assignments" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id"
-   FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'assignments'::"text", 15) "get_accessible_item_ids"("id")))));
+DROP POLICY IF EXISTS "Users can view their own accessible assignments" ON "public"."assignments";
+CREATE POLICY "Users can view their own accessible assignments" ON "public"."assignments" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id" FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'assignments'::"text", 15) "get_accessible_item_ids"("id")))));
 
 
 
-CREATE POLICY "Users can view their own accessible courses" ON "public"."courses" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id"
-   FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
+DROP POLICY IF EXISTS "Users can view their own accessible courses" ON "public"."courses";
+CREATE POLICY "Users can view their own accessible courses" ON "public"."courses" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("id" IN ( SELECT "get_accessible_item_ids"."id" FROM "public"."get_accessible_item_ids"("auth"."uid"(), 'courses'::"text", 2) "get_accessible_item_ids"("id")))));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own active assignments" ON "public"."assignments";
 CREATE POLICY "Users can view their own active assignments" ON "public"."assignments" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own active lectures" ON "public"."lectures";
 CREATE POLICY "Users can view their own active lectures" ON "public"."lectures" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own active study sessions" ON "public"."study_sessions";
 CREATE POLICY "Users can view their own active study sessions" ON "public"."study_sessions" FOR SELECT USING ((("auth"."uid"() = "user_id") AND ("deleted_at" IS NULL)));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own notification preferences" ON "public"."notification_preferences";
 CREATE POLICY "Users can view their own notification preferences" ON "public"."notification_preferences" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own profile." ON "public"."profiles";
 CREATE POLICY "Users can view their own profile." ON "public"."profiles" FOR SELECT USING (("auth"."uid"() = "id"));
 
 
 
+DROP POLICY IF EXISTS "Users can view their own streaks" ON "public"."streaks";
 CREATE POLICY "Users can view their own streaks" ON "public"."streaks" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 

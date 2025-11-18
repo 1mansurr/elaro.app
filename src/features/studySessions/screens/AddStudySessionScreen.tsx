@@ -25,7 +25,6 @@ import {
   Button,
   Input,
   ReminderSelector,
-  GuestAuthModal,
 } from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
@@ -114,7 +113,6 @@ const AddStudySessionScreen = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
 
@@ -319,7 +317,15 @@ const AddStudySessionScreen = () => {
         'Task Saved!',
         'Your task is almost saved! Sign up to complete it.',
       );
-      setShowGuestAuthModal(true);
+      navigation.navigate('Auth', {
+        mode: 'signup',
+        onAuthSuccess: async () => {
+          const pendingTask = await getPendingTask();
+          if (pendingTask && pendingTask.taskType === 'study_session') {
+            navigation.goBack();
+          }
+        },
+      } as any);
       return;
     }
 
@@ -335,13 +341,58 @@ const AddStudySessionScreen = () => {
         reminders,
       };
 
+      const isEditing = taskToEdit && taskToEdit.id;
+
+      if (isEditing) {
+        // Check if task has temp ID and resolve it
+        const { isTempId, resolveTaskId } = await import('@/utils/taskCache');
+
+        if (isTempId(taskToEdit.id)) {
+          const realId = await resolveTaskId(taskToEdit.id, 'study_session');
+
+          if (realId === taskToEdit.id) {
+            // Still a temp ID - task hasn't synced yet
+            Alert.alert(
+              'Please Wait',
+              'This task is still syncing. Please wait a moment before editing, or go online to sync first.',
+            );
+            setIsSaving(false);
+            return;
+          }
+
+          // Update taskToEdit with real ID
+          taskToEdit.id = realId;
+        }
+
+        // Update existing study session
+        // Cancel old notifications before updating
+        if (taskToEdit.id) {
+          try {
+            await notificationService.cancelItemReminders(
+              taskToEdit.id,
+              'study_session',
+            );
+          } catch (notifError) {
+            console.warn('Failed to cancel old notifications:', notifError);
+            // Continue with update even if notification cancellation fails
+          }
+        }
+
+        await api.mutations.studySessions.update(
+          taskToEdit.id!,
+          taskData,
+          isOnline,
+          user?.id || '',
+        );
+      } else {
+        // Create new study session
       await api.mutations.studySessions.create(
         taskData,
         isOnline,
         user?.id || '',
       );
 
-      // Save as template if enabled
+        // Save as template if enabled (only for new tasks)
       if (saveAsTemplate && canSaveAsTemplate(taskData, 'study_session')) {
         try {
           await createTemplate.mutateAsync({
@@ -359,22 +410,33 @@ const AddStudySessionScreen = () => {
       if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
         await notificationService.registerForPushNotifications(session.user.id);
       }
+      }
 
-      // Invalidate queries
-      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      // Invalidate queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient, 'study_session');
 
       // Clear draft on successful save
       await clearDraft('study_session');
 
-      Alert.alert('Success', 'Study session created successfully!', [
+      Alert.alert(
+        'Success',
+        isEditing
+          ? 'Study session updated successfully!'
+          : 'Study session created successfully!',
+        [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
         },
-      ]);
+        ],
+      );
     } catch (error) {
-      console.error('Failed to create study session:', error);
+      const isEditing = taskToEdit && taskToEdit.id;
+      console.error(
+        `Failed to ${isEditing ? 'update' : 'create'} study session:`,
+        error,
+      );
       const errorTitle = getErrorTitle(error);
       const errorMessage = mapErrorCodeToMessage(error);
       Alert.alert(errorTitle, errorMessage);
@@ -383,18 +445,6 @@ const AddStudySessionScreen = () => {
     }
   };
 
-  const handleGuestAuth = async (mode: 'signup' | 'signin') => {
-    setShowGuestAuthModal(false);
-    navigation.navigate('Auth', {
-      mode,
-      onAuthSuccess: async () => {
-        const pendingTask = await getPendingTask();
-        if (pendingTask && pendingTask.taskType === 'study_session') {
-          navigation.goBack();
-        }
-      },
-    } as any);
-  };
 
   return (
     <View style={styles.container}>
@@ -659,15 +709,6 @@ const AddStudySessionScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Guest Auth Modal */}
-      <GuestAuthModal
-        isVisible={showGuestAuthModal}
-        onClose={() => setShowGuestAuthModal(false)}
-        onSignUp={() => handleGuestAuth('signup')}
-        onSignIn={() => handleGuestAuth('signin')}
-        actionType="Study Session"
-      />
 
       {/* Template Browser Modal */}
       <TemplateBrowserModal

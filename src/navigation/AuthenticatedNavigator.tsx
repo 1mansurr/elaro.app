@@ -18,6 +18,8 @@ import {
 // Critical screens - loaded immediately
 import LaunchScreen from '@/shared/screens/LaunchScreen';
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
+import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScreen';
+import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import { AccountScreen } from '@/features/user-profile/screens/AccountScreen';
 import DraftsScreen from '@/features/dashboard/screens/DraftsScreen';
@@ -397,13 +399,7 @@ export const AuthenticatedNavigator: React.FC = () => {
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Stack.Navigator screenOptions={sharedScreenOptions}>
-        {/* Always show Launch screen */}
-        <Stack.Screen
-          name="Launch"
-          component={LaunchScreen}
-          options={SCREEN_CONFIGS.Launch}
-        />
-
+        {/* Launch screen removed - AppNavigator handles initial routing */}
         {/* Main app screens */}
         {renderScreens(mainScreens)}
 
@@ -414,6 +410,26 @@ export const AuthenticatedNavigator: React.FC = () => {
             name="Auth"
             component={AuthScreen}
             options={SCREEN_CONFIGS.Auth}
+          />
+
+          {/* Forgot Password screen */}
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+            options={{
+              presentation: 'modal' as const,
+              headerShown: false,
+            }}
+          />
+
+          {/* Reset Password screen */}
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
+            options={{
+              presentation: 'modal' as const,
+              headerShown: false,
+            }}
           />
 
           {Object.entries(modalFlows)

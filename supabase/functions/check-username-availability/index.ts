@@ -7,12 +7,20 @@ import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { CheckUsernameSchema } from '../_shared/schemas/user.ts';
+import { corsHeaders } from '../_shared/cors.ts';
+import { addVersionHeaders } from '../_shared/versioning.ts';
 
 async function handleCheckUsername(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const { username } = body;
+  const responseHeaders = {
+    ...corsHeaders,
+    ...addVersionHeaders(),
+    'Content-Type': 'application/json',
+  };
 
+  try {
   await logger.info(
     'Checking username availability',
     { user_id: user.id, username },
@@ -41,7 +49,32 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
     traceContext,
   );
 
-  return { isAvailable };
+    return {
+      available: isAvailable,
+      ...(isAvailable ? {} : { message: 'Username is taken.' }),
+    };
+  } catch (error) {
+    await logger.error(
+      'Username availability check failed',
+      {
+        user_id: user.id,
+        username,
+        error:
+          error instanceof Error
+            ? { message: error.message, stack: error.stack }
+            : { message: String(error) },
+      },
+      traceContext,
+    );
+
+    return new Response(
+      JSON.stringify({ error: 'An unexpected error occurred.' }),
+      {
+        status: 500,
+        headers: responseHeaders,
+      },
+    );
+  }
 }
 
 serve(

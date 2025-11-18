@@ -1,9 +1,12 @@
+/// <reference path="../global.d.ts" />
+/// <reference path="../supabase-js.d.ts" />
 import {
   createClient,
-  SupabaseClient,
+  type SupabaseClient,
+  type User,
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+// @ts-ignore - ESM imports are valid in Deno runtime
+import { z } from 'zod';
 import { corsHeaders } from './cors.ts';
 import {
   checkRateLimit,
@@ -179,10 +182,13 @@ export function createAuthenticatedHandler(
 
     // Create metrics collector
     const metrics = createMetricsCollector(options.rateLimitName);
-    
+
     // Track function invocation start time
     const startTime = performance.now();
     let userId: string | undefined;
+    // Declare user and supabaseClient outside try block so they're accessible in catch
+    let user: User | null = null;
+    let supabaseClient: SupabaseClient | null = null;
 
     if (req.method === 'OPTIONS') {
       const responseHeaders = new Headers(corsHeaders);
@@ -214,7 +220,7 @@ export function createAuthenticatedHandler(
       }
 
       // 1. Authenticate user
-      const supabaseClient = createClient(
+      supabaseClient = createClient(
         Deno.env.get('SUPABASE_URL') ?? '',
         Deno.env.get('SUPABASE_ANON_KEY') ?? '',
         {
@@ -224,9 +230,10 @@ export function createAuthenticatedHandler(
         },
       );
       const {
-        data: { user },
+        data: { user: authUser },
         error: authError,
       } = await supabaseClient.auth.getUser();
+      user = authUser;
       if (authError || !user) {
         throw new AppError(
           ERROR_MESSAGES.UNAUTHORIZED,
@@ -396,7 +403,7 @@ export function createAuthenticatedHandler(
       }
 
       metrics.incrementStatusCode(statusCode);
-      
+
       // Track function invocation (async, don't await)
       const durationMs = Math.round(performance.now() - startTime);
       recordInvocation(supabaseClient, {
@@ -408,12 +415,16 @@ export function createAuthenticatedHandler(
           method: req.method,
           api_version: requestedVersion,
         },
-      }).catch((err) => {
+      }).catch(err => {
         // Non-critical: if tracking fails, log but don't fail the request
-        logger.warn('Failed to record function invocation', {
-          error: err instanceof Error ? err.message : String(err),
-          function_name: options.rateLimitName,
-        }, traceContext);
+        logger.warn(
+          'Failed to record function invocation',
+          {
+            error: err instanceof Error ? err.message : String(err),
+            function_name: options.rateLimitName,
+          },
+          traceContext,
+        );
       });
 
       // Log structured response with PII redaction and tracing
@@ -463,8 +474,9 @@ export function createAuthenticatedHandler(
       // Note: supabaseClient may not be available if auth failed
       const durationMs = Math.round(performance.now() - startTime);
       const statusCode = error instanceof AppError ? error.statusCode : 500;
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       // Try to get supabaseClient for tracking (may not exist if auth failed)
       let trackingClient: any;
       try {
@@ -475,7 +487,7 @@ export function createAuthenticatedHandler(
       } catch {
         // Can't track if we can't create client
       }
-      
+
       if (trackingClient) {
         recordInvocation(trackingClient, {
           functionName: options.rateLimitName,
@@ -484,13 +496,18 @@ export function createAuthenticatedHandler(
           errorMessage,
           userId,
           metadata: {
-            error_type: error instanceof AppError ? 'AppError' : error instanceof Error ? error.constructor.name : 'Unknown',
+            error_type:
+              error instanceof AppError
+                ? 'AppError'
+                : error instanceof Error
+                  ? error.constructor.name
+                  : 'Unknown',
           },
         }).catch(() => {
           // Non-critical: if tracking fails, ignore
         });
       }
-      
+
       // 10. Record error metrics and abuse violations
       if (error instanceof AppError) {
         metrics.recordError('AppError', error.message);
@@ -551,7 +568,9 @@ export function createAuthenticatedHandler(
         {
           function: options.rateLimitName,
           traceId: traceContext.traceId,
+          metadata: {
           spanId: traceContext.spanId,
+          },
         },
       );
 

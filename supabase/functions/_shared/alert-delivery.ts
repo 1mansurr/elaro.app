@@ -1,6 +1,6 @@
 /**
  * Alert Delivery Service
- * 
+ *
  * Delivers quota and budget alerts via multiple channels
  */
 
@@ -24,11 +24,11 @@ async function sendEmailAlert(alert: Alert): Promise<boolean> {
   try {
     // Get admin email from environment or database
     const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@elaro.app';
-    
+
     // Use Supabase Edge Function to send email
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
+
     if (supabaseUrl && supabaseAnonKey) {
       try {
         const emailResponse = await fetch(
@@ -216,4 +216,3 @@ export async function deliverAlert(
 
   return results;
 }
-

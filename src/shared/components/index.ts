@@ -33,7 +33,6 @@ export { default as FeatureErrorBoundary } from './FeatureErrorBoundary';
 export { default as ErrorBoundary } from './ErrorBoundary';
 export { default as TaskDetailModal } from './TaskDetailModal';
 export { default as TaskDetailSheet } from './TaskDetailSheet';
-export { default as GuestAuthModal } from './GuestAuthModal';
 export { QueryStateWrapper } from './QueryStateWrapper';
 export { EmptyState } from './EmptyState';
 export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';

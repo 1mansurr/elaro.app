@@ -7,15 +7,31 @@
  */
 
 // @deno-types="https://deno.land/x/sentry/types/index.d.ts"
-import * as sentry from 'https://deno.land/x/sentry@7.119.3/index.mjs';
+import * as sentryModule from 'sentry';
+
+type SentryModule = typeof sentryModule & {
+  init?: typeof sentryModule.init;
+};
+
+const sentry = sentryModule as SentryModule;
 
 const SENTRY_DSN = Deno.env.get('SENTRY_DSN');
 const ENVIRONMENT = Deno.env.get('ENVIRONMENT') || 'production';
 const RELEASE_VERSION = Deno.env.get('RELEASE_VERSION') || 'unknown';
 
-// Initialize Sentry only once (safe to call multiple times)
-if (!sentry.getCurrentHub().getClient() && SENTRY_DSN) {
-  sentry.init({
+const hasInit = typeof sentry.init === 'function';
+const hasGetCurrentHub = typeof sentry.getCurrentHub === 'function';
+
+const SENTRY_SUPPORTED =
+  !!SENTRY_DSN &&
+  hasInit &&
+  hasGetCurrentHub &&
+  typeof sentry.setUser === 'function' &&
+  typeof sentry.addBreadcrumb === 'function' &&
+  typeof sentry.captureException === 'function';
+
+if (SENTRY_SUPPORTED && !sentry.getCurrentHub().getClient()) {
+  sentry.init?.({
     dsn: SENTRY_DSN,
     environment: ENVIRONMENT,
     tracesSampleRate: parseFloat(
@@ -43,6 +59,10 @@ if (!sentry.getCurrentHub().getClient() && SENTRY_DSN) {
       return event;
     },
   });
+} else if (!SENTRY_SUPPORTED && SENTRY_DSN) {
+  console.warn(
+    'Sentry SDK not fully supported in this runtime; error tracking disabled.',
+  );
 }
 
 /**
@@ -69,6 +89,7 @@ export function setUserContext(
     subscriptionTier?: string;
   },
 ): void {
+  if (!SENTRY_SUPPORTED) return;
   sentry.setUser({
     id: hashString(userId), // Hash for privacy
     // Don't include email/username (PII)
@@ -85,6 +106,7 @@ export function addBreadcrumb(
   level: 'info' | 'warning' | 'error' | 'debug' = 'info',
   data?: Record<string, any>,
 ): void {
+  if (!SENTRY_SUPPORTED) return;
   sentry.addBreadcrumb({
     message,
     category,
@@ -131,6 +153,7 @@ function sanitizeBreadcrumbData(
  * Set custom context/tags
  */
 export function setContext(key: string, context: Record<string, any>): void {
+  if (!SENTRY_SUPPORTED) return;
   sentry.setContext(key, sanitizeBreadcrumbData(context));
 }
 
@@ -138,6 +161,7 @@ export function setContext(key: string, context: Record<string, any>): void {
  * Set tag
  */
 export function setTag(key: string, value: string): void {
+  if (!SENTRY_SUPPORTED) return;
   sentry.setTag(key, value);
 }
 
@@ -153,6 +177,9 @@ export function captureException(
     metadata?: Record<string, any>;
   },
 ): string {
+  if (!SENTRY_SUPPORTED) {
+    return 'sentry_disabled';
+  }
   // Add context
   if (context) {
     if (context.function) {
@@ -185,6 +212,9 @@ export function captureMessage(
     metadata?: Record<string, any>;
   },
 ): string {
+  if (!SENTRY_SUPPORTED) {
+    return 'sentry_disabled';
+  }
   // Add context
   if (context) {
     if (context.function) {
@@ -212,23 +242,28 @@ export function withSentry<T extends (...args: any[]) => Promise<any>>(
   functionName: string,
 ): T {
   return (async (...args: any[]) => {
+    if (SENTRY_SUPPORTED) {
     // Add breadcrumb for function start
     addBreadcrumb(`Starting ${functionName}`, 'function', 'info', {
       function: functionName,
       args_count: args.length,
     });
+    }
 
     try {
       const result = await fn(...args);
 
+      if (SENTRY_SUPPORTED) {
       // Add breadcrumb for success
       addBreadcrumb(`Completed ${functionName}`, 'function', 'info', {
         function: functionName,
         success: true,
       });
+      }
 
       return result;
     } catch (error) {
+      if (SENTRY_SUPPORTED) {
       // Capture exception with context
       captureException(
         error instanceof Error ? error : new Error(String(error)),
@@ -236,6 +271,7 @@ export function withSentry<T extends (...args: any[]) => Promise<any>>(
           function: functionName,
         },
       );
+      }
 
       throw error;
     }

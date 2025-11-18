@@ -6,8 +6,8 @@ This guide will help you get the ELARO application up and running for local deve
 
 ## Prerequisites
 
-- **Node.js**: v16 or higher
-- **npm**: v7 or higher
+- **Node.js**: v18 or higher (v20 recommended)
+- **npm**: v9 or higher
 - **Expo CLI**: Latest version
 - **Supabase CLI**: Latest version
 - **iOS Simulator** (for iOS development) or **Android Emulator** (for Android development)
@@ -115,11 +115,13 @@ src/
 ### Adding a New Feature
 
 1. **Create feature directory:**
+
    ```bash
    mkdir src/features/your-new-feature
    ```
 
 2. **Follow standard structure:**
+
    ```
    src/features/your-new-feature/
    ├── components/
@@ -234,4 +236,3 @@ If you encounter issues:
 2. Review troubleshooting section
 3. Check [Documentation Index](./docs/README.md)
 4. Contact the development team
-

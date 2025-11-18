@@ -29,7 +29,7 @@ A modern, intelligent study planning app designed to help students build better 
 
 ### Phase 3: Modal Animation Consistency ✅
 
-- **Standardized Animations**: All modals now use consistent 300ms animations
+- **Standardized Animations**: All modals use optimized durations (200-350ms) per modal type
 - **Backdrop Types**: Proper backdrop types per modal variant (blur for dialogs, opacity for sheets)
 - **Modal Variants**: Created `DialogModal`, `SheetModal`, `SimpleModal`, `FullScreenModal`
 - **100% Migration**: Eliminated all custom Modal implementations across the codebase
@@ -56,7 +56,7 @@ A modern, intelligent study planning app designed to help students build better 
 - **Simplified Input Component**: Grouped props with `config`, `state`, and `icons` objects
 - **Query State Wrapper**: Simplified loading/error/empty state handling
 - **Typography Token Enforcement**: ESLint rules prevent hardcoded typography values
-- **Animation Consistency**: All modals use standardized 300ms animations
+- **Animation Consistency**: All modals use optimized durations (200-350ms) per modal type
 
 ### User Experience Enhancements
 
@@ -78,7 +78,7 @@ A modern, intelligent study planning app designed to help students build better 
 
 ### Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v18 or higher, v20 recommended)
 - Expo CLI
 - iOS Simulator or Android Emulator
 
@@ -141,11 +141,11 @@ Comprehensive documentation is available in the [`docs/`](./docs/) directory:
 
 ### Tech Stack
 
-- **Frontend**: React Native with Expo
+- **Frontend**: React Native 0.74.5 with Expo SDK 51
 - **Backend**: Supabase (PostgreSQL + Auth + Real-time)
 - **Styling**: React Native StyleSheet with custom design system
 - **Navigation**: React Navigation v6
-- **State Management**: React Context + Hooks
+- **State Management**: React Query + React Context
 - **Animations**: React Native Animated API
 
 ### Project Structure

@@ -1,9 +1,9 @@
 /**
  * Check Policy Accessibility Function
- * 
+ *
  * Scheduled function that checks if Privacy Policy and Terms of Service URLs
  * are accessible. Logs errors to Sentry if URLs are unreachable.
- * 
+ *
  * Runs: Daily (via cron or scheduled trigger)
  */
 
@@ -29,7 +29,7 @@ interface UrlCheckResult {
 
 async function checkUrl(url: string, name: string): Promise<UrlCheckResult> {
   const checkedAt = new Date().toISOString();
-  
+
   try {
     const response = await fetch(url, {
       method: 'HEAD',
@@ -73,7 +73,7 @@ async function checkUrl(url: string, name: string): Promise<UrlCheckResult> {
       { traceId: 'policy-check' },
     );
 
-      // Note: Errors are logged via logger above, which will be picked up by monitoring
+    // Note: Errors are logged via logger above, which will be picked up by monitoring
 
     return {
       url,
@@ -91,11 +91,7 @@ serve(async (req: Request) => {
   }
 
   const traceContext = extractTraceContext(req);
-  await logger.info(
-    'Starting policy accessibility check',
-    {},
-    traceContext,
-  );
+  await logger.info('Starting policy accessibility check', {}, traceContext);
 
   try {
     // Check both URLs in parallel
@@ -115,8 +111,10 @@ serve(async (req: Request) => {
       },
       summary: {
         totalChecked: 2,
-        accessible: (termsResult.accessible ? 1 : 0) + (privacyResult.accessible ? 1 : 0),
-        inaccessible: (termsResult.accessible ? 0 : 1) + (privacyResult.accessible ? 0 : 1),
+        accessible:
+          (termsResult.accessible ? 1 : 0) + (privacyResult.accessible ? 1 : 0),
+        inaccessible:
+          (termsResult.accessible ? 0 : 1) + (privacyResult.accessible ? 0 : 1),
       },
     };
 
@@ -157,4 +155,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

@@ -25,7 +25,6 @@ import {
   Button,
   Input,
   ReminderSelector,
-  GuestAuthModal,
 } from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
@@ -115,7 +114,6 @@ const AddAssignmentScreen = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [templateName, setTemplateName] = useState('');
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
@@ -367,7 +365,15 @@ const AddAssignmentScreen = () => {
         'Task Saved!',
         'Your task is almost saved! Sign up to complete it.',
       );
-      setShowGuestAuthModal(true);
+      navigation.navigate('Auth', {
+        mode: 'signup',
+        onAuthSuccess: async () => {
+          const pendingTask = await getPendingTask();
+          if (pendingTask && pendingTask.taskType === 'assignment') {
+            navigation.goBack();
+          }
+        },
+      } as any);
       return;
     }
 
@@ -385,13 +391,58 @@ const AddAssignmentScreen = () => {
         reminders,
       };
 
+      const isEditing = taskToEdit && taskToEdit.id;
+
+      if (isEditing) {
+        // Check if task has temp ID and resolve it
+        const { isTempId, resolveTaskId } = await import('@/utils/taskCache');
+
+        if (isTempId(taskToEdit.id)) {
+          const realId = await resolveTaskId(taskToEdit.id, 'assignment');
+
+          if (realId === taskToEdit.id) {
+            // Still a temp ID - task hasn't synced yet
+            Alert.alert(
+              'Please Wait',
+              'This task is still syncing. Please wait a moment before editing, or go online to sync first.',
+            );
+            setIsSaving(false);
+            return;
+          }
+
+          // Update taskToEdit with real ID
+          taskToEdit.id = realId;
+        }
+
+        // Update existing assignment
+        // Cancel old notifications before updating
+        if (taskToEdit.id) {
+          try {
+            await notificationService.cancelItemReminders(
+              taskToEdit.id,
+              'assignment',
+            );
+          } catch (notifError) {
+            console.warn('Failed to cancel old notifications:', notifError);
+            // Continue with update even if notification cancellation fails
+          }
+        }
+
+        await api.mutations.assignments.update(
+          taskToEdit.id!,
+          taskData,
+          isOnline,
+          user?.id || '',
+        );
+      } else {
+        // Create new assignment
       await api.mutations.assignments.create(
         taskData,
         isOnline,
         user?.id || '',
       );
 
-      // Save as template if enabled
+        // Save as template if enabled (only for new tasks)
       if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
         try {
           await createTemplate.mutateAsync({
@@ -409,22 +460,33 @@ const AddAssignmentScreen = () => {
       if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
         await notificationService.registerForPushNotifications(session.user.id);
       }
+      }
 
-      // Invalidate queries
-      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      // Invalidate queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient, 'assignment');
 
       // Clear draft on successful save
       await clearDraft('assignment');
 
-      Alert.alert('Success', 'Assignment created successfully!', [
+      Alert.alert(
+        'Success',
+        isEditing
+          ? 'Assignment updated successfully!'
+          : 'Assignment created successfully!',
+        [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
         },
-      ]);
+        ],
+      );
     } catch (error) {
-      console.error('Failed to create assignment:', error);
+      const isEditing = taskToEdit && taskToEdit.id;
+      console.error(
+        `Failed to ${isEditing ? 'update' : 'create'} assignment:`,
+        error,
+      );
       const errorTitle = getErrorTitle(error);
       const errorMessage = mapErrorCodeToMessage(error);
       Alert.alert(errorTitle, errorMessage);
@@ -433,20 +495,6 @@ const AddAssignmentScreen = () => {
     }
   };
 
-  const handleGuestAuth = async (mode: 'signup' | 'signin') => {
-    setShowGuestAuthModal(false);
-    navigation.navigate('Auth', {
-      mode,
-      onAuthSuccess: async () => {
-        // After auth, try to create the assignment from pending data
-        // const pendingTask = await getPendingTask();
-        // if (pendingTask && pendingTask.taskType === 'assignment') {
-        //   // Re-trigger save
-        //   navigation.goBack();
-        // }
-      },
-    } as any);
-  };
 
   return (
     <View style={styles.container}>
@@ -786,15 +834,6 @@ const AddAssignmentScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Guest Auth Modal */}
-      <GuestAuthModal
-        isVisible={showGuestAuthModal}
-        onClose={() => setShowGuestAuthModal(false)}
-        onSignUp={() => handleGuestAuth('signup')}
-        onSignIn={() => handleGuestAuth('signin')}
-        actionType="Assignment"
-      />
 
       {/* Save as Template Modal */}
       <Modal

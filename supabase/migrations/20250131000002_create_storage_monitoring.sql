@@ -26,9 +26,10 @@ CREATE TABLE IF NOT EXISTS storage_quota_usage (
 CREATE INDEX IF NOT EXISTS idx_storage_quota_type_period 
   ON storage_quota_usage(storage_type, period_start DESC);
 
-CREATE INDEX IF NOT EXISTS idx_storage_quota_current 
-  ON storage_quota_usage(storage_type, period_start DESC) 
-  WHERE period_start <= NOW() AND period_end >= NOW();
+-- Removed NOW() from WHERE clause because it is not immutable
+-- Filter by current time at query level instead of in the index
+CREATE INDEX IF NOT EXISTS idx_storage_quota_current
+  ON storage_quota_usage(storage_type, period_start DESC);
 
 -- ============================================================================
 -- STORAGE QUOTA ALERTS TABLE

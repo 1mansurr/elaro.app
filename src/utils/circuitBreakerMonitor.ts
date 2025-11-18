@@ -1,6 +1,6 @@
 /**
  * Circuit Breaker Monitoring Utility
- * 
+ *
  * Provides monitoring and alerting for circuit breaker states
  */
 
@@ -22,7 +22,7 @@ export function monitorCircuitBreakers() {
         `Supabase circuit breaker is OPEN after ${stats.failures} failures`,
         'error',
       );
-      
+
       errorTracking.trackEvent('circuit_breaker_open', {
         service: 'supabase',
         failures: stats.failures,
@@ -32,8 +32,10 @@ export function monitorCircuitBreakers() {
 
     // Log half-open state for monitoring
     if (stats.state === 'half-open') {
-      console.warn('⚠️ Supabase circuit breaker is HALF-OPEN (testing recovery)');
-      
+      console.warn(
+        '⚠️ Supabase circuit breaker is HALF-OPEN (testing recovery)',
+      );
+
       errorTracking.trackEvent('circuit_breaker_half_open', {
         service: 'supabase',
         successes: stats.successes,
@@ -59,7 +61,9 @@ export function startCircuitBreakerMonitoring(intervalMs: number = 30000) {
     monitorCircuitBreakers();
   }, intervalMs);
 
-  console.log(`✅ Circuit breaker monitoring started (interval: ${intervalMs}ms)`);
+  console.log(
+    `✅ Circuit breaker monitoring started (interval: ${intervalMs}ms)`,
+  );
 }
 
 /**
@@ -82,4 +86,3 @@ if (typeof setInterval !== 'undefined') {
     startCircuitBreakerMonitoring(30000); // Check every 30 seconds
   }, 5000); // Wait 5 seconds after app load
 }
-

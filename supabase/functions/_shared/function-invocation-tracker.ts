@@ -1,6 +1,6 @@
 /**
  * Edge Function Invocation Tracker
- * 
+ *
  * Tracks function invocations for monitoring and cost optimization
  */
 
@@ -52,14 +52,18 @@ export async function recordInvocation(
  */
 export async function checkHighFrequencyFunctions(
   supabaseClient: SupabaseClient,
-): Promise<Array<{
-  functionName: string;
-  invocationCount: number;
-  threshold: number;
-  alertNeeded: boolean;
-}>> {
+): Promise<
+  Array<{
+    functionName: string;
+    invocationCount: number;
+    threshold: number;
+    alertNeeded: boolean;
+  }>
+> {
   try {
-    const { data, error } = await supabaseClient.rpc('check_high_frequency_functions');
+    const { data, error } = await supabaseClient.rpc(
+      'check_high_frequency_functions',
+    );
 
     if (error) {
       await logger.error('Failed to check high frequency functions', {
@@ -87,15 +91,19 @@ export async function checkHighFrequencyFunctions(
  */
 export async function checkHighErrorRateFunctions(
   supabaseClient: SupabaseClient,
-): Promise<Array<{
-  functionName: string;
-  errorRate: number;
-  errorCount: number;
-  totalCount: number;
-  alertNeeded: boolean;
-}>> {
+): Promise<
+  Array<{
+    functionName: string;
+    errorRate: number;
+    errorCount: number;
+    totalCount: number;
+    alertNeeded: boolean;
+  }>
+> {
   try {
-    const { data, error } = await supabaseClient.rpc('check_high_error_rate_functions');
+    const { data, error } = await supabaseClient.rpc(
+      'check_high_error_rate_functions',
+    );
 
     if (error) {
       await logger.error('Failed to check high error rate functions', {
@@ -118,4 +126,3 @@ export async function checkHighErrorRateFunctions(
     return [];
   }
 }
-

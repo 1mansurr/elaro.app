@@ -219,10 +219,12 @@ export async function sendPushNotification(
   // Track quota usage for successful sends
   if (sentCount > 0) {
     await trackQuotaUsage(supabaseAdmin, 'expo_push', sentCount);
-    
+
     // Record cost for successful notifications
     try {
-      const { recordApiCost, DEFAULT_COSTS } = await import('./cost-tracker.ts');
+      const { recordApiCost, DEFAULT_COSTS } = await import(
+        './cost-tracker.ts'
+      );
       await recordApiCost(supabaseAdmin, {
         serviceName: 'expo_push',
         operationType: 'push_notification',

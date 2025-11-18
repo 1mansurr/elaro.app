@@ -67,7 +67,7 @@ import { useDebounce } from '@/hooks/useDebounce';
 test('debounces value changes', async () => {
   const { result, rerender } = renderHook(
     ({ value }) => useDebounce(value, 500),
-    { initialProps: { value: 'test' } }
+    { initialProps: { value: 'test' } },
   );
 
   rerender({ value: 'updated' });
@@ -104,7 +104,7 @@ import { AssignmentScreen } from '@/features/assignments';
 
 test('loads and displays assignments', async () => {
   const queryClient = new QueryClient();
-  
+
   render(
     <QueryClientProvider client={queryClient}>
       <AssignmentScreen />
@@ -136,12 +136,10 @@ test('user cannot access other users assignments', async () => {
     .single();
 
   // User 2 cannot see it
-  const { data: assignments } = await user2Client
-    .from('assignments')
-    .select();
+  const { data: assignments } = await user2Client.from('assignments').select();
 
   expect(assignments).not.toContainEqual(
-    expect.objectContaining({ id: assignment.id })
+    expect.objectContaining({ id: assignment.id }),
   );
 });
 ```
@@ -221,4 +219,3 @@ Coverage reports are generated in `coverage/` directory.
 - [React Native Testing Library](https://callstack.github.io/react-native-testing-library/)
 - [Jest Documentation](https://jestjs.io/docs/getting-started)
 - [Detox E2E Testing](https://wix.github.io/Detox/)
-

@@ -1,9 +1,9 @@
 /**
  * Monitor Edge Functions Function
- * 
+ *
  * Scheduled function that checks for high-frequency and high-error-rate functions
  * and creates alerts when thresholds are exceeded.
- * 
+ *
  * Runs: Daily (via cron or scheduled trigger)
  */
 
@@ -40,19 +40,25 @@ serve(async (req: Request) => {
     // Create alerts for high-frequency functions
     for (const func of highFrequency) {
       if (func.alertNeeded) {
-        const { error } = await supabaseAdmin.from('edge_function_alerts').insert({
-          function_name: func.functionName,
-          alert_type: 'high_frequency',
-          metric_value: func.invocationCount,
-          threshold_value: func.threshold,
-          message: `${func.functionName} has ${func.invocationCount} invocations today (threshold: ${func.threshold})`,
-        });
+        const { error } = await supabaseAdmin
+          .from('edge_function_alerts')
+          .insert({
+            function_name: func.functionName,
+            alert_type: 'high_frequency',
+            metric_value: func.invocationCount,
+            threshold_value: func.threshold,
+            message: `${func.functionName} has ${func.invocationCount} invocations today (threshold: ${func.threshold})`,
+          });
 
         if (error) {
-          await logger.error('Failed to create high-frequency alert', {
-            error: error.message,
-            function_name: func.functionName,
-          }, traceContext);
+          await logger.error(
+            'Failed to create high-frequency alert',
+            {
+              error: error.message,
+              function_name: func.functionName,
+            },
+            traceContext,
+          );
         }
       }
     }
@@ -60,19 +66,25 @@ serve(async (req: Request) => {
     // Create alerts for high error rate functions
     for (const func of highErrorRate) {
       if (func.alertNeeded) {
-        const { error } = await supabaseAdmin.from('edge_function_alerts').insert({
-          function_name: func.functionName,
-          alert_type: 'high_error_rate',
-          metric_value: func.errorRate,
-          threshold_value: 10, // 10% error rate threshold
-          message: `${func.functionName} has ${func.errorRate.toFixed(2)}% error rate (${func.errorCount}/${func.totalCount} errors)`,
-        });
+        const { error } = await supabaseAdmin
+          .from('edge_function_alerts')
+          .insert({
+            function_name: func.functionName,
+            alert_type: 'high_error_rate',
+            metric_value: func.errorRate,
+            threshold_value: 10, // 10% error rate threshold
+            message: `${func.functionName} has ${func.errorRate.toFixed(2)}% error rate (${func.errorCount}/${func.totalCount} errors)`,
+          });
 
         if (error) {
-          await logger.error('Failed to create high-error-rate alert', {
-            error: error.message,
-            function_name: func.functionName,
-          }, traceContext);
+          await logger.error(
+            'Failed to create high-error-rate alert',
+            {
+              error: error.message,
+              function_name: func.functionName,
+            },
+            traceContext,
+          );
         }
       }
     }
@@ -82,17 +94,17 @@ serve(async (req: Request) => {
       highFrequencyFunctions: highFrequency.length,
       highErrorRateFunctions: highErrorRate.length,
       alerts: {
-        highFrequency: highFrequency.filter((f) => f.alertNeeded).length,
-        highErrorRate: highErrorRate.filter((f) => f.alertNeeded).length,
+        highFrequency: highFrequency.filter(f => f.alertNeeded).length,
+        highErrorRate: highErrorRate.filter(f => f.alertNeeded).length,
       },
       details: {
-        highFrequency: highFrequency.map((f) => ({
+        highFrequency: highFrequency.map(f => ({
           functionName: f.functionName,
           invocationCount: f.invocationCount,
           threshold: f.threshold,
           alertNeeded: f.alertNeeded,
         })),
-        highErrorRate: highErrorRate.map((f) => ({
+        highErrorRate: highErrorRate.map(f => ({
           functionName: f.functionName,
           errorRate: f.errorRate.toFixed(2),
           errorCount: f.errorCount,
@@ -102,11 +114,16 @@ serve(async (req: Request) => {
       },
     };
 
-    await logger.info('Edge function monitoring completed', {
-      high_frequency_count: highFrequency.length,
-      high_error_rate_count: highErrorRate.length,
-      alerts_created: summary.alerts.highFrequency + summary.alerts.highErrorRate,
-    }, traceContext);
+    await logger.info(
+      'Edge function monitoring completed',
+      {
+        high_frequency_count: highFrequency.length,
+        high_error_rate_count: highErrorRate.length,
+        alerts_created:
+          summary.alerts.highFrequency + summary.alerts.highErrorRate,
+      },
+      traceContext,
+    );
 
     return new Response(JSON.stringify(summary), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -133,4 +150,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

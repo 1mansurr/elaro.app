@@ -32,7 +32,7 @@ BEGIN
     PERFORM cron.schedule(
       'check-policy-accessibility-daily',
       '0 2 * * *', -- Daily at 2:00 AM UTC
-      $$
+      $sql$
       SELECT
         net.http_post(
           url := 'https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/check-policy-accessibility',
@@ -42,7 +42,7 @@ BEGIN
           ),
           body := '{}'::jsonb
         ) AS request_id;
-      $$
+      $sql$
     );
     
     RAISE NOTICE '✅ Cron job check-policy-accessibility-daily scheduled successfully (daily at 2 AM UTC)';
@@ -69,7 +69,7 @@ BEGIN
     PERFORM cron.schedule(
       'monitor-storage-daily',
       '0 3 * * *', -- Daily at 3:00 AM UTC
-      $$
+      $sql$
       SELECT
         net.http_post(
           url := 'https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/monitor-storage',
@@ -79,7 +79,7 @@ BEGIN
           ),
           body := '{}'::jsonb
         ) AS request_id;
-      $$
+      $sql$
     );
     
     RAISE NOTICE '✅ Cron job monitor-storage-daily scheduled successfully (daily at 3 AM UTC)';
@@ -106,7 +106,7 @@ BEGIN
     PERFORM cron.schedule(
       'monitor-edge-functions-daily',
       '0 4 * * *', -- Daily at 4:00 AM UTC
-      $$
+      $sql$
       SELECT
         net.http_post(
           url := 'https://oqwyoucchbjiyddnznwf.supabase.co/functions/v1/monitor-edge-functions',
@@ -116,7 +116,7 @@ BEGIN
           ),
           body := '{}'::jsonb
         ) AS request_id;
-      $$
+      $sql$
     );
     
     RAISE NOTICE '✅ Cron job monitor-edge-functions-daily scheduled successfully (daily at 4 AM UTC)';

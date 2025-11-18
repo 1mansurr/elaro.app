@@ -23,7 +23,6 @@ import { useNetwork } from '@/contexts/NetworkContext';
 import {
   Button,
   ReminderSelector,
-  GuestAuthModal,
   Input,
 } from '@/shared/components';
 import { api } from '@/services/api';
@@ -129,7 +128,6 @@ const AddLectureScreen = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
 
@@ -374,7 +372,15 @@ const AddLectureScreen = () => {
         'Task Saved!',
         'Your task is almost saved! Sign up to complete it.',
       );
-      setShowGuestAuthModal(true);
+      navigation.navigate('Auth', {
+        mode: 'signup',
+        onAuthSuccess: async () => {
+          const pendingTask = await getPendingTask();
+          if (pendingTask && pendingTask.taskType === 'lecture') {
+            navigation.goBack();
+          }
+        },
+      } as any);
       return;
     }
 
@@ -392,9 +398,54 @@ const AddLectureScreen = () => {
         reminders,
       };
 
+      const isEditing = taskToEdit && taskToEdit.id;
+
+      if (isEditing) {
+        // Check if task has temp ID and resolve it
+        const { isTempId, resolveTaskId } = await import('@/utils/taskCache');
+
+        if (isTempId(taskToEdit.id)) {
+          const realId = await resolveTaskId(taskToEdit.id, 'lecture');
+
+          if (realId === taskToEdit.id) {
+            // Still a temp ID - task hasn't synced yet
+            Alert.alert(
+              'Please Wait',
+              'This task is still syncing. Please wait a moment before editing, or go online to sync first.',
+            );
+            setIsSaving(false);
+            return;
+          }
+
+          // Update taskToEdit with real ID
+          taskToEdit.id = realId;
+        }
+
+        // Update existing lecture
+        // Cancel old notifications before updating
+        if (taskToEdit.id) {
+          try {
+            await notificationService.cancelItemReminders(
+              taskToEdit.id,
+              'lecture',
+            );
+          } catch (notifError) {
+            console.warn('Failed to cancel old notifications:', notifError);
+            // Continue with update even if notification cancellation fails
+          }
+        }
+
+        await api.mutations.lectures.update(
+          taskToEdit.id!,
+          taskData,
+          isOnline,
+          user?.id || '',
+        );
+      } else {
+        // Create new lecture
       await api.mutations.lectures.create(taskData, isOnline, user?.id || '');
 
-      // Save as template if enabled
+        // Save as template if enabled (only for new tasks)
       if (saveAsTemplate && canSaveAsTemplate(taskData, 'lecture')) {
         try {
           await createTemplate.mutateAsync({
@@ -412,22 +463,31 @@ const AddLectureScreen = () => {
       if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
         await notificationService.registerForPushNotifications(session.user.id);
       }
+      }
 
-      // Invalidate queries
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      // Invalidate queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient, 'lecture');
 
       // Clear draft on successful save
       await clearDraft('lecture');
 
-      Alert.alert('Success', 'Lecture created successfully!', [
+      Alert.alert(
+        'Success',
+        isEditing ? 'Lecture updated successfully!' : 'Lecture created successfully!',
+        [
         {
           text: 'OK',
           onPress: () => navigation.goBack(),
         },
-      ]);
+        ],
+      );
     } catch (error) {
-      console.error('Failed to create lecture:', error);
+      const isEditing = taskToEdit && taskToEdit.id;
+      console.error(
+        `Failed to ${isEditing ? 'update' : 'create'} lecture:`,
+        error,
+      );
       const errorTitle = getErrorTitle(error);
       const errorMessage = mapErrorCodeToMessage(error);
       Alert.alert(errorTitle, errorMessage);
@@ -436,18 +496,6 @@ const AddLectureScreen = () => {
     }
   };
 
-  const handleGuestAuth = async (mode: 'signup' | 'signin') => {
-    setShowGuestAuthModal(false);
-    navigation.navigate('Auth', {
-      mode,
-      onAuthSuccess: async () => {
-        const pendingTask = await getPendingTask();
-        if (pendingTask && pendingTask.taskType === 'lecture') {
-          navigation.goBack();
-        }
-      },
-    } as any);
-  };
 
   return (
     <View style={styles.container}>
@@ -795,15 +843,6 @@ const AddLectureScreen = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-
-      {/* Guest Auth Modal */}
-      <GuestAuthModal
-        isVisible={showGuestAuthModal}
-        onClose={() => setShowGuestAuthModal(false)}
-        onSignUp={() => handleGuestAuth('signup')}
-        onSignIn={() => handleGuestAuth('signin')}
-        actionType="Lecture"
-      />
 
       {/* Template Browser Modal */}
       <TemplateBrowserModal

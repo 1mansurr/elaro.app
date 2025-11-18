@@ -90,24 +90,15 @@ const HomeScreen = () => {
   const restoreTaskMutation = useRestoreTask();
   const { showToast } = useToast();
 
-  // JS Thread monitoring (dev only)
-  const jsThreadMetrics = useJSThreadMonitor({
-    enabled: __DEV__,
-    logSlowFrames: true,
+  // JS Thread monitoring (dev only) - warnings disabled for cleaner console
+  useJSThreadMonitor({
+    enabled: false, // Disabled to reduce overhead and warnings
+    logSlowFrames: false,
     slowFrameThreshold: 20,
   });
 
   // Memory monitoring (dev only)
   useMemoryMonitor(__DEV__, 50, 30000); // 50% threshold, check every 30s
-
-  // Log warnings in dev if too many slow frames
-  useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
-      console.warn(
-        `⚠️ HomeScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
-      );
-    }
-  }, [jsThreadMetrics.slowFrameCount, jsThreadMetrics.averageFrameTime]);
 
   // Load draft count on mount
   useEffect(() => {
@@ -131,7 +122,7 @@ const HomeScreen = () => {
     }, []),
   );
 
-  const promptSignUp = () => {
+  const promptSignUp = useCallback(() => {
     mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
       source: 'home_screen',
       user_type: isGuest ? 'guest' : 'authenticated',
@@ -139,7 +130,7 @@ const HomeScreen = () => {
       timestamp: new Date().toISOString(),
     });
     navigation.navigate('Auth', { mode: 'signup' });
-  };
+  }, [isGuest, navigation]);
 
   const fabActions = useMemo(
     () => [
@@ -186,19 +177,24 @@ const HomeScreen = () => {
     [navigation],
   );
 
-  const backdropOpacity = fabAnimation.interpolate({
+  // Memoize backdrop opacity interpolation to prevent recalculation
+  const backdropOpacity = useMemo(
+    () =>
+      fabAnimation.interpolate({
     inputRange: [0, 1],
     outputRange: [0, 1], // Animate opacity to 1 to show the blur view
-  });
+      }),
+    [fabAnimation],
+  );
 
-  const handleFabStateChange = ({ isOpen }: { isOpen: boolean }) => {
+  const handleFabStateChange = useCallback(({ isOpen }: { isOpen: boolean }) => {
     setIsFabOpen(isOpen);
     Animated.spring(fabAnimation, {
       toValue: isOpen ? 1 : 0,
       friction: 7,
       useNativeDriver: false,
     }).start();
-  };
+  }, [fabAnimation]);
 
   const handleViewDetails = useCallback((task: Task) => {
     mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
@@ -343,8 +339,8 @@ const HomeScreen = () => {
     handleCloseSheet,
   ]);
 
-  // Trial banner logic
-  const getTrialDaysRemaining = () => {
+  // Trial banner logic - memoized to prevent recalculation
+  const trialDaysRemaining = useMemo(() => {
     if (
       user?.subscription_status !== 'trialing' ||
       !user?.subscription_expires_at
@@ -354,13 +350,15 @@ const HomeScreen = () => {
     const today = new Date();
     const expirationDate = new Date(user.subscription_expires_at);
     return differenceInCalendarDays(expirationDate, today);
-  };
+  }, [user?.subscription_status, user?.subscription_expires_at]);
 
-  const trialDaysRemaining = getTrialDaysRemaining();
-  const shouldShowBanner =
+  const shouldShowBanner = useMemo(
+    () =>
     trialDaysRemaining !== null &&
     trialDaysRemaining <= 3 &&
-    !isBannerDismissed;
+      !isBannerDismissed,
+    [trialDaysRemaining, isBannerDismissed],
+  );
 
   // Check AsyncStorage for banner dismissal state
   useEffect(() => {
@@ -389,7 +387,7 @@ const HomeScreen = () => {
     };
   }, [user?.id, trialDaysRemaining]);
 
-  const handleDismissBanner = async () => {
+  const handleDismissBanner = useCallback(async () => {
     if (!user?.id || trialDaysRemaining === null) return;
 
     try {
@@ -399,9 +397,9 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error saving banner dismissal state:', error);
     }
-  };
+  }, [user?.id, trialDaysRemaining]);
 
-  const handleSubscribePress = () => {
+  const handleSubscribePress = useCallback(() => {
     Alert.alert(
       'Unlock Premium Access',
       'As an early user, you can unlock all premium features for free. Would you like to upgrade your account?',
@@ -442,17 +440,17 @@ const HomeScreen = () => {
         },
       ],
     );
-  };
+  }, [queryClient]);
 
-  // Get personalized title
-  const getPersonalizedTitle = () => {
+  // Get personalized title - memoized to prevent recalculation on every render
+  const personalizedTitle = useMemo(() => {
     if (isGuest) {
       return "Let's Make Today Count";
     }
 
     const name = user?.username || user?.first_name || 'there';
     return `${getGreeting()}, ${name}!`;
-  };
+  }, [isGuest, user?.username, user?.first_name]);
 
   // Show one-time "How It Works" prompt for new users
   useEffect(() => {
@@ -580,16 +578,55 @@ const HomeScreen = () => {
     return () => clearTimeout(timer);
   }, [isGuest, user, isLoading, homeData, queryClient, showToast]);
 
+  // Memoized callbacks for better performance
+  const handleNotificationBellPress = useCallback(() => {
+    setIsNotificationHistoryVisible(true);
+  }, []);
+
+  const handleRefresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+  }, [queryClient]);
+
+  const handleCalendarPress = useCallback(() => {
+    navigation.navigate('Calendar');
+  }, [navigation]);
+
+  const handleQuickAddClose = useCallback(() => {
+    setIsQuickAddVisible(false);
+  }, []);
+
+  const handleNotificationHistoryClose = useCallback(() => {
+    setIsNotificationHistoryVisible(false);
+  }, []);
+
+  const handleQuickAddDoubleTap = useCallback(() => {
+    setIsQuickAddVisible(true);
+  }, []);
+
+  const handleDraftBadgePress = useCallback(() => {
+    navigation.navigate('Drafts');
+  }, [navigation]);
+
+  const handleBackdropPress = useCallback(() => {
+    handleFabStateChange({ isOpen: false });
+  }, [handleFabStateChange]);
+
+  const handleAddActivity = useCallback(() => {
+    handleFabStateChange({ isOpen: true });
+  }, [handleFabStateChange]);
+
+  const handleRefetch = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+  }, [queryClient]);
+
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
     <View style={styles.container} testID="home-screen">
       {/* Header with Notification Bell */}
       {!isGuest && (
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
-          <NotificationBell
-            onPress={() => setIsNotificationHistoryVisible(true)}
-          />
+          <Text style={styles.headerTitle}>{personalizedTitle}</Text>
+          <NotificationBell onPress={handleNotificationBellPress} />
         </View>
       )}
 
@@ -597,12 +634,7 @@ const HomeScreen = () => {
         style={styles.scrollContainer}
         refreshControl={
           !isGuest ? (
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={() =>
-                queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
-              }
-            />
+            <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
@@ -613,14 +645,14 @@ const HomeScreen = () => {
             onDismiss={handleDismissBanner}
           />
         )}
-        {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
+        {isGuest && <Text style={styles.title}>{personalizedTitle}</Text>}
         <SwipeableTaskCard
           onSwipeComplete={handleSwipeComplete}
           enabled={!isGuest && !!homeData?.nextUpcomingTask}>
           <NextTaskCard
             task={isGuest ? null : homeData?.nextUpcomingTask || null}
             isGuestMode={isGuest}
-            onAddActivity={() => handleFabStateChange({ isOpen: true })}
+            onAddActivity={handleAddActivity}
             onViewDetails={handleViewDetails}
           />
         </SwipeableTaskCard>
@@ -629,15 +661,17 @@ const HomeScreen = () => {
           monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
           subscriptionTier={user?.subscription_tier || 'free'}
         />
+        {/* Only show calendar button for authenticated users */}
+        {!isGuest && (
         <Button
           title="View Full Calendar"
-          onPress={() => navigation.navigate('Calendar')}
+            onPress={handleCalendarPress}
         />
+        )}
       </ScrollView>
 
       {isFabOpen && (
-        <TouchableWithoutFeedback
-          onPress={() => handleFabStateChange({ isOpen: false })}>
+        <TouchableWithoutFeedback onPress={handleBackdropPress}>
           <Animated.View
             style={[styles.backdrop, { opacity: backdropOpacity }]}>
             <BlurView
@@ -652,14 +686,14 @@ const HomeScreen = () => {
       <FloatingActionButton
         actions={fabActions}
         onStateChange={handleFabStateChange}
-        onDoubleTap={() => setIsQuickAddVisible(true)}
+        onDoubleTap={handleQuickAddDoubleTap}
         draftCount={draftCount}
-        onDraftBadgePress={() => navigation.navigate('Drafts')}
+        onDraftBadgePress={handleDraftBadgePress}
       />
 
       <QuickAddModal
         isVisible={isQuickAddVisible}
-        onClose={() => setIsQuickAddVisible(false)}
+        onClose={handleQuickAddClose}
       />
 
       <TaskDetailSheet
@@ -673,7 +707,7 @@ const HomeScreen = () => {
 
       <NotificationHistoryModal
         isVisible={isNotificationHistoryVisible}
-        onClose={() => setIsNotificationHistoryVisible(false)}
+        onClose={handleNotificationHistoryClose}
       />
     </View>
   );
@@ -686,15 +720,11 @@ const HomeScreen = () => {
         isError={isError}
         error={error}
         data={homeData}
-        refetch={() =>
-          queryClient.invalidateQueries({ queryKey: ['homeScreenData'] })
-        }
+        refetch={handleRefetch}
         isRefetching={isRefetching}
         onRefresh={refetch}
         emptyStateComponent={
-          <HomeScreenEmptyState
-            onAddActivity={() => handleFabStateChange({ isOpen: true })}
-          />
+          <HomeScreenEmptyState onAddActivity={handleAddActivity} />
         }
         skeletonComponent={<TaskCardSkeleton />}
         skeletonCount={3}>

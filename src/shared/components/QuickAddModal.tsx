@@ -22,7 +22,6 @@ import { Course, RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { Button } from './Button';
-import { GuestAuthModal } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { api } from '@/services/api';
 import { useQueryClient } from '@tanstack/react-query';
@@ -82,17 +81,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
-  const [showGuestAuthModal, setShowGuestAuthModal] = useState(false);
 
   const isGuest = !session;
 
-  // Block Quick Add for guests - show auth modal instead
+  // Block Quick Add for unauthenticated users - redirect to Auth
   useEffect(() => {
     if (isVisible && isGuest) {
       onClose(); // Close Quick Add modal
-      setShowGuestAuthModal(true); // Show auth prompt
+      navigation.navigate('Auth', { mode: 'signup' } as any);
     }
-  }, [isVisible, isGuest, onClose]);
+  }, [isVisible, isGuest, onClose, navigation]);
 
   // Fetch courses when modal opens
   useEffect(() => {
@@ -250,7 +248,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           'Task Saved!',
           'Your task is almost saved! Sign up to complete it.',
         );
-        setShowGuestAuthModal(true);
+        navigation.navigate('Auth', { mode: 'signup' } as any);
       } catch (error) {
         console.error('Error saving pending task:', error);
         Alert.alert('Error', 'Failed to save your progress. Please try again.');
@@ -330,12 +328,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         await notificationService.registerForPushNotifications(session.user.id);
       }
 
-      // Invalidate queries
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-      await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['studySessions'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
+      // Invalidate queries (including calendar queries so task appears immediately)
+      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient); // No specific type - invalidates all
 
       onClose();
       Alert.alert('Success', 'Task created successfully!');
@@ -347,15 +342,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     }
   };
 
-  const handleGuestAuth = (mode: 'signup' | 'signin') => {
-    setShowGuestAuthModal(false);
-    navigation.navigate('Auth', { mode } as any);
-  };
-
   const handleAddMoreDetails = () => {
-    // Block guests from accessing full add flows
+    // Block unauthenticated users from accessing full add flows
     if (isGuest) {
-      setShowGuestAuthModal(true);
+      navigation.navigate('Auth', { mode: 'signup' } as any);
       return;
     }
 
@@ -685,21 +675,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           visible={showEmptyStateModal}
           onClose={() => setShowEmptyStateModal(false)}
           message="You don't have any templates. You can add a template using the toggle at the latter part of the task addition."
-        />
-
-        {/* Guest Auth Modal */}
-        <GuestAuthModal
-          isVisible={showGuestAuthModal}
-          onClose={() => setShowGuestAuthModal(false)}
-          onSignUp={() => handleGuestAuth('signup')}
-          onSignIn={() => handleGuestAuth('signin')}
-          actionType={
-            taskType === 'assignment'
-              ? 'Task'
-              : taskType === 'lecture'
-                ? 'Lecture'
-                : 'Study Session'
-          }
         />
       </View>
     </Modal>

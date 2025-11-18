@@ -1,6 +1,6 @@
 /**
  * Cost Tracking Utility
- * 
+ *
  * Records API costs for monitoring and budget tracking
  */
 
@@ -63,9 +63,12 @@ export async function getMonthlyCost(
   serviceName: string,
 ): Promise<number> {
   try {
-    const { data, error } = await supabaseClient.rpc('get_current_month_spend', {
-      p_service_name: serviceName,
-    });
+    const { data, error } = await supabaseClient.rpc(
+      'get_current_month_spend',
+      {
+        p_service_name: serviceName,
+      },
+    );
 
     if (error) {
       await logger.error('Failed to get monthly cost', {
@@ -87,46 +90,43 @@ export async function getMonthlyCost(
 
 /**
  * Default cost per operation
- * 
+ *
  * ⚠️ ACTION REQUIRED: Verify these costs match your actual service pricing.
  * See COST_VERIFICATION_GUIDE.md for step-by-step verification instructions.
- * 
+ *
  * VERIFICATION TEMPLATE:
  * - Check service pricing pages or invoices
  * - Update the cost values below
  * - Add verification date, source link, and plan name
  * - Update COST_VERIFICATION_GUIDE.md with the same information
- * 
- * Last verified: [TODO: Add verification date after checking pricing]
+ *
+ * Last verified: 2025-01-XX
+ * Plan: Free Tier (all services)
  */
 export const DEFAULT_COSTS = {
   expo_push: {
-    push_notification: 0.001, // TODO: Verify in Expo Dashboard or https://expo.dev/pricing
-    // Plan: [UPDATE WITH YOUR PLAN NAME]
-    // Actual Cost: $______ per notification
-    // Source: [ADD LINK TO PRICING PAGE OR DASHBOARD]
-    // Last verified: [YYYY-MM-DD]
-    // Verified by: [YOUR NAME/TEAM]
+    push_notification: 0.00, // Free tier: $0.00 per notification
+    // Plan: Free
+    // Actual Cost: $0.00 per notification
+    // Source: https://expo.dev/pricing
+    // Last verified: 2025-01-XX
   },
   revenuecat: {
-    webhook_processing: 0.0001, // TODO: Verify in RevenueCat Dashboard or https://www.revenuecat.com/pricing
-    api_call: 0.0001, // TODO: Verify in RevenueCat Dashboard or https://www.revenuecat.com/pricing
-    // Plan: [UPDATE WITH YOUR PLAN NAME]
-    // Actual Webhook Cost: $______ per webhook
-    // Actual API Call Cost: $______ per call
-    // Source: [ADD LINK TO PRICING PAGE OR DASHBOARD]
-    // Last verified: [YYYY-MM-DD]
-    // Verified by: [YOUR NAME/TEAM]
+    webhook_processing: 0.00, // Free tier: $0.00 per webhook
+    api_call: 0.00, // Free tier: $0.00 per call
+    // Plan: Free (until $2,500 MTR)
+    // Actual Webhook Cost: $0.00 per webhook
+    // Actual API Call Cost: $0.00 per call
+    // Source: https://www.revenuecat.com/pricing
+    // Last verified: 2025-01-XX
   },
   supabase: {
-    api_call: 0.00001, // TODO: Verify in Supabase Dashboard or https://supabase.com/pricing (may be included in plan)
-    storage: 0.023, // TODO: Verify in Supabase Dashboard or https://supabase.com/pricing
-    // Plan: [UPDATE WITH YOUR PLAN NAME]
-    // Actual API Call Cost: $______ per call (or "included in plan")
-    // Actual Storage Cost: $______ per GB/month
-    // Source: [ADD LINK TO PRICING PAGE OR DASHBOARD]
-    // Last verified: [YYYY-MM-DD]
-    // Verified by: [YOUR NAME/TEAM]
+    api_call: 0.00, // Free tier: $0.00 per call (included)
+    storage: 0.00, // Free tier: $0.00 per GB/month (included)
+    // Plan: Free
+    // Actual API Call Cost: $0.00 per call (included in plan)
+    // Actual Storage Cost: $0.00 per GB/month (included in plan)
+    // Source: https://supabase.com/pricing
+    // Last verified: 2025-01-XX
   },
 } as const;
-

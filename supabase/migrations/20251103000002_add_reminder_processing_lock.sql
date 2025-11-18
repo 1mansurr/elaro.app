@@ -113,9 +113,9 @@ BEGIN
     PERFORM cron.schedule(
       'cleanup-stale-reminder-locks',
       '*/15 * * * *', -- Every 15 minutes
-      $$
+      $sql$
       SELECT public.cleanup_stale_reminder_locks();
-      $$
+      $sql$
     );
     
     RAISE NOTICE 'Cron job cleanup-stale-reminder-locks scheduled successfully (every 15 minutes)';

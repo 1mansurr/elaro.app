@@ -24,9 +24,10 @@ CREATE TABLE IF NOT EXISTS api_quota_usage (
 CREATE INDEX IF NOT EXISTS idx_api_quota_service_period 
   ON api_quota_usage(service_name, period_start, period_end);
 
-CREATE INDEX IF NOT EXISTS idx_api_quota_current 
-  ON api_quota_usage(service_name, quota_type, period_start DESC) 
-  WHERE period_start <= NOW() AND period_end >= NOW();
+-- Removed NOW() because it is not immutable
+-- We'll filter by current time at query level instead of in the index
+CREATE INDEX IF NOT EXISTS idx_api_quota_current
+  ON api_quota_usage(service_name, quota_type, period_start DESC);
 
 -- ============================================================================
 -- QUOTA ALERTS TABLE

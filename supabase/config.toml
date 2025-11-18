@@ -1,19 +1,14 @@
-project_id = "oqwyoucchbjiyddnznwf"
+project_id = "alqpwhrsxmetwbtxuihv"
+
+# Database connection settings
+# Use direct connection (port 5432) for migrations instead of pooler (port 6543)
+# This is recommended for migrations and admin tasks
+[db]
+# Direct connection is used by default for migrations
+# Pooler connection (port 6543) is used for application queries
 
 [functions.revenuecat-webhook]
 verify_jwt = false
-
-[functions.schedule-reminders]
-import_map = "./functions/import_map.json"
-
-[functions.create-task]
-import_map = "./functions/import_map.json"
-
-[functions.get-streak-info]
-import_map = "./functions/import_map.json"
-
-[functions.cleanup-old-reminders]
-import_map = "./functions/import_map.json"
 
 [functions.export-user-data]
 verify_jwt = false

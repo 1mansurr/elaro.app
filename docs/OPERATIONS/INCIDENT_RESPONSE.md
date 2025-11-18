@@ -7,22 +7,26 @@ This runbook provides step-by-step procedures for responding to incidents in the
 ## Incident Severity Levels
 
 ### Critical (P0)
+
 - Application completely down
 - Data loss or corruption
 - Security breach
 - **Response Time**: Immediate
 
 ### High (P1)
+
 - Major feature broken
 - Performance degradation affecting many users
 - **Response Time**: Within 1 hour
 
 ### Medium (P2)
+
 - Minor feature broken
 - Performance issues affecting some users
 - **Response Time**: Within 4 hours
 
 ### Low (P3)
+
 - Cosmetic issues
 - Minor bugs
 - **Response Time**: Next business day
@@ -32,6 +36,7 @@ This runbook provides step-by-step procedures for responding to incidents in the
 ### 1. Detection
 
 **Sources:**
+
 - Error tracking (Sentry)
 - User reports
 - Monitoring alerts
@@ -40,6 +45,7 @@ This runbook provides step-by-step procedures for responding to incidents in the
 ### 2. Assessment
 
 **Immediate Actions:**
+
 1. Check error logs in Sentry
 2. Review database health
 3. Check application status
@@ -48,6 +54,7 @@ This runbook provides step-by-step procedures for responding to incidents in the
 ### 3. Containment
 
 **For Critical Issues:**
+
 1. **Stop application traffic** (if possible)
 2. **Create backup** of current state
 3. **Document current state** before changes
@@ -68,6 +75,7 @@ Follow specific procedures based on incident type (see below).
 ### Database Connection Issues
 
 **Symptoms:**
+
 - "Connection refused" errors
 - Timeout errors
 - High connection count
@@ -75,11 +83,13 @@ Follow specific procedures based on incident type (see below).
 **Steps:**
 
 1. **Check Supabase status:**
+
    ```bash
    supabase status
    ```
 
 2. **Check connection pool:**
+
    ```sql
    SELECT count(*) as active_connections
    FROM pg_stat_activity
@@ -87,6 +97,7 @@ Follow specific procedures based on incident type (see below).
    ```
 
 3. **Restart if needed:**
+
    ```bash
    supabase stop && supabase start
    ```
@@ -99,6 +110,7 @@ Follow specific procedures based on incident type (see below).
 ### Database Performance Issues
 
 **Symptoms:**
+
 - Slow queries
 - Timeouts
 - High CPU usage
@@ -106,16 +118,19 @@ Follow specific procedures based on incident type (see below).
 **Steps:**
 
 1. **Check health score:**
+
    ```sql
    SELECT * FROM calculate_database_health_score();
    ```
 
 2. **Identify bottlenecks:**
+
    ```sql
    SELECT * FROM detect_performance_bottlenecks();
    ```
 
 3. **Check slow queries:**
+
    ```sql
    SELECT query, mean_time, calls
    FROM pg_stat_statements
@@ -132,6 +147,7 @@ Follow specific procedures based on incident type (see below).
 ### Data Corruption
 
 **Symptoms:**
+
 - Inconsistent data
 - Foreign key violations
 - Missing data
@@ -141,12 +157,14 @@ Follow specific procedures based on incident type (see below).
 1. **Stop application** (if possible)
 2. **Create backup** of current state
 3. **Identify corrupted data:**
+
    ```sql
    -- Check for foreign key violations
    SELECT * FROM check_foreign_key_integrity();
    ```
 
 4. **Restore from backup** if needed:
+
    ```bash
    ./scripts/backup-manager.sh restore /path/to/backup.sql.gz
    ```
@@ -162,6 +180,7 @@ Follow specific procedures based on incident type (see below).
 ### Application Crashes
 
 **Symptoms:**
+
 - App won't launch
 - Frequent crashes
 - High crash rate in Sentry
@@ -180,6 +199,7 @@ Follow specific procedures based on incident type (see below).
 ### Performance Degradation
 
 **Symptoms:**
+
 - Slow app response
 - High memory usage
 - Battery drain
@@ -194,6 +214,7 @@ Follow specific procedures based on incident type (see below).
 ### Feature Broken
 
 **Symptoms:**
+
 - Feature not working
 - Error messages
 - Unexpected behavior
@@ -218,6 +239,7 @@ Follow specific procedures based on incident type (see below).
    - See [Secret Rotation Guide](../SECURITY/SECRET_ROTATION.md)
 
 2. **Review access logs:**
+
    ```sql
    SELECT * FROM admin_actions
    ORDER BY created_at DESC
@@ -225,6 +247,7 @@ Follow specific procedures based on incident type (see below).
    ```
 
 3. **Check for unauthorized access:**
+
    ```sql
    SELECT * FROM login_history
    WHERE success = false
@@ -293,6 +316,7 @@ eas build:rollback BUILD_ID
 ### Documentation
 
 Document the following:
+
 - Incident timeline
 - Root cause
 - Resolution steps
@@ -302,6 +326,7 @@ Document the following:
 ### Post-Mortem (P0/P1)
 
 Schedule within 48 hours:
+
 1. Review incident timeline
 2. Identify root cause
 3. Discuss prevention measures
@@ -319,4 +344,3 @@ Schedule within 48 hours:
 - [Database Operations Runbook](../DATABASE/OPERATIONS_RUNBOOK.md)
 - [Rollback Procedure](../ROLLBACK_PROCEDURE.md)
 - [Secret Rotation Guide](../SECURITY/SECRET_ROTATION.md)
-

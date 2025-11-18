@@ -4,7 +4,7 @@ import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScreenTracking } from '../hooks/useScreenTracking';
 import { AuthenticatedNavigator } from './AuthenticatedNavigator';
-import { GuestNavigator } from './GuestNavigator';
+import { AuthNavigator } from './AuthNavigator';
 
 // Loading fallback component
 const LoadingFallback = () => (
@@ -32,5 +32,5 @@ export const AppNavigator: React.FC = () => {
   }
 
   // Return appropriate navigator based on authentication state
-  return session ? <AuthenticatedNavigator /> : <GuestNavigator />;
+  return session ? <AuthenticatedNavigator /> : <AuthNavigator />;
 };

@@ -1,7 +1,7 @@
 /**
  * Route Guards
  *
- * Defines which routes require authentication and which are guest-only.
+ * Defines which routes require authentication.
  * Used by navigationSync service to validate navigation state.
  */
 
@@ -34,10 +34,7 @@ export const AUTHENTICATED_ROUTES = [
   'StudySessionReview',
 ] as const;
 
-// Routes accessible only to non-authenticated users
-export const GUEST_ROUTES = ['GuestHome'] as const;
-
-// Routes accessible to both authenticated and guest users
+// Routes accessible to both authenticated and unauthenticated users
 export const PUBLIC_ROUTES = ['Launch', 'Auth'] as const;
 
 // Routes accessible during onboarding (authenticated but onboarding incomplete)
@@ -48,13 +45,6 @@ export const ONBOARDING_ROUTES = ['OnboardingFlow'] as const;
  */
 export function isAuthenticatedRoute(routeName: string): boolean {
   return (AUTHENTICATED_ROUTES as readonly string[]).includes(routeName);
-}
-
-/**
- * Check if a route is guest-only
- */
-export function isGuestRoute(routeName: string): boolean {
-  return (GUEST_ROUTES as readonly string[]).includes(routeName);
 }
 
 /**
@@ -100,17 +90,6 @@ export function validateRouteAccess(
       return { allowed: true };
     }
 
-    return { allowed: true };
-  }
-
-  // Guest routes require no authentication
-  if (isGuestRoute(routeName)) {
-    if (isAuthenticated) {
-      return {
-        allowed: false,
-        reason: 'Route is guest-only',
-      };
-    }
     return { allowed: true };
   }
 

@@ -14,7 +14,7 @@ import {
   ERROR_MESSAGES,
   ERROR_STATUS_CODES,
 } from './error-codes.ts';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
 import { isAdmin } from './permissions.ts';
 
 /**

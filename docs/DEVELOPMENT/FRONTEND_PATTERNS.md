@@ -17,7 +17,7 @@ const queryClient = useQueryClient();
 
 const mutation = useMutation({
   mutationFn: updateAssignment,
-  onMutate: async (newAssignment) => {
+  onMutate: async newAssignment => {
     // Cancel outgoing refetches
     await queryClient.cancelQueries({ queryKey: ['assignments'] });
 
@@ -25,9 +25,9 @@ const mutation = useMutation({
     const previousAssignments = queryClient.getQueryData(['assignments']);
 
     // Optimistically update
-    queryClient.setQueryData(['assignments'], (old) => {
+    queryClient.setQueryData(['assignments'], old => {
       return old.map(assignment =>
-        assignment.id === newAssignment.id ? newAssignment : assignment
+        assignment.id === newAssignment.id ? newAssignment : assignment,
       );
     });
 
@@ -190,7 +190,7 @@ function App() {
 const fetchWithTimeout = async (
   url: string,
   options: RequestInit,
-  timeoutMs: number = 15000
+  timeoutMs: number = 15000,
 ): Promise<Response> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -258,7 +258,7 @@ const assignmentSchema = z.object({
 function AssignmentForm() {
   const [errors, setErrors] = useState({});
 
-  const handleSubmit = (data) => {
+  const handleSubmit = data => {
     try {
       const validated = assignmentSchema.parse(data);
       // Submit validated data
@@ -287,7 +287,7 @@ useEffect(() => {
   };
 
   Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
-  
+
   // Handle initial URL
   Linking.getInitialURL().then(url => {
     if (url) handleDeepLink(url);
@@ -347,4 +347,3 @@ function App() {
 - [React Query Patterns](https://tanstack.com/query/latest/docs/react/guides/optimistic-updates)
 - [Zod Validation](https://zod.dev/)
 - [React Navigation Deep Linking](https://reactnavigation.org/docs/deep-linking/)
-

@@ -3,6 +3,7 @@
 ## Current Configuration
 
 ### Supabase
+
 - **Plan**: Free
 - **API Calls**: Unlimited (per pricing page)
 - **Other Limits**: 50,000 MAUs, 500MB database, 1GB file storage
@@ -15,6 +16,7 @@
 **Important**: API requests are unlimited on Free plan, but other resource limits apply (database size, storage, bandwidth).
 
 ### Expo Push Notifications
+
 - **Plan**: Free
 - **Rate Limit**: 600 notifications per second
 - **Calculated Daily**: 51,840,000 notifications/day (600/sec × 86,400 sec/day)
@@ -27,6 +29,7 @@
 **Important**: This is a burst rate limit (600/sec), not a hard daily cap. Sustained high usage may still be throttled.
 
 ### RevenueCat
+
 - **Plan**: Free
 - **API Calls**: No clear monthly request cap found
 - **Free Tier Limit**: Free until Monthly Recurring Revenue (MTR) reaches US $2,500
@@ -69,6 +72,7 @@ Quick Steps:
 - **Critical**: 90% of quota limit
 
 These thresholds are configured in:
+
 - `supabase/functions/_shared/quota-monitor.ts`
 - Database functions: `track_quota_usage()` and `get_quota_status()`
 
@@ -77,7 +81,7 @@ These thresholds are configured in:
 Quota usage is tracked in the `api_quota_usage` table. You can query current usage:
 
 ```sql
-SELECT 
+SELECT
   service_name,
   quota_type,
   usage_count,
@@ -95,4 +99,3 @@ ORDER BY percentage DESC;
 2. **Monitor Usage**: Set up alerts for approaching limits
 3. **Plan Ahead**: Upgrade plans before hitting limits
 4. **Document Changes**: Always update this file when limits change
-

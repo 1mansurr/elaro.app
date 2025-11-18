@@ -1,4 +1,15 @@
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
+
+export const CheckUsernameSchema = z.object({
+  username: z
+    .string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username must be 30 characters or less')
+    .regex(
+      /^[a-z0-9_]+$/,
+      'Username can only contain letters, numbers, and underscores',
+    ),
+});
 
 // Schema for updating user profile
 export const UpdateUserProfileSchema = z.object({

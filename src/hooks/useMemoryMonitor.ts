@@ -32,11 +32,7 @@ export const useMemoryMonitor = (
 
     // Check if memory API is available (Chrome/Edge only)
     if (!(performance as any).memory) {
-      if (__DEV__) {
-        console.log(
-          'Memory monitoring not available (performance.memory API not supported)',
-        );
-      }
+      // Suppress log - memory API not available in React Native
       return;
     }
 

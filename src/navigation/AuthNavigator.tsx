@@ -102,8 +102,8 @@ const renderScreens = (screens: ScreensConfig) => {
  * - MFA enrollment and verification
  * - Account switching
  *
- * This navigator is used by both GuestNavigator and AuthenticatedNavigator
- * to provide consistent auth flows throughout the app.
+ * This navigator is used by AppNavigator for unauthenticated users
+ * and can be accessed from AuthenticatedNavigator for auth-related flows.
  */
 export const AuthNavigator: React.FC = () => {
   return (

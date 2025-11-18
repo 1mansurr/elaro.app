@@ -230,7 +230,7 @@ export const PaywallScreen: React.FC = () => {
       {/* Hero Image Card */}
       <View style={styles.heroCard}>
         <Image
-          source={require('@/assets/focus.png')}
+          source={require('../../../../assets/focus.png')}
           style={styles.heroImage}
           contentFit="contain"
         />

@@ -1,4 +1,18 @@
-import { StatsD } from 'https://deno.land/x/statsd@0.2.0/mod.ts';
+import * as StatsDModule from 'https://deno.land/x/statsd@0.2.0/mod.ts';
+
+type StatsDConstructor = new (options: {
+  host: string;
+  port: number;
+  prefix?: string;
+}) => {
+  increment: (metric: string, tags?: Record<string, string>) => void;
+  timing: (metric: string, value: number, tags?: Record<string, string>) => void;
+  gauge: (metric: string, value: number, tags?: Record<string, string>) => void;
+  close: () => void;
+};
+
+const StatsD: StatsDConstructor | undefined =
+  (StatsDModule as any).StatsD || (StatsDModule as any).default;
 
 // Initialize StatsD client
 let statsdClient: StatsD | null = null;
@@ -14,6 +28,13 @@ export function getStatsDClient(): StatsD | null {
   if (!metricsHost || !metricsPort) {
     console.warn(
       'Metrics not configured: METRICS_HOST and METRICS_PORT environment variables not set',
+    );
+    return null;
+  }
+
+  if (!StatsD) {
+    console.warn(
+      'StatsD module does not expose a compatible constructor; metrics disabled',
     );
     return null;
   }

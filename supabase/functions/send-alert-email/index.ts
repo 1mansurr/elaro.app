@@ -1,17 +1,17 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-serve(async (req) => {
+serve(async req => {
   try {
     const { to, subject, html } = await req.json();
 
     // Use Resend API for email delivery (if configured)
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
-    
+
     if (resendApiKey) {
       const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${resendApiKey}`,
+          Authorization: `Bearer ${resendApiKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -43,7 +43,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        message: 'Email service not configured. Set RESEND_API_KEY environment variable.',
+        message:
+          'Email service not configured. Set RESEND_API_KEY environment variable.',
       }),
       {
         headers: { 'Content-Type': 'application/json' },
@@ -62,4 +63,3 @@ serve(async (req) => {
     );
   }
 });
-

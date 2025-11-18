@@ -1,6 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { Assignment } from '@/types';
-import { CreateAssignmentRequest } from '@/types/api';
+import { CreateAssignmentRequest, UpdateAssignmentRequest } from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
@@ -63,6 +63,77 @@ export const assignmentsApiMutations = {
       const { data, error } = await supabase.functions.invoke(
         'create-assignment',
         { body: request },
+      );
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /**
+   * Update an existing assignment
+   *
+   * OFFLINE SUPPORT:
+   * - When online: Executes server mutation immediately
+   * - When offline: Adds to sync queue for later sync
+   */
+  async update(
+    assignmentId: string,
+    request: UpdateAssignmentRequest,
+    isOnline: boolean,
+    userId: string,
+  ): Promise<Assignment> {
+    try {
+      // OFFLINE MODE: Queue for later sync and return optimistic data
+      if (!isOnline) {
+        console.log('📴 Offline: Queueing UPDATE assignment action');
+
+        // Get cached task data
+        const { getCachedTask, mergeTaskUpdates } = await import('@/utils/taskCache');
+        const cachedTask = await getCachedTask(assignmentId, 'assignment');
+
+        if (!cachedTask) {
+          throw new Error(
+            'Assignment not found in cache. Please sync and try again.',
+          );
+        }
+
+        // Merge updates with cached data
+        const optimisticTask = mergeTaskUpdates(
+          cachedTask as Assignment,
+          request,
+        );
+
+        // Add to sync queue
+        await syncManager.addToQueue(
+          'UPDATE',
+          'assignment',
+          {
+            type: 'UPDATE',
+            id: assignmentId,
+            data: request,
+          },
+          userId,
+          { syncImmediately: false },
+        );
+
+        console.log(
+          `✅ Created optimistic update for assignment ${assignmentId}`,
+        );
+        return optimisticTask as Assignment;
+      }
+
+      // ONLINE MODE: Execute server mutation
+      console.log('🌐 Online: Updating assignment on server');
+      const { data, error } = await supabase.functions.invoke(
+        'update-assignment',
+        {
+          body: {
+            assignment_id: assignmentId,
+            ...request,
+          },
+        },
       );
       if (error) throw error;
       return data;

@@ -18,6 +18,7 @@ Server-side rate limiting is implemented in `supabase/functions/_shared/rate-lim
    - **Most Restrictive Applies**: The stricter limit is enforced
 
 2. **Action-Based Limits**: Different rate limits for different operations:
+
    ```typescript
    'create-assignment': { perUser: 100/60s, perIP: 200/60s }
    'update-assignment': { perUser: 200/60s, perIP: 400/60s }
@@ -57,7 +58,7 @@ Rate limiting is automatically applied when using `createAuthenticatedHandler`:
 
 ```typescript
 export default createAuthenticatedHandler(
-  async (req) => {
+  async req => {
     // Handler logic
   },
   {
@@ -138,24 +139,24 @@ try {
 
 ### Server-Side (Edge Functions)
 
-| Action | Per-User | Per-IP | Window |
-|--------|----------|--------|--------|
-| Create Assignment | 100 | 200 | 60s |
-| Update Assignment | 200 | 400 | 60s |
-| Delete Assignment | 50 | 100 | 60s |
-| Create Course | 50 | 100 | 60s |
-| Update Course | 200 | 400 | 60s |
-| Send Notification | 100 | 200 | 60s |
-| Default | 100 | 200 | 60s |
+| Action            | Per-User | Per-IP | Window |
+| ----------------- | -------- | ------ | ------ |
+| Create Assignment | 100      | 200    | 60s    |
+| Update Assignment | 200      | 400    | 60s    |
+| Delete Assignment | 50       | 100    | 60s    |
+| Create Course     | 50       | 100    | 60s    |
+| Update Course     | 200      | 400    | 60s    |
+| Send Notification | 100      | 200    | 60s    |
+| Default           | 100      | 200    | 60s    |
 
 ### Client-Side (Mobile App)
 
-| Operation | Limit | Window |
-|-----------|-------|--------|
-| Supabase Query | 60 | 60s |
-| Supabase Mutation | 30 | 60s |
-| RevenueCat API | 20 | 60s |
-| General | 100 | 60s |
+| Operation         | Limit | Window |
+| ----------------- | ----- | ------ |
+| Supabase Query    | 60    | 60s    |
+| Supabase Mutation | 30    | 60s    |
+| RevenueCat API    | 20    | 60s    |
+| General           | 100   | 60s    |
 
 ## Monitoring
 
@@ -234,4 +235,3 @@ export const CLIENT_RATE_LIMITS = {
 3. **Rate Limit Dashboard**: Admin dashboard to view rate limit usage
 4. **Sliding Window**: Implement sliding window instead of fixed window
 5. **Distributed Rate Limiting**: Support for multiple Edge Function instances
-

@@ -7,7 +7,9 @@ import {
   NavigationContainer,
   NavigationContainerRef,
   NavigationState,
+  LinkingOptions,
 } from '@react-navigation/native';
+import { RootStackParamList } from './src/types/navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   QueryClient,
@@ -29,7 +31,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
 import { useTheme } from './src/contexts/ThemeContext';
 import AnimatedSplashScreen from './src/shared/screens/AnimatedSplashScreen';
-import { useAuth } from './src/features/auth/contexts/AuthContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from './src/services/notifications';
 import notificationServiceNew from './src/services/notificationService';
 import {
@@ -50,10 +52,62 @@ import { setupQueryCachePersistence } from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
 import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
+import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
 
 // Validate configuration on startup
 validateAndLogConfig();
+
+// Disable React Native DevTools overlay for non-technical users
+if (__DEV__) {
+  // Prevent DevTools from connecting and showing overlay
+  if (typeof global !== 'undefined') {
+    // Disable React DevTools
+    (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = undefined;
+    // Disable React Native DevTools
+    if ((global as any).window) {
+      (global as any).window.__REACT_DEVTOOLS_GLOBAL_HOOK__ = undefined;
+    }
+    // Disable Element Inspector
+    if ((global as any).__DEV__) {
+      // Override DevTools setup
+      const originalDevTools = (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__;
+      if (originalDevTools) {
+        (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = {
+          ...originalDevTools,
+          onCommitFiberRoot: () => {},
+          onCommitFiberUnmount: () => {},
+        };
+      }
+    }
+  }
+  // Disable console warnings about DevTools
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('DevTools') ||
+        args[0].includes('React DevTools') ||
+        args[0].includes('Element Inspector'))
+    ) {
+      return; // Suppress DevTools warnings
+    }
+    originalWarn.apply(console, args);
+  };
+  
+  // Disable dev menu's Element Inspector option
+  if (Platform.OS === 'ios' || Platform.OS === 'android') {
+    // This prevents the Element Inspector from being activated
+    try {
+      const DevSettings = require('react-native').DevSettings;
+      if (DevSettings && DevSettings.setIsInspectorShown) {
+        DevSettings.setIsInspectorShown(false);
+      }
+    } catch (e) {
+      // DevSettings might not be available, ignore
+    }
+  }
+}
 
 // Initialize centralized error tracking service
 errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
@@ -100,7 +154,20 @@ const queryClient = new QueryClient({
   },
   queryCache: new QueryCache({
     onError: (error, query) => {
-      // Log React Query errors
+      // Suppress expected permission errors for guest users
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isPermissionError =
+        errorMessage.includes('permission denied') ||
+        errorMessage.includes('permission denied for table');
+
+      // Don't log expected permission errors (guest users can't access these tables)
+      if (isPermissionError) {
+        // Silently ignore - these are expected for guest users
+        return;
+      }
+
+      // Log other React Query errors
       console.error('React Query error:', error, query);
       // You can also send this to Sentry or other error tracking services
       // Sentry.captureException(error, { tags: { queryKey: query.queryKey } });
@@ -211,6 +278,113 @@ const NavigationStateValidator: React.FC<{
   return null;
 };
 
+// Deep linking configuration
+const linking: LinkingOptions<RootStackParamList> = {
+  prefixes: ['elaro://'],
+  config: {
+    screens: {
+      // Main app screens
+      Main: {
+        screens: {
+          Home: 'home',
+          Account: 'account',
+        },
+      },
+      // Task detail screens - handle different task types
+      TaskDetailModal: {
+        path: ':taskType/:taskId',
+        parse: {
+          taskId: (taskId: string) => taskId,
+          taskType: (taskType: string) => {
+            // Normalize task type for internal use
+            if (taskType === 'study-session') return 'study_session';
+            return taskType;
+          },
+        },
+      },
+      // Course screens
+      CourseDetail: {
+        path: 'course/:courseId',
+        parse: {
+          courseId: (courseId: string) => courseId,
+        },
+      },
+      Courses: 'courses',
+      Calendar: 'calendar',
+      Profile: 'profile',
+      Settings: 'settings',
+      RecycleBin: 'recycle-bin',
+      PaywallScreen: 'paywall',
+      // Auth
+      Auth: 'auth',
+      ResetPassword: 'reset-password',
+      // Onboarding
+      OnboardingFlow: 'onboarding',
+      // Guest
+      GuestHome: 'guest',
+    },
+  },
+};
+
+// Component to handle deep links from external sources
+// Note: React Navigation's linking prop handles most deep links automatically,
+// but this component handles edge cases and provides fallback navigation
+const DeepLinkHandler: React.FC = () => {
+  useEffect(() => {
+    const { Linking } = require('react-native');
+    const { parseDeepLink, isDeepLink } = require('@/utils/deepLinking');
+
+    // Handle initial URL (if app was opened via deep link)
+    // React Navigation's linking prop should handle this, but we add a fallback
+    Linking.getInitialURL()
+      .then(url => {
+        if (url && isDeepLink(url) && navigationRef.current) {
+          const parsed = parseDeepLink(url);
+          if (parsed?.screen) {
+            // Wait a bit for navigation to be ready
+            setTimeout(() => {
+              if (navigationRef.current) {
+                try {
+                  navigationRef.current.navigate(
+                    parsed.screen as keyof RootStackParamList,
+                    parsed.params as any,
+                  );
+                } catch (error) {
+                  console.error('Failed to navigate from deep link:', error);
+                }
+              }
+            }, 1000);
+          }
+        }
+      })
+      .catch(error => {
+        console.error('Failed to get initial URL:', error);
+      });
+
+    // Listen for deep links while app is running
+    // React Navigation's linking prop handles this, but we add a listener for edge cases
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      if (isDeepLink(url) && navigationRef.current) {
+        const parsed = parseDeepLink(url);
+        if (parsed?.screen) {
+          try {
+            navigationRef.current.navigate(
+              parsed.screen as keyof RootStackParamList,
+              parsed.params as any,
+            );
+          } catch (error) {
+            console.error('Failed to navigate from deep link:', error);
+          }
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  return null;
+};
+
 // Component to integrate React Query with Error Boundary
 const AppWithErrorBoundary: React.FC<{
   initialNavigationState?: NavigationState;
@@ -228,7 +402,8 @@ const AppWithErrorBoundary: React.FC<{
     setIsStateValidated(true);
   }, []);
 
-  // Don't render NavigationContainer until auth state is validated
+  // Don't render NavigationContainer until navigation state validation is complete
+  // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
   const shouldShowLoading = !isStateValidated;
 
   return (
@@ -255,6 +430,7 @@ const AppWithErrorBoundary: React.FC<{
               <NavigationContainer
                 ref={navigationRef}
                 initialState={safeInitialState}
+                linking={linking}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
                   await updateLastActiveTimestamp();
@@ -263,6 +439,7 @@ const AppWithErrorBoundary: React.FC<{
                   // User ID will be set via NavigationStateHandler component
                   await navigationSyncService.saveState(state);
                 }}>
+                <DeepLinkHandler />
                 <NavigationStateHandler />
                 <GracePeriodChecker />
                 <AuthEffects />
@@ -271,6 +448,8 @@ const AppWithErrorBoundary: React.FC<{
                 <SyncIndicator />
                 <AppNavigator />
                 <NotificationHandler />
+                {/* DevTools Disabler - prevents overlay from appearing */}
+                {__DEV__ && <DevToolsDisabler />}
               </NavigationContainer>
             </>
           )}
@@ -320,12 +499,12 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
         console.log('✅ Sync Manager initialized');
 
         // Initialize circuit breaker monitoring
-        import('./src/utils/circuitBreakerMonitor').then(
-          ({ startCircuitBreakerMonitoring }) => {
+        import('./src/utils/circuitBreakerMonitor')
+          .then(({ startCircuitBreakerMonitoring }) => {
             startCircuitBreakerMonitoring(30000); // Check every 30 seconds
             console.log('✅ Circuit breaker monitoring initialized');
-          },
-        ).catch(console.error);
+          })
+          .catch(console.error);
 
         // Track bundle size (non-blocking)
         import('./src/services/bundleSizeTracking').then(
@@ -383,6 +562,33 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+// Component to actively disable DevTools overlay
+const DevToolsDisabler: React.FC = () => {
+  useEffect(() => {
+    // Continuously check and disable DevTools overlay
+    const interval = setInterval(() => {
+      if (typeof global !== 'undefined') {
+        // Disable React DevTools hook
+        (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = undefined;
+        
+        // Try to close any active inspector
+        try {
+          const DevSettings = require('react-native').DevSettings;
+          if (DevSettings && DevSettings.setIsInspectorShown) {
+            DevSettings.setIsInspectorShown(false);
+          }
+        } catch (e) {
+          // Ignore if DevSettings not available
+        }
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return null; // This component doesn't render anything
+};
+
 // StatusBar with theme support
 const ThemedStatusBar = () => {
   const { isDark } = useTheme();
@@ -432,6 +638,8 @@ function AuthEffects() {
 // Component to handle notification context and TaskDetailSheet
 function NotificationHandler() {
   const { taskToShow, setTaskToShow } = useNotification();
+  const completeTaskMutation = useCompleteTask();
+  const deleteTaskMutation = useDeleteTask();
 
   // Set up the handler so the notification service can call our context function
   useEffect(() => {
@@ -473,25 +681,69 @@ function NotificationHandler() {
   const handleEditTask = (task: Task) => {
     // Close the sheet first
     setTaskToShow(null);
-    // Navigate to edit modal - this would need navigation ref
-    // For now, just close the sheet
-    console.log('Edit task:', task);
+    
+    // Navigate to edit modal using navigation ref
+    if (navigationRef.current && task) {
+      let modalName:
+        | 'AddLectureFlow'
+        | 'AddAssignmentFlow'
+        | 'AddStudySessionFlow';
+      
+      switch (task.type) {
+        case 'lecture':
+          modalName = 'AddLectureFlow';
+          break;
+        case 'assignment':
+          modalName = 'AddAssignmentFlow';
+          break;
+        case 'study_session':
+          modalName = 'AddStudySessionFlow';
+          break;
+        default:
+          console.warn('Unknown task type for editing:', task.type);
+          return;
+      }
+
+      try {
+        navigationRef.current.navigate(modalName, {
+          initialData: { taskToEdit: task },
+        });
+      } catch (error) {
+        console.error('Error navigating to edit screen:', error);
+      }
+    }
   };
 
   const handleCompleteTask = async (task: Task) => {
-    // Handle task completion logic here
-    console.log('Complete task:', task);
-    // Data refresh is now handled by React Query in individual components
-    // Close the sheet
+    if (!task) return;
+
+    try {
+      await completeTaskMutation.mutateAsync({
+        taskId: task.id,
+        taskType: task.type,
+        taskTitle: task.title || task.name || 'Untitled Task',
+      });
     setTaskToShow(null);
+    } catch (error) {
+      console.error('Error completing task:', error);
+      // Don't close sheet on error so user can try again
+    }
   };
 
   const handleDeleteTask = async (task: Task) => {
-    // Handle task deletion logic here
-    console.log('Delete task:', task);
-    // Data refresh is now handled by React Query in individual components
-    // Close the sheet
+    if (!task) return;
+
+    try {
+      await deleteTaskMutation.mutateAsync({
+        taskId: task.id,
+        taskType: task.type,
+        taskTitle: task.title || task.name || 'Untitled Task',
+      });
     setTaskToShow(null);
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      // Don't close sheet on error so user can try again
+    }
   };
 
   return (
@@ -572,6 +824,14 @@ function App() {
           console.log(
             '✅ Navigation state loaded, will validate after auth loads',
           );
+        } else if (navState.status === 'rejected') {
+          // Log error but don't block app startup
+          console.warn(
+            '⚠️ Navigation state restoration failed:',
+            navState.reason,
+          );
+          // Could optionally show a toast: "Could not restore previous screen"
+          // For now, we'll continue without restored state
         }
 
         const endTime = performance.now();

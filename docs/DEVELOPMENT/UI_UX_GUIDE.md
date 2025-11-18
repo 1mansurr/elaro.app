@@ -58,18 +58,18 @@ export const COMPONENT_TOKENS = {
 **Unified Button Component** with focused variants:
 
 ```typescript
-import { 
-  PrimaryButton, 
-  SecondaryButton, 
-  OutlineButton, 
-  DangerButton, 
-  GhostButton 
+import {
+  PrimaryButton,
+  SecondaryButton,
+  OutlineButton,
+  DangerButton,
+  GhostButton
 } from '@/shared/components';
 
 // Usage
-<PrimaryButton 
-  title="Save" 
-  onPress={handleSave} 
+<PrimaryButton
+  title="Save"
+  onPress={handleSave}
   loading={isLoading}
   disabled={false}
 />
@@ -79,6 +79,7 @@ import {
 ```
 
 **Benefits:**
+
 - Single source of truth
 - Consistent behavior across all variants
 - Theme-aware by default
@@ -89,11 +90,11 @@ import {
 **Standardized Modal Variants:**
 
 ```typescript
-import { 
-  DialogModal, 
-  SheetModal, 
-  SimpleModal, 
-  FullScreenModal 
+import {
+  DialogModal,
+  SheetModal,
+  SimpleModal,
+  FullScreenModal
 } from '@/shared/components';
 
 // Dialog with blur backdrop
@@ -115,7 +116,8 @@ import {
 ```
 
 **Animation Standards:**
-- All modals use 300ms duration
+
+- Optimized durations per modal type: Sheet (300ms), Dialog (250ms), Simple (200ms), FullScreen (350ms)
 - Consistent easing functions
 - Proper backdrop types (blur for dialogs, opacity for sheets)
 
@@ -176,6 +178,7 @@ const MyComponent = () => {
 ```
 
 **Benefits:**
+
 - Memoized styles (only re-renders when theme changes)
 - Type-safe theme access
 - Better performance than direct `useTheme()`
@@ -258,9 +261,9 @@ interface ComplexInputProps {
 ```typescript
 interface SimplifiedInputProps {
   label?: string;
-  config?: InputConfig;    // variant, size, required
-  state?: InputState;       // error, success, helperText
-  icons?: InputIcons;       // leftIcon, rightIcon, onPress
+  config?: InputConfig; // variant, size, required
+  state?: InputState; // error, success, helperText
+  icons?: InputIcons; // leftIcon, rightIcon, onPress
 }
 ```
 
@@ -306,7 +309,11 @@ export const ANIMATIONS = {
 
 ### Animation Principles
 
-- **Consistent Duration**: 300ms for all modal animations
+- **Optimized Durations**: Different durations per modal type (200-350ms) for optimal UX
+  - Sheet: 300ms (standard bottom sheet)
+  - Dialog: 250ms (quick confirmation dialogs)
+  - Simple: 200ms (lightweight overlays)
+  - FullScreen: 350ms (smooth full-screen transitions)
 - **Appropriate Easing**: Different easing functions for different interaction types
 - **Backdrop Consistency**: Proper backdrop types per modal variant
 - **Performance**: Optimized animations with proper cleanup
@@ -319,7 +326,7 @@ export const ANIMATIONS = {
 - Use `useThemedStyles` for theme-aware components
 - Group related props into objects
 - Break complex components into focused sub-components
-- Follow animation standards (300ms, proper easing)
+- Follow animation standards (optimized durations per modal type, proper easing)
 - Use component variants (PrimaryButton, not generic Button)
 
 ### ❌ DON'T
@@ -335,32 +342,35 @@ export const ANIMATIONS = {
 ### Migrating from Old Components
 
 1. **Replace Button imports:**
+
    ```typescript
    // Old
    import { Button } from '@/shared/components';
-   
+
    // New
    import { PrimaryButton } from '@/shared/components';
    ```
 
 2. **Update Input components:**
+
    ```typescript
    // Old
    <Input value={value} onChangeText={setValue} />
-   
+
    // New
-   <UnifiedInput 
-     value={value} 
+   <UnifiedInput
+     value={value}
      onChangeText={setValue}
      config={{ variant: 'outlined' }}
    />
    ```
 
 3. **Replace Modal implementations:**
+
    ```typescript
    // Old - Custom modal
    <CustomModal visible={visible} />
-   
+
    // New - Standard variant
    <DialogModal visible={visible} onClose={handleClose} />
    ```
@@ -371,11 +381,14 @@ export const ANIMATIONS = {
 
 ```typescript
 // Memoize expensive style calculations
-const styles = useMemo(() => 
-  StyleSheet.create({
-    container: { /* complex styles */ },
-  }), 
-  [dependencies]
+const styles = useMemo(
+  () =>
+    StyleSheet.create({
+      container: {
+        /* complex styles */
+      },
+    }),
+  [dependencies],
 );
 ```
 
@@ -412,4 +425,3 @@ export const MyComponent = React.memo(({ data }) => {
 - [React Native StyleSheet Documentation](https://reactnative.dev/docs/stylesheet)
 - [NativeWind Documentation](https://www.nativewind.dev/)
 - [React Native Accessibility](https://reactnative.dev/docs/accessibility)
-

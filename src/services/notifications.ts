@@ -408,8 +408,50 @@ export const notificationService = {
     planType: 'origin' | 'oddity';
     userId: string;
   }) {
-    await this.cancelSRReminders(sessionId);
-    // TODO: Implement the logic to schedule new reminders here instead of calling itself.
+    try {
+      // Cancel existing reminders first
+      await this.cancelSRReminders(sessionId);
+      
+      // Cancel reminders in database as well
+      const now = new Date().toISOString();
+      await supabase
+        .from('reminders')
+        .update({
+          completed: true,
+          processed_at: now,
+          action_taken: 'rescheduled',
+        })
+        .eq('user_id', userId)
+        .eq('session_id', sessionId)
+        .eq('reminder_type', 'spaced_repetition')
+        .eq('completed', false);
+
+      // Use the edge function to schedule new reminders with the new date
+      // This ensures consistency with initial scheduling logic
+      const { error: scheduleError } = await supabase.functions.invoke(
+        'schedule-reminders',
+        {
+          body: {
+            session_id: sessionId,
+            session_date: newDate.toISOString(),
+            topic: sessionTitle,
+          },
+        },
+      );
+
+      if (scheduleError) {
+        console.error('❌ Error rescheduling SRS reminders:', scheduleError);
+        // Don't throw - partial success is acceptable
+        // The old reminders were cancelled, new ones will be created on next sync
+      } else {
+        console.log(
+          `✅ Successfully rescheduled SRS reminders for session ${sessionId}`,
+        );
+      }
+    } catch (error) {
+      console.error('❌ Exception in rescheduleSRReminders:', error);
+      // Don't throw - allow the update to proceed even if reminder rescheduling fails
+    }
   },
 
   // Functions using deleted types removed:

@@ -4,8 +4,8 @@ import {
   PermissionService,
   PermissionCheckResult,
   TaskLimitCheck,
-} from '../permissions/PermissionService';
-import { Permission } from '../permissions/PermissionConstants';
+} from '@/features/auth/permissions/PermissionService';
+import { Permission } from '@/features/auth/permissions/PermissionConstants';
 
 export interface UsePermissionsReturn {
   hasPermission: (permission: Permission) => Promise<PermissionCheckResult>;

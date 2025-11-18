@@ -36,7 +36,11 @@ export function parseDeepLink(url: string): DeepLinkParams | null {
     const segments = path.split('/').filter(Boolean);
 
     if (segments.length === 0) {
-      return null;
+      // Return fallback to home for empty paths
+      return {
+        screen: 'Main',
+        params: {},
+      };
     }
 
     // Parse query parameters
@@ -68,12 +72,17 @@ export function parseDeepLink(url: string): DeepLinkParams | null {
       settings: { screen: 'Settings', paramKey: undefined },
       'recycle-bin': { screen: 'RecycleBin', paramKey: undefined },
       paywall: { screen: 'PaywallScreen', paramKey: undefined },
+      'reset-password': { screen: 'ResetPassword', paramKey: undefined },
     };
 
     const route = routeMap[segments[0]];
     if (!route) {
       console.warn(`Unknown deep link route: ${segments[0]}`);
-      return null;
+      // Return fallback to home instead of null for better UX
+      return {
+        screen: 'Main',
+        params: {},
+      };
     }
 
     const params: Record<string, any> = { ...queryParams };
@@ -101,7 +110,11 @@ export function parseDeepLink(url: string): DeepLinkParams | null {
     };
   } catch (error) {
     console.error('Failed to parse deep link:', error);
-    return null;
+    // Return fallback to home instead of null for better UX
+    return {
+      screen: 'Main',
+      params: {},
+    };
   }
 }
 
@@ -119,7 +132,7 @@ export function generateDeepLink(
   try {
     // Map screens to URL paths
     const screenMap: Record<string, { path: string; idParam?: string }> = {
-      TaskDetailModal: { path: 'task', idParam: 'taskId' },
+      TaskDetailModal: { path: 'task', idParam: 'taskId' }, // Will be overridden based on taskType
       CourseDetail: { path: 'course', idParam: 'courseId' },
       Courses: { path: 'courses' },
       Calendar: { path: 'calendar' },
@@ -127,6 +140,7 @@ export function generateDeepLink(
       Settings: { path: 'settings' },
       RecycleBin: { path: 'recycle-bin' },
       PaywallScreen: { path: 'paywall' },
+      ResetPassword: { path: 'reset-password' },
       Main: { path: 'home' },
     };
 
@@ -137,6 +151,18 @@ export function generateDeepLink(
     }
 
     let url = `elaro://${mapping.path}`;
+
+    // Fix: For TaskDetailModal, use taskType to determine the correct path
+    if (screen === 'TaskDetailModal' && params?.taskType) {
+      const taskTypePathMap: Record<string, string> = {
+        assignment: 'assignment',
+        lecture: 'lecture',
+        study_session: 'study-session',
+        'study-session': 'study-session',
+      };
+      const taskTypePath = taskTypePathMap[params.taskType] || 'task';
+      url = `elaro://${taskTypePath}`;
+    }
 
     // Add ID if present
     if (mapping.idParam && params?.[mapping.idParam]) {

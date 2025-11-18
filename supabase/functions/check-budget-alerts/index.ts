@@ -86,7 +86,8 @@ async function handleCheckBudgetAlerts(supabaseAdmin: SupabaseClient) {
                 type: 'budget',
                 serviceName: alert.service_name,
                 level: alert.alert_level,
-                message: alert.message || `Budget alert for ${alert.service_name}`,
+                message:
+                  alert.message || `Budget alert for ${alert.service_name}`,
                 percentage: Number(alert.percentage) || 0,
                 sentAt: alert.sent_at,
               });

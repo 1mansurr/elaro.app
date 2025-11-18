@@ -142,10 +142,20 @@ export default function EnhancedAuthScreen({
           Alert.alert(errorTitle, errorMessage);
         } else {
           Alert.alert(
-            'Verify your email',
-            'We sent a confirmation link to your email. You can continue using the app once verified.',
+            'Check your email',
+            'We sent a confirmation link to your email. Verifying your email helps keep your account secure, but you can continue using the app right away.',
           );
+          
+          // Wait for auth state to update before calling callbacks
+          // This ensures AppNavigator detects the session and switches to AuthenticatedNavigator
+          // which will then show OnboardingNavigator if onboarding_completed is false
+          setTimeout(() => {
           onAuthSuccess?.();
+            // Close the modal if onClose is provided
+            if (onClose) {
+              onClose();
+            }
+          }, 500);
         }
       } else {
         // Handle sign in with potential MFA

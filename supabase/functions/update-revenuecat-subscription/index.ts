@@ -8,8 +8,18 @@ import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { CustomerInfo } from 'https://esm.sh/react-native-purchases@7.0.0';
-import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+import { z } from 'zod';
+
+// Minimal type definition for CustomerInfo (avoiding react-native-purchases dependency)
+interface CustomerInfo {
+  entitlements: {
+    active: {
+      [key: string]: {
+        expirationDate: string | null;
+      };
+    };
+  };
+}
 
 const UpdateSubscriptionSchema = z.object({
   customerInfo: z.any(), // CustomerInfo is a complex type from external library

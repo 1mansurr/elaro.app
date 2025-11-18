@@ -32,13 +32,23 @@ export const nameSchema = z
   );
 
 export const firstNameSchema = nameSchema;
-export const lastNameSchema = nameSchema;
+// lastNameSchema allows empty strings since last name is optional
+export const lastNameSchema = z
+  .string()
+  .max(50, 'Name is too long')
+  .regex(
+    /^[a-zA-Z\s'-]*$/, // * allows empty string (unlike + which requires at least one)
+    'Name can only contain letters, spaces, hyphens, and apostrophes',
+  );
 
 export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   firstName: firstNameSchema,
-  lastName: lastNameSchema.optional(),
+  lastName: lastNameSchema
+    .or(z.literal('')) // Explicitly allow empty string
+    .transform(val => (val === '' ? undefined : val)) // Convert empty string to undefined
+    .optional(), // Now optional() works correctly
   agreedToTerms: z.boolean().refine(val => val === true, {
     message: 'You must agree to the Terms of Service and Privacy Policy',
   }),

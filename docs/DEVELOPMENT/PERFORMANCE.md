@@ -50,12 +50,15 @@ queryClient.invalidateQueries();
 import React, { memo } from 'react';
 
 // Memoize expensive components
-export const ExpensiveComponent = memo(({ data }) => {
-  // Component implementation
-}, (prevProps, nextProps) => {
-  // Custom comparison function
-  return prevProps.data.id === nextProps.data.id;
-});
+export const ExpensiveComponent = memo(
+  ({ data }) => {
+    // Component implementation
+  },
+  (prevProps, nextProps) => {
+    // Custom comparison function
+    return prevProps.data.id === nextProps.data.id;
+  },
+);
 ```
 
 ### Hook Memoization
@@ -147,7 +150,7 @@ import { useEffect } from 'react';
 
 useEffect(() => {
   const subscription = subscribeToUpdates();
-  
+
   // Cleanup on unmount
   return () => {
     subscription.unsubscribe();
@@ -234,4 +237,3 @@ Monitor these key metrics:
 - [React Query Performance](https://tanstack.com/query/latest/docs/react/guides/performance)
 - [React Performance Optimization](https://react.dev/learn/render-and-commit)
 - [React Native Performance](https://reactnative.dev/docs/performance)
-

@@ -1,6 +1,6 @@
 import { supabase } from '@/services/supabase';
 import { Lecture } from '@/types';
-import { CreateLectureRequest } from '@/types/api';
+import { CreateLectureRequest, UpdateLectureRequest } from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
@@ -64,6 +64,72 @@ export const lecturesApiMutations = {
       const { data, error } = await supabase.functions.invoke(
         'create-lecture',
         { body: request },
+      );
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  },
+
+  /**
+   * Update an existing lecture
+   *
+   * OFFLINE SUPPORT:
+   * - When online: Executes server mutation immediately
+   * - When offline: Adds to sync queue for later sync
+   */
+  async update(
+    lectureId: string,
+    request: UpdateLectureRequest,
+    isOnline: boolean,
+    userId: string,
+  ): Promise<Lecture> {
+    try {
+      // OFFLINE MODE: Queue for later sync and return optimistic data
+      if (!isOnline) {
+        console.log('📴 Offline: Queueing UPDATE lecture action');
+
+        // Get cached task data
+        const { getCachedTask, mergeTaskUpdates } = await import('@/utils/taskCache');
+        const cachedTask = await getCachedTask(lectureId, 'lecture');
+
+        if (!cachedTask) {
+          throw new Error(
+            'Lecture not found in cache. Please sync and try again.',
+          );
+        }
+
+        // Merge updates with cached data
+        const optimisticTask = mergeTaskUpdates(cachedTask as Lecture, request);
+
+        // Add to sync queue
+        await syncManager.addToQueue(
+          'UPDATE',
+          'lecture',
+          {
+            type: 'UPDATE',
+            id: lectureId,
+            data: request,
+          },
+          userId,
+          { syncImmediately: false },
+        );
+
+        console.log(`✅ Created optimistic update for lecture ${lectureId}`);
+        return optimisticTask as Lecture;
+      }
+
+      // ONLINE MODE: Execute server mutation
+      console.log('🌐 Online: Updating lecture on server');
+      const { data, error } = await supabase.functions.invoke(
+        'update-lecture',
+        {
+          body: {
+            lecture_id: lectureId,
+            ...request,
+          },
+        },
       );
       if (error) throw error;
       return data;

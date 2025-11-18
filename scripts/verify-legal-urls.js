@@ -2,10 +2,10 @@
 
 /**
  * Legal URLs Verification Script
- * 
+ *
  * Verifies that both Terms of Service and Privacy Policy URLs are accessible
  * and return HTTP 200 status codes.
- * 
+ *
  * Usage: node scripts/verify-legal-urls.js
  */
 
@@ -43,9 +43,15 @@ async function main() {
   ]);
 
   console.log('\n📊 Summary:');
-  console.log(`Terms of Service: ${termsAccessible ? '✅ Accessible' : '❌ Not Accessible'}`);
-  console.log(`Privacy Policy: ${privacyAccessible ? '✅ Accessible' : '❌ Not Accessible'}`);
-  console.log(`Overall: ${termsAccessible && privacyAccessible ? '✅ All URLs accessible' : '❌ Some URLs are not accessible'}\n`);
+  console.log(
+    `Terms of Service: ${termsAccessible ? '✅ Accessible' : '❌ Not Accessible'}`,
+  );
+  console.log(
+    `Privacy Policy: ${privacyAccessible ? '✅ Accessible' : '❌ Not Accessible'}`,
+  );
+  console.log(
+    `Overall: ${termsAccessible && privacyAccessible ? '✅ All URLs accessible' : '❌ Some URLs are not accessible'}\n`,
+  );
 
   if (!termsAccessible || !privacyAccessible) {
     process.exit(1);
@@ -54,8 +60,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('Fatal error:', error);
   process.exit(1);
 });
-

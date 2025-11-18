@@ -173,7 +173,10 @@ export class CacheManager {
   private static async saveMetrics(): Promise<void> {
     if (!this.metrics) return;
     try {
-      await AsyncStorage.setItem(CACHE_METRICS_KEY, JSON.stringify(this.metrics));
+      await AsyncStorage.setItem(
+        CACHE_METRICS_KEY,
+        JSON.stringify(this.metrics),
+      );
     } catch (error) {
       console.error('Failed to save cache metrics:', error);
     }

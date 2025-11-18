@@ -13,7 +13,6 @@ import { NavigationState, PartialState } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/navigation';
 import {
   AUTHENTICATED_ROUTES,
-  GUEST_ROUTES,
 } from '@/navigation/utils/RouteGuards';
 
 // Storage keys
@@ -28,7 +27,6 @@ const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'Launch',
   'Auth',
   'Main',
-  'GuestHome',
   'OnboardingFlow',
   'Courses',
   'Drafts',
@@ -320,16 +318,6 @@ class NavigationSyncService {
     ) {
       console.log(
         '🔒 NavigationSync: Logged out user trying to access authenticated route. Clearing state.',
-      );
-      await this.clearState();
-      return null;
-    }
-
-    // If user is logged in but state contains guest-only routes, clear it
-    const guestRoutes = GUEST_ROUTES as readonly string[];
-    if (isAuthenticated && currentRoute && guestRoutes.includes(currentRoute)) {
-      console.log(
-        '✅ NavigationSync: Authenticated user in guest route. Clearing state.',
       );
       await this.clearState();
       return null;

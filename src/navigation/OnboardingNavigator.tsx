@@ -1,6 +1,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
-import NewWelcomeScreen from '@/features/onboarding/screens/NewWelcomeScreen';
+import WelcomeScreen from '@/features/onboarding/screens/WelcomeScreen';
 import ProfileSetupScreen from '@/features/onboarding/screens/ProfileSetupScreen';
 import OnboardingCoursesScreen from '@/features/onboarding/screens/OnboardingCoursesScreen';
 import { ProgressHeader } from '@/shared/components';
@@ -26,7 +26,7 @@ const OnboardingNavigator = () => {
       initialRouteName="Welcome">
       <Stack.Screen
         name="Welcome"
-        component={NewWelcomeScreen}
+        component={WelcomeScreen}
         options={{
           header: () => (
             <ProgressHeader currentStep={1} totalSteps={TOTAL_STEPS} />

@@ -1,0 +1,8 @@
+extends: default
+
+rules:
+  # Disable context-access warnings for GitHub Actions workflows
+  # These are false positives - the syntax is valid for GitHub Actions
+  context-access:
+    enabled: false
+

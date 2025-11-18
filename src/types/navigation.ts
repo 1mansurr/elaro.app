@@ -21,7 +21,6 @@ export type RootStackParamList = {
     mode?: 'signup' | 'signin';
   };
   Main: undefined;
-  GuestHome: undefined;
   OnboardingFlow: undefined;
 
   // Core app screens
@@ -42,6 +41,8 @@ export type RootStackParamList = {
   // Auth-related screens
   MFAEnrollmentScreen: undefined;
   MFAVerificationScreen: { factorId: string };
+  ForgotPassword: undefined;
+  ResetPassword: undefined;
 
   // Modal flows (can accept optional initialData)
   AddCourseFlow: { initialData?: FlowInitialData } | undefined;
@@ -84,3 +85,4 @@ export type MainTabParamList = {
   Home: undefined;
   Account: undefined;
 };
+

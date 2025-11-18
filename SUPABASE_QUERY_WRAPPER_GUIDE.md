@@ -7,6 +7,7 @@ This guide explains when and how to use the Supabase Query Wrapper for consisten
 ## What is the Query Wrapper?
 
 The query wrapper (`src/utils/supabaseQueryWrapper.ts`) provides:
+
 - **Circuit Breaker Protection**: Prevents cascading failures during Supabase outages
 - **Automatic Retry**: Retries failed requests with exponential backoff
 - **Error Handling**: Consistent error handling across all operations
@@ -134,6 +135,7 @@ await executeSupabaseMutation(
 ### ⚠️ Not Using Wrapper (Lower Priority):
 
 These files use direct Supabase queries but are less critical:
+
 - `src/utils/reminderUtils.ts` - Analytics/utility functions
 - `src/utils/notificationQueue.ts` - Background queue operations
 - `src/utils/notificationActions.ts` - Analytics tracking
@@ -144,6 +146,7 @@ These files use direct Supabase queries but are less critical:
 ### Recommendation
 
 For files not using the wrapper:
+
 1. **High Priority**: Wrap operations in user-facing code paths
 2. **Medium Priority**: Wrap operations in critical business logic
 3. **Low Priority**: Analytics, logging, and background jobs can remain unwrapped
@@ -151,6 +154,7 @@ For files not using the wrapper:
 ## Migration Example
 
 ### Before:
+
 ```typescript
 const { data, error } = await supabase
   .from('users')
@@ -163,6 +167,7 @@ return data;
 ```
 
 ### After:
+
 ```typescript
 import { executeSupabaseQueryNullable } from '@/utils/supabaseQueryWrapper';
 
@@ -188,7 +193,7 @@ return data; // Can be null
 
 1. **Always Provide `operationName`**: Helps with debugging and monitoring
 2. **Use Appropriate Function**: Choose `executeSupabaseQuery`, `executeSupabaseQueryNullable`, or `executeSupabaseMutation`
-3. **Set Retry Appropriately**: 
+3. **Set Retry Appropriately**:
    - Queries: `retryOnFailure: true` (default)
    - Mutations: `retryOnFailure: false` (default)
 4. **Handle Null Results**: Use `executeSupabaseQueryNullable` if null is a valid result
@@ -208,6 +213,7 @@ console.log('Circuit breaker state:', stats.state); // 'closed' | 'open' | 'half
 ## Error Handling
 
 The wrapper automatically:
+
 - Retries on network errors (5xx, timeouts)
 - Does NOT retry on client errors (4xx except 429)
 - Opens circuit breaker after 5 consecutive failures
@@ -228,4 +234,3 @@ try {
   }
 }
 ```
-

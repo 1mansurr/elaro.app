@@ -3,6 +3,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { COLORS } from '@/constants/theme';
 
 interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
@@ -51,13 +52,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0A2540', // Must match the native splash screen color
+    backgroundColor: COLORS.primary, // Matches app primary color (#2C5EFF) and native splash screen
   },
   wordmark: {
-    fontSize: 48,
-    fontWeight: 'bold',
+    fontSize: 64, // Increased for better visibility
+    fontWeight: '900', // Extra bold for better visibility
     color: '#FFFFFF', // White text
-    letterSpacing: 2,
+    letterSpacing: 4, // Increased spacing for better readability
+    textShadowColor: 'rgba(0, 0, 0, 0.3)', // Add shadow for better visibility
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
   },
 });
 

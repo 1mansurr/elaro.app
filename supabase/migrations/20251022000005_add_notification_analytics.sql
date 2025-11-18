@@ -1,7 +1,7 @@
 -- Comprehensive Notification Analytics and Delivery Tracking
 -- Enables tracking of notification delivery, engagement, and effectiveness
 
--- 1. Create notification deliveries table for tracking
+-- 1. Create notification deliveries table for tracking (or add missing columns if table exists)
 CREATE TABLE IF NOT EXISTS public.notification_deliveries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -23,6 +23,48 @@ CREATE TABLE IF NOT EXISTS public.notification_deliveries (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Add missing columns if table already exists from earlier migration
+DO $$
+BEGIN
+  -- Add columns that might be missing from earlier migration
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'opened_at') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN opened_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'clicked_at') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN clicked_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'dismissed_at') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN dismissed_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'expo_receipt_id') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN expo_receipt_id TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'expo_ticket_id') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN expo_ticket_id TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'expo_status') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN expo_status TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'device_token') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN device_token TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'deep_link_url') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN deep_link_url TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'metadata') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN metadata JSONB;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'title') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN title TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'body') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN body TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_deliveries' AND column_name = 'sent_at') THEN
+    ALTER TABLE public.notification_deliveries ADD COLUMN sent_at TIMESTAMPTZ;
+  END IF;
+END $$;
+
 -- Add indexes for efficient queries
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_user ON public.notification_deliveries(user_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_notification_deliveries_opened ON public.notification_deliveries(opened_at) WHERE opened_at IS NOT NULL;
@@ -34,7 +76,7 @@ COMMENT ON TABLE public.notification_deliveries IS 'Tracks all push notification
 COMMENT ON COLUMN public.notification_deliveries.expo_receipt_id IS 'Expo receipt ID for delivery confirmation';
 COMMENT ON COLUMN public.notification_deliveries.expo_status IS 'Delivery status from Expo: ok, error, or pending';
 
--- 2. Create notification queue table for batching and retry
+-- 2. Create notification queue table for batching and retry (or add missing columns if table exists)
 CREATE TABLE IF NOT EXISTS public.notification_queue (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.users(id) ON DELETE CASCADE,
@@ -53,6 +95,41 @@ CREATE TABLE IF NOT EXISTS public.notification_queue (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Add missing columns if table already exists from earlier migration
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'notification_type') THEN
+    ALTER TABLE public.notification_queue ADD COLUMN notification_type TEXT DEFAULT 'general';
+  END IF;
+  -- Handle priority: existing table has TEXT, new one has INTEGER
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'priority' AND data_type = 'text') THEN
+    -- Convert TEXT priority to INTEGER (map 'urgent'=1, 'high'=3, 'normal'=5, 'low'=7)
+    ALTER TABLE public.notification_queue ADD COLUMN priority_int INTEGER;
+    UPDATE public.notification_queue SET priority_int = CASE 
+      WHEN priority = 'urgent' THEN 1
+      WHEN priority = 'high' THEN 3
+      WHEN priority = 'normal' THEN 5
+      WHEN priority = 'low' THEN 7
+      ELSE 5
+    END;
+    ALTER TABLE public.notification_queue DROP COLUMN priority;
+    ALTER TABLE public.notification_queue RENAME COLUMN priority_int TO priority;
+    ALTER TABLE public.notification_queue ADD CONSTRAINT notification_queue_priority_check CHECK (priority BETWEEN 1 AND 10);
+  ELSIF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'priority') THEN
+    ALTER TABLE public.notification_queue ADD COLUMN priority INTEGER DEFAULT 5;
+    ALTER TABLE public.notification_queue ADD CONSTRAINT notification_queue_priority_check CHECK (priority BETWEEN 1 AND 10);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'next_retry_at') THEN
+    ALTER TABLE public.notification_queue ADD COLUMN next_retry_at TIMESTAMPTZ;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'last_error') THEN
+    ALTER TABLE public.notification_queue ADD COLUMN last_error TEXT;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'notification_queue' AND column_name = 'updated_at') THEN
+    ALTER TABLE public.notification_queue ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+  END IF;
+END $$;
 
 -- Indexes for queue processing
 CREATE INDEX IF NOT EXISTS idx_notification_queue_processing ON public.notification_queue(status, scheduled_for, priority) WHERE status = 'pending';

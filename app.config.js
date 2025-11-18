@@ -97,9 +97,6 @@ module.exports = ({ config }) => {
           'This app needs photo library access to save and share learning materials.',
       },
     },
-    apple: {
-      appleTeamId: process.env.APPLE_TEAM_ID || '',
-    },
     android: {
       ...config.android,
       package: 'com.elaro.app',
@@ -115,8 +112,6 @@ module.exports = ({ config }) => {
           })(),
       ),
       // googleServicesFile: './google-services.json', // Commented out - file not found
-      compileSdkVersion: 35,
-      targetSdkVersion: 35,
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#4A90E2',
@@ -139,25 +134,27 @@ module.exports = ({ config }) => {
       bundler: 'metro',
     },
     plugins: [
-      [
-        'expo-notifications',
-        {
-          icon: './assets/notification-icon.png',
-          color: '#ffffff',
-          sounds: [
-            // You can add custom sound files here if you have them
-          ],
-        },
-      ],
-      [
-        'expo-image-picker',
-        {
-          photosPermission: 'Allow $(PRODUCT_NAME) to access your photos.',
-          cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera.',
-        },
-      ],
-      'expo-build-properties',
-      'expo-font',
+      // Temporarily commented out for binary search test (not in dependencies 53-61)
+      // [
+      //   'expo-notifications',
+      //   {
+      //     icon: './assets/notification-icon.png',
+      //     color: '#ffffff',
+      //     sounds: [
+      //       // You can add custom sound files here if you have them
+      //     ],
+      //   },
+      // ],
+      // [
+      //   'expo-image-picker',
+      //   {
+      //     photosPermission: 'Allow $(PRODUCT_NAME) to access your photos.',
+      //     cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera.',
+      //   },
+      // ],
+      // Temporarily commented out for binary search test (packages in first 35)
+      // 'expo-build-properties',
+      // 'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin
       // Note: react-native-reanimated/plugin should be in babel.config.js, not here
     ],

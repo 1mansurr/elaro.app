@@ -15,10 +15,10 @@ interface QuotaConfig {
 
 /**
  * Quota configurations - update these based on your actual service limits
- * 
+ *
  * ⚠️ CRITICAL: These limits MUST be verified against your actual service dashboards.
  * Wrong limits mean monitoring won't work correctly and you risk exceeding quotas.
- * 
+ *
  * 📋 VERIFICATION STEPS:
  * 1. Log into each service dashboard (links below)
  * 2. Check Settings → Billing → Usage (or equivalent)
@@ -26,15 +26,15 @@ interface QuotaConfig {
  * 4. Fill in all placeholders (Plan, Source, Last verified, Verified by)
  * 5. Update QUOTA_LIMITS.md with the same information
  * 6. Remove all TODO comments after verification
- * 
+ *
  * 📚 See QUOTA_VERIFICATION_GUIDE.md for detailed step-by-step instructions
- * 
+ *
  * Last verified: 2025-01-31 by ELARO
  */
 const QUOTA_CONFIGS: QuotaConfig[] = [
-  { 
-    serviceName: 'supabase', 
-    quotaType: 'daily', 
+  {
+    serviceName: 'supabase',
+    quotaType: 'daily',
     // ✅ VERIFIED: Free plan → "Unlimited API requests" per pricing page
     // Note: Other limits apply (e.g., 50,000 MAUs, 500MB database, 1GB storage)
     // Set high limit for monitoring purposes (won't trigger alerts, but tracks usage)
@@ -45,9 +45,9 @@ const QUOTA_CONFIGS: QuotaConfig[] = [
     // Verified by: ELARO
     // Note: API requests are unlimited, but monitoring tracks usage for visibility
   },
-  { 
-    serviceName: 'expo_push', 
-    quotaType: 'daily', 
+  {
+    serviceName: 'expo_push',
+    quotaType: 'daily',
     // ✅ VERIFIED: Free plan → "600 notifications per second" rate limit
     // Calculated daily: 600/sec × 86,400 sec/day = 51,840,000/day
     // This is a rate limit (burst capacity), not a hard daily cap
@@ -58,9 +58,9 @@ const QUOTA_CONFIGS: QuotaConfig[] = [
     // Verified by: ELARO
     // Note: This is a per-second rate limit, not a daily quota. Monitoring tracks daily usage.
   },
-  { 
-    serviceName: 'revenuecat', 
-    quotaType: 'monthly', 
+  {
+    serviceName: 'revenuecat',
+    quotaType: 'monthly',
     // ✅ VERIFIED: Free plan → Free until MTR reaches US $2,500
     // No clear monthly request cap found in documentation
     // Set high limit for monitoring purposes (tracks usage, won't trigger false alerts)

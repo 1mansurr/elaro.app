@@ -1,6 +1,6 @@
 /**
  * Cache Monitoring Service
- * 
+ *
  * Monitors cache hit rates and alerts when hit rate drops below 80% for more than 30 minutes
  */
 
@@ -72,7 +72,10 @@ class CacheMonitoringService {
         if (durationLow > MONITORING_WINDOW_MS) {
           // Only alert once per 30-minute window
           if (now - this.lastAlertTime > MONITORING_WINDOW_MS) {
-            await this.alertLowHitRate({ ...stats, windowStart: this.lowHitRateStartTime });
+            await this.alertLowHitRate({
+              ...stats,
+              windowStart: this.lowHitRateStartTime,
+            });
             this.lastAlertTime = now;
           }
         }
@@ -162,9 +165,7 @@ class CacheMonitoringService {
     const stats = await cache.getHitRate();
     const now = Date.now();
     const lowHitRateDuration =
-      this.lowHitRateStartTime !== null
-        ? now - this.lowHitRateStartTime
-        : null;
+      this.lowHitRateStartTime !== null ? now - this.lowHitRateStartTime : null;
 
     return {
       ...stats,
@@ -175,4 +176,3 @@ class CacheMonitoringService {
 }
 
 export const cacheMonitoring = CacheMonitoringService.getInstance();
-

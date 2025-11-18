@@ -1,6 +1,6 @@
 /**
  * Legal URLs and Policy Links
- * 
+ *
  * Centralized location for all legal document URLs to ensure consistency
  * across the application.
  */
@@ -42,4 +42,3 @@ export async function verifyLegalUrls(): Promise<{
     };
   }
 }
-

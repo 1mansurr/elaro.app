@@ -231,4 +231,3 @@ CREATE TABLE notification_analytics (
 - [Expo Notifications Documentation](https://docs.expo.dev/versions/latest/sdk/notifications/)
 - [Supabase Edge Functions](https://supabase.com/docs/guides/functions)
 - [Resend Documentation](https://resend.com/docs)
-

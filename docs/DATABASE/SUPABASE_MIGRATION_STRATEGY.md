@@ -24,6 +24,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 **Location:** `src/services/VersionedApiClient.ts`, `src/services/ApiVersioningService.ts`
 
 **What's Abstracted:**
+
 - Course operations (CRUD)
 - Assignment operations (CRUD)
 - Lecture operations (CRUD)
@@ -34,12 +35,14 @@ This document identifies what's abstracted, what's not, and provides a migration
 - Batch operations
 
 **How It Works:**
+
 - Client app calls `VersionedApiClient` methods
 - `VersionedApiClient` uses `ApiVersioningService` to make HTTP requests to Edge Functions
 - Edge Functions (`api-v2`) handle business logic and database operations
 - App never directly interacts with Supabase client for these operations
 
 **Edge Functions Used:**
+
 - `api-v2/courses/*`
 - `api-v2/assignments/*`
 - `api-v2/lectures/*`
@@ -48,6 +51,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 - `api-v2/analytics/*`
 
 **Benefits:**
+
 - ✅ Business logic centralized in Edge Functions
 - ✅ Version management and deprecation support
 - ✅ Consistent error handling
@@ -63,6 +67,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 **Current Direct Supabase Usage:**
 
 #### 1. Authentication (`src/services/authService.ts`, `src/contexts/AuthContext.tsx`)
+
 - **Usage:** User sign up, sign in, sign out, password reset
 - **Supabase Feature:** `supabase.auth.*`
 - **Migration Path:** Create Edge Functions:
@@ -73,11 +78,13 @@ This document identifies what's abstracted, what's not, and provides a migration
   - `auth/verify-email`
 
 #### 2. User Profile (`src/features/auth/services/UserProfileService.ts`)
+
 - **Usage:** Fetch and update user profile
 - **Supabase Feature:** Direct database queries to `users` table
 - **Migration Path:** Already partially abstracted via `api-v2/users/profile` and `api-v2/users/update`
 
 #### 3. Notifications (`src/services/notifications/*`)
+
 - **Usage:** Notification preferences, delivery tracking, scheduling
 - **Supabase Feature:** Direct queries to `notification_preferences`, `notification_deliveries`, `reminders`
 - **Migration Path:** Create Edge Functions:
@@ -86,16 +93,19 @@ This document identifies what's abstracted, what's not, and provides a migration
   - `notification-system/schedule`
 
 #### 4. Sync Services (`src/services/syncManager.ts`, `src/services/studySessionSync.ts`, `src/services/settingsSync.ts`)
+
 - **Usage:** Offline sync, data synchronization
 - **Supabase Feature:** Direct database mutations
 - **Migration Path:** Use batch operations API or create dedicated sync Edge Functions
 
 #### 5. Utilities (`src/utils/*`)
+
 - **Usage:** Various utility functions (reminders, notifications, auth lockout, etc.)
 - **Supabase Feature:** Direct database queries
 - **Migration Path:** Move logic to Edge Functions or use existing API endpoints
 
 #### 6. Real-time Subscriptions
+
 - **Usage:** Not currently implemented
 - **Migration Path:** If needed, use WebSocket connections or polling
 
@@ -108,6 +118,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 **Goal:** Move all core data operations through API layer
 
 #### Step 1: Authentication API
+
 - [ ] Create `auth/signup` Edge Function
 - [ ] Create `auth/signin` Edge Function
 - [ ] Create `auth/signout` Edge Function
@@ -116,6 +127,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 - [ ] Update `AuthContext.tsx` to use new auth API
 
 #### Step 2: Notification API
+
 - [ ] Extend `notification-system` Edge Function with:
   - `GET /notification-system/preferences` - Get preferences
   - `PUT /notification-system/preferences` - Update preferences
@@ -124,6 +136,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 - [ ] Update `NotificationHistoryService.ts` to use API
 
 #### Step 3: Sync API
+
 - [ ] Extend `batch-operations` Edge Function for sync operations
 - [ ] Update `syncManager.ts` to use batch API
 - [ ] Update `studySessionSync.ts` to use batch API
@@ -205,6 +218,7 @@ This document identifies what's abstracted, what's not, and provides a migration
 ## Files Using Direct Supabase (87 files)
 
 ### High Priority (Core Features):
+
 1. `src/services/authService.ts` - Authentication
 2. `src/contexts/AuthContext.tsx` - Auth context
 3. `src/services/notifications/NotificationPreferenceService.ts` - Preferences
@@ -214,12 +228,14 @@ This document identifies what's abstracted, what's not, and provides a migration
 7. `src/services/settingsSync.ts` - Settings sync
 
 ### Medium Priority (Utilities):
+
 8. `src/utils/reminderUtils.ts`
 9. `src/utils/notificationQueue.ts`
 10. `src/utils/notificationActions.ts`
 11. `src/utils/authLockout.ts`
 
 ### Low Priority (Dev/Admin):
+
 12. `src/utils/exampleData.ts` - Dev-only
 13. Various admin screens - Can remain direct
 
@@ -245,6 +261,7 @@ These Edge Functions already provide API abstraction:
 ## Migration Checklist
 
 ### Phase 1: Core Features (High Priority)
+
 - [ ] Create auth Edge Functions
 - [ ] Migrate `authService.ts` to use Edge Functions
 - [ ] Migrate `AuthContext.tsx` to use Edge Functions
@@ -254,10 +271,12 @@ These Edge Functions already provide API abstraction:
 - [ ] Migrate sync services to use API
 
 ### Phase 2: Utilities (Medium Priority)
+
 - [ ] Review and migrate utility functions
 - [ ] Update all direct Supabase queries in utilities
 
 ### Phase 3: Database Abstraction (Low Priority)
+
 - [ ] Abstract RLS logic
 - [ ] Move database functions to Edge Functions
 - [ ] Abstract storage operations
@@ -270,6 +289,7 @@ These Edge Functions already provide API abstraction:
 Even after full migration, some Supabase features will remain:
 
 ### Critical (Cannot easily migrate):
+
 1. **Supabase Auth** - Authentication provider
    - **Migration:** Use Auth0, Firebase Auth, or custom auth
    - **Effort:** High (requires full auth migration)
@@ -283,6 +303,7 @@ Even after full migration, some Supabase features will remain:
    - **Effort:** Low (storage abstraction)
 
 ### Non-Critical (Can remain):
+
 1. **Supabase Edge Functions** - Serverless functions
    - **Migration:** Use AWS Lambda, Google Cloud Functions, etc.
    - **Effort:** Medium (function migration)
@@ -308,12 +329,14 @@ Even after full migration, some Supabase features will remain:
 ## Testing Strategy
 
 ### During Migration:
+
 1. **Feature Flags** - Use feature flags to switch between direct Supabase and API
 2. **Parallel Testing** - Run both implementations and compare results
 3. **Gradual Rollout** - Migrate one feature at a time
 4. **Monitoring** - Track API usage and errors
 
 ### After Migration:
+
 1. **Integration Tests** - Test all API endpoints
 2. **Performance Tests** - Ensure no performance regression
 3. **Load Tests** - Test Edge Function capacity
@@ -322,14 +345,14 @@ Even after full migration, some Supabase features will remain:
 
 ## Current Status Summary
 
-| Category | Abstracted | Direct Usage | Migration Priority |
-|----------|-----------|--------------|-------------------|
-| **Core Data (Courses, Assignments, etc.)** | ✅ Yes | ❌ No | ✅ Complete |
-| **Authentication** | ❌ No | ✅ Yes | 🔴 High |
-| **Notifications** | ⚠️ Partial | ✅ Yes | 🔴 High |
-| **Sync Services** | ⚠️ Partial | ✅ Yes | 🟡 Medium |
-| **Utilities** | ❌ No | ✅ Yes | 🟡 Medium |
-| **Storage** | ❌ No | ✅ Yes | 🟢 Low |
+| Category                                   | Abstracted | Direct Usage | Migration Priority |
+| ------------------------------------------ | ---------- | ------------ | ------------------ |
+| **Core Data (Courses, Assignments, etc.)** | ✅ Yes     | ❌ No        | ✅ Complete        |
+| **Authentication**                         | ❌ No      | ✅ Yes       | 🔴 High            |
+| **Notifications**                          | ⚠️ Partial | ✅ Yes       | 🔴 High            |
+| **Sync Services**                          | ⚠️ Partial | ✅ Yes       | 🟡 Medium          |
+| **Utilities**                              | ❌ No      | ✅ Yes       | 🟡 Medium          |
+| **Storage**                                | ❌ No      | ✅ Yes       | 🟢 Low             |
 
 **Overall Migration Progress:** ~40% complete
 
@@ -359,4 +382,3 @@ Even after full migration, some Supabase features will remain:
 **Document Maintainer:** Development Team  
 **Review Schedule:** Quarterly  
 **Last Review Date:** 2025-01-31
-

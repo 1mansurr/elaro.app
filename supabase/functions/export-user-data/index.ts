@@ -1,4 +1,7 @@
+/// <reference path="../global.d.ts" />
+// @ts-ignore - ESM imports are valid in Deno runtime
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-ignore - ESM imports are valid in Deno runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { AppError } from '../_shared/function-handler.ts';
@@ -21,7 +24,12 @@ function convertToCSV(data: any): string {
     const result: Record<string, any> = {};
     for (const key in obj) {
       const newKey = prefix ? `${prefix}.${key}` : key;
-      if (obj[key] && typeof obj[key] === 'object' && !Array.isArray(obj[key]) && !(obj[key] instanceof Date)) {
+      if (
+        obj[key] &&
+        typeof obj[key] === 'object' &&
+        !Array.isArray(obj[key]) &&
+        !(obj[key] instanceof Date)
+      ) {
         Object.assign(result, flatten(obj[key], newKey));
       } else {
         result[newKey] = obj[key];
@@ -31,12 +39,12 @@ function convertToCSV(data: any): string {
   };
 
   const allRows: Record<string, any>[] = [];
-  
+
   // Flatten user data
   if (data.data.user) {
     allRows.push({ type: 'user', ...flatten(data.data.user) });
   }
-  
+
   // Flatten arrays
   const processArray = (arr: any[], type: string) => {
     if (Array.isArray(arr)) {
@@ -52,11 +60,14 @@ function convertToCSV(data: any): string {
   processArray(data.data.studySessions, 'studySession');
   processArray(data.data.reminders, 'reminder');
   processArray(data.data.userDevices, 'userDevice');
-  
+
   if (data.data.notificationPreferences) {
-    allRows.push({ type: 'notificationPreferences', ...flatten(data.data.notificationPreferences) });
+    allRows.push({
+      type: 'notificationPreferences',
+      ...flatten(data.data.notificationPreferences),
+    });
   }
-  
+
   if (data.data.streaks) {
     allRows.push({ type: 'streaks', ...flatten(data.data.streaks) });
   }
@@ -65,7 +76,10 @@ function convertToCSV(data: any): string {
     processArray(data.data.userEvents, 'userEvent');
   }
 
-  if (data.data.notificationDeliveries && Array.isArray(data.data.notificationDeliveries)) {
+  if (
+    data.data.notificationDeliveries &&
+    Array.isArray(data.data.notificationDeliveries)
+  ) {
     processArray(data.data.notificationDeliveries, 'notificationDelivery');
   }
 
@@ -84,26 +98,32 @@ function convertToCSV(data: any): string {
   });
 
   const keys = Array.from(allKeys).sort();
-  
+
   // Create CSV header
   const header = keys.join(',');
-  
+
   // Create CSV rows
   const rows = allRows.map(row => {
-    return keys.map(key => {
-      const value = row[key];
-      if (value === null || value === undefined) {
-        return '';
-      }
-      if (typeof value === 'object') {
-        return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
-      }
-      const stringValue = String(value);
-      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-        return `"${stringValue.replace(/"/g, '""')}"`;
-      }
-      return stringValue;
-    }).join(',');
+    return keys
+      .map(key => {
+        const value = row[key];
+        if (value === null || value === undefined) {
+          return '';
+        }
+        if (typeof value === 'object') {
+          return `"${JSON.stringify(value).replace(/"/g, '""')}"`;
+        }
+        const stringValue = String(value);
+        if (
+          stringValue.includes(',') ||
+          stringValue.includes('"') ||
+          stringValue.includes('\n')
+        ) {
+          return `"${stringValue.replace(/"/g, '""')}"`;
+        }
+        return stringValue;
+      })
+      .join(',');
   });
 
   return [header, ...rows].join('\n');
@@ -133,32 +153,6 @@ serve(async (req: Request) => {
       );
     }
 
-    // --- Rate Limiting Check ---
-    const { data: userData, error: userError } = await supabaseAdmin
-      .from('users')
-      .select('last_data_export_at')
-      .eq('id', user.id)
-      .single();
-
-    if (userError) {
-      throw handleDbError(userError);
-    }
-
-    if (userData?.last_data_export_at) {
-      const lastExportDate = new Date(userData.last_data_export_at);
-      const nextAvailableDate = new Date(
-        lastExportDate.getTime() + RATE_LIMIT_DAYS * 24 * 60 * 60 * 1000,
-      );
-
-      if (new Date() < nextAvailableDate) {
-        throw new AppError(
-          `Data export is limited to once every ${RATE_LIMIT_DAYS} days. Next available on: ${nextAvailableDate.toDateString()}`,
-          ERROR_STATUS_CODES.RATE_LIMIT_EXCEEDED,
-          ERROR_CODES.RATE_LIMIT_EXCEEDED,
-        );
-      }
-    }
-
     // --- Get Export Format ---
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'json';
@@ -171,7 +165,7 @@ serve(async (req: Request) => {
       );
     }
 
-    // --- Check User Role ---
+    // --- Check User Role and Rate Limiting ---
     const { data: userData, error: userError } = await supabaseAdmin
       .from('users')
       .select('role, last_data_export_at')
@@ -207,7 +201,7 @@ serve(async (req: Request) => {
       { user_id: user.id, format, is_admin: isAdmin },
       traceContext,
     );
-    
+
     // Base data queries (all users)
     const [
       userProfile,
@@ -241,7 +235,9 @@ serve(async (req: Request) => {
       supabaseAdmin.from('user_events').select('*').eq('user_id', user.id),
       supabaseAdmin
         .from('notification_deliveries')
-        .select('id, notification_type, title, body, sent_at, delivered_at, opened_at, clicked_at, deep_link_url, created_at')
+        .select(
+          'id, notification_type, title, body, sent_at, delivered_at, opened_at, clicked_at, deep_link_url, created_at',
+        )
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(1000), // Limit to last 1000 notifications
@@ -286,7 +282,9 @@ serve(async (req: Request) => {
         totalReminders: reminders.data?.length || 0,
         totalUserEvents: userEvents.data?.length || 0,
         totalNotificationDeliveries: notificationDeliveries.data?.length || 0,
-        ...(isAdmin && adminActions ? { totalAdminActions: adminActions.length } : {}),
+        ...(isAdmin && adminActions
+          ? { totalAdminActions: adminActions.length }
+          : {}),
       },
     };
 
@@ -325,9 +323,9 @@ serve(async (req: Request) => {
       { user_id: user.id, format, data_size: responseBody.length },
       traceContext,
     );
-    
+
     const filename = `elaro-export-${user.id}-${new Date().toISOString().split('T')[0]}.${format}`;
-    
+
     return new Response(responseBody, {
       headers: {
         ...corsHeaders,

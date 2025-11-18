@@ -56,7 +56,7 @@ export const SheetModal: React.FC<ModalVariantProps> = ({
   );
 };
 
-// Dialog Modal - Centered with blur backdrop (like GuestAuthModal)
+// Dialog Modal - Centered with blur backdrop
 export const DialogModal: React.FC<ModalVariantProps> = ({
   isVisible,
   onClose,

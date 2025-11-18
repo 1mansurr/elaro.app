@@ -286,7 +286,7 @@ import { FullScreenModal, DialogModal, SimpleModal, SheetModal } from '@/shared/
 #### FullScreenModal
 
 - **Use for:** Full-screen experiences (templates, notifications)
-- **Animation:** Slide from bottom, 300ms duration
+- **Animation:** Slide from bottom, 350ms duration
 - **Backdrop:** None (full screen)
 - **Close behavior:** Manual close only
 
@@ -305,7 +305,7 @@ import { FullScreenModal, DialogModal, SimpleModal, SheetModal } from '@/shared/
 #### DialogModal
 
 - **Use for:** Important dialogs (auth, confirmations)
-- **Animation:** Fade in/out, 300ms duration
+- **Animation:** Fade in/out, 250ms duration
 - **Backdrop:** Blur effect
 - **Close behavior:** Tap backdrop to close
 
@@ -343,7 +343,7 @@ import { FullScreenModal, DialogModal, SimpleModal, SheetModal } from '@/shared/
 #### SimpleModal
 
 - **Use for:** Simple alerts and info modals
-- **Animation:** Fade in/out, 300ms duration
+- **Animation:** Fade in/out, 200ms duration
 - **Backdrop:** Semi-transparent overlay
 - **Close behavior:** Tap backdrop to close
 
@@ -361,7 +361,7 @@ import { FullScreenModal, DialogModal, SimpleModal, SheetModal } from '@/shared/
 
 ### Modal Consistency Benefits
 
-- **Unified animations:** All modals use 300ms duration
+- **Unified animations:** All modals use optimized durations (200-350ms) per modal type
 - **Consistent theming:** All modals respect light/dark mode
 - **Predictable behavior:** Same backdrop and close behaviors
 - **Maintainable code:** Single BaseModal foundation
@@ -615,7 +615,7 @@ const MyComponent = () => {
 - [x] Review modal variants
 - [x] Ensure consistency across all modals
 - [x] Update documentation
-- [x] All modals use 300ms animations
+- [x] All modals use optimized durations (200-350ms) per modal type
 - [x] Convert inconsistent modals to use BaseModal system
 
 ### Phase 4: Color Migration ✅ Complete

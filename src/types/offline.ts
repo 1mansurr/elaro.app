@@ -99,8 +99,13 @@ export interface CreatePayload {
  */
 export interface UpdatePayload {
   type: 'UPDATE';
-  resourceId: string; // Server ID of the resource to update
-  updates: Record<string, any>; // Fields to update
+  // New format (preferred)
+  id?: string; // Server ID of the resource to update
+  data?: Record<string, any>; // Fields to update
+  // Legacy format (for backward compatibility)
+  resourceId?: string; // Deprecated: use 'id' instead
+  updates?: Record<string, any>; // Deprecated: use 'data' instead
+  // Note: At least one of (id, resourceId) and one of (data, updates) must be provided
 }
 
 /**
