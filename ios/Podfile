@@ -7,8 +7,8 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-# Use git-based CocoaPods repo to avoid GitHub rate limits
-source 'https://github.com/CocoaPods/Specs.git'
+# Use CocoaPods CDN (default, faster and more reliable)
+source 'https://cdn.cocoapods.org/'
 
 use_autolinking_method_symbol = ('use' + '_native' + '_modules!').to_sym
 origin_autolinking_method = self.method(use_autolinking_method_symbol)
@@ -52,6 +52,7 @@ target 'Elaro' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
+  # START: COMPLETE UPDATED POST_INSTALL BLOCK (Including Deployment Target Fix and Warning Suppression)
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -60,8 +61,7 @@ target 'Elaro' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # This is necessary for Xcode 14, because it signs resource bundles by default
-    # when building for devices.
+    # Necessary for Xcode 14+ resource bundle signing issue
     installer.target_installation_results.pod_target_installation_results
       .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
@@ -79,7 +79,36 @@ target 'Elaro' do
         end
       end
     end
+
+    # --- FIX 1: ENFORCE CONSISTENT DEPLOYMENT TARGET (13.4) ---
+    # Overrides outdated deployment targets specified by individual Pods.
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+      end
+    end
+    # Ensure the main Pods Project also uses the correct version
+    installer.pods_project.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+    end
+
+    # --- FIX 2: SUPPRESS C/C++ COMPILER WARNINGS ---
+    # Suppresses warnings that modern Xcode treats as fatal errors (MIN/MAX ambiguity, 64-to-32 bit conversion).
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        # Append to C Flags, inheriting existing flags
+        config.build_settings['OTHER_CFLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-ambiguous-macro'
+        config.build_settings['OTHER_CFLAGS'] << '-Wno-shorten-64-to-32'
+        
+        # Append to C++ Flags
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] ||= ['$(inherited)']
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-ambiguous-macro'
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-shorten-64-to-32'
+      end
+    end
   end
+  # END: COMPLETE UPDATED POST_INSTALL BLOCK
 
   post_integrate do |installer|
     begin
