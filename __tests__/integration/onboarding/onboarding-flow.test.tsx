@@ -1,6 +1,6 @@
 /**
  * Integration Tests: Onboarding Flow
- * 
+ *
  * Tests the complete onboarding journey from welcome to course setup
  */
 
@@ -21,7 +21,7 @@ const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 describe('Onboarding Flow', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock auth context
     mockUseAuth.mockReturnValue({
       user: {
@@ -118,5 +118,3 @@ describe('Onboarding Flow', () => {
     });
   });
 });
-
-

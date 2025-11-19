@@ -58,16 +58,10 @@
     </dict>
     <key>NSCameraUsageDescription</key>
     <string>This app needs camera access for profile photos and document scanning.</string>
-    <key>NSFaceIDUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to use Face ID</string>
-    <key>NSMicrophoneUsageDescription</key>
-    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>This app needs photo library access to save and share learning materials.</string>
     <key>NSUserTrackingUsageDescription</key>
     <string>This app uses tracking to provide personalized learning experiences.</string>
-    <key>RCTNewArchEnabled</key>
-    <true/>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

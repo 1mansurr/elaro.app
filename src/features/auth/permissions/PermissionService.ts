@@ -333,7 +333,7 @@ export class PermissionService {
   /**
    * Get current task count for user by task type
    * Counts tasks created in the last 30 days, excluding soft-deleted tasks
-   * 
+   *
    * @param user - User object
    * @param taskType - Type of task: 'assignments', 'lectures', 'study_sessions', 'courses', or 'srs_reminders'
    * @returns Number of tasks of the specified type created in the last 30 days
@@ -346,12 +346,12 @@ export class PermissionService {
       // For monthly limits (srs_reminders), use 30 days
       const daysBack = taskType === 'srs_reminders' ? 30 : 7;
       sinceDate.setDate(sinceDate.getDate() - daysBack);
-      
+
       const { supabase } = await import('@/services/supabase');
-      
+
       // Query based on task type
       let count = 0;
-      
+
       switch (taskType) {
         case 'assignments': {
           // Count assignments created since the date, excluding soft-deleted ones
@@ -361,7 +361,7 @@ export class PermissionService {
             .eq('user_id', user.id)
             .gte('created_at', sinceDate.toISOString())
             .is('deleted_at', null);
-          
+
           if (error) {
             console.error('❌ Error counting assignments:', error);
             return 0;
@@ -369,7 +369,7 @@ export class PermissionService {
           count = assignmentCount || 0;
           break;
         }
-        
+
         case 'lectures': {
           // Count lectures created since the date, excluding soft-deleted ones
           const { count: lectureCount, error } = await supabase
@@ -378,7 +378,7 @@ export class PermissionService {
             .eq('user_id', user.id)
             .gte('created_at', sinceDate.toISOString())
             .is('deleted_at', null);
-          
+
           if (error) {
             console.error('❌ Error counting lectures:', error);
             return 0;
@@ -386,7 +386,7 @@ export class PermissionService {
           count = lectureCount || 0;
           break;
         }
-        
+
         case 'study_sessions': {
           // Count study sessions created since the date, excluding soft-deleted ones
           const { count: sessionCount, error } = await supabase
@@ -395,7 +395,7 @@ export class PermissionService {
             .eq('user_id', user.id)
             .gte('created_at', sinceDate.toISOString())
             .is('deleted_at', null);
-          
+
           if (error) {
             console.error('❌ Error counting study sessions:', error);
             return 0;
@@ -403,14 +403,14 @@ export class PermissionService {
           count = sessionCount || 0;
           break;
         }
-        
+
         case 'courses': {
           const { count: courseCount, error } = await supabase
             .from('courses')
             .select('*', { count: 'exact', head: true })
             .eq('user_id', user.id)
             .gte('created_at', sinceDate.toISOString());
-          
+
           if (error) {
             console.error('❌ Error counting courses:', error);
             return 0;
@@ -418,7 +418,7 @@ export class PermissionService {
           count = courseCount || 0;
           break;
         }
-        
+
         case 'srs_reminders': {
           // For SRS reminders, count reminders created in the last 30 days
           const { count: reminderCount, error } = await supabase
@@ -428,7 +428,7 @@ export class PermissionService {
             .eq('reminder_type', 'spaced_repetition')
             .gte('created_at', sinceDate.toISOString())
             .eq('completed', false);
-          
+
           if (error) {
             console.error('❌ Error counting SRS reminders:', error);
             return 0;
@@ -436,12 +436,12 @@ export class PermissionService {
           count = reminderCount || 0;
           break;
         }
-        
+
         default:
           console.warn(`⚠️ Unknown task type: ${taskType}`);
           return 0;
       }
-      
+
       return count;
     } catch (error) {
       console.error('❌ Exception getting task count:', error);

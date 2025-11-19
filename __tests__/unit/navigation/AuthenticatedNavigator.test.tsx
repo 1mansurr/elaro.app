@@ -1,6 +1,6 @@
 /**
  * Authenticated Navigator Tests
- * 
+ *
  * Tests for src/navigation/AuthenticatedNavigator.tsx
  * Target: 70%+ coverage
  */
@@ -17,7 +17,9 @@ jest.mock('@/hooks/useSmartPreloading');
 jest.mock('@react-navigation/stack', () => ({
   createStackNavigator: () => ({
     Navigator: ({ children }: { children: React.ReactNode }) => children,
-    Screen: ({ name }: { name: string }) => <div testID={`screen-${name}`}>{name}</div>,
+    Screen: ({ name }: { name: string }) => (
+      <div testID={`screen-${name}`}>{name}</div>
+    ),
     Group: ({ children }: { children: React.ReactNode }) => children,
   }),
 }));
@@ -96,4 +98,3 @@ describe('AuthenticatedNavigator', () => {
     });
   });
 });
-

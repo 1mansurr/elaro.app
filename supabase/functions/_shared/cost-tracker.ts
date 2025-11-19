@@ -105,15 +105,15 @@ export async function getMonthlyCost(
  */
 export const DEFAULT_COSTS = {
   expo_push: {
-    push_notification: 0.00, // Free tier: $0.00 per notification
+    push_notification: 0.0, // Free tier: $0.00 per notification
     // Plan: Free
     // Actual Cost: $0.00 per notification
     // Source: https://expo.dev/pricing
     // Last verified: 2025-01-XX
   },
   revenuecat: {
-    webhook_processing: 0.00, // Free tier: $0.00 per webhook
-    api_call: 0.00, // Free tier: $0.00 per call
+    webhook_processing: 0.0, // Free tier: $0.00 per webhook
+    api_call: 0.0, // Free tier: $0.00 per call
     // Plan: Free (until $2,500 MTR)
     // Actual Webhook Cost: $0.00 per webhook
     // Actual API Call Cost: $0.00 per call
@@ -121,8 +121,8 @@ export const DEFAULT_COSTS = {
     // Last verified: 2025-01-XX
   },
   supabase: {
-    api_call: 0.00, // Free tier: $0.00 per call (included)
-    storage: 0.00, // Free tier: $0.00 per GB/month (included)
+    api_call: 0.0, // Free tier: $0.00 per call (included)
+    storage: 0.0, // Free tier: $0.00 per GB/month (included)
     // Plan: Free
     // Actual API Call Cost: $0.00 per call (included in plan)
     // Actual Storage Cost: $0.00 per GB/month (included in plan)

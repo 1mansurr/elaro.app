@@ -52,7 +52,7 @@ target 'Elaro' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
-  # START: COMPLETE UPDATED POST_INSTALL BLOCK (Including Deployment Target Fix and Warning Suppression)
+  # START: COMPLETE, REFINED POST_INSTALL BLOCK (Incorporating all fixes and correcting the compiler flag error)
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -61,7 +61,7 @@ target 'Elaro' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # Necessary for Xcode 14+ resource bundle signing issue
+    # Standard Xcode 14+ resource bundle signing fix
     installer.target_installation_results.pod_target_installation_results
       .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
@@ -80,35 +80,129 @@ target 'Elaro' do
       end
     end
 
-    # --- FIX 1: ENFORCE CONSISTENT DEPLOYMENT TARGET (13.4) ---
-    # Overrides outdated deployment targets specified by individual Pods.
+    # --- FINALIZED BUILD FIXES ---
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
+        # FIX 1: Enforce consistent deployment target
         config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
-      end
-    end
-    # Ensure the main Pods Project also uses the correct version
+
+        # FIX 9: EXCLUDE ARM64 ARCHITECTURE FROM SIMULATOR BUILDS
+        # This is the most crucial fix for persistent SwiftCompile failures (like Sentry/RevenueCat)
+        # on modern systems (Xcode/M-series) due to ambiguous linking.
+        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+
+        # FIX 4 (Cleanup): General cleanup of duplicate symbols (GULUserDefaults)
+        other_ldflags = config.build_settings['OTHER_LDFLAGS']
+        if other_ldflags.is_a?(Array)
+          other_ldflags_str = other_ldflags.join(' ')
+        else
+          other_ldflags_str = other_ldflags.to_s
+        end
+
+        # Remove explicit references that can cause duplicate symbol linking
+        other_ldflags_str = other_ldflags_str.gsub('-lGoogleUtilities', '')
+        other_ldflags_str = other_ldflags_str.gsub('-lGULUserDefaults', '')
+
+        # Check if this is a Google target to exclude from -all_load
+        is_google_target = target.name.include?('GoogleUtilities') || target.name.include?('Google-Maps') || target.name.include?('GoogleMaps')
+        if is_google_target
+          other_ldflags_str = other_ldflags_str.gsub('-Wl,-all_load', '')
+          other_ldflags_str = other_ldflags_str.gsub('-all_load', '')
+        end
+
+        # FIX 7: FINAL LINKER FLAGS for C++ static libraries
+        other_ldflags_array = other_ldflags_str.split(' ').reject(&:empty?)
+        other_ldflags_array = ['$(inherited)'] if other_ldflags_array.empty?
+
+        # Add -ObjC flag for all targets (ensures Objective-C categories are loaded)
+        unless other_ldflags_array.include?('-ObjC')
+          other_ldflags_array << '-ObjC'
+        end
+
+        # Add -all_load flag ONLY for non-Google targets to avoid duplicate symbols
+        unless is_google_target
+          unless other_ldflags_array.include?('-all_load') || other_ldflags_array.include?('-Wl,-all_load')
+            other_ldflags_array << '-all_load'
+          end
+        end
+
+        config.build_settings['OTHER_LDFLAGS'] = other_ldflags_array
+
+        # FIX 5 (Cleanup): Linker Search Paths for C++ libs (fmt, glog, etc.)
+        # Use an array assignment here, not append, to ensure clean values
+        config.build_settings['LIBRARY_SEARCH_PATHS'] = [
+          '$(inherited)',
+          '$(PODS_ROOT)/build/uninstalled/Debug-$(PLATFORM_NAME)/',
+          '$(PODS_ROOT)/build/uninstalled/$(CONFIGURATION)/',
+        ]
+
+        # FIX 6 (Correction): Corrected Compiler Warning Suppression (prevent concatenation bug)
+        # Use simple array assignment with inherited to ensure clean flags
+        config.build_settings['OTHER_CFLAGS'] = [
+          '$(inherited)',
+          '-Wno-ambiguous-macro',
+          '-Wno-shorten-64-to-32',
+        ]
+
+        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = [
+          '$(inherited)',
+          '-Wno-ambiguous-macro',
+          '-Wno-shorten-64-to-32',
+        ]
+
+        # FIX 8: ENFORCE SWIFT VERSION FOR SENTRY AND REVENUECAT
+        # This resolves the final SwiftCompile error related to API signature mismatches.
+        if target.name == 'Sentry' || target.name == 'RevenueCat' || target.name == 'PurchasesCoreSwift'
+          # Set a known stable Swift version for older bridge code
+          config.build_settings['SWIFT_VERSION'] = '5.0'
+        end
+
+        # FIX 3 (Alternative): Set C++ Standard explicitly for problematic C++ targets if needed (React/Folly)
+        # This can sometimes resolve subtle C++ header conflicts that fail compilation.
+        if target.name == 'RCT-Folly'
+          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
+          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
+        end
+
+      end # end target build configurations
+    end # end target iteration
+
+    # Ensure the main Pods Project also uses the correct deployment target
     installer.pods_project.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
     end
 
-    # --- FIX 2: SUPPRESS C/C++ COMPILER WARNINGS ---
-    # Suppresses warnings that modern Xcode treats as fatal errors (MIN/MAX ambiguity, 64-to-32 bit conversion).
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # Append to C Flags, inheriting existing flags
-        config.build_settings['OTHER_CFLAGS'] ||= ['$(inherited)']
-        config.build_settings['OTHER_CFLAGS'] << '-Wno-ambiguous-macro'
-        config.build_settings['OTHER_CFLAGS'] << '-Wno-shorten-64-to-32'
-        
-        # Append to C++ Flags
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] ||= ['$(inherited)']
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-ambiguous-macro'
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] << '-Wno-shorten-64-to-32'
-      end
+    # --- FIX 3 (Final Attempt): ROBUST PURE-RUBY SENTRY SWIFT COMPILATION FIX ---
+    # Fixes the persistent 'incorrect argument label' Swift error by patching SentrySDK.swift.
+    # Using pure Ruby file I/O instead of shell commands for reliability on EAS build machines.
+    sentry_file_path = File.join(__dir__, 'Pods', 'Sentry', 'Sources', 'Swift', 'Helper', 'SentrySDK.swift')
+    
+    if File.exist?(sentry_file_path)
+      # 1. Make file writable (Pods files are read-only by default)
+      File.chmod(0644, sentry_file_path)
+      
+      # 2. Read content
+      content = File.read(sentry_file_path)
+      
+      # 3. Fix the undefined 'error' variable in capture(userFeedback:) function
+      # The function parameter is 'userFeedback' but the body uses 'error' which doesn't exist
+      # Change: SentrySDKInternal.capture(error: error) 
+      # To:     SentrySDKInternal.capture(error: userFeedback)
+      new_content = content.gsub(/SentrySDKInternal\.capture\(error:\s*error\)/m, "SentrySDKInternal.capture(error: userFeedback)")
+      
+      # 4. Also fix any userFeedback: userFeedback patterns (if they exist)
+      new_content = new_content.gsub(/userFeedback:\s*userFeedback/m, "error: error")
+      
+      # 5. Also fix UserFeedback type references as a safety measure
+      new_content = new_content.gsub(/UserFeedback/, "NSError")
+      
+      # 6. Write the modified content back
+      File.write(sentry_file_path, new_content)
     end
+    # --- END FIX 3 ---
+
   end
-  # END: COMPLETE UPDATED POST_INSTALL BLOCK
+  # END: COMPLETE, REFINED POST_INSTALL BLOCK
 
   post_integrate do |installer|
     begin

@@ -64,42 +64,52 @@ function checkBundleSize(budgets, report) {
   const WARNING_THRESHOLD = 0.9; // 90% of budget
   const FAIL_THRESHOLD = 1.1; // 110% of budget
   const BUDGET = budgets.jsBundle || 2 * 1024 * 1024; // 2MB default
-  
+
   let hasViolations = false;
   let hasWarnings = false;
   const isProduction = process.env.BUILD_PROFILE === 'production';
-  
+
   if (report && report.bundles) {
     const iosSize = report.bundles.ios || 0;
     const androidSize = report.bundles.android || 0;
-    
+
     // iOS checks
     if (iosSize > BUDGET * FAIL_THRESHOLD) {
-      console.error(`❌ iOS bundle size (${formatBytes(iosSize)}) exceeds fail threshold (${formatBytes(BUDGET * FAIL_THRESHOLD)})`);
+      console.error(
+        `❌ iOS bundle size (${formatBytes(iosSize)}) exceeds fail threshold (${formatBytes(BUDGET * FAIL_THRESHOLD)})`,
+      );
       hasViolations = true;
     } else if (iosSize > BUDGET * WARNING_THRESHOLD) {
-      console.warn(`⚠️ iOS bundle size (${formatBytes(iosSize)}) exceeds warning threshold (${formatBytes(BUDGET * WARNING_THRESHOLD)})`);
+      console.warn(
+        `⚠️ iOS bundle size (${formatBytes(iosSize)}) exceeds warning threshold (${formatBytes(BUDGET * WARNING_THRESHOLD)})`,
+      );
       hasWarnings = true;
     }
-    
+
     // Android checks
     if (androidSize > BUDGET * FAIL_THRESHOLD) {
-      console.error(`❌ Android bundle size (${formatBytes(androidSize)}) exceeds fail threshold (${formatBytes(BUDGET * FAIL_THRESHOLD)})`);
+      console.error(
+        `❌ Android bundle size (${formatBytes(androidSize)}) exceeds fail threshold (${formatBytes(BUDGET * FAIL_THRESHOLD)})`,
+      );
       hasViolations = true;
     } else if (androidSize > BUDGET * WARNING_THRESHOLD) {
-      console.warn(`⚠️ Android bundle size (${formatBytes(androidSize)}) exceeds warning threshold (${formatBytes(BUDGET * WARNING_THRESHOLD)})`);
+      console.warn(
+        `⚠️ Android bundle size (${formatBytes(androidSize)}) exceeds warning threshold (${formatBytes(BUDGET * WARNING_THRESHOLD)})`,
+      );
       hasWarnings = true;
     }
   }
-  
+
   // Only fail builds for production if critical violation
   if (hasViolations && isProduction) {
-    console.error('❌ Performance budget violation - blocking production build');
+    console.error(
+      '❌ Performance budget violation - blocking production build',
+    );
     return { shouldFail: true, hasWarnings };
   } else if (hasWarnings) {
     console.warn('⚠️ Performance warnings detected, but build continues');
   }
-  
+
   return { shouldFail: false, hasWarnings };
 }
 

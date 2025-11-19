@@ -1,6 +1,6 @@
 /**
  * Integration Tests: Task Creation
- * 
+ *
  * Tests task creation flows for assignments, lectures, and study sessions
  */
 
@@ -15,20 +15,24 @@ jest.mock('@/services/supabase');
 jest.mock('@/features/auth/permissions/PermissionService');
 
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
-const mockPermissionService = PermissionService as jest.MockedClass<typeof PermissionService>;
+const mockPermissionService = PermissionService as jest.MockedClass<
+  typeof PermissionService
+>;
 
 describe('Task Creation', () => {
   const mockUser = createMockUser();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock permission service
     const permissionInstance = {
       canCreateTask: jest.fn().mockResolvedValue({ allowed: true }),
       getTaskCount: jest.fn().mockResolvedValue(5),
     };
-    mockPermissionService.getInstance = jest.fn().mockReturnValue(permissionInstance);
+    mockPermissionService.getInstance = jest
+      .fn()
+      .mockReturnValue(permissionInstance);
   });
 
   describe('Assignment Creation', () => {
@@ -133,5 +137,3 @@ describe('Task Creation', () => {
     });
   });
 });
-
-

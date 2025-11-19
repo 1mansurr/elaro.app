@@ -411,7 +411,7 @@ export const notificationService = {
     try {
       // Cancel existing reminders first
       await this.cancelSRReminders(sessionId);
-      
+
       // Cancel reminders in database as well
       const now = new Date().toISOString();
       await supabase

@@ -5,16 +5,19 @@
 ## 🚀 Quick Commands
 
 ### 1. Verify Edge Functions Deployment
+
 ```bash
 npm run verify:edge-functions
 ```
 
 **What it does:**
+
 - Lists all local Edge Functions
 - Compares with deployed functions
 - Reports missing/extra deployments
 
 **Prerequisites:**
+
 ```bash
 # Install Supabase CLI (if not installed)
 npm install -g supabase
@@ -29,16 +32,19 @@ supabase link --project-ref YOUR_PROJECT_REF
 ---
 
 ### 2. Test Critical Edge Functions
+
 ```bash
 npm run test:edge-functions
 ```
 
 **What it does:**
+
 - Tests critical functions via HTTP
 - Verifies endpoints are accessible
 - Reports success/failure
 
 **Requires:**
+
 - `.env` file with:
   - `EXPO_PUBLIC_SUPABASE_URL`
   - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
@@ -46,17 +52,20 @@ npm run test:edge-functions
 ---
 
 ### 3. Verify Third-Party Services
+
 ```bash
 npm run verify:services
 ```
 
 **What it does:**
+
 - Checks Sentry configuration
 - Tests Mixpanel connection
 - Validates RevenueCat key
 - Tests Supabase connectivity
 
 **Requires:**
+
 - `.env` file with service keys (see below)
 
 ---
@@ -81,6 +90,7 @@ EXPO_PUBLIC_REVENUECAT_APPLE_KEY=rcb_your-key
 ## ✅ Expected Results
 
 ### Edge Functions Verification
+
 ```
 ✅ All Edge Functions are deployed and in sync!
 ```
@@ -94,6 +104,7 @@ OR
 ```
 
 ### Third-Party Services
+
 ```
 ✅ All services verified!
 ```
@@ -110,21 +121,25 @@ OR
 ## 🔧 Troubleshooting
 
 ### "Supabase CLI not found"
+
 ```bash
 npm install -g supabase
 ```
 
 ### "Not logged in"
+
 ```bash
 supabase login
 ```
 
 ### "Project not linked"
+
 ```bash
 supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 ### "Missing Supabase configuration"
+
 - Create `.env` file
 - Add `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
@@ -141,4 +156,3 @@ supabase link --project-ref YOUR_PROJECT_REF
 ---
 
 **Ready to verify! Run the commands above to check your deployment status.**
-

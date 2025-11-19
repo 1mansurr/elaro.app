@@ -21,33 +21,33 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
   };
 
   try {
-  await logger.info(
-    'Checking username availability',
-    { user_id: user.id, username },
-    traceContext,
-  );
+    await logger.info(
+      'Checking username availability',
+      { user_id: user.id, username },
+      traceContext,
+    );
 
-  const { data, error } = await supabaseClient
-    .from('users')
-    .select('id')
-    .eq('username', username)
-    .neq('id', user.id); // Exclude the current user from the check
+    const { data, error } = await supabaseClient
+      .from('users')
+      .select('id')
+      .eq('username', username)
+      .neq('id', user.id); // Exclude the current user from the check
 
-  if (error) {
-    throw handleDbError(error);
-  }
+    if (error) {
+      throw handleDbError(error);
+    }
 
-  const isAvailable = data.length === 0;
+    const isAvailable = data.length === 0;
 
-  await logger.info(
-    'Username availability check complete',
-    {
-      user_id: user.id,
-      username,
-      is_available: isAvailable,
-    },
-    traceContext,
-  );
+    await logger.info(
+      'Username availability check complete',
+      {
+        user_id: user.id,
+        username,
+        is_available: isAvailable,
+      },
+      traceContext,
+    );
 
     return {
       available: isAvailable,

@@ -43,4 +43,3 @@ declare const Deno: {
     readonly writable: WritableStream<Uint8Array>;
   };
 };
-

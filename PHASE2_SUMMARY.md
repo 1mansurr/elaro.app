@@ -6,6 +6,7 @@
 ## 📋 Overview
 
 Phase 2 provides comprehensive verification tools for:
+
 1. **Edge Functions Deployment Status**
 2. **Third-Party Service Integrations**
 
@@ -16,9 +17,11 @@ All scripts are created and ready to run.
 ## ✅ What's Been Created
 
 ### 1. Edge Functions Verification Script ✅
+
 **File:** `scripts/verify-edge-functions.sh`
 
 **Features:**
+
 - Scans local Edge Functions directory
 - Compares with deployed functions
 - Reports missing deployments
@@ -26,6 +29,7 @@ All scripts are created and ready to run.
 - Provides deployment commands
 
 **Usage:**
+
 ```bash
 npm run verify:edge-functions
 ```
@@ -33,15 +37,18 @@ npm run verify:edge-functions
 ---
 
 ### 2. Edge Functions Test Script ✅
+
 **File:** `scripts/test-edge-functions.sh`
 
 **Features:**
+
 - Tests critical Edge Functions via HTTP
 - Verifies endpoint accessibility
 - Checks authentication
 - Reports success/failure
 
 **Usage:**
+
 ```bash
 npm run test:edge-functions
 ```
@@ -51,9 +58,11 @@ npm run test:edge-functions
 ---
 
 ### 3. Third-Party Services Verification Script ✅
+
 **File:** `scripts/verify-third-party-services.js`
 
 **Features:**
+
 - Verifies Sentry configuration
 - Tests Mixpanel connection
 - Validates RevenueCat key
@@ -61,6 +70,7 @@ npm run test:edge-functions
 - Provides detailed status report
 
 **Usage:**
+
 ```bash
 npm run verify:services
 ```
@@ -68,15 +78,18 @@ npm run verify:services
 ---
 
 ### 4. Runtime Health Check Service ✅
+
 **File:** `src/services/serviceHealthCheck.ts`
 
 **Features:**
+
 - Runtime health monitoring
 - Detailed service status
 - Health summary function
 - Can be called from app
 
 **Usage:**
+
 ```typescript
 import { checkServiceHealth } from '@/services/serviceHealthCheck';
 const health = await checkServiceHealth();
@@ -89,6 +102,7 @@ const health = await checkServiceHealth();
 Based on directory scan, expected functions include:
 
 ### Critical Functions (Must be deployed):
+
 - `health-check` - Health monitoring
 - `api-v2` - Main API endpoint
 - `create-assignment` - Assignment creation
@@ -106,6 +120,7 @@ Based on directory scan, expected functions include:
 - `get-calendar-data-for-week` - Calendar data
 
 ### System Functions:
+
 - `assignments-system` - Consolidated assignments
 - `courses` - Course management
 - `lectures-system` - Lecture management
@@ -117,10 +132,12 @@ Based on directory scan, expected functions include:
 - `tasks` - Consolidated tasks
 
 ### Admin Functions:
+
 - `admin-system` - Admin operations
 - `admin-export-all-data` - Data export
 
 ### Monitoring Functions:
+
 - `monitor-edge-functions` - Function monitoring
 - `monitor-storage` - Storage monitoring
 - `crash-rate-monitor` - Crash monitoring
@@ -146,25 +163,31 @@ Based on directory scan, expected functions include:
 ### Running Verification:
 
 1. **Verify Edge Functions:**
+
    ```bash
    npm run verify:edge-functions
    ```
+
    - [ ] Review missing deployments
    - [ ] Deploy missing functions if needed
    - [ ] Note any extra deployments
 
 2. **Test Critical Edge Functions:**
+
    ```bash
    npm run test:edge-functions
    ```
+
    - [ ] Review test results
    - [ ] Fix any failing endpoints
    - [ ] Verify authentication works
 
 3. **Verify Third-Party Services:**
+
    ```bash
    npm run verify:services
    ```
+
    - [ ] Review service status
    - [ ] Fix any configuration issues
    - [ ] Ensure critical services (Supabase) are working
@@ -179,6 +202,7 @@ Based on directory scan, expected functions include:
    - Fix any issues found
 
 2. **Deploy Missing Functions:**
+
    ```bash
    # For each missing function
    supabase functions deploy FUNCTION_NAME
@@ -199,31 +223,41 @@ Based on directory scan, expected functions include:
 ## 🚨 Common Issues & Solutions
 
 ### Issue: Supabase CLI not found
+
 **Solution:**
+
 ```bash
 npm install -g supabase
 ```
 
 ### Issue: Not logged into Supabase
+
 **Solution:**
+
 ```bash
 supabase login
 ```
 
 ### Issue: Project not linked
+
 **Solution:**
+
 ```bash
 supabase link --project-ref YOUR_PROJECT_REF
 ```
 
 ### Issue: Environment variables missing
+
 **Solution:**
+
 - Create `.env` file
 - Add required variables
 - Or set in CI/CD environment
 
 ### Issue: Functions not deploying
+
 **Solution:**
+
 - Check function code for errors
 - Verify `deno.json` dependencies
 - Check Supabase project permissions
@@ -254,4 +288,3 @@ supabase link --project-ref YOUR_PROJECT_REF
 **Ready to execute Phase 2 verification!**
 
 Run the verification scripts to check deployment status and service integrations.
-

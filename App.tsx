@@ -94,7 +94,7 @@ if (__DEV__) {
     }
     originalWarn.apply(console, args);
   };
-  
+
   // Disable dev menu's Element Inspector option
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     // This prevents the Element Inspector from being activated
@@ -570,7 +570,7 @@ const DevToolsDisabler: React.FC = () => {
       if (typeof global !== 'undefined') {
         // Disable React DevTools hook
         (global as any).__REACT_DEVTOOLS_GLOBAL_HOOK__ = undefined;
-        
+
         // Try to close any active inspector
         try {
           const DevSettings = require('react-native').DevSettings;
@@ -681,14 +681,14 @@ function NotificationHandler() {
   const handleEditTask = (task: Task) => {
     // Close the sheet first
     setTaskToShow(null);
-    
+
     // Navigate to edit modal using navigation ref
     if (navigationRef.current && task) {
       let modalName:
         | 'AddLectureFlow'
         | 'AddAssignmentFlow'
         | 'AddStudySessionFlow';
-      
+
       switch (task.type) {
         case 'lecture':
           modalName = 'AddLectureFlow';
@@ -723,7 +723,7 @@ function NotificationHandler() {
         taskType: task.type,
         taskTitle: task.title || task.name || 'Untitled Task',
       });
-    setTaskToShow(null);
+      setTaskToShow(null);
     } catch (error) {
       console.error('Error completing task:', error);
       // Don't close sheet on error so user can try again
@@ -739,7 +739,7 @@ function NotificationHandler() {
         taskType: task.type,
         taskTitle: task.title || task.name || 'Untitled Task',
       });
-    setTaskToShow(null);
+      setTaskToShow(null);
     } catch (error) {
       console.error('Error deleting task:', error);
       // Don't close sheet on error so user can try again

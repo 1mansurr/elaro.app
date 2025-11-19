@@ -1,6 +1,6 @@
 /**
  * Assignments Mutations Tests
- * 
+ *
  * Tests for src/features/assignments/services/mutations.ts
  * Target: 70%+ coverage
  */
@@ -26,7 +26,7 @@ jest.mock('@/services/syncManager', () => ({
 }));
 
 jest.mock('@/utils/uuid', () => ({
-  generateTempId: jest.fn((prefix) => `temp-${prefix}-123`),
+  generateTempId: jest.fn(prefix => `temp-${prefix}-123`),
 }));
 
 jest.mock('@/utils/taskCache', () => ({
@@ -255,7 +255,12 @@ describe('assignmentsApiMutations', () => {
       getCachedTask.mockResolvedValue(null);
 
       await expect(
-        assignmentsApiMutations.update(assignmentId, updateRequest, false, userId),
+        assignmentsApiMutations.update(
+          assignmentId,
+          updateRequest,
+          false,
+          userId,
+        ),
       ).rejects.toThrow('Assignment not found in cache');
     });
 
@@ -271,7 +276,12 @@ describe('assignmentsApiMutations', () => {
       });
 
       await expect(
-        assignmentsApiMutations.update(assignmentId, updateRequest, true, userId),
+        assignmentsApiMutations.update(
+          assignmentId,
+          updateRequest,
+          true,
+          userId,
+        ),
       ).rejects.toBeDefined();
     });
 
@@ -280,7 +290,12 @@ describe('assignmentsApiMutations', () => {
       mockSupabase.functions.invoke.mockRejectedValue(networkError);
 
       await expect(
-        assignmentsApiMutations.update(assignmentId, updateRequest, true, userId),
+        assignmentsApiMutations.update(
+          assignmentId,
+          updateRequest,
+          true,
+          userId,
+        ),
       ).rejects.toThrow('Network request failed');
     });
 
@@ -404,4 +419,3 @@ describe('assignmentsApiMutations', () => {
     });
   });
 });
-

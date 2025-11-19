@@ -569,7 +569,7 @@ export function createAuthenticatedHandler(
           function: options.rateLimitName,
           traceId: traceContext.traceId,
           metadata: {
-          spanId: traceContext.spanId,
+            spanId: traceContext.spanId,
           },
         },
       );

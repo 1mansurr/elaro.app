@@ -85,4 +85,3 @@ export type MainTabParamList = {
   Home: undefined;
   Account: undefined;
 };
-

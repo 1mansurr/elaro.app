@@ -21,11 +21,7 @@ import { format } from 'date-fns';
 import { RootStackParamList, Course } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import {
-  Button,
-  Input,
-  ReminderSelector,
-} from '@/shared/components';
+import { Button, Input, ReminderSelector } from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -386,34 +382,38 @@ const AddStudySessionScreen = () => {
         );
       } else {
         // Create new study session
-      await api.mutations.studySessions.create(
-        taskData,
-        isOnline,
-        user?.id || '',
-      );
+        await api.mutations.studySessions.create(
+          taskData,
+          isOnline,
+          user?.id || '',
+        );
 
         // Save as template if enabled (only for new tasks)
-      if (saveAsTemplate && canSaveAsTemplate(taskData, 'study_session')) {
-        try {
-          await createTemplate.mutateAsync({
-            template_name: generateTemplateName(topic.trim()),
-            task_type: 'study_session',
-            template_data: taskData,
-          });
-        } catch (templateError) {
-          console.error('Error saving template:', templateError);
-          // Don't show error for template creation failure
+        if (saveAsTemplate && canSaveAsTemplate(taskData, 'study_session')) {
+          try {
+            await createTemplate.mutateAsync({
+              template_name: generateTemplateName(topic.trim()),
+              task_type: 'study_session',
+              template_data: taskData,
+            });
+          } catch (templateError) {
+            console.error('Error saving template:', templateError);
+            // Don't show error for template creation failure
+          }
+        }
+
+        // Check if this is the user's first task
+        if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
+          await notificationService.registerForPushNotifications(
+            session.user.id,
+          );
         }
       }
 
-      // Check if this is the user's first task
-      if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-        await notificationService.registerForPushNotifications(session.user.id);
-      }
-      }
-
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient, 'study_session');
 
       // Clear draft on successful save
@@ -425,10 +425,10 @@ const AddStudySessionScreen = () => {
           ? 'Study session updated successfully!'
           : 'Study session created successfully!',
         [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
         ],
       );
     } catch (error) {
@@ -444,7 +444,6 @@ const AddStudySessionScreen = () => {
       setIsSaving(false);
     }
   };
-
 
   return (
     <View style={styles.container}>

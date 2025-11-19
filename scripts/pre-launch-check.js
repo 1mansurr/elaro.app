@@ -2,7 +2,7 @@
 
 /**
  * Pre-Launch Checklist Script
- * 
+ *
  * Runs all verification checks before beta launch:
  * - Test coverage verification
  * - Edge Functions verification
@@ -66,14 +66,14 @@ const results = {
 function runCommand(command, description) {
   try {
     logInfo(`Running: ${description}...`);
-    const output = execSync(command, { 
+    const output = execSync(command, {
       encoding: 'utf-8',
       stdio: 'pipe',
     });
     return { success: true, output };
   } catch (error) {
-    return { 
-      success: false, 
+    return {
+      success: false,
       output: error.stdout || error.message,
       error: error.stderr || error.message,
     };
@@ -83,12 +83,19 @@ function runCommand(command, description) {
 // Check test coverage
 function checkTestCoverage() {
   logSection('1. Test Coverage Verification');
-  
+
   // Check if coverage report exists
-  const coveragePath = path.join(process.cwd(), 'coverage', 'coverage-summary.json');
+  const coveragePath = path.join(
+    process.cwd(),
+    'coverage',
+    'coverage-summary.json',
+  );
   if (!fs.existsSync(coveragePath)) {
     logWarning('Coverage report not found. Running tests with coverage...');
-    const result = runCommand('npm run test:coverage', 'Generate coverage report');
+    const result = runCommand(
+      'npm run test:coverage',
+      'Generate coverage report',
+    );
     if (!result.success) {
       results.testCoverage = {
         passed: false,
@@ -99,20 +106,26 @@ function checkTestCoverage() {
   }
 
   // Check coverage thresholds
-  const result = runCommand('npm run test:coverage:check', 'Check coverage thresholds');
+  const result = runCommand(
+    'npm run test:coverage:check',
+    'Check coverage thresholds',
+  );
   if (result.success) {
     logSuccess('Test coverage meets requirements');
     results.testCoverage = { passed: true, message: 'Coverage thresholds met' };
   } else {
     logError('Test coverage below thresholds');
-    results.testCoverage = { passed: false, message: result.output || 'Coverage check failed' };
+    results.testCoverage = {
+      passed: false,
+      message: result.output || 'Coverage check failed',
+    };
   }
 }
 
 // Check Edge Functions
 function checkEdgeFunctions() {
   logSection('2. Edge Functions Verification');
-  
+
   // Check if Supabase CLI is available
   try {
     execSync('which supabase', { stdio: 'ignore' });
@@ -126,34 +139,46 @@ function checkEdgeFunctions() {
     return;
   }
 
-  const result = runCommand('npm run verify:edge-functions', 'Verify Edge Functions');
+  const result = runCommand(
+    'npm run verify:edge-functions',
+    'Verify Edge Functions',
+  );
   if (result.success) {
     logSuccess('All Edge Functions are deployed');
     results.edgeFunctions = { passed: true, message: 'All functions deployed' };
   } else {
     logError('Some Edge Functions are missing');
-    results.edgeFunctions = { passed: false, message: result.output || 'Verification failed' };
+    results.edgeFunctions = {
+      passed: false,
+      message: result.output || 'Verification failed',
+    };
   }
 }
 
 // Check third-party services
 function checkServices() {
   logSection('3. Third-Party Services Verification');
-  
-  const result = runCommand('npm run verify:services', 'Verify third-party services');
+
+  const result = runCommand(
+    'npm run verify:services',
+    'Verify third-party services',
+  );
   if (result.success) {
     logSuccess('All services verified');
     results.services = { passed: true, message: 'All services working' };
   } else {
     logError('Some services failed verification');
-    results.services = { passed: false, message: result.output || 'Verification failed' };
+    results.services = {
+      passed: false,
+      message: result.output || 'Verification failed',
+    };
   }
 }
 
 // Check security
 function checkSecurity() {
   logSection('4. Security Audit');
-  
+
   // Check for secrets in code
   const secretsResult = runCommand('npm run audit-secrets', 'Audit secrets');
   if (secretsResult.success) {
@@ -163,7 +188,10 @@ function checkSecurity() {
   }
 
   // Check for vulnerable dependencies
-  const auditResult = runCommand('npm audit --audit-level=moderate', 'Audit dependencies');
+  const auditResult = runCommand(
+    'npm audit --audit-level=moderate',
+    'Audit dependencies',
+  );
   if (auditResult.success) {
     logSuccess('No critical vulnerabilities found');
     results.security = { passed: true, message: 'Security audit passed' };
@@ -176,7 +204,7 @@ function checkSecurity() {
 // Check linting
 function checkLinting() {
   logSection('5. Code Quality - Linting');
-  
+
   const result = runCommand('npm run lint', 'Run linter');
   if (result.success) {
     logSuccess('Linting passed');
@@ -190,7 +218,7 @@ function checkLinting() {
 // Check TypeScript
 function checkTypeScript() {
   logSection('6. Code Quality - Type Checking');
-  
+
   // Check if TypeScript is configured
   const tsConfigPath = path.join(process.cwd(), 'tsconfig.json');
   if (!fs.existsSync(tsConfigPath)) {
@@ -212,7 +240,7 @@ function checkTypeScript() {
 // Generate summary
 function generateSummary() {
   logSection('Pre-Launch Check Summary');
-  
+
   const allChecks = [
     { name: 'Test Coverage', result: results.testCoverage },
     { name: 'Edge Functions', result: results.edgeFunctions },
@@ -223,7 +251,7 @@ function generateSummary() {
   ];
 
   let allPassed = true;
-  
+
   allChecks.forEach(({ name, result }) => {
     if (result.passed) {
       logSuccess(`${name}: PASSED`);
@@ -234,7 +262,7 @@ function generateSummary() {
   });
 
   log('\n' + '='.repeat(60), 'cyan');
-  
+
   if (allPassed) {
     logSuccess('\n🎉 All pre-launch checks passed! Ready for beta launch.');
     process.exit(0);
@@ -269,5 +297,3 @@ if (require.main === module) {
 }
 
 module.exports = { main, results };
-
-

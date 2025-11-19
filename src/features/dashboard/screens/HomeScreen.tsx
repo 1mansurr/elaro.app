@@ -181,20 +181,23 @@ const HomeScreen = () => {
   const backdropOpacity = useMemo(
     () =>
       fabAnimation.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1], // Animate opacity to 1 to show the blur view
+        inputRange: [0, 1],
+        outputRange: [0, 1], // Animate opacity to 1 to show the blur view
       }),
     [fabAnimation],
   );
 
-  const handleFabStateChange = useCallback(({ isOpen }: { isOpen: boolean }) => {
-    setIsFabOpen(isOpen);
-    Animated.spring(fabAnimation, {
-      toValue: isOpen ? 1 : 0,
-      friction: 7,
-      useNativeDriver: false,
-    }).start();
-  }, [fabAnimation]);
+  const handleFabStateChange = useCallback(
+    ({ isOpen }: { isOpen: boolean }) => {
+      setIsFabOpen(isOpen);
+      Animated.spring(fabAnimation, {
+        toValue: isOpen ? 1 : 0,
+        friction: 7,
+        useNativeDriver: false,
+      }).start();
+    },
+    [fabAnimation],
+  );
 
   const handleViewDetails = useCallback((task: Task) => {
     mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
@@ -354,8 +357,8 @@ const HomeScreen = () => {
 
   const shouldShowBanner = useMemo(
     () =>
-    trialDaysRemaining !== null &&
-    trialDaysRemaining <= 3 &&
+      trialDaysRemaining !== null &&
+      trialDaysRemaining <= 3 &&
       !isBannerDismissed,
     [trialDaysRemaining, isBannerDismissed],
   );
@@ -663,10 +666,7 @@ const HomeScreen = () => {
         />
         {/* Only show calendar button for authenticated users */}
         {!isGuest && (
-        <Button
-          title="View Full Calendar"
-            onPress={handleCalendarPress}
-        />
+          <Button title="View Full Calendar" onPress={handleCalendarPress} />
         )}
       </ScrollView>
 

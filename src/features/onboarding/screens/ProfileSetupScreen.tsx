@@ -109,7 +109,7 @@ const ProfileSetupScreen = () => {
             if (data.available) {
               setIsAvailable(true);
               setUsernameError(null);
-          } else {
+            } else {
               setIsAvailable(false);
               setUsernameError(data.message || 'Username is already taken.');
             }
@@ -213,19 +213,23 @@ const ProfileSetupScreen = () => {
   }, [cancelUsernameDebounce]);
 
   return (
-    <LinearGradient colors={['#f8f9ff', '#ffffff', '#fff8f9']} style={styles.gradient}>
+    <LinearGradient
+      colors={['#f8f9ff', '#ffffff', '#fff8f9']}
+      style={styles.gradient}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-      <Text style={styles.title}>Set Up Your Profile</Text>
-      <Text style={styles.subtitle}>
-        Choose your username and tell us about your studies.
-      </Text>
+          <Text style={styles.title}>Set Up Your Profile</Text>
+          <Text style={styles.subtitle}>
+            Choose your username and tell us about your studies.
+          </Text>
         </View>
 
         <View style={styles.card}>
-          <LinearGradient colors={['#ffffff', '#fafbff']} style={styles.cardGradient}>
+          <LinearGradient
+            colors={['#ffffff', '#fafbff']}
+            style={styles.cardGradient}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>👤 Username</Text>
               <View style={styles.requiredBadge}>
@@ -233,53 +237,57 @@ const ProfileSetupScreen = () => {
               </View>
             </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="e.g., john_doe"
-          value={username}
-          onChangeText={text => {
-            const formattedText = text.toLowerCase().replace(/[^a-z0-9_]/g, '');
-            setUsername(formattedText);
-            setUsernameError(null);
-            setIsAvailable(null);
-            checkUsernameDebounced(formattedText);
-          }}
-          autoCapitalize="none"
+            <TextInput
+              style={styles.input}
+              placeholder="e.g., john_doe"
+              value={username}
+              onChangeText={text => {
+                const formattedText = text
+                  .toLowerCase()
+                  .replace(/[^a-z0-9_]/g, '');
+                setUsername(formattedText);
+                setUsernameError(null);
+                setIsAvailable(null);
+                checkUsernameDebounced(formattedText);
+              }}
+              autoCapitalize="none"
               placeholderTextColor={COLORS.textSecondary}
-        />
+            />
 
-        {isChecking && (
-          <View style={styles.feedbackContainer}>
-            <ActivityIndicator size="small" color={COLORS.primary} />
-            <Text style={styles.feedbackText}>Checking availability...</Text>
-          </View>
-        )}
+            {isChecking && (
+              <View style={styles.feedbackContainer}>
+                <ActivityIndicator size="small" color={COLORS.primary} />
+                <Text style={styles.feedbackText}>
+                  Checking availability...
+                </Text>
+              </View>
+            )}
             {!isChecking && username.length > 0 && username.length < 3 && (
               <Text style={[styles.feedback, styles.error]}>
                 Username must be at least 3 characters.
               </Text>
             )}
             {!isChecking && username.length >= 3 && isAvailable === true && (
-          <Text style={[styles.feedback, styles.success]}>
-            ✓ Username is available!
-          </Text>
-        )}
+              <Text style={[styles.feedback, styles.success]}>
+                ✓ Username is available!
+              </Text>
+            )}
             {!isChecking && username.length >= 3 && usernameError && (
               <Text
                 style={[
                   styles.feedback,
                   isAvailable === false ? styles.error : styles.neutral,
                 ]}>
-                {isAvailable === false
-                  ? `✗ ${usernameError}`
-                  : usernameError}
-          </Text>
-        )}
+                {isAvailable === false ? `✗ ${usernameError}` : usernameError}
+              </Text>
+            )}
           </LinearGradient>
-      </View>
+        </View>
 
         <View style={styles.card}>
-          <LinearGradient colors={['#ffffff', '#fffbfa']} style={styles.cardGradient}>
+          <LinearGradient
+            colors={['#ffffff', '#fffbfa']}
+            style={styles.cardGradient}>
             <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>🎓 Your Studies</Text>
               <View style={styles.requiredBadge}>
@@ -288,51 +296,50 @@ const ProfileSetupScreen = () => {
             </View>
             <Text style={styles.cardHint}>
               Tell us where you study so we can personalize your experience.
-        </Text>
+            </Text>
 
             <View style={styles.fieldGroup}>
-        <SearchableSelector
-          label="Country *"
-          data={countryData}
-          selectedValue={selectedCountry}
-          onValueChange={setSelectedCountry}
-          placeholder="Select your country..."
-          searchPlaceholder="Search for your country"
-        />
+              <SearchableSelector
+                label="Country *"
+                data={countryData}
+                selectedValue={selectedCountry}
+                onValueChange={setSelectedCountry}
+                placeholder="Select your country..."
+                searchPlaceholder="Search for your country"
+              />
             </View>
 
-        {selectedCountry && (
+            {selectedCountry && (
               <View style={styles.fieldGroup}>
-          <SearchableSelector
-            label="University *"
-            data={universityData}
-            selectedValue={university}
-            onValueChange={setUniversity}
-            placeholder="Select or type your university..."
-            searchPlaceholder="Search for your university"
-          />
+                <SearchableSelector
+                  label="University *"
+                  data={universityData}
+                  selectedValue={university}
+                  onValueChange={setUniversity}
+                  placeholder="Select or type your university..."
+                  searchPlaceholder="Search for your university"
+                />
               </View>
-        )}
+            )}
 
             <View style={styles.fieldGroup}>
-        <SearchableSelector
+              <SearchableSelector
                 label="Program of Study *"
-          data={programData}
-          selectedValue={program}
-          onValueChange={setProgram}
-          placeholder="Select or type your program..."
-          searchPlaceholder="Search for your program"
-        />
+                data={programData}
+                selectedValue={program}
+                onValueChange={setProgram}
+                placeholder="Select or type your program..."
+                searchPlaceholder="Search for your program"
+              />
             </View>
 
             <TouchableOpacity
               onPress={() => setIsModalVisible(true)}
               style={styles.linkContainer}>
-          <Text style={styles.linkText}>Why do we need this?</Text>
-        </TouchableOpacity>
+              <Text style={styles.linkText}>Why do we need this?</Text>
+            </TouchableOpacity>
           </LinearGradient>
-      </View>
-
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>

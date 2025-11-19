@@ -12,19 +12,19 @@ const denoJsonContent = {
 const functionDirs = fs
   .readdirSync(functionsDir, { withFileTypes: true })
   .filter(
-    (dirent) =>
+    dirent =>
       dirent.isDirectory() &&
       dirent.name !== '_shared' &&
       !dirent.name.startsWith('.'),
   )
-  .map((dirent) => dirent.name);
+  .map(dirent => dirent.name);
 
 console.log(`Found ${functionDirs.length} function directories`);
 
 let created = 0;
 let skipped = 0;
 
-functionDirs.forEach((funcName) => {
+functionDirs.forEach(funcName => {
   const funcDir = path.join(functionsDir, funcName);
   const denoJsonPath = path.join(funcDir, 'deno.json');
 
@@ -48,5 +48,3 @@ console.log(`\n📊 Summary:`);
 console.log(`   Created: ${created}`);
 console.log(`   Skipped: ${skipped}`);
 console.log(`   Total: ${functionDirs.length}`);
-
-

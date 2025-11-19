@@ -1,6 +1,6 @@
 /**
  * Complete Navigation Flow E2E Test
- * 
+ *
  * Tests the complete user journey:
  * Launch → Auth → Onboarding → Main App
  */
@@ -34,7 +34,7 @@ describe('Complete Navigation Flow', () => {
     await element(by.id('last-name-input')).typeText('User');
     await element(by.id('email-input')).typeText('test@example.com');
     await element(by.id('password-input')).typeText('Test1234!');
-    
+
     // Agree to terms (if checkbox exists)
     // Note: Terms checkbox may need testID added
 
@@ -107,4 +107,3 @@ describe('Complete Navigation Flow', () => {
     await expect(element(by.id('auth-screen'))).toBeVisible();
   });
 });
-

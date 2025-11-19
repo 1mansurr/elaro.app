@@ -6,11 +6,13 @@
 ## 📝 Tests Created
 
 ### 1. useTaskMutations.test.ts ✅ (Expanded)
+
 **Location:** `__tests__/unit/hooks/useTaskMutations.test.ts`  
 **Target File:** `src/hooks/useTaskMutations.ts`  
 **Coverage Goal:** 70%+
 
 **New Test Coverage Added:**
+
 - ✅ `useRestoreTask` - Complete test suite (online, offline, different task types, errors)
 - ✅ Optimistic updates - Complete task, delete task, rollback on error
 - ✅ Query invalidation - After success, skip when offline
@@ -18,6 +20,7 @@
 - ✅ Error handling - Network errors, server errors
 
 **Existing Tests:**
+
 - ✅ `useCompleteTask` - Online, offline, errors
 - ✅ `useDeleteTask` - Online, offline, errors
 
@@ -26,11 +29,13 @@
 ---
 
 ### 2. assignmentsMutations.test.ts ✅ (New)
+
 **Location:** `__tests__/unit/services/assignmentsMutations.test.ts`  
 **Target File:** `src/features/assignments/services/mutations.ts`  
 **Coverage Goal:** 70%+
 
 **Test Coverage:**
+
 - ✅ `create` - Online creation, offline queueing, error handling, network errors
 - ✅ `update` - Online update, offline queueing, cache handling, error handling
 - ✅ Edge cases - Null description, null submission_method, empty reminders, partial updates
@@ -42,11 +47,13 @@
 ---
 
 ### 3. AddAssignmentScreen.test.tsx ✅ (New)
+
 **Location:** `__tests__/unit/features/assignments/AddAssignmentScreen.test.tsx`  
 **Target File:** `src/features/assignments/screens/AddAssignmentScreen.tsx`  
 **Coverage Goal:** 70%+
 
 **Test Coverage:**
+
 - ✅ Rendering - Form, initial data, guest mode
 - ✅ Form validation - Required fields (course, title, due date)
 - ✅ Course selection - Modal, display selected
@@ -66,18 +73,21 @@
 ## 📊 Expected Coverage
 
 ### useTaskMutations.ts
+
 - **Lines:** ~75%+ (all hooks tested)
 - **Functions:** ~75%+ (all mutation functions tested)
 - **Branches:** ~70%+ (online/offline paths covered)
 - **Statements:** ~75%+ (all statements covered)
 
 ### assignmentsMutations.ts
+
 - **Lines:** ~80%+ (all methods tested)
 - **Functions:** ~80%+ (create and update tested)
 - **Branches:** ~75%+ (online/offline paths covered)
 - **Statements:** ~80%+ (all statements covered)
 
 ### AddAssignmentScreen.tsx
+
 - **Lines:** ~70%+ (core flows tested)
 - **Functions:** ~70%+ (event handlers tested)
 - **Branches:** ~65%+ (conditional rendering tested)
@@ -88,6 +98,7 @@
 ## 🚀 Next Steps
 
 1. **Run Tests:**
+
    ```bash
    npm run test:unit -- __tests__/unit/hooks/useTaskMutations.test.ts
    npm run test:unit -- __tests__/unit/services/assignmentsMutations.test.ts
@@ -95,6 +106,7 @@
    ```
 
 2. **Check Coverage:**
+
    ```bash
    npm run test:coverage -- --collectCoverageFrom='src/hooks/useTaskMutations.ts' --testPathPattern='useTaskMutations'
    npm run test:coverage -- --collectCoverageFrom='src/features/assignments/**/*.{ts,tsx}' --testPathPattern='assignments'
@@ -132,4 +144,3 @@
 ---
 
 **Ready for:** Test execution and coverage verification
-

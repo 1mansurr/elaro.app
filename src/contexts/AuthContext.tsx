@@ -224,7 +224,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Clear cache to ensure fresh data (especially after onboarding completion)
       const cacheKey = `user_profile:${session.user.id}`;
       await cache.delete(cacheKey);
-      
+
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);
     }
@@ -336,7 +336,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   } else {
                     console.warn(
                       '⚠️ Pending assignment missing required fields:',
-                      { hasCourse: !!course?.id, hasDueDate: !!dueDate, hasTitle: !!title },
+                      {
+                        hasCourse: !!course?.id,
+                        hasDueDate: !!dueDate,
+                        hasTitle: !!title,
+                      },
                     );
                   }
                 } else if (pending.taskType === 'lecture') {
@@ -661,26 +665,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         await authSyncService.saveAuthState(signUpResponse.session);
         setSession(signUpResponse.session);
         if (signUpResponse.session.user) {
-          const userProfile = await fetchUserProfile(signUpResponse.session.user.id);
+          const userProfile = await fetchUserProfile(
+            signUpResponse.session.user.id,
+          );
           setUser(userProfile);
         }
       } else {
         // No session in response - immediately sign in to create a session
         // This is more reliable than waiting for async session creation
         // Since email confirmation is disabled, sign in should work immediately
-        console.log('⏳ No session in signup response, signing in to create session...');
+        console.log(
+          '⏳ No session in signup response, signing in to create session...',
+        );
         try {
           const signInResponse = await authService.login({
             email: credentials.email,
             password: credentials.password,
           });
-          
+
           if (signInResponse?.session) {
             console.log('✅ Session created via sign in');
             await authSyncService.saveAuthState(signInResponse.session);
             setSession(signInResponse.session);
             if (signInResponse.session.user) {
-              const userProfile = await fetchUserProfile(signInResponse.session.user.id);
+              const userProfile = await fetchUserProfile(
+                signInResponse.session.user.id,
+              );
               setUser(userProfile);
             }
           } else {

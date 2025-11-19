@@ -569,10 +569,12 @@ describe('SyncManager', () => {
     it('should trigger sync when coming online', async () => {
       let networkStateCallback: ((state: any) => void) | null = null;
 
-      (mockNetInfo.addEventListener as jest.Mock).mockImplementation(callback => {
-        networkStateCallback = callback;
-        return jest.fn(); // Return unsubscribe function
-      });
+      (mockNetInfo.addEventListener as jest.Mock).mockImplementation(
+        callback => {
+          networkStateCallback = callback;
+          return jest.fn(); // Return unsubscribe function
+        },
+      );
 
       (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
         data: { id: 'created-1' },
@@ -620,7 +622,10 @@ describe('SyncManager', () => {
       (mockSupabase.functions.invoke as jest.Mock).mockImplementation(
         () =>
           new Promise(resolve =>
-            setTimeout(() => resolve({ data: { id: 'created-1' }, error: null }), 100),
+            setTimeout(
+              () => resolve({ data: { id: 'created-1' }, error: null }),
+              100,
+            ),
           ),
       );
 
@@ -644,7 +649,10 @@ describe('SyncManager', () => {
       (mockSupabase.functions.invoke as jest.Mock).mockImplementation(
         () =>
           new Promise(resolve =>
-            setTimeout(() => resolve({ data: { id: 'created-1' }, error: null }), 100),
+            setTimeout(
+              () => resolve({ data: { id: 'created-1' }, error: null }),
+              100,
+            ),
           ),
       );
 
@@ -683,14 +691,12 @@ describe('SyncManager', () => {
         },
       ];
 
-      mockAsyncStorage.getItem = jest
-        .fn()
-        .mockImplementation(key => {
-          if (key === 'offline_queue') {
-            return Promise.resolve(JSON.stringify(mockQueue));
-          }
-          return Promise.resolve(null);
-        });
+      mockAsyncStorage.getItem = jest.fn().mockImplementation(key => {
+        if (key === 'offline_queue') {
+          return Promise.resolve(JSON.stringify(mockQueue));
+        }
+        return Promise.resolve(null);
+      });
 
       (mockNetInfo.fetch as jest.Mock).mockResolvedValue({
         isConnected: true,
@@ -724,14 +730,12 @@ describe('SyncManager', () => {
         },
       ];
 
-      mockAsyncStorage.getItem = jest
-        .fn()
-        .mockImplementation(key => {
-          if (key === 'offline_queue') {
-            return Promise.resolve(JSON.stringify(mockQueue));
-          }
-          return Promise.resolve(null);
-        });
+      mockAsyncStorage.getItem = jest.fn().mockImplementation(key => {
+        if (key === 'offline_queue') {
+          return Promise.resolve(JSON.stringify(mockQueue));
+        }
+        return Promise.resolve(null);
+      });
 
       (mockNetInfo.fetch as jest.Mock).mockResolvedValue({
         isConnected: false,

@@ -21,11 +21,7 @@ import { format } from 'date-fns';
 import { RootStackParamList, Course } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import {
-  Button,
-  Input,
-  ReminderSelector,
-} from '@/shared/components';
+import { Button, Input, ReminderSelector } from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -436,34 +432,38 @@ const AddAssignmentScreen = () => {
         );
       } else {
         // Create new assignment
-      await api.mutations.assignments.create(
-        taskData,
-        isOnline,
-        user?.id || '',
-      );
+        await api.mutations.assignments.create(
+          taskData,
+          isOnline,
+          user?.id || '',
+        );
 
         // Save as template if enabled (only for new tasks)
-      if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
-        try {
-          await createTemplate.mutateAsync({
-            template_name: generateTemplateName(title.trim()),
-            task_type: 'assignment',
-            template_data: taskData,
-          });
-        } catch (templateError) {
-          console.error('Error saving template:', templateError);
-          // Don't show error for template creation failure
+        if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
+          try {
+            await createTemplate.mutateAsync({
+              template_name: generateTemplateName(title.trim()),
+              task_type: 'assignment',
+              template_data: taskData,
+            });
+          } catch (templateError) {
+            console.error('Error saving template:', templateError);
+            // Don't show error for template creation failure
+          }
+        }
+
+        // Check if this is the user's first task
+        if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
+          await notificationService.registerForPushNotifications(
+            session.user.id,
+          );
         }
       }
 
-      // Check if this is the user's first task
-      if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-        await notificationService.registerForPushNotifications(session.user.id);
-      }
-      }
-
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient, 'assignment');
 
       // Clear draft on successful save
@@ -475,10 +475,10 @@ const AddAssignmentScreen = () => {
           ? 'Assignment updated successfully!'
           : 'Assignment created successfully!',
         [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
+          {
+            text: 'OK',
+            onPress: () => navigation.goBack(),
+          },
         ],
       );
     } catch (error) {
@@ -494,7 +494,6 @@ const AddAssignmentScreen = () => {
       setIsSaving(false);
     }
   };
-
 
   return (
     <View style={styles.container}>

@@ -6,7 +6,11 @@ type StatsDConstructor = new (options: {
   prefix?: string;
 }) => {
   increment: (metric: string, tags?: Record<string, string>) => void;
-  timing: (metric: string, value: number, tags?: Record<string, string>) => void;
+  timing: (
+    metric: string,
+    value: number,
+    tags?: Record<string, string>,
+  ) => void;
   gauge: (metric: string, value: number, tags?: Record<string, string>) => void;
   close: () => void;
 };

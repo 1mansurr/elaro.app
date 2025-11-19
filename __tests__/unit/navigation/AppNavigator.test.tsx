@@ -1,6 +1,6 @@
 /**
  * App Navigator Tests
- * 
+ *
  * Tests for src/navigation/AppNavigator.tsx
  * Target: 70%+ coverage
  */
@@ -21,9 +21,8 @@ jest.mock('@/hooks/useScreenTracking', () => ({
 }));
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
-const MockAuthenticatedNavigator = AuthenticatedNavigator as jest.MockedFunction<
-  typeof AuthenticatedNavigator
->;
+const MockAuthenticatedNavigator =
+  AuthenticatedNavigator as jest.MockedFunction<typeof AuthenticatedNavigator>;
 const MockAuthNavigator = AuthNavigator as jest.MockedFunction<
   typeof AuthNavigator
 >;
@@ -33,10 +32,10 @@ describe('AppNavigator', () => {
     jest.clearAllMocks();
 
     MockAuthenticatedNavigator.mockReturnValue(
-      <div testID="authenticated-navigator">Authenticated</div> as any,
+      (<div testID="authenticated-navigator">Authenticated</div>) as any,
     );
     MockAuthNavigator.mockReturnValue(
-      <div testID="auth-navigator">Auth</div> as any,
+      (<div testID="auth-navigator">Auth</div>) as any,
     );
   });
 
@@ -241,4 +240,3 @@ describe('AppNavigator', () => {
     });
   });
 });
-

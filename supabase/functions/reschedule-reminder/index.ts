@@ -18,7 +18,8 @@ async function handleRescheduleReminder(
   req: AuthenticatedRequest,
 ): Promise<{ success: boolean; reminder_id: string }> {
   const { user, supabaseClient, body } = req;
-  const { reminder_id, new_scheduled_time, notification_id } = schema.parse(body);
+  const { reminder_id, new_scheduled_time, notification_id } =
+    schema.parse(body);
 
   // Validate that new scheduled time is in the future
   const scheduledDate = new Date(new_scheduled_time);
@@ -64,4 +65,3 @@ export default createAuthenticatedHandler(handleRescheduleReminder, {
   rateLimitName: 'reschedule-reminder',
   schema,
 });
-

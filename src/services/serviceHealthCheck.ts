@@ -1,6 +1,6 @@
 /**
  * Service Health Check
- * 
+ *
  * Verifies that all third-party service integrations are working correctly.
  * Used for runtime health monitoring and diagnostics.
  */
@@ -76,7 +76,8 @@ export async function checkServiceHealth(): Promise<ServiceHealthStatus> {
     // Mixpanel may not be initialized, which is OK
     results.mixpanel = {
       status: 'not_configured',
-      message: error instanceof Error ? error.message : 'Mixpanel not initialized',
+      message:
+        error instanceof Error ? error.message : 'Mixpanel not initialized',
     };
   }
 
@@ -84,7 +85,10 @@ export async function checkServiceHealth(): Promise<ServiceHealthStatus> {
   try {
     // RevenueCat doesn't expose isInitialized, so we'll check if it's configured
     // by checking if the service exists and can be called
-    if (revenueCatService && typeof revenueCatService.getCustomerInfo === 'function') {
+    if (
+      revenueCatService &&
+      typeof revenueCatService.getCustomerInfo === 'function'
+    ) {
       // Service exists, consider it OK (actual initialization check would require API call)
       results.revenuecat = { status: 'ok' };
     } else {
@@ -104,7 +108,7 @@ export async function checkServiceHealth(): Promise<ServiceHealthStatus> {
   try {
     // Test Supabase connection with a simple query
     const { error } = await supabase.from('users').select('id').limit(1);
-    
+
     if (error) {
       // Check if it's an auth error (expected for unauthenticated requests)
       if (error.code === 'PGRST116' || error.code === '42501') {
@@ -132,9 +136,7 @@ export async function checkServiceHealth(): Promise<ServiceHealthStatus> {
 /**
  * Get a summary of service health
  */
-export function getServiceHealthSummary(
-  health: ServiceHealthStatus,
-): {
+export function getServiceHealthSummary(health: ServiceHealthStatus): {
   allOk: boolean;
   criticalOk: boolean;
   message: string;
@@ -171,4 +173,3 @@ export function getServiceHealthSummary(
     message,
   };
 }
-

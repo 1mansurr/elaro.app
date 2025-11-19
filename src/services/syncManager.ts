@@ -294,7 +294,9 @@ class SyncManager {
       }
 
       // Check if queue has pending items
-      const pendingCount = this.queue.filter(a => a.status === 'pending').length;
+      const pendingCount = this.queue.filter(
+        a => a.status === 'pending',
+      ).length;
       if (pendingCount === 0) {
         console.log('✅ SyncManager: No pending items to sync');
         return;
@@ -330,7 +332,8 @@ class SyncManager {
     return {
       length: this.queue.length,
       pending: this.queue.filter(item => item.status === 'pending').length,
-      processing: this.queue.filter(item => item.status === 'processing').length,
+      processing: this.queue.filter(item => item.status === 'processing')
+        .length,
       failed: this.queue.filter(item => item.status === 'failed').length,
     };
   }
@@ -762,19 +765,23 @@ class SyncManager {
       updates?: Record<string, unknown>;
       data?: Record<string, unknown>;
     };
-    
+
     // Use new format (id/data) if available, fallback to old format (resourceId/updates)
-    const resourceId = this.resolveId(updatePayload.id || updatePayload.resourceId || '');
+    const resourceId = this.resolveId(
+      updatePayload.id || updatePayload.resourceId || '',
+    );
     const updates = updatePayload.data || updatePayload.updates || {};
-    
+
     // Validate that we have both ID and updates
     if (!resourceId) {
-      throw new Error('UPDATE payload must include either "id" or "resourceId"');
+      throw new Error(
+        'UPDATE payload must include either "id" or "resourceId"',
+      );
     }
     if (!updates || Object.keys(updates).length === 0) {
       throw new Error('UPDATE payload must include either "data" or "updates"');
     }
-    
+
     const functionName = `update-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
 
@@ -949,14 +956,18 @@ class SyncManager {
             data?: Record<string, any>;
             updates?: Record<string, any>;
           };
-          
+
           // Check both new format (id) and old format (resourceId)
           if (updatePayload.id === tempId) {
             updatePayload.id = realId;
-            console.log(`  ↪️ Updated UPDATE action to use real ID (new format)`);
+            console.log(
+              `  ↪️ Updated UPDATE action to use real ID (new format)`,
+            );
           } else if (updatePayload.resourceId === tempId) {
             updatePayload.resourceId = realId;
-            console.log(`  ↪️ Updated UPDATE action to use real ID (old format)`);
+            console.log(
+              `  ↪️ Updated UPDATE action to use real ID (old format)`,
+            );
           }
         } else if (
           action.payload.type === 'DELETE' &&

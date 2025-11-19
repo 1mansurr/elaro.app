@@ -2,7 +2,7 @@
 
 /**
  * RevenueCat Webhook Verification Script
- * 
+ *
  * Verifies that RevenueCat webhook is properly configured and accessible.
  * This script checks:
  * 1. Webhook URL is configured in RevenueCat dashboard
@@ -25,13 +25,13 @@ console.log('🔍 Verifying RevenueCat Webhook Configuration...\n');
 
 // Check 1: Verify webhook endpoint exists
 async function checkWebhookEndpoint() {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     const protocol = WEBHOOK_ENDPOINT.startsWith('https:') ? https : http;
 
     const req = protocol.request(
       WEBHOOK_ENDPOINT,
       { method: 'OPTIONS' },
-      (res) => {
+      res => {
         resolve({
           accessible: res.statusCode >= 200 && res.statusCode < 500,
           status: res.statusCode,
@@ -70,7 +70,9 @@ function checkWebhookSecret() {
   console.log('   - Verify webhook is enabled\n');
 
   console.log('2. Supabase Secrets:');
-  console.log('   - Go to: Supabase Dashboard → Project Settings → Edge Functions → Secrets');
+  console.log(
+    '   - Go to: Supabase Dashboard → Project Settings → Edge Functions → Secrets',
+  );
   console.log('   - Verify REVENUECAT_WEBHOOK_SECRET is set');
   console.log('   - Verify it matches the secret in RevenueCat dashboard\n');
 }
@@ -83,7 +85,9 @@ async function verifyWebhook() {
   const endpointCheck = await checkWebhookEndpoint();
 
   if (endpointCheck.accessible) {
-    console.log(`✅ Webhook endpoint is accessible (Status: ${endpointCheck.status})\n`);
+    console.log(
+      `✅ Webhook endpoint is accessible (Status: ${endpointCheck.status})\n`,
+    );
   } else {
     console.log(`❌ Webhook endpoint is not accessible`);
     if (endpointCheck.status) {
@@ -97,13 +101,17 @@ async function verifyWebhook() {
   checkWebhookSecret();
 
   console.log('📝 Testing Webhook:');
-  console.log('   To test the webhook, trigger a test event from RevenueCat dashboard:');
+  console.log(
+    '   To test the webhook, trigger a test event from RevenueCat dashboard:',
+  );
   console.log('   - Go to RevenueCat → Webhooks → Test Webhook');
   console.log('   - Send a test event');
   console.log('   - Check Supabase logs for the event\n');
 
   console.log('✅ Verification complete!');
-  console.log('⚠️  Remember to manually verify RevenueCat dashboard and Supabase secrets.\n');
+  console.log(
+    '⚠️  Remember to manually verify RevenueCat dashboard and Supabase secrets.\n',
+  );
 
   if (!endpointCheck.accessible) {
     console.log('❌ Webhook endpoint check failed. Please verify:');
@@ -115,4 +123,3 @@ async function verifyWebhook() {
 }
 
 verifyWebhook();
-

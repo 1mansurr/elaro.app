@@ -52,9 +52,7 @@ const SearchableSelector: React.FC<Props> = ({
     const options = ['Other', ...data];
     const query = searchQuery.trim().toLowerCase();
     if (!query) return options;
-    return options.filter(option =>
-      option.toLowerCase().includes(query),
-    );
+    return options.filter(option => option.toLowerCase().includes(query));
   }, [data, searchQuery]);
 
   const openDropdown = () => {

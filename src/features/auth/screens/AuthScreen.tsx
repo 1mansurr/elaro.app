@@ -249,16 +249,19 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             'We sent a confirmation link to your email. Verifying your email helps keep your account secure, but you can continue using the app right away.',
           );
         }
-        
+
         // Call onAuthSuccess callback
         onAuthSuccess?.();
-        
+
         // For signup, wait longer for sign-in to complete and session to be created
         // AppNavigator will automatically switch to AuthenticatedNavigator when session is available
         // AuthenticatedNavigator will then show OnboardingNavigator if onboarding_completed is false
-        setTimeout(() => {
-        navigation.goBack();
-        }, mode === 'signup' ? 1500 : 500); // Wait 1.5s for signup (to allow sign-in), 500ms for signin
+        setTimeout(
+          () => {
+            navigation.goBack();
+          },
+          mode === 'signup' ? 1500 : 500,
+        ); // Wait 1.5s for signup (to allow sign-in), 500ms for signin
       }
     } catch (err) {
       const errorTitle = getErrorTitle(err);

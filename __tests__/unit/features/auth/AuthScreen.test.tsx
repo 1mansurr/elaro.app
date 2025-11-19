@@ -1,6 +1,6 @@
 /**
  * Auth Screen Tests
- * 
+ *
  * Tests for src/features/auth/screens/AuthScreen.tsx
  * Target: 70%+ coverage
  */
@@ -197,7 +197,10 @@ describe('AuthScreen', () => {
 
       fireEvent.changeText(getByPlaceholderText('First Name'), 'Test');
       fireEvent.changeText(getByPlaceholderText('Last Name'), 'User');
-      fireEvent.changeText(getByPlaceholderText('Email'), 'existing@example.com');
+      fireEvent.changeText(
+        getByPlaceholderText('Email'),
+        'existing@example.com',
+      );
       fireEvent.changeText(getByPlaceholderText('Password'), 'password123');
 
       const signUpButton = getByText(/sign up/i);
@@ -434,4 +437,3 @@ describe('AuthScreen', () => {
     });
   });
 });
-

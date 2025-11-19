@@ -76,7 +76,6 @@ const RemindersScreen = () => {
     await createAssignment([]); // Create assignment with no reminders
   };
 
-
   // Add auto-save function
   const autoCreateTask = async () => {
     try {
@@ -117,7 +116,9 @@ const RemindersScreen = () => {
       await clearPendingTask();
 
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success!', 'Your assignment has been saved successfully!', [
@@ -139,7 +140,6 @@ const RemindersScreen = () => {
       setIsLoading(false);
     }
   };
-
 
   const createAssignment = async (reminders: number[]) => {
     if (isGuest) {
@@ -200,7 +200,9 @@ const RemindersScreen = () => {
       }
 
       // Invalidate all relevant queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success', 'Assignment created successfully!', [

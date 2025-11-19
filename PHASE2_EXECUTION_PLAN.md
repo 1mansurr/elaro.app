@@ -6,6 +6,7 @@
 ## 📋 Overview
 
 Phase 2 focuses on verifying that all critical infrastructure components are properly deployed and configured:
+
 1. **Edge Functions Deployment** - Ensure all local functions are deployed to Supabase
 2. **Third-Party Services** - Verify integrations with Sentry, Mixpanel, RevenueCat, and Supabase
 
@@ -27,9 +28,11 @@ Phase 2 focuses on verifying that all critical infrastructure components are pro
 ### Task 2.1: Edge Functions Verification
 
 #### Step 1: Inventory Local Functions
+
 **Script:** `scripts/verify-edge-functions.sh`
 
 **What it does:**
+
 - Scans `supabase/functions/` directory
 - Lists all local Edge Functions (excludes `_shared`)
 - Compares with deployed functions via `supabase functions list`
@@ -37,6 +40,7 @@ Phase 2 focuses on verifying that all critical infrastructure components are pro
 - Reports extra deployments (not in local)
 
 **Expected Output:**
+
 ```
 📋 Local Edge Functions:
   1. admin-export-all-data
@@ -44,12 +48,12 @@ Phase 2 focuses on verifying that all critical infrastructure components are pro
   3. api-v2
   4. assignments-system
   ...
-  
+
 🚀 Deployed Edge Functions:
   1. admin-system
   2. api-v2
   ...
-  
+
 ❌ Missing deployments (X functions):
   - create-assignment
   - update-assignment
@@ -57,6 +61,7 @@ Phase 2 focuses on verifying that all critical infrastructure components are pro
 ```
 
 **How to Run:**
+
 ```bash
 npm run verify:edge-functions
 # OR
@@ -64,6 +69,7 @@ npm run verify:edge-functions
 ```
 
 **Prerequisites:**
+
 - Supabase CLI installed: `npm install -g supabase`
 - Logged in: `supabase login`
 - Project linked: `supabase link --project-ref YOUR_PROJECT_REF`
@@ -71,15 +77,18 @@ npm run verify:edge-functions
 ---
 
 #### Step 2: Test Critical Edge Functions
+
 **Script:** `scripts/test-edge-functions.sh`
 
 **What it does:**
+
 - Tests critical Edge Functions by making HTTP requests
 - Verifies endpoints are accessible
 - Checks authentication requirements
 - Reports success/failure for each function
 
 **Critical Functions to Test:**
+
 - `health-check` - Basic health endpoint
 - `api-v2` - Main API endpoint
 - `create-assignment` - Task creation
@@ -87,6 +96,7 @@ npm run verify:edge-functions
 - `auth/signup` - User registration (if exists)
 
 **How to Run:**
+
 ```bash
 npm run test:edge-functions
 # OR
@@ -94,6 +104,7 @@ npm run test:edge-functions
 ```
 
 **Note:** Requires environment variables:
+
 - `EXPO_PUBLIC_SUPABASE_URL`
 - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
@@ -102,9 +113,11 @@ npm run test:edge-functions
 ### Task 2.2: Third-Party Services Verification
 
 #### Step 1: Verify Service Configurations
+
 **Script:** `scripts/verify-third-party-services.js`
 
 **What it does:**
+
 - Checks environment variables for each service
 - Tests Sentry DSN validity
 - Tests Mixpanel API connection
@@ -112,6 +125,7 @@ npm run test:edge-functions
 - Tests Supabase REST API connectivity
 
 **Services Verified:**
+
 1. **Sentry** (Error Tracking)
    - Checks `EXPO_PUBLIC_SENTRY_DSN`
    - Validates DSN format
@@ -132,6 +146,7 @@ npm run test:edge-functions
    - Tests REST API connectivity
 
 **How to Run:**
+
 ```bash
 npm run verify:services
 # OR
@@ -139,6 +154,7 @@ node scripts/verify-third-party-services.js
 ```
 
 **Expected Output:**
+
 ```
 🔍 Verifying Third-Party Services
 ==================================================
@@ -168,14 +184,17 @@ node scripts/verify-third-party-services.js
 ---
 
 #### Step 2: Runtime Health Check
+
 **Service:** `src/services/serviceHealthCheck.ts`
 
 **What it does:**
+
 - Provides runtime health check for services
 - Can be called from within the app
 - Returns detailed status for each service
 
 **Usage:**
+
 ```typescript
 import { checkServiceHealth } from '@/services/serviceHealthCheck';
 
@@ -194,6 +213,7 @@ console.log(health);
 ## 📊 Expected Results
 
 ### Edge Functions
+
 - **Total Local Functions:** ~80+ functions
 - **Expected Deployed:** All critical functions
 - **Critical Functions:**
@@ -214,6 +234,7 @@ console.log(health);
   - `get-calendar-data-for-week`
 
 ### Third-Party Services
+
 - **Sentry:** ✅ Configured and working
 - **Mixpanel:** ✅ Configured and working
 - **RevenueCat:** ✅ Configured and working
@@ -226,6 +247,7 @@ console.log(health);
 ### Edge Functions Issues
 
 **Issue:** `supabase functions list` returns empty
+
 - **Solution:** Ensure you're logged in and linked to the project
   ```bash
   supabase login
@@ -233,29 +255,35 @@ console.log(health);
   ```
 
 **Issue:** Functions not deploying
+
 - **Solution:** Deploy missing functions
   ```bash
   supabase functions deploy FUNCTION_NAME
   ```
 
 **Issue:** Function deployment fails
+
 - **Solution:** Check function code for errors, verify dependencies in `deno.json`
 
 ### Third-Party Services Issues
 
 **Issue:** Sentry DSN invalid
+
 - **Solution:** Verify DSN format: `https://KEY@HOST/PROJECT_ID`
 - Check Sentry dashboard for correct DSN
 
 **Issue:** Mixpanel connection fails
+
 - **Solution:** Verify token is correct, check network connectivity
 - Test with Mixpanel API directly
 
 **Issue:** RevenueCat key format invalid
+
 - **Solution:** Ensure key starts with `rcb_`
 - Get correct key from RevenueCat dashboard
 
 **Issue:** Supabase connection fails
+
 - **Solution:** Verify URL and anon key are correct
 - Check Supabase project settings
 
@@ -275,6 +303,7 @@ console.log(health);
 ## 📝 Next Steps After Verification
 
 1. **Deploy Missing Functions:**
+
    ```bash
    # For each missing function
    supabase functions deploy FUNCTION_NAME
@@ -307,4 +336,3 @@ console.log(health);
 ---
 
 **Ready to execute Phase 2 verification!**
-

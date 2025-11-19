@@ -243,34 +243,34 @@ export function withSentry<T extends (...args: any[]) => Promise<any>>(
 ): T {
   return (async (...args: any[]) => {
     if (SENTRY_SUPPORTED) {
-    // Add breadcrumb for function start
-    addBreadcrumb(`Starting ${functionName}`, 'function', 'info', {
-      function: functionName,
-      args_count: args.length,
-    });
+      // Add breadcrumb for function start
+      addBreadcrumb(`Starting ${functionName}`, 'function', 'info', {
+        function: functionName,
+        args_count: args.length,
+      });
     }
 
     try {
       const result = await fn(...args);
 
       if (SENTRY_SUPPORTED) {
-      // Add breadcrumb for success
-      addBreadcrumb(`Completed ${functionName}`, 'function', 'info', {
-        function: functionName,
-        success: true,
-      });
+        // Add breadcrumb for success
+        addBreadcrumb(`Completed ${functionName}`, 'function', 'info', {
+          function: functionName,
+          success: true,
+        });
       }
 
       return result;
     } catch (error) {
       if (SENTRY_SUPPORTED) {
-      // Capture exception with context
-      captureException(
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          function: functionName,
-        },
-      );
+        // Capture exception with context
+        captureException(
+          error instanceof Error ? error : new Error(String(error)),
+          {
+            function: functionName,
+          },
+        );
       }
 
       throw error;

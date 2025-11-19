@@ -329,7 +329,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
 
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient); // No specific type - invalidates all
 
       onClose();

@@ -104,7 +104,6 @@ const AddLectureRemindersScreen = () => {
     }
   };
 
-
   const handleFinish = async () => {
     setIsLoading(true);
     // First, update the context with the final reminder selection

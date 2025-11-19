@@ -90,7 +90,9 @@ export const assignmentsApiMutations = {
         console.log('📴 Offline: Queueing UPDATE assignment action');
 
         // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } = await import('@/utils/taskCache');
+        const { getCachedTask, mergeTaskUpdates } = await import(
+          '@/utils/taskCache'
+        );
         const cachedTask = await getCachedTask(assignmentId, 'assignment');
 
         if (!cachedTask) {

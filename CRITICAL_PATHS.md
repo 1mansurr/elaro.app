@@ -8,12 +8,14 @@ This document identifies the critical paths in the ELARO app that require at lea
 **Current Status:** Needs testing
 
 ### Files:
+
 - `src/features/auth/services/authService.ts` - Core authentication logic
 - `src/contexts/AuthContext.tsx` - Authentication state management
 - `src/features/auth/screens/AuthScreen.tsx` - Authentication UI
 - `src/services/supabase.ts` - Supabase client and auth methods
 
 ### Test Scenarios:
+
 - [ ] User sign up (email/password)
 - [ ] User sign in (email/password)
 - [ ] User sign out
@@ -31,6 +33,7 @@ This document identifies the critical paths in the ELARO app that require at lea
 **Current Status:** Needs testing
 
 ### Files:
+
 - `src/hooks/useTaskMutations.ts` - Task CRUD operations
 - `src/features/assignments/services/mutations.ts` - Assignment mutations
 - `src/features/assignments/screens/AddAssignmentScreen.tsx` - Task creation UI
@@ -38,6 +41,7 @@ This document identifies the critical paths in the ELARO app that require at lea
 - `src/features/studySessions/screens/AddStudySessionScreen.tsx` - Study session creation
 
 ### Test Scenarios:
+
 - [ ] Create assignment
 - [ ] Update assignment
 - [ ] Delete assignment (soft delete)
@@ -56,12 +60,14 @@ This document identifies the critical paths in the ELARO app that require at lea
 **Current Status:** Needs testing
 
 ### Files:
+
 - `src/navigation/AppNavigator.tsx` - Main navigation logic
 - `src/navigation/AuthenticatedNavigator.tsx` - Authenticated routes
 - `src/navigation/GuestNavigator.tsx` - Guest routes
 - `src/navigation/utils/RouteGuards.ts` - Route access validation
 
 ### Test Scenarios:
+
 - [ ] Navigation based on auth state
 - [ ] Route guards (prevent unauthorized access)
 - [ ] Deep linking
@@ -77,11 +83,13 @@ This document identifies the critical paths in the ELARO app that require at lea
 **Current Status:** Needs testing
 
 ### Files:
+
 - `src/services/syncManager.ts` - Offline queue management
 - `src/hooks/useOfflineMutation.ts` - Offline mutation handling
 - `src/utils/cacheRecovery.ts` - Cache recovery logic
 
 ### Test Scenarios:
+
 - [ ] Queue actions when offline
 - [ ] Auto-sync when online
 - [ ] Priority-based queue processing
@@ -99,10 +107,12 @@ This document identifies the critical paths in the ELARO app that require at lea
 **Current Status:** Partially tested
 
 ### Files:
+
 - All RLS policies in `supabase/migrations/*.sql`
 - `tests/rls/*.test.ts` - RLS test files
 
 ### Test Scenarios:
+
 - [ ] User can only access their own data
 - [ ] RLS policies prevent unauthorized access
 - [ ] Soft delete policies work correctly
@@ -114,11 +124,13 @@ This document identifies the critical paths in the ELARO app that require at lea
 ## Coverage Goals
 
 ### Overall Coverage:
+
 - **Minimum:** 50% for all code
 - **Critical Paths:** 70%+ (as listed above)
 - **Security:** 80%+ (RLS policies)
 
 ### Current Status:
+
 - Overall: 3.5% (needs improvement)
 - Critical Paths: TBD (needs testing)
 - Security: Partially tested
@@ -138,10 +150,10 @@ This document identifies the critical paths in the ELARO app that require at lea
 ## Success Criteria
 
 Phase 1 is complete when:
+
 - [ ] Authentication flow: 70%+ coverage
 - [ ] Task management: 70%+ coverage
 - [ ] Navigation: 70%+ coverage
 - [ ] Offline sync: 70%+ coverage
 - [ ] All critical path tests passing
 - [ ] Coverage thresholds enforced in CI/CD
-

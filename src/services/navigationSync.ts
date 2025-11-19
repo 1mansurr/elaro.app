@@ -11,9 +11,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationState, PartialState } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/navigation';
-import {
-  AUTHENTICATED_ROUTES,
-} from '@/navigation/utils/RouteGuards';
+import { AUTHENTICATED_ROUTES } from '@/navigation/utils/RouteGuards';
 
 // Storage keys
 const NAVIGATION_STATE_KEY = '@elaro_navigation_state_v1';

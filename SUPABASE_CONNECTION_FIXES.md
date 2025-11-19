@@ -28,6 +28,7 @@
 **Error**: `password authentication failed for user "postgres"`
 
 **Causes**:
+
 - Database password may be incorrect or expired
 - Password might have been reset in Supabase Dashboard
 - Connection credentials may be cached incorrectly
@@ -35,6 +36,7 @@
 **Solutions**:
 
 **Option A: Reset Database Password**
+
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard/project/alqpwhrsxmetwbtxuihv/settings/database)
 2. Navigate to Settings → Database
 3. Click "Reset Database Password"
@@ -46,6 +48,7 @@
    ```
 
 **Option B: Use Access Token Instead**
+
 ```bash
 # Login with access token
 supabase login
@@ -59,6 +62,7 @@ supabase link --project-ref alqpwhrsxmetwbtxuihv
 **Error**: `FATAL: {:shutdown, :db_termination} (SQLSTATE XX000)`
 
 **Causes**:
+
 - Database might be paused (free tier auto-pauses after inactivity)
 - Database might be experiencing issues
 - Connection pooler might be overloaded
@@ -86,6 +90,7 @@ supabase link --project-ref alqpwhrsxmetwbtxuihv
 **Error**: `timeout: context deadline exceeded`
 
 **Causes**:
+
 - Network connectivity issues
 - Database is slow to respond
 - Connection pooler is overloaded
@@ -93,6 +98,7 @@ supabase link --project-ref alqpwhrsxmetwbtxuihv
 **Solutions**:
 
 1. **Check Network Connectivity**
+
    ```bash
    # Test connection to Supabase
    ping aws-1-eu-west-1.pooler.supabase.com
@@ -109,6 +115,7 @@ supabase link --project-ref alqpwhrsxmetwbtxuihv
 ## Recommended Next Steps
 
 ### 1. Verify Database is Active
+
 ```bash
 # Check project status
 supabase projects list
@@ -117,28 +124,34 @@ supabase projects list
 ```
 
 ### 2. Reset Database Password (if needed)
+
 1. Go to Dashboard → Settings → Database
 2. Reset password
 3. Re-link: `supabase link --project-ref alqpwhrsxmetwbtxuihv`
 
 ### 3. Resume Database (if paused)
+
 - Free tier databases auto-pause after 1 week of inactivity
 - Resume from Dashboard if needed
 
 ### 4. Retry Migration Push
+
 ```bash
 # After fixing password/database status
 supabase db push --include-all
 ```
 
 ### 5. Verify Edge Function Secrets
+
 Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in:
+
 - Supabase Dashboard → Edge Functions → Secrets
 - Should match the service role key from Settings → API
 
 ## Connection Configuration
 
 ### Current Setup
+
 - **Project Ref**: `alqpwhrsxmetwbtxuihv`
 - **Region**: `aws-1-eu-west-1` (West EU - London)
 - **Connection**: Using pooler by default, direct for migrations
@@ -146,11 +159,13 @@ Ensure `SUPABASE_SERVICE_ROLE_KEY` is set in:
 ### Connection Strings
 
 **Direct Connection (for migrations)**:
+
 ```
 postgresql://postgres.alqpwhrsxmetwbtxuihv:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:5432/postgres
 ```
 
 **Pooler Connection (for applications)**:
+
 ```
 postgresql://postgres.alqpwhrsxmetwbtxuihv:[PASSWORD]@aws-1-eu-west-1.pooler.supabase.com:6543/postgres
 ```
@@ -182,4 +197,3 @@ supabase login
 ✅ **Fixed**: Service role key variable names, migration history, CLI version, project linkage
 ⚠️ **Action Required**: Reset database password and/or resume database if paused
 🔄 **Next**: Retry `supabase db push --include-all` after fixing password/database status
-

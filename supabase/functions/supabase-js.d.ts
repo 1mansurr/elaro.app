@@ -71,9 +71,8 @@ declare module 'https://esm.sh/@supabase/supabase-js@2.0.0' {
   export function createClient(
     supabaseUrl: string,
     supabaseKey: string,
-    options?: SupabaseClientOptions
+    options?: SupabaseClientOptions,
   ): SupabaseClient;
 
   export type { SupabaseClient, User };
 }
-

@@ -33,9 +33,8 @@ export async function invalidateTaskQueries(
 
   // Always invalidate these queries (they depend on all task types)
   await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-  
+
   // Invalidate calendar queries to ensure tasks appear immediately
   await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
   await queryClient.invalidateQueries({ queryKey: ['calendarMonthData'] });
 }
-

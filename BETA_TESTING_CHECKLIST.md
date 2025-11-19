@@ -18,6 +18,7 @@
 ## ✅ Core Functionality Tests
 
 ### Authentication
+
 - [ ] Sign up works
 - [ ] Sign in works
 - [ ] Sign out works
@@ -26,6 +27,7 @@
 - [ ] Account lockout works
 
 ### Tasks
+
 - [ ] Create assignment
 - [ ] Create lecture
 - [ ] Create study session
@@ -36,6 +38,7 @@
 - [ ] View task details
 
 ### Courses
+
 - [ ] Create course
 - [ ] Edit course
 - [ ] Delete course
@@ -43,6 +46,7 @@
 - [ ] View course tasks
 
 ### Offline
+
 - [ ] Create task offline
 - [ ] Edit task offline
 - [ ] Delete task offline
@@ -109,5 +113,3 @@
 ---
 
 **Use this checklist to ensure comprehensive beta testing!**
-
-

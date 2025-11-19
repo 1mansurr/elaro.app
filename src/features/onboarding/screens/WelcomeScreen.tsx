@@ -56,9 +56,9 @@ const WelcomeScreen = () => {
   // Format date for display
   const formattedDate = dateOfBirth
     ? formatDate(dateOfBirth, {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
       })
     : 'Select your birthdate';
 
@@ -163,9 +163,9 @@ const WelcomeScreen = () => {
 
         {/* Show age information */}
         {age !== null && (
-        <View style={styles.ageContainer}>
-          <Text style={styles.ageText}>Your age: {age} years old</Text>
-        </View>
+          <View style={styles.ageContainer}>
+            <Text style={styles.ageText}>Your age: {age} years old</Text>
+          </View>
         )}
 
         {/* Error message for users under 13 */}
@@ -386,4 +386,3 @@ const styles = StyleSheet.create({
 });
 
 export default WelcomeScreen;
-

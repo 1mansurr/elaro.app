@@ -5,11 +5,13 @@
 ## 🚀 Quick Commands
 
 ### Run Pre-Launch Checks
+
 ```bash
 npm run pre-launch:check
 ```
 
 **What it does:**
+
 - Checks test coverage thresholds
 - Verifies Edge Functions deployment
 - Verifies third-party services
@@ -18,6 +20,7 @@ npm run pre-launch:check
 - Checks TypeScript
 
 **Expected Output:**
+
 ```
 🚀 Pre-Launch Checklist
 
@@ -54,7 +57,9 @@ Pre-Launch Check Summary
 ## 📋 Prerequisites
 
 ### Environment Variables
+
 Create a `.env` file:
+
 ```env
 EXPO_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
@@ -64,6 +69,7 @@ EXPO_PUBLIC_REVENUECAT_APPLE_KEY=rcb_your-key
 ```
 
 ### Supabase CLI (for Edge Functions check)
+
 ```bash
 npm install -g supabase
 supabase login
@@ -75,6 +81,7 @@ supabase link --project-ref YOUR_PROJECT_REF
 ## 🔧 Troubleshooting
 
 ### "Test coverage below thresholds"
+
 ```bash
 # Generate detailed coverage report
 npm run test:coverage
@@ -84,6 +91,7 @@ npm run test:coverage
 ```
 
 ### "Edge Functions not deployed"
+
 ```bash
 # See which functions are missing
 npm run verify:edge-functions
@@ -93,11 +101,13 @@ supabase functions deploy FUNCTION_NAME
 ```
 
 ### "Services verification failed"
+
 - Check environment variables are set
 - Verify credentials are correct
 - Test network connectivity
 
 ### "Security audit found vulnerabilities"
+
 ```bash
 # Try to fix automatically
 npm audit fix
@@ -115,6 +125,7 @@ npm audit
 The CI/CD pipeline is already configured in `.github/workflows/ci.yml`.
 
 **To activate:**
+
 1. Push the workflow file to your repository
 2. Add secrets to GitHub Settings → Secrets:
    - `EXPO_PUBLIC_SUPABASE_URL`
@@ -124,6 +135,7 @@ The CI/CD pipeline is already configured in `.github/workflows/ci.yml`.
    - `EXPO_PUBLIC_REVENUECAT_APPLE_KEY` (optional)
 
 **The pipeline will:**
+
 - Run on every push/PR
 - Test code and check coverage
 - Verify services
@@ -159,5 +171,3 @@ Before beta launch, ensure:
 ---
 
 **Ready to verify! Run `npm run pre-launch:check` to check your beta readiness.**
-
-

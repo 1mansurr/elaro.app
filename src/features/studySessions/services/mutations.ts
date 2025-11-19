@@ -1,6 +1,9 @@
 import { supabase } from '@/services/supabase';
 import { StudySession } from '@/types';
-import { CreateStudySessionRequest, UpdateStudySessionRequest } from '@/types/api';
+import {
+  CreateStudySessionRequest,
+  UpdateStudySessionRequest,
+} from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
@@ -92,7 +95,9 @@ export const studySessionsApiMutations = {
         console.log('📴 Offline: Queueing UPDATE study_session action');
 
         // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } = await import('@/utils/taskCache');
+        const { getCachedTask, mergeTaskUpdates } = await import(
+          '@/utils/taskCache'
+        );
         const cachedTask = await getCachedTask(sessionId, 'study_session');
 
         if (!cachedTask) {

@@ -299,9 +299,9 @@ describe('PermissionService', () => {
 
       // Mock exception
       const { supabase } = require('@/services/supabase');
-      jest.spyOn(supabase.rpc, 'count_tasks_since').mockRejectedValue(
-        new Error('Network error'),
-      );
+      jest
+        .spyOn(supabase.rpc, 'count_tasks_since')
+        .mockRejectedValue(new Error('Network error'));
 
       const count = await permissionService.getTaskCount(
         freeUser,
@@ -315,7 +315,7 @@ describe('PermissionService', () => {
     it('should calculate date 30 days ago correctly', async () => {
       const freeUser = createMockUser();
       const { supabase } = require('@/services/supabase');
-      
+
       jest.spyOn(supabase.rpc, 'count_tasks_since').mockResolvedValue({
         data: 3,
         error: null,
@@ -329,7 +329,9 @@ describe('PermissionService', () => {
       expectedDate.setDate(expectedDate.getDate() - 30);
 
       // Allow 1 second difference for execution time
-      expect(Math.abs(sinceDate.getTime() - expectedDate.getTime())).toBeLessThan(1000);
+      expect(
+        Math.abs(sinceDate.getTime() - expectedDate.getTime()),
+      ).toBeLessThan(1000);
     });
   });
 

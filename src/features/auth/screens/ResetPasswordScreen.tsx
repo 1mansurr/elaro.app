@@ -55,7 +55,7 @@ export function ResetPasswordScreen() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
-      
+
       // Don't show error immediately - Supabase might still be processing the token
       // Give it a moment to set up the session
       setTimeout(async () => {
@@ -87,7 +87,10 @@ export function ResetPasswordScreen() {
 
   const validatePassword = (): boolean => {
     if (!password || password.length < 8) {
-      Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+      Alert.alert(
+        'Invalid Password',
+        'Password must be at least 8 characters long.',
+      );
       return false;
     }
     if (password !== confirmPassword) {
@@ -182,10 +185,7 @@ export function ResetPasswordScreen() {
               New Password
             </Text>
             <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.card },
-              ]}>
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
               <TextInput
                 style={[styles.input, { color: theme.text }]}
                 placeholder="Enter new password"
@@ -215,10 +215,7 @@ export function ResetPasswordScreen() {
               Confirm Password
             </Text>
             <View
-              style={[
-                styles.inputWrapper,
-                { backgroundColor: theme.card },
-              ]}>
+              style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
               <TextInput
                 style={[styles.input, { color: theme.text }]}
                 placeholder="Confirm new password"
@@ -370,4 +367,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

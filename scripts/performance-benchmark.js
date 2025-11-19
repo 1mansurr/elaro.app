@@ -2,7 +2,7 @@
 
 /**
  * Performance Benchmark Script
- * 
+ *
  * Measures key performance metrics for the app:
  * - Bundle size
  * - Estimated startup time
@@ -71,14 +71,14 @@ const results = {
 // Get directory size
 function getDirectorySize(dirPath) {
   let totalSize = 0;
-  
+
   try {
     const files = fs.readdirSync(dirPath);
-    
+
     for (const file of files) {
       const filePath = path.join(dirPath, file);
       const stats = fs.statSync(filePath);
-      
+
       if (stats.isDirectory()) {
         totalSize += getDirectorySize(filePath);
       } else {
@@ -88,7 +88,7 @@ function getDirectorySize(dirPath) {
   } catch (error) {
     // Ignore errors for inaccessible directories
   }
-  
+
   return totalSize;
 }
 
@@ -98,20 +98,20 @@ function formatBytes(bytes) {
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
 }
 
 // Check bundle size
 function checkBundleSize() {
   logSection('1. Bundle Size Analysis');
-  
+
   // Check node_modules size
   const nodeModulesPath = path.join(process.cwd(), 'node_modules');
   if (fs.existsSync(nodeModulesPath)) {
     logInfo('Calculating node_modules size...');
     const nodeModulesSize = getDirectorySize(nodeModulesPath);
     logInfo(`node_modules size: ${formatBytes(nodeModulesSize)}`);
-    
+
     // Check if within reasonable limits
     const maxSize = 500 * 1024 * 1024; // 500MB
     if (nodeModulesSize > maxSize) {
@@ -121,17 +121,19 @@ function checkBundleSize() {
       logSuccess(`node_modules size is reasonable`);
     }
   }
-  
+
   // Check if build directories exist
   const iosBuildPath = path.join(process.cwd(), 'ios', 'build');
   const androidBuildPath = path.join(process.cwd(), 'android', 'app', 'build');
-  
+
   if (fs.existsSync(iosBuildPath)) {
     const iosSize = getDirectorySize(iosBuildPath);
     logInfo(`iOS build size: ${formatBytes(iosSize)}`);
-    
+
     if (iosSize > TARGETS.bundleSize.ios) {
-      logWarning(`iOS bundle exceeds target (${formatBytes(iosSize)} > ${formatBytes(TARGETS.bundleSize.ios)})`);
+      logWarning(
+        `iOS bundle exceeds target (${formatBytes(iosSize)} > ${formatBytes(TARGETS.bundleSize.ios)})`,
+      );
       results.bundleSize.passed = false;
     } else {
       logSuccess(`iOS bundle size is within target`);
@@ -140,13 +142,15 @@ function checkBundleSize() {
     results.bundleSize.value = iosSize;
     results.bundleSize.target = TARGETS.bundleSize.ios;
   }
-  
+
   if (fs.existsSync(androidBuildPath)) {
     const androidSize = getDirectorySize(androidBuildPath);
     logInfo(`Android build size: ${formatBytes(androidSize)}`);
-    
+
     if (androidSize > TARGETS.bundleSize.android) {
-      logWarning(`Android bundle exceeds target (${formatBytes(androidSize)} > ${formatBytes(TARGETS.bundleSize.android)})`);
+      logWarning(
+        `Android bundle exceeds target (${formatBytes(androidSize)} > ${formatBytes(TARGETS.bundleSize.android)})`,
+      );
       results.bundleSize.passed = false;
     } else {
       logSuccess(`Android bundle size is within target`);
@@ -158,21 +162,23 @@ function checkBundleSize() {
 // Check dependencies
 function checkDependencies() {
   logSection('2. Dependencies Analysis');
-  
+
   try {
     const packageJsonPath = path.join(process.cwd(), 'package.json');
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
-    
+
     const dependencies = Object.keys(packageJson.dependencies || {}).length;
-    const devDependencies = Object.keys(packageJson.devDependencies || {}).length;
+    const devDependencies = Object.keys(
+      packageJson.devDependencies || {},
+    ).length;
     const total = dependencies + devDependencies;
-    
+
     logInfo(`Production dependencies: ${dependencies}`);
     logInfo(`Development dependencies: ${devDependencies}`);
     logInfo(`Total dependencies: ${total}`);
-    
+
     results.dependencies.count = total;
-    
+
     if (total > 200) {
       logWarning(`High number of dependencies (${total})`);
       logInfo('Consider reviewing and removing unused dependencies');
@@ -181,11 +187,14 @@ function checkDependencies() {
       logSuccess(`Dependency count is reasonable`);
       results.dependencies.passed = true;
     }
-    
+
     // Check for duplicate dependencies
     logInfo('\nChecking for duplicate dependencies...');
     try {
-      const output = execSync('npm ls --depth=0', { encoding: 'utf-8', stdio: 'pipe' });
+      const output = execSync('npm ls --depth=0', {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
       if (output.includes('UNMET') || output.includes('invalid')) {
         logWarning('Some dependencies may have issues');
       } else {
@@ -203,19 +212,19 @@ function checkDependencies() {
 // Check code complexity
 function checkCodeComplexity() {
   logSection('3. Code Complexity Analysis');
-  
+
   try {
     // Count TypeScript files
     const srcPath = path.join(process.cwd(), 'src');
     let fileCount = 0;
     let totalLines = 0;
-    
+
     function countFiles(dir) {
       const files = fs.readdirSync(dir);
       for (const file of files) {
         const filePath = path.join(dir, file);
         const stats = fs.statSync(filePath);
-        
+
         if (stats.isDirectory()) {
           countFiles(filePath);
         } else if (file.endsWith('.ts') || file.endsWith('.tsx')) {
@@ -225,19 +234,19 @@ function checkCodeComplexity() {
         }
       }
     }
-    
+
     if (fs.existsSync(srcPath)) {
       countFiles(srcPath);
       logInfo(`TypeScript files: ${fileCount}`);
       logInfo(`Total lines of code: ${totalLines.toLocaleString()}`);
       logInfo(`Average lines per file: ${Math.round(totalLines / fileCount)}`);
-      
+
       if (totalLines > 50000) {
         logWarning('Large codebase - consider code splitting');
       } else {
         logSuccess('Codebase size is manageable');
       }
-      
+
       results.codeComplexity.passed = true;
       results.codeComplexity.message = `${fileCount} files, ${totalLines.toLocaleString()} lines`;
     } else {
@@ -253,17 +262,21 @@ function checkCodeComplexity() {
 // Performance recommendations
 function generateRecommendations() {
   logSection('4. Performance Recommendations');
-  
+
   const recommendations = [];
-  
+
   if (!results.bundleSize.passed) {
-    recommendations.push('Optimize bundle size: Use code splitting, tree shaking, and remove unused code');
+    recommendations.push(
+      'Optimize bundle size: Use code splitting, tree shaking, and remove unused code',
+    );
   }
-  
+
   if (!results.dependencies.passed) {
-    recommendations.push('Review dependencies: Remove unused packages and check for duplicates');
+    recommendations.push(
+      'Review dependencies: Remove unused packages and check for duplicates',
+    );
   }
-  
+
   if (recommendations.length === 0) {
     logSuccess('No critical performance issues found');
     logInfo('\nGeneral recommendations:');
@@ -282,15 +295,15 @@ function generateRecommendations() {
 // Generate summary
 function generateSummary() {
   logSection('Performance Benchmark Summary');
-  
+
   const allChecks = [
     { name: 'Bundle Size', result: results.bundleSize },
     { name: 'Dependencies', result: results.dependencies },
     { name: 'Code Complexity', result: results.codeComplexity },
   ];
-  
+
   let allPassed = true;
-  
+
   allChecks.forEach(({ name, result }) => {
     if (result.passed) {
       logSuccess(`${name}: PASSED`);
@@ -305,9 +318,9 @@ function generateSummary() {
       allPassed = false;
     }
   });
-  
+
   log('\n' + '='.repeat(60), 'cyan');
-  
+
   if (allPassed) {
     logSuccess('\n✅ Performance benchmarks look good!');
     logInfo('Continue monitoring performance in production.');
@@ -315,7 +328,7 @@ function generateSummary() {
     logWarning('\n⚠️  Some performance areas need attention.');
     logInfo('Review recommendations above before beta launch.');
   }
-  
+
   log('\nPerformance Targets:');
   logInfo(`- Bundle size: < ${formatBytes(TARGETS.bundleSize.ios)}`);
   logInfo(`- Startup time: < ${TARGETS.startupTime}ms`);
@@ -345,5 +358,3 @@ if (require.main === module) {
 }
 
 module.exports = { main, results, TARGETS };
-
-

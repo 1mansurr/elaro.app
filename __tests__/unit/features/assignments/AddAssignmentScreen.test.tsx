@@ -1,6 +1,6 @@
 /**
  * Add Assignment Screen Tests
- * 
+ *
  * Tests for src/features/assignments/screens/AddAssignmentScreen.tsx
  * Target: 70%+ coverage
  */
@@ -313,9 +313,9 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should handle creation errors', async () => {
-      const mockCreate = jest.fn().mockRejectedValue(
-        new Error('Failed to create assignment'),
-      );
+      const mockCreate = jest
+        .fn()
+        .mockRejectedValue(new Error('Failed to create assignment'));
 
       jest.doMock('@/services/api', () => ({
         api: {
@@ -619,4 +619,3 @@ describe('AddAssignmentScreen', () => {
     });
   });
 });
-

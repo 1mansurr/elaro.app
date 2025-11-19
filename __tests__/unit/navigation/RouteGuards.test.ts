@@ -1,6 +1,6 @@
 /**
  * Route Guards Tests
- * 
+ *
  * Tests for src/navigation/utils/RouteGuards.ts
  * Target: 70%+ coverage
  */
@@ -202,4 +202,3 @@ describe('RouteGuards', () => {
     });
   });
 });
-

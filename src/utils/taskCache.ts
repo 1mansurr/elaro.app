@@ -1,6 +1,6 @@
 /**
  * Task Cache Utilities
- * 
+ *
  * Provides helper functions for accessing and merging cached task data
  * for offline update operations.
  */
@@ -40,7 +40,9 @@ export async function getCachedTask(
   // 2. Check AsyncStorage cache
   try {
     const cacheKey = `${taskType}_${taskId}`;
-    const stored = await cache.get<Assignment | Lecture | StudySession>(cacheKey);
+    const stored = await cache.get<Assignment | Lecture | StudySession>(
+      cacheKey,
+    );
     if (stored) {
       console.log(`✅ Found task ${taskId} in AsyncStorage cache`);
       return stored;
@@ -139,4 +141,3 @@ export async function resolveTaskId(
   // Return original if not resolved yet
   return taskId;
 }
-

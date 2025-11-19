@@ -1,6 +1,6 @@
 /**
  * Auth Service Tests
- * 
+ *
  * Tests for src/features/auth/services/authService.ts
  * Target: 70%+ coverage
  */
@@ -396,9 +396,7 @@ describe('authService', () => {
 
       mockSupabase.auth.signOut.mockResolvedValue({ error: mockError });
 
-      await expect(
-        authService.signOutFromAllDevices(),
-      ).rejects.toMatchObject({
+      await expect(authService.signOutFromAllDevices()).rejects.toMatchObject({
         message: 'Global sign out failed',
         status: 500,
         code: 'GLOBAL_SIGNOUT_ERROR',
@@ -739,8 +737,7 @@ describe('authService', () => {
         error: null,
       });
 
-      const result =
-        await authService.mfa.getAuthenticatorAssuranceLevel();
+      const result = await authService.mfa.getAuthenticatorAssuranceLevel();
 
       expect(result).toEqual({
         currentLevel: 'aal1',
@@ -754,8 +751,7 @@ describe('authService', () => {
         error: null,
       });
 
-      const result =
-        await authService.mfa.getAuthenticatorAssuranceLevel();
+      const result = await authService.mfa.getAuthenticatorAssuranceLevel();
 
       expect(result).toEqual({
         currentLevel: null,
@@ -869,4 +865,3 @@ describe('authService', () => {
     });
   });
 });
-
