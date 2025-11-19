@@ -70,6 +70,15 @@ target 'Elaro' do
         end
       end
     end
+
+    # Fix for react-native-select-dropdown static linking issue with .xcframework
+    installer.pods_project.targets.each do |target|
+      if target.name == 'react-native-select-dropdown'
+        target.build_configurations.each do |config|
+          config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
+        end
+      end
+    end
   end
 
   post_integrate do |installer|
