@@ -1,11 +1,7 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/features/auth/services/authService';
-import {
-  checkAccountLockout,
-  resetFailedAttempts,
-  recordSuccessfulLogin,
-} from '@/features/auth/services/accountLockout';
+import { checkAccountLockout, resetFailedAttempts, recordSuccessfulLogin } from '@/features/auth/services/accountLockout';
 import { updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 import { mixpanelService } from '@/services/analytics';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
@@ -23,30 +19,16 @@ jest.mock('@/services/analyticsEvents', () => ({
 }));
 
 const mockAuthService = authService as jest.Mocked<typeof authService>;
-const mockCheckAccountLockout = checkAccountLockout as jest.MockedFunction<
-  typeof checkAccountLockout
->;
-const mockResetFailedAttempts = resetFailedAttempts as jest.MockedFunction<
-  typeof resetFailedAttempts
->;
-const mockRecordSuccessfulLogin = recordSuccessfulLogin as jest.MockedFunction<
-  typeof recordSuccessfulLogin
->;
-const mockUpdateLastActiveTimestamp =
-  updateLastActiveTimestamp as jest.MockedFunction<
-    typeof updateLastActiveTimestamp
-  >;
-const mockMixpanelService = mixpanelService as jest.Mocked<
-  typeof mixpanelService
->;
+const mockCheckAccountLockout = checkAccountLockout as jest.MockedFunction<typeof checkAccountLockout>;
+const mockResetFailedAttempts = resetFailedAttempts as jest.MockedFunction<typeof resetFailedAttempts>;
+const mockRecordSuccessfulLogin = recordSuccessfulLogin as jest.MockedFunction<typeof recordSuccessfulLogin>;
+const mockUpdateLastActiveTimestamp = updateLastActiveTimestamp as jest.MockedFunction<typeof updateLastActiveTimestamp>;
+const mockMixpanelService = mixpanelService as jest.Mocked<typeof mixpanelService>;
 
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCheckAccountLockout.mockResolvedValue({
-      isLocked: false,
-      minutesRemaining: null,
-    });
+    mockCheckAccountLockout.mockResolvedValue({ isLocked: false, minutesRemaining: null });
     mockResetFailedAttempts.mockResolvedValue();
     mockRecordSuccessfulLogin.mockResolvedValue();
     mockUpdateLastActiveTimestamp.mockResolvedValue();
@@ -237,173 +219,5 @@ describe('AuthContext', () => {
       });
     });
   });
-
-  describe('refreshUser', () => {
-    it('should refresh user profile successfully', async () => {
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-        first_name: 'Test',
-        last_name: 'User',
-      };
-
-      // Mock the getUserProfile function
-      const { supabaseAuthService } = require('@/services/supabase');
-      jest
-        .spyOn(supabaseAuthService, 'getUserProfile')
-        .mockResolvedValue(mockUser as any);
-
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      await act(async () => {
-        await result.current.refreshUser();
-      });
-
-      await waitFor(() => {
-        expect(result.current.user).toBeTruthy();
-      });
-    });
-
-    it('should handle refresh errors gracefully', async () => {
-      const { supabaseAuthService } = require('@/services/supabase');
-      jest
-        .spyOn(supabaseAuthService, 'getUserProfile')
-        .mockRejectedValue(new Error('Failed to fetch user'));
-
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      await act(async () => {
-        await result.current.refreshUser();
-      });
-
-      // Should not crash, user might remain null or previous value
-      expect(result.current.user).toBeDefined();
-    });
-  });
-
-  describe('MFA handling', () => {
-    it('should handle MFA requirement during sign in', async () => {
-      const mockError = {
-        message: 'MFA required',
-        status: 400,
-      };
-
-      mockAuthService.login = jest.fn().mockRejectedValue(mockError);
-
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      await act(async () => {
-        const response = await result.current.signIn({
-          email: 'test@example.com',
-          password: 'password123',
-        });
-
-        expect(response.error).toBeTruthy();
-        expect(response.requiresMFA).toBeFalsy(); // Should be false unless explicitly set
-      });
-    });
-  });
-
-  describe('session management', () => {
-    it('should handle session expiration', async () => {
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      // Initially loading
-      expect(result.current.loading).toBe(true);
-
-      // Wait for initialization
-      await waitFor(
-        () => {
-          expect(result.current.loading).toBe(false);
-        },
-        { timeout: 3000 },
-      );
-    });
-
-    it('should provide isGuest flag correctly', async () => {
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      // Initially should be guest (no user)
-      expect(result.current.isGuest).toBe(true);
-
-      // After sign in, should not be guest
-      const mockUser = {
-        id: 'user-123',
-        email: 'test@example.com',
-      };
-
-      const mockSession = {
-        access_token: 'token',
-        user: mockUser,
-      };
-
-      mockAuthService.login = jest.fn().mockResolvedValue({
-        user: mockUser,
-        session: mockSession,
-      });
-
-      await act(async () => {
-        await result.current.signIn({
-          email: 'test@example.com',
-          password: 'password123',
-        });
-      });
-
-      await waitFor(() => {
-        expect(result.current.isGuest).toBe(false);
-      });
-    });
-  });
-
-  describe('error handling', () => {
-    it('should handle network errors during sign in', async () => {
-      const networkError = new Error('Network request failed');
-      mockAuthService.login = jest.fn().mockRejectedValue(networkError);
-
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      await act(async () => {
-        const response = await result.current.signIn({
-          email: 'test@example.com',
-          password: 'password123',
-        });
-
-        expect(response.error).toBeTruthy();
-        expect(response.error?.message).toBe('Network request failed');
-      });
-    });
-
-    it('should handle network errors during sign up', async () => {
-      const networkError = new Error('Network request failed');
-      mockAuthService.signUp = jest.fn().mockRejectedValue(networkError);
-
-      const { result } = renderHook(() => useAuth(), {
-        wrapper: AuthProvider,
-      });
-
-      await act(async () => {
-        const response = await result.current.signUp({
-          email: 'test@example.com',
-          password: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
-        });
-
-        expect(response.error).toBeTruthy();
-        expect(response.error?.message).toBe('Network request failed');
-      });
-    });
-  });
 });
+

@@ -93,3 +93,7 @@ e2e/artifacts/
 
 # Detox
 e2e/artifacts/
+
+# Backups
+backups/
+*.gz

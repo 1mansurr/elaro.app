@@ -35,12 +35,6 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>elaro</string>
-        </array>
-      </dict>
-      <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
           <string>exp+elaro</string>
         </array>
       </dict>

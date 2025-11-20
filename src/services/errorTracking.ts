@@ -2,12 +2,14 @@ import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
+type SeverityLevel = 'debug' | 'info' | 'warning' | 'error' | 'fatal';
+
 interface ErrorContext {
   tags?: Record<string, string>;
   extra?: Record<string, unknown>;
   contexts?: Record<string, unknown>;
   user?: { id: string; email?: string };
-  level?: Sentry.SeverityLevel;
+  level?: SeverityLevel;
 }
 
 class ErrorTrackingService {
@@ -24,7 +26,16 @@ class ErrorTrackingService {
   initialize(dsn?: string) {
     if (this.isInitialized) return;
 
-    if (dsn) {
+    // Get DSN from config if not provided
+    const sentryDsn = dsn || Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN;
+
+    if (!sentryDsn) {
+      console.warn('⚠️ Sentry DSN not configured - error tracking disabled');
+      this.isInitialized = true;
+      return;
+    }
+
+    try {
       const release =
         Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_VERSION ||
         Constants.expoConfig?.version ||
@@ -32,14 +43,14 @@ class ErrorTrackingService {
       const environment = __DEV__ ? 'development' : 'production';
 
       Sentry.init({
-        dsn,
+        dsn: sentryDsn,
         enabled: !__DEV__, // Disable in development
         environment,
         release,
         tracesSampleRate: __DEV__ ? 1.0 : 0.1, // 100% in dev, 10% in prod
         enableAutoSessionTracking: true,
         sessionTrackingIntervalMillis: 30000, // 30 seconds
-        beforeSend: (event, hint) => {
+        beforeSend: (event: any, hint: any) => {
           // Helper function to hash string (same as hashString method)
           const hashString = (str: string): string => {
             let hash = 0;
@@ -121,6 +132,10 @@ class ErrorTrackingService {
       Sentry.setTag('update_channel', Updates.channel || 'default');
 
       this.isInitialized = true;
+      console.log('✅ Sentry error tracking initialized');
+    } catch (error) {
+      console.error('❌ Failed to initialize Sentry:', error);
+      this.isInitialized = true; // Mark as initialized to prevent retry loops
     }
   }
 
@@ -166,7 +181,11 @@ class ErrorTrackingService {
   captureError(error: Error, context?: ErrorContext) {
     console.error('Error captured:', error);
 
-    if (this.isInitialized && context) {
+    if (!this.isInitialized) {
+      return;
+    }
+
+    if (context) {
       // Set tags if provided
       if (context.tags) {
         Object.entries(context.tags).forEach(([key, value]) => {
@@ -179,7 +198,7 @@ class ErrorTrackingService {
         extra: context.extra,
         level: context.level,
       });
-    } else if (this.isInitialized) {
+    } else {
       Sentry.captureException(error);
     }
   }
@@ -221,7 +240,7 @@ class ErrorTrackingService {
       Sentry.addBreadcrumb({
         message,
         category: category || 'user',
-        level: (level as Sentry.SeverityLevel) || 'info',
+        level: (level as SeverityLevel) || 'info',
         data: redactedData,
       });
     }

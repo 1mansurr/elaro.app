@@ -193,13 +193,15 @@ export const PaywallScreen: React.FC = () => {
           [{ text: 'OK' }],
         );
       } else {
-        // Server error - log to Sentry and show user-friendly message
-        Sentry.captureException(error, {
-          tags: {
-            feature: 'paywall_purchase',
-            variant: variant,
-          },
-        });
+        // Server error - log to Sentry if available and show user-friendly message
+        if (Sentry?.captureException) {
+          Sentry.captureException(error, {
+            tags: {
+              feature: 'paywall_purchase',
+              variant: variant,
+            },
+          });
+        }
 
         Alert.alert(
           'Something went wrong',

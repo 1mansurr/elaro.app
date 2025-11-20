@@ -1,0 +1,53 @@
+# EAS Build ignore file
+# Files and directories to exclude from EAS builds
+
+# Backup files
+backups/
+*.gz
+
+# Duplicate files with spaces
+ios/build 2/
+ios/Podfile 2.lock
+package-lock 2.json
+
+# Build artifacts
+ios/build/
+android/build/
+android/app/build/
+
+# Dependencies
+node_modules/
+
+# Logs
+logs/
+*.log
+
+# Coverage and test results
+coverage/
+test-results/
+e2e/artifacts/
+
+# Sensitive files
+AuthKey_*.p8
+**/AuthKey*.p8
+*.p8
+*.p12
+*.key
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Expo
+.expo/
+dist/
+web-build/
+

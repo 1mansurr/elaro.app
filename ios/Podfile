@@ -89,7 +89,11 @@ target 'Elaro' do
         # FIX 9: EXCLUDE ARM64 ARCHITECTURE FROM SIMULATOR BUILDS
         # This is the most crucial fix for persistent SwiftCompile failures (like Sentry/RevenueCat)
         # on modern systems (Xcode/M-series) due to ambiguous linking.
-        config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        # Set EXCLUDE_SIMULATOR_ARM64=false to disable this exclusion if building on Apple Silicon Macs
+        # and experiencing no compilation issues.
+        if ENV['EXCLUDE_SIMULATOR_ARM64'] != 'false'
+          config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
+        end
 
         # FIX 4 (Cleanup): General cleanup of duplicate symbols (GULUserDefaults)
         other_ldflags = config.build_settings['OTHER_LDFLAGS']
@@ -150,9 +154,9 @@ target 'Elaro' do
           '-Wno-shorten-64-to-32',
         ]
 
-        # FIX 8: ENFORCE SWIFT VERSION FOR SENTRY AND REVENUECAT
-        # This resolves the final SwiftCompile error related to API signature mismatches.
-        if target.name == 'Sentry' || target.name == 'RevenueCat' || target.name == 'PurchasesCoreSwift'
+        # FIX 8: ENFORCE SWIFT VERSION FOR REVENUECAT
+        # This resolves SwiftCompile errors related to API signature mismatches.
+        if target.name == 'RevenueCat' || target.name == 'PurchasesCoreSwift'
           # Set a known stable Swift version for older bridge code
           config.build_settings['SWIFT_VERSION'] = '5.0'
         end
@@ -172,34 +176,7 @@ target 'Elaro' do
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
     end
 
-    # --- FIX 3 (Final Attempt): ROBUST PURE-RUBY SENTRY SWIFT COMPILATION FIX ---
-    # Fixes the persistent 'incorrect argument label' Swift error by patching SentrySDK.swift.
-    # Using pure Ruby file I/O instead of shell commands for reliability on EAS build machines.
-    sentry_file_path = File.join(__dir__, 'Pods', 'Sentry', 'Sources', 'Swift', 'Helper', 'SentrySDK.swift')
-    
-    if File.exist?(sentry_file_path)
-      # 1. Make file writable (Pods files are read-only by default)
-      File.chmod(0644, sentry_file_path)
-      
-      # 2. Read content
-      content = File.read(sentry_file_path)
-      
-      # 3. Fix the undefined 'error' variable in capture(userFeedback:) function
-      # The function parameter is 'userFeedback' but the body uses 'error' which doesn't exist
-      # Change: SentrySDKInternal.capture(error: error) 
-      # To:     SentrySDKInternal.capture(error: userFeedback)
-      new_content = content.gsub(/SentrySDKInternal\.capture\(error:\s*error\)/m, "SentrySDKInternal.capture(error: userFeedback)")
-      
-      # 4. Also fix any userFeedback: userFeedback patterns (if they exist)
-      new_content = new_content.gsub(/userFeedback:\s*userFeedback/m, "error: error")
-      
-      # 5. Also fix UserFeedback type references as a safety measure
-      new_content = new_content.gsub(/UserFeedback/, "NSError")
-      
-      # 6. Write the modified content back
-      File.write(sentry_file_path, new_content)
-    end
-    # --- END FIX 3 ---
+    # Sentry patches removed - Sentry is temporarily disabled
 
   end
   # END: COMPLETE, REFINED POST_INSTALL BLOCK

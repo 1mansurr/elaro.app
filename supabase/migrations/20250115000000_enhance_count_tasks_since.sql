@@ -40,3 +40,4 @@ $$;
 COMMENT ON FUNCTION "public"."count_tasks_since" IS 'Counts tasks created since given date, excluding tasks deleted within 5 minutes of creation (soft delete grace period). Used for enforcing subscription tier task limits.';
 
 
+

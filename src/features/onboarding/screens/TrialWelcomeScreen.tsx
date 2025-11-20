@@ -31,26 +31,30 @@ const TrialWelcomeScreen = () => {
 
       if (error) {
         console.error('Failed to start trial:', error);
-        // Log to Sentry for monitoring
-        Sentry.captureException(error, {
-          tags: {
-            feature: 'trial_welcome',
-            action: 'start_trial',
-          },
-        });
+        // Log to Sentry for monitoring if available
+        if (Sentry?.captureException) {
+          Sentry.captureException(error, {
+            tags: {
+              feature: 'trial_welcome',
+              action: 'start_trial',
+            },
+          });
+        }
       }
 
       // Navigate to main app regardless of trial start success/failure
       navigation.navigate('Main');
     } catch (error) {
       console.error('Unexpected error starting trial:', error);
-      // Log to Sentry
-      Sentry.captureException(error, {
-        tags: {
-          feature: 'trial_welcome',
-          action: 'start_trial_unexpected',
-        },
-      });
+      // Log to Sentry if available
+      if (Sentry?.captureException) {
+        Sentry.captureException(error, {
+          tags: {
+            feature: 'trial_welcome',
+            action: 'start_trial_unexpected',
+          },
+        });
+      }
 
       // Still navigate to main app
       navigation.navigate('Main');

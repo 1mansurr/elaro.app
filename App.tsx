@@ -54,9 +54,23 @@ import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
+import { validateSupabaseConfig } from '@/services/supabase';
 
 // Validate configuration on startup
 validateAndLogConfig();
+
+// Validate Supabase configuration before initializing services
+try {
+  validateSupabaseConfig();
+  console.log('✅ Supabase configuration validated');
+} catch (error) {
+  console.error('❌ Supabase configuration error:', error);
+  if (__DEV__) {
+    // Fail fast in development
+    throw error;
+  }
+  // In production, log error but continue (app will handle gracefully)
+}
 
 // Disable React Native DevTools overlay for non-technical users
 if (__DEV__) {
