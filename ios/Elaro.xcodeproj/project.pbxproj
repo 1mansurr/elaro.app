@@ -395,7 +395,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Elaro/Elaro-Debug.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Elaro/Elaro-Debug.entitlements";
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_BITCODE = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
@@ -428,7 +428,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_ENTITLEMENTS = Elaro/Elaro-Release.entitlements;
+				CODE_SIGN_ENTITLEMENTS = "Elaro/Elaro-Release.entitlements";
 				CURRENT_PROJECT_VERSION = 1;
 				INFOPLIST_FILE = Elaro/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 13.4;

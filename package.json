@@ -66,6 +66,7 @@
     "version:minor": "node scripts/version-manager.js minor",
     "version:major": "node scripts/version-manager.js major",
     "version:current": "node -e \"console.log(require('./package.json').version)\"",
+    "postinstall": "patch-package",
     "prepare": "husky"
   },
   "dependencies": {
