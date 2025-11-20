@@ -86,7 +86,8 @@ target 'Elaro' do
     # --- FIX 3 (Final & Robust): PURE-RUBY SENTRY SWIFT COMPILATION FIX ---
     # This block fixes the persistent 'incorrect argument label' Swift error by patching SentrySDK.swift 
     # The issue: Deprecated capture(userFeedback:) function has API mismatch causing build errors
-    # Fix: Comment out or disable the deprecated function since it's not needed
+    # Fix: Only comment out problematic method calls, preserving file structure (no function body replacement)
+    # This preserves #if blocks, class structure, and conditional compilation blocks
     sentry_file_path = File.join(Pod::Config.instance.installation_root, "Pods/Sentry/Sources/Swift/Helper/SentrySDK.swift")
     
     if File.exist?(sentry_file_path)
@@ -98,36 +99,26 @@ target 'Elaro' do
       original_content = content.dup
       new_content = content.dup
       
-      # Strategy 1: Replace the function body with an empty implementation
-      # This disables the deprecated function without breaking the API signature
+      # Strategy: Only comment out problematic method calls, preserving all file structure
+      # This is safer than replacing function bodies which can break #if blocks and class structure
+      
+      # Fix: SentrySDKInternal.capture(error: error) -> comment out (preserves structure)
       new_content = new_content.gsub(
-        /(public static func capture\(userFeedback: UserFeedback\) \{[^}]*\})/m,
-        'public static func capture(userFeedback: UserFeedback) {\n        // Deprecated function disabled to fix build errors\n        // Use SentrySDK.captureFeedback instead\n    }'
+        /(\s+)SentrySDKInternal\.capture\(error:\s*error\s*\)/,
+        '\1// SentrySDKInternal.capture(error: error) // Disabled - undefined variable'
       )
       
-      # Strategy 2: Fix specific problematic method calls if function body replacement didn't work
-      if new_content == original_content
-        # Fix: SentrySDKInternal.capture(error: error) -> comment out
-        new_content = new_content.gsub(
-          /SentrySDKInternal\.capture\(error:\s*error\s*\)/,
-          '// SentrySDKInternal.capture(error: error) // Disabled - undefined variable'
-        )
-        # Fix: SentrySDKInternal.capture(userFeedback: userFeedback) -> comment out  
-        new_content = new_content.gsub(
-          /SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)/,
-          '// SentrySDKInternal.capture(userFeedback: userFeedback) // Disabled - deprecated API'
-        )
-        # Fix: SentrySDKInternal.capture(error: userFeedback) -> comment out
-        new_content = new_content.gsub(
-          /SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)/,
-          '// SentrySDKInternal.capture(error: userFeedback) // Disabled - type mismatch'
-        )
-        # Fix: Any other capture calls with userFeedback parameter
-        new_content = new_content.gsub(
-          /SentrySDKInternal\.capture\([^)]*userFeedback[^)]*\)/,
-          '// SentrySDKInternal.capture(...) // Disabled - deprecated API'
-        )
-      end
+      # Fix: SentrySDKInternal.capture(userFeedback: userFeedback) -> comment out
+      new_content = new_content.gsub(
+        /(\s+)SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)/,
+        '\1// SentrySDKInternal.capture(userFeedback: userFeedback) // Disabled - deprecated API'
+      )
+      
+      # Fix: SentrySDKInternal.capture(error: userFeedback) -> comment out
+      new_content = new_content.gsub(
+        /(\s+)SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)/,
+        '\1// SentrySDKInternal.capture(error: userFeedback) // Disabled - type mismatch'
+      )
       
       # Write the modified content back to the file
       if new_content != original_content
