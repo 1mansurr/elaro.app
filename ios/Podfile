@@ -85,9 +85,8 @@ target 'Elaro' do
 
     # --- FIX 3 (Final & Robust): PURE-RUBY SENTRY SWIFT COMPILATION FIX ---
     # This block fixes the persistent 'incorrect argument label' Swift error by patching SentrySDK.swift 
-    # using robust Ruby file I/O instead of fragile shell commands.
-    # The issue: Function capture(userFeedback:) has undefined 'error' variable in body
-    # Fix: Change SentrySDKInternal.capture(error: error) to use userFeedback parameter
+    # The issue: Deprecated capture(userFeedback:) function has API mismatch causing build errors
+    # Fix: Comment out or disable the deprecated function since it's not needed
     sentry_file_path = File.join(Pod::Config.instance.installation_root, "Pods/Sentry/Sources/Swift/Helper/SentrySDK.swift")
     
     if File.exist?(sentry_file_path)
@@ -97,21 +96,46 @@ target 'Elaro' do
       # Read the file content
       content = File.read(sentry_file_path)
       original_content = content.dup
+      new_content = content.dup
       
-      # Fix the undefined 'error' variable - replace with 'userFeedback' parameter
-      # This fixes: SentrySDKInternal.capture(error: error) -> SentrySDKInternal.capture(error: userFeedback)
-      # Note: This may cause type mismatch if UserFeedback != Error, but it's the fix requested
-      new_content = content.gsub(/SentrySDKInternal\.capture\(error:\s*error\s*\)/, "SentrySDKInternal.capture(error: userFeedback)")
+      # Strategy 1: Replace the function body with an empty implementation
+      # This disables the deprecated function without breaking the API signature
+      new_content = new_content.gsub(
+        /(public static func capture\(userFeedback: UserFeedback\) \{[^}]*\})/m,
+        'public static func capture(userFeedback: UserFeedback) {\n        // Deprecated function disabled to fix build errors\n        // Use SentrySDK.captureFeedback instead\n    }'
+      )
       
-      # Also try alternative pattern in case the spacing is different
-      new_content = new_content.gsub(/SentrySDKInternal\.capture\(error:error\)/, "SentrySDKInternal.capture(error: userFeedback)")
+      # Strategy 2: Fix specific problematic method calls if function body replacement didn't work
+      if new_content == original_content
+        # Fix: SentrySDKInternal.capture(error: error) -> comment out
+        new_content = new_content.gsub(
+          /SentrySDKInternal\.capture\(error:\s*error\s*\)/,
+          '// SentrySDKInternal.capture(error: error) // Disabled - undefined variable'
+        )
+        # Fix: SentrySDKInternal.capture(userFeedback: userFeedback) -> comment out  
+        new_content = new_content.gsub(
+          /SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)/,
+          '// SentrySDKInternal.capture(userFeedback: userFeedback) // Disabled - deprecated API'
+        )
+        # Fix: SentrySDKInternal.capture(error: userFeedback) -> comment out
+        new_content = new_content.gsub(
+          /SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)/,
+          '// SentrySDKInternal.capture(error: userFeedback) // Disabled - type mismatch'
+        )
+        # Fix: Any other capture calls with userFeedback parameter
+        new_content = new_content.gsub(
+          /SentrySDKInternal\.capture\([^)]*userFeedback[^)]*\)/,
+          '// SentrySDKInternal.capture(...) // Disabled - deprecated API'
+        )
+      end
       
       # Write the modified content back to the file
       if new_content != original_content
         File.write(sentry_file_path, new_content)
-        Pod::UI.puts "✅ Patched SentrySDK.swift to fix userFeedback parameter issue".green
+        Pod::UI.puts "✅ Patched SentrySDK.swift to fix userFeedback compilation error".green
       else
-        Pod::UI.puts "⚠️  SentrySDK.swift patch pattern not found, file may have changed".yellow
+        Pod::UI.puts "⚠️  SentrySDK.swift patch pattern not found - file structure may have changed".yellow
+        Pod::UI.puts "⚠️  Consider updating @sentry/react-native to latest version".yellow
       end
     else
       Pod::UI.puts "⚠️  SentrySDK.swift not found at #{sentry_file_path}, skipping patch".yellow
