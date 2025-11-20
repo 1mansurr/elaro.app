@@ -195,7 +195,7 @@ module.exports = ({ config }) => {
       //   },
       // ],
       // Temporarily commented out for binary search test (packages in first 35)
-      // 'expo-build-properties',
+      'expo-build-properties',
       // 'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin
       // Note: react-native-reanimated/plugin should be in babel.config.js, not here

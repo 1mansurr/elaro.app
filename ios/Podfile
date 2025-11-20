@@ -7,9 +7,6 @@ podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties
 ENV['RCT_NEW_ARCH_ENABLED'] = podfile_properties['newArchEnabled'] == 'true' ? '1' : '0'
 ENV['EX_DEV_CLIENT_NETWORK_INSPECTOR'] = podfile_properties['EX_DEV_CLIENT_NETWORK_INSPECTOR']
 
-# Use CocoaPods CDN (default, faster and more reliable)
-source 'https://cdn.cocoapods.org/'
-
 use_autolinking_method_symbol = ('use' + '_native' + '_modules!').to_sym
 origin_autolinking_method = self.method(use_autolinking_method_symbol)
 self.define_singleton_method(use_autolinking_method_symbol) do |*args|
@@ -52,7 +49,6 @@ target 'Elaro' do
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
 
-  # START: COMPLETE, REFINED POST_INSTALL BLOCK (Incorporating all fixes and correcting the compiler flag error)
   post_install do |installer|
     react_native_post_install(
       installer,
@@ -61,7 +57,8 @@ target 'Elaro' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
-    # Standard Xcode 14+ resource bundle signing fix
+    # This is necessary for Xcode 14, because it signs resource bundles by default
+    # when building for devices.
     installer.target_installation_results.pod_target_installation_results
       .each do |pod_name, target_installation_result|
       target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
@@ -69,111 +66,6 @@ target 'Elaro' do
           config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
         end
       end
-    end
-
-    # Fix for react-native-select-dropdown static linking issue with .xcframework
-    installer.pods_project.targets.each do |target|
-      if target.name == 'react-native-select-dropdown'
-        target.build_configurations.each do |config|
-          config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'YES'
-        end
-      end
-    end
-
-    # --- FINALIZED BUILD FIXES ---
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        # FIX 1: Enforce consistent deployment target
-        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
-
-        # FIX 9: EXCLUDE ARM64 ARCHITECTURE FROM SIMULATOR BUILDS
-        # This is the most crucial fix for persistent SwiftCompile failures (like Sentry/RevenueCat)
-        # on modern systems (Xcode/M-series) due to ambiguous linking.
-        # Set EXCLUDE_SIMULATOR_ARM64=false to disable this exclusion if building on Apple Silicon Macs
-        # and experiencing no compilation issues.
-        if ENV['EXCLUDE_SIMULATOR_ARM64'] != 'false'
-          config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
-        end
-
-        # FIX 4 (Cleanup): General cleanup of duplicate symbols (GULUserDefaults)
-        other_ldflags = config.build_settings['OTHER_LDFLAGS']
-        if other_ldflags.is_a?(Array)
-          other_ldflags_str = other_ldflags.join(' ')
-        else
-          other_ldflags_str = other_ldflags.to_s
-        end
-
-        # Remove explicit references that can cause duplicate symbol linking
-        other_ldflags_str = other_ldflags_str.gsub('-lGoogleUtilities', '')
-        other_ldflags_str = other_ldflags_str.gsub('-lGULUserDefaults', '')
-
-        # Check if this is a Google target to exclude from -all_load
-        is_google_target = target.name.include?('GoogleUtilities') || target.name.include?('Google-Maps') || target.name.include?('GoogleMaps')
-        if is_google_target
-          other_ldflags_str = other_ldflags_str.gsub('-Wl,-all_load', '')
-          other_ldflags_str = other_ldflags_str.gsub('-all_load', '')
-        end
-
-        # FIX 7: FINAL LINKER FLAGS for C++ static libraries
-        other_ldflags_array = other_ldflags_str.split(' ').reject(&:empty?)
-        other_ldflags_array = ['$(inherited)'] if other_ldflags_array.empty?
-
-        # Add -ObjC flag for all targets (ensures Objective-C categories are loaded)
-        unless other_ldflags_array.include?('-ObjC')
-          other_ldflags_array << '-ObjC'
-        end
-
-        # Add -all_load flag ONLY for non-Google targets to avoid duplicate symbols
-        unless is_google_target
-          unless other_ldflags_array.include?('-all_load') || other_ldflags_array.include?('-Wl,-all_load')
-            other_ldflags_array << '-all_load'
-          end
-        end
-
-        config.build_settings['OTHER_LDFLAGS'] = other_ldflags_array
-
-        # FIX 5 (Cleanup): Linker Search Paths for C++ libs (fmt, glog, etc.)
-        # Use an array assignment here, not append, to ensure clean values
-        config.build_settings['LIBRARY_SEARCH_PATHS'] = [
-          '$(inherited)',
-          '$(PODS_ROOT)/build/uninstalled/Debug-$(PLATFORM_NAME)/',
-          '$(PODS_ROOT)/build/uninstalled/$(CONFIGURATION)/',
-        ]
-
-        # FIX 6 (Correction): Corrected Compiler Warning Suppression (prevent concatenation bug)
-        # Use simple array assignment with inherited to ensure clean flags
-        config.build_settings['OTHER_CFLAGS'] = [
-          '$(inherited)',
-          '-Wno-ambiguous-macro',
-          '-Wno-shorten-64-to-32',
-        ]
-
-        config.build_settings['OTHER_CPLUSPLUSFLAGS'] = [
-          '$(inherited)',
-          '-Wno-ambiguous-macro',
-          '-Wno-shorten-64-to-32',
-        ]
-
-        # FIX 8: ENFORCE SWIFT VERSION FOR REVENUECAT
-        # This resolves SwiftCompile errors related to API signature mismatches.
-        if target.name == 'RevenueCat' || target.name == 'PurchasesCoreSwift'
-          # Set a known stable Swift version for older bridge code
-          config.build_settings['SWIFT_VERSION'] = '5.0'
-        end
-
-        # FIX 3 (Alternative): Set C++ Standard explicitly for problematic C++ targets if needed (React/Folly)
-        # This can sometimes resolve subtle C++ header conflicts that fail compilation.
-        if target.name == 'RCT-Folly'
-          config.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++17'
-          config.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-        end
-
-      end # end target build configurations
-    end # end target iteration
-
-    # Ensure the main Pods Project also uses the correct deployment target
-    installer.pods_project.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
     end
 
     # --- FIX 3 (Final & Robust): PURE-RUBY SENTRY SWIFT COMPILATION FIX ---
@@ -249,9 +141,7 @@ target 'Elaro' do
       end
     end
     # --- END FIX 10 ---
-
   end
-  # END: COMPLETE, REFINED POST_INSTALL BLOCK
 
   post_integrate do |installer|
     begin
