@@ -57,6 +57,21 @@ target 'Elaro' do
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
 
+    # --- FIX: ENFORCE MINIMUM DEPLOYMENT TARGET FOR ALL PODS ---
+    # Explicitly set the minimum deployment target for all Pods to avoid Xcode warnings/errors
+    # This prevents individual Pods from using outdated deployment targets (like 9.0)
+    installer.pods_project.targets.each do |target|
+      target.build_configurations.each do |config|
+        config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+      end
+    end
+    
+    # Also ensure the main Pods Project uses the correct deployment target
+    installer.pods_project.build_configurations.each do |config|
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.4'
+    end
+    # --- END FIX ---
+
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
     installer.target_installation_results.pod_target_installation_results
