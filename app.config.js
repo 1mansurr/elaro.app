@@ -229,7 +229,7 @@ module.exports = ({ config }) => {
       EXPO_PLATFORM: process.env.EXPO_PLATFORM,
       // EAS configuration
       eas: {
-        projectId: '1dd584f5-6522-4df5-ad51-076b07b3d09c',
+        projectId: '7a43b16d-f54c-4ee5-83b5-3323eb4e27fc',
       },
     },
     // Development-specific configurations
@@ -242,7 +242,7 @@ module.exports = ({ config }) => {
     // Production-specific configurations
     ...(isProduction && {
       updates: {
-        url: 'https://u.expo.dev/1dd584f5-6522-4df5-ad51-076b07b3d09c',
+        url: 'https://u.expo.dev/7a43b16d-f54c-4ee5-83b5-3323eb4e27fc',
         enabled: true,
         checkAutomatically: 'ON_ERROR_RECOVERY', // Check on error in production
         fallbackToCacheTimeout: 3000,

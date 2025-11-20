@@ -11,7 +11,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#4A90E2"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.elaro.app",
@@ -19,10 +21,14 @@
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["elaro"]
+            "CFBundleURLSchemes": [
+              "elaro"
+            ]
           },
           {
-            "CFBundleURLSchemes": ["elaro"]
+            "CFBundleURLSchemes": [
+              "elaro"
+            ]
           }
         ],
         "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized learning experiences.",
@@ -47,7 +53,10 @@
               "scheme": "elaro"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ],
       "permissions": [
@@ -67,16 +76,18 @@
       "bundler": "metro"
     },
     "scheme": "elaro",
-    "plugins": ["expo-notifications"],
+    "plugins": [
+      "expo-notifications"
+    ],
     "extra": {
       "eas": {
-        "projectId": "1dd584f5-6522-4df5-ad51-076b07b3d09c"
+        "projectId": "7a43b16d-f54c-4ee5-83b5-3323eb4e27fc"
       }
     },
     "runtimeVersion": "1.0.0",
     "updates": {
       "enabled": false,
-      "url": "https://u.expo.dev/1dd584f5-6522-4df5-ad51-076b07b3d09c"
+      "url": "https://u.expo.dev/7a43b16d-f54c-4ee5-83b5-3323eb4e27fc"
     }
   }
 }
