@@ -475,7 +475,8 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
 
         if (revenueCatApiKey) {
           try {
-            const initSuccess = await revenueCatService.initialize(revenueCatApiKey);
+            const initSuccess =
+              await revenueCatService.initialize(revenueCatApiKey);
 
             if (initSuccess) {
               console.log('✅ RevenueCat initialized successfully');

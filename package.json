@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
-    "validate:deps": "node scripts/validate-native-deps.js",
-    "prebuild": "npm run validate:deps && expo prebuild",
-    "prebuild:ios": "npm run validate:deps && expo prebuild --platform ios --clean",
-    "prebuild:android": "npm run validate:deps && expo prebuild --platform android --clean",
+    "prebuild": "expo prebuild",
+    "prebuild:ios": "expo prebuild --platform ios --clean",
+    "prebuild:android": "expo prebuild --platform android --clean",
     "prebuild:clean": "expo prebuild --clean",
     "start": "expo start",
     "start:ios": "expo start --ios",

@@ -22,9 +22,7 @@ try {
   isAvailable = true;
   console.log('✅ RevenueCat module loaded successfully');
 } catch (e) {
-  console.warn(
-    '⚠️ RevenueCat not available - subscription features disabled',
-  );
+  console.warn('⚠️ RevenueCat not available - subscription features disabled');
   isAvailable = false;
 }
 
@@ -40,4 +38,3 @@ export const RevenueCat = {
 export type PurchasesOfferingType = typeof PurchasesOffering;
 export type PurchasesPackageType = typeof PurchasesPackage;
 export type CustomerInfoType = typeof CustomerInfo;
-

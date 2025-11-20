@@ -143,9 +143,8 @@ export const revenueCatService = {
         return null;
       }
 
-      return (
-        retryResult.result as { current: PurchasesOffering | null }
-      ).current;
+      return (retryResult.result as { current: PurchasesOffering | null })
+        .current;
     } catch (error) {
       if (error instanceof RateLimitError) {
         console.warn(

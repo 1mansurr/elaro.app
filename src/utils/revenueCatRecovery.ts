@@ -74,7 +74,9 @@ function createDefaultOffering(): PurchasesOffering | null {
 export async function getOfferingsWithRecovery(): Promise<PurchasesOffering | null> {
   // Early return if RevenueCat not available
   if (!RevenueCat.isAvailable) {
-    console.warn('⚠️ RevenueCat not available - using cached/default offerings');
+    console.warn(
+      '⚠️ RevenueCat not available - using cached/default offerings',
+    );
     const cached = await getCachedOfferings();
     return cached || createDefaultOffering();
   }

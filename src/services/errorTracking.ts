@@ -36,7 +36,9 @@ class ErrorTrackingService {
 
     // Sentry is temporarily disabled
     if (!Sentry) {
-      console.log('Sentry not available - error tracking service initialized in no-op mode');
+      console.log(
+        'Sentry not available - error tracking service initialized in no-op mode',
+      );
       this.isInitialized = true;
       return;
     }

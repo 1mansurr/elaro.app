@@ -193,4 +193,3 @@ main().catch(error => {
   log(`\n❌ Validation script error: ${error.message}`, 'red');
   process.exit(1);
 });
-
