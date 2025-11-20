@@ -99,24 +99,43 @@ target 'Elaro' do
       original_content = content.dup
       new_content = content.dup
       
-      # Strategy: Only comment out problematic method calls, preserving all file structure
-      # This is safer than replacing function bodies which can break #if blocks and class structure
+      # Strategy: Fix problematic method calls, handling return statements properly
+      # If the method call is part of a return statement, we need to return a valid value
       
-      # Fix: SentrySDKInternal.capture(error: error) -> comment out (preserves structure)
+      # Fix: return SentrySDKInternal.capture(error: error).sentryId -> return SentryId()
+      # This handles the case where the method call is part of a return statement
       new_content = new_content.gsub(
-        /(\s+)SentrySDKInternal\.capture\(error:\s*error\s*\)/,
+        /return\s+SentrySDKInternal\.capture\(error:\s*error\s*\)\.sentryId/,
+        'return SentryId() // Fixed - replaced undefined error with empty SentryId'
+      )
+      
+      # Fix: return SentrySDKInternal.capture(userFeedback: userFeedback).sentryId -> return SentryId()
+      new_content = new_content.gsub(
+        /return\s+SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)\.sentryId/,
+        'return SentryId() // Fixed - deprecated API replaced with empty SentryId'
+      )
+      
+      # Fix: return SentrySDKInternal.capture(error: userFeedback).sentryId -> return SentryId()
+      new_content = new_content.gsub(
+        /return\s+SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)\.sentryId/,
+        'return SentryId() // Fixed - type mismatch replaced with empty SentryId'
+      )
+      
+      # Fix: Standalone SentrySDKInternal.capture(error: error) calls (not in return statements)
+      new_content = new_content.gsub(
+        /(\s+)SentrySDKInternal\.capture\(error:\s*error\s*\)(?!\s*\.sentryId)/,
         '\1// SentrySDKInternal.capture(error: error) // Disabled - undefined variable'
       )
       
-      # Fix: SentrySDKInternal.capture(userFeedback: userFeedback) -> comment out
+      # Fix: Standalone SentrySDKInternal.capture(userFeedback: userFeedback) calls
       new_content = new_content.gsub(
-        /(\s+)SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)/,
+        /(\s+)SentrySDKInternal\.capture\(userFeedback:\s*userFeedback\s*\)(?!\s*\.sentryId)/,
         '\1// SentrySDKInternal.capture(userFeedback: userFeedback) // Disabled - deprecated API'
       )
       
-      # Fix: SentrySDKInternal.capture(error: userFeedback) -> comment out
+      # Fix: Standalone SentrySDKInternal.capture(error: userFeedback) calls
       new_content = new_content.gsub(
-        /(\s+)SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)/,
+        /(\s+)SentrySDKInternal\.capture\(error:\s*userFeedback\s*\)(?!\s*\.sentryId)/,
         '\1// SentrySDKInternal.capture(error: userFeedback) // Disabled - type mismatch'
       )
       
