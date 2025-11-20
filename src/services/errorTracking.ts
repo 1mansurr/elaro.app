@@ -27,7 +27,8 @@ class ErrorTrackingService {
     if (this.isInitialized) return;
 
     // Get DSN from config if not provided
-    const sentryDsn = dsn || Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN;
+    const sentryDsn =
+      dsn || Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN;
 
     if (!sentryDsn) {
       console.warn('⚠️ Sentry DSN not configured - error tracking disabled');

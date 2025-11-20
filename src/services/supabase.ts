@@ -68,7 +68,9 @@ try {
     }
 
     // In production, log warning but continue (app will fail gracefully when trying to use Supabase)
-    console.warn('⚠️ Creating no-op Supabase client - app functionality will be limited');
+    console.warn(
+      '⚠️ Creating no-op Supabase client - app functionality will be limited',
+    );
   }
 } catch (error) {
   if (__DEV__) {
@@ -128,41 +130,45 @@ const fetchWithTimeout = async (
 };
 
 // Only create client if configuration is valid
-export const supabase = configValid && supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey, {
-      auth: {
-        storage: AsyncStorage,
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: false,
-      },
-      global: {
-        fetch: fetchWithTimeout as unknown as typeof fetch,
-      },
-    })
-  : (() => {
-      // Return a mock client that throws errors when used
-      console.error('❌ Supabase client not initialized - missing configuration');
-      const errorMessage = 'Supabase is not configured. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY';
-      
-      return {
+export const supabase =
+  configValid && supabaseUrl && supabaseAnonKey
+    ? createClient(supabaseUrl, supabaseAnonKey, {
         auth: {
-          signUp: () => Promise.reject(new Error(errorMessage)),
-          signInWithPassword: () => Promise.reject(new Error(errorMessage)),
-          signOut: () => Promise.reject(new Error(errorMessage)),
-          getUser: () => Promise.reject(new Error(errorMessage)),
-          getSession: () => Promise.reject(new Error(errorMessage)),
+          storage: AsyncStorage,
+          autoRefreshToken: true,
+          persistSession: true,
+          detectSessionInUrl: false,
         },
-        from: () => ({
-          select: () => Promise.reject(new Error(errorMessage)),
-          insert: () => Promise.reject(new Error(errorMessage)),
-          update: () => Promise.reject(new Error(errorMessage)),
-          delete: () => Promise.reject(new Error(errorMessage)),
-          eq: () => Promise.reject(new Error(errorMessage)),
-          single: () => Promise.reject(new Error(errorMessage)),
-        }),
-      } as any;
-    })();
+        global: {
+          fetch: fetchWithTimeout as unknown as typeof fetch,
+        },
+      })
+    : (() => {
+        // Return a mock client that throws errors when used
+        console.error(
+          '❌ Supabase client not initialized - missing configuration',
+        );
+        const errorMessage =
+          'Supabase is not configured. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY';
+
+        return {
+          auth: {
+            signUp: () => Promise.reject(new Error(errorMessage)),
+            signInWithPassword: () => Promise.reject(new Error(errorMessage)),
+            signOut: () => Promise.reject(new Error(errorMessage)),
+            getUser: () => Promise.reject(new Error(errorMessage)),
+            getSession: () => Promise.reject(new Error(errorMessage)),
+          },
+          from: () => ({
+            select: () => Promise.reject(new Error(errorMessage)),
+            insert: () => Promise.reject(new Error(errorMessage)),
+            update: () => Promise.reject(new Error(errorMessage)),
+            delete: () => Promise.reject(new Error(errorMessage)),
+            eq: () => Promise.reject(new Error(errorMessage)),
+            single: () => Promise.reject(new Error(errorMessage)),
+          }),
+        } as any;
+      })();
 
 // Authentication Services
 export const authService = {

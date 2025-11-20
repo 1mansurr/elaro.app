@@ -1,7 +1,11 @@
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/features/auth/services/authService';
-import { checkAccountLockout, resetFailedAttempts, recordSuccessfulLogin } from '@/features/auth/services/accountLockout';
+import {
+  checkAccountLockout,
+  resetFailedAttempts,
+  recordSuccessfulLogin,
+} from '@/features/auth/services/accountLockout';
 import { updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 import { mixpanelService } from '@/services/analytics';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
@@ -19,16 +23,30 @@ jest.mock('@/services/analyticsEvents', () => ({
 }));
 
 const mockAuthService = authService as jest.Mocked<typeof authService>;
-const mockCheckAccountLockout = checkAccountLockout as jest.MockedFunction<typeof checkAccountLockout>;
-const mockResetFailedAttempts = resetFailedAttempts as jest.MockedFunction<typeof resetFailedAttempts>;
-const mockRecordSuccessfulLogin = recordSuccessfulLogin as jest.MockedFunction<typeof recordSuccessfulLogin>;
-const mockUpdateLastActiveTimestamp = updateLastActiveTimestamp as jest.MockedFunction<typeof updateLastActiveTimestamp>;
-const mockMixpanelService = mixpanelService as jest.Mocked<typeof mixpanelService>;
+const mockCheckAccountLockout = checkAccountLockout as jest.MockedFunction<
+  typeof checkAccountLockout
+>;
+const mockResetFailedAttempts = resetFailedAttempts as jest.MockedFunction<
+  typeof resetFailedAttempts
+>;
+const mockRecordSuccessfulLogin = recordSuccessfulLogin as jest.MockedFunction<
+  typeof recordSuccessfulLogin
+>;
+const mockUpdateLastActiveTimestamp =
+  updateLastActiveTimestamp as jest.MockedFunction<
+    typeof updateLastActiveTimestamp
+  >;
+const mockMixpanelService = mixpanelService as jest.Mocked<
+  typeof mixpanelService
+>;
 
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockCheckAccountLockout.mockResolvedValue({ isLocked: false, minutesRemaining: null });
+    mockCheckAccountLockout.mockResolvedValue({
+      isLocked: false,
+      minutesRemaining: null,
+    });
     mockResetFailedAttempts.mockResolvedValue();
     mockRecordSuccessfulLogin.mockResolvedValue();
     mockUpdateLastActiveTimestamp.mockResolvedValue();
@@ -220,4 +238,3 @@ describe('AuthContext', () => {
     });
   });
 });
-

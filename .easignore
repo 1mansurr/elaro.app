@@ -51,3 +51,18 @@ Thumbs.db
 dist/
 web-build/
 
+# iOS Pods (regenerated on EAS servers - don't upload)
+ios/Pods/
+
+# Test directories (not needed for builds)
+__tests__/
+e2e/
+tests/
+
+# Documentation (not needed for builds)
+*.md
+docs/
+
+# Supabase edge functions (deployed separately to Supabase, not part of mobile build)
+supabase/functions/
+
