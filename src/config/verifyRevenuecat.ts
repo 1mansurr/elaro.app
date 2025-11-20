@@ -1,12 +1,17 @@
-import Purchases from 'react-native-purchases';
+import { RevenueCat } from '@/services/revenueCatWrapper';
 
 /**
  * Verifies that RevenueCat SDK is properly initialized and responding
  * @returns {Promise<boolean>} True if verification succeeds, false otherwise
  */
 export const verifyRevenueCatSetup = async (): Promise<boolean> => {
+  if (!RevenueCat.isAvailable || !RevenueCat.Purchases) {
+    console.warn('⚠️ RevenueCat not available - skipping verification');
+    return false;
+  }
+
   try {
-    const customerInfo = await Purchases.getCustomerInfo();
+    const customerInfo = await RevenueCat.Purchases.getCustomerInfo();
     if (customerInfo) {
       console.log(
         '✅ RevenueCat setup verified: SDK initialized and responding.',

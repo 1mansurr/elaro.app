@@ -7,77 +7,8 @@ import {
   executeSupabaseMutation,
 } from '@/utils/supabaseQueryWrapper';
 
-/**
- * Validate Supabase configuration
- * @throws Error if configuration is invalid
- */
-export function validateSupabaseConfig(): void {
-  const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !key) {
-    const errorMessage =
-      '❌ CRITICAL: Missing required Supabase configuration.\n' +
-      '   Required environment variables:\n' +
-      '   - EXPO_PUBLIC_SUPABASE_URL\n' +
-      '   - EXPO_PUBLIC_SUPABASE_ANON_KEY\n\n' +
-      '   Please ensure these are set in your .env file or EAS secrets.\n' +
-      '   See docs/CONFIGURATION_GUIDE.md for setup instructions.';
-    throw new Error(errorMessage);
-  }
-
-  // Validate URL format
-  try {
-    new URL(url);
-  } catch {
-    throw new Error(`Invalid Supabase URL format: ${url}`);
-  }
-
-  // Validate key is not empty
-  if (key.trim().length === 0) {
-    throw new Error('Supabase anon key cannot be empty');
-  }
-}
-
-// Validate configuration at module load time
-let supabaseUrl: string | undefined;
-let supabaseAnonKey: string | undefined;
-let configValid = false;
-
-try {
-  supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
-  supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (supabaseUrl && supabaseAnonKey) {
-    validateSupabaseConfig();
-    configValid = true;
-  } else {
-    const errorMessage =
-      '❌ CRITICAL: Missing required Supabase configuration.\n' +
-      '   Required environment variables:\n' +
-      '   - EXPO_PUBLIC_SUPABASE_URL\n' +
-      '   - EXPO_PUBLIC_SUPABASE_ANON_KEY\n\n' +
-      '   Please ensure these are set in your .env file or EAS secrets.\n' +
-      '   See docs/CONFIGURATION_GUIDE.md for setup instructions.';
-
-    console.error(errorMessage);
-
-    // In development, throw error immediately
-    if (__DEV__) {
-      throw new Error(errorMessage);
-    }
-
-    // In production, log warning but continue (app will fail gracefully when trying to use Supabase)
-    console.warn(
-      '⚠️ Creating no-op Supabase client - app functionality will be limited',
-    );
-  }
-} catch (error) {
-  if (__DEV__) {
-    throw error;
-  }
-  console.error('❌ Supabase configuration error:', error);
-}
+const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
 
 /**
  * Custom fetch wrapper that enforces a timeout on all requests.
@@ -129,46 +60,17 @@ const fetchWithTimeout = async (
   }
 };
 
-// Only create client if configuration is valid
-export const supabase =
-  configValid && supabaseUrl && supabaseAnonKey
-    ? createClient(supabaseUrl, supabaseAnonKey, {
-        auth: {
-          storage: AsyncStorage,
-          autoRefreshToken: true,
-          persistSession: true,
-          detectSessionInUrl: false,
-        },
-        global: {
-          fetch: fetchWithTimeout as unknown as typeof fetch,
-        },
-      })
-    : (() => {
-        // Return a mock client that throws errors when used
-        console.error(
-          '❌ Supabase client not initialized - missing configuration',
-        );
-        const errorMessage =
-          'Supabase is not configured. Please set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY';
-
-        return {
-          auth: {
-            signUp: () => Promise.reject(new Error(errorMessage)),
-            signInWithPassword: () => Promise.reject(new Error(errorMessage)),
-            signOut: () => Promise.reject(new Error(errorMessage)),
-            getUser: () => Promise.reject(new Error(errorMessage)),
-            getSession: () => Promise.reject(new Error(errorMessage)),
-          },
-          from: () => ({
-            select: () => Promise.reject(new Error(errorMessage)),
-            insert: () => Promise.reject(new Error(errorMessage)),
-            update: () => Promise.reject(new Error(errorMessage)),
-            delete: () => Promise.reject(new Error(errorMessage)),
-            eq: () => Promise.reject(new Error(errorMessage)),
-            single: () => Promise.reject(new Error(errorMessage)),
-          }),
-        } as any;
-      })();
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: AsyncStorage,
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: false,
+  },
+  global: {
+    fetch: fetchWithTimeout as unknown as typeof fetch,
+  },
+});
 
 // Authentication Services
 export const authService = {

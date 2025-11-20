@@ -1,4 +1,12 @@
-import * as Sentry from '@sentry/react-native';
+// Sentry is temporarily disabled - make it optional
+let Sentry: any = null;
+try {
+  Sentry = require('@sentry/react-native');
+} catch (e) {
+  // Sentry package not available - continue without it
+  console.log('Sentry not available - error tracking disabled');
+}
+
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
 
@@ -26,17 +34,14 @@ class ErrorTrackingService {
   initialize(dsn?: string) {
     if (this.isInitialized) return;
 
-    // Get DSN from config if not provided
-    const sentryDsn =
-      dsn || Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN;
-
-    if (!sentryDsn) {
-      console.warn('⚠️ Sentry DSN not configured - error tracking disabled');
+    // Sentry is temporarily disabled
+    if (!Sentry) {
+      console.log('Sentry not available - error tracking service initialized in no-op mode');
       this.isInitialized = true;
       return;
     }
 
-    try {
+    if (dsn) {
       const release =
         Constants.expoConfig?.extra?.EXPO_PUBLIC_APP_VERSION ||
         Constants.expoConfig?.version ||
@@ -44,7 +49,7 @@ class ErrorTrackingService {
       const environment = __DEV__ ? 'development' : 'production';
 
       Sentry.init({
-        dsn: sentryDsn,
+        dsn,
         enabled: !__DEV__, // Disable in development
         environment,
         release,
@@ -129,14 +134,12 @@ class ErrorTrackingService {
       });
 
       // Set initial context
-      Sentry.setTag('platform', Constants.platform?.ios ? 'ios' : 'android');
-      Sentry.setTag('update_channel', Updates.channel || 'default');
+      if (Sentry?.setTag) {
+        Sentry.setTag('platform', Constants.platform?.ios ? 'ios' : 'android');
+        Sentry.setTag('update_channel', Updates.channel || 'default');
+      }
 
       this.isInitialized = true;
-      console.log('✅ Sentry error tracking initialized');
-    } catch (error) {
-      console.error('❌ Failed to initialize Sentry:', error);
-      this.isInitialized = true; // Mark as initialized to prevent retry loops
     }
   }
 
@@ -182,25 +185,29 @@ class ErrorTrackingService {
   captureError(error: Error, context?: ErrorContext) {
     console.error('Error captured:', error);
 
-    if (!this.isInitialized) {
+    if (!Sentry || !this.isInitialized) {
       return;
     }
 
     if (context) {
       // Set tags if provided
-      if (context.tags) {
+      if (context.tags && Sentry.setTag) {
         Object.entries(context.tags).forEach(([key, value]) => {
           Sentry.setTag(key, value);
         });
       }
 
       // Capture exception with extra context
-      Sentry.captureException(error, {
-        extra: context.extra,
-        level: context.level,
-      });
+      if (Sentry.captureException) {
+        Sentry.captureException(error, {
+          extra: context.extra,
+          level: context.level,
+        });
+      }
     } else {
-      Sentry.captureException(error);
+      if (Sentry.captureException) {
+        Sentry.captureException(error);
+      }
     }
   }
 
@@ -210,13 +217,13 @@ class ErrorTrackingService {
   ) {
     console.log(`[${level.toUpperCase()}] ${message}`);
 
-    if (this.isInitialized) {
+    if (this.isInitialized && Sentry?.captureMessage) {
       Sentry.captureMessage(message, level);
     }
   }
 
   setUser(user: { id: string; email?: string; username?: string }) {
-    if (this.isInitialized) {
+    if (this.isInitialized && Sentry?.setUser) {
       const hashedId = this.hashString(user.id);
 
       Sentry.setUser({
@@ -232,7 +239,7 @@ class ErrorTrackingService {
     level?: string,
     data?: Record<string, unknown>,
   ) {
-    if (this.isInitialized) {
+    if (this.isInitialized && Sentry?.addBreadcrumb) {
       const redactedData = data ? { ...data } : undefined;
       if (redactedData) {
         this.redactPIIFromObject(redactedData);
@@ -256,7 +263,7 @@ class ErrorTrackingService {
     value: number,
     unit: 'ms' | 'bytes' | 'count' = 'ms',
   ) {
-    if (this.isInitialized) {
+    if (this.isInitialized && Sentry?.addBreadcrumb) {
       // Use breadcrumb for performance tracking if metrics API not available
       Sentry.addBreadcrumb({
         message: `Performance: ${metric}`,
@@ -291,7 +298,7 @@ class ErrorTrackingService {
    * Track custom event with context
    */
   trackEvent(eventName: string, properties?: Record<string, unknown>) {
-    if (this.isInitialized) {
+    if (this.isInitialized && Sentry?.addBreadcrumb) {
       const redactedProperties = properties ? { ...properties } : undefined;
       if (redactedProperties) {
         this.redactPIIFromObject(redactedProperties);

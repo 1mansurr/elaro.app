@@ -11,11 +11,10 @@ module.exports = ({ config }) => {
   // Detect if we're in config reading phase (when EAS runs 'npx expo config' locally)
   // During this phase, EAS secrets are not available yet - they're injected during actual build
   // We detect this by checking if we're NOT in a build environment
-  const isConfigReading =
-    !process.env.EAS_BUILD &&
-    !process.env.EAS_BUILD_RUNNING &&
-    !process.env.CI &&
-    process.argv.some(arg => arg.includes('config'));
+  const isConfigReading = !process.env.EAS_BUILD && 
+                          !process.env.EAS_BUILD_RUNNING && 
+                          !process.env.CI &&
+                          process.argv.some(arg => arg.includes('config'));
 
   // Required environment variables - app will not work without these
   const requiredVars = [
@@ -41,33 +40,21 @@ module.exports = ({ config }) => {
       console.error(`   - ${varName}`);
     });
     console.error('\n💡 Solution:');
-    console.error(
-      '   1. Set EAS secrets: eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value your-value',
-    );
-    console.error(
-      '   2. Set EAS secrets: eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value your-value',
-    );
+    console.error('   1. Set EAS secrets: eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_URL --value your-value');
+    console.error('   2. Set EAS secrets: eas secret:create --scope project --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value your-value');
     console.error('   3. Or ensure .env file exists with these variables');
-    console.error(
-      '   4. See README.md, .env.example, or ALERT_DELIVERY_SETUP.md for detailed setup instructions\n',
-    );
+    console.error('   4. See README.md, .env.example, or ALERT_DELIVERY_SETUP.md for detailed setup instructions\n');
     process.exit(1); // Fail the build
   }
-
+  
   // Warn during config reading phase (but don't fail - EAS will inject secrets during build)
   if (missingRequired.length > 0 && isConfigReading && !isTest) {
-    console.warn(
-      '\n⚠️  WARNING: Required environment variables not found during config reading:',
-    );
+    console.warn('\n⚠️  WARNING: Required environment variables not found during config reading:');
     missingRequired.forEach(varName => {
       console.warn(`   - ${varName}`);
     });
-    console.warn(
-      '   This is OK - EAS will inject these during the build phase',
-    );
-    console.warn(
-      '   Make sure they are set as EAS secrets for your build profile\n',
-    );
+    console.warn('   This is OK - EAS will inject these during the build phase');
+    console.warn('   Make sure they are set as EAS secrets for your build profile\n');
   }
 
   // Warn about missing recommended variables
@@ -113,10 +100,9 @@ module.exports = ({ config }) => {
         (() => {
           // For production builds, ensure we have a valid build number
           if (process.env.EAS_BUILD_PROFILE === 'production' || isProduction) {
-            const buildNum =
-              process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER ||
-              process.env.EAS_BUILD_NUMBER ||
-              '1';
+            const buildNum = process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER || 
+                            process.env.EAS_BUILD_NUMBER || 
+                            '1';
             return buildNum;
           }
           // For development/preview builds, try app.json or default to '1'
@@ -195,13 +181,21 @@ module.exports = ({ config }) => {
       //   },
       // ],
       // Temporarily commented out for binary search test (packages in first 35)
-      'expo-build-properties',
+      // 'expo-build-properties',
       // 'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin
       // Note: react-native-reanimated/plugin should be in babel.config.js, not here
     ],
     extra: {
       ...config.extra,
+      // Environment variables
+      FIREBASE_API_KEY: process.env.FIREBASE_API_KEY,
+      FIREBASE_AUTH_DOMAIN: process.env.FIREBASE_AUTH_DOMAIN,
+      FIREBASE_PROJECT_ID: process.env.FIREBASE_PROJECT_ID,
+      FIREBASE_STORAGE_BUCKET: process.env.FIREBASE_STORAGE_BUCKET,
+      FIREBASE_MESSAGING_SENDER_ID: process.env.FIREBASE_MESSAGING_SENDER_ID,
+      FIREBASE_APP_ID: process.env.FIREBASE_APP_ID,
+      FIREBASE_MEASUREMENT_ID: process.env.FIREBASE_MEASUREMENT_ID,
       // Supabase configuration
       EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
       EXPO_PUBLIC_SUPABASE_ANON_KEY: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,

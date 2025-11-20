@@ -54,23 +54,9 @@ import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
-import { validateSupabaseConfig } from '@/services/supabase';
 
 // Validate configuration on startup
 validateAndLogConfig();
-
-// Validate Supabase configuration before initializing services
-try {
-  validateSupabaseConfig();
-  console.log('✅ Supabase configuration validated');
-} catch (error) {
-  console.error('❌ Supabase configuration error:', error);
-  if (__DEV__) {
-    // Fail fast in development
-    throw error;
-  }
-  // In production, log error but continue (app will handle gracefully)
-}
 
 // Disable React Native DevTools overlay for non-technical users
 if (__DEV__) {
@@ -483,28 +469,57 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const prepare = async () => {
       try {
-        // Initialize RevenueCat
+        // Initialize RevenueCat with enhanced error handling
         const revenueCatApiKey =
           Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
-        if (revenueCatApiKey) {
-          const initSuccess =
-            await revenueCatService.initialize(revenueCatApiKey);
 
-          // Verify RevenueCat setup only if initialization succeeded
-          if (initSuccess) {
-            const { verifyRevenueCatSetup } = await import(
-              './src/config/verifyRevenuecat'
-            );
-            await verifyRevenueCatSetup();
-          } else {
-            console.warn(
-              '⚠️ RevenueCat initialization failed. Skipping verification.',
-            );
+        if (revenueCatApiKey) {
+          try {
+            const initSuccess = await revenueCatService.initialize(revenueCatApiKey);
+
+            if (initSuccess) {
+              console.log('✅ RevenueCat initialized successfully');
+              try {
+                const { verifyRevenueCatSetup } = await import(
+                  './src/config/verifyRevenuecat'
+                );
+                const verified = await verifyRevenueCatSetup();
+                if (verified) {
+                  console.log('✅ RevenueCat setup verified');
+                } else {
+                  console.warn(
+                    '⚠️ RevenueCat initialized but verification failed',
+                  );
+                }
+              } catch (verifyError) {
+                console.error('❌ RevenueCat verification error:', verifyError);
+                // Log to error tracking if available
+                errorTracking.captureError(verifyError as Error, {
+                  tags: {
+                    component: 'revenuecat',
+                    phase: 'verification',
+                  },
+                });
+                // Don't block app startup
+              }
+            } else {
+              console.warn(
+                '⚠️ RevenueCat initialization failed - subscription features disabled',
+              );
+            }
+          } catch (initError) {
+            console.error('❌ RevenueCat initialization error:', initError);
+            // Log to error tracking if available
+            errorTracking.captureError(initError as Error, {
+              tags: { component: 'revenuecat', phase: 'initialization' },
+            });
+            // Don't block app startup - app can function without RevenueCat
           }
         } else {
           console.warn(
-            '⚠️ RevenueCat API key not found in environment variables',
+            '⚠️ RevenueCat API key not found - subscription features disabled',
           );
+          console.warn('   Set EXPO_PUBLIC_REVENUECAT_APPLE_KEY in .env file');
         }
 
         // Initialize Sync Manager for offline support
@@ -537,8 +552,12 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
         // Small delay to ensure smooth transition
         await new Promise(resolve => setTimeout(resolve, 100));
       } catch (e) {
-        console.warn('App initialization error:', e);
-        // You could log this to your error tracking service
+        console.error('❌ App initialization error:', e);
+        // Log to error tracking service
+        errorTracking.captureError(e as Error, {
+          tags: { component: 'app', phase: 'initialization' },
+        });
+        // Don't block app startup - continue with degraded functionality
       } finally {
         setAppIsReady(true);
       }

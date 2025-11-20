@@ -14,7 +14,13 @@ import { supabase } from '@/services/supabase';
 import { PrimaryButton } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { RootStackParamList } from '@/types/navigation';
-import * as Sentry from '@sentry/react-native';
+// Sentry is temporarily disabled
+let Sentry: any = null;
+try {
+  Sentry = require('@sentry/react-native');
+} catch (e) {
+  // Sentry not available
+}
 
 type ScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 

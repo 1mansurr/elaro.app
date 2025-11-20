@@ -40,7 +40,11 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
-import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
+import {
+  RevenueCat,
+  PurchasesOfferingType as PurchasesOffering,
+  PurchasesPackageType as PurchasesPackage,
+} from '@/services/revenueCatWrapper';
 
 type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 type ViewMode = 'month' | 'week' | 'agenda';

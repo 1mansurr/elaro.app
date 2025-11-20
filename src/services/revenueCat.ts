@@ -1,8 +1,9 @@
-import Purchases, {
-  PurchasesOffering,
-  PurchasesPackage,
-  CustomerInfo,
-} from 'react-native-purchases';
+import {
+  RevenueCat,
+  PurchasesOfferingType as PurchasesOffering,
+  PurchasesPackageType as PurchasesPackage,
+  CustomerInfoType as CustomerInfo,
+} from './revenueCatWrapper';
 import { retryWithBackoff } from '@/utils/errorRecovery';
 import { CircuitBreaker } from '@/utils/circuitBreaker';
 import {
@@ -10,6 +11,8 @@ import {
   CLIENT_RATE_LIMITS,
   RateLimitError,
 } from '@/utils/clientRateLimiter';
+
+const Purchases = RevenueCat.Purchases;
 
 /**
  * Execute a promise with a timeout
@@ -43,9 +46,9 @@ interface RevenueCatError {
 function isRetryableRevenueCatError(error: unknown): boolean {
   const err = error as RevenueCatError;
   // Don't retry user cancellations or invalid API keys
-  if (error?.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') return false;
-  if (error?.message?.includes('Invalid API key')) return false;
-  if (error?.message?.includes('authentication failed')) return false;
+  if (err?.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') return false;
+  if (err?.message?.includes('Invalid API key')) return false;
+  if (err?.message?.includes('authentication failed')) return false;
 
   // Retry network errors and server errors
   return true;
@@ -57,6 +60,11 @@ export const revenueCatService = {
    * @returns {Promise<boolean>} True if initialization succeeded, false otherwise
    */
   initialize: async (apiKey: string): Promise<boolean> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      console.warn('⚠️ RevenueCat not available - skipping initialization');
+      return false;
+    }
+
     try {
       // Validate API key format
       if (!apiKey || apiKey.length < 10) {
@@ -90,6 +98,11 @@ export const revenueCatService = {
    * @internal Use getOfferings() for recovery support
    */
   getOfferingsDirect: async (): Promise<PurchasesOffering | null> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      console.warn('⚠️ RevenueCat not available - cannot fetch offerings');
+      return null;
+    }
+
     try {
       const retryResult = await withRateLimit(
         'revenuecat_offerings',
@@ -130,7 +143,9 @@ export const revenueCatService = {
         return null;
       }
 
-      return retryResult.result.current;
+      return (
+        retryResult.result as { current: PurchasesOffering | null }
+      ).current;
     } catch (error) {
       if (error instanceof RateLimitError) {
         console.warn(
@@ -167,6 +182,10 @@ export const revenueCatService = {
   purchasePackage: async (
     packageToPurchase: PurchasesPackage,
   ): Promise<CustomerInfo> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      throw new Error('RevenueCat not available - cannot process purchase');
+    }
+
     try {
       const retryResult = await withRateLimit(
         'revenuecat_purchase',
@@ -178,11 +197,11 @@ export const revenueCatService = {
                 failureThreshold: 3,
                 resetTimeout: 30000,
               }).execute(async () => {
-                const response = await withTimeout(
+                const response = (await withTimeout(
                   Purchases.purchasePackage(packageToPurchase),
                   REVENUECAT_TIMEOUT,
                   'RevenueCat purchasePackage timed out',
-                );
+                )) as { customerInfo: CustomerInfo };
                 return response.customerInfo;
               });
             },
@@ -229,6 +248,10 @@ export const revenueCatService = {
    * Restore previous purchases
    */
   restorePurchases: async (): Promise<CustomerInfo> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      throw new Error('RevenueCat not available - cannot restore purchases');
+    }
+
     try {
       const retryResult = await withRateLimit(
         'revenuecat_restore',
@@ -273,6 +296,10 @@ export const revenueCatService = {
    * Get current customer information
    */
   getCustomerInfo: async (): Promise<CustomerInfo> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      throw new Error('RevenueCat not available - cannot get customer info');
+    }
+
     try {
       const retryResult = await withRateLimit(
         'revenuecat_customer_info',
@@ -360,6 +387,11 @@ export const revenueCatService = {
    * Set user ID for RevenueCat (should match your backend user ID)
    */
   setUserId: async (userId: string): Promise<void> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      console.warn('⚠️ RevenueCat not available - cannot set user ID');
+      return;
+    }
+
     try {
       const retryResult = await retryWithBackoff(
         async () => {
@@ -397,6 +429,10 @@ export const revenueCatService = {
    * Log out current user
    */
   logOut: async (): Promise<CustomerInfo> => {
+    if (!RevenueCat.isAvailable || !Purchases) {
+      throw new Error('RevenueCat not available - cannot log out');
+    }
+
     try {
       const retryResult = await retryWithBackoff(
         async () => {

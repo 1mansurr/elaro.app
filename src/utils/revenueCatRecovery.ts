@@ -4,7 +4,11 @@
  * Provides recovery strategies for RevenueCat operations with fallback options.
  */
 
-import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
+import {
+  RevenueCat,
+  PurchasesOfferingType as PurchasesOffering,
+  PurchasesPackageType as PurchasesPackage,
+} from '@/services/revenueCatWrapper';
 import { executeWithRecovery, RecoveryStrategy } from './errorRecovery';
 import { revenueCatService } from '@/services/revenueCat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -68,6 +72,13 @@ function createDefaultOffering(): PurchasesOffering | null {
  * Fallback 2: Default offering structure
  */
 export async function getOfferingsWithRecovery(): Promise<PurchasesOffering | null> {
+  // Early return if RevenueCat not available
+  if (!RevenueCat.isAvailable) {
+    console.warn('⚠️ RevenueCat not available - using cached/default offerings');
+    const cached = await getCachedOfferings();
+    return cached || createDefaultOffering();
+  }
+
   const strategy: RecoveryStrategy<PurchasesOffering | null> = {
     primary: async () => {
       const offerings = await revenueCatService.getOfferingsDirect();
@@ -117,6 +128,21 @@ export async function getOfferingsWithRecovery(): Promise<PurchasesOffering | nu
 export async function getCustomerInfoWithRecovery(): Promise<
   ReturnType<typeof revenueCatService.getCustomerInfo>
 > {
+  // Early return if RevenueCat not available
+  if (!RevenueCat.isAvailable) {
+    console.warn('⚠️ RevenueCat not available - using cached customer info');
+    try {
+      const cached = await AsyncStorage.getItem(CACHED_CUSTOMER_INFO_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return parsed.data;
+      }
+    } catch {
+      // Ignore cache errors
+    }
+    throw new Error('RevenueCat not available and no cached customer info');
+  }
+
   const strategy: RecoveryStrategy<
     ReturnType<typeof revenueCatService.getCustomerInfo>
   > = {

@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CustomerInfo, PurchasesPackage } from 'react-native-purchases';
+import {
+  RevenueCat,
+  CustomerInfoType as CustomerInfo,
+  PurchasesPackageType as PurchasesPackage,
+} from '@/services/revenueCatWrapper';
 import { revenueCatService } from '@/services/revenueCat';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
@@ -32,6 +36,29 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Early return if RevenueCat not available
+  if (!RevenueCat.isAvailable) {
+    return {
+      customerInfo: null,
+      isLoading: false,
+      error: 'RevenueCat not available',
+      hasActiveSubscription: false,
+      subscriptionTier: 'free',
+      subscriptionExpiration: null,
+      isInTrial: false,
+      isInGracePeriod: false,
+      gracePeriodExpiration: null,
+      purchasePackage: async () => {
+        throw new Error('RevenueCat not available');
+      },
+      restorePurchases: async () => {
+        throw new Error('RevenueCat not available');
+      },
+      refreshCustomerInfo: async () => {},
+      clearError: () => {},
+    };
+  }
 
   // Load customer information
   const loadCustomerInfo = useCallback(async () => {

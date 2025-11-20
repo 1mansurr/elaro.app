@@ -12,7 +12,13 @@ import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
-import * as Sentry from '@sentry/react-native';
+// Sentry is temporarily disabled
+let Sentry: any = null;
+try {
+  Sentry = require('@sentry/react-native');
+} catch (e) {
+  // Sentry not available
+}
 
 import { PrimaryButton } from '@/shared/components';
 import { useSubscription } from '@/hooks/useSubscription';
