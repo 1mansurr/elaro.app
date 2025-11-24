@@ -34,8 +34,11 @@ const TrialWelcomeScreen = () => {
     try {
       // Get fresh access token from Supabase session
       // This ensures we have the latest valid token and the Edge Function receives the JWT for RLS context
-      const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-      
+      const {
+        data: { session: currentSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
       // Debug logging to verify session exists
       console.log('🔍 Session Debug (start-user-trial):', {
         hasSession: !!currentSession,
@@ -46,14 +49,17 @@ const TrialWelcomeScreen = () => {
         expiresAt: currentSession?.expires_at,
         expiresIn: currentSession?.expires_in,
       });
-      
+
       if (sessionError || !currentSession) {
-        console.error('❌ Error getting session for trial start:', sessionError);
+        console.error(
+          '❌ Error getting session for trial start:',
+          sessionError,
+        );
         // Navigate anyway, but log the error
         navigation.navigate('Main');
         return;
       }
-      
+
       const accessToken = currentSession.access_token;
       if (!accessToken) {
         console.error('❌ No access token available for trial start');
@@ -62,7 +68,10 @@ const TrialWelcomeScreen = () => {
       }
 
       // Debug logging to see the actual request
-      console.log('📤 Calling start-user-trial with token:', accessToken.substring(0, 30) + '...');
+      console.log(
+        '📤 Calling start-user-trial with token:',
+        accessToken.substring(0, 30) + '...',
+      );
 
       // Start the user's trial with authentication
       const { error } = await supabase.functions.invoke('start-user-trial', {

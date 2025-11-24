@@ -11,12 +11,19 @@ import {
 } from './constants/NavigationConstants';
 
 // Type definitions for type-safe screen configuration
-type ScreenConfig<K extends keyof RootStackParamList = keyof RootStackParamList> = {
-  component: React.ComponentType<{ route: { params: RootStackParamList[K] }; navigation: unknown }>;
+type ScreenConfig<
+  K extends keyof RootStackParamList = keyof RootStackParamList,
+> = {
+  component: React.ComponentType<{
+    route: { params: RootStackParamList[K] };
+    navigation: unknown;
+  }>;
   options?: StackNavigationOptions;
 };
 
-type ScreensConfig = Partial<Record<keyof RootStackParamList, ScreenConfig<keyof RootStackParamList>>>;
+type ScreensConfig = Partial<
+  Record<keyof RootStackParamList, ScreenConfig<keyof RootStackParamList>>
+>;
 
 // Critical auth screens - loaded immediately
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';

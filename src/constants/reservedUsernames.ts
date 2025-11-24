@@ -1,6 +1,6 @@
 /**
  * Reserved Usernames List
- * 
+ *
  * These usernames are blocked to prevent conflicts with system routes,
  * endpoints, and reserved functionality. Matching is case-insensitive
  * and word-boundary aware.
@@ -9,42 +9,99 @@
 export const RESERVED_USERNAMES = [
   // App/Brand names
   'elaro',
-  
+
   // System routes
-  'settings', 'support', 'legal', 'marketing', 'admin', 'api', 'www',
-  'mail', 'help', 'contact', 'about', 'privacy', 'terms', 'faq',
-  
+  'settings',
+  'support',
+  'legal',
+  'marketing',
+  'admin',
+  'api',
+  'www',
+  'mail',
+  'help',
+  'contact',
+  'about',
+  'privacy',
+  'terms',
+  'faq',
+
   // User-related routes
-  'users', 'profile', 'account', 'analytics', 'dashboard',
-  
+  'users',
+  'profile',
+  'account',
+  'analytics',
+  'dashboard',
+
   // Content routes
-  'courses', 'lectures', 'assignments', 'sessions', 'reminders',
-  'notifications', 'messages', 'chat', 'inbox',
-  
+  'courses',
+  'lectures',
+  'assignments',
+  'sessions',
+  'reminders',
+  'notifications',
+  'messages',
+  'chat',
+  'inbox',
+
   // System/Technical
-  'root', 'system', 'test', 'demo', 'guest', 'null', 'undefined',
-  'app', 'mobile', 'web', 'ios', 'android',
-  
+  'root',
+  'system',
+  'test',
+  'demo',
+  'guest',
+  'null',
+  'undefined',
+  'app',
+  'mobile',
+  'web',
+  'ios',
+  'android',
+
   // Common web routes
-  'blog', 'news', 'feed', 'home', 'search', 'explore',
-  
+  'blog',
+  'news',
+  'feed',
+  'home',
+  'search',
+  'explore',
+
   // Auth routes
-  'login', 'signup', 'signin', 'logout', 'register', 'auth',
-  'password', 'reset', 'verify', 'confirm', 'activate',
-  
+  'login',
+  'signup',
+  'signin',
+  'logout',
+  'register',
+  'auth',
+  'password',
+  'reset',
+  'verify',
+  'confirm',
+  'activate',
+
   // Roles/Status
-  'moderator', 'staff', 'team', 'official',
-  
+  'moderator',
+  'staff',
+  'team',
+  'official',
+
   // Development/Status
-  'beta', 'alpha', 'preview', 'staging', 'production',
-  'status', 'health', 'monitor', 'metrics',
+  'beta',
+  'alpha',
+  'preview',
+  'staging',
+  'production',
+  'status',
+  'health',
+  'monitor',
+  'metrics',
 ] as const;
 
 /**
  * Check if a username contains a reserved word (case-insensitive, word-boundary aware)
  * @param username - The username to check (original case preserved)
  * @returns true if username contains a reserved word as a complete word
- * 
+ *
  * Examples:
  * - "elaro" → true (exact match)
  * - "elaro123" → true (starts with reserved word)
@@ -62,4 +119,3 @@ export function isReservedUsername(username: string): boolean {
     return regex.test(username);
   });
 }
-

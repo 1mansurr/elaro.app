@@ -26,12 +26,12 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
   }
 
   if (!StatsDModulePromise) {
-    StatsDModulePromise = import('https://deno.land/x/statsd@0.2.0/mod.ts').catch(
-      (error) => {
-        console.warn('StatsD module not available, metrics disabled:', error);
-        return null;
-      }
-    );
+    StatsDModulePromise = import(
+      'https://deno.land/x/statsd@0.2.0/mod.ts'
+    ).catch(error => {
+      console.warn('StatsD module not available, metrics disabled:', error);
+      return null;
+    });
   }
 
   try {
@@ -42,11 +42,11 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
     }
 
     // Try multiple export patterns
-    StatsDConstructor = 
+    StatsDConstructor =
       StatsDModule.default ||
       StatsDModule.StatsD ||
       (typeof StatsDModule === 'function' ? StatsDModule : undefined);
-    
+
     return StatsDConstructor;
   } catch (error) {
     console.warn('Failed to load StatsD module:', error);
@@ -99,7 +99,8 @@ export async function getStatsDClient(): Promise<ReturnType<StatsDConstructor> |
 // Metric collection utilities
 export class MetricsCollector {
   private client: ReturnType<StatsDConstructor> | null = null;
-  private clientPromise: Promise<ReturnType<StatsDConstructor> | null> | null = null;
+  private clientPromise: Promise<ReturnType<StatsDConstructor> | null> | null =
+    null;
   private startTime: number;
   private functionName: string;
 
@@ -125,77 +126,85 @@ export class MetricsCollector {
   // Increment request counter
   incrementRequest(): void {
     // Fire and forget - don't await to avoid blocking
-    this.ensureClient().then(client => {
-      if (!client) return;
-    try {
-        client.increment('api.requests.count', {
-        function: this.functionName,
+    this.ensureClient()
+      .then(client => {
+        if (!client) return;
+        try {
+          client.increment('api.requests.count', {
+            function: this.functionName,
+          });
+        } catch (error) {
+          console.error('Failed to send request count metric:', error);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - metrics are optional
       });
-    } catch (error) {
-      console.error('Failed to send request count metric:', error);
-    }
-    }).catch(() => {
-      // Ignore errors - metrics are optional
-    });
   }
 
   // Record execution time
   recordExecutionTime(): void {
     // Fire and forget - don't await to avoid blocking
-    this.ensureClient().then(client => {
-      if (!client) return;
-    const duration = Date.now() - this.startTime;
-    try {
-        client.timing('api.execution_time', duration, {
-        function: this.functionName,
+    this.ensureClient()
+      .then(client => {
+        if (!client) return;
+        const duration = Date.now() - this.startTime;
+        try {
+          client.timing('api.execution_time', duration, {
+            function: this.functionName,
+          });
+        } catch (error) {
+          console.error('Failed to send execution time metric:', error);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - metrics are optional
       });
-    } catch (error) {
-      console.error('Failed to send execution time metric:', error);
-    }
-    }).catch(() => {
-      // Ignore errors - metrics are optional
-    });
   }
 
   // Increment status code counter
   incrementStatusCode(statusCode: number): void {
     // Fire and forget - don't await to avoid blocking
-    this.ensureClient().then(client => {
-      if (!client) return;
-    const statusCategory = Math.floor(statusCode / 100) * 100;
-    try {
-      // Increment specific status code counter
-        client.increment(`api.status.${statusCode}.count`, {
-        function: this.functionName,
+    this.ensureClient()
+      .then(client => {
+        if (!client) return;
+        const statusCategory = Math.floor(statusCode / 100) * 100;
+        try {
+          // Increment specific status code counter
+          client.increment(`api.status.${statusCode}.count`, {
+            function: this.functionName,
+          });
+          // Increment status category counter (2xx, 3xx, 4xx, 5xx)
+          client.increment(`api.status.${statusCategory}.count`, {
+            function: this.functionName,
+          });
+        } catch (error) {
+          console.error('Failed to send status code metric:', error);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - metrics are optional
       });
-      // Increment status category counter (2xx, 3xx, 4xx, 5xx)
-        client.increment(`api.status.${statusCategory}.count`, {
-        function: this.functionName,
-      });
-    } catch (error) {
-      console.error('Failed to send status code metric:', error);
-    }
-    }).catch(() => {
-      // Ignore errors - metrics are optional
-    });
   }
 
   // Record error
   recordError(errorType: string, errorMessage: string): void {
     // Fire and forget - don't await to avoid blocking
-    this.ensureClient().then(client => {
-      if (!client) return;
-    try {
-        client.increment('api.errors.count', {
-        function: this.functionName,
-        error_type: errorType,
+    this.ensureClient()
+      .then(client => {
+        if (!client) return;
+        try {
+          client.increment('api.errors.count', {
+            function: this.functionName,
+            error_type: errorType,
+          });
+        } catch (error) {
+          console.error('Failed to send error metric:', error);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - metrics are optional
       });
-    } catch (error) {
-      console.error('Failed to send error metric:', error);
-    }
-    }).catch(() => {
-      // Ignore errors - metrics are optional
-    });
   }
 
   // Record custom metric
@@ -205,19 +214,21 @@ export class MetricsCollector {
     tags?: Record<string, string>,
   ): void {
     // Fire and forget - don't await to avoid blocking
-    this.ensureClient().then(client => {
-      if (!client) return;
-    try {
-        client.gauge(metricName, value, {
-        function: this.functionName,
-        ...tags,
+    this.ensureClient()
+      .then(client => {
+        if (!client) return;
+        try {
+          client.gauge(metricName, value, {
+            function: this.functionName,
+            ...tags,
+          });
+        } catch (error) {
+          console.error(`Failed to send metric ${metricName}:`, error);
+        }
+      })
+      .catch(() => {
+        // Ignore errors - metrics are optional
       });
-    } catch (error) {
-      console.error(`Failed to send metric ${metricName}:`, error);
-    }
-    }).catch(() => {
-      // Ignore errors - metrics are optional
-    });
   }
 
   // Close the client (optional, for cleanup)

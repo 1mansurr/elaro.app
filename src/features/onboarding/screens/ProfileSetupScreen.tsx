@@ -51,7 +51,9 @@ const ProfileSetupScreen = () => {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   // Validation functions
-  const validateUsernameLength = (username: string): { valid: boolean; error?: string } => {
+  const validateUsernameLength = (
+    username: string,
+  ): { valid: boolean; error?: string } => {
     if (username.length < 4) {
       return { valid: false, error: 'Username must be at least 4 characters.' };
     }
@@ -61,30 +63,49 @@ const ProfileSetupScreen = () => {
     return { valid: true };
   };
 
-  const validateUsernameCharacters = (username: string): { valid: boolean; error?: string } => {
+  const validateUsernameCharacters = (
+    username: string,
+  ): { valid: boolean; error?: string } => {
     const regex = /^[a-zA-Z0-9_.]+$/;
     if (!regex.test(username)) {
-      return { valid: false, error: 'Username can only contain letters, numbers, dots, and underscores.' };
+      return {
+        valid: false,
+        error:
+          'Username can only contain letters, numbers, dots, and underscores.',
+      };
     }
     return { valid: true };
   };
 
-  const validateUsernameFormat = (username: string): { valid: boolean; error?: string } => {
+  const validateUsernameFormat = (
+    username: string,
+  ): { valid: boolean; error?: string } => {
     // Check start/end
     if (/^[._]/.test(username)) {
-      return { valid: false, error: 'Username cannot start with a dot or underscore.' };
+      return {
+        valid: false,
+        error: 'Username cannot start with a dot or underscore.',
+      };
     }
     if (/[._]$/.test(username)) {
-      return { valid: false, error: 'Username cannot end with a dot or underscore.' };
+      return {
+        valid: false,
+        error: 'Username cannot end with a dot or underscore.',
+      };
     }
     // Check consecutive
     if (/[._]{2,}/.test(username)) {
-      return { valid: false, error: 'Username cannot have consecutive dots or underscores.' };
+      return {
+        valid: false,
+        error: 'Username cannot have consecutive dots or underscores.',
+      };
     }
     return { valid: true };
   };
 
-  const validateReservedUsername = (username: string): { valid: boolean; error?: string } => {
+  const validateReservedUsername = (
+    username: string,
+  ): { valid: boolean; error?: string } => {
     if (isReservedUsername(username)) {
       return { valid: false, error: 'This username is not available.' };
     }
@@ -137,22 +158,29 @@ const ProfileSetupScreen = () => {
         try {
           // Get fresh access token from Supabase session (not from context which may be stale)
           // This ensures we have the latest valid token and the Edge Function receives the JWT for RLS context
-          const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-          
+          const {
+            data: { session: currentSession },
+            error: sessionError,
+          } = await supabase.auth.getSession();
+
           // Debug logging to verify session exists
           console.log('🔍 Session Debug (check-username):', {
             hasSession: !!currentSession,
             hasError: !!sessionError,
             userId: currentSession?.user?.id,
             tokenLength: currentSession?.access_token?.length,
-            tokenPreview: currentSession?.access_token?.substring(0, 20) + '...',
+            tokenPreview:
+              currentSession?.access_token?.substring(0, 20) + '...',
             expiresAt: currentSession?.expires_at,
             expiresIn: currentSession?.expires_in,
             username: newUsername,
           });
-          
+
           if (sessionError || !currentSession) {
-            console.error('❌ Error getting session for username check:', sessionError);
+            console.error(
+              '❌ Error getting session for username check:',
+              sessionError,
+            );
             setUsernameError('Please sign in to check username availability.');
             setIsAvailable(null);
             setIsChecking(false);
@@ -173,7 +201,10 @@ const ProfileSetupScreen = () => {
           }
 
           // Debug logging to see the actual request
-          console.log('📤 Calling check-username-availability with token:', accessToken.substring(0, 30) + '...');
+          console.log(
+            '📤 Calling check-username-availability with token:',
+            accessToken.substring(0, 30) + '...',
+          );
 
           const { data, error } = await supabase.functions.invoke(
             'check-username-availability',
@@ -314,186 +345,190 @@ const ProfileSetupScreen = () => {
       colors={['#f8f9ff', '#ffffff', '#fff8f9']}
       style={styles.gradient}>
       <TouchableWithoutFeedback onPress={handleOutsidePress}>
-      <ScrollView
-        contentContainerStyle={styles.container}
+        <ScrollView
+          contentContainerStyle={styles.container}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
-          <Text style={styles.title}>Set Up Your Profile</Text>
-          <Text style={styles.subtitle}>
-            Choose your username and tell us about your studies.
-          </Text>
-        </View>
-
-        <View style={styles.card}>
-          <LinearGradient
-            colors={['#ffffff', '#fafbff']}
-            style={styles.cardGradient}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>👤 Username</Text>
-              <View style={styles.requiredBadge}>
-                <Text style={styles.requiredText}>Required</Text>
-              </View>
-            </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="e.g., john_doe"
-              value={username}
-              onChangeText={text => {
-                // Allow dots and underscores, preserve case
-                const formattedText = text.replace(/[^a-zA-Z0-9_.]/g, '');
-                setUsername(formattedText);
-                
-                // Clear previous errors
-                setUsernameError(null);
-                setIsAvailable(null);
-
-                // Validate in order: Length → Characters → Format → Reserved Word
-                if (formattedText.length === 0) {
-                  return; // Don't validate empty input
-                }
-
-                // Length validation
-                const lengthValidation = validateUsernameLength(formattedText);
-                if (!lengthValidation.valid) {
-                  setUsernameError(lengthValidation.error || null);
-                  setIsAvailable(false);
-                  return;
-                }
-
-                // Character validation
-                const charValidation = validateUsernameCharacters(formattedText);
-                if (!charValidation.valid) {
-                  setUsernameError(charValidation.error || null);
-                  setIsAvailable(false);
-                  return;
-                }
-
-                // Format validation
-                const formatValidation = validateUsernameFormat(formattedText);
-                if (!formatValidation.valid) {
-                  setUsernameError(formatValidation.error || null);
-                  setIsAvailable(false);
-                  return;
-                }
-
-                // Reserved word validation
-                const reservedValidation = validateReservedUsername(formattedText);
-                if (!reservedValidation.valid) {
-                  setUsernameError(reservedValidation.error || null);
-                  setIsAvailable(false);
-                  return;
-                }
-
-                // All validations passed, check availability via API
-                checkUsernameDebounced(formattedText);
-              }}
-              autoCapitalize="none"
-              placeholderTextColor={COLORS.textSecondary}
-            />
-
-            {isChecking && (
-              <View style={styles.feedbackContainer}>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-                <Text style={styles.feedbackText}>
-                  Checking availability...
-                </Text>
-              </View>
-            )}
-            {!isChecking && username.length > 0 && username.length < 4 && (
-              <Text style={[styles.feedback, styles.error]}>
-                Username must be at least 4 characters.
-              </Text>
-            )}
-            {!isChecking && username.length >= 4 && isAvailable === true && (
-              <Text style={[styles.feedback, styles.success]}>
-                ✓ Username is available!
-              </Text>
-            )}
-            {!isChecking && username.length >= 4 && usernameError && (
-              <Text
-                style={[
-                  styles.feedback,
-                  isAvailable === false ? styles.error : styles.neutral,
-                ]}>
-                {isAvailable === false ? `✗ ${usernameError}` : usernameError}
-              </Text>
-            )}
-          </LinearGradient>
-        </View>
-
-        <View style={styles.card}>
-          <LinearGradient
-            colors={['#ffffff', '#fffbfa']}
-            style={styles.cardGradient}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.cardTitle}>🎓 Your Studies</Text>
-              <View style={styles.requiredBadge}>
-                <Text style={styles.requiredText}>Required</Text>
-              </View>
-            </View>
-            <Text style={styles.cardHint}>
-              Tell us where you study so we can personalize your experience.
+          <View style={styles.header}>
+            <Text style={styles.title}>Set Up Your Profile</Text>
+            <Text style={styles.subtitle}>
+              Choose your username and tell us about your studies.
             </Text>
+          </View>
 
-            <View style={styles.fieldGroup}>
-              <SearchableSelector
-                id="country"
-                label="Country *"
-                data={countryData}
-                selectedValue={selectedCountry}
-                onValueChange={setSelectedCountry}
-                placeholder="Select your country..."
-                searchPlaceholder="Search for your country"
-                showOther={false}
-                isActive={activeSelectorId === 'country'}
-                onOpen={handleSelectorOpen}
+          <View style={styles.card}>
+            <LinearGradient
+              colors={['#ffffff', '#fafbff']}
+              style={styles.cardGradient}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>👤 Username</Text>
+                <View style={styles.requiredBadge}>
+                  <Text style={styles.requiredText}>Required</Text>
+                </View>
+              </View>
+
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., john_doe"
+                value={username}
+                onChangeText={text => {
+                  // Allow dots and underscores, preserve case
+                  const formattedText = text.replace(/[^a-zA-Z0-9_.]/g, '');
+                  setUsername(formattedText);
+
+                  // Clear previous errors
+                  setUsernameError(null);
+                  setIsAvailable(null);
+
+                  // Validate in order: Length → Characters → Format → Reserved Word
+                  if (formattedText.length === 0) {
+                    return; // Don't validate empty input
+                  }
+
+                  // Length validation
+                  const lengthValidation =
+                    validateUsernameLength(formattedText);
+                  if (!lengthValidation.valid) {
+                    setUsernameError(lengthValidation.error || null);
+                    setIsAvailable(false);
+                    return;
+                  }
+
+                  // Character validation
+                  const charValidation =
+                    validateUsernameCharacters(formattedText);
+                  if (!charValidation.valid) {
+                    setUsernameError(charValidation.error || null);
+                    setIsAvailable(false);
+                    return;
+                  }
+
+                  // Format validation
+                  const formatValidation =
+                    validateUsernameFormat(formattedText);
+                  if (!formatValidation.valid) {
+                    setUsernameError(formatValidation.error || null);
+                    setIsAvailable(false);
+                    return;
+                  }
+
+                  // Reserved word validation
+                  const reservedValidation =
+                    validateReservedUsername(formattedText);
+                  if (!reservedValidation.valid) {
+                    setUsernameError(reservedValidation.error || null);
+                    setIsAvailable(false);
+                    return;
+                  }
+
+                  // All validations passed, check availability via API
+                  checkUsernameDebounced(formattedText);
+                }}
+                autoCapitalize="none"
+                placeholderTextColor={COLORS.textSecondary}
               />
-            </View>
 
-            {selectedCountry && (
+              {isChecking && (
+                <View style={styles.feedbackContainer}>
+                  <ActivityIndicator size="small" color={COLORS.primary} />
+                  <Text style={styles.feedbackText}>
+                    Checking availability...
+                  </Text>
+                </View>
+              )}
+              {!isChecking && username.length > 0 && username.length < 4 && (
+                <Text style={[styles.feedback, styles.error]}>
+                  Username must be at least 4 characters.
+                </Text>
+              )}
+              {!isChecking && username.length >= 4 && isAvailable === true && (
+                <Text style={[styles.feedback, styles.success]}>
+                  ✓ Username is available!
+                </Text>
+              )}
+              {!isChecking && username.length >= 4 && usernameError && (
+                <Text
+                  style={[
+                    styles.feedback,
+                    isAvailable === false ? styles.error : styles.neutral,
+                  ]}>
+                  {isAvailable === false ? `✗ ${usernameError}` : usernameError}
+                </Text>
+              )}
+            </LinearGradient>
+          </View>
+
+          <View style={styles.card}>
+            <LinearGradient
+              colors={['#ffffff', '#fffbfa']}
+              style={styles.cardGradient}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.cardTitle}>🎓 Your Studies</Text>
+                <View style={styles.requiredBadge}>
+                  <Text style={styles.requiredText}>Required</Text>
+                </View>
+              </View>
+              <Text style={styles.cardHint}>
+                Tell us where you study so we can personalize your experience.
+              </Text>
+
               <View style={styles.fieldGroup}>
                 <SearchableSelector
-                  id="university"
-                  label="University *"
-                  data={universityData}
-                  selectedValue={university}
-                  onValueChange={setUniversity}
-                  placeholder="Select or type your university..."
-                  searchPlaceholder="Search for your university"
-                  showOther={true}
-                  tooltipText="Enter your university manually"
-                  isActive={activeSelectorId === 'university'}
+                  id="country"
+                  label="Country *"
+                  data={countryData}
+                  selectedValue={selectedCountry}
+                  onValueChange={setSelectedCountry}
+                  placeholder="Select your country..."
+                  searchPlaceholder="Search for your country"
+                  showOther={false}
+                  isActive={activeSelectorId === 'country'}
                   onOpen={handleSelectorOpen}
                 />
               </View>
-            )}
 
-            <View style={styles.fieldGroup}>
-              <SearchableSelector
-                id="program"
-                label="Program of Study *"
-                data={programData}
-                selectedValue={program}
-                onValueChange={setProgram}
-                placeholder="Select or type your program..."
-                searchPlaceholder="Search for your program"
-                showOther={true}
-                tooltipText="Enter your course manually"
-                isActive={activeSelectorId === 'program'}
-                onOpen={handleSelectorOpen}
-              />
-            </View>
+              {selectedCountry && (
+                <View style={styles.fieldGroup}>
+                  <SearchableSelector
+                    id="university"
+                    label="University *"
+                    data={universityData}
+                    selectedValue={university}
+                    onValueChange={setUniversity}
+                    placeholder="Select or type your university..."
+                    searchPlaceholder="Search for your university"
+                    showOther={true}
+                    tooltipText="Enter your university manually"
+                    isActive={activeSelectorId === 'university'}
+                    onOpen={handleSelectorOpen}
+                  />
+                </View>
+              )}
 
-            <TouchableOpacity
-              onPress={() => setIsModalVisible(true)}
-              style={styles.linkContainer}>
-              <Text style={styles.linkText}>Why do we need this?</Text>
-            </TouchableOpacity>
-          </LinearGradient>
-        </View>
-      </ScrollView>
+              <View style={styles.fieldGroup}>
+                <SearchableSelector
+                  id="program"
+                  label="Program of Study *"
+                  data={programData}
+                  selectedValue={program}
+                  onValueChange={setProgram}
+                  placeholder="Select or type your program..."
+                  searchPlaceholder="Search for your program"
+                  showOther={true}
+                  tooltipText="Enter your course manually"
+                  isActive={activeSelectorId === 'program'}
+                  onOpen={handleSelectorOpen}
+                />
+              </View>
+
+              <TouchableOpacity
+                onPress={() => setIsModalVisible(true)}
+                style={styles.linkContainer}>
+                <Text style={styles.linkText}>Why do we need this?</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
+        </ScrollView>
       </TouchableWithoutFeedback>
 
       <View style={styles.footer}>

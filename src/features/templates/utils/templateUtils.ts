@@ -10,7 +10,9 @@ export const generateTemplateName = (title: string): string => {
 /**
  * Clear date fields from template data
  */
-export const clearDateFields = (templateData: Record<string, unknown>): Record<string, unknown> => {
+export const clearDateFields = (
+  templateData: Record<string, unknown>,
+): Record<string, unknown> => {
   const clearedData = { ...templateData };
 
   // Clear common date fields
@@ -46,7 +48,10 @@ export const validateTemplateData = (
   const titleField = taskType === 'lecture' ? 'lecture_name' : 'title';
   const titleValue = templateData[titleField];
 
-  if (!titleValue || (typeof titleValue === 'string' && titleValue.trim() === '')) {
+  if (
+    !titleValue ||
+    (typeof titleValue === 'string' && titleValue.trim() === '')
+  ) {
     return {
       isValid: false,
       error: 'Title is required',

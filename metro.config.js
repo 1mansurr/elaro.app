@@ -5,17 +5,17 @@ const config = getDefaultConfig(__dirname);
 // Only add minification optimizations in production builds
 // Minification can cause bundling errors in development
 if (process.env.NODE_ENV === 'production') {
-config.transformer.minifierConfig = {
-  keep_fnames: true,
-  mangle: {
+  config.transformer.minifierConfig = {
     keep_fnames: true,
-  },
-  compress: {
-    drop_console: false, // Keep console logs for debugging
-    drop_debugger: true,
-    pure_funcs: ['console.log', 'console.info', 'console.debug'],
-  },
-};
+    mangle: {
+      keep_fnames: true,
+    },
+    compress: {
+      drop_console: false, // Keep console logs for debugging
+      drop_debugger: true,
+      pure_funcs: ['console.log', 'console.info', 'console.debug'],
+    },
+  };
 }
 
 // Add tree shaking for better bundle optimization

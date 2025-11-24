@@ -656,7 +656,9 @@ export class AdvancedTemplateService {
   /**
    * Map database template to AdvancedTaskTemplate interface
    */
-  private mapTemplateFromDB(dbTemplate: Record<string, unknown>): AdvancedTaskTemplate {
+  private mapTemplateFromDB(
+    dbTemplate: Record<string, unknown>,
+  ): AdvancedTaskTemplate {
     const templateData = dbTemplate.template_data || {};
 
     return {
@@ -685,7 +687,9 @@ export class AdvancedTemplateService {
   /**
    * Map database category to TemplateCategory interface
    */
-  private mapCategoryFromDB(dbCategory: Record<string, unknown>): TemplateCategory {
+  private mapCategoryFromDB(
+    dbCategory: Record<string, unknown>,
+  ): TemplateCategory {
     return {
       id: dbCategory.id,
       name: dbCategory.name,

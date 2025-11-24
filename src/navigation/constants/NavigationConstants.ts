@@ -35,7 +35,7 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: CardStyleInterpolator = ({ current, layouts }) => {
+    cardStyleInterpolator: (CardStyleInterpolator = ({ current, layouts }) => {
       return {
         cardStyle: {
           transform: [
@@ -48,7 +48,7 @@ export const TRANSITIONS = {
           ],
         },
       };
-    },
+    }),
   },
 
   // Modal transition
@@ -70,7 +70,7 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: CardStyleInterpolator = ({ current, layouts }) => {
+    cardStyleInterpolator: (CardStyleInterpolator = ({ current, layouts }) => {
       return {
         cardStyle: {
           transform: [
@@ -83,7 +83,7 @@ export const TRANSITIONS = {
           ],
         },
       };
-    },
+    }),
   },
 
   // Fade transition
@@ -105,13 +105,13 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: CardStyleInterpolator = ({ current }) => {
+    cardStyleInterpolator: (CardStyleInterpolator = ({ current }) => {
       return {
         cardStyle: {
           opacity: current.progress,
         },
       };
-    },
+    }),
   },
 
   // Scale transition
@@ -133,7 +133,7 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: CardStyleInterpolator = ({ current }) => {
+    cardStyleInterpolator: (CardStyleInterpolator = ({ current }) => {
       return {
         cardStyle: {
           transform: [
@@ -147,7 +147,7 @@ export const TRANSITIONS = {
           opacity: current.progress,
         },
       };
-    },
+    }),
   },
 };
 

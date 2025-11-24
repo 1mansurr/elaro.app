@@ -71,7 +71,8 @@ const notificationService = {
         // Fallback: try to get from legacy config structure
         const legacyProjectId =
           Constants.expoConfig?.extra?.eas?.projectId ||
-          (Constants.manifest as { extra?: { eas?: { projectId?: string } } })?.extra?.eas?.projectId;
+          (Constants.manifest as { extra?: { eas?: { projectId?: string } } })
+            ?.extra?.eas?.projectId;
 
         if (!legacyProjectId) {
           throw new Error(

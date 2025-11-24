@@ -1,5 +1,8 @@
 import React, { Suspense, lazy } from 'react';
-import { createStackNavigator, StackNavigationOptions } from '@react-navigation/stack';
+import {
+  createStackNavigator,
+  StackNavigationOptions,
+} from '@react-navigation/stack';
 import { View, ActivityIndicator } from 'react-native';
 
 import { RootStackParamList } from '@/types';
@@ -147,13 +150,20 @@ const sharedScreenOptions = {
 };
 
 // Typed screen configuration interface
-type ScreenConfig<K extends keyof RootStackParamList = keyof RootStackParamList> = {
-  component: React.ComponentType<{ route: { params: RootStackParamList[K] }; navigation: unknown }>;
+type ScreenConfig<
+  K extends keyof RootStackParamList = keyof RootStackParamList,
+> = {
+  component: React.ComponentType<{
+    route: { params: RootStackParamList[K] };
+    navigation: unknown;
+  }>;
   options?: StackNavigationOptions;
 };
 
 // Type-safe screens configuration
-type ScreensConfig = Partial<Record<keyof RootStackParamList, ScreenConfig<keyof RootStackParamList>>>;
+type ScreensConfig = Partial<
+  Record<keyof RootStackParamList, ScreenConfig<keyof RootStackParamList>>
+>;
 
 // AddCourse Flow Wrapper with Provider (lazy loaded)
 const AddCourseFlow = () => (

@@ -72,15 +72,15 @@ export const usernameSchema = z
     'Username can only contain letters, numbers, dots, and underscores',
   )
   .refine(
-    (val) => !/^[._]/.test(val),
+    val => !/^[._]/.test(val),
     'Username cannot start with a dot or underscore',
   )
   .refine(
-    (val) => !/[._]$/.test(val),
+    val => !/[._]$/.test(val),
     'Username cannot end with a dot or underscore',
   )
   .refine(
-    (val) => !/[._]{2,}/.test(val),
+    val => !/[._]{2,}/.test(val),
     'Username cannot have consecutive dots or underscores',
   );
 

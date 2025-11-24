@@ -249,7 +249,11 @@ export class SRSAnalyticsService {
           const sessionData = p.study_sessions;
           if (Array.isArray(sessionData)) {
             topic = sessionData[0]?.topic;
-          } else if (sessionData && typeof sessionData === 'object' && 'topic' in sessionData) {
+          } else if (
+            sessionData &&
+            typeof sessionData === 'object' &&
+            'topic' in sessionData
+          ) {
             topic = sessionData.topic;
           }
           if (topic) {
@@ -689,7 +693,11 @@ export class SRSAnalyticsService {
         const sessionData = reminder.study_sessions;
         if (Array.isArray(sessionData)) {
           topic = sessionData[0]?.topic;
-        } else if (sessionData && typeof sessionData === 'object' && 'topic' in sessionData) {
+        } else if (
+          sessionData &&
+          typeof sessionData === 'object' &&
+          'topic' in sessionData
+        ) {
           topic = sessionData.topic;
         }
         return {

@@ -17,7 +17,7 @@ async function handleStartUserTrial(req: AuthenticatedRequest) {
   const authHeader = (req as unknown as Request).headers.get('Authorization');
   await logger.info(
     'Starting trial for user',
-    { 
+    {
       user_id: user.id,
       has_auth_header: !!authHeader,
       auth_header_length: authHeader?.length || 0,

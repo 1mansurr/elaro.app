@@ -46,7 +46,11 @@ interface AuthContextType {
   isGuest: boolean;
   signIn: (
     credentials: LoginCredentials,
-  ) => Promise<{ error: Error | null; requiresMFA?: boolean; factors?: Factor[] }>;
+  ) => Promise<{
+    error: Error | null;
+    requiresMFA?: boolean;
+    factors?: Factor[];
+  }>;
   signUp: (credentials: SignUpCredentials) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -475,24 +479,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           try {
             // Get access token from session to explicitly pass Authorization header
             // This ensures the Edge Function receives the JWT for RLS context
-            const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
-            
+            const {
+              data: { session: currentSession },
+              error: sessionError,
+            } = await supabase.auth.getSession();
+
             if (sessionError || !currentSession) {
-              console.error('Error getting session for trial start:', sessionError);
+              console.error(
+                'Error getting session for trial start:',
+                sessionError,
+              );
               return;
             }
-            
+
             const accessToken = currentSession.access_token;
             if (!accessToken) {
               console.error('No access token available for trial start');
               return;
             }
 
-            const { error } = await supabase.functions.invoke('start-user-trial', {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
+            const { error } = await supabase.functions.invoke(
+              'start-user-trial',
+              {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
               },
-            });
+            );
             if (error) {
               console.error('Failed to start user trial:', error.message);
             } else {

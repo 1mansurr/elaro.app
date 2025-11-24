@@ -32,7 +32,11 @@ import {
   ERROR_MESSAGES,
   type ErrorCode,
 } from './error-codes.ts';
-import { extractTraceContext, addTraceHeaders, type TraceContext } from './tracing.ts';
+import {
+  extractTraceContext,
+  addTraceHeaders,
+  type TraceContext,
+} from './tracing.ts';
 import { logger } from './logging.ts';
 import {
   captureException,
@@ -222,8 +226,11 @@ export function createAuthenticatedHandler(
 
       // 1. Authenticate user
       // Try both lowercase and capitalized Authorization header (case-insensitive but some runtimes normalize)
-      const authHeader = req.headers.get('authorization') ?? req.headers.get('Authorization') ?? '';
-      
+      const authHeader =
+        req.headers.get('authorization') ??
+        req.headers.get('Authorization') ??
+        '';
+
       // Debug logging to verify header arrives
       await logger.info(
         'Authentication header check',
@@ -235,7 +242,7 @@ export function createAuthenticatedHandler(
         },
         traceContext,
       );
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         await logger.error(
           'Missing or invalid Authorization header',
@@ -251,20 +258,20 @@ export function createAuthenticatedHandler(
           ERROR_CODES.UNAUTHORIZED,
         );
       }
-      
+
       // Extract the JWT token from the Bearer header
       const jwtToken = authHeader.replace('Bearer ', '');
-      
+
       // Verify the JWT token using Supabase Auth REST API
       // This is the most reliable way to verify tokens in Edge Functions
       const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
       const verifyResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
         headers: {
-          'Authorization': authHeader,
-          'apikey': Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          Authorization: authHeader,
+          apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '',
         },
       });
-      
+
       if (!verifyResponse.ok) {
         const errorText = await verifyResponse.text();
         await logger.error(
@@ -284,10 +291,10 @@ export function createAuthenticatedHandler(
           ERROR_CODES.UNAUTHORIZED,
         );
       }
-      
+
       const userData = await verifyResponse.json();
       user = userData as User;
-      
+
       if (!user || !user.id) {
         await logger.error(
           'Invalid user data from token verification',
@@ -303,7 +310,7 @@ export function createAuthenticatedHandler(
           ERROR_CODES.UNAUTHORIZED,
         );
       }
-      
+
       // Create Supabase client with the verified token for RLS
       supabaseClient = createClient(
         supabaseUrl,
@@ -420,7 +427,7 @@ export function createAuthenticatedHandler(
       let body: any = {};
       const contentType = req.headers.get('content-type') || '';
       const contentLength = req.headers.get('content-length');
-      
+
       // Only try to parse body for POST/PUT/PATCH/DELETE requests
       // Check if there's actually content to parse
       if (req.method !== 'GET' && req.method !== 'HEAD') {
@@ -438,14 +445,20 @@ export function createAuthenticatedHandler(
               ERROR_MESSAGES.VALIDATION_ERROR,
               ERROR_STATUS_CODES.VALIDATION_ERROR,
               ERROR_CODES.VALIDATION_ERROR,
-              { message: 'Invalid JSON in request body', details: parseError instanceof Error ? parseError.message : String(parseError) },
+              {
+                message: 'Invalid JSON in request body',
+                details:
+                  parseError instanceof Error
+                    ? parseError.message
+                    : String(parseError),
+              },
             );
           }
           // For functions without schema, empty body is okay
           body = {};
         }
       }
-      
+
       // Determine if request has a body for schema validation purposes
       const hasBody = Object.keys(body).length > 0;
 
@@ -503,17 +516,34 @@ export function createAuthenticatedHandler(
           return typeof value === 'function' ? value.bind(target) : value;
         },
         has(target, prop) {
-          return prop === 'user' || prop === 'supabaseClient' || prop === 'body' || prop === 'traceContext' || prop in target;
+          return (
+            prop === 'user' ||
+            prop === 'supabaseClient' ||
+            prop === 'body' ||
+            prop === 'traceContext' ||
+            prop in target
+          );
         },
         ownKeys(target) {
-          return [...Reflect.ownKeys(target), 'user', 'supabaseClient', 'body', 'traceContext'];
+          return [
+            ...Reflect.ownKeys(target),
+            'user',
+            'supabaseClient',
+            'body',
+            'traceContext',
+          ];
         },
         getOwnPropertyDescriptor(target, prop) {
-          if (prop === 'user' || prop === 'supabaseClient' || prop === 'body' || prop === 'traceContext') {
+          if (
+            prop === 'user' ||
+            prop === 'supabaseClient' ||
+            prop === 'body' ||
+            prop === 'traceContext'
+          ) {
             return { enumerable: true, configurable: true };
           }
           return Reflect.getOwnPropertyDescriptor(target, prop);
-        }
+        },
       }) as AuthenticatedRequest;
       const result = await handler(authenticatedReq);
 

@@ -369,7 +369,9 @@ export class RecurringTaskService {
   /**
    * Map database pattern to RecurringPattern interface
    */
-  private mapPatternFromDB(dbPattern: Record<string, unknown>): RecurringPattern {
+  private mapPatternFromDB(
+    dbPattern: Record<string, unknown>,
+  ): RecurringPattern {
     return {
       id: dbPattern.id,
       name: dbPattern.name,
@@ -388,7 +390,9 @@ export class RecurringTaskService {
   /**
    * Map database recurring task to RecurringTask interface
    */
-  private mapRecurringTaskFromDB(dbTask: Record<string, unknown>): RecurringTask {
+  private mapRecurringTaskFromDB(
+    dbTask: Record<string, unknown>,
+  ): RecurringTask {
     return {
       id: dbTask.id,
       userId: dbTask.user_id,
@@ -408,7 +412,9 @@ export class RecurringTaskService {
   /**
    * Map database generated task to GeneratedTask interface
    */
-  private mapGeneratedTaskFromDB(dbTask: Record<string, unknown>): GeneratedTask {
+  private mapGeneratedTaskFromDB(
+    dbTask: Record<string, unknown>,
+  ): GeneratedTask {
     return {
       id: dbTask.id,
       recurringTaskId: dbTask.recurring_task_id,
@@ -506,7 +512,10 @@ export class RecurringTaskService {
 
       const completedTasks = stats.reduce(
         (sum, s) =>
-          sum + s.generated_tasks.filter((gt: { is_completed?: boolean }) => gt.is_completed).length,
+          sum +
+          s.generated_tasks.filter(
+            (gt: { is_completed?: boolean }) => gt.is_completed,
+          ).length,
         0,
       );
       const completionRate =

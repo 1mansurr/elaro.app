@@ -5,7 +5,11 @@
  * transition timing, back button handling, and navigation state management.
  */
 
-import { NavigationState, CommonActions, NavigationContainerRef } from '@react-navigation/native';
+import {
+  NavigationState,
+  CommonActions,
+  NavigationContainerRef,
+} from '@react-navigation/native';
 import { InteractionManager } from 'react-native';
 import { RootStackParamList } from '@/types/navigation';
 
@@ -92,7 +96,9 @@ export function createSafeResetAction<K extends keyof RootStackParamList>(
 /**
  * Navigate after interaction completes (smoother transitions)
  */
-export async function navigateAfterInteraction<K extends keyof RootStackParamList>(
+export async function navigateAfterInteraction<
+  K extends keyof RootStackParamList,
+>(
   navigation: NavigationContainerRef<RootStackParamList>,
   routeName: K,
   params?: RootStackParamList[K],

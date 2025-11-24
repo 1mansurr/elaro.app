@@ -10,7 +10,9 @@ export const generateTemplateName = (title: string): string => {
 /**
  * Clear date fields from template data
  */
-export const clearDateFields = (templateData: Record<string, unknown>): Record<string, unknown> => {
+export const clearDateFields = (
+  templateData: Record<string, unknown>,
+): Record<string, unknown> => {
   const clearedData = { ...templateData };
 
   // Clear common date fields

@@ -32,7 +32,7 @@ export function extractTraceContext(req: Request | any): TraceContext {
   // Handle case where req might have been spread or modified and lost headers
   // Try to access headers from the request object safely
   let headers: Headers | null = null;
-  
+
   try {
     if (req instanceof Request) {
       headers = req.headers;
@@ -55,12 +55,12 @@ export function extractTraceContext(req: Request | any): TraceContext {
     // If accessing headers fails, continue without them
     // This can happen if the request object has been modified
   }
-  
+
   // If headers are accessible, use them; otherwise generate new trace IDs
   let traceId = generateTraceId();
   let spanId = generateSpanId();
   let parentSpanId: string | undefined;
-  
+
   if (headers) {
     try {
       traceId = headers.get('X-Trace-ID') || traceId;

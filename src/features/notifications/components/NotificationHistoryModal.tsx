@@ -10,7 +10,12 @@ import {
   Alert,
   Animated,
 } from 'react-native';
-import { PanGestureHandler, State, GestureHandlerGestureEvent, GestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';

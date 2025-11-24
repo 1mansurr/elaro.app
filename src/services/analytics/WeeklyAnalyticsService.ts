@@ -486,7 +486,7 @@ export class WeeklyAnalyticsService {
     // Defensive check: ensure both are arrays
     const sessionsArray = Array.isArray(sessions) ? sessions : [];
     const tasksArray = Array.isArray(tasks) ? tasks : [];
-    
+
     const subjectMap = new Map<string, { time: number; tasks: number }>();
 
     // Process sessions
@@ -522,11 +522,15 @@ export class WeeklyAnalyticsService {
     const tasksArray = Array.isArray(tasks) ? tasks : [];
 
     const total = tasksArray.length;
-    const completed = tasksArray.filter(task => task.status === 'completed').length;
+    const completed = tasksArray.filter(
+      task => task.status === 'completed',
+    ).length;
 
     const assignments = tasksArray.filter(task => task.type === 'assignment');
     const lectures = tasksArray.filter(task => task.type === 'lecture');
-    const studySessions = tasksArray.filter(task => task.type === 'study_session');
+    const studySessions = tasksArray.filter(
+      task => task.type === 'study_session',
+    );
 
     return {
       assignments: assignments.length

@@ -48,7 +48,10 @@ import { syncManager } from './src/services/syncManager';
 import { useAppStateSync } from './src/hooks/useAppState';
 import { navigationSyncService } from './src/services/navigationSync';
 import { validateAndLogConfig } from './src/utils/configValidator';
-import { setupQueryCachePersistence, persistQueryCache } from './src/utils/queryCachePersistence';
+import {
+  setupQueryCachePersistence,
+  persistQueryCache,
+} from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
 import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
@@ -178,7 +181,9 @@ const queryClient = new QueryClient({
 // Component to setup query cache persistence
 // Using useEffect ensures it only runs once, even during Fast Refresh
 // Disabled in development to avoid Fast Refresh issues
-const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({ queryClient }) => {
+const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
+  queryClient,
+}) => {
   useEffect(() => {
     // Skip cache persistence in development mode to avoid Fast Refresh issues
     if (__DEV__) {
@@ -193,8 +198,8 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({ queryClient }
       // CRITICAL: Wrap setup in try-catch to catch any errors from React Query
       // This catches errors that might escape from setupQueryCachePersistence
       try {
-      // Setup persistence - useEffect ensures this only runs once per mount
-      cacheCleanup = setupQueryCachePersistence(queryClient);
+        // Setup persistence - useEffect ensures this only runs once per mount
+        cacheCleanup = setupQueryCachePersistence(queryClient);
       } catch (setupError: any) {
         // Catch React Query errors that might escape
         const errorMessage = setupError?.message || String(setupError);
@@ -204,7 +209,9 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({ queryClient }
           errorMessage.includes('.forever') ||
           errorMessage.includes('Caching has already been configured')
         ) {
-          console.warn('⚠️ Query cache persistence setup failed - already configured');
+          console.warn(
+            '⚠️ Query cache persistence setup failed - already configured',
+          );
           return; // Exit early, don't set up listeners
         }
         // Re-throw other errors
@@ -212,11 +219,14 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({ queryClient }
       }
 
       // Also persist when app goes to background
-      appStateSubscription = AppState.addEventListener('change', nextAppState => {
-        if (nextAppState === 'background' || nextAppState === 'inactive') {
-          persistQueryCache(queryClient).catch(console.error);
-        }
-      });
+      appStateSubscription = AppState.addEventListener(
+        'change',
+        nextAppState => {
+          if (nextAppState === 'background' || nextAppState === 'inactive') {
+            persistQueryCache(queryClient).catch(console.error);
+          }
+        },
+      );
 
       console.log('✅ Query cache persistence enabled');
     } catch (error) {

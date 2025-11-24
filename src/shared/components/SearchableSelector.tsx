@@ -79,13 +79,13 @@ const SearchableSelector: React.FC<Props> = ({
       // Check if text has changed from what was there when "Other" was selected
       // Only trigger if user has actually modified the text (not just initial render)
       const hasChanged = internalValue !== previousInputValue;
-      
+
       if (hasChanged) {
         // User is modifying the text
-        const matches = data.filter(item => 
-          item.toLowerCase().includes(internalValue.toLowerCase())
+        const matches = data.filter(item =>
+          item.toLowerCase().includes(internalValue.toLowerCase()),
         );
-        
+
         // Switch back to picker mode if there are matches or text is empty
         if (matches.length > 0 || internalValue === '') {
           setIsInputMode(false);
@@ -103,22 +103,32 @@ const SearchableSelector: React.FC<Props> = ({
         }
       }
     }
-  }, [internalValue, isInputMode, isOtherSelected, previousInputValue, data, selectedValue, id, onOpen]);
+  }, [
+    internalValue,
+    isInputMode,
+    isOtherSelected,
+    previousInputValue,
+    data,
+    selectedValue,
+    id,
+    onOpen,
+  ]);
 
   const filteredOptions = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    
+
     // Filter data based on search query
-    const filteredData = query 
+    const filteredData = query
       ? data.filter(item => item.toLowerCase().includes(query))
       : data;
-    
+
     // Determine if "Other" should be shown
-    const shouldShowOther = showOther && (filteredData.length === 0 || query === '');
-    
+    const shouldShowOther =
+      showOther && (filteredData.length === 0 || query === '');
+
     // Build options array with "Other" at top if it should be shown
     const options = shouldShowOther ? ['Other', ...filteredData] : filteredData;
-    
+
     return options;
   }, [data, searchQuery, showOther]);
 
@@ -139,11 +149,11 @@ const SearchableSelector: React.FC<Props> = ({
       // Store the current searchQuery as previousInputValue
       const currentText = searchQuery.trim();
       setPreviousInputValue(currentText);
-      
+
       // Switch to input mode
       setIsInputMode(true);
       setIsOtherSelected(true);
-      
+
       // Fill text box with what they typed (if any)
       if (currentText) {
         setInternalValue(currentText);
@@ -152,16 +162,18 @@ const SearchableSelector: React.FC<Props> = ({
         setInternalValue('');
         onValueChange('');
       }
-      
+
       // Close dropdown
       closeDropdown();
-      
+
       // Keep keyboard open and focus input
       setTimeout(() => {
         manualInputRef.current?.focus();
         // Set cursor to end if text exists
         if (currentText && manualInputRef.current) {
-          manualInputRef.current.setNativeProps({ selection: { start: currentText.length, end: currentText.length } });
+          manualInputRef.current.setNativeProps({
+            selection: { start: currentText.length, end: currentText.length },
+          });
         }
       }, 50);
     } else {
@@ -172,7 +184,7 @@ const SearchableSelector: React.FC<Props> = ({
       setSearchQuery(selectedItem);
       onValueChange(selectedItem);
       closeDropdown();
-      
+
       // Dismiss keyboard after brief delay
       setTimeout(() => {
         Keyboard.dismiss();
@@ -194,16 +206,18 @@ const SearchableSelector: React.FC<Props> = ({
 
   const renderOption = ({ item }: { item: string }) => {
     const isSelected = item === internalValue || item === selectedValue;
-    const isHighlighted = item !== 'Other' && searchQuery && 
+    const isHighlighted =
+      item !== 'Other' &&
+      searchQuery &&
       item.toLowerCase().includes(searchQuery.toLowerCase()) &&
       item.toLowerCase() === searchQuery.toLowerCase();
-    
+
     return (
       <TouchableOpacity
         style={[
-          styles.optionRow, 
+          styles.optionRow,
           isSelected && styles.optionRowSelected,
-          isHighlighted && styles.optionRowHighlighted
+          isHighlighted && styles.optionRowHighlighted,
         ]}
         onPress={() => handleSelect(item)}>
         <Text style={styles.optionText}>{item}</Text>
@@ -248,10 +262,11 @@ const SearchableSelector: React.FC<Props> = ({
               onFocus={openDropdown}
             />
             {!!searchQuery && (
-              <TouchableOpacity onPress={() => {
-                setSearchQuery('');
-                setIsDropdownOpen(true);
-              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setSearchQuery('');
+                  setIsDropdownOpen(true);
+                }}>
                 <Ionicons name="close-circle" size={18} color="#9ca3af" />
               </TouchableOpacity>
             )}
@@ -264,16 +279,16 @@ const SearchableSelector: React.FC<Props> = ({
               </TouchableWithoutFeedback>
               <View style={styles.dropdownWrapper}>
                 <View style={styles.dropdownContainer} ref={dropdownRef}>
-                <FlatList
-                  data={filteredOptions}
-                  keyExtractor={(item, index) => `${item}-${index}`}
-                  renderItem={renderOption}
-                  keyboardShouldPersistTaps="handled"
-                  contentContainerStyle={styles.optionsListContent}
-                  style={styles.optionsList}
-                />
+                  <FlatList
+                    data={filteredOptions}
+                    keyExtractor={(item, index) => `${item}-${index}`}
+                    renderItem={renderOption}
+                    keyboardShouldPersistTaps="handled"
+                    contentContainerStyle={styles.optionsListContent}
+                    style={styles.optionsList}
+                  />
+                </View>
               </View>
-            </View>
             </>
           )}
         </>

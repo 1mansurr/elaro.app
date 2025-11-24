@@ -151,7 +151,9 @@ export function setupQueryCachePersistence(
   // CRITICAL: Check global flag FIRST, before any operations
   // This must be the very first check to prevent errors during module evaluation
   if (getGlobalCacheConfigured()) {
-    console.warn('⚠️ Query cache persistence already configured globally, skipping...');
+    console.warn(
+      '⚠️ Query cache persistence already configured globally, skipping...',
+    );
     return () => {}; // Return no-op cleanup function
   }
 
@@ -163,14 +165,16 @@ export function setupQueryCachePersistence(
     // Check if this specific QueryClient instance already has persistence configured
     // WeakMap survives Fast Refresh and tracks per-instance
     if (persistenceSetupMap.get(queryClient)) {
-      console.warn('⚠️ Query cache persistence already configured for this QueryClient, skipping...');
+      console.warn(
+        '⚠️ Query cache persistence already configured for this QueryClient, skipping...',
+      );
       setGlobalCacheConfigured(false); // Reset since we're not actually configuring
       return () => {}; // Return no-op cleanup function
     }
-    
+
     // Mark this QueryClient as configured
     persistenceSetupMap.set(queryClient, true);
-    
+
     // Restore cache on startup
     restoreQueryCache(queryClient).catch(console.error);
 
@@ -187,30 +191,35 @@ export function setupQueryCachePersistence(
     let unsubscribe: (() => void) | null = null;
     try {
       const cache = queryClient.getQueryCache();
-      
+
       // CRITICAL: Check if cache already has listeners before subscribing
       // This helps prevent React Query from detecting duplicate persistence
       const cacheAny = cache as any;
-      const hasListeners = cacheAny._listeners && Array.isArray(cacheAny._listeners) && cacheAny._listeners.length > 0;
-      
+      const hasListeners =
+        cacheAny._listeners &&
+        Array.isArray(cacheAny._listeners) &&
+        cacheAny._listeners.length > 0;
+
       if (hasListeners) {
         // Check if any listener is our persistence listener by checking if debouncedPersist exists
         // This is a heuristic check - if listeners exist, persistence might already be configured
-        console.warn('⚠️ Cache already has listeners, skipping subscription to prevent duplicate persistence...');
+        console.warn(
+          '⚠️ Cache already has listeners, skipping subscription to prevent duplicate persistence...',
+        );
         setGlobalCacheConfigured(false); // Reset flag
         return () => {}; // Return no-op cleanup function
       }
-      
+
       // CRITICAL: Wrap subscribe call in immediate try-catch to catch React Query errors
       // This catches errors thrown synchronously by React Query's internal code
       try {
-      unsubscribe = cache.subscribe(event => {
-        // Only persist on mutations/updates, not on every query
-        if (event?.type === 'updated' && event?.query?.state?.dataUpdatedAt) {
-          // Debounce persistence to avoid too frequent writes
-          debouncedPersist();
-        }
-      });
+        unsubscribe = cache.subscribe(event => {
+          // Only persist on mutations/updates, not on every query
+          if (event?.type === 'updated' && event?.query?.state?.dataUpdatedAt) {
+            // Debounce persistence to avoid too frequent writes
+            debouncedPersist();
+          }
+        });
       } catch (subscribeError: any) {
         // Catch React Query's internal error immediately
         const errorMessage = subscribeError?.message || String(subscribeError);
@@ -220,7 +229,9 @@ export function setupQueryCachePersistence(
           errorMessage.includes('.forever') ||
           errorMessage.includes('Caching has already been configured')
         ) {
-          console.warn('⚠️ Query cache subscription failed - already configured, skipping...');
+          console.warn(
+            '⚠️ Query cache subscription failed - already configured, skipping...',
+          );
           setGlobalCacheConfigured(false); // Reset flag
           return () => {}; // Return no-op cleanup function
         }
@@ -236,7 +247,9 @@ export function setupQueryCachePersistence(
         errorMessage.includes('.forever') ||
         errorMessage.includes('Caching has already been configured')
       ) {
-        console.warn('⚠️ Query cache persistence already configured, skipping...');
+        console.warn(
+          '⚠️ Query cache persistence already configured, skipping...',
+        );
         setGlobalCacheConfigured(false); // Reset flag on error to allow retry
         return () => {}; // Return no-op cleanup function
       }
@@ -266,13 +279,18 @@ export function setupQueryCachePersistence(
       errorMessage.includes('.forever') ||
       errorMessage.includes('Caching has already been configured')
     ) {
-      console.warn('⚠️ Query cache persistence setup failed - already configured');
+      console.warn(
+        '⚠️ Query cache persistence setup failed - already configured',
+      );
       setGlobalCacheConfigured(false); // Reset flag
       return () => {}; // Return no-op cleanup function
     }
     // Silently fail in development to avoid breaking Fast Refresh
     if (__DEV__) {
-      console.warn('⚠️ Cache persistence setup failed (development mode):', error);
+      console.warn(
+        '⚠️ Cache persistence setup failed (development mode):',
+        error,
+      );
       setGlobalCacheConfigured(false); // Reset flag on error
       return () => {}; // Return no-op cleanup function
     }

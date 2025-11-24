@@ -25,8 +25,8 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
   const authHeader = (req as unknown as Request).headers.get('Authorization');
   await logger.info(
     'Checking username availability',
-    { 
-      user_id: user.id, 
+    {
+      user_id: user.id,
       username,
       has_auth_header: !!authHeader,
       auth_header_length: authHeader?.length || 0,
@@ -97,7 +97,10 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
 
     // Check if error is from database trigger (case-insensitive uniqueness violation)
     const errorMessage = error instanceof Error ? error.message : String(error);
-    if (errorMessage.includes('USERNAME_DUPLICATE') || errorMessage.includes('already exists')) {
+    if (
+      errorMessage.includes('USERNAME_DUPLICATE') ||
+      errorMessage.includes('already exists')
+    ) {
       return {
         available: false,
         message: 'This username is not available.',
