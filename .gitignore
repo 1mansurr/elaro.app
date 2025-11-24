@@ -78,6 +78,7 @@ android/local.properties
 google-services.json
 GoogleService-Info.plist
 AuthKey_*.p8
+**/AuthKey*.p8
 
 # Logs
 logs/
@@ -92,3 +93,7 @@ e2e/artifacts/
 
 # Detox
 e2e/artifacts/
+
+# Backups
+backups/
+*.gz

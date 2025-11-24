@@ -1,31 +1,56 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session, User as SupabaseUser } from '@supabase/supabase-js';
-import * as Google from 'expo-auth-session/providers/google';
-import { appleAuth } from '@invertase/react-native-apple-authentication';
-import { supabase, authService } from '../services/supabase';
-import { User } from '../types';
-import { useNavigation } from '@react-navigation/native';
-import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../types';
+import { Session, User as SupabaseUser, Factor } from '@supabase/supabase-js';
+import { Alert, AppState } from 'react-native';
+import {
+  supabase,
+  authService as supabaseAuthService,
+} from '@/services/supabase';
+import { authService } from '@/services/authService';
+import { authSyncService } from '@/services/authSync';
+import { User } from '@/types';
+import { getPendingTask } from '@/utils/taskPersistence';
+import { mixpanelService } from '@/services/mixpanel';
+import { AnalyticsEvents } from '@/services/analyticsEvents';
+import {
+  isSessionExpired,
+  clearLastActiveTimestamp,
+  updateLastActiveTimestamp,
+} from '@/utils/sessionTimeout';
+import { cache } from '@/utils/cache';
+// import { errorTrackingService } from '@/services/ErrorTrackingService';
+import {
+  checkAccountLockout,
+  recordFailedAttempt,
+  recordSuccessfulLogin,
+  getLockoutMessage,
+  resetFailedAttempts,
+} from '@/utils/authLockout';
+import { Platform } from 'react-native';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
+// import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
+
+interface LoginCredentials {
+  email: string;
+  password: string;
+}
+
+interface SignUpCredentials extends LoginCredentials {
+  firstName: string;
+  lastName: string;
+}
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (
-    email: string,
-    password: string,
-    name?: string,
-  ) => Promise<{ error: any }>;
+  isGuest: boolean;
+  signIn: (
+    credentials: LoginCredentials,
+  ) => Promise<{ error: Error | null; requiresMFA?: boolean; factors?: Factor[] }>;
+  signUp: (credentials: SignUpCredentials) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<void>;
-  signInWithGoogle: () => Promise<{ error: any }>;
-  signInWithApple: () => Promise<{ error: any }>;
 }
-
-type AuthNavProp = StackNavigationProp<RootStackParamList>;
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -43,30 +68,148 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigation = useNavigation<AuthNavProp>();
+  // Navigation is handled in AppNavigator, not here
   // const { fetchInitialData } = useData(); // Removed to fix circular dependency
+  // Grace period check moved to GracePeriodChecker component to avoid circular dependency
 
-  // Set up Google Auth request
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: "304047164378-e45ushdl2io4cr9c4a7bbv1m6qvc3h0s.apps.googleusercontent.com",
-    webClientId: "304047164378-ps1apl5jd7pd5phmkruaq3i8rlkfq50k.apps.googleusercontent.com",
-  });
+  // Social providers removed; email-only auth
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     try {
-      const userProfile = await authService.getUserProfile(userId);
+      // Try to get from cache first for instant load
+      const cacheKey = `user_profile:${userId}`;
+      const cachedProfile = await cache.get<User>(cacheKey);
+
+      if (cachedProfile) {
+        console.log('📱 Using cached user profile');
+        // Set cached data immediately for instant UI
+        setUser(cachedProfile);
+
+        // Still fetch fresh data in background to stay up-to-date
+        supabaseAuthService
+          .getUserProfile(userId)
+          .then(async freshProfile => {
+            if (
+              freshProfile &&
+              JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)
+            ) {
+              console.log('🔄 Updating user profile from server');
+              setUser(freshProfile as User);
+              await cache.setLong(cacheKey, freshProfile);
+            }
+          })
+          .catch(err => {
+            console.error('Background profile fetch failed:', err);
+            // Keep using cached data
+          });
+
+        return cachedProfile;
+      }
+
+      // No cache - fetch from server
+      console.log('🌐 Fetching user profile from server');
+      const userProfile = await supabaseAuthService.getUserProfile(userId);
+
+      if (!userProfile) {
+        return null;
+      }
+
+      // Cache the profile (24 hours) for future use
+      await cache.setLong(cacheKey, userProfile);
+
+      // Check if account is in deleted status
+      if (userProfile.account_status === 'deleted') {
+        // Check if restoration is still possible
+        if (userProfile.deletion_scheduled_at) {
+          const deletionDate = new Date(userProfile.deletion_scheduled_at);
+          const now = new Date();
+
+          if (now <= deletionDate) {
+            // Show restoration option to user
+            Alert.alert(
+              'Account Deleted',
+              'Your account was deleted but can still be restored. Would you like to restore it?',
+              [
+                {
+                  text: 'No',
+                  style: 'cancel',
+                  onPress: () => authService.signOut(),
+                },
+                {
+                  text: 'Restore',
+                  onPress: async () => {
+                    try {
+                      await authService.restoreAccount();
+                      // Refresh user profile after restoration
+                      const restoredProfile =
+                        await supabaseAuthService.getUserProfile(userId);
+                      setUser(restoredProfile as User);
+                    } catch (error) {
+                      console.error('Error restoring account:', error);
+                      Alert.alert(
+                        'Restoration Failed',
+                        'Could not restore your account. Please contact support.',
+                      );
+                      await authService.signOut();
+                    }
+                  },
+                },
+              ],
+            );
+            return null; // Don't set user as logged in
+          } else {
+            // Restoration period expired
+            Alert.alert(
+              'Account Permanently Deleted',
+              'Your account has been permanently deleted and cannot be restored.',
+            );
+            await authService.signOut();
+            return null;
+          }
+        }
+      }
+
+      // Check if account is suspended
+      if (userProfile.account_status === 'suspended') {
+        // Check if suspension has expired
+        if (userProfile.suspension_end_date) {
+          const endDate = new Date(userProfile.suspension_end_date);
+          const now = new Date();
+
+          if (now > endDate) {
+            // Suspension expired, auto-unsuspend
+            try {
+              // Note: This would typically be handled by a cron job, but we can handle it here as a fallback
+              console.log(
+                'Suspension expired, but auto-unsuspend should be handled by cron job',
+              );
+            } catch (error) {
+              console.error('Error auto-unsuspending account:', error);
+            }
+          }
+        }
+
+        // Account is still suspended
+        Alert.alert(
+          'Account Suspended',
+          'Your account has been suspended. Please contact support for assistance.',
+        );
+        await authService.signOut();
+        return null;
+      }
+
       return userProfile as User;
     } catch (error) {
       console.error('AuthContext: Error fetching user profile:', error);
       // If user profile doesn't exist, create it
       try {
-        const session = await supabase.auth.getSession();
-        if (session.data.session?.user) {
-          await authService.createUserProfile(
-            session.data.session.user.id,
-            session.data.session.user.email || '',
+        const session = await authService.getSession();
+        if (session?.user) {
+          await supabaseAuthService.createUserProfile(
+            session.user.id,
+            session.user.email || '',
           );
-          const newProfile = await authService.getUserProfile(userId);
+          const newProfile = await supabaseAuthService.getUserProfile(userId);
           return newProfile as User;
         }
       } catch (createError) {
@@ -78,181 +221,575 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const refreshUser = async () => {
     if (session?.user) {
+      // Clear cache to ensure fresh data (especially after onboarding completion)
+      const cacheKey = `user_profile:${session.user.id}`;
+      await cache.delete(cacheKey);
+
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);
     }
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
+    const initializeAuth = async () => {
+      try {
+        // Initialize auth sync service (loads session from Supabase and syncs to local cache)
+        const initialSession = await authSyncService.initialize();
+
+        // Set initial session immediately
+        setSession(initialSession);
+
+        if (initialSession?.user) {
+          const userProfile = await fetchUserProfile(initialSession.user.id);
+          setUser(userProfile);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
         console.error('❌ Error getting initial session:', error);
         setSession(null);
         setUser(null);
+      } finally {
         setLoading(false);
-        return;
       }
+    };
 
+    initializeAuth();
+
+    // Subscribe to auth sync service changes
+    const unsubscribeAuthSync = authSyncService.onAuthChange(async session => {
       setSession(session);
+
       if (session?.user) {
-        fetchUserProfile(session.user.id).then(profile => {
-          setUser(profile);
-          setLoading(false);
-        });
+        const userProfile = await fetchUserProfile(session.user.id);
+        setUser(userProfile);
       } else {
-        setLoading(false);
+        setUser(null);
       }
     });
 
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // Listen for Supabase auth changes (primary source of truth)
+    const subscription = authService.onAuthChange(async (event, session) => {
+      console.log(`🔄 Auth event: ${event}`);
+
+      // Sync to authSyncService (updates local cache)
+      if (session) {
+        await authSyncService.saveAuthState(session);
+      } else {
+        await authSyncService.clearAuthState();
+      }
+
       setSession(session);
       if (session?.user) {
         const userProfile = await fetchUserProfile(session.user.id);
         setUser(userProfile);
-        
-        // Navigation logic based on onboarding status
-        if (userProfile) {
-          if (userProfile.onboarding_completed) {
-            // fetchInitialData(); // Removed to fix circular dependency - will be called elsewhere
-            navigation.replace('Main');
-          } else {
-            // Pre-fill logic for social login users
-            let params = {};
-            const fullName = session.user?.user_metadata?.full_name;
 
-            if (fullName) {
-              const nameParts = fullName.split(' ');
-              const firstName = nameParts[0];
-              const lastName = nameParts.slice(1).join(' ');
-              params = { firstName, lastName };
+        // Complete any pending task after authentication
+        if (userProfile && session.user.id) {
+          try {
+            // Fire-and-forget: complete pending task in background
+            const { getPendingTask, clearPendingTask } = await import(
+              '@/utils/taskPersistence'
+            );
+            const { api } = await import('@/services/api');
+
+            const pending = await getPendingTask();
+            if (pending && pending.taskData) {
+              const userId = session.user.id;
+              const isOnline = true; // Server writes only happen when online
+
+              try {
+                let taskCreated = false;
+                let taskTypeName = '';
+
+                if (pending.taskType === 'assignment') {
+                  taskTypeName = 'assignment';
+                  const {
+                    course,
+                    title,
+                    description,
+                    dueDate,
+                    submissionMethod,
+                    submissionLink,
+                    reminders,
+                  } = pending.taskData || {};
+                  if (course?.id && dueDate && title) {
+                    await api.mutations.assignments.create(
+                      {
+                        course_id: course.id,
+                        title: String(title).trim(),
+                        description: String(description || '').trim(),
+                        submission_method: submissionMethod || undefined,
+                        submission_link:
+                          submissionMethod === 'Online'
+                            ? String(submissionLink || '').trim()
+                            : undefined,
+                        due_date: new Date(dueDate).toISOString(),
+                        reminders: reminders || [120],
+                      },
+                      isOnline,
+                      userId,
+                    );
+                    await clearPendingTask();
+                    taskCreated = true;
+                    console.log('✅ Pending assignment created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending assignment missing required fields:',
+                      {
+                        hasCourse: !!course?.id,
+                        hasDueDate: !!dueDate,
+                        hasTitle: !!title,
+                      },
+                    );
+                  }
+                } else if (pending.taskType === 'lecture') {
+                  taskTypeName = 'lecture';
+                  const {
+                    course,
+                    title,
+                    startTime,
+                    endTime,
+                    recurrence,
+                    reminders,
+                  } = pending.taskData || {};
+                  if (course?.id && startTime && endTime && title) {
+                    await api.mutations.lectures.create(
+                      {
+                        course_id: course.id,
+                        lecture_name: String(title).trim(),
+                        description: course?.courseName
+                          ? `A lecture for the course: ${course.courseName}.`
+                          : '',
+                        start_time: new Date(startTime).toISOString(),
+                        end_time: new Date(endTime).toISOString(),
+                        is_recurring: recurrence && recurrence !== 'none',
+                        recurring_pattern: recurrence || 'none',
+                        reminders: reminders || [30],
+                      },
+                      isOnline,
+                      userId,
+                    );
+                    await clearPendingTask();
+                    taskCreated = true;
+                    console.log('✅ Pending lecture created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending lecture missing required fields:',
+                      {
+                        hasCourse: !!course?.id,
+                        hasStartTime: !!startTime,
+                        hasEndTime: !!endTime,
+                        hasTitle: !!title,
+                      },
+                    );
+                  }
+                } else if (pending.taskType === 'study_session') {
+                  taskTypeName = 'study session';
+                  const {
+                    course,
+                    topic,
+                    description,
+                    sessionDate,
+                    hasSpacedRepetition,
+                    reminders,
+                  } = pending.taskData || {};
+                  if (course?.id && sessionDate && topic) {
+                    await api.mutations.studySessions.create(
+                      {
+                        course_id: course.id,
+                        topic: String(topic).trim(),
+                        notes: String(description || '').trim(),
+                        session_date: new Date(sessionDate).toISOString(),
+                        has_spaced_repetition: !!hasSpacedRepetition,
+                        reminders: reminders || [15],
+                      },
+                      isOnline,
+                      userId,
+                    );
+                    await clearPendingTask();
+                    taskCreated = true;
+                    console.log('✅ Pending study session created after auth');
+                  } else {
+                    console.warn(
+                      '⚠️ Pending study session missing required fields:',
+                      {
+                        hasCourse: !!course?.id,
+                        hasSessionDate: !!sessionDate,
+                        hasTopic: !!topic,
+                      },
+                    );
+                  }
+                }
+
+                if (!taskCreated && pending.taskType) {
+                  // Task data was incomplete - clear it to prevent retry loops
+                  console.warn(
+                    `⚠️ Pending ${pending.taskType} had incomplete data, clearing it`,
+                  );
+                  await clearPendingTask();
+                }
+              } catch (createError) {
+                // Don't block auth flow if pending task creation fails
+                // Log error with more context for debugging
+                console.error(
+                  `❌ Failed to create pending ${pending.taskType} after auth:`,
+                  createError,
+                );
+                // Note: We keep the pending task so user can try again manually
+                // This is better than losing their data
+              }
             }
-            
-            navigation.replace('Welcome', params);
+          } catch (importError) {
+            // Silently ignore import errors - pending task completion is optional
+            console.log('Pending task completion skipped:', importError);
           }
         }
+
+        // Identify user in Mixpanel and set user properties
+        if (userProfile) {
+          mixpanelService.identify(userProfile.id);
+          mixpanelService.setUserProperties({
+            subscription_tier: userProfile.subscription_tier,
+            onboarding_completed: userProfile.onboarding_completed,
+            created_at: userProfile.created_at,
+            university: userProfile.university,
+            program: userProfile.program,
+          });
+
+          // Track login event
+          mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+            subscription_tier: userProfile.subscription_tier,
+            onboarding_completed: userProfile.onboarding_completed,
+            login_method: 'email',
+          });
+        }
+
+        // --- START: NEW TRIAL LOGIC ---
+        if (
+          userProfile &&
+          userProfile.subscription_tier === 'free' &&
+          userProfile.subscription_expires_at === null
+        ) {
+          console.log('New free user detected. Attempting to start trial...');
+          try {
+            // Get access token from session to explicitly pass Authorization header
+            // This ensures the Edge Function receives the JWT for RLS context
+            const { data: { session: currentSession }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError || !currentSession) {
+              console.error('Error getting session for trial start:', sessionError);
+              return;
+            }
+            
+            const accessToken = currentSession.access_token;
+            if (!accessToken) {
+              console.error('No access token available for trial start');
+              return;
+            }
+
+            const { error } = await supabase.functions.invoke('start-user-trial', {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            });
+            if (error) {
+              console.error('Failed to start user trial:', error.message);
+            } else {
+              console.log(
+                'Trial started successfully. Refreshing user profile...',
+              );
+              // Refresh the user profile to get the new subscription status
+              const refreshedUserProfile = await fetchUserProfile(
+                session.user.id,
+              );
+              setUser(refreshedUserProfile);
+
+              // Track trial start
+              mixpanelService.track(AnalyticsEvents.TRIAL_STARTED, {
+                trial_type: 'free_trial',
+                trial_duration: 7,
+              });
+            }
+          } catch (e) {
+            console.error(
+              'An unexpected error occurred while starting trial:',
+              e,
+            );
+          }
+        }
+        // --- END: NEW TRIAL LOGIC ---
+
+        // Navigation is now handled in AppNavigator based on auth state changes
       } else {
+        // Track logout event
+        mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+          logout_reason: 'manual',
+        });
         setUser(null);
       }
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, [navigation]);
+    return () => {
+      unsubscribeAuthSync();
+      subscription.unsubscribe();
+    };
+  }, []);
 
-  const signIn = async (email: string, password: string) => {
+  // Check for session timeout on app load
+  useEffect(() => {
+    const checkSessionTimeout = async () => {
+      try {
+        const expired = await isSessionExpired();
+
+        if (expired && session) {
+          console.log('⏰ Session expired due to inactivity. Logging out...');
+
+          // Track the session timeout event
+          mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+            logout_reason: 'session_timeout',
+            timeout_days: 30,
+          });
+
+          // Sign out the user
+          await signOut();
+
+          // Clear the last active timestamp
+          await clearLastActiveTimestamp();
+
+          // Show alert to user
+          Alert.alert(
+            'Session Expired',
+            'Your session has expired due to inactivity. Please log in again.',
+            [{ text: 'OK' }],
+          );
+        }
+      } catch (error) {
+        console.error('❌ Error checking session timeout:', error);
+      }
+    };
+
+    // Only check if we have a session
+    if (session) {
+      checkSessionTimeout();
+    }
+  }, [session]);
+
+  // Validate session on app resume (no custom inactivity timeout)
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (state === 'active') {
+        try {
+          const s = await authService.getSession();
+          setSession(s || null);
+          if (s?.user) {
+            const userProfile = await fetchUserProfile(s.user.id);
+            setUser(userProfile);
+          } else {
+            setUser(null);
+          }
+        } catch (e) {
+          // Ignore errors; AppNavigator will handle based on context state
+        }
+      }
+    });
+    return () => sub.remove();
+  }, []);
+
+  const signIn = async (credentials: LoginCredentials) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      // Check if account is locked
+      const lockoutStatus = await checkAccountLockout(credentials.email);
+      if (lockoutStatus.isLocked && lockoutStatus.minutesRemaining) {
+        const lockoutMessage = getLockoutMessage(
+          lockoutStatus.minutesRemaining,
+        );
+        Alert.alert('Account Locked', lockoutMessage);
+        return { error: { message: lockoutMessage } };
+      }
 
-      if (error) {
-        console.error('❌ Sign in error:', error);
-        return { error };
+      const result = await authService.login(credentials);
+
+      // Set the initial last active timestamp on successful login
+      await updateLastActiveTimestamp();
+
+      // Record successful login with device info
+      if (result?.user?.id) {
+        await recordSuccessfulLogin(result.user.id, 'email', {
+          platform: Platform.OS,
+          version: Platform.Version?.toString(),
+        });
+
+        // Reset failed attempts on successful login
+        await resetFailedAttempts(credentials.email);
+      }
+
+      // Check if MFA is required
+      try {
+        const aal = await authService.mfa.getAuthenticatorAssuranceLevel();
+        if (aal.currentLevel === 'aal2') {
+          // Get available MFA factors
+          const mfaStatus = await authService.mfa.getStatus();
+          return {
+            error: null,
+            requiresMFA: true,
+            factors: mfaStatus.factors,
+          };
+        }
+      } catch (mfaError) {
+        // MFA might not be enabled or configured
+        console.log('MFA check failed:', mfaError);
       }
 
       return { error: null };
-    } catch (error) {
-      console.error('❌ Sign in error:', error);
-      return { error };
+    } catch (error: unknown) {
+      // Log error for debugging
+      console.error('Sign in error:', error);
+
+      const err = error as { message?: string; code?: string };
+      // Record failed login attempt
+      if (credentials.email && err?.message) {
+        await recordFailedAttempt(credentials.email, err.message);
+      }
+
+      // Check if this is an MFA-related error
+      if (err?.message?.includes('MFA') || err?.message?.includes('aal2')) {
+        try {
+          const mfaStatus = await authService.mfa.getStatus();
+          return {
+            error: null,
+            requiresMFA: true,
+            factors: mfaStatus.factors,
+          };
+        } catch (mfaError) {
+          // If we can't get MFA status, return the original error
+          return { error: err as Error };
+        }
+      }
+
+      return { error: err as Error };
     }
   };
 
-  const signUp = async (email: string, password: string, name?: string) => {
+  const signUp = async (credentials: SignUpCredentials) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+      const signUpResponse = await authService.signUp(credentials);
+
+      // Check if signup returned a session (auto-confirm enabled)
+      // If session exists, update auth state immediately
+      if (signUpResponse?.session) {
+        console.log('✅ Signup returned session immediately');
+        // Use authSyncService to properly sync and notify all listeners
+        await authSyncService.saveAuthState(signUpResponse.session);
+        setSession(signUpResponse.session);
+        if (signUpResponse.session.user) {
+          const userProfile = await fetchUserProfile(
+            signUpResponse.session.user.id,
+          );
+          setUser(userProfile);
+        }
+      } else {
+        // No session in response - immediately sign in to create a session
+        // This is more reliable than waiting for async session creation
+        // Since email confirmation is disabled, sign in should work immediately
+        console.log(
+          '⏳ No session in signup response, signing in to create session...',
+        );
+        try {
+          const signInResponse = await authService.login({
+            email: credentials.email,
+            password: credentials.password,
+          });
+
+          if (signInResponse?.session) {
+            console.log('✅ Session created via sign in');
+            await authSyncService.saveAuthState(signInResponse.session);
+            setSession(signInResponse.session);
+            if (signInResponse.session.user) {
+              const userProfile = await fetchUserProfile(
+                signInResponse.session.user.id,
+              );
+              setUser(userProfile);
+            }
+          } else {
+            console.log('⚠️ Sign in did not return a session');
+          }
+        } catch (signInError) {
+          console.error('❌ Error signing in after signup:', signInError);
+          // If sign in fails, try refreshing session as fallback
+          setTimeout(async () => {
+            try {
+              const session = await authSyncService.refreshSession();
+              if (session) {
+                console.log('✅ Session found after refresh fallback');
+                setSession(session);
+                if (session.user) {
+                  const userProfile = await fetchUserProfile(session.user.id);
+                  setUser(userProfile);
+                }
+              }
+            } catch (refreshError) {
+              console.error('❌ Error in refresh fallback:', refreshError);
+            }
+          }, 1000);
+        }
+      }
+
+      // Track sign up event
+      mixpanelService.track(AnalyticsEvents.USER_SIGNED_UP, {
+        signup_method: 'email',
+        has_first_name: !!credentials.firstName,
+        has_last_name: !!credentials.lastName,
       });
-
-      if (error) {
-        console.error('❌ Sign up error:', error);
-        return { error };
-      }
-
-      // User profile will be created automatically by the database trigger
-      // But we can also create it manually if needed
-      if (data.user && !data.user.email_confirmed_at) {
-      }
 
       return { error: null };
     } catch (error) {
       console.error('❌ Sign up error:', error);
+
+      // Track failed sign up
+      mixpanelService.track(AnalyticsEvents.ERROR_OCCURRED, {
+        error_type: 'signup_failed',
+        error_message: error instanceof Error ? error.message : 'Unknown error',
+      });
+
       return { error };
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('❌ Sign out error:', error);
-      }
+      // Track logout event before signing out
+      mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+        logout_reason: 'manual',
+      });
+
+      // Clear all cached data on logout
+      await cache.clearAll();
+
+      // Clear the last active timestamp
+      await clearLastActiveTimestamp();
+
+      // Clear auth sync state
+      await authSyncService.clearAuthState();
+
+      await authService.signOut();
     } catch (error) {
       console.error('❌ Sign out error:', error);
     }
   };
 
-  const signInWithGoogle = async () => {
-    try {
-      const result = await promptAsync();
-
-      if (result.type === "success" && result.authentication?.idToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: "google",
-          token: result.authentication.idToken,
-        });
-
-        if (error) {
-          console.error("Supabase sign-in error:", error);
-          return { error };
-        } else {
-          return { error: null };
-        }
-      }
-      return { error: new Error('Google sign-in was cancelled or failed') };
-    } catch (err) {
-      console.error("Google sign-in error:", err);
-      return { error: err };
-    }
-  };
-
-  const signInWithApple = async () => {
-    try {
-      const appleAuthRequestResponse = await appleAuth.performRequest({
-        requestedOperation: appleAuth.Operation.LOGIN,
-        requestedScopes: [appleAuth.Scope.FULL_NAME, appleAuth.Scope.EMAIL],
-      });
-      const { identityToken } = appleAuthRequestResponse;
-      if (identityToken) {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'apple',
-          token: identityToken,
-        });
-        if (error) throw error;
-        return { error: null };
-      }
-      return { error: new Error('No identity token received') };
-    } catch (error) {
-      console.error('Apple Sign-In Error:', error);
-      return { error };
-    }
-  };
+  // Removed Google and Apple sign-in methods
 
   const value = {
     session,
     user,
     loading,
+    isGuest: !session,
     signIn,
     signUp,
     signOut,
     refreshUser,
-    signInWithGoogle,
-    signInWithApple,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

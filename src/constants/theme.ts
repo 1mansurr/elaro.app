@@ -2,7 +2,7 @@
 // To add dark mode support, implement dynamic color selection using Appearance API or similar.
 // theme.ts
 
-import { Platform } from 'react-native';
+import { Platform, TextStyle } from 'react-native';
 
 /* ---------------------------------- 🎨 COLORS ---------------------------------- */
 
@@ -92,6 +92,7 @@ export const COLORS = {
     blue500: '#3b82f6',
     blue600: '#2563eb',
     blue700: '#1d4ed8',
+    blue900: '#1e3a8a',
     green50: '#f0fdf4',
     green100: '#dcfce7',
     green200: '#bbf7d0',
@@ -136,14 +137,14 @@ export const FONT_SIZES = {
   caption: 12,
 };
 
-export const FONT_WEIGHTS = {
+export const FONT_WEIGHTS: Record<string, TextStyle['fontWeight']> = {
   light: '300',
   normal: '400',
   medium: '500',
   semibold: '600',
   bold: '700',
   heavy: '800',
-};
+} as const;
 
 export const FONT_FAMILIES = {
   monospace: Platform.select({
@@ -264,9 +265,52 @@ export const ANIMATIONS = {
     smooth: 'cubic-bezier(0.4, 0, 0.2, 1)',
     sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
   },
+  // React Native Animated easing functions
+  animatedEasing: {
+    ease: require('react-native').Easing.ease,
+    easeIn: require('react-native').Easing.in(
+      require('react-native').Easing.ease,
+    ),
+    easeOut: require('react-native').Easing.out(
+      require('react-native').Easing.ease,
+    ),
+    easeInOut: require('react-native').Easing.inOut(
+      require('react-native').Easing.ease,
+    ),
+    bounce: require('react-native').Easing.bounce,
+    smooth: require('react-native').Easing.bezier(0.4, 0, 0.2, 1),
+    sharp: require('react-native').Easing.bezier(0.4, 0, 0.6, 1),
+  },
   spring: {
     tension: 100,
     friction: 8,
+  },
+  // Modal animation configurations
+  modal: {
+    sheet: {
+      duration: 300,
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
+    },
+    dialog: {
+      duration: 250,
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
+    },
+    simple: {
+      duration: 200,
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
+    },
+    fullScreen: {
+      duration: 350,
+      easing: require('react-native').Easing.out(
+        require('react-native').Easing.ease,
+      ),
+    },
   },
 };
 
@@ -384,5 +428,92 @@ export const COMPONENTS = {
   modal: {
     borderRadius: BORDER_RADIUS.xl,
     shadow: SHADOWS.xl,
+  },
+};
+
+// Component-specific design tokens
+export const COMPONENT_TOKENS = {
+  input: {
+    height: 48,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    borderColor: COLORS.gray300,
+    textColor: COLORS.textPrimary,
+    backgroundColor: COLORS.white,
+  },
+  button: {
+    height: 48,
+    paddingHorizontal: SPACING.lg,
+    borderRadius: BORDER_RADIUS.md,
+  },
+  card: {
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    shadow: SHADOWS.sm,
+  },
+  courseSelector: {
+    height: 48,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    borderColor: COLORS.gray300,
+    padding: SPACING.md,
+    backgroundColor: COLORS.white,
+    textColor: COLORS.textPrimary,
+    selectedTextColor: COLORS.primary,
+  },
+  dateTimePicker: {
+    height: 48,
+    paddingHorizontal: SPACING.md,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.md,
+    borderColor: COLORS.gray300,
+    padding: SPACING.md,
+    backgroundColor: COLORS.white,
+    textColor: COLORS.textPrimary,
+  },
+  templateSection: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
+    textColor: COLORS.textPrimary,
+  },
+  typeSelector: {
+    padding: SPACING.sm,
+    backgroundColor: COLORS.gray100,
+    borderWidth: 1,
+    borderColor: COLORS.gray300,
+    borderRadius: BORDER_RADIUS.sm,
+    activeBorderColor: COLORS.primary,
+    activeBackgroundColor: COLORS.primaryLight,
+    inactiveTextColor: COLORS.textSecondary,
+    activeTextColor: COLORS.white,
+  },
+};
+
+// Modal-specific design tokens
+export const MODAL_TOKENS = {
+  sheet: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.xl,
+  },
+  dialog: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.lg,
+    margin: SPACING.lg,
+    padding: SPACING.lg,
+  },
+  simple: {
+    backgroundColor: COLORS.white,
+    borderRadius: BORDER_RADIUS.md,
+    margin: SPACING.md,
+    padding: SPACING.md,
+  },
+  fullScreen: {
+    backgroundColor: COLORS.white,
+    padding: SPACING.lg,
   },
 };

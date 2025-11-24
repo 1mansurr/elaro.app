@@ -1,0 +1,35 @@
+{
+  "importMap": "./import_map.json",
+  "compilerOptions": {
+    "lib": ["deno.window", "deno.ns"],
+    "strict": true,
+    "types": ["./supabase-js.d.ts", "./deno.d.ts"]
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended", "cargo"],
+      "include": ["ban-untagged-todo", "no-console"],
+      "exclude": [
+        "no-console" // Allow console for logging (we use structured logging but console is still needed)
+      ]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["**/*.ts"],
+      "exclude": ["node_modules", "deno.lock"]
+    },
+    "options": {
+      "useTabs": false,
+      "lineWidth": 100,
+      "indentWidth": 2,
+      "singleQuote": true,
+      "proseWrap": "preserve"
+    }
+  },
+  "tasks": {
+    "lint": "deno lint supabase/functions",
+    "fmt": "deno fmt supabase/functions",
+    "check": "deno check supabase/functions"
+  }
+}

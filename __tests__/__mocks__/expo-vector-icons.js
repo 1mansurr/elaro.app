@@ -1,0 +1,15 @@
+module.exports = {
+  Ionicons: 'Ionicons',
+  MaterialIcons: 'MaterialIcons',
+  FontAwesome: 'FontAwesome',
+  AntDesign: 'AntDesign',
+  Entypo: 'Entypo',
+  EvilIcons: 'EvilIcons',
+  Feather: 'Feather',
+  FontAwesome5: 'FontAwesome5',
+  Foundation: 'Foundation',
+  MaterialCommunityIcons: 'MaterialCommunityIcons',
+  Octicons: 'Octicons',
+  SimpleLineIcons: 'SimpleLineIcons',
+  Zocial: 'Zocial',
+};

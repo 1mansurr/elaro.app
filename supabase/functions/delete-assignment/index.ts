@@ -1,43 +1,65 @@
-// Create this new Edge Function to handle securely deleting an assignment.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { DeleteAssignmentSchema } from '../_shared/schemas/assignment.ts';
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createSupabaseClient } from '../_shared/supabase-client.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+async function handleDeleteAssignment(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+  const { assignment_id } = body;
 
-serve(async (req ) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  await logger.info(
+    'Verifying assignment ownership',
+    { user_id: user.id, assignment_id },
+    traceContext,
+  );
+
+  // SECURITY: Verify ownership before deleting
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('assignments')
+    .select('id')
+    .eq('id', assignment_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
+    }
+    throw new AppError(
+      'Assignment not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
+    );
   }
 
-  try {
-    const supabase = createSupabaseClient(req);
-    const { assignmentId } = await req.json();
-    const { data: { user } } = await supabase.auth.getUser();
+  // Perform soft delete
+  const { error: deleteError } = await supabaseClient
+    .from('assignments')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', assignment_id);
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+  if (deleteError) throw handleDbError(deleteError);
 
-    // Delete the assignment, ensuring the user_id matches.
-    const { error } = await supabase
-      .from('assignments')
-      .delete()
-      .eq('id', assignmentId)
-      .eq('user_id', user.id);
+  await logger.info(
+    'Successfully soft deleted assignment',
+    { user_id: user.id, assignment_id },
+    traceContext,
+  );
 
-    if (error) {
-      throw new Error(`Failed to delete assignment: ${error.message}`);
-    }
+  return { success: true, message: 'Assignment deleted successfully.' };
+}
 
-    return new Response(JSON.stringify({ message: 'Assignment deleted successfully' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
+serve(
+  createAuthenticatedHandler(handleDeleteAssignment, {
+    rateLimitName: 'delete-assignment',
+    schema: DeleteAssignmentSchema,
+  }),
+);

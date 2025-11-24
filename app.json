@@ -15,7 +15,21 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.elaro.app",
-      "buildNumber": "1"
+      "buildNumber": "1",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["elaro"]
+          },
+          {
+            "CFBundleURLSchemes": ["exp+elaro"]
+          }
+        ],
+        "NSUserTrackingUsageDescription": "This app uses tracking to provide personalized learning experiences.",
+        "NSCameraUsageDescription": "This app needs camera access for profile photos and document scanning.",
+        "NSPhotoLibraryUsageDescription": "This app needs photo library access to save and share learning materials."
+      },
+      "usesAppleSignIn": true
     },
     "android": {
       "adaptiveIcon": {
@@ -24,9 +38,28 @@
       },
       "package": "com.elaro.app",
       "versionCode": 1,
-      "googleServicesFile": "./google-services.json",
-      "compileSdkVersion": 35,
-      "targetSdkVersion": 35
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [
+            {
+              "scheme": "elaro"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -35,15 +68,14 @@
     "scheme": "elaro",
     "plugins": ["expo-notifications"],
     "extra": {
-      "FIREBASE_API_KEY": "AIzaSyBDJn__V1DtG_jAnwarXJULSvrUjDOialo",
-      "FIREBASE_AUTH_DOMAIN": "elaro-c0a15.firebaseapp.com",
-      "FIREBASE_PROJECT_ID": "elaro-c0a15",
-      "FIREBASE_STORAGE_BUCKET": "elaro-c0a15.firebasestorage.app",
-      "FIREBASE_MESSAGING_SENDER_ID": "1008960716833",
-      "FIREBASE_APP_ID": "1:1008960716833:web:95d91efecf316ef8732360",
       "eas": {
-        "projectId": "1dd584f5-6522-4df5-ad51-076b07b3d09c"
+        "projectId": "7a43b16d-f54c-4ee5-83b5-3323eb4e27fc"
       }
+    },
+    "runtimeVersion": "1.0.0",
+    "updates": {
+      "enabled": false,
+      "url": "https://u.expo.dev/7a43b16d-f54c-4ee5-83b5-3323eb4e27fc"
     }
   }
 }

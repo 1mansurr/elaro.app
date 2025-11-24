@@ -1,0 +1,40 @@
+name: Lint Edge Functions
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/lint-edge-functions.yml'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'supabase/functions/**'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.40.0
+
+      - name: Lint Edge Functions
+        run: |
+          cd supabase/functions
+          deno lint --config ../deno.json
+
+      - name: Check TypeScript
+        run: |
+          cd supabase/functions
+          deno check **/*.ts
+
+      - name: Format Check
+        run: |
+          cd supabase/functions
+          deno fmt --check
+

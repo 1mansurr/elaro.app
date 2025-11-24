@@ -1,0 +1,1 @@
+export { DeletedItemCard } from './DeletedItemCard';

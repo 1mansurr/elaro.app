@@ -1,64 +1,69 @@
-// FILE: supabase/functions/restore-course/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { RestoreCourseSchema } from '../_shared/schemas/restore.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
+async function handleRestoreCourse(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  // Schema transformation ensures course_id is always present
+  const courseId = body.course_id;
+
+  await logger.info(
+    'Verifying course ownership',
+    { user_id: user.id, course_id: courseId },
+    traceContext,
   );
-};
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+  // SECURITY: Verify ownership before restoring
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('courses')
+    .select('id')
+    .eq('id', courseId)
+    .eq('user_id', user.id)
+    .single();
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    const { courseId } = await req.json();
-
-    if (!courseId) {
-      return new Response(
-        JSON.stringify({ error: 'courseId is required.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
     }
-
-    const { error } = await supabase
-      .from('courses')
-      .update({ deleted_at: null }) // Set deleted_at to NULL to restore
-      .eq('id', courseId)
-      .eq('user_id', user.id);
-
-    if (error) throw error;
-
-    return new Response(
-      JSON.stringify({ message: 'Course restored successfully.' }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
+    throw new AppError(
+      'Course not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
     );
   }
-});
+
+  // Restore by setting deleted_at to null
+  const { error: restoreError } = await supabaseClient
+    .from('courses')
+    .update({ deleted_at: null })
+    .eq('id', courseId);
+
+  if (restoreError) throw handleDbError(restoreError);
+
+  await logger.info(
+    'Successfully restored course',
+    { user_id: user.id, course_id: courseId },
+    traceContext,
+  );
+
+  // Maintain backward compatibility with existing response format
+  return { message: 'Course restored successfully.' };
+}
+
+serve(
+  createAuthenticatedHandler(handleRestoreCourse, {
+    rateLimitName: 'restore-course',
+    schema: RestoreCourseSchema,
+    requireIdempotency: true,
+  }),
+);

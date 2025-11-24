@@ -30,7 +30,6 @@
         <key>CFBundleURLSchemes</key>
         <array>
           <string>elaro</string>
-          <string>com.elaro.app</string>
         </array>
       </dict>
       <dict>

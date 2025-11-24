@@ -1,0 +1,95 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # Trigger on version tags (v1.0.0, v1.1.0, etc.)
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform to build'
+        required: true
+        type: choice
+        options:
+          - ios
+          - android
+          - all
+      profile:
+        description: 'Build profile'
+        required: true
+        type: choice
+        options:
+          - preview
+          - staging
+          - production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # yamllint disable-line rule:context-access
+      EXPO_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+      # yamllint disable-line rule:context-access
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+      # yamllint disable-line rule:context-access
+      EAS_TOKEN: ${{ secrets.EAS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linting
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Run critical tests
+        run: npm run test:critical
+        # No continue-on-error - must pass
+      
+      - name: Run all tests
+        run: npm run test:ci
+        continue-on-error: true  # Warnings only
+      
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          # yamllint disable-line rule:context-access
+          token: ${{ secrets.EAS_TOKEN }}
+      
+      - name: Build iOS
+        # yamllint disable-line rule:context-access
+        if: github.event.inputs.platform == 'ios' || github.event.inputs.platform == 'all' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          # yamllint disable-line rule:context-access
+          PROFILE=${{ github.event.inputs.profile || 'production' }}
+          eas build --platform ios --profile $PROFILE --non-interactive
+        continue-on-error: false
+      
+      - name: Build Android
+        # yamllint disable-line rule:context-access
+        if: github.event.inputs.platform == 'android' || github.event.inputs.platform == 'all' || startsWith(github.ref, 'refs/tags/')
+        run: |
+          # yamllint disable-line rule:context-access
+          PROFILE=${{ github.event.inputs.profile || 'production' }}
+          eas build --platform android --profile $PROFILE --non-interactive
+        continue-on-error: false
+      
+      - name: Upload build artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: |
+            *.ipa
+            *.aab
+          retention-days: 30
+          if-no-files-found: ignore
+

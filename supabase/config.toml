@@ -1,24 +1,20 @@
-project_id = "oqwyoucchbjiyddnznwf"
+project_id = "alqpwhrsxmetwbtxuihv"
 
-[functions.paystack-webhook]
-enabled = true
-verify_jwt = true
-import_map = "./functions/paystack-webhook/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-entrypoint = "./functions/paystack-webhook/index.ts"
-# Specifies static files to be bundled with the function. Supports glob patterns.
-# For example, if you want to serve static HTML pages in your function:
-# static_files = [ "./functions/paystack-webhook/*.html" ]
+# Database connection settings
+# Use direct connection (port 5432) for migrations instead of pooler (port 6543)
+# This is recommended for migrations and admin tasks
+[db]
+# Direct connection is used by default for migrations
+# Pooler connection (port 6543) is used for application queries
 
-[functions.schedule-reminders]
-import_map = "./functions/import_map.json"
+[functions.revenuecat-webhook]
+verify_jwt = false
 
-[functions.create-task]
-import_map = "./functions/import_map.json"
+[functions.export-user-data]
+verify_jwt = false
 
-[functions.get-streak-info]
-import_map = "./functions/import_map.json"
+[functions.check-grace-period]
+verify_jwt = false
 
-[functions.cleanup-old-reminders]
-import_map = "./functions/import_map.json"
+[functions.send-welcome-email]
+verify_jwt = false

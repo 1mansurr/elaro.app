@@ -3,11 +3,49 @@ import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { NavigationContainerRef } from '@react-navigation/native';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
 import { supabase } from './supabase';
+import { NotificationPreferenceService } from '@/services/notifications/NotificationPreferenceService';
+import {
+  SimpleNotificationPreferences,
+  SimpleNotificationPreferencesUpdate,
+} from '@/services/notifications/interfaces/SimpleNotificationPreferences';
+import { NotificationPreferences } from '@/services/notifications/interfaces/INotificationPreferenceService';
+import { RootStackParamList } from '@/types/navigation';
+import { Task } from '@/types/entities';
+
+// Notification data interface
+interface NotificationData {
+  url?: string;
+  itemId?: string;
+  taskType?: 'lecture' | 'assignment' | 'study_session';
+  [key: string]: unknown;
+}
 
 // Navigation reference for handling notification taps
-let navigationRef: any = null;
+let navigationRef: NavigationContainerRef<RootStackParamList> | null = null;
+
+// Service locator pattern for accessing NotificationContext
+let _setTaskToShow: (task: Task) => void;
+
+export function setNotificationTaskHandler(handler: (task: Task) => void) {
+  _setTaskToShow = handler;
+}
+
+// Helper function to get table name from task type
+function getTableName(taskType: string): string {
+  switch (taskType) {
+    case 'lecture':
+      return 'lectures';
+    case 'assignment':
+      return 'assignments';
+    case 'study_session':
+      return 'study_sessions';
+    default:
+      throw new Error(`Unknown task type: ${taskType}`);
+  }
+}
 
 /**
  * Save push token to Supabase user_devices table
@@ -90,7 +128,7 @@ export async function sendTestPushNotification(
 
 export const notificationService = {
   // Set navigation reference for handling notification taps
-  setNavigationRef(ref: any) {
+  setNavigationRef(ref: NavigationContainerRef<RootStackParamList> | null) {
     navigationRef = ref;
   },
 
@@ -185,8 +223,7 @@ export const notificationService = {
 
   // Setup notification listeners
   setupNotificationListeners() {
-    Notifications.addNotificationReceivedListener(notification => {
-    });
+    Notifications.addNotificationReceivedListener(notification => {});
 
     Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
@@ -194,28 +231,78 @@ export const notificationService = {
     });
   },
 
-  // Handle notification tap
-  handleNotificationTap(data: any) {
-    if (!navigationRef) {
-      console.warn('Navigation reference not set in notificationService.');
+  // Handle notification tap with deep linking support
+  async handleNotificationTap(data: NotificationData) {
+    const { url, itemId, taskType } = data;
+
+    // If a deep link URL is provided, use it
+    if (url) {
+      console.log('Handling notification with deep link:', url);
+      try {
+        // Use React Navigation's linking to navigate
+        if (navigationRef.current) {
+          // Navigate using the deep link
+          navigationRef.current.navigate(url as never);
+          console.log('Successfully navigated to:', url);
+        } else {
+          console.warn(
+            'Navigation ref not available, falling back to legacy method',
+          );
+          await this.handleNotificationTapLegacy(data);
+        }
+      } catch (error) {
+        console.error('Error navigating with deep link:', error);
+        // Fallback to old method if deep link fails
+        await this.handleNotificationTapLegacy(data);
+      }
       return;
     }
 
-    const { type, itemId } = data;
+    // Fallback to legacy method if no URL is provided
+    console.log('No deep link URL found, using legacy navigation');
+    await this.handleNotificationTapLegacy(data);
+  },
 
-    // Ensure type is one of the expected values before navigating
-    if (type === 'study_session' || type === 'lecture' || type === 'assignment') {
-      navigationRef.navigate('TaskDetailModal', {
-        taskId: itemId,
-        taskType: type,
-      });
-    } else {
-      // Fallback for other notification types
-      console.warn(`Unhandled notification type: ${type}. Navigating to Home.`);
-      navigationRef.navigate('Home');
+  // Legacy notification tap handler (fallback)
+  async handleNotificationTapLegacy(data: NotificationData) {
+    const { itemId, taskType } = data;
+
+    if (!itemId || !taskType) {
+      console.warn('Missing itemId or taskType in notification data');
+      return;
+    }
+
+    try {
+      // Fetch the full task data from Supabase
+      const { data: task, error } = await supabase
+        .from(getTableName(taskType))
+        .select('*')
+        .eq('id', itemId)
+        .single();
+
+      if (error || !task) {
+        console.error('Failed to fetch task for notification:', error);
+        return;
+      }
+
+      // Set the task in the NotificationContext
+      if (_setTaskToShow) {
+        _setTaskToShow(task);
+      } else {
+        console.warn(
+          'Notification task handler not set. Make sure NotificationProvider is properly initialized.',
+        );
+      }
+    } catch (error) {
+      console.error('Error handling notification tap:', error);
     }
   },
 
+  /**
+   * @deprecated This function is deprecated. Use the `useNotificationPreferences` hook instead.
+   * This function reads from AsyncStorage which is no longer the source of truth.
+   * Use the new notification preferences system backed by the database.
+   */
   async areNotificationsEnabled(): Promise<boolean> {
     const settings = await AsyncStorage.getItem('notificationSettings');
     if (!settings) return true;
@@ -224,6 +311,11 @@ export const notificationService = {
     return parsed.enabled !== false;
   },
 
+  /**
+   * @deprecated This function is deprecated. Use the `useNotificationPreferences` hook instead.
+   * This function writes to AsyncStorage which is no longer the source of truth.
+   * Use the new notification preferences system backed by the database.
+   */
   async setNotificationsEnabled(enabled: boolean) {
     await AsyncStorage.setItem(
       'notificationSettings',
@@ -247,7 +339,7 @@ export const notificationService = {
     body: string;
     triggerDate: Date;
     type?: 'reminder' | 'spaced_repetition';
-    data?: any;
+    data?: Record<string, unknown>;
   }) {
     const enabled = await this.areNotificationsEnabled();
     if (!enabled) return;
@@ -316,13 +408,55 @@ export const notificationService = {
     planType: 'origin' | 'oddity';
     userId: string;
   }) {
-    await this.cancelSRReminders(sessionId);
-    // TODO: Implement the logic to schedule new reminders here instead of calling itself.
+    try {
+      // Cancel existing reminders first
+      await this.cancelSRReminders(sessionId);
+
+      // Cancel reminders in database as well
+      const now = new Date().toISOString();
+      await supabase
+        .from('reminders')
+        .update({
+          completed: true,
+          processed_at: now,
+          action_taken: 'rescheduled',
+        })
+        .eq('user_id', userId)
+        .eq('session_id', sessionId)
+        .eq('reminder_type', 'spaced_repetition')
+        .eq('completed', false);
+
+      // Use the edge function to schedule new reminders with the new date
+      // This ensures consistency with initial scheduling logic
+      const { error: scheduleError } = await supabase.functions.invoke(
+        'schedule-reminders',
+        {
+          body: {
+            session_id: sessionId,
+            session_date: newDate.toISOString(),
+            topic: sessionTitle,
+          },
+        },
+      );
+
+      if (scheduleError) {
+        console.error('❌ Error rescheduling SRS reminders:', scheduleError);
+        // Don't throw - partial success is acceptable
+        // The old reminders were cancelled, new ones will be created on next sync
+      } else {
+        console.log(
+          `✅ Successfully rescheduled SRS reminders for session ${sessionId}`,
+        );
+      }
+    } catch (error) {
+      console.error('❌ Exception in rescheduleSRReminders:', error);
+      // Don't throw - allow the update to proceed even if reminder rescheduling fails
+    }
   },
 
   // Functions using deleted types removed:
   // - scheduleRepeatingReminders
-  // - generateRepeatOccurrences  
+  // - generateRepeatOccurrences
   // - getNextCustomDay
   // - calculateReminderTime
   // - getReminderTimeText
@@ -347,4 +481,139 @@ export const notificationService = {
       trigger: null,
     });
   },
+
+  // Preferences proxy exposing a simplified interface used by UI components
+  preferences: {
+    async getUserPreferences(
+      userId: string,
+    ): Promise<SimpleNotificationPreferences> {
+      const svc = NotificationPreferenceService.getInstance();
+      const fullPrefs = await svc.getUserPreferences(userId);
+      return mapFullToSimple(userId, fullPrefs);
+    },
+
+    async updateUserPreferences(
+      userId: string,
+      update: SimpleNotificationPreferencesUpdate,
+    ): Promise<void> {
+      const svc = NotificationPreferenceService.getInstance();
+      const fullUpdate = mapSimpleUpdateToFull(update);
+      await svc.updatePreferences(userId, fullUpdate);
+    },
+  },
+
+  async getScheduledNotifications(userId: string) {
+    // Proxy to delivery service if available, otherwise return empty array
+    try {
+      const notifications =
+        await Notifications.getAllScheduledNotificationsAsync();
+      return notifications.map(notif => ({
+        id: notif.identifier,
+        title: notif.content.title || '',
+        body: notif.content.body || '',
+        scheduledFor: notif.trigger
+          ? typeof notif.trigger === 'number' ||
+            typeof notif.trigger === 'string'
+            ? new Date(notif.trigger)
+            : new Date()
+          : new Date(),
+        category: notif.content.data?.category || 'reminder',
+      }));
+    } catch (error) {
+      console.error('Error getting scheduled notifications:', error);
+      return [];
+    }
+  },
+
+  async cancelNotification(notificationId: string) {
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+    } catch (error) {
+      console.error('Error cancelling notification:', error);
+      throw error;
+    }
+  },
+
+  async sendSmartNotification(
+    userId: string,
+    title: string,
+    body: string,
+    type: string,
+    priority: string,
+  ) {
+    // Use the existing sendTestNotification for now
+    try {
+      await this.sendTestNotification();
+      return true;
+    } catch (error) {
+      console.error('Error sending smart notification:', error);
+      return false;
+    }
+  },
 };
+
+// ======================
+// Mapping helpers
+// ======================
+function mapFullToSimple(
+  userId: string,
+  prefs: NotificationPreferences,
+): SimpleNotificationPreferences {
+  return {
+    enabled: prefs.masterToggle && !prefs.doNotDisturb,
+    reminders: prefs.notificationTypes.reminders || prefs.notificationTypes.srs,
+    assignments: prefs.notificationTypes.assignments,
+    lectures: prefs.notificationTypes.lectures,
+    studySessions: prefs.notificationTypes.srs,
+    dailySummaries: prefs.notificationTypes.dailySummaries,
+    marketing: prefs.notificationTypes.marketing,
+    quietHours: {
+      enabled: prefs.quietHours.enabled,
+      start: prefs.quietHours.start,
+      end: prefs.quietHours.end,
+    },
+    userId,
+    updatedAt: prefs.updatedAt,
+  };
+}
+
+function mapSimpleUpdateToFull(
+  update: SimpleNotificationPreferencesUpdate,
+): Partial<NotificationPreferences> {
+  const full: Partial<NotificationPreferences> = {};
+
+  if (update.enabled !== undefined) {
+    full.masterToggle = update.enabled;
+    // Do not change doNotDisturb automatically
+  }
+
+  if (
+    update.reminders !== undefined ||
+    update.assignments !== undefined ||
+    update.lectures !== undefined ||
+    update.studySessions !== undefined ||
+    update.dailySummaries !== undefined ||
+    update.marketing !== undefined
+  ) {
+    full.notificationTypes = {
+      reminders: update.reminders ?? undefined,
+      achievements: undefined,
+      updates: undefined,
+      marketing: update.marketing ?? undefined,
+      assignments: update.assignments ?? undefined,
+      lectures: update.lectures ?? undefined,
+      srs: update.studySessions ?? update.reminders,
+      dailySummaries: update.dailySummaries ?? undefined,
+    };
+  }
+
+  if (update.quietHours) {
+    full.quietHours = {
+      enabled: update.quietHours.enabled ?? undefined,
+      start: update.quietHours.start ?? undefined,
+      end: update.quietHours.end ?? undefined,
+    };
+  }
+
+  return full;
+}

@@ -1,0 +1,11 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run Prettier check (non-blocking - will auto-fix on commit)
+npm run format:check || true
+
+# Run ESLint (warn only - don't block commits for warnings)
+npm run lint || echo "⚠️ ESLint found issues (non-blocking)"
+
+# Auto-format staged files before commit
+npm run format -- --write $(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|jsx|ts|tsx|json|md)$' | tr '\n' ' ') 2>/dev/null || true

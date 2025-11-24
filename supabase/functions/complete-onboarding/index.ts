@@ -1,76 +1,154 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { CompleteOnboardingSchema } from '../_shared/schemas/user.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
-interface Course {
-  course_name: string;
-  course_code: string;
-  about_course: string;
-}
+async function handleCompleteOnboarding(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
 
-serve(async (req) => {
-  // 1. Create Supabase client with admin privileges
-  const supabaseClient = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+  const {
+    username,
+    university,
+    program,
+    country,
+    courses,
+    dateOfBirth,
+    hasParentalConsent,
+    marketingOptIn,
+  } = body;
+  const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+  if (!encryptionKey)
+    throw new AppError(
+      'Encryption key not configured.',
+      500,
+      ERROR_CODES.CONFIG_ERROR,
+    );
+
+  await logger.info(
+    'Completing onboarding',
+    { user_id: user.id },
+    traceContext,
   );
 
-  // 2. Get the user from the authorization header
-  const authHeader = req.headers.get('Authorization')!;
-  const { data: { user }, error: userError } = await supabaseClient.auth.getUser(authHeader.replace('Bearer ', ''));
+  // Age validation logic
+  const birthDate = new Date(dateOfBirth);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
 
-  if (userError) {
-    return new Response(JSON.stringify({ error: 'Authentication failed' }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+  ) {
+    age--;
   }
 
-  // 3. Get the data from the request body
-  const { firstName, lastName, university, program, courses } = await req.json();
+  // Check if user is under 13
+  if (age < 13) {
+    throw new AppError(
+      'You must be at least 13 years old to use this service.',
+      403,
+      ERROR_CODES.FORBIDDEN,
+    );
+  }
 
-  // 4. Update user metadata
-  const { error: updateError } = await supabaseClient.auth.admin.updateUserById(
-    user.id,
-    {
-      user_metadata: {
-        first_name: firstName,
-        last_name: lastName,
-        university: university,
-        program: program,
-      },
-    }
+  // Check if user is between 13-17 and lacks parental consent
+  if (age >= 13 && age < 18 && !hasParentalConsent) {
+    throw new AppError(
+      'Parental consent is required for users under 18.',
+      403,
+      ERROR_CODES.FORBIDDEN,
+    );
+  }
+
+  await logger.info(
+    'Age validation passed',
+    { user_id: user.id, age },
+    traceContext,
   );
 
-  if (updateError) {
-    console.error('Error updating user:', updateError);
-    return new Response(JSON.stringify({ error: 'Failed to update user profile' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-  }
+  // 1. Update the user's profile with onboarding data
+  const [encryptedUniversity, encryptedProgram] = await Promise.all([
+    university ? encrypt(university, encryptionKey) : null,
+    program ? encrypt(program, encryptionKey) : null,
+  ]);
 
-  // 5. Create the courses, if any
-  if (courses && courses.length > 0) {
-    const coursesToInsert = courses.map((course: Course) => ({
-      user_id: user.id,
-      course_name: course.course_name,
-      course_code: course.course_code,
-      about_course: course.about_course,
-    }));
-
-    const { error: coursesError } = await supabaseClient.from('courses').insert(coursesToInsert);
-
-    if (coursesError) {
-      console.error('Error creating courses:', coursesError);
-      // Even if courses fail, the profile update succeeded, so we don't return a hard error.
-      // A more robust solution might use a transaction here.
-    }
-  }
-
-  // 6. Update the onboarding status in public.users
-  const { error: updateOnboardingError } = await supabaseClient
+  const { error: userUpdateError } = await supabaseClient
     .from('users')
-    .update({ onboarding_completed: true })
+    .update({
+      username,
+      university: encryptedUniversity,
+      program: encryptedProgram,
+      country,
+      date_of_birth: dateOfBirth,
+      marketing_opt_in: marketingOptIn,
+      onboarding_completed: true,
+    })
     .eq('id', user.id);
 
-  if (updateOnboardingError) {
-    console.error('Error updating onboarding status:', updateOnboardingError);
-    return new Response(JSON.stringify({ error: 'Failed to finalize onboarding status' }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+  if (userUpdateError) {
+    throw handleDbError(userUpdateError);
   }
 
-  return new Response(JSON.stringify({ message: 'Onboarding completed successfully' }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-});
+  await logger.info('User profile updated', { user_id: user.id }, traceContext);
+
+  // 2. Create the initial courses for the user
+  if (courses && courses.length > 0) {
+    await logger.info(
+      'Creating initial courses',
+      { user_id: user.id, course_count: courses.length },
+      traceContext,
+    );
+
+    const coursesToInsert = await Promise.all(
+      courses.map(
+        async (course: { course_name: string; course_code?: string }) => ({
+          user_id: user.id,
+          course_name: await encrypt(course.course_name, encryptionKey),
+          course_code: course.course_code,
+        }),
+      ),
+    );
+
+    const { error: courseInsertError } = await supabaseClient
+      .from('courses')
+      .insert(coursesToInsert);
+
+    if (courseInsertError) {
+      // This is a non-critical error. The user profile was updated, but courses failed.
+      // We log it but don't fail the whole request.
+      await logger.error(
+        'Failed to create initial courses',
+        {
+          user_id: user.id,
+          error: courseInsertError.message,
+        },
+        traceContext,
+      );
+    } else {
+      await logger.info(
+        'Successfully created initial courses',
+        { user_id: user.id },
+        traceContext,
+      );
+    }
+  }
+
+  return { success: true, message: 'Onboarding completed successfully.' };
+}
+
+serve(
+  createAuthenticatedHandler(handleCompleteOnboarding, {
+    rateLimitName: 'complete-onboarding',
+    schema: CompleteOnboardingSchema,
+  }),
+);

@@ -1,185 +1,178 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { handleCors, corsHeaders } from '../_shared/cors.ts';
-import { initSentry, captureException } from '../_shared/sentry.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { isPremium, PERMISSIONS } from '../_shared/permissions.ts';
+import { ScheduleRemindersSchema } from '../_shared/schemas/reminders.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts';
 
-// Function to add days to a date
-function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
-}
+async function handleScheduleReminders(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+  const { session_id, session_date, topic } = body;
 
-// --- RATE LIMITING CONSTANTS ---
-const RATE_LIMIT_COUNT = 10; // Max 10 requests
-const RATE_LIMIT_INTERVAL_HOURS = 1; // per 1 hour
+  await logger.info(
+    'Scheduling SRS reminders',
+    { user_id: user.id, session_id },
+    traceContext,
+  );
 
-// --- NEW RATE LIMITING LOGIC ---
-async function checkRateLimit(
-  supabaseClient: SupabaseClient,
-  userId: string,
-): Promise<void> {
-  const functionName = 'schedule-reminders';
-  const oneHourAgo = new Date();
-  oneHourAgo.setHours(oneHourAgo.getHours() - RATE_LIMIT_INTERVAL_HOURS);
+  // SECURITY: Verify the user owns the study session
+  const { error: checkError } = await supabaseClient
+    .from('study_sessions')
+    .select('id')
+    .eq('id', session_id)
+    .eq('user_id', user.id)
+    .single();
 
-  // Check for recent requests
-  const { count, error: countError } = await supabaseClient
-    .from('function_request_logs')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .eq('function_name', functionName)
-    .gte('created_at', oneHourAgo.toISOString());
-
-  if (countError) {
-    throw new Error(`Rate limit check failed: ${countError.message}`);
+  if (checkError) {
+    throw handleDbError(checkError);
   }
 
-  if (count !== null && count >= RATE_LIMIT_COUNT) {
-    throw new Error('Too Many Requests');
+  // --- START: NEW SRS LIMIT CHECK ---
+  // Check if the user is allowed to create more SRS reminders based on their monthly limit.
+  const { data: canCreate, error: rpcError } = await supabaseClient.rpc(
+    'can_create_srs_reminders',
+    { p_user_id: user.id },
+  );
+
+  if (rpcError) {
+    throw handleDbError(rpcError);
   }
 
-  // Log the current request
-  const { error: logError } = await supabaseClient
-    .from('function_request_logs')
-    .insert({
-      user_id: userId,
-      function_name: functionName,
-    });
-  if (logError) {
-    // Non-critical error, so we can just log it and continue
-    console.error('Failed to log function request:', logError.message);
-  }
-}
-
-serve(async (req: Request) => {
-  initSentry();
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
-
-  try {
-    // Create a Supabase client with the Auth context of the user that called the function.
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
-      },
+  if (canCreate === false) {
+    throw new AppError(
+      'You have reached your monthly limit for Spaced Repetition reminders.',
+      403,
+      ERROR_CODES.RESOURCE_LIMIT_EXCEEDED,
     );
+  }
+  // --- END: NEW SRS LIMIT CHECK ---
 
-    // Get the user from the auth header
-    const {
-      data: { user },
-    } = await supabaseClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        headers: corsHeaders,
-        status: 401,
-      });
-    }
+  // Step 1: Get the user's subscription tier
+  const { data: userProfile, error: profileError } = await supabaseClient
+    .from('users')
+    .select('subscription_tier')
+    .eq('id', user.id)
+    .single();
 
-    // --- MVP LIMIT LOGIC FOR REMINDERS ---
-    const REMINDER_LIMIT = 6;
-    const oneWeekAgo = new Date(new Date().setDate(new Date().getDate() - 7)).toISOString();
-    const { count: weeklyReminders, error: countError } = await supabaseClient
-      .from('reminders')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id)
-      .gte('created_at', oneWeekAgo);
+  if (profileError) {
+    throw handleDbError(profileError);
+  }
 
-    if (countError) {
-      throw new Error(`Failed to check reminder limit: ${countError.message}`);
-    }
+  const userTier = userProfile?.subscription_tier || 'free';
 
-    // The function creates 5 reminders at a time for a session.
-    const remindersToBeCreated = 5;
-    if ((weeklyReminders ?? 0) + remindersToBeCreated > REMINDER_LIMIT) {
-      return new Response(JSON.stringify({ error: `Weekly reminder limit of ${REMINDER_LIMIT} exceeded.` }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 403, // Forbidden
-      });
-    }
-    // --- END OF MVP LIMIT LOGIC ---
+  // Check if user has permission to create SRS reminders
+  if (!isPremium(userTier)) {
+    throw new AppError(
+      'Premium subscription required for SRS reminders.',
+      403,
+      ERROR_CODES.FORBIDDEN,
+    );
+  }
 
-    // --- APPLY THE RATE LIMIT CHECK ---
-    try {
-      await checkRateLimit(supabaseClient, user.id);
-    } catch (error: any) {
-      if (error && error.message === 'Too Many Requests') {
-        return new Response(
-          JSON.stringify({
-            error: 'Rate limit exceeded. Please try again later.',
-          }),
-          {
-            headers: corsHeaders,
-            status: 429,
-          },
-        );
-      }
-      captureException(error);
-      throw error;
-    }
+  // Step 2: Fetch the appropriate SRS schedule based on user tier
+  const { data: schedule, error: scheduleError } = await supabaseClient
+    .from('srs_schedules')
+    .select('intervals, name')
+    .eq('tier_restriction', userTier)
+    .single();
 
-    const { session_id } = await req.json();
-    if (!session_id) {
-      return new Response(JSON.stringify({ error: 'session_id is required' }), {
-        headers: { 'Content-Type': 'application/json' },
-        status: 400,
-      });
-    }
+  if (scheduleError || !schedule) {
+    await logger.warn(
+      'SRS schedule not found, using fallback',
+      { user_id: user.id, tier: userTier, error: scheduleError?.message },
+      traceContext,
+    );
+    // As a fallback, use tier-specific hardcoded intervals
+    const fallbackSchedule =
+      userTier === 'free'
+        ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
+        : {
+            intervals: [1, 3, 7, 14, 30, 60, 120, 180],
+            name: 'Oddity Tier (Fallback)',
+          };
+    schedule = fallbackSchedule;
+  }
 
-    // 1. Fetch the study session to get its details
-    const { data: session, error: sessionError } = await supabaseClient
-      .from('study_sessions')
-      .select('start_date, topic')
-      .eq('id', session_id)
-      .eq('user_id', user.id) // Ensure the user owns this session
-      .single();
-    if (sessionError || !session) {
-      throw new Error(
-        sessionError?.message || 'Study session not found or access denied.',
-      );
-    }
+  const intervals = schedule.intervals;
+  const sessionDate = new Date(session_date);
+  const JITTER_MINUTES = 30; // We'll add +/- 30 minutes of jitter
 
-    // 2. Define the spaced repetition intervals (in days)
-    const intervals = [1, 7, 14, 30, 60];
-    const sessionStartDate = new Date(session.start_date);
+  // Get optimal hour for reminders based on user patterns
+  const { data: optimalHour } = await supabaseClient.rpc(
+    'get_optimal_reminder_hour',
+    {
+      p_user_id: user.id,
+      p_reminder_type: 'spaced_repetition',
+    },
+  );
 
-    // 3. Create the reminder objects
-    const remindersToInsert = intervals.map(days => {
-      const reminderDate = addDays(sessionStartDate, days);
-      return {
+  const preferredHour = optimalHour || 10; // Default to 10 AM if no data
+
+  // Cancel existing reminders for this session before scheduling new ones
+  const { cancelExistingSRSReminders } = await import(
+    '../_shared/reminder-scheduling.ts'
+  );
+  const cancelledCount = await cancelExistingSRSReminders(
+    supabaseClient,
+    user.id,
+    session_id,
+  );
+  if (cancelledCount > 0) {
+    await logger.info(
+      'Cancelled existing reminders before rescheduling',
+      {
         user_id: user.id,
-        study_session_id: session_id,
-        reminder_date: reminderDate.toISOString(),
-        // Example title, you can customize this
-        title: `Review: ${session.topic}`,
-        status: 'scheduled', // Assuming you have a status column
-      };
-    });
-
-    // 4. Bulk insert the reminders into the database
-    const { error: insertError } = await supabaseClient
-      .from('reminders')
-      .insert(remindersToInsert);
-    if (insertError) {
-      throw new Error(`Failed to insert reminders: ${insertError.message}`);
-    }
-
-    return new Response(
-      JSON.stringify({ message: 'Reminders scheduled successfully' }),
-      {
-        headers: { 'Content-Type': 'application/json' },
-        status: 200,
+        session_id,
+        cancelled_count: cancelledCount,
       },
+      traceContext,
     );
-  } catch (error: any) {
-    captureException(error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: corsHeaders,
-      status: 500,
-    });
   }
-});
+
+  // Use consolidated scheduling service (deterministic jitter by default)
+  const remindersToInsert = await scheduleMultipleSRSReminders(supabaseClient, {
+    userId: user.id,
+    sessionId: session_id,
+    sessionDate,
+    topic,
+    preferredHour,
+    jitterMinutes: JITTER_MINUTES,
+    useDeterministicJitter: true, // Deterministic for consistency
+    intervals,
+  });
+
+  const { error: insertError } = await supabaseClient
+    .from('reminders')
+    .insert(remindersToInsert);
+
+  if (insertError) {
+    throw handleDbError(insertError);
+  }
+
+  await logger.info(
+    'Successfully scheduled SRS reminders',
+    {
+      user_id: user.id,
+      count: remindersToInsert.length,
+      schedule_name: schedule.name || 'Default',
+    },
+    traceContext,
+  );
+
+  return { success: true, remindersScheduled: remindersToInsert.length };
+}
+
+serve(
+  createAuthenticatedHandler(handleScheduleReminders, {
+    rateLimitName: 'schedule-reminders',
+    schema: ScheduleRemindersSchema,
+  }),
+);

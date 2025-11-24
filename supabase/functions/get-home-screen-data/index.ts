@@ -1,159 +1,57 @@
-// FILE: supabase/functions/get-home-screen-data/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+} from '../_shared/function-handler.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
+// The core business logic for fetching home screen data
+async function handleGetHomeScreenData(req: AuthenticatedRequest) {
+  const { user, supabaseClient } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+
+  await logger.info(
+    'Fetching home screen data',
+    { user_id: user.id },
+    traceContext,
   );
-};
 
+  const { data, error } = await supabaseClient.rpc(
+    'get_home_screen_data_for_user',
+    {
+      p_user_id: user.id,
+    },
+  );
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
-
-  try {
-    console.log('Function started');
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    console.log('User authenticated:', user?.id);
-    if (!user) throw new Error('Unauthorized');
-
-    const now = new Date().toISOString();
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayEnd = new Date();
-    todayEnd.setHours(23, 59, 59, 999);
-
-    // --- Run all queries in parallel ---
-    console.log('Starting database queries');
-    const [
-      { data: lectures, error: lecturesError },
-      { data: studySessions, error: studySessionsError },
-      { data: assignments, error: assignmentsError },
-    ] = await Promise.all([
-      // Fetch all upcoming lectures
-      supabase
-        .from('lectures')
-        .select('*, courses(course_name)')
-        .gt('lecture_date', now),
-      // Fetch all upcoming study sessions
-      supabase
-        .from('study_sessions')
-        .select('*, courses(course_name)')
-        .gt('session_date', now),
-      // Fetch all upcoming assignments
-      supabase
-        .from('assignments')
-        .select('*, courses(course_name)')
-        .gt('due_date', now),
-    ]);
-
-    console.log('Queries completed');
-    console.log('Lectures:', lectures?.length || 0, 'Study Sessions:', studySessions?.length || 0, 'Assignments:', assignments?.length || 0);
-    
-    if (lecturesError) {
-      console.error('Lectures error:', lecturesError);
-      throw lecturesError;
-    }
-    if (studySessionsError) {
-      console.error('Study sessions error:', studySessionsError);
-      throw studySessionsError;
-    }
-    if (assignmentsError) {
-      console.error('Assignments error:', assignmentsError);
-      throw assignmentsError;
-    }
-
-    // Calculate weekly task count using rolling 7-day window
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const oneWeekAgoISO = oneWeekAgo.toISOString();
-
-    const weeklyTaskCount = (lectures || []).filter(l => l.created_at >= oneWeekAgoISO).length +
-                           (studySessions || []).filter(s => s.created_at >= oneWeekAgoISO).length +
-                           (assignments || []).filter(a => a.created_at >= oneWeekAgoISO).length;
-
-    // --- Process the results ---
-    // 1. Find the single next upcoming task
-    const allTasks = [
-      ...(lectures || []).map(t => ({
-        ...t,
-        type: 'lecture',
-        date: t.lecture_date,
-        name: t.courses.course_name
-      })),
-      ...(studySessions || []).map(t => ({
-        ...t,
-        type: 'study_session',
-        date: t.session_date,
-        name: t.topic
-      })),
-      ...(assignments || []).map(t => ({
-        ...t,
-        type: 'assignment',
-        date: t.due_date,
-        name: t.title
-      })),
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-    const nextUpcomingTask = allTasks[0] || null;
-
-    // 2. Get today's overview counts
-    const todayOverview = {
-      lectures: (lectures || []).filter(t => 
-        new Date(t.lecture_date) >= todayStart && 
-        new Date(t.lecture_date) <= todayEnd
-      ).length,
-      study_sessions: (studySessions || []).filter(t => 
-        new Date(t.session_date) >= todayStart && 
-        new Date(t.session_date) <= todayEnd
-      ).length,
-      assignments: (assignments || []).filter(t => 
-        new Date(t.due_date) >= todayStart && 
-        new Date(t.due_date) <= todayEnd
-      ).length,
-      // You can add reminders/reviews here later
-      reviews: 0,
-    };
-
-    // --- Combine into a single response object ---
-    const responseData = {
-      nextUpcomingTask,
-      todayOverview,
-      weeklyTaskCount,
-    };
-
-    console.log('Response data:', JSON.stringify(responseData, null, 2));
-
-    return new Response(
-      JSON.stringify(responseData),
+  if (error) {
+    await logger.error(
+      'Error calling get_home_screen_data_for_user RPC',
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    );
-  } catch (error) {
-    console.error('Edge Function Error:', error);
-    return new Response(
-      JSON.stringify({ 
+        user_id: user.id,
         error: error.message,
-        details: error.toString(),
-        stack: error.stack 
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
-      }
+      },
+      traceContext,
     );
+    throw handleDbError(error);
   }
-});
+
+  await logger.info(
+    'Successfully fetched home screen data',
+    { user_id: user.id },
+    traceContext,
+  );
+
+  // The RPC function returns the data in the exact JSON format we need.
+  return data;
+}
+
+// Wrap the business logic with our secure, generic handler
+serve(
+  createAuthenticatedHandler(handleGetHomeScreenData, {
+    rateLimitName: 'get-home-screen-data',
+    // No schema needed for a GET request with no body
+    // No task limit check needed for a read operation
+  }),
+);

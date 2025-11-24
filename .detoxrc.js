@@ -6,7 +6,8 @@ module.exports = {
     'ios.debug': {
       type: 'ios.app',
       binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/ELARO.app',
-      build: 'xcodebuild -workspace ios/ELARO.xcworkspace -scheme ELARO -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build -destination "platform=iOS Simulator,name=iPhone 16"',
+      build:
+        'xcodebuild -workspace ios/ELARO.xcworkspace -scheme ELARO -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build -destination "platform=iOS Simulator,name=iPhone 16"',
     },
   },
   devices: {

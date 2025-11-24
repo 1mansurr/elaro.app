@@ -2,7 +2,19 @@
   "extends": "./node_modules/expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
-    "types": []
+    "types": [],
+    "baseUrl": "./",
+    "module": "esnext",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "exclude": ["node_modules", "**/__tests__/*", "**/*.spec.ts", "**/*.spec.tsx"]
+  "exclude": [
+    "node_modules",
+    "**/__tests__/*",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "supabase/**/*",
+    "src/future-features/**/*"
+  ]
 }

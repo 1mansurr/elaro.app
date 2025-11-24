@@ -1,76 +1,105 @@
-// FILE: supabase/functions/create-assignment/index.ts
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
-import { checkTaskLimit } from '../_shared/check-task-limit.ts';
+import {
+  createAuthenticatedHandler,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { CreateAssignmentSchema } from '../_shared/schemas/assignment.ts';
+import { encrypt } from '../_shared/encryption.ts';
+import { logger } from '../_shared/logging.ts';
 
-const getSupabaseClient = (req: Request): SupabaseClient => {
-  return createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-    {
-      global: {
-        headers: { Authorization: req.headers.get('Authorization')! }
-      }
-    }
-  );
-};
+const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+serve(
+  createAuthenticatedHandler(
+    async ({ user, supabaseClient, body }) => {
+      // Validation is now handled automatically by the handler using CreateAssignmentSchema
 
-  try {
-    const supabase = getSupabaseClient(req);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Unauthorized');
-
-    // Check unified task limit
-    const limitError = await checkTaskLimit(supabase, user.id);
-    if (limitError) return limitError;
-
-    const { course_id, title, submission_method, submission_link, due_date } = await req.json();
-
-    if (!course_id || !title || !due_date) {
-      return new Response(
-        JSON.stringify({ error: 'Course, title, and due date are required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    const { data, error } = await supabase
-      .from('assignments')
-      .insert({
-        user_id: user.id,
+      // 1. Get validated data from the request body
+      const {
         course_id,
         title,
+        description,
+        due_date,
         submission_method,
         submission_link,
-        due_date,
-      })
-      .select()
-      .single();
+        reminders,
+      } = body;
 
-    if (error) throw error;
+      // 2. SECURITY: Verify course ownership
+      const { data: course, error: courseError } = await supabaseClient
+        .from('courses')
+        .select('id')
+        .eq('id', course_id)
+        .eq('user_id', user.id)
+        .single();
 
-    return new Response(
-      JSON.stringify(data),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201,
+      if (courseError || !course) {
+        throw new AppError(
+          'Course not found or access denied.',
+          404,
+          ERROR_CODES.DB_NOT_FOUND,
+        );
       }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+
+      // 3. Core Business Logic
+      const encryptedTitle = await encrypt(title, encryptionKey);
+      const encryptedDescription = description
+        ? await encrypt(description, encryptionKey)
+        : null;
+
+      const { data: newAssignment, error: insertError } = await supabaseClient
+        .from('assignments')
+        .insert({
+          user_id: user.id,
+          course_id,
+          title: encryptedTitle,
+          description: encryptedDescription,
+          due_date,
+          submission_method,
+          submission_link,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw handleDbError(insertError);
       }
-    );
-  }
-});
+
+      // 4. Reminder creation logic
+      if (newAssignment && reminders && reminders.length > 0) {
+        const dueDate = new Date(due_date);
+        const remindersToInsert = reminders.map((mins: number) => ({
+          user_id: user.id,
+          assignment_id: newAssignment.id,
+          reminder_time: new Date(
+            dueDate.getTime() - mins * 60000,
+          ).toISOString(),
+          reminder_type: 'assignment',
+          day_number: Math.ceil(mins / (24 * 60)),
+          completed: false,
+        }));
+
+        const { error: reminderError } = await supabaseClient
+          .from('reminders')
+          .insert(remindersToInsert);
+        if (reminderError) {
+          await logger.error('Failed to create reminders for assignment', {
+            assignment_id: newAssignment.id,
+            error: reminderError.message,
+          });
+          // Non-critical error, so we don't throw. The assignment was still created.
+        }
+      }
+
+      // 5. Return the result
+      return newAssignment;
+    },
+    {
+      rateLimitName: 'create-assignment',
+      checkTaskLimit: true,
+      schema: CreateAssignmentSchema,
+    },
+  ),
+);

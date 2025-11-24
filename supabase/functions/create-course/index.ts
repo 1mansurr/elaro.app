@@ -1,100 +1,80 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
+import {
+  createAuthenticatedHandler,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { CreateCourseSchema } from '../_shared/schemas/course.ts';
 
-const COURSE_LIMIT = 3;
+const COURSE_LIMITS: { [key: string]: number } = {
+  free: 2,
+  oddity: 7,
+};
 
-serve(async (req) => {
-  // This is needed if you're planning to invoke your function from a browser.
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+serve(
+  createAuthenticatedHandler(
+    async ({ user, supabaseClient, body }) => {
+      // Validation is now handled automatically by the handler using CreateCourseSchema
 
-  try {
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! }
-        }
+      // 1. Get validated data from the request body
+      const { course_name, course_code, about_course } = body;
+
+      // 2. TIER-SPECIFIC LIMIT LOGIC
+      // Get the user's subscription tier to apply the correct limit
+      const { data: userProfile, error: profileError } = await supabaseClient
+        .from('users')
+        .select('subscription_tier')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        throw handleDbError(profileError);
       }
-    );
 
-    const { data: { user } } = await supabaseClient.auth.getUser();
+      const userTier = userProfile?.subscription_tier || 'free';
+      const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
 
-    if (!user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 401,
-        }
-      );
-    }
+      // Check if the user has reached their course limit
+      const { count, error: countError } = await supabaseClient
+        .from('courses')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id);
 
-    const { course_name, course_code, about_course } = await req.json();
-
-    if (!course_name) {
-      return new Response(
-        JSON.stringify({ error: 'Course name is required.' }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 400,
-        }
-      );
-    }
-
-    // --- MVP LIMIT LOGIC ---
-    const { count, error: countError } = await supabaseClient
-      .from('courses')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', user.id);
-
-    if (countError) {
-      throw countError;
-    }
-
-    if (count !== null && count >= COURSE_LIMIT) {
-      return new Response(
-        JSON.stringify({ error: `Course limit of ${COURSE_LIMIT} reached.` }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 403, // Forbidden
-        }
-      );
-    }
-    // --- END OF MVP LIMIT LOGIC ---
-
-    const { data: newCourse, error: insertError } = await supabaseClient
-      .from('courses')
-      .insert({
-        user_id: user.id,
-        course_name,
-        course_code,
-        about_course,
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      throw insertError;
-    }
-
-    return new Response(
-      JSON.stringify(newCourse),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 201, // Created
+      if (countError) {
+        throw handleDbError(countError);
       }
-    );
-  } catch (error) {
-    return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500,
+
+      if (count !== null && count >= courseLimit) {
+        throw new AppError(
+          `You have reached the course limit of ${courseLimit} for the '${userTier}' plan.`,
+          403,
+          ERROR_CODES.RESOURCE_LIMIT_EXCEEDED,
+        );
       }
-    );
-  }
-});
+
+      // 3. Create the course
+      const { data: newCourse, error: insertError } = await supabaseClient
+        .from('courses')
+        .insert({
+          user_id: user.id,
+          course_name,
+          course_code,
+          about_course,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        throw handleDbError(insertError);
+      }
+
+      // 4. Return the result
+      return newCourse;
+    },
+    {
+      rateLimitName: 'create-course',
+      schema: CreateCourseSchema,
+    },
+  ),
+);

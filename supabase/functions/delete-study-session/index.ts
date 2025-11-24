@@ -1,43 +1,65 @@
-// Create this new Edge Function to handle securely deleting a study session.
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import {
+  createAuthenticatedHandler,
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { handleDbError } from '../api-v2/_handler-utils.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
+import { DeleteStudySessionSchema } from '../_shared/schemas/studySession.ts';
 
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
-import { createSupabaseClient } from '../_shared/supabase-client.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+async function handleDeleteStudySession(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const traceContext = extractTraceContext(req as unknown as Request);
+  const { session_id } = body;
 
-serve(async (req ) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+  await logger.info(
+    'Verifying study session ownership',
+    { user_id: user.id, session_id },
+    traceContext,
+  );
+
+  // SECURITY: Verify ownership before deleting
+  const { data: existing, error: checkError } = await supabaseClient
+    .from('study_sessions')
+    .select('id')
+    .eq('id', session_id)
+    .eq('user_id', user.id)
+    .single();
+
+  if (checkError || !existing) {
+    if (checkError) {
+      throw handleDbError(checkError);
+    }
+    throw new AppError(
+      'Study session not found or access denied.',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
+    );
   }
 
-  try {
-    const supabase = createSupabaseClient(req);
-    const { sessionId } = await req.json();
-    const { data: { user } } = await supabase.auth.getUser();
+  // Perform soft delete
+  const { error: deleteError } = await supabaseClient
+    .from('study_sessions')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', session_id);
 
-    if (!user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+  if (deleteError) throw handleDbError(deleteError);
 
-    // Delete the study session, ensuring the user_id matches.
-    const { error } = await supabase
-      .from('study_sessions')
-      .delete()
-      .eq('id', sessionId)
-      .eq('user_id', user.id);
+  await logger.info(
+    'Successfully soft deleted study session',
+    { user_id: user.id, session_id },
+    traceContext,
+  );
 
-    if (error) {
-      throw new Error(`Failed to delete study session: ${error.message}`);
-    }
+  return { success: true, message: 'Study session deleted successfully.' };
+}
 
-    return new Response(JSON.stringify({ message: 'Study session deleted successfully' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200,
-    });
-
-  } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 500,
-    });
-  }
-});
+serve(
+  createAuthenticatedHandler(handleDeleteStudySession, {
+    rateLimitName: 'delete-study-session',
+    schema: DeleteStudySessionSchema,
+  }),
+);
