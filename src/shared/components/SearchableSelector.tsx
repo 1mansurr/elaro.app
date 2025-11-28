@@ -1,14 +1,14 @@
 // FILE: src/components/SearchableSelector.tsx
 // ACTION: Create this new reusable component.
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  FlatList,
+  ScrollView,
   TouchableWithoutFeedback,
   Keyboard,
   Dimensions,
@@ -27,6 +27,9 @@ interface Props {
   isActive?: boolean;
   showOther?: boolean;
   tooltipText?: string;
+  returnKeyType?: 'done' | 'next' | 'search' | 'go' | 'send';
+  onFocusScroll?: () => void;
+  onSelectionComplete?: () => void; // Callback when selection is made
 }
 
 const SearchableSelector: React.FC<Props> = ({
@@ -41,6 +44,9 @@ const SearchableSelector: React.FC<Props> = ({
   isActive = false,
   showOther = true,
   tooltipText,
+  returnKeyType = 'search',
+  onFocusScroll,
+  onSelectionComplete,
 }) => {
   const [isInputMode, setIsInputMode] = useState(false);
   const [internalValue, setInternalValue] = useState(selectedValue);
@@ -51,6 +57,8 @@ const SearchableSelector: React.FC<Props> = ({
   const manualInputRef = useRef<TextInput | null>(null);
   const selectorInputRef = useRef<TextInput | null>(null);
   const dropdownRef = useRef<View | null>(null);
+  const inputWrapperRef = useRef<TouchableOpacity | null>(null);
+  const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
 
   // Sync internalValue with selectedValue from parent
   useEffect(() => {
@@ -69,9 +77,27 @@ const SearchableSelector: React.FC<Props> = ({
   useEffect(() => {
     if (!isActive && isDropdownOpen) {
       closeDropdown();
-      setSearchQuery(selectedValue || '');
+      // Don't reset searchQuery when becoming inactive - preserve user's typed text
+      // The text will be preserved and can be used when they come back to this selector
+      // setSearchQuery(selectedValue || ''); // Commented out to preserve user input
     }
   }, [isActive, selectedValue]);
+
+  // Auto-focus when becoming active
+  useEffect(() => {
+    if (isActive && !isInputMode) {
+      // Focus the selector input when it becomes active
+      // Use a slightly longer timeout to ensure the component is fully rendered
+      setTimeout(() => {
+        selectorInputRef.current?.focus();
+        // Also ensure dropdown opens when focused
+        setIsDropdownOpen(true);
+        if (onOpen) {
+          onOpen(id);
+        }
+      }, 150);
+    }
+  }, [isActive, isInputMode, id, onOpen]);
 
   // Auto-switch back to picker mode when user modifies text in input mode
   useEffect(() => {
@@ -133,7 +159,9 @@ const SearchableSelector: React.FC<Props> = ({
   }, [data, searchQuery, showOther]);
 
   const openDropdown = () => {
+    // Set state first to ensure immediate UI update
     setIsDropdownOpen(true);
+    // Then notify parent
     if (onOpen) {
       onOpen(id);
     }
@@ -177,7 +205,7 @@ const SearchableSelector: React.FC<Props> = ({
         }
       }, 50);
     } else {
-      // Regular selection
+      // Regular selection - update state immediately (no delay)
       setIsInputMode(false);
       setIsOtherSelected(false);
       setInternalValue(selectedItem);
@@ -185,11 +213,15 @@ const SearchableSelector: React.FC<Props> = ({
       onValueChange(selectedItem);
       closeDropdown();
 
-      // Dismiss keyboard after brief delay
+      // Call selection complete callback to trigger auto-navigation
+      if (onSelectionComplete) {
+        // Use setTimeout with 0 delay to ensure state updates are processed first
       setTimeout(() => {
-        Keyboard.dismiss();
-        selectorInputRef.current?.blur();
-      }, 100);
+          onSelectionComplete();
+        }, 0);
+      }
+
+      // Don't dismiss keyboard - keep it open for next selector
     }
   };
 
@@ -198,13 +230,24 @@ const SearchableSelector: React.FC<Props> = ({
     onValueChange(text);
   };
 
-  const handleOutsidePress = () => {
+  const handleOutsidePress = useCallback(() => {
+    // Only close dropdown, keep keyboard open so user can keep typing
     closeDropdown();
-    Keyboard.dismiss();
-    // Keep searchQuery as is (don't reset)
+    // Don't dismiss keyboard - let user continue typing
+  }, []);
+
+  const handleInputLayout = () => {
+    if (inputWrapperRef.current) {
+      // Use setTimeout to ensure layout is complete before measuring
+      setTimeout(() => {
+        inputWrapperRef.current?.measureInWindow((x, y, width, height) => {
+          setInputLayout({ x, y, width, height });
+        });
+      }, 0);
+    }
   };
 
-  const renderOption = ({ item }: { item: string }) => {
+  const renderOption = (item: string, index: number) => {
     const isSelected = item === internalValue || item === selectedValue;
     const isHighlighted =
       item !== 'Other' &&
@@ -214,10 +257,11 @@ const SearchableSelector: React.FC<Props> = ({
 
     return (
       <TouchableOpacity
+        key={`${item}-${index}`}
         style={[
           styles.optionRow,
-          isSelected && styles.optionRowSelected,
-          isHighlighted && styles.optionRowHighlighted,
+          isSelected ? styles.optionRowSelected : undefined,
+          isHighlighted ? styles.optionRowHighlighted : undefined,
         ]}
         onPress={() => handleSelect(item)}>
         <Text style={styles.optionText}>{item}</Text>
@@ -238,6 +282,11 @@ const SearchableSelector: React.FC<Props> = ({
             placeholder={placeholder}
             value={internalValue}
             onChangeText={handleTextChange}
+            returnKeyType={returnKeyType}
+            onSubmitEditing={() => {
+              // Dismiss keyboard when Done is pressed
+              Keyboard.dismiss();
+            }}
           />
           {isOtherSelected && tooltipText && (
             <Text style={styles.tooltip}>{tooltipText}</Text>
@@ -245,21 +294,77 @@ const SearchableSelector: React.FC<Props> = ({
         </View>
       ) : (
         <>
-          <View style={styles.selectorInputWrapper}>
+          <TouchableOpacity
+            ref={inputWrapperRef}
+            style={styles.selectorInputWrapper}
+            onLayout={handleInputLayout}
+            onPress={() => {
+              // Focus the TextInput when wrapper is tapped
+              // Use setTimeout to ensure focus happens after any state updates
+              setTimeout(() => {
+                selectorInputRef.current?.focus();
+                // The onFocus handler will handle opening dropdown and calling onOpen
+              }, 0);
+            }}
+            activeOpacity={1}>
             <Ionicons name="search" size={18} color="#9ca3af" />
             <TextInput
               ref={selectorInputRef}
               style={styles.selectorInput}
               placeholder={searchPlaceholder}
               value={searchQuery}
+              returnKeyType={returnKeyType}
               onChangeText={text => {
                 setSearchQuery(text);
                 setIsDropdownOpen(true);
+                handleInputLayout(); // Update position when text changes
                 if (onOpen) {
                   onOpen(id);
                 }
               }}
-              onFocus={openDropdown}
+              onSubmitEditing={() => {
+                // When Done is pressed, check if there's a matching option
+                const trimmedQuery = searchQuery.trim();
+                if (trimmedQuery) {
+                  // Find exact match (case-insensitive)
+                  const matchingOption = data.find(
+                    item => item.toLowerCase() === trimmedQuery.toLowerCase()
+                  );
+                  if (matchingOption) {
+                    // Auto-select the matching option
+                    handleSelect(matchingOption);
+                    return;
+                  }
+                }
+                
+                // If we have a selected value, trigger navigation to next selector
+                if (selectedValue && onSelectionComplete) {
+                  Keyboard.dismiss();
+                  setTimeout(() => {
+                    onSelectionComplete();
+                  }, 0);
+                  return;
+                }
+                
+                // Otherwise just dismiss keyboard, keep text
+                Keyboard.dismiss();
+              }}
+              onFocus={() => {
+                // Open dropdown immediately and synchronously
+                setIsDropdownOpen(true);
+                // Set active state immediately
+                if (onOpen) {
+                  onOpen(id);
+                }
+                // Measure layout and trigger scroll callback
+                setTimeout(() => {
+                  handleInputLayout();
+                  // Trigger scroll callback if provided
+                  if (onFocusScroll) {
+                    onFocusScroll();
+                  }
+                }, 100);
+              }}
             />
             {!!searchQuery && (
               <TouchableOpacity
@@ -270,26 +375,22 @@ const SearchableSelector: React.FC<Props> = ({
                 <Ionicons name="close-circle" size={18} color="#9ca3af" />
               </TouchableOpacity>
             )}
-          </View>
+          </TouchableOpacity>
 
-          {isDropdownOpen && isActive && (
-            <>
-              <TouchableWithoutFeedback onPress={handleOutsidePress}>
-                <View style={styles.overlay} />
-              </TouchableWithoutFeedback>
-              <View style={styles.dropdownWrapper}>
-                <View style={styles.dropdownContainer} ref={dropdownRef}>
-                  <FlatList
-                    data={filteredOptions}
-                    keyExtractor={(item, index) => `${item}-${index}`}
-                    renderItem={renderOption}
-                    keyboardShouldPersistTaps="handled"
-                    contentContainerStyle={styles.optionsListContent}
-                    style={styles.optionsList}
-                  />
-                </View>
+          {/* Show dropdown immediately when focused, not just when isActive */}
+          {isDropdownOpen && (
+            <View style={styles.dropdownWrapper}>
+              <View style={styles.dropdownContainer} ref={dropdownRef}>
+                <ScrollView
+                  keyboardShouldPersistTaps="handled"
+                  nestedScrollEnabled={true}
+                  style={styles.optionsList}
+                  contentContainerStyle={styles.optionsListContent}
+                  showsVerticalScrollIndicator={true}>
+                  {filteredOptions.map((item, index) => renderOption(item, index))}
+                </ScrollView>
               </View>
-            </>
+            </View>
           )}
         </>
       )}
@@ -349,6 +450,7 @@ const styles = StyleSheet.create({
   dropdownWrapper: {
     marginTop: 6,
     position: 'relative',
+    zIndex: 1000,
   },
   dropdownContainer: {
     marginTop: 6,
@@ -406,3 +508,4 @@ const styles = StyleSheet.create({
 });
 
 export default SearchableSelector;
+

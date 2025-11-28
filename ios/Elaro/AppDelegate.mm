@@ -1,5 +1,6 @@
 #import "AppDelegate.h"
 
+#import <React/RCTBundleURLProvider.h>
 #import <React/RCTLinkingManager.h>
 
 @implementation AppDelegate
@@ -13,6 +14,11 @@
   self.initialProps = @{};
 
   return [super application:application didFinishLaunchingWithOptions:launchOptions];
+}
+
+- (NSURL *)sourceURLForBridge:(RCTBridge *)bridge
+{
+  return [super sourceURLForBridge:bridge];
 }
 
 // Linking API

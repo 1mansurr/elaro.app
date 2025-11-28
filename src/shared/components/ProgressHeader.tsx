@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 interface ProgressHeaderProps {
@@ -11,8 +12,10 @@ export const ProgressHeader: React.FC<ProgressHeaderProps> = ({
   currentStep,
   totalSteps,
 }) => {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
       {/* Step text */}
       <Text style={styles.stepText}>
         Step {currentStep} of {totalSteps}
@@ -54,7 +57,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.gray,
+    color: COLORS.textSecondary, // Changed from COLORS.gray to make it more visible
     textAlign: 'center',
     marginBottom: SPACING.xs,
   },

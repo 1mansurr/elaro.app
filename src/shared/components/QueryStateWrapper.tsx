@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   RefreshControl,
+  FlatList,
+  SectionList,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -16,6 +18,40 @@ import {
   getErrorTitle,
   isRecoverableError,
 } from '@/utils/errorMapping';
+
+/**
+ * Helper function to check if children contain a VirtualizedList component
+ * (FlatList, SectionList, or any component that uses VirtualizedList)
+ */
+const hasVirtualizedList = (children: React.ReactNode): boolean => {
+  if (!children) return false;
+
+  const checkElement = (element: React.ReactNode): boolean => {
+    if (!React.isValidElement(element)) return false;
+
+    // Check if the element itself is a VirtualizedList
+    const elementType = element.type;
+    if (
+      elementType === FlatList ||
+      elementType === SectionList ||
+      (typeof elementType === 'string' &&
+        (elementType === 'FlatList' || elementType === 'SectionList'))
+    ) {
+      return true;
+    }
+
+    // Check children recursively
+    if (element.props?.children) {
+      const childrenArray = React.Children.toArray(element.props.children);
+      return childrenArray.some(child => checkElement(child));
+    }
+
+    return false;
+  };
+
+  const childrenArray = React.Children.toArray(children);
+  return childrenArray.some(child => checkElement(child));
+};
 
 interface QueryStateWrapperProps {
   isLoading: boolean;
@@ -206,7 +242,65 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
 
   // Success State - Render children with optional pull-to-refresh
   if (onRefresh) {
-    // Wrap children in ScrollView with RefreshControl
+    // Check if children contain a VirtualizedList
+    // If so, don't wrap in ScrollView - let the VirtualizedList handle its own scrolling
+    // and pass RefreshControl directly to it via cloneElement
+    if (hasVirtualizedList(children)) {
+      // Recursively clone children and add RefreshControl to VirtualizedList components
+      const addRefreshControlToVirtualizedList = (
+        element: React.ReactNode,
+      ): React.ReactNode => {
+        if (!React.isValidElement(element)) {
+          return element;
+        }
+
+        const elementType = element.type;
+        // Check if this element is a VirtualizedList
+        if (
+          elementType === FlatList ||
+          elementType === SectionList ||
+          (typeof elementType === 'string' &&
+            (elementType === 'FlatList' || elementType === 'SectionList'))
+        ) {
+          return React.cloneElement(element as React.ReactElement<any>, {
+            refreshControl: (
+              <RefreshControl
+                refreshing={isRefetching}
+                onRefresh={onRefresh}
+                tintColor={theme.accent}
+                colors={[theme.accent]}
+              />
+            ),
+          });
+        }
+
+        // Recursively process children
+        if (element.props?.children) {
+          const processedChildren = React.Children.map(
+            element.props.children,
+            addRefreshControlToVirtualizedList,
+          );
+          return React.cloneElement(element, {
+            children: processedChildren,
+          });
+        }
+
+        return element;
+      };
+
+      const childrenWithRefresh = React.Children.map(
+        children,
+        addRefreshControlToVirtualizedList,
+      );
+
+      return (
+        <View style={{ flex: 1, backgroundColor: theme.background }}>
+          {childrenWithRefresh}
+        </View>
+      );
+    }
+
+    // No VirtualizedList found - safe to wrap in ScrollView
     return (
       <View style={{ flex: 1, backgroundColor: theme.background }}>
         <ScrollView

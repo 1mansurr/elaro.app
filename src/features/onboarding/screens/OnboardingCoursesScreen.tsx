@@ -5,12 +5,11 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, QueryStateWrapper } from '@/shared/components';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { CommonActions } from '@react-navigation/native';
 import { useOnboarding } from '@/contexts/OnboardingContext';
 import { useCourses } from '@/hooks/useDataQueries';
 import { supabase } from '@/services/supabase';
@@ -83,9 +82,11 @@ const OnboardingCoursesScreen = () => {
           await queryClient.invalidateQueries({ queryKey: ['courses'] });
           await queryClient.invalidateQueries({ queryKey: ['lectures'] });
 
+          // Type assertion: taskData is Course when taskType is 'course'
+          const courseData = pendingTask.taskData as { courseName: string };
           Alert.alert(
             'Welcome!',
-            `Your course "${pendingTask.taskData.courseName}" has been automatically created!`,
+            `Your course "${courseData.courseName}" has been automatically created!`,
           );
         } catch (error) {
           console.error('Failed to auto-create course:', error);
@@ -114,25 +115,74 @@ const OnboardingCoursesScreen = () => {
         dateOfBirth,
         hasParentalConsent,
       } = onboardingData;
-      // The courses now come from our React Query hook, or empty array if skipping
-      const finalCourses = skipCourses ? [] : courses || [];
 
-      const { error } = await supabase.functions.invoke('complete-onboarding', {
-        body: {
-          username,
-          country,
-          university,
-          program,
-          courses: finalCourses,
-          dateOfBirth,
-          hasParentalConsent,
-          marketingOptIn,
-        },
+      // Validate required fields before sending
+      if (!username || username.trim().length < 4) {
+        Alert.alert(
+          'Missing Information',
+          'Please complete your profile setup. Username is required and must be at least 4 characters.',
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      if (!dateOfBirth) {
+        Alert.alert(
+          'Missing Information',
+          'Please complete your profile setup. Date of birth is required.',
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // The courses now come from our React Query hook, or empty array if skipping
+      // Map courses to the format expected by the edge function (snake_case)
+      const finalCourses = skipCourses
+        ? []
+        : (courses || []).map(course => ({
+            course_name: course.courseName,
+            course_code: course.courseCode,
+          }));
+
+      // Filter out empty strings for optional fields - convert to undefined
+      // This prevents schema validation errors (empty string fails .min(1) check even for optional fields)
+      const body = {
+        username: username.trim(),
+        country: country && country.trim() ? country.trim() : undefined,
+        university: university && university.trim() ? university.trim() : undefined,
+        program: program && program.trim() ? program.trim() : undefined,
+        courses: finalCourses,
+        dateOfBirth: dateOfBirth,
+        hasParentalConsent: hasParentalConsent || false,
+        marketingOptIn: marketingOptIn || false,
+      };
+
+      // Log the request body for debugging (excluding sensitive data)
+      console.log('Onboarding completion request:', {
+        username: body.username,
+        hasCountry: !!body.country,
+        hasUniversity: !!body.university,
+        hasProgram: !!body.program,
+        coursesCount: body.courses.length,
+        hasDateOfBirth: !!body.dateOfBirth,
+        skipCourses,
+      });
+
+      const { error, data } = await supabase.functions.invoke('complete-onboarding', {
+        body,
       });
 
       if (error) {
+        console.error('Onboarding completion error details:', {
+          error,
+          message: error.message,
+          code: error.code,
+          context: error.context,
+        });
         throw error;
       }
+
+      console.log('Onboarding completed successfully:', data);
 
       // Refresh user profile to get updated onboarding_completed status
       // Wait a moment for backend to process the update
@@ -144,15 +194,9 @@ const OnboardingCoursesScreen = () => {
         : 'Your profile has been saved successfully.';
       Alert.alert('Setup Complete!', message);
 
-      // Navigate to main app after successful onboarding completion
-      // Use CommonActions.reset() to properly reset navigation stack from nested navigator
       // The AuthenticatedNavigator will automatically show Main when onboarding_completed is true
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        }),
-      );
+      // No need to manually navigate - refreshUser() will trigger a re-render
+      // and AuthenticatedNavigator will switch to the main app screens
     } catch (error: unknown) {
       console.error('Onboarding completion error:', error);
       const errorTitle = getErrorTitle(error);
@@ -178,24 +222,27 @@ const OnboardingCoursesScreen = () => {
     [],
   );
 
-  const handleScrollToIndexFailed = useCallback(info => {
-    const wait = new Promise(resolve => setTimeout(resolve, 100));
-    wait.then(() => {
-      if (listRef.current) {
-        const targetIndex = Math.min(
-          info.highestMeasuredFrameIndex + 1,
-          info.index,
-        );
-        listRef.current.scrollToIndex({
-          index: targetIndex,
-          animated: true,
-        });
-      }
-    });
-  }, []);
+  const handleScrollToIndexFailed = useCallback(
+    (info: { index: number; highestMeasuredFrameIndex: number }) => {
+      const wait = new Promise(resolve => setTimeout(resolve, 100));
+      wait.then(() => {
+        if (listRef.current) {
+          const targetIndex = Math.min(
+            info.highestMeasuredFrameIndex + 1,
+            info.index,
+          );
+          listRef.current.scrollToIndex({
+            index: targetIndex,
+            animated: true,
+          });
+        }
+      });
+    },
+    [],
+  );
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View style={styles.container}>
       <Text style={styles.title}>Add Your First Courses</Text>
       <Text style={styles.subtitle}>
         Get a head start by adding up to 3 courses now, or skip this step and
@@ -217,7 +264,32 @@ const OnboardingCoursesScreen = () => {
           data={courses || []}
           renderItem={renderCourseItem}
           keyExtractor={(item, index) => index.toString()}
-          scrollEnabled={false}
+          scrollEnabled={true}
+          ListFooterComponent={
+            <>
+              {/* Marketing Opt-In Section */}
+              <View style={styles.marketingSection}>
+                <TouchableOpacity
+                  style={styles.checkboxContainer}
+                  onPress={() => setMarketingOptIn(!marketingOptIn)}
+                  activeOpacity={0.7}>
+                  <View
+                    style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
+                    {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                  <View style={styles.checkboxTextContainer}>
+                    <Text style={styles.checkboxLabel}>
+                      Yes, send me helpful tips, new feature announcements, and special
+                      offers from ELARO.
+                    </Text>
+                    <Text style={styles.checkboxSubtext}>
+                      You can change this anytime in your Settings.
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </>
+          }
           // Performance optimizations
           removeClippedSubviews={true}
           maxToRenderPerBatch={10}
@@ -233,52 +305,57 @@ const OnboardingCoursesScreen = () => {
         />
       </QueryStateWrapper>
 
-      {/* Marketing Opt-In Section */}
-      <View style={styles.marketingSection}>
-        <TouchableOpacity
-          style={styles.checkboxContainer}
-          onPress={() => setMarketingOptIn(!marketingOptIn)}
-          activeOpacity={0.7}>
-          <View
-            style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
-            {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
-          </View>
-          <View style={styles.checkboxTextContainer}>
-            <Text style={styles.checkboxLabel}>
-              Yes, send me helpful tips, new feature announcements, and special
-              offers from ELARO.
-            </Text>
-            <Text style={styles.checkboxSubtext}>
-              You can change this anytime in your Settings.
-            </Text>
-          </View>
-        </TouchableOpacity>
-      </View>
+      {/* Always visible buttons section */}
+      <View style={styles.footerSection}>
+        <View style={styles.actionButtonsContainer}>
+          <Button
+            title="Add a Course"
+            onPress={() => navigation.navigate('AddCourseFlow')}
+            disabled={(courses?.length || 0) >= 3 || coursesLoading}
+          />
+        </View>
 
-      <View style={styles.actionButtonsContainer}>
-        <Button
-          title="Add a Course"
-          onPress={() => navigation.getParent()?.navigate('AddCourseFlow')}
-          disabled={(courses?.length || 0) >= 3 || coursesLoading}
-        />
-      </View>
+        {/* Marketing Opt-In Section - show when courses exist */}
+        {courses && courses.length > 0 && (
+          <View style={styles.marketingSection}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setMarketingOptIn(!marketingOptIn)}
+              activeOpacity={0.7}>
+              <View
+                style={[styles.checkbox, marketingOptIn && styles.checkboxChecked]}>
+                {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <View style={styles.checkboxTextContainer}>
+                <Text style={styles.checkboxLabel}>
+                  Yes, send me helpful tips, new feature announcements, and special
+                  offers from ELARO.
+                </Text>
+                <Text style={styles.checkboxSubtext}>
+                  You can change this anytime in your Settings.
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
-      <View style={styles.buttonContainer}>
-        <Button title="Back" onPress={handleBack} variant="outline" />
-        <Button
-          title={(courses?.length || 0) > 0 ? 'Finish Setup' : 'Skip for Now'}
-          onPress={() =>
-            (courses?.length || 0) > 0 ? handleFinish(false) : handleSkip()
-          }
-          loading={isLoading}
-        />
+        <View style={styles.buttonContainer}>
+          <Button title="Back" onPress={handleBack} variant="outline" />
+          <Button
+            title={(courses?.length || 0) > 0 ? 'Finish Setup' : 'Skip'}
+            onPress={() =>
+              (courses?.length || 0) > 0 ? handleFinish(false) : handleSkip()
+            }
+            loading={isLoading}
+          />
+        </View>
       </View>
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flexGrow: 1, padding: 20, backgroundColor: '#fff' },
+  container: { flex: 1, padding: 20, backgroundColor: '#fff' },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -366,6 +443,32 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
     gap: 10,
+  },
+  footerSection: {
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 10,
+    backgroundColor: '#fff',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    paddingHorizontal: 20,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 22,
   },
 });
 

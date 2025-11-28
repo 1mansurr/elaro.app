@@ -80,3 +80,41 @@ export const UnsuspendUserSchema = z.object({
 export const DeleteUserSchema = z.object({
   user_id: z.string().uuid('Invalid user ID format'),
 });
+
+// Schema for completing onboarding
+export const CompleteOnboardingSchema = z.object({
+  username: z
+    .string()
+    .min(4, 'Username must be at least 4 characters')
+    .max(20, 'Username must be 20 characters or less')
+    .regex(
+      /^[a-zA-Z0-9_.]+$/,
+      'Username can only contain letters, numbers, dots, and underscores',
+    )
+    .refine(
+      val => !/^[._]/.test(val),
+      'Username cannot start with a dot or underscore',
+    )
+    .refine(
+      val => !/[._]$/.test(val),
+      'Username cannot end with a dot or underscore',
+    )
+    .refine(
+      val => !/[._]{2,}/.test(val),
+      'Username cannot have consecutive dots or underscores',
+    ),
+  country: z.string().min(1, 'Country is required').max(50).optional(),
+  university: z.string().max(100).optional(),
+  program: z.string().max(100).optional(),
+  courses: z
+    .array(
+      z.object({
+        course_name: z.string().min(1).max(200),
+        course_code: z.string().max(50).optional(),
+      }),
+    )
+    .default([]),
+  dateOfBirth: z.string().date('Invalid date format'),
+  hasParentalConsent: z.boolean().default(false),
+  marketingOptIn: z.boolean().default(false),
+});

@@ -18,3 +18,4 @@ export {
   useRestoreTask,
 } from './useTaskMutations';
 export { useDebounce } from './useDebounce';
+export { useUsernameAvailability } from './useUsernameAvailability';

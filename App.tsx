@@ -520,17 +520,25 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const prepare = async () => {
       try {
-        // Initialize RevenueCat with enhanced error handling
+        // Set a minimum display time for splash (800ms) for better UX
+        const minSplashTime = Promise.resolve().then(() =>
+          new Promise(resolve => setTimeout(resolve, 800)),
+        );
+
+        // Run initialization in parallel where possible (non-blocking)
+        const initPromises = [
+          // RevenueCat - make non-blocking (run in background)
+          (async () => {
+            try {
         const revenueCatApiKey =
           Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
 
         if (revenueCatApiKey) {
-          try {
             const initSuccess =
               await revenueCatService.initialize(revenueCatApiKey);
 
             if (initSuccess) {
-              console.log('✅ RevenueCat initialized successfully');
+                  console.log('✅ RevenueCat initialized');
               try {
                 const { verifyRevenueCatSetup } = await import(
                   './src/config/verifyRevenuecat'
@@ -544,42 +552,54 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                   );
                 }
               } catch (verifyError) {
-                console.error('❌ RevenueCat verification error:', verifyError);
-                // Log to error tracking if available
+                    console.warn(
+                      '⚠️ RevenueCat verification error (non-blocking):',
+                      verifyError,
+                    );
                 errorTracking.captureError(verifyError as Error, {
                   tags: {
                     component: 'revenuecat',
                     phase: 'verification',
                   },
                 });
-                // Don't block app startup
               }
             } else {
               console.warn(
                 '⚠️ RevenueCat initialization failed - subscription features disabled',
               );
-            }
-          } catch (initError) {
-            console.error('❌ RevenueCat initialization error:', initError);
-            // Log to error tracking if available
-            errorTracking.captureError(initError as Error, {
-              tags: { component: 'revenuecat', phase: 'initialization' },
-            });
-            // Don't block app startup - app can function without RevenueCat
           }
         } else {
           console.warn(
             '⚠️ RevenueCat API key not found - subscription features disabled',
           );
-          console.warn('   Set EXPO_PUBLIC_REVENUECAT_APPLE_KEY in .env file');
-        }
+              }
+            } catch (error) {
+              console.warn(
+                '⚠️ RevenueCat init failed (non-blocking):',
+                error,
+              );
+              errorTracking.captureError(error as Error, {
+                tags: { component: 'revenuecat', phase: 'initialization' },
+              });
+            }
+          })(),
 
-        // Initialize Sync Manager for offline support
+          // Sync Manager - make non-blocking
+          (async () => {
+            try {
         console.log('🔄 Initializing Sync Manager...');
         await syncManager.start();
         console.log('✅ Sync Manager initialized');
+            } catch (error) {
+              console.warn(
+                '⚠️ Sync Manager init failed (non-blocking):',
+                error,
+              );
+            }
+          })(),
+        ];
 
-        // Initialize circuit breaker monitoring
+        // Initialize circuit breaker monitoring (non-blocking)
         import('./src/utils/circuitBreakerMonitor')
           .then(({ startCircuitBreakerMonitoring }) => {
             startCircuitBreakerMonitoring(30000); // Check every 30 seconds
@@ -594,18 +614,13 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           },
         );
 
-        // Future async initialization can go here:
-        // - Load custom fonts
-        // - Check for app updates
-        // - Load user preferences
-        // - Initialize push notifications
-        // - Check onboarding status
-
-        // Small delay to ensure smooth transition
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Wait for minimum splash time OR initialization (whichever is longer)
+        await Promise.all([
+          minSplashTime,
+          Promise.allSettled(initPromises),
+        ]);
       } catch (e) {
         console.error('❌ App initialization error:', e);
-        // Log to error tracking service
         errorTracking.captureError(e as Error, {
           tags: { component: 'app', phase: 'initialization' },
         });
@@ -618,26 +633,26 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
     prepare();
   }, []);
 
+  // Hide native splash screen as soon as we show animated splash
+  useEffect(() => {
+    SplashScreen.hideAsync().catch(console.error);
+  }, []);
+
   const onLayoutRootView = useCallback(async () => {
-    if (appIsReady) {
-      // Hide the native splash screen to reveal our animated splash screen
-      await SplashScreen.hideAsync();
-    }
-  }, [appIsReady]);
+    // Layout callback - no longer needed for splash hiding
+  }, []);
 
-  if (!appIsReady) {
-    // While the app is preparing (fonts, auth state), we show nothing.
-    // The native splash screen is still visible at this point.
-    return null;
-  }
-
-  // Once the app is ready, we decide whether to show the animation or the main app.
-  if (!isAnimationFinished) {
-    // If the app is ready but the animation isn't finished, show the animated splash screen.
+  // Show splash screen immediately while initialization happens
+  if (!appIsReady || !isAnimationFinished) {
     return (
+      <View style={{ flex: 1, backgroundColor: COLORS.primary }}>
       <AnimatedSplashScreen
-        onAnimationFinish={() => setAnimationFinished(true)}
+          onAnimationFinish={() => {
+            // Mark animation as finished (will be checked when app is ready)
+            setAnimationFinished(true);
+          }}
       />
+      </View>
     );
   }
 
@@ -859,9 +874,8 @@ function App() {
         const projectToken =
           Constants.expoConfig?.extra?.EXPO_PUBLIC_MIXPANEL_TOKEN;
 
-        // Parallelize independent operations for faster startup
-        const [analyticsInit, versionCheck, navState] =
-          await Promise.allSettled([
+        // Parallelize independent operations for faster startup (all non-blocking)
+        Promise.allSettled([
             // Initialize Analytics (non-blocking)
             analyticsService.initialize(projectToken || '').then(() => {
               // Track app launch only after successful initialization
@@ -870,71 +884,55 @@ function App() {
                 timestamp: new Date().toISOString(),
                 app_version: '1.0.0',
               });
+            console.log('✅ Analytics initialized');
             }),
 
             // Check API version compatibility (non-blocking, don't fail if it fails)
-            promptForUpdateIfNeeded().catch(error => {
+          promptForUpdateIfNeeded()
+            .then(() => {
+              console.log('✅ API version check complete');
+            })
+            .catch(error => {
               console.warn('⚠️ API version check failed:', error);
-              return null; // Don't block startup
             }),
 
             // Load navigation state (non-blocking)
-            navigationSyncService.loadState().catch(error => {
-              console.error('❌ Failed to load navigation state:', error);
-              return null; // Continue without restored state
-            }),
-          ]);
-
-        // Handle analytics initialization result
-        if (analyticsInit.status === 'fulfilled') {
-          console.log('✅ Analytics initialized');
-        } else {
-          console.warn(
-            '⚠️ Analytics initialization failed:',
-            analyticsInit.reason,
-          );
-        }
-
-        // Handle version check result
-        if (
-          versionCheck.status === 'fulfilled' &&
-          versionCheck.value !== null
-        ) {
-          console.log('✅ API version check complete');
-        }
-
-        // Handle navigation state result
-        if (navState.status === 'fulfilled' && navState.value) {
-          setInitialNavigationState(navState.value);
+          navigationSyncService
+            .loadState()
+            .then(state => {
+              if (state) {
+                setInitialNavigationState(state);
           console.log(
             '✅ Navigation state loaded, will validate after auth loads',
           );
-        } else if (navState.status === 'rejected') {
-          // Log error but don't block app startup
+              }
+            })
+            .catch(error => {
           console.warn(
             '⚠️ Navigation state restoration failed:',
-            navState.reason,
+                error,
           );
-          // Could optionally show a toast: "Could not restore previous screen"
-          // For now, we'll continue without restored state
-        }
-
-        const endTime = performance.now();
-        const initializationTime = endTime - startTime;
-        console.log(
-          `⏱️ App initialization completed in ${initializationTime.toFixed(2)}ms`,
-        );
+            }),
+        ]).catch(error => {
+          console.warn('⚠️ Some app initialization tasks failed:', error);
+        });
 
         // Check for updates (non-blocking, auto-installs)
         if (!__DEV__) {
           updateService.checkAndInstallUpdates().catch(error => {
             console.warn('Update check failed:', error);
-            // Don't block app startup if update check fails
           });
         }
+
+        const endTime = performance.now();
+        const initializationTime = endTime - startTime;
+        console.log(
+          `⏱️ App initialization started in ${initializationTime.toFixed(2)}ms (running in background)`,
+        );
       } catch (error) {
-        console.error('❌ Failed to initialize app:', error);
+        console.error('❌ Failed to start app initialization:', error);
       } finally {
+        // Mark as ready immediately - initialization runs in background
         setIsReady(true);
       }
     };
@@ -949,20 +947,7 @@ function App() {
     }
   }, [isReady]);
 
-  if (!isReady) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          alignItems: 'center',
-          backgroundColor: COLORS.background,
-        }}>
-        <ActivityIndicator size="large" color={COLORS.primary} />
-      </View>
-    );
-  }
-
+  // Show app immediately - initialization runs in background
   return (
     <AppWithErrorBoundary initialNavigationState={initialNavigationState} />
   );

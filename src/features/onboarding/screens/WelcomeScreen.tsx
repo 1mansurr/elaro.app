@@ -72,9 +72,67 @@ const WelcomeScreen = () => {
   const canContinue =
     age !== null && age >= 13 && (!needsParentalConsent || hasParentalConsent);
 
+  // Helper function to safely navigate - ensures navigation is ready
+  const safeNavigate = (routeName: 'ProfileSetup') => {
+    try {
+      // Check if navigation object exists and has navigate method
+      if (navigation && typeof navigation.navigate === 'function') {
+        navigation.navigate(routeName);
+      } else {
+        // Retry after a delay if navigation isn't ready
+        setTimeout(() => {
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate(routeName);
+          }
+        }, 300);
+      }
+    } catch (error) {
+      // If navigation fails, retry after a delay
+      console.warn('Navigation not ready, retrying...', error);
+      setTimeout(() => {
+        try {
+          if (navigation && typeof navigation.navigate === 'function') {
+            navigation.navigate(routeName);
+          }
+        } catch (retryError) {
+          console.error('Navigation retry failed:', retryError);
+        }
+      }, 500);
+    }
+  };
+
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
+      
+      // For Android: Check if user is 18+ and auto-navigate
+      if (selectedDate) {
+        const today = new Date();
+        let calculatedAge = today.getFullYear() - selectedDate.getFullYear();
+        const monthDiff = today.getMonth() - selectedDate.getMonth();
+
+        if (
+          monthDiff < 0 ||
+          (monthDiff === 0 && today.getDate() < selectedDate.getDate())
+        ) {
+          calculatedAge--;
+        }
+
+        setDateOfBirth(selectedDate);
+
+        // If 18+, auto-navigate to ProfileSetup
+        if (calculatedAge >= 18) {
+          const formattedDateOfBirth = selectedDate.toISOString().split('T')[0];
+          updateOnboardingData({
+            dateOfBirth: formattedDateOfBirth,
+            hasParentalConsent: false,
+          });
+          setTimeout(() => {
+            safeNavigate('ProfileSetup');
+          }, 100);
+          return;
+        }
+      }
     }
 
     if (selectedDate) {
@@ -82,8 +140,17 @@ const WelcomeScreen = () => {
     }
   };
 
-  const handleNext = () => {
-    if (!canContinue || !dateOfBirth) return;
+  const handleDone = () => {
+    // Close date picker if open (iOS)
+    if (showDatePicker) {
+      setShowDatePicker(false);
+    }
+
+    // Validate that we have a date
+    if (!dateOfBirth) return;
+
+    // Check if user can proceed
+    if (!canContinue) return;
 
     // Format date as YYYY-MM-DD for backend
     const formattedDateOfBirth = dateOfBirth.toISOString().split('T')[0];
@@ -93,11 +160,25 @@ const WelcomeScreen = () => {
       hasParentalConsent,
     });
 
-    navigation.navigate('ProfileSetup');
+    // For iOS users 18+, auto-navigate immediately
+    if (Platform.OS === 'ios' && age !== null && age >= 18) {
+      setTimeout(() => {
+        safeNavigate('ProfileSetup');
+      }, 100);
+      return;
+    }
+
+    // Navigate to ProfileSetup
+    safeNavigate('ProfileSetup');
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView 
+      contentContainerStyle={[
+        styles.container,
+        (showDatePicker || age !== null) && styles.containerWithPicker
+      ]}
+      keyboardShouldPersistTaps="handled">
       {showConfetti && (
         <ConfettiCannon
           count={200}
@@ -151,14 +232,6 @@ const WelcomeScreen = () => {
               minimumDate={new Date(1900, 0, 1)}
             />
           )}
-
-          {Platform.OS === 'ios' && showDatePicker && (
-            <TouchableOpacity
-              style={styles.doneButton}
-              onPress={() => setShowDatePicker(false)}>
-              <Text style={styles.doneButtonText}>Done</Text>
-            </TouchableOpacity>
-          )}
         </View>
 
         {/* Show age information */}
@@ -210,8 +283,15 @@ const WelcomeScreen = () => {
         )}
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Button title="Continue" onPress={handleNext} disabled={!canContinue} />
+      <View style={[
+        styles.buttonContainer,
+        (showDatePicker || age !== null) && styles.buttonContainerWithPicker
+      ]}>
+        <Button 
+          title="Done" 
+          onPress={handleDone} 
+          disabled={!canContinue || !dateOfBirth} 
+        />
       </View>
     </ScrollView>
   );
@@ -221,13 +301,17 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     padding: SPACING.lg,
-    paddingTop: SPACING.xxl * 2,
+    paddingTop: SPACING.xl, // Reduced from SPACING.xxl * 2 to eliminate unnecessary whitespace
+    paddingBottom: SPACING.xxl * 2,
     backgroundColor: COLORS.background,
+  },
+  containerWithPicker: {
+    paddingBottom: SPACING.md, // Reduce bottom padding when picker is open or age info is showing
   },
   welcomeSection: {
     alignItems: 'center',
     marginBottom: SPACING.xl,
-    paddingTop: SPACING.md,
+    // Removed paddingTop to reduce whitespace
   },
   welcomeTitle: {
     fontWeight: FONT_WEIGHTS.bold as any,
@@ -291,23 +375,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.semibold as any,
   },
-  doneButton: {
-    marginTop: SPACING.sm,
-    padding: SPACING.sm,
-    backgroundColor: COLORS.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  doneButtonText: {
-    color: COLORS.background,
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-  },
   ageContainer: {
     backgroundColor: '#e3f2fd',
     padding: SPACING.md,
     borderRadius: 12,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm, // Reduced margin to prevent pushing button down
   },
   ageText: {
     fontSize: FONT_SIZES.lg,
@@ -364,7 +436,7 @@ const styles = StyleSheet.create({
   },
   consentSubtext: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
+    color: COLORS.textSecondary,
     marginLeft: 36,
     lineHeight: 18,
   },
@@ -372,7 +444,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#e8f5e9',
     padding: SPACING.md,
     borderRadius: 12,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm, // Reduced margin to prevent pushing button down
   },
   infoText: {
     fontSize: FONT_SIZES.sm,
@@ -381,7 +453,11 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    marginTop: SPACING.lg,
+    marginTop: SPACING.xxl * 2, // Push button down to sit at bottom
+    marginBottom: SPACING.lg, // Add bottom margin for spacing from edge
+  },
+  buttonContainerWithPicker: {
+    marginTop: SPACING.lg, // Reduce top margin when picker/age info is showing
   },
 });
 

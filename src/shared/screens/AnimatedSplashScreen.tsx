@@ -12,14 +12,14 @@ interface AnimatedSplashScreenProps {
 const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
   onAnimationFinish,
 }) => {
-  // 1. Set up the animated value
-  const fadeAnim = useRef(new Animated.Value(0)).current; // Initial opacity is 0
+  // 1. Set up the animated value - start at 0.7 opacity for immediate visibility with smooth fade-in
+  const fadeAnim = useRef(new Animated.Value(0.7)).current;
 
   // 2. Define the animation sequence
   useEffect(() => {
     const animation = Animated.timing(fadeAnim, {
-      toValue: 1, // Animate to opacity 1
-      duration: 1500, // Animation duration in milliseconds
+      toValue: 1, // Animate to full opacity
+      duration: 1000, // Slightly faster since we're starting from visible state
       useNativeDriver: true, // Use native driver for better performance
     });
 

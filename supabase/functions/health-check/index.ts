@@ -94,19 +94,32 @@ serve(async req => {
     // Check 2: Database Connectivity
     try {
       // Perform a simple, fast read-only query
-      const { error } = await supabaseClient
+      // Remove .single() to allow empty results - we just need to verify DB is accessible
+      const { data, error } = await supabaseClient
         .from('users')
         .select('id')
-        .limit(1)
-        .single();
+        .limit(1);
 
-      if (error && error.code !== 'PGRST116') {
-        // PGRST116 is "not found" which is expected when table is empty
-        // Any other error indicates a real problem
-        throw error;
+      if (error) {
+        // PGRST116 = "not found" (empty table) - database is working, just no data
+        // 42501 = "insufficient privilege" (RLS blocking) - database is working, RLS is active
+        // PGRST301 = "permission denied" (RLS) - database is working, RLS is active
+        // These errors indicate the database is accessible and functioning
+        if (
+          error.code === 'PGRST116' ||
+          error.code === '42501' ||
+          error.code === 'PGRST301'
+        ) {
+          // Database is accessible - these are expected scenarios
+          checks.database = 'ok';
+        } else {
+          // Other errors indicate real database connectivity issues
+          throw error;
+        }
+      } else {
+        // Query succeeded - database is accessible
+        checks.database = 'ok';
       }
-
-      checks.database = 'ok';
     } catch (dbError) {
       // Health check doesn't need full logger - just check database
       checks.database = 'error';
@@ -116,7 +129,9 @@ serve(async req => {
         status: 'error',
         timestamp,
         checks,
-        message: 'Database connection failed',
+        message: `Database connection failed: ${
+          dbError instanceof Error ? dbError.message : 'Unknown error'
+        }`,
       };
 
       return new Response(JSON.stringify(response), {
