@@ -26,7 +26,7 @@ export interface UsernameInputCardProps {
 
 /**
  * UsernameInputCard Component
- * 
+ *
  * Displays the username input field with validation feedback and availability checking
  */
 export const UsernameInputCard: React.FC<UsernameInputCardProps> = ({
@@ -216,4 +216,3 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
 });
-

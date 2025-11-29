@@ -30,12 +30,12 @@ const adminUserId = Deno.args[1];
 if (!masterKey) {
   console.error('❌ Missing master key');
   console.error('');
-  console.error('Usage: deno run migrate-master-key.ts <master-key> <admin-user-id>');
+  console.error(
+    'Usage: deno run migrate-master-key.ts <master-key> <admin-user-id>',
+  );
   console.error('');
   console.error('Example:');
-  console.error(
-    '  SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." \\',
-  );
+  console.error('  SUPABASE_URL="..." SUPABASE_SERVICE_ROLE_KEY="..." \\');
   console.error(
     '  deno run --allow-net --allow-env scripts/migrate-master-key.ts \\',
   );
@@ -46,7 +46,9 @@ if (!masterKey) {
 if (!adminUserId) {
   console.error('❌ Missing admin user ID');
   console.error('');
-  console.error('Usage: deno run migrate-master-key.ts <master-key> <admin-user-id>');
+  console.error(
+    'Usage: deno run migrate-master-key.ts <master-key> <admin-user-id>',
+  );
   console.error('Please provide the UUID of a top-level admin user');
   Deno.exit(1);
 }
@@ -55,7 +57,9 @@ if (!supabaseUrl) {
   console.error('❌ Missing SUPABASE_URL');
   console.error('');
   console.error('Set it using one of these methods:');
-  console.error('  1. Export: export SUPABASE_URL="https://your-project.supabase.co"');
+  console.error(
+    '  1. Export: export SUPABASE_URL="https://your-project.supabase.co"',
+  );
   console.error('  2. Inline: SUPABASE_URL="..." deno run ...');
   console.error('  3. Or set EXPO_PUBLIC_SUPABASE_URL in your .env file');
   Deno.exit(1);
@@ -64,13 +68,17 @@ if (!supabaseUrl) {
 if (!supabaseServiceKey) {
   console.error('❌ Missing SUPABASE_SERVICE_ROLE_KEY');
   console.error('');
-  console.error('Get it from: Supabase Dashboard → Settings → API → service_role key');
+  console.error(
+    'Get it from: Supabase Dashboard → Settings → API → service_role key',
+  );
   console.error('');
   console.error('Set it using one of these methods:');
   console.error('  1. Export: export SUPABASE_SERVICE_ROLE_KEY="your-key"');
   console.error('  2. Inline: SUPABASE_SERVICE_ROLE_KEY="..." deno run ...');
   console.error('');
-  console.error('⚠️  WARNING: Never commit the service role key to version control!');
+  console.error(
+    '⚠️  WARNING: Never commit the service role key to version control!',
+  );
   Deno.exit(1);
 }
 
@@ -135,7 +143,10 @@ async function migrate() {
     .single();
 
   if (adminError || !adminUser) {
-    console.error('❌ Admin user not found:', adminError?.message || 'No user found');
+    console.error(
+      '❌ Admin user not found:',
+      adminError?.message || 'No user found',
+    );
     console.error('   Please verify the user ID is correct');
     Deno.exit(1);
   }
@@ -209,8 +220,7 @@ async function migrate() {
   console.log('🎉 You can now use the master key system!');
 }
 
-migrate().catch((error) => {
+migrate().catch(error => {
   console.error('Migration failed:', error);
   Deno.exit(1);
 });
-

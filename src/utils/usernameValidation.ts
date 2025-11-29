@@ -2,7 +2,7 @@ import { isReservedUsername } from '@/constants/reservedUsernames';
 
 /**
  * Username validation utilities
- * 
+ *
  * These functions validate usernames according to ELARO's requirements:
  * - Length: 4-20 characters
  * - Characters: letters, numbers, dots, and underscores only
@@ -95,7 +95,7 @@ export const validateReservedUsername = (
 /**
  * Validates username using all validation rules in order
  * Returns the first validation error encountered, or success if all pass
- * 
+ *
  * @param username - The username to validate
  * @returns Validation result with first error or success
  */
@@ -129,4 +129,3 @@ export const validateUsername = (
 
   return { valid: true };
 };
-

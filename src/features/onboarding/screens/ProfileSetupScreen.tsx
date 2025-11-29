@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  TouchableOpacity,
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
@@ -19,6 +20,9 @@ import { useUsernameAvailability } from '@/hooks/useUsernameAvailability';
 import { useProfileSetupData } from '@/features/onboarding/hooks/useProfileSetupData';
 import { UsernameInputCard } from '@/features/onboarding/components/UsernameInputCard';
 import { StudiesSection } from '@/features/onboarding/components/StudiesSection';
+import { supabase } from '@/services/supabase';
+import { useAuth } from '@/contexts/AuthContext';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 
 type ScreenNavigationProp = StackNavigationProp<
   OnboardingStackParamList,
@@ -28,6 +32,7 @@ type ScreenNavigationProp = StackNavigationProp<
 const ProfileSetupScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
   const { onboardingData, updateOnboardingData } = useOnboarding();
+  const { refreshUser } = useAuth();
 
   // Username management via custom hook
   const {
@@ -51,6 +56,10 @@ const ProfileSetupScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const studiesSectionRef = useRef<View>(null);
   const [studiesSectionY, setStudiesSectionY] = useState(0);
+  
+  // Onboarding completion state
+  const [isLoading, setIsLoading] = useState(false);
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
 
   // Profile setup data via custom hook
   const { countryData, universityData, programData } =
@@ -64,7 +73,7 @@ const ProfileSetupScreen = () => {
     university.trim().length > 0 &&
     program.trim().length > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!isFormValid) {
       Alert.alert(
         'Please complete all required fields',
@@ -73,14 +82,98 @@ const ProfileSetupScreen = () => {
       return;
     }
 
-    updateOnboardingData({
-      username: username.trim(),
-      country: selectedCountry,
-      university: university.trim(),
-      program: program.trim(),
-    });
+    // Validate required fields before sending
+    if (!username || username.trim().length < 4) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete your profile setup. Username is required and must be at least 4 characters.',
+      );
+      return;
+    }
 
-    navigation.navigate('CourseSetup');
+    if (!onboardingData.dateOfBirth) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete your profile setup. Date of birth is required.',
+      );
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Update onboarding data with current form values
+      updateOnboardingData({
+        username: username.trim(),
+        country: selectedCountry,
+        university: university.trim(),
+        program: program.trim(),
+      });
+
+      // Prepare the request body for complete-onboarding
+      // Filter out empty strings for optional fields - convert to undefined
+      const body = {
+        username: username.trim(),
+        country: selectedCountry && selectedCountry.trim() ? selectedCountry.trim() : undefined,
+        university:
+          university && university.trim() ? university.trim() : undefined,
+        program: program && program.trim() ? program.trim() : undefined,
+        courses: [], // No courses during onboarding
+        dateOfBirth: onboardingData.dateOfBirth,
+        hasParentalConsent: onboardingData.hasParentalConsent || false,
+        marketingOptIn: marketingOptIn || false,
+      };
+
+      // Log the request body for debugging (excluding sensitive data)
+      console.log('Onboarding completion request:', {
+        username: body.username,
+        hasCountry: !!body.country,
+        hasUniversity: !!body.university,
+        hasProgram: !!body.program,
+        coursesCount: body.courses.length,
+        hasDateOfBirth: !!body.dateOfBirth,
+      });
+
+      const { error, data } = await supabase.functions.invoke(
+        'complete-onboarding',
+        {
+          body,
+        },
+      );
+
+      if (error) {
+        console.error('Onboarding completion error details:', {
+          error,
+          message: error.message,
+          code: error.code,
+          context: error.context,
+        });
+        throw error;
+      }
+
+      console.log('Onboarding completed successfully:', data);
+
+      // Refresh user profile to get updated onboarding_completed status
+      // Wait a moment for backend to process the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      await refreshUser();
+
+      Alert.alert(
+        'Setup Complete!',
+        'Your profile has been saved successfully. You can add courses anytime from the Account page.',
+      );
+
+      // The AuthenticatedNavigator will automatically show Main when onboarding_completed is true
+      // No need to manually navigate - refreshUser() will trigger a re-render
+      // and AuthenticatedNavigator will switch to the main app screens
+    } catch (error: unknown) {
+      console.error('Onboarding completion error:', error);
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -149,7 +242,7 @@ const ProfileSetupScreen = () => {
     // Calculate approximate positions for each selector within the studies section
     // Country is first, University is second (if country selected), Program is third
     let selectorOffset = 0;
-    
+
     if (selectorId === 'country') {
       selectorOffset = 120; // Approximate: label + spacing + input
     } else if (selectorId === 'university') {
@@ -160,7 +253,7 @@ const ProfileSetupScreen = () => {
 
     // Scroll to show selector with space for first 2 dropdown options (~120px)
     const targetScrollY = studiesSectionY + selectorOffset - 120;
-    
+
     scrollViewRef.current.scrollTo({
       y: Math.max(0, targetScrollY),
       animated: true,
@@ -195,7 +288,7 @@ const ProfileSetupScreen = () => {
 
           <View
             ref={studiesSectionRef}
-            onLayout={(event) => {
+            onLayout={event => {
               const { y } = event.nativeEvent.layout;
               setStudiesSectionY(y);
             }}>
@@ -217,12 +310,42 @@ const ProfileSetupScreen = () => {
               onUniversityComplete={handleUniversityComplete}
             />
           </View>
+
+          {/* Marketing Opt-In Section */}
+          <View style={styles.marketingSection}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setMarketingOptIn(!marketingOptIn)}
+              activeOpacity={0.7}>
+              <View
+                style={[
+                  styles.checkbox,
+                  marketingOptIn && styles.checkboxChecked,
+                ]}>
+                {marketingOptIn && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <View style={styles.checkboxTextContainer}>
+                <Text style={styles.checkboxLabel}>
+                  Yes, send me helpful tips, new feature announcements, and
+                  special offers from ELARO.
+                </Text>
+                <Text style={styles.checkboxSubtext}>
+                  You can change this anytime in your Settings.
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
 
       <View style={styles.footer}>
         <Button title="Back" onPress={handleBack} variant="outline" />
-        <Button title="Continue" onPress={handleNext} disabled={!isFormValid} />
+        <Button
+          title="Finish Setup"
+          onPress={handleNext}
+          disabled={!isFormValid || isLoading}
+          loading={isLoading}
+        />
       </View>
 
       <InfoModal
@@ -263,6 +386,53 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     lineHeight: 24,
     paddingHorizontal: SPACING.md,
+  },
+  marketingSection: {
+    marginTop: SPACING.lg,
+    marginBottom: SPACING.md,
+    padding: SPACING.md,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    marginRight: SPACING.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: COLORS.background,
+    marginTop: 2,
+  },
+  checkboxChecked: {
+    backgroundColor: COLORS.primary,
+  },
+  checkmark: {
+    color: COLORS.background,
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold as any,
+  },
+  checkboxTextContainer: {
+    flex: 1,
+  },
+  checkboxLabel: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.text,
+    lineHeight: 20,
+  },
+  checkboxSubtext: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: 4,
+    lineHeight: 18,
   },
   footer: {
     flexDirection: 'row',

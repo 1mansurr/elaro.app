@@ -24,27 +24,27 @@ function log(message, color = 'reset') {
 
 async function testHealthCheck() {
   log('\n=== Testing Health Check Endpoint ===', 'blue');
-  
+
   if (!SUPABASE_URL || !ANON_KEY) {
     log('❌ Missing SUPABASE_URL or ANON_KEY', 'red');
     return false;
   }
 
   const healthCheckUrl = `${SUPABASE_URL}/functions/v1/health-check`;
-  
+
   try {
     log(`Testing: ${healthCheckUrl}`, 'blue');
-    
+
     const response = await fetch(healthCheckUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${ANON_KEY}`,
+        Authorization: `Bearer ${ANON_KEY}`,
         'Content-Type': 'application/json',
       },
     });
 
     const data = await response.json();
-    
+
     if (response.ok) {
       log('✅ Health check passed', 'green');
       log(`Status: ${data.status}`, 'green');
@@ -64,28 +64,32 @@ async function testHealthCheck() {
 
 async function testDatabaseConnection() {
   log('\n=== Testing Database Connection ===', 'blue');
-  
+
   if (!SUPABASE_URL || !ANON_KEY) {
     log('❌ Missing SUPABASE_URL or ANON_KEY', 'red');
     return false;
   }
 
   const restUrl = `${SUPABASE_URL}/rest/v1/users?select=id&limit=1`;
-  
+
   try {
     log(`Testing: ${restUrl}`, 'blue');
-    
+
     const response = await fetch(restUrl, {
       method: 'GET',
       headers: {
-        'apikey': ANON_KEY,
-        'Authorization': `Bearer ${ANON_KEY}`,
+        apikey: ANON_KEY,
+        Authorization: `Bearer ${ANON_KEY}`,
         'Content-Type': 'application/json',
       },
     });
 
     // Even if we get 401/403, it means the database is reachable
-    if (response.status === 200 || response.status === 401 || response.status === 403) {
+    if (
+      response.status === 200 ||
+      response.status === 401 ||
+      response.status === 403
+    ) {
       log('✅ Database connection successful', 'green');
       log(`Status: ${response.status}`, 'green');
       return true;
@@ -101,21 +105,21 @@ async function testDatabaseConnection() {
 
 async function testProjectConfiguration() {
   log('\n=== Testing Project Configuration ===', 'blue');
-  
+
   const fs = require('fs');
   const path = require('path');
-  
+
   const configPath = path.join(__dirname, '../supabase/config.toml');
   const projectRef = 'alqpwhrsxmetwbtxuihv';
-  
+
   try {
     const configContent = fs.readFileSync(configPath, 'utf8');
     const configRef = configContent.match(/project_id\s*=\s*"([^"]+)"/)?.[1];
-    
+
     if (configRef) {
       log(`Project Reference from config: ${configRef}`, 'blue');
     }
-    
+
     if (SUPABASE_URL && SUPABASE_URL.includes(projectRef)) {
       log('✅ Supabase URL matches project reference', 'green');
       log(`Project Reference: ${projectRef}`, 'green');
@@ -139,10 +143,16 @@ async function testProjectConfiguration() {
 }
 
 async function main() {
-  log('============================================================================', 'blue');
+  log(
+    '============================================================================',
+    'blue',
+  );
   log('CONNECTIVITY TEST', 'blue');
-  log('============================================================================', 'blue');
-  
+  log(
+    '============================================================================',
+    'blue',
+  );
+
   const results = {
     healthCheck: false,
     database: false,
@@ -153,17 +163,35 @@ async function main() {
   results.database = await testDatabaseConnection();
   results.healthCheck = await testHealthCheck();
 
-  log('\n============================================================================', 'blue');
+  log(
+    '\n============================================================================',
+    'blue',
+  );
   log('SUMMARY', 'blue');
-  log('============================================================================', 'blue');
-  
-  log(`Configuration: ${results.configuration ? '✅ PASS' : '❌ FAIL'}`, results.configuration ? 'green' : 'red');
-  log(`Database: ${results.database ? '✅ PASS' : '❌ FAIL'}`, results.database ? 'green' : 'red');
-  log(`Health Check: ${results.healthCheck ? '✅ PASS' : '❌ FAIL'}`, results.healthCheck ? 'green' : 'red');
-  
+  log(
+    '============================================================================',
+    'blue',
+  );
+
+  log(
+    `Configuration: ${results.configuration ? '✅ PASS' : '❌ FAIL'}`,
+    results.configuration ? 'green' : 'red',
+  );
+  log(
+    `Database: ${results.database ? '✅ PASS' : '❌ FAIL'}`,
+    results.database ? 'green' : 'red',
+  );
+  log(
+    `Health Check: ${results.healthCheck ? '✅ PASS' : '❌ FAIL'}`,
+    results.healthCheck ? 'green' : 'red',
+  );
+
   const allPassed = Object.values(results).every(r => r);
-  
-  log('\n============================================================================', 'blue');
+
+  log(
+    '\n============================================================================',
+    'blue',
+  );
   if (allPassed) {
     log('✅ ALL TESTS PASSED', 'green');
     process.exit(0);
@@ -178,4 +206,3 @@ main().catch(error => {
   log(`\n❌ Fatal error: ${error.message}`, 'red');
   process.exit(1);
 });
-

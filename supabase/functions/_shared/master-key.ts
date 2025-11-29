@@ -80,9 +80,7 @@ export async function hashMasterKey(key: string): Promise<string> {
 /**
  * Verify master key against stored hash
  */
-export async function verifyMasterKey(
-  providedKey: string,
-): Promise<boolean> {
+export async function verifyMasterKey(providedKey: string): Promise<boolean> {
   const storedHash = await getActiveMasterKeyHash();
 
   if (!storedHash) {
@@ -181,4 +179,3 @@ export async function getTopLevelAdminCount(
 
   return count || 0;
 }
-

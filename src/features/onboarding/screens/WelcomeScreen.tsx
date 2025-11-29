@@ -104,7 +104,7 @@ const WelcomeScreen = () => {
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
-      
+
       // For Android: Check if user is 18+ and auto-navigate
       if (selectedDate) {
         const today = new Date();
@@ -173,10 +173,10 @@ const WelcomeScreen = () => {
   };
 
   return (
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={[
         styles.container,
-        (showDatePicker || age !== null) && styles.containerWithPicker
+        (showDatePicker || age !== null) && styles.containerWithPicker,
       ]}
       keyboardShouldPersistTaps="handled">
       {showConfetti && (
@@ -283,14 +283,15 @@ const WelcomeScreen = () => {
         )}
       </View>
 
-      <View style={[
-        styles.buttonContainer,
-        (showDatePicker || age !== null) && styles.buttonContainerWithPicker
-      ]}>
-        <Button 
-          title="Done" 
-          onPress={handleDone} 
-          disabled={!canContinue || !dateOfBirth} 
+      <View
+        style={[
+          styles.buttonContainer,
+          (showDatePicker || age !== null) && styles.buttonContainerWithPicker,
+        ]}>
+        <Button
+          title="Done"
+          onPress={handleDone}
+          disabled={!canContinue || !dateOfBirth}
         />
       </View>
     </ScrollView>

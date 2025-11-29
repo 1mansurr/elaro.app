@@ -4,10 +4,7 @@ import {
   AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
 import { decrypt } from '../_shared/encryption.ts';
-import {
-  verifyMasterKey,
-  isTopLevelAdmin,
-} from '../_shared/master-key.ts';
+import { verifyMasterKey, isTopLevelAdmin } from '../_shared/master-key.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -197,4 +194,3 @@ serve(
     false,
   ),
 );
-

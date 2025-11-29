@@ -11,9 +11,9 @@ export interface UseProfileSetupDataReturn {
 
 /**
  * Custom hook for processing profile setup data
- * 
+ *
  * Processes and filters data for country, university, and program selectors
- * 
+ *
  * @param selectedCountry - Currently selected country (filters universities)
  * @returns Processed data arrays for selectors
  */
@@ -50,4 +50,3 @@ export const useProfileSetupData = (
     programData,
   };
 };
-

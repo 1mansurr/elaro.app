@@ -44,9 +44,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   isGuest: boolean;
-  signIn: (
-    credentials: LoginCredentials,
-  ) => Promise<{
+  signIn: (credentials: LoginCredentials) => Promise<{
     error: Error | null;
     requiresMFA?: boolean;
     factors?: Factor[];

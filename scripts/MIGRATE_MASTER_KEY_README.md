@@ -20,8 +20,8 @@ Quick guide to migrate your existing master key to the new system.
 Run this SQL in Supabase Dashboard → SQL Editor:
 
 ```sql
-SELECT id, email, role 
-FROM users 
+SELECT id, email, role
+FROM users
 WHERE email = 'saymmmohammed265@gmail.com';
 ```
 
@@ -107,23 +107,28 @@ deno run --allow-net --allow-env scripts/migrate-master-key.ts \
 ## Troubleshooting
 
 ### "Missing SUPABASE_URL"
+
 - Set it: `export SUPABASE_URL="https://alqpwhrsxmetwbtxuihv.supabase.co"`
 - Or use inline: `SUPABASE_URL="..." deno run ...`
 
 ### "Missing SUPABASE_SERVICE_ROLE_KEY"
+
 - Get it from: Supabase Dashboard → Settings → API → service_role key
 - Set it: `export SUPABASE_SERVICE_ROLE_KEY="your-key"`
 - ⚠️ Never commit this key to version control!
 
 ### "Admin user not found"
+
 - Verify the user ID is correct
 - Check: `SELECT id FROM users WHERE email = 'your-email';`
 
 ### "User is not a top-level admin"
+
 - Run: `scripts/set-admin-role.sql` in Supabase Dashboard
 - Or: `UPDATE users SET role = 'admin' WHERE email = 'your-email';`
 
 ### "Master key already exists"
+
 - This is normal if you've already migrated
 - The existing key will be used
 - No action needed
@@ -134,4 +139,3 @@ deno run --allow-net --allow-env scripts/migrate-master-key.ts \
 - ⚠️ **Never share** your master key
 - ✅ Store master key securely (password manager, HSM, etc.)
 - ✅ Use environment variables, not hardcoded values
-

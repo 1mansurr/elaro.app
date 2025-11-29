@@ -3,9 +3,7 @@ import {
   createAdminHandler,
   AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
-import {
-  isTopLevelAdmin,
-} from '../_shared/master-key.ts';
+import { isTopLevelAdmin } from '../_shared/master-key.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -163,4 +161,3 @@ serve(
     true,
   ),
 );
-

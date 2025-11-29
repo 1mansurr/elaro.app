@@ -521,8 +521,8 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
     const prepare = async () => {
       try {
         // Set a minimum display time for splash (800ms) for better UX
-        const minSplashTime = Promise.resolve().then(() =>
-          new Promise(resolve => setTimeout(resolve, 800)),
+        const minSplashTime = Promise.resolve().then(
+          () => new Promise(resolve => setTimeout(resolve, 800)),
         );
 
         // Run initialization in parallel where possible (non-blocking)
@@ -530,54 +530,51 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           // RevenueCat - make non-blocking (run in background)
           (async () => {
             try {
-        const revenueCatApiKey =
-          Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
+              const revenueCatApiKey =
+                Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
 
-        if (revenueCatApiKey) {
-            const initSuccess =
-              await revenueCatService.initialize(revenueCatApiKey);
+              if (revenueCatApiKey) {
+                const initSuccess =
+                  await revenueCatService.initialize(revenueCatApiKey);
 
-            if (initSuccess) {
+                if (initSuccess) {
                   console.log('✅ RevenueCat initialized');
-              try {
-                const { verifyRevenueCatSetup } = await import(
-                  './src/config/verifyRevenuecat'
-                );
-                const verified = await verifyRevenueCatSetup();
-                if (verified) {
-                  console.log('✅ RevenueCat setup verified');
-                } else {
-                  console.warn(
-                    '⚠️ RevenueCat initialized but verification failed',
-                  );
-                }
-              } catch (verifyError) {
+                  try {
+                    const { verifyRevenueCatSetup } = await import(
+                      './src/config/verifyRevenuecat'
+                    );
+                    const verified = await verifyRevenueCatSetup();
+                    if (verified) {
+                      console.log('✅ RevenueCat setup verified');
+                    } else {
+                      console.warn(
+                        '⚠️ RevenueCat initialized but verification failed',
+                      );
+                    }
+                  } catch (verifyError) {
                     console.warn(
                       '⚠️ RevenueCat verification error (non-blocking):',
                       verifyError,
                     );
-                errorTracking.captureError(verifyError as Error, {
-                  tags: {
-                    component: 'revenuecat',
-                    phase: 'verification',
-                  },
-                });
-              }
-            } else {
-              console.warn(
-                '⚠️ RevenueCat initialization failed - subscription features disabled',
-              );
-          }
-        } else {
-          console.warn(
-            '⚠️ RevenueCat API key not found - subscription features disabled',
-          );
+                    errorTracking.captureError(verifyError as Error, {
+                      tags: {
+                        component: 'revenuecat',
+                        phase: 'verification',
+                      },
+                    });
+                  }
+                } else {
+                  console.warn(
+                    '⚠️ RevenueCat initialization failed - subscription features disabled',
+                  );
+                }
+              } else {
+                console.warn(
+                  '⚠️ RevenueCat API key not found - subscription features disabled',
+                );
               }
             } catch (error) {
-              console.warn(
-                '⚠️ RevenueCat init failed (non-blocking):',
-                error,
-              );
+              console.warn('⚠️ RevenueCat init failed (non-blocking):', error);
               errorTracking.captureError(error as Error, {
                 tags: { component: 'revenuecat', phase: 'initialization' },
               });
@@ -587,9 +584,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           // Sync Manager - make non-blocking
           (async () => {
             try {
-        console.log('🔄 Initializing Sync Manager...');
-        await syncManager.start();
-        console.log('✅ Sync Manager initialized');
+              console.log('🔄 Initializing Sync Manager...');
+              await syncManager.start();
+              console.log('✅ Sync Manager initialized');
             } catch (error) {
               console.warn(
                 '⚠️ Sync Manager init failed (non-blocking):',
@@ -615,10 +612,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
         );
 
         // Wait for minimum splash time OR initialization (whichever is longer)
-        await Promise.all([
-          minSplashTime,
-          Promise.allSettled(initPromises),
-        ]);
+        await Promise.all([minSplashTime, Promise.allSettled(initPromises)]);
       } catch (e) {
         console.error('❌ App initialization error:', e);
         errorTracking.captureError(e as Error, {
@@ -646,12 +640,12 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   if (!appIsReady || !isAnimationFinished) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.primary }}>
-      <AnimatedSplashScreen
+        <AnimatedSplashScreen
           onAnimationFinish={() => {
             // Mark animation as finished (will be checked when app is ready)
             setAnimationFinished(true);
           }}
-      />
+        />
       </View>
     );
   }
@@ -876,18 +870,18 @@ function App() {
 
         // Parallelize independent operations for faster startup (all non-blocking)
         Promise.allSettled([
-            // Initialize Analytics (non-blocking)
-            analyticsService.initialize(projectToken || '').then(() => {
-              // Track app launch only after successful initialization
-              analyticsService.track('App Launched', {
-                platform: Platform.OS,
-                timestamp: new Date().toISOString(),
-                app_version: '1.0.0',
-              });
+          // Initialize Analytics (non-blocking)
+          analyticsService.initialize(projectToken || '').then(() => {
+            // Track app launch only after successful initialization
+            analyticsService.track('App Launched', {
+              platform: Platform.OS,
+              timestamp: new Date().toISOString(),
+              app_version: '1.0.0',
+            });
             console.log('✅ Analytics initialized');
-            }),
+          }),
 
-            // Check API version compatibility (non-blocking, don't fail if it fails)
+          // Check API version compatibility (non-blocking, don't fail if it fails)
           promptForUpdateIfNeeded()
             .then(() => {
               console.log('✅ API version check complete');
@@ -896,22 +890,19 @@ function App() {
               console.warn('⚠️ API version check failed:', error);
             }),
 
-            // Load navigation state (non-blocking)
+          // Load navigation state (non-blocking)
           navigationSyncService
             .loadState()
             .then(state => {
               if (state) {
                 setInitialNavigationState(state);
-          console.log(
-            '✅ Navigation state loaded, will validate after auth loads',
-          );
+                console.log(
+                  '✅ Navigation state loaded, will validate after auth loads',
+                );
               }
             })
             .catch(error => {
-          console.warn(
-            '⚠️ Navigation state restoration failed:',
-                error,
-          );
+              console.warn('⚠️ Navigation state restoration failed:', error);
             }),
         ]).catch(error => {
           console.warn('⚠️ Some app initialization tasks failed:', error);

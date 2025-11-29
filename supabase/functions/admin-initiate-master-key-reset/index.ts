@@ -24,7 +24,9 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
 const InitiateResetSchema = z.object({
-  new_master_key: z.string().min(32, 'Master key must be at least 32 characters'),
+  new_master_key: z
+    .string()
+    .min(32, 'Master key must be at least 32 characters'),
   reason: z.string().optional(),
 });
 
@@ -111,7 +113,8 @@ async function handleInitiateReset(req: AuthenticatedRequest) {
     success: true,
     reset_request_id: data.id,
     expires_at: data.expires_at,
-    message: 'Reset request created. Requires approval from another top-level admin.',
+    message:
+      'Reset request created. Requires approval from another top-level admin.',
   };
 }
 
@@ -123,4 +126,3 @@ serve(
     true,
   ),
 );
-

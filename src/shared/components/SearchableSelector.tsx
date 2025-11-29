@@ -1,7 +1,13 @@
 // FILE: src/components/SearchableSelector.tsx
 // ACTION: Create this new reusable component.
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from 'react';
 import {
   View,
   Text,
@@ -58,7 +64,12 @@ const SearchableSelector: React.FC<Props> = ({
   const selectorInputRef = useRef<TextInput | null>(null);
   const dropdownRef = useRef<View | null>(null);
   const inputWrapperRef = useRef<TouchableOpacity | null>(null);
-  const [inputLayout, setInputLayout] = useState({ x: 0, y: 0, width: 0, height: 0 });
+  const [inputLayout, setInputLayout] = useState({
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0,
+  });
 
   // Sync internalValue with selectedValue from parent
   useEffect(() => {
@@ -216,7 +227,7 @@ const SearchableSelector: React.FC<Props> = ({
       // Call selection complete callback to trigger auto-navigation
       if (onSelectionComplete) {
         // Use setTimeout with 0 delay to ensure state updates are processed first
-      setTimeout(() => {
+        setTimeout(() => {
           onSelectionComplete();
         }, 0);
       }
@@ -328,7 +339,7 @@ const SearchableSelector: React.FC<Props> = ({
                 if (trimmedQuery) {
                   // Find exact match (case-insensitive)
                   const matchingOption = data.find(
-                    item => item.toLowerCase() === trimmedQuery.toLowerCase()
+                    item => item.toLowerCase() === trimmedQuery.toLowerCase(),
                   );
                   if (matchingOption) {
                     // Auto-select the matching option
@@ -336,7 +347,7 @@ const SearchableSelector: React.FC<Props> = ({
                     return;
                   }
                 }
-                
+
                 // If we have a selected value, trigger navigation to next selector
                 if (selectedValue && onSelectionComplete) {
                   Keyboard.dismiss();
@@ -345,7 +356,7 @@ const SearchableSelector: React.FC<Props> = ({
                   }, 0);
                   return;
                 }
-                
+
                 // Otherwise just dismiss keyboard, keep text
                 Keyboard.dismiss();
               }}
@@ -387,7 +398,9 @@ const SearchableSelector: React.FC<Props> = ({
                   style={styles.optionsList}
                   contentContainerStyle={styles.optionsListContent}
                   showsVerticalScrollIndicator={true}>
-                  {filteredOptions.map((item, index) => renderOption(item, index))}
+                  {filteredOptions.map((item, index) =>
+                    renderOption(item, index),
+                  )}
                 </ScrollView>
               </View>
             </View>
@@ -508,4 +521,3 @@ const styles = StyleSheet.create({
 });
 
 export default SearchableSelector;
-

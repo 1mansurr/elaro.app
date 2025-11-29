@@ -59,6 +59,7 @@ The master key system provides a secure backdoor mechanism that allows top-level
 ### Audit Logging
 
 All decryption attempts are logged in `admin_actions` table with:
+
 - Admin user ID
 - Target user ID (if applicable)
 - What data was decrypted
@@ -85,6 +86,7 @@ deno run --allow-net --allow-env scripts/migrate-master-key.ts <your-master-key>
 ```
 
 **Example:**
+
 ```bash
 deno run --allow-net --allow-env scripts/migrate-master-key.ts "your-secure-master-key-here" "123e4567-e89b-12d3-a456-426614174000"
 ```
@@ -125,6 +127,7 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-decrypt-user-da
 ```
 
 **Response:**
+
 ```json
 {
   "decrypted_text": "decrypted content"
@@ -149,12 +152,14 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-decrypt-user-da
 ```
 
 **Supported record types:**
+
 - `assignment`
 - `lecture`
 - `study_session`
 - `course`
 
 **Response:**
+
 ```json
 {
   "decrypted_record": {
@@ -185,11 +190,13 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-initiate-master
 ```
 
 **Requirements:**
+
 - At least 2 top-level admins must exist
 - No pending reset requests
 - New key must be at least 32 characters
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -213,11 +220,13 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-approve-master-
 ```
 
 **Requirements:**
+
 - Must be a different admin than the one who initiated
 - Reset request must not be expired (< 12 hours old)
 - Reset request must be pending
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -228,6 +237,7 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-approve-master-
 ```
 
 **What Happens:**
+
 1. Old master key is deactivated
 2. New master key is activated
 3. Reset request is marked as approved
@@ -268,7 +278,7 @@ curl -X POST https://your-project.supabase.co/functions/v1/admin-approve-master-
 All decryption activities are logged in `admin_actions` table:
 
 ```sql
-SELECT 
+SELECT
   admin_id,
   target_user_id,
   action,
@@ -340,6 +350,7 @@ ORDER BY created_at DESC;
 **Idempotency:** Required
 
 **Request:**
+
 ```json
 {
   "master_key": "string (min 32 chars)",
@@ -354,6 +365,7 @@ ORDER BY created_at DESC;
 **Idempotency:** Not required
 
 **Request (Single Field):**
+
 ```json
 {
   "encrypted_text": "string",
@@ -363,6 +375,7 @@ ORDER BY created_at DESC;
 ```
 
 **Request (Bulk):**
+
 ```json
 {
   "record_type": "assignment|lecture|study_session|course",
@@ -380,6 +393,7 @@ ORDER BY created_at DESC;
 **Idempotency:** Required
 
 **Request:**
+
 ```json
 {
   "new_master_key": "string (min 32 chars)",
@@ -395,6 +409,7 @@ ORDER BY created_at DESC;
 **Idempotency:** Required
 
 **Request:**
+
 ```json
 {
   "reset_request_id": "uuid",
@@ -408,6 +423,7 @@ ORDER BY created_at DESC;
 ## Support
 
 For questions or issues:
+
 1. Check audit logs in `admin_actions` table
 2. Review function logs in Supabase dashboard
 3. Contact security team for master key access
@@ -415,4 +431,3 @@ For questions or issues:
 ---
 
 **⚠️ IMPORTANT:** The master key provides access to all encrypted user data. Treat it with the highest level of security and only use it when legally required.
-

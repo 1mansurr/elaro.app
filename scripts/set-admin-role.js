@@ -6,13 +6,17 @@
 require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const supabaseUrl =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseServiceKey) {
   console.error('❌ Missing environment variables:');
   console.error('   SUPABASE_URL:', supabaseUrl ? '✓' : '✗');
-  console.error('   SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? '✓' : '✗');
+  console.error(
+    '   SUPABASE_SERVICE_ROLE_KEY:',
+    supabaseServiceKey ? '✓' : '✗',
+  );
   process.exit(1);
 }
 
@@ -65,8 +69,7 @@ async function setAdminRole() {
   console.log('   Role:', updatedUser.role);
 }
 
-setAdminRole().catch((error) => {
+setAdminRole().catch(error => {
   console.error('❌ Error:', error.message);
   process.exit(1);
 });
-

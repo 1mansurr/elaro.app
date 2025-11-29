@@ -16,14 +16,14 @@ export interface UseUsernameAvailabilityReturn {
 
 /**
  * Custom hook for managing username availability checking
- * 
+ *
  * Features:
  * - Debounced API calls (250ms delay)
  * - Request cancellation on new input
  * - Timeout handling (10s)
  * - Session validation
  * - Error handling
- * 
+ *
  * @param initialUsername - Initial username value (optional)
  * @returns Username state and availability checking utilities
  */
@@ -217,4 +217,3 @@ export const useUsernameAvailability = (
     reset,
   };
 };
-

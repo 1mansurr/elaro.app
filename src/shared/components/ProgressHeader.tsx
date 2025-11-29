@@ -13,7 +13,7 @@ export const ProgressHeader: React.FC<ProgressHeaderProps> = ({
   totalSteps,
 }) => {
   const insets = useSafeAreaInsets();
-  
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + SPACING.md }]}>
       {/* Step text */}

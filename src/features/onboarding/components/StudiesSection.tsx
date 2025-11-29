@@ -24,7 +24,7 @@ export interface StudiesSectionProps {
 
 /**
  * StudiesSection Component
- * 
+ *
  * Displays the studies information form with country, university, and program selectors
  */
 export const StudiesSection: React.FC<StudiesSectionProps> = ({
@@ -99,23 +99,23 @@ export const StudiesSection: React.FC<StudiesSectionProps> = ({
         )}
 
         {university && (
-        <View style={styles.fieldGroup}>
-          <SearchableSelector
-            id="program"
-            label="Program of Study *"
-            data={programData}
-            selectedValue={program}
-            onValueChange={onProgramChange}
-            placeholder="Select or type your program..."
-            searchPlaceholder="Search for your program"
-            showOther={true}
-            tooltipText="Enter your course manually"
+          <View style={styles.fieldGroup}>
+            <SearchableSelector
+              id="program"
+              label="Program of Study *"
+              data={programData}
+              selectedValue={program}
+              onValueChange={onProgramChange}
+              placeholder="Select or type your program..."
+              searchPlaceholder="Search for your program"
+              showOther={true}
+              tooltipText="Enter your course manually"
               returnKeyType="done"
-            isActive={activeSelectorId === 'program'}
-            onOpen={onSelectorOpen}
-            onFocusScroll={() => onSelectorFocusScroll?.('program')}
-          />
-        </View>
+              isActive={activeSelectorId === 'program'}
+              onOpen={onSelectorOpen}
+              onFocusScroll={() => onSelectorFocusScroll?.('program')}
+            />
+          </View>
         )}
 
         <TouchableOpacity onPress={onInfoPress} style={styles.linkContainer}>
@@ -190,4 +190,3 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
 });
-
