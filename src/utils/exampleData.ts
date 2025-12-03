@@ -28,9 +28,25 @@ export async function createExampleData(
   try {
     console.log('📚 Creating example data for new user:', userId);
 
+    // Get current session to ensure we have a valid token
+    // Explicitly passing Authorization header ensures Edge Function receives the JWT
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      throw new Error('No valid session found for creating example data');
+    }
+
+    const authHeaders = {
+      Authorization: `Bearer ${session.access_token}`,
+    };
+
     // Step 1: Create a sample course
     const { data: courseData, error: courseError } =
       await supabase.functions.invoke('create-course-and-lecture', {
+        headers: authHeaders,
         body: {
           courseName: 'Getting Started with ELARO',
           courseCode: 'EXAMPLE-101',
@@ -61,6 +77,7 @@ export async function createExampleData(
 
     const { data: assignmentData, error: assignmentError } =
       await supabase.functions.invoke('create-assignment', {
+        headers: authHeaders,
         body: {
           course_id: courseId,
           title: '✨ Complete Your First ELARO Task',
@@ -87,6 +104,7 @@ export async function createExampleData(
 
     const { data: lectureData, error: lectureError } =
       await supabase.functions.invoke('create-lecture', {
+        headers: authHeaders,
         body: {
           course_id: courseId,
           lecture_name: '📖 Introduction to Smart Studying',
@@ -114,6 +132,7 @@ export async function createExampleData(
 
     const { data: studySessionData, error: studySessionError } =
       await supabase.functions.invoke('create-study-session', {
+        headers: authHeaders,
         body: {
           course_id: courseId,
           topic: "🎯 Review 'How ELARO Works' Guide",
@@ -165,6 +184,21 @@ export async function clearExampleData(userId: string): Promise<boolean> {
   try {
     console.log('🗑️ Clearing example data for user:', userId);
 
+    // Get current session to ensure we have a valid token
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session?.access_token) {
+      console.error('No valid session found for clearing example data');
+      return false;
+    }
+
+    const authHeaders = {
+      Authorization: `Bearer ${session.access_token}`,
+    };
+
     // Note: The backend should handle filtering by is_example flag
     // For now, we'll delete the example course which should cascade delete related tasks
 
@@ -185,6 +219,7 @@ export async function clearExampleData(userId: string): Promise<boolean> {
         const { error: deleteError } = await supabase.functions.invoke(
           'delete-course',
           {
+            headers: authHeaders,
             body: { courseId: course.id },
           },
         );

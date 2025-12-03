@@ -56,7 +56,7 @@ const ProfileSetupScreen = () => {
   const scrollViewRef = useRef<ScrollView>(null);
   const studiesSectionRef = useRef<View>(null);
   const [studiesSectionY, setStudiesSectionY] = useState(0);
-  
+
   // Onboarding completion state
   const [isLoading, setIsLoading] = useState(false);
   const [marketingOptIn, setMarketingOptIn] = useState(false);
@@ -114,7 +114,10 @@ const ProfileSetupScreen = () => {
       // Filter out empty strings for optional fields - convert to undefined
       const body = {
         username: username.trim(),
-        country: selectedCountry && selectedCountry.trim() ? selectedCountry.trim() : undefined,
+        country:
+          selectedCountry && selectedCountry.trim()
+            ? selectedCountry.trim()
+            : undefined,
         university:
           university && university.trim() ? university.trim() : undefined,
         program: program && program.trim() ? program.trim() : undefined,

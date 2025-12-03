@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   ActivityIndicator,
   Linking,
+  Dimensions,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -35,6 +35,8 @@ interface AuthScreenProps {
   mode?: 'signup' | 'signin';
 }
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   onClose,
   onAuthSuccess,
@@ -57,12 +59,22 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   // Import Zod schemas (will work after npm install zod)
   // import { emailSchema, passwordSchema, signUpSchema, signInSchema } from '../../../shared/validation/schemas';
 
-  const validateEmail = (text: string) => {
-    // Try to use Zod if available, fallback to regex for now
+  // Simple handler that just updates the email value while typing
+  const handleEmailChange = useCallback((text: string) => {
+    setEmail(text);
+    // Clear error while typing to prevent shake animation
+    if (emailError) {
+      setEmailError('');
+    }
+  }, [emailError]);
+
+  // Validate email only when user leaves the field (on blur)
+  const validateEmailOnBlur = useCallback(() => {
+    // Validate only when user leaves the field
     try {
       const { emailSchema } = require('../../../shared/validation/schemas');
-      const result = emailSchema.safeParse(text);
-      if (!result.success && text) {
+      const result = emailSchema.safeParse(email);
+      if (!result.success && email) {
         setEmailError(result.error.errors[0]?.message || 'Invalid email');
       } else {
         setEmailError('');
@@ -70,14 +82,13 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
     } catch {
       // Fallback to regex if Zod not installed yet
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (text && !emailRegex.test(text)) {
+      if (email && !emailRegex.test(email)) {
         setEmailError('Please enter a valid email address.');
       } else {
         setEmailError('');
       }
     }
-    setEmail(text);
-  };
+  }, [email]);
 
   const checkPasswordStrength = (text: string) => {
     // Still calculate visual strength indicator
@@ -273,22 +284,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      testID="auth-screen">
+    <View style={styles.container} testID="auth-screen">
       <View style={styles.gradient} testID="auth-container">
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => navigation.goBack()}
-          accessibilityLabel="Close"
-          accessibilityHint="Closes the authentication screen"
-          accessibilityRole="button">
-          <Ionicons name="close" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          keyboardDismissMode="on-drag"
+          bounces={false}>
           <View style={styles.header}>
             <Text style={styles.title}>
               {mode === 'signup' ? 'Create Account' : 'Sign In with Email'}
@@ -327,11 +330,17 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             <Input
               label="Email"
               value={email}
-              onChangeText={validateEmail}
+              onChangeText={handleEmailChange}
+              onBlur={validateEmailOnBlur}
               placeholder="Enter your email"
               keyboardType="email-address"
               autoCapitalize="none"
               error={emailError}
+              animated={false}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              textContentType="username"
+              autoComplete="email"
               testID="email-input"
             />
 
@@ -343,6 +352,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               secureTextEntry={!showPassword}
               rightIcon={showPassword ? 'eye-off-outline' : 'eye-outline'}
               onRightIconPress={() => setShowPassword(!showPassword)}
+              returnKeyType="done"
+              blurOnSubmit={false}
+              onSubmitEditing={() => {
+                // Explicitly prevent auto-submit - user must tap button
+                // Just dismiss keyboard, don't submit
+                Keyboard.dismiss();
+              }}
+              textContentType="password"
+              autoComplete="password"
               testID="password-input"
             />
 
@@ -552,7 +570,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           </View>
         </ScrollView>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -565,28 +583,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#2C5EFF',
   },
-  closeButton: {
-    position: 'absolute',
-    top: SPACING.lg,
-    right: SPACING.lg,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 1000,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
   scrollContent: {
     flexGrow: 1,
+    minHeight: SCREEN_HEIGHT,
     justifyContent: 'center',
     padding: SPACING.lg,
-    paddingTop: SPACING.xxl + 8, // Add extra padding to account for close button
+    paddingTop: SPACING.xxl,
+    paddingBottom: SPACING.xxl + 100, // Extra bottom padding for keyboard
   },
   header: {
     alignItems: 'center',

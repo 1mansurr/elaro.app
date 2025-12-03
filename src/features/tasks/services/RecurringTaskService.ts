@@ -511,11 +511,16 @@ export class RecurringTaskService {
       ).length;
 
       const completedTasks = stats.reduce(
-        (sum, s) =>
-          sum +
-          s.generated_tasks.filter(
-            (gt: { is_completed?: boolean }) => gt.is_completed,
-          ).length,
+        (sum, s) => {
+          // Defensive check: ensure generated_tasks is an array before filtering
+          if (!Array.isArray(s.generated_tasks)) return sum;
+          return (
+            sum +
+            s.generated_tasks.filter(
+              (gt: { is_completed?: boolean }) => gt.is_completed,
+            ).length
+          );
+        },
         0,
       );
       const completionRate =

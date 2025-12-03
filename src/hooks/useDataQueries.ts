@@ -161,6 +161,8 @@ export const useHomeScreenData = (enabled: boolean = true) => {
       return data;
     },
     enabled,
+    // Don't retry if disabled - prevents unnecessary API calls
+    retry: enabled ? 3 : false,
   });
 };
 

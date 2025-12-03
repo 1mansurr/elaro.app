@@ -23,8 +23,11 @@ export const useMonthlyTaskCount = () => {
     const oneMonthAgo = new Date();
     oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
-    const filterTasksByDate = (tasks: Array<{ createdAt: string }>) =>
-      tasks.filter(task => new Date(task.createdAt) >= oneMonthAgo).length;
+    const filterTasksByDate = (tasks: Array<{ createdAt: string }> | undefined) => {
+      // Defensive check: ensure tasks is an array before filtering
+      if (!Array.isArray(tasks)) return 0;
+      return tasks.filter(task => new Date(task.createdAt) >= oneMonthAgo).length;
+    };
 
     const monthlyAssignments = filterTasksByDate(assignments);
     const monthlyLectures = filterTasksByDate(lectures);

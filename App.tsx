@@ -47,6 +47,7 @@ import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 import { syncManager } from './src/services/syncManager';
 import { useAppStateSync } from './src/hooks/useAppState';
 import { navigationSyncService } from './src/services/navigationSync';
+import { AUTHENTICATED_ROUTES } from './src/navigation/utils/RouteGuards';
 import { validateAndLogConfig } from './src/utils/configValidator';
 import {
   setupQueryCachePersistence,
@@ -297,8 +298,37 @@ const NavigationStateValidator: React.FC<{
       // If we have a pre-loaded initial state, validate it
       if (initialNavigationState) {
         try {
+          const isAuthenticated = !!session;
+          
+          // Extract route name from initialNavigationState to check if it's authenticated
+          const getRouteName = (state: NavigationState): string | null => {
+            if (!state || !state.routes || state.routes.length === 0) {
+              return null;
+            }
+            const currentRoute = state.routes[state.index || 0];
+            if (!currentRoute) {
+              return null;
+            }
+            // If this route has nested state, get the nested route name
+            if (currentRoute.state && 'routes' in currentRoute.state) {
+              return getRouteName(currentRoute.state as NavigationState);
+            }
+            return currentRoute.name || null;
+          };
+          
+          const currentRoute = getRouteName(initialNavigationState);
+          const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
+          
+          // If user is not authenticated but saved state contains authenticated route, clear it immediately
+          if (!isAuthenticated && currentRoute && authenticatedRoutes.includes(currentRoute)) {
+            console.log('🔒 NavigationSync: Auth failed, clearing authenticated navigation state');
+            await navigationSyncService.clearState();
+            onStateValidated(null);
+            return;
+          }
+          
           const safeState = await navigationSyncService.getSafeInitialState(
-            !!session,
+            isAuthenticated,
             authLoading,
             user?.id,
           );
@@ -308,6 +338,8 @@ const NavigationStateValidator: React.FC<{
             '❌ NavigationSync: Error validating initial state:',
             error,
           );
+          // Clear state on error to prevent navigation errors
+          await navigationSyncService.clearState().catch(() => {});
           onStateValidated(null);
         }
       } else {

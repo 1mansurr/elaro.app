@@ -7,6 +7,7 @@ import {
 } from '@/services/supabase';
 import { authService } from '@/services/authService';
 import { authSyncService } from '@/services/authSync';
+import { navigationSyncService } from '@/services/navigationSync';
 import { User } from '@/types';
 import { getPendingTask } from '@/utils/taskPersistence';
 import { mixpanelService } from '@/services/mixpanel';
@@ -235,23 +236,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const initializeAuth = async () => {
       try {
+        // Add timeout wrapper to prevent indefinite hanging
+        const timeoutPromise = new Promise<Session | null>((_, reject) => {
+          setTimeout(() => reject(new Error('Auth initialization timeout')), 10000); // 10 second timeout
+        });
+
         // Initialize auth sync service (loads session from Supabase and syncs to local cache)
-        const initialSession = await authSyncService.initialize();
+        const initPromise = authSyncService.initialize();
+        const initialSession = await Promise.race([initPromise, timeoutPromise]);
 
         // Set initial session immediately
         setSession(initialSession);
 
         if (initialSession?.user) {
-          const userProfile = await fetchUserProfile(initialSession.user.id);
+          // Fetch user profile with timeout - don't block app if it hangs
+          const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
+            setTimeout(() => reject(new Error('User profile fetch timeout')), 8000); // 8 second timeout
+          });
+
+          try {
+            const profilePromise = fetchUserProfile(initialSession.user.id);
+            const userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
           setUser(userProfile);
+          } catch (profileError) {
+            console.warn('⚠️ User profile fetch timed out or failed, continuing without profile:', profileError);
+            // Continue without user profile - it can be fetched later
+            setUser(null);
+            // Try to fetch in background (non-blocking)
+            fetchUserProfile(initialSession.user.id)
+              .then(profile => {
+                if (profile) {
+                  console.log('✅ User profile fetched in background');
+                  setUser(profile);
+                }
+              })
+              .catch(err => {
+                console.error('Background profile fetch failed:', err);
+              });
+          }
         } else {
           setUser(null);
         }
       } catch (error) {
         console.error('❌ Error getting initial session:', error);
+        // Don't block app - continue with no session
         setSession(null);
         setUser(null);
+        
+        // Clear any saved navigation state that might reference authenticated routes
+        // This prevents navigation errors when auth fails/times out
+        navigationSyncService.clearState().catch(err => {
+          console.warn('⚠️ Failed to clear navigation state:', err);
+        });
       } finally {
+        // Always set loading to false, even on error or timeout
         setLoading(false);
       }
     };
@@ -263,8 +301,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       setSession(session);
 
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id);
+        // Add timeout to prevent hanging on profile fetch
+        const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000);
+        });
+
+        try {
+          const profilePromise = fetchUserProfile(session.user.id);
+          const userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
         setUser(userProfile);
+        } catch (error) {
+          console.warn('⚠️ User profile fetch timed out, continuing without profile:', error);
+          setUser(null);
+          // Try to fetch in background (non-blocking)
+          fetchUserProfile(session.user.id)
+            .then(profile => {
+              if (profile) {
+                console.log('✅ User profile fetched in background');
+                setUser(profile);
+              }
+            })
+            .catch(() => {});
+        }
       } else {
         setUser(null);
       }
@@ -283,8 +341,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
       setSession(session);
       if (session?.user) {
-        const userProfile = await fetchUserProfile(session.user.id);
+        // Add timeout to prevent hanging on profile fetch
+        const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
+          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000);
+        });
+
+        let userProfile: User | null = null; // Declare outside try block
+        
+        try {
+          const profilePromise = fetchUserProfile(session.user.id);
+          userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
         setUser(userProfile);
+        } catch (error) {
+          console.warn('⚠️ User profile fetch timed out in auth change listener:', error);
+          setUser(null);
+          // Try to fetch in background (non-blocking)
+          fetchUserProfile(session.user.id)
+            .then(profile => {
+              if (profile) {
+                console.log('✅ User profile fetched in background');
+                setUser(profile);
+              }
+            })
+            .catch(() => {});
+          return; // Exit early to avoid processing pending tasks
+        }
 
         // Complete any pending task after authentication
         if (userProfile && session.user.id) {
@@ -620,28 +701,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return { error: { message: lockoutMessage } };
       }
 
-      const result = await authService.login(credentials);
+      // Add timeout wrapper for login to prevent indefinite hanging
+      const loginTimeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Login timeout')), 15000); // 15 second timeout
+      });
 
-      // Set the initial last active timestamp on successful login
-      await updateLastActiveTimestamp();
+      const loginPromise = authService.login(credentials);
+      const result = await Promise.race([loginPromise, loginTimeoutPromise]);
 
-      // Record successful login with device info
+      // Clear any saved navigation state that might reference 'Main' before navigator switches
+      // This prevents navigation errors when AppNavigator switches to AuthenticatedNavigator
+      navigationSyncService.clearState().catch(() => {});
+
+      // Set the initial last active timestamp on successful login (non-blocking)
+      updateLastActiveTimestamp().catch(() => {});
+
+      // Record successful login with device info (non-blocking to prevent stalls)
       if (result?.user?.id) {
-        await recordSuccessfulLogin(result.user.id, 'email', {
+        Promise.all([
+          recordSuccessfulLogin(result.user.id, 'email', {
           platform: Platform.OS,
           version: Platform.Version?.toString(),
+          }),
+          resetFailedAttempts(credentials.email),
+        ]).catch(err => {
+          console.warn('⚠️ Failed to record login metrics:', err);
         });
-
-        // Reset failed attempts on successful login
-        await resetFailedAttempts(credentials.email);
       }
 
-      // Check if MFA is required
+      // Check if MFA is required (with timeout to prevent hanging)
       try {
-        const aal = await authService.mfa.getAuthenticatorAssuranceLevel();
+        const mfaTimeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('MFA check timeout')), 5000); // 5 second timeout
+        });
+
+        const aalPromise = authService.mfa.getAuthenticatorAssuranceLevel();
+        const aal = await Promise.race([aalPromise, mfaTimeoutPromise]);
+        
         if (aal.currentLevel === 'aal2') {
-          // Get available MFA factors
-          const mfaStatus = await authService.mfa.getStatus();
+          const mfaStatusPromise = authService.mfa.getStatus();
+          const mfaStatus = await Promise.race([mfaStatusPromise, mfaTimeoutPromise]);
           return {
             error: null,
             requiresMFA: true,
@@ -649,8 +748,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           };
         }
       } catch (mfaError) {
-        // MFA might not be enabled or configured
-        console.log('MFA check failed:', mfaError);
+        // MFA might not be enabled or timed out - continue without MFA
+        console.log('MFA check failed or timed out:', mfaError);
       }
 
       return { error: null };

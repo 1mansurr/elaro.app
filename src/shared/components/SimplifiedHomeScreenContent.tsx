@@ -141,7 +141,8 @@ const TaskListSection: React.FC<{
   onFabStateChange: (state: { isOpen: boolean }) => void;
 }> = memo(
   ({ homeData, isGuest, onSwipeComplete, onViewDetails, onFabStateChange }) => {
-    const tasks = homeData?.tasks || [];
+    // Ensure tasks is always an array - defensive check to prevent crashes
+    const tasks = Array.isArray(homeData?.tasks) ? homeData.tasks : [];
 
     if (tasks.length === 0) return null;
 
@@ -264,8 +265,11 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
       );
     }
 
-    // Show empty state
-    if (!homeData || (!homeData.tasks?.length && !homeData.nextTask)) {
+    // Show empty state - improved null checking to handle undefined tasks
+    if (
+      !homeData ||
+      (!Array.isArray(homeData.tasks) && !homeData.tasks?.length && !homeData.nextTask)
+    ) {
       return (
         <ScrollView
           style={styles.container}

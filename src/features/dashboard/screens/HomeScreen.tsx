@@ -65,6 +65,63 @@ const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { session, user } = useAuth();
   const isGuest = !session;
+  const queryClient = useQueryClient();
+  
+  // Check if user is new (just completed onboarding, no example data yet)
+  // Skip API call for new users to avoid unnecessary Edge Function calls
+  const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    const checkIfNewUser = async () => {
+      if (isGuest || !user || !user.onboarding_completed) {
+        setIsNewUser(false);
+        return;
+      }
+      
+      // Check if example data has been created
+      const hasCreatedExamples = await AsyncStorage.getItem(
+        'hasCreatedExampleData',
+      );
+      
+      // If user just completed onboarding and no example data created yet,
+      // they're a new user - skip API call
+      const userIsNew = !hasCreatedExamples;
+      setIsNewUser(userIsNew);
+      
+      // If user is new, completely remove query from cache to prevent any retries
+      if (userIsNew) {
+        queryClient.cancelQueries({ queryKey: ['homeScreenData'] });
+        // Remove query from cache completely to prevent retries
+        queryClient.removeQueries({ queryKey: ['homeScreenData'] });
+      }
+    };
+    
+    checkIfNewUser();
+  }, [user, isGuest, queryClient]);
+  
+  // If user creates data manually (not through example data), update isNewUser
+  useEffect(() => {
+    if (
+      !isGuest &&
+      user &&
+      homeData &&
+      (homeData.nextUpcomingTask ||
+        (homeData.todayOverview &&
+          (homeData.todayOverview.lectures > 0 ||
+            homeData.todayOverview.assignments > 0 ||
+            homeData.todayOverview.studySessions > 0)))
+    ) {
+      // User has data, they're no longer a new user
+      if (isNewUser === true) {
+        setIsNewUser(false);
+      }
+    }
+  }, [homeData, isGuest, user, isNewUser]);
+  
+  // Only fetch data if user is not new (has data or example data was created)
+  // Wait until we've determined if user is new before enabling query
+  const shouldFetchData = !isGuest && isNewUser === false;
+  
   const {
     data: homeData,
     isLoading,
@@ -72,9 +129,8 @@ const HomeScreen = () => {
     error,
     refetch,
     isRefetching,
-  } = useHomeScreenData(!isGuest);
+  } = useHomeScreenData(shouldFetchData);
   const { monthlyTaskCount } = useMonthlyTaskCount();
-  const queryClient = useQueryClient();
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
@@ -513,25 +569,16 @@ const HomeScreen = () => {
   // Create example data for brand new users
   useEffect(() => {
     const checkAndCreateExampleData = async () => {
-      // Only for authenticated users
-      if (isGuest || !user || isLoading) return;
+      // Only for authenticated users and new users
+      if (isGuest || !user || isLoading || isNewUser !== true) return;
 
       try {
         const hasCreatedExamples = await AsyncStorage.getItem(
           'hasCreatedExampleData',
         );
 
-        // Check if user has any data
-        const hasAnyData =
-          homeData &&
-          (homeData.nextUpcomingTask ||
-            (homeData.todayOverview &&
-              (homeData.todayOverview.lectures > 0 ||
-                homeData.todayOverview.assignments > 0 ||
-                homeData.todayOverview.studySessions > 0)));
-
-        // If user has no data and we haven't created examples yet
-        if (!hasAnyData && !hasCreatedExamples) {
+        // If we haven't created examples yet
+        if (!hasCreatedExamples) {
           console.log(
             '📚 New user with no data detected. Creating example data...',
           );
@@ -544,6 +591,9 @@ const HomeScreen = () => {
 
           if (result.success) {
             console.log('✅ Example data created successfully');
+            
+            // Update isNewUser state to enable data fetching
+            setIsNewUser(false);
 
             // Refresh home screen data to show examples
             await queryClient.invalidateQueries({
@@ -564,11 +614,15 @@ const HomeScreen = () => {
             });
           } else {
             console.error('Failed to create example data:', result.error);
+            // Reset flag if creation failed so user can try again
+            await AsyncStorage.removeItem('hasCreatedExampleData');
             // Don't show error to user - it's not critical
           }
         }
       } catch (error) {
         console.error('Error in checkAndCreateExampleData:', error);
+        // Reset flag if error occurred
+        await AsyncStorage.removeItem('hasCreatedExampleData').catch(() => {});
         // Fail silently - not critical for app function
       }
     };
@@ -579,7 +633,7 @@ const HomeScreen = () => {
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [isGuest, user, isLoading, homeData, queryClient, showToast]);
+  }, [isGuest, user, isLoading, isNewUser, queryClient, showToast]);
 
   // Memoized callbacks for better performance
   const handleNotificationBellPress = useCallback(() => {
@@ -714,9 +768,29 @@ const HomeScreen = () => {
 
   // For authenticated users, wrap with QueryStateWrapper
   if (!isGuest) {
+    // For new users (just completed onboarding, no data yet), show empty state immediately
+    // Skip API call to avoid unnecessary Edge Function errors
+    if (isNewUser === true) {
+      return (
+        <QueryStateWrapper
+          isLoading={false}
+          isError={false}
+          error={null}
+          data={null}
+          refetch={handleRefetch}
+          isRefetching={false}
+          emptyStateComponent={
+            <HomeScreenEmptyState onAddActivity={handleAddActivity} />
+          }>
+          {content}
+        </QueryStateWrapper>
+      );
+    }
+    
+    // For existing users or while checking, use normal QueryStateWrapper
     return (
       <QueryStateWrapper
-        isLoading={isLoading}
+        isLoading={isLoading || isNewUser === null}
         isError={isError}
         error={error}
         data={homeData}

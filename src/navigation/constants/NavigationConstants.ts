@@ -191,7 +191,7 @@ export const SCREEN_OPTIONS = {
     headerShadowVisible: false,
     headerBackTitleVisible: false,
     headerTitleAlign: 'center' as const,
-    headerTintColor: 'COLORS.textPrimary',
+    headerTintColor: COLORS.textPrimary,
     headerStyle: {
       backgroundColor: COLORS.white,
     },
@@ -264,12 +264,12 @@ export const NAVIGATION_THEMES = {
   light: {
     dark: false,
     colors: {
-      primary: 'COLORS.primary',
-      background: 'COLORS.white',
-      card: 'COLORS.white',
-      text: 'COLORS.textPrimary',
-      border: 'COLORS.border',
-      notification: 'COLORS.accent',
+      primary: COLORS.primary,
+      background: COLORS.white,
+      card: COLORS.white,
+      text: COLORS.textPrimary,
+      border: COLORS.border,
+      notification: COLORS.accent,
     },
   },
 };

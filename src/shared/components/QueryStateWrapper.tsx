@@ -168,11 +168,32 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
     );
   }
 
-  // Empty State
-  const isEmpty =
-    data === null ||
-    data === undefined ||
-    (Array.isArray(data) && data.length === 0);
+  // Empty State - improved check for objects and arrays
+  const isEmpty = (() => {
+    if (data === null || data === undefined) return true;
+    if (Array.isArray(data)) return data.length === 0;
+    
+    // For objects, check if they're effectively empty
+    // (no properties or all properties are null/undefined/empty arrays)
+    if (typeof data === 'object' && data !== null) {
+      const keys = Object.keys(data);
+      if (keys.length === 0) return true; // Empty object {}
+      
+      // Check if all properties are empty/null/undefined
+      const allEmpty = keys.every(key => {
+        const value = (data as any)[key];
+        return (
+          value === null ||
+          value === undefined ||
+          (Array.isArray(value) && value.length === 0) ||
+          (typeof value === 'object' && Object.keys(value).length === 0)
+        );
+      });
+      return allEmpty;
+    }
+    
+    return false;
+  })();
 
   if (isEmpty) {
     // If custom empty state component is provided, use it
