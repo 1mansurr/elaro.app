@@ -299,7 +299,7 @@ const NavigationStateValidator: React.FC<{
       if (initialNavigationState) {
         try {
           const isAuthenticated = !!session;
-          
+
           // Extract route name from initialNavigationState to check if it's authenticated
           const getRouteName = (state: NavigationState): string | null => {
             if (!state || !state.routes || state.routes.length === 0) {
@@ -315,18 +315,24 @@ const NavigationStateValidator: React.FC<{
             }
             return currentRoute.name || null;
           };
-          
+
           const currentRoute = getRouteName(initialNavigationState);
           const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
-          
+
           // If user is not authenticated but saved state contains authenticated route, clear it immediately
-          if (!isAuthenticated && currentRoute && authenticatedRoutes.includes(currentRoute)) {
-            console.log('🔒 NavigationSync: Auth failed, clearing authenticated navigation state');
+          if (
+            !isAuthenticated &&
+            currentRoute &&
+            authenticatedRoutes.includes(currentRoute)
+          ) {
+            console.log(
+              '🔒 NavigationSync: Auth failed, clearing authenticated navigation state',
+            );
             await navigationSyncService.clearState();
             onStateValidated(null);
             return;
           }
-          
+
           const safeState = await navigationSyncService.getSafeInitialState(
             isAuthenticated,
             authLoading,

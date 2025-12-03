@@ -137,9 +137,18 @@ const ProfileSetupScreen = () => {
         hasDateOfBirth: !!body.dateOfBirth,
       });
 
+      // Get fresh access token to ensure it's valid
+      const { getFreshAccessToken } = await import(
+        '@/utils/getFreshAccessToken'
+      );
+      const accessToken = await getFreshAccessToken();
+
       const { error, data } = await supabase.functions.invoke(
         'complete-onboarding',
         {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
           body,
         },
       );

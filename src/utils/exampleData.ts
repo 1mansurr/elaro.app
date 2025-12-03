@@ -28,19 +28,12 @@ export async function createExampleData(
   try {
     console.log('📚 Creating example data for new user:', userId);
 
-    // Get current session to ensure we have a valid token
-    // Explicitly passing Authorization header ensures Edge Function receives the JWT
-    const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
-
-    if (sessionError || !session?.access_token) {
-      throw new Error('No valid session found for creating example data');
-    }
-
+    // Get fresh access token to ensure it's valid
+    const { getFreshAccessToken } = await import('@/utils/getFreshAccessToken');
+    const accessToken = await getFreshAccessToken();
+    
     const authHeaders = {
-      Authorization: `Bearer ${session.access_token}`,
+      Authorization: `Bearer ${accessToken}`,
     };
 
     // Step 1: Create a sample course

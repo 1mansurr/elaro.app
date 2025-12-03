@@ -44,15 +44,10 @@ const CompleteOnboardingSchema = z.object({
       }),
     )
     .default([]),
-  dateOfBirth: z
-    .string()
-    .refine(
-      val => {
-        const date = new Date(val);
-        return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
-      },
-      'Invalid date format. Expected YYYY-MM-DD',
-    ),
+  dateOfBirth: z.string().refine(val => {
+    const date = new Date(val);
+    return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
+  }, 'Invalid date format. Expected YYYY-MM-DD'),
   hasParentalConsent: z.boolean().default(false),
   marketingOptIn: z.boolean().default(false),
 });

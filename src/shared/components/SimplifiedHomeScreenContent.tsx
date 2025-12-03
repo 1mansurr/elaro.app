@@ -268,7 +268,9 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
     // Show empty state - improved null checking to handle undefined tasks
     if (
       !homeData ||
-      (!Array.isArray(homeData.tasks) && !homeData.tasks?.length && !homeData.nextTask)
+      (!Array.isArray(homeData.tasks) &&
+        !homeData.tasks?.length &&
+        !homeData.nextTask)
     ) {
       return (
         <ScrollView

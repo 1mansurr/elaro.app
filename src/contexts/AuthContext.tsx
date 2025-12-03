@@ -238,28 +238,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         // Add timeout wrapper to prevent indefinite hanging
         const timeoutPromise = new Promise<Session | null>((_, reject) => {
-          setTimeout(() => reject(new Error('Auth initialization timeout')), 10000); // 10 second timeout
+          setTimeout(
+            () => reject(new Error('Auth initialization timeout')),
+            10000,
+          ); // 10 second timeout
         });
 
         // Initialize auth sync service (loads session from Supabase and syncs to local cache)
         const initPromise = authSyncService.initialize();
-        const initialSession = await Promise.race([initPromise, timeoutPromise]);
+        const initialSession = await Promise.race([
+          initPromise,
+          timeoutPromise,
+        ]);
 
         // Set initial session immediately
         setSession(initialSession);
 
         if (initialSession?.user) {
           // Fetch user profile with timeout - don't block app if it hangs
-          const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
-            setTimeout(() => reject(new Error('User profile fetch timeout')), 8000); // 8 second timeout
-          });
+          const profileTimeoutPromise = new Promise<User | null>(
+            (_, reject) => {
+              setTimeout(
+                () => reject(new Error('User profile fetch timeout')),
+                8000,
+              ); // 8 second timeout
+            },
+          );
 
           try {
             const profilePromise = fetchUserProfile(initialSession.user.id);
-            const userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
-          setUser(userProfile);
+            const userProfile = await Promise.race([
+              profilePromise,
+              profileTimeoutPromise,
+            ]);
+            setUser(userProfile);
           } catch (profileError) {
-            console.warn('⚠️ User profile fetch timed out or failed, continuing without profile:', profileError);
+            console.warn(
+              '⚠️ User profile fetch timed out or failed, continuing without profile:',
+              profileError,
+            );
             // Continue without user profile - it can be fetched later
             setUser(null);
             // Try to fetch in background (non-blocking)
@@ -282,7 +299,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         // Don't block app - continue with no session
         setSession(null);
         setUser(null);
-        
+
         // Clear any saved navigation state that might reference authenticated routes
         // This prevents navigation errors when auth fails/times out
         navigationSyncService.clearState().catch(err => {
@@ -308,10 +325,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         try {
           const profilePromise = fetchUserProfile(session.user.id);
-          const userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
-        setUser(userProfile);
+          const userProfile = await Promise.race([
+            profilePromise,
+            profileTimeoutPromise,
+          ]);
+          setUser(userProfile);
         } catch (error) {
-          console.warn('⚠️ User profile fetch timed out, continuing without profile:', error);
+          console.warn(
+            '⚠️ User profile fetch timed out, continuing without profile:',
+            error,
+          );
           setUser(null);
           // Try to fetch in background (non-blocking)
           fetchUserProfile(session.user.id)
@@ -347,13 +370,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         });
 
         let userProfile: User | null = null; // Declare outside try block
-        
+
         try {
           const profilePromise = fetchUserProfile(session.user.id);
-          userProfile = await Promise.race([profilePromise, profileTimeoutPromise]);
-        setUser(userProfile);
+          userProfile = await Promise.race([
+            profilePromise,
+            profileTimeoutPromise,
+          ]);
+          setUser(userProfile);
         } catch (error) {
-          console.warn('⚠️ User profile fetch timed out in auth change listener:', error);
+          console.warn(
+            '⚠️ User profile fetch timed out in auth change listener:',
+            error,
+          );
           setUser(null);
           // Try to fetch in background (non-blocking)
           fetchUserProfile(session.user.id)
@@ -556,26 +585,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         ) {
           console.log('New free user detected. Attempting to start trial...');
           try {
-            // Get access token from session to explicitly pass Authorization header
-            // This ensures the Edge Function receives the JWT for RLS context
-            const {
-              data: { session: currentSession },
-              error: sessionError,
-            } = await supabase.auth.getSession();
-
-            if (sessionError || !currentSession) {
-              console.error(
-                'Error getting session for trial start:',
-                sessionError,
-              );
-              return;
-            }
-
-            const accessToken = currentSession.access_token;
-            if (!accessToken) {
-              console.error('No access token available for trial start');
-              return;
-            }
+            // Get fresh access token to ensure it's valid
+            const { getFreshAccessToken } = await import(
+              '@/utils/getFreshAccessToken'
+            );
+            const accessToken = await getFreshAccessToken();
 
             const { error } = await supabase.functions.invoke(
               'start-user-trial',
@@ -720,8 +734,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (result?.user?.id) {
         Promise.all([
           recordSuccessfulLogin(result.user.id, 'email', {
-          platform: Platform.OS,
-          version: Platform.Version?.toString(),
+            platform: Platform.OS,
+            version: Platform.Version?.toString(),
           }),
           resetFailedAttempts(credentials.email),
         ]).catch(err => {
@@ -737,10 +751,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         const aalPromise = authService.mfa.getAuthenticatorAssuranceLevel();
         const aal = await Promise.race([aalPromise, mfaTimeoutPromise]);
-        
+
         if (aal.currentLevel === 'aal2') {
           const mfaStatusPromise = authService.mfa.getStatus();
-          const mfaStatus = await Promise.race([mfaStatusPromise, mfaTimeoutPromise]);
+          const mfaStatus = await Promise.race([
+            mfaStatusPromise,
+            mfaTimeoutPromise,
+          ]);
           return {
             error: null,
             requiresMFA: true,

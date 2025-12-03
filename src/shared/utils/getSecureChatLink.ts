@@ -3,8 +3,17 @@ import { User } from '@/types/entities';
 
 export async function getSecureChatLink(user: User): Promise<string> {
   try {
+    // Get fresh access token to ensure it's valid
+    const { getFreshAccessToken } = await import('@/utils/getFreshAccessToken');
+    const accessToken = await getFreshAccessToken();
+    
     const { data, error } = await supabase.functions.invoke(
       'get-secure-chat-link',
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      },
     );
 
     if (error) {

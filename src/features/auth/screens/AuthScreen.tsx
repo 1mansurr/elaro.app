@@ -60,13 +60,16 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   // import { emailSchema, passwordSchema, signUpSchema, signInSchema } from '../../../shared/validation/schemas';
 
   // Simple handler that just updates the email value while typing
-  const handleEmailChange = useCallback((text: string) => {
-    setEmail(text);
-    // Clear error while typing to prevent shake animation
-    if (emailError) {
-      setEmailError('');
-    }
-  }, [emailError]);
+  const handleEmailChange = useCallback(
+    (text: string) => {
+      setEmail(text);
+      // Clear error while typing to prevent shake animation
+      if (emailError) {
+        setEmailError('');
+      }
+    },
+    [emailError],
+  );
 
   // Validate email only when user leaves the field (on blur)
   const validateEmailOnBlur = useCallback(() => {

@@ -82,51 +82,15 @@ export const useUsernameAvailability = (
         try {
           // Get fresh access token from Supabase session (not from context which may be stale)
           // This ensures we have the latest valid token and the Edge Function receives the JWT for RLS context
-          const {
-            data: { session: currentSession },
-            error: sessionError,
-          } = await supabase.auth.getSession();
-
-          // Debug logging to verify session exists
-          console.log('🔍 Session Debug (check-username):', {
-            hasSession: !!currentSession,
-            hasError: !!sessionError,
-            userId: currentSession?.user?.id,
-            tokenLength: currentSession?.access_token?.length,
-            tokenPreview:
-              currentSession?.access_token?.substring(0, 20) + '...',
-            expiresAt: currentSession?.expires_at,
-            expiresIn: currentSession?.expires_in,
-            username: newUsername,
-          });
-
-          if (sessionError || !currentSession) {
-            console.error(
-              '❌ Error getting session for username check:',
-              sessionError,
-            );
-            setUsernameError('Please sign in to check username availability.');
-            setIsAvailable(null);
-            setIsChecking(false);
-            abortControllerRef.current?.abort();
-            abortControllerRef.current = null;
-            return;
-          }
-
-          const accessToken = currentSession.access_token;
-          if (!accessToken) {
-            console.error('❌ No access token available for username check');
-            setUsernameError('Please sign in to check username availability.');
-            setIsAvailable(null);
-            setIsChecking(false);
-            abortControllerRef.current?.abort();
-            abortControllerRef.current = null;
-            return;
-          }
+          // Get fresh access token to ensure it's valid and not expired
+          const { getFreshAccessToken } = await import(
+            '@/utils/getFreshAccessToken'
+          );
+          const accessToken = await getFreshAccessToken();
 
           // Debug logging to see the actual request
           console.log(
-            '📤 Calling check-username-availability with token:',
+            '📤 Calling check-username-availability with fresh token:',
             accessToken.substring(0, 30) + '...',
           );
 

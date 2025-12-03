@@ -15,6 +15,7 @@ export type FlowInitialData = {
 export type RootStackParamList = {
   // Core navigation
   Launch: undefined;
+  AppWelcome: undefined;
   Auth: {
     onClose?: () => void;
     onAuthSuccess?: () => void;

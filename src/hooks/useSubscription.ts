@@ -126,9 +126,18 @@ export const useSubscription = (): UseSubscriptionReturn => {
     if (!user) return;
 
     try {
+      // Get fresh access token to ensure it's valid
+      const { getFreshAccessToken } = await import(
+        '@/utils/getFreshAccessToken'
+      );
+      const accessToken = await getFreshAccessToken();
+
       const { error } = await supabase.functions.invoke(
         'update-revenuecat-subscription',
         {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: {
             customerInfo,
             userId: user.id,

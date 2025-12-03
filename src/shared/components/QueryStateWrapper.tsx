@@ -172,13 +172,13 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
   const isEmpty = (() => {
     if (data === null || data === undefined) return true;
     if (Array.isArray(data)) return data.length === 0;
-    
+
     // For objects, check if they're effectively empty
     // (no properties or all properties are null/undefined/empty arrays)
     if (typeof data === 'object' && data !== null) {
       const keys = Object.keys(data);
       if (keys.length === 0) return true; // Empty object {}
-      
+
       // Check if all properties are empty/null/undefined
       const allEmpty = keys.every(key => {
         const value = (data as any)[key];
@@ -191,7 +191,7 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
       });
       return allEmpty;
     }
-    
+
     return false;
   })();
 

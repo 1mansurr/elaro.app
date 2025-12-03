@@ -66,28 +66,28 @@ const HomeScreen = () => {
   const { session, user } = useAuth();
   const isGuest = !session;
   const queryClient = useQueryClient();
-  
+
   // Check if user is new (just completed onboarding, no example data yet)
   // Skip API call for new users to avoid unnecessary Edge Function calls
   const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
-  
+
   useEffect(() => {
     const checkIfNewUser = async () => {
       if (isGuest || !user || !user.onboarding_completed) {
         setIsNewUser(false);
         return;
       }
-      
+
       // Check if example data has been created
       const hasCreatedExamples = await AsyncStorage.getItem(
         'hasCreatedExampleData',
       );
-      
+
       // If user just completed onboarding and no example data created yet,
       // they're a new user - skip API call
       const userIsNew = !hasCreatedExamples;
       setIsNewUser(userIsNew);
-      
+
       // If user is new, completely remove query from cache to prevent any retries
       if (userIsNew) {
         queryClient.cancelQueries({ queryKey: ['homeScreenData'] });
@@ -95,10 +95,10 @@ const HomeScreen = () => {
         queryClient.removeQueries({ queryKey: ['homeScreenData'] });
       }
     };
-    
+
     checkIfNewUser();
   }, [user, isGuest, queryClient]);
-  
+
   // If user creates data manually (not through example data), update isNewUser
   useEffect(() => {
     if (
@@ -117,11 +117,11 @@ const HomeScreen = () => {
       }
     }
   }, [homeData, isGuest, user, isNewUser]);
-  
+
   // Only fetch data if user is not new (has data or example data was created)
   // Wait until we've determined if user is new before enabling query
   const shouldFetchData = !isGuest && isNewUser === false;
-  
+
   const {
     data: homeData,
     isLoading,
@@ -591,7 +591,7 @@ const HomeScreen = () => {
 
           if (result.success) {
             console.log('✅ Example data created successfully');
-            
+
             // Update isNewUser state to enable data fetching
             setIsNewUser(false);
 
@@ -786,7 +786,7 @@ const HomeScreen = () => {
         </QueryStateWrapper>
       );
     }
-    
+
     // For existing users or while checking, use normal QueryStateWrapper
     return (
       <QueryStateWrapper

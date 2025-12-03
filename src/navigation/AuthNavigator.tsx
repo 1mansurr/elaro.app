@@ -1,6 +1,10 @@
-import React, { Suspense, lazy } from 'react';
-import { createStackNavigator } from '@react-navigation/stack';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
+import {
+  createStackNavigator,
+  StackNavigationOptions,
+} from '@react-navigation/stack';
 import { View, ActivityIndicator, TextStyle } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RootStackParamList } from '@/types';
 import { FONT_WEIGHTS, COLORS } from '@/constants/theme';
@@ -27,6 +31,7 @@ type ScreensConfig = Partial<
 
 // Critical auth screens - loaded immediately
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
+import AppWelcomeScreen from '@/features/auth/screens/AppWelcomeScreen';
 
 // Lazy-loaded auth screens
 const MFAEnrollmentScreen = lazy(() =>
@@ -49,9 +54,9 @@ const LoadingFallback = () => (
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: 'COLORS.backgroundSecondary ',
+      backgroundColor: COLORS.backgroundSecondary,
     }}>
-    <ActivityIndicator size="large" color="COLORS.primary" />
+    <ActivityIndicator size="large" color={COLORS.primary} />
   </View>
 );
 
@@ -67,6 +72,12 @@ const authScreenOptions = {
 
 // Auth screens configuration
 const authScreens = {
+  AppWelcome: {
+    component: AppWelcomeScreen,
+    options: {
+      headerShown: false,
+    },
+  },
   Auth: {
     component: AuthScreen,
     options: SCREEN_CONFIGS.Auth,
@@ -105,6 +116,7 @@ const renderScreens = (screens: ScreensConfig) => {
  * AuthNavigator - Handles all authentication-related flows
  *
  * Responsibilities:
+ * - First-time welcome screen
  * - User authentication (sign up/sign in)
  * - MFA enrollment and verification
  * - Account switching
@@ -113,9 +125,35 @@ const renderScreens = (screens: ScreensConfig) => {
  * and can be accessed from AuthenticatedNavigator for auth-related flows.
  */
 export const AuthNavigator: React.FC = () => {
+  const [initialRoute, setInitialRoute] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkFirstTimeUser = async () => {
+      try {
+        const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcomeScreen');
+        setInitialRoute(hasSeenWelcome ? 'Auth' : 'AppWelcome');
+      } catch (error) {
+        console.error('Error checking welcome screen status:', error);
+        // Default to showing welcome screen on error
+        setInitialRoute('AppWelcome');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkFirstTimeUser();
+  }, []);
+
+  if (isLoading) {
+    return <LoadingFallback />;
+  }
+
   return (
     <Suspense fallback={<LoadingFallback />}>
-      <Stack.Navigator screenOptions={authScreenOptions}>
+      <Stack.Navigator
+        screenOptions={authScreenOptions}
+        initialRouteName={initialRoute as 'AppWelcome' | 'Auth'}>
         <Stack.Group>{renderScreens(authScreens)}</Stack.Group>
       </Stack.Navigator>
     </Suspense>

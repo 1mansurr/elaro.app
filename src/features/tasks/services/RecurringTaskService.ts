@@ -510,19 +510,16 @@ export class RecurringTaskService {
             new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       ).length;
 
-      const completedTasks = stats.reduce(
-        (sum, s) => {
-          // Defensive check: ensure generated_tasks is an array before filtering
-          if (!Array.isArray(s.generated_tasks)) return sum;
-          return (
-            sum +
-            s.generated_tasks.filter(
-              (gt: { is_completed?: boolean }) => gt.is_completed,
-            ).length
-          );
-        },
-        0,
-      );
+      const completedTasks = stats.reduce((sum, s) => {
+        // Defensive check: ensure generated_tasks is an array before filtering
+        if (!Array.isArray(s.generated_tasks)) return sum;
+        return (
+          sum +
+          s.generated_tasks.filter(
+            (gt: { is_completed?: boolean }) => gt.is_completed,
+          ).length
+        );
+      }, 0);
       const completionRate =
         totalGenerated > 0 ? (completedTasks / totalGenerated) * 100 : 0;
 
