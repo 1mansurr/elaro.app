@@ -1,18 +1,32 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Button } from '@/shared/components';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 interface HomeScreenEmptyStateProps {
   onAddActivity: () => void;
+  onDismiss?: () => void;
 }
 
 export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
   onAddActivity,
+  onDismiss,
 }) => {
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.xxl * 2 }]}>
+      {/* Dismiss button */}
+      {onDismiss && (
+        <TouchableOpacity
+          style={[styles.dismissButton, { top: insets.top + SPACING.md }]}
+          onPress={onDismiss}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="close" size={24} color={COLORS.textSecondary} />
+        </TouchableOpacity>
+      )}
+
       {/* Illustration using Ionicons */}
       <View style={styles.iconContainer}>
         <View style={styles.iconCircle}>
@@ -30,25 +44,19 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
       </View>
 
       {/* Content */}
-      <Text style={styles.title}>Your Schedule Awaits!</Text>
+      <Text style={styles.title}>Start building Your Schedule</Text>
       <Text style={styles.subtitle}>
-        Start your academic journey by adding your first lecture, assignment, or
-        study session.
+        Tap the + button below to add your first lecture, assignment, or study session.
       </Text>
 
-      {/* CTA Button */}
-      <Button
-        title="Schedule Your First Task"
-        onPress={onAddActivity}
-        style={styles.ctaButton}
-      />
+      {/* Removed CTA Button - FAB will be used instead */}
 
       {/* Additional tip */}
       <View style={styles.tipContainer}>
         <Ionicons
           name="information-circle-outline"
           size={20}
-          color={COLORS.gray}
+          color={COLORS.textSecondary}
         />
         <Text style={styles.tipText}>
           Tip: You can also swipe right on tasks to mark them complete!
@@ -64,7 +72,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,
-    paddingTop: SPACING.xxl * 2,
+    overflow: 'visible', // Ensure X button isn't clipped
+  },
+  dismissButton: {
+    position: 'absolute',
+    right: SPACING.md,
+    zIndex: 1000, // Increased zIndex
+    padding: SPACING.xs,
+    backgroundColor: COLORS.background, // Add background for visibility
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+    // top is set dynamically using insets.top + SPACING.md
   },
   iconContainer: {
     position: 'relative',
@@ -116,15 +138,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.gray,
+    color: COLORS.textSecondary, // Changed from COLORS.gray for better contrast
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: SPACING.xl,
     paddingHorizontal: SPACING.md,
-  },
-  ctaButton: {
-    minWidth: 250,
-    marginBottom: SPACING.lg,
   },
   tipContainer: {
     flexDirection: 'row',
@@ -137,7 +155,7 @@ const styles = StyleSheet.create({
   },
   tipText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
+    color: COLORS.textSecondary, // Changed from COLORS.gray for better contrast
     flex: 1,
     lineHeight: 18,
   },

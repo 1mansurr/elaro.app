@@ -31,7 +31,7 @@ export async function createExampleData(
     // Get fresh access token to ensure it's valid
     const { getFreshAccessToken } = await import('@/utils/getFreshAccessToken');
     const accessToken = await getFreshAccessToken();
-    
+
     const authHeaders = {
       Authorization: `Bearer ${accessToken}`,
     };

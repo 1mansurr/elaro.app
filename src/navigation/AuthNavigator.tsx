@@ -131,7 +131,9 @@ export const AuthNavigator: React.FC = () => {
   useEffect(() => {
     const checkFirstTimeUser = async () => {
       try {
-        const hasSeenWelcome = await AsyncStorage.getItem('hasSeenWelcomeScreen');
+        const hasSeenWelcome = await AsyncStorage.getItem(
+          'hasSeenWelcomeScreen',
+        );
         setInitialRoute(hasSeenWelcome ? 'Auth' : 'AppWelcome');
       } catch (error) {
         console.error('Error checking welcome screen status:', error);

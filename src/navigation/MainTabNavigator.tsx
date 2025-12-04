@@ -9,6 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { MainTabParamList } from '@/types';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import { AccountScreen } from '@/features/user-profile/screens/AccountScreen';
+import { CalendarScreen } from '@/navigation/bundles/CalendarBundle';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -19,6 +20,9 @@ const getTabBarIcon = (routeName: keyof MainTabParamList, focused: boolean) => {
   switch (routeName) {
     case 'Home':
       iconName = focused ? 'home' : 'home-outline';
+      break;
+    case 'Calendar':
+      iconName = focused ? 'calendar' : 'calendar-outline';
       break;
     case 'Account':
       iconName = focused ? 'person' : 'person-outline';
@@ -87,6 +91,13 @@ export const MainTabNavigator: React.FC = () => {
   return (
     <Tab.Navigator screenOptions={tabBarScreenOptions(insets, theme)}>
       <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen 
+        name="Calendar" 
+        component={CalendarScreen}
+        options={{
+          tabBarLabel: 'Calendar',
+        }}
+      />
       <Tab.Screen
         name="Account"
         component={AccountScreen}

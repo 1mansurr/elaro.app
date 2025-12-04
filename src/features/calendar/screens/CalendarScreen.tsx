@@ -74,19 +74,25 @@ const CalendarScreen = () => {
   // JS Thread monitoring (dev only)
   const jsThreadMetrics = useJSThreadMonitor({
     enabled: __DEV__,
-    logSlowFrames: true,
+    logSlowFrames: false, // Disable individual frame logging - too verbose
     slowFrameThreshold: 20,
   });
 
   // Memory monitoring (dev only)
   useMemoryMonitor(__DEV__, 50, 30000); // 50% threshold, check every 30s
 
-  // Log warnings in dev if too many slow frames
+  // Log warnings in dev if too many slow frames (only log summary at intervals)
+  const lastLoggedCountRef = React.useRef(0);
   React.useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 100) {
+      // Only log every 50 frames to reduce noise
+      const framesSinceLastLog = jsThreadMetrics.slowFrameCount - lastLoggedCountRef.current;
+      if (framesSinceLastLog >= 50) {
       console.warn(
         `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
       );
+        lastLoggedCountRef.current = jsThreadMetrics.slowFrameCount;
+      }
     }
   }, [jsThreadMetrics.slowFrameCount, jsThreadMetrics.averageFrameTime]);
 

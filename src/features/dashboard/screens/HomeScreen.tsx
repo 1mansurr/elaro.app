@@ -20,6 +20,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CommonActions } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 
@@ -56,9 +57,9 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 // Helper function to get greeting based on time of day
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Good morning';      // 0:00 - 11:59
+  if (hour < 17) return 'Good afternoon';    // 12:00 - 16:59
+  return 'Good evening';                      // 17:00 - 23:59
 };
 
 const HomeScreen = () => {
@@ -66,6 +67,7 @@ const HomeScreen = () => {
   const { session, user } = useAuth();
   const isGuest = !session;
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   // Check if user is new (just completed onboarding, no example data yet)
   // Skip API call for new users to avoid unnecessary Edge Function calls
@@ -138,6 +140,7 @@ const HomeScreen = () => {
   const [draftCount, setDraftCount] = useState(0);
   const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
     useState(false);
+  const [isEmptyStateDismissed, setIsEmptyStateDismissed] = useState(false);
   const fabAnimation = useRef(new Animated.Value(0)).current;
 
   // Optimistic mutation hooks
@@ -676,12 +679,16 @@ const HomeScreen = () => {
     queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
   }, [queryClient]);
 
+  const handleDismissEmptyState = useCallback(() => {
+    setIsEmptyStateDismissed(true);
+  }, []);
+
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
     <View style={styles.container} testID="home-screen">
       {/* Header with Notification Bell */}
       {!isGuest && (
-        <View style={styles.header}>
+        <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
           <Text style={styles.headerTitle}>{personalizedTitle}</Text>
           <NotificationBell onPress={handleNotificationBellPress} />
         </View>
@@ -718,12 +725,40 @@ const HomeScreen = () => {
           monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
           subscriptionTier={user?.subscription_tier || 'free'}
         />
-        {/* Only show calendar button for authenticated users */}
-        {!isGuest && (
+        {/* Only show calendar button for authenticated users with data */}
+        {!isGuest && homeData && (
           <Button title="View Full Calendar" onPress={handleCalendarPress} />
         )}
       </ScrollView>
+    </View>
+  );
 
+  // For authenticated users, wrap with QueryStateWrapper
+  if (!isGuest) {
+    // For new users (just completed onboarding, no data yet), show empty state immediately
+    // Skip API call to avoid unnecessary Edge Function errors
+    if (isNewUser === true) {
+      return (
+        <View style={styles.container}>
+          <QueryStateWrapper
+            isLoading={false}
+            isError={false}
+            error={null}
+            data={isEmptyStateDismissed ? { _dismissed: true } : null}
+            refetch={handleRefetch}
+            isRefetching={false}
+            emptyStateComponent={
+              !isEmptyStateDismissed ? (
+                <HomeScreenEmptyState 
+                  onAddActivity={handleAddActivity}
+                  onDismiss={handleDismissEmptyState}
+                />
+              ) : undefined
+            }>
+            {content}
+          </QueryStateWrapper>
+
+          {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
       {isFabOpen && (
         <TouchableWithoutFeedback onPress={handleBackdropPress}>
           <Animated.View
@@ -765,45 +800,83 @@ const HomeScreen = () => {
       />
     </View>
   );
-
-  // For authenticated users, wrap with QueryStateWrapper
-  if (!isGuest) {
-    // For new users (just completed onboarding, no data yet), show empty state immediately
-    // Skip API call to avoid unnecessary Edge Function errors
-    if (isNewUser === true) {
-      return (
-        <QueryStateWrapper
-          isLoading={false}
-          isError={false}
-          error={null}
-          data={null}
-          refetch={handleRefetch}
-          isRefetching={false}
-          emptyStateComponent={
-            <HomeScreenEmptyState onAddActivity={handleAddActivity} />
-          }>
-          {content}
-        </QueryStateWrapper>
-      );
     }
 
-    // For existing users or while checking, use normal QueryStateWrapper
+    // For existing users: Show empty state immediately if error, update when data arrives
+    // Don't block UI with error states - show empty state instead for better UX
+    // Only show loading skeleton while checking if user is new
+    const shouldShowLoading = isNewUser === null;
+    const shouldShowError = false; // Never show error - show empty state instead
+    const displayData = isError ? null : homeData; // Treat errors as empty data
+    // If empty state is dismissed, show content even if data is empty
+    const finalData = isEmptyStateDismissed && !displayData 
+      ? { _dismissed: true } 
+      : displayData;
+
     return (
+      <View style={styles.container}>
       <QueryStateWrapper
-        isLoading={isLoading || isNewUser === null}
-        isError={isError}
-        error={error}
-        data={homeData}
+          isLoading={shouldShowLoading}
+          isError={shouldShowError}
+          error={null} // Don't show error UI
+          data={finalData}
         refetch={handleRefetch}
         isRefetching={isRefetching}
         onRefresh={refetch}
         emptyStateComponent={
-          <HomeScreenEmptyState onAddActivity={handleAddActivity} />
+            !isEmptyStateDismissed ? (
+              <HomeScreenEmptyState 
+                onAddActivity={handleAddActivity}
+                onDismiss={handleDismissEmptyState}
+              />
+            ) : undefined
         }
         skeletonComponent={<TaskCardSkeleton />}
         skeletonCount={3}>
         {content}
       </QueryStateWrapper>
+
+        {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
+        {isFabOpen && (
+          <TouchableWithoutFeedback onPress={handleBackdropPress}>
+            <Animated.View
+              style={[styles.backdrop, { opacity: backdropOpacity }]}>
+              <BlurView
+                intensity={40}
+                tint="dark"
+                style={StyleSheet.absoluteFill}
+              />
+            </Animated.View>
+          </TouchableWithoutFeedback>
+        )}
+
+        <FloatingActionButton
+          actions={fabActions}
+          onStateChange={handleFabStateChange}
+          onDoubleTap={handleQuickAddDoubleTap}
+          draftCount={draftCount}
+          onDraftBadgePress={handleDraftBadgePress}
+        />
+
+        <QuickAddModal
+          isVisible={isQuickAddVisible}
+          onClose={handleQuickAddClose}
+        />
+
+        <TaskDetailSheet
+          task={selectedTask}
+          isVisible={!!selectedTask}
+          onClose={handleCloseSheet}
+          onEdit={handleEditTask}
+          onComplete={handleCompleteTask}
+          onDelete={handleDeleteTask}
+        />
+
+        <NotificationHistoryModal
+          isVisible={isNotificationHistoryVisible}
+          onClose={handleNotificationHistoryClose}
+        />
+      </View>
     );
   }
 

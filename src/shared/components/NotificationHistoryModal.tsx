@@ -14,10 +14,12 @@ import {
   PanGestureHandler,
   State,
   GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext'; // TODO: Update to @/contexts/AuthContext after move
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   NotificationHistoryItem,
   NotificationFilter,
@@ -37,6 +39,7 @@ export const NotificationHistoryModal: React.FC<
 > = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<NotificationHistoryItem[]>(
     [],
   );
@@ -48,6 +51,57 @@ export const NotificationHistoryModal: React.FC<
   const [loading, setLoading] = useState(true);
   const [hasUnread, setHasUnread] = useState(false);
   const [swipeAnimations] = useState<{ [key: string]: Animated.Value }>({});
+
+  // Swipe gesture handlers for left-edge swipe to close
+  const swipeTranslateX = useRef(new Animated.Value(0)).current;
+  const swipeOpacity = useRef(new Animated.Value(1)).current;
+
+  const handleSwipeGesture = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    // Only handle swipes from the left edge (positive translationX = right swipe)
+    if (translationX > 0) {
+      const progress = Math.min(1, translationX / screenWidth);
+      swipeTranslateX.setValue(translationX);
+      swipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX, velocityX } = event.nativeEvent;
+    const shouldClose = translationX > screenWidth * 0.3 || velocityX > 500;
+
+    if (shouldClose) {
+      Animated.parallel([
+        Animated.timing(swipeTranslateX, {
+          toValue: screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(swipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        onClose();
+        // Reset animations
+        swipeTranslateX.setValue(0);
+        swipeOpacity.setValue(1);
+      });
+    } else {
+      // Spring back
+      Animated.parallel([
+        Animated.spring(swipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+        Animated.spring(swipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  };
 
   const filters = notificationHistoryService.getNotificationFilters();
 
@@ -251,10 +305,33 @@ export const NotificationHistoryModal: React.FC<
       animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <PanGestureHandler
+        onGestureEvent={handleSwipeGesture}
+        onHandlerStateChange={handleSwipeEnd}
+        activeOffsetX={10}
+        failOffsetY={[-10, 10]}>
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              backgroundColor: theme.background,
+              transform: [{ translateX: swipeTranslateX }],
+              opacity: swipeOpacity,
+            },
+          ]}>
         {/* Header */}
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          <View
+            style={[
+              styles.header,
+              {
+                borderBottomColor: theme.border,
+                paddingTop: insets.top + 16,
+              },
+            ]}>
+            <TouchableOpacity
+              onPress={onClose}
+              style={styles.closeButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Ionicons name="close" size={24} color={theme.text} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -375,7 +452,8 @@ export const NotificationHistoryModal: React.FC<
             ))
           )}
         </ScrollView>
-      </View>
+        </Animated.View>
+      </PanGestureHandler>
     </Modal>
   );
 };
@@ -567,8 +645,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingBottom: 16,
   },
   closeButton: {
     padding: 4,
@@ -581,8 +658,7 @@ const styles = StyleSheet.create({
     width: 32,
   },
   filterContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    // Removed border for cleaner UI
   },
   filterContent: {
     paddingHorizontal: 20,
@@ -592,11 +668,14 @@ const styles = StyleSheet.create({
   filterTab: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     gap: 6,
+    minHeight: 36,
+    maxHeight: 36,
   },
   activeFilterTab: {
     borderWidth: 1,
@@ -635,11 +714,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   emptyContainer: {
-    flex: 1,
-    justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 40,
-    paddingVertical: 60,
+    paddingTop: 40,
+    paddingBottom: 40,
   },
   emptyTitle: {
     fontSize: 18,

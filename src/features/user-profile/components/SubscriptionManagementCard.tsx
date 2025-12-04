@@ -1,21 +1,21 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ActivityIndicator,
   Platform,
   Linking,
-  Alert,
 } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
+import { useAuth } from '@/contexts/AuthContext';
 import { showToast } from '@/utils/showToast';
 import { formatDate } from '@/i18n';
 
 export function SubscriptionManagementCard() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const {
     customerInfo,
     // offerings,
@@ -30,6 +30,20 @@ export function SubscriptionManagementCard() {
 
   // Mock offerings for now
   const offerings = { current: null as any };
+
+  // Benefits data
+  const freeBenefits = [
+    'Up to 15 tasks/month',
+    '2 courses',
+    '5 Spaced Repetition Reminders',
+  ];
+
+  const oddityBenefits = [
+    'Up to 70 tasks/month',
+    '10 courses',
+    '50 Spaced Repetition Reminders',
+    'Weekly Analytics',
+  ];
 
   const handleManageSubscription = useCallback(async () => {
     const url = Platform.select({
@@ -65,10 +79,13 @@ export function SubscriptionManagementCard() {
   }, []);
 
   const handleUpgrade = useCallback(async () => {
+    // If offerings aren't available, navigate to PaywallScreen
     if (
       !offerings?.current?.availablePackages ||
       offerings.current.availablePackages.length === 0
     ) {
+      // Navigate to PaywallScreen - but we need navigation prop
+      // For now, show error toast
       showToast({
         type: 'error',
         message: 'No subscription packages available.',
@@ -77,14 +94,24 @@ export function SubscriptionManagementCard() {
     }
 
     try {
-      // Get the first available package (or you could implement logic to choose a specific package)
-      const packageToPurchase = offerings.current.availablePackages[0];
+      // Try to find the oddity_monthly package first
+      const oddityPackage = offerings.current.availablePackages.find(
+        (pkg: any) => pkg.identifier === 'oddity_monthly',
+      );
+
+      // Fallback to first available package if oddity_monthly not found
+      const packageToPurchase = oddityPackage || offerings.current.availablePackages[0];
+
       await purchasePackage(packageToPurchase);
       showToast({
         type: 'success',
-        message: 'Subscription activated successfully!',
+        message: 'You have successfully become an Oddity!',
       });
-    } catch (error) {
+    } catch (error: any) {
+      // Don't show error if user cancelled
+      if (error?.userCancelled) {
+        return;
+      }
       // Error is already handled by the hook
       console.error('Purchase error:', error);
     }
@@ -117,23 +144,65 @@ export function SubscriptionManagementCard() {
     }
   };
 
-  const getPlanDisplayName = () => {
-    if (hasActiveSubscription) {
-      return subscriptionTier === 'oddity' ? 'Oddity Plan' : 'Premium Plan';
+  // Detect mismatch between database and RevenueCat
+  const hasMismatch = useMemo(() => {
+    if (isLoading || !user) return false;
+    
+    const dbTier = user.subscription_tier || 'free';
+    const rcTier = subscriptionTier || 'free';
+    
+    return (
+      (dbTier === 'oddity' && rcTier === 'free') ||
+      (dbTier === 'free' && rcTier === 'oddity') ||
+      (dbTier === 'oddity' && customerInfo === null)
+    );
+  }, [isLoading, user, subscriptionTier, customerInfo]);
+
+  // Log mismatch for monitoring
+  useEffect(() => {
+    if (hasMismatch && user) {
+      console.error('⚠️ Subscription mismatch detected:', {
+        userId: user.id,
+        dbTier: user.subscription_tier,
+        rcTier: subscriptionTier,
+        hasCustomerInfo: !!customerInfo,
+      });
     }
-    return 'Free Plan';
+  }, [hasMismatch, user, subscriptionTier, customerInfo]);
+
+  // Determine current plan display (default to free on error)
+  const currentPlanTier = useMemo(() => {
+    // If error loading, default to free
+    if (error) {
+      return 'free';
+    }
+    
+    // If mismatch, use database tier as source of truth
+    if (hasMismatch && user) {
+      return user.subscription_tier || 'free';
+    }
+    
+    // Normal case: use RevenueCat tier
+    return subscriptionTier || 'free';
+  }, [error, hasMismatch, user, subscriptionTier]);
+
+  const getPlanDisplayName = () => {
+    return currentPlanTier === 'oddity' ? 'ODDITY' : 'FREE';
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color={theme.accent} />
-        <Text style={[styles.loadingText, { color: theme.textMuted }]}>
-          Loading subscription info...
-        </Text>
-      </View>
-    );
-  }
+  const getBenefitsHeading = () => {
+    return currentPlanTier === 'oddity'
+      ? "You get the full experience"
+      : "You're getting started with the basics";
+  };
+
+  const getBenefits = () => {
+    return currentPlanTier === 'oddity' ? oddityBenefits : freeBenefits;
+  };
+
+  // Show default state immediately (no loading spinner)
+  // Default to free tier if still loading
+  const displayTier = isLoading ? 'free' : currentPlanTier;
 
   return (
     <View style={styles.container}>
@@ -141,37 +210,54 @@ export function SubscriptionManagementCard() {
         <Text style={[styles.planName, { color: theme.text }]}>
           {getPlanDisplayName()}
         </Text>
-        {subscriptionExpiration && (
+        {/* Show expiration only for Oddity users in normal state */}
+        {displayTier === 'oddity' && !hasMismatch && subscriptionExpiration && (
           <Text style={[styles.expirationText, { color: theme.textMuted }]}>
-            Expires: {formatExpirationDate(subscriptionExpiration)}
+            Renews: {formatExpirationDate(subscriptionExpiration)}
           </Text>
         )}
       </View>
 
-      {error && (
-        <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
-      )}
+      {/* Benefits Section */}
+      <View style={styles.benefitsSection}>
+        <Text style={[styles.benefitsHeading, { color: theme.text }]}>
+          {getBenefitsHeading()}
+        </Text>
+        <View style={styles.benefitsList}>
+          {getBenefits().map((benefit, index) => (
+            <Text
+              key={index}
+              style={[styles.benefitItem, { color: theme.textSecondary }]}>
+              • {benefit}
+            </Text>
+          ))}
+        </View>
+      </View>
 
+      {/* Button Section */}
       <View style={styles.buttonContainer}>
-        {hasActiveSubscription ? (
+        {hasMismatch ? (
+          // Mismatch detected: show only Restore Purchases button
           <Button
-            title="Manage Subscription"
+            title="Restore Purchases"
+            onPress={handleRestore}
+            variant="primary"
+          />
+        ) : displayTier === 'oddity' ? (
+          // Oddity user: show Manage Membership button
+          <Button
+            title="Manage Membership"
             onPress={handleManageSubscription}
-            variant="secondary"
+            variant="primary"
           />
         ) : (
+          // Free user: show Become an Oddity button
           <Button
-            title="Upgrade to Oddity"
+            title="Become an Oddity"
             onPress={handleUpgrade}
             variant="primary"
           />
         )}
-
-        <Button
-          title="Restore Purchases"
-          onPress={handleRestore}
-          variant="outline"
-        />
       </View>
     </View>
   );
@@ -181,15 +267,6 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
-  loadingContainer: {
-    padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingText: {
-    marginTop: 8,
-    fontSize: 14,
-  },
   planInfo: {
     marginBottom: 16,
     alignItems: 'center',
@@ -198,16 +275,27 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 4,
+    textTransform: 'uppercase',
   },
   expirationText: {
     fontSize: 14,
   },
-  errorText: {
-    fontSize: 14,
-    textAlign: 'center',
+  benefitsSection: {
+    marginBottom: 20,
+  },
+  benefitsHeading: {
+    fontSize: 16,
+    fontWeight: '600',
     marginBottom: 12,
   },
+  benefitsList: {
+    gap: 8,
+  },
+  benefitItem: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
   buttonContainer: {
-    gap: 12,
+    marginTop: 8,
   },
 });

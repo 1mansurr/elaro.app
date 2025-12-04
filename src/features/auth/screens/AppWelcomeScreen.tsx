@@ -1,23 +1,12 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Dimensions,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '@/types/navigation';
 import { PrimaryButton } from '@/shared/components';
-import {
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  SPACING,
-} from '@/constants/theme';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 type AppWelcomeScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -88,11 +77,7 @@ const AppWelcomeScreen = () => {
                   styles.benefitIconContainer,
                   { backgroundColor: benefit.color + '20' },
                 ]}>
-                <Ionicons
-                  name={benefit.icon}
-                  size={28}
-                  color={benefit.color}
-                />
+                <Ionicons name={benefit.icon} size={28} color={benefit.color} />
               </View>
               <View style={styles.benefitContent}>
                 <Text style={styles.benefitTitle}>{benefit.title}</Text>
@@ -197,4 +182,3 @@ const styles = StyleSheet.create({
 });
 
 export default AppWelcomeScreen;
-

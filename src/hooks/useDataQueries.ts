@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import {
@@ -155,10 +156,32 @@ export const useHomeScreenData = (enabled: boolean = true) => {
   return useQuery<HomeScreenData | null, Error>({
     queryKey: ['homeScreenData'],
     queryFn: async () => {
+      try {
       const data = await api.homeScreen.getData();
       // Cache for 5 minutes (changes more frequently)
       await cache.setShort(cacheKey, data);
       return data;
+      } catch (error) {
+        // On auth errors or edge function errors, return null instead of throwing
+        // This provides better UX - user sees empty state instead of error screen
+        if (
+          error instanceof Error &&
+          (error.message.includes('No valid session') ||
+            error.message.includes('Failed to refresh token') ||
+            error.message.includes('Session expired') ||
+            error.message.includes('Edge Function returned a non-2xx') ||
+            error.message.includes('Authentication required') ||
+            error.message.includes('Auth session missing'))
+        ) {
+          // Only log warnings in development to reduce production noise
+          if (__DEV__) {
+            console.warn('⚠️ Auth/API error in homeScreenData, returning null:', error.message);
+          }
+          return null;
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
     enabled,
     // Don't retry if disabled - prevents unnecessary API calls
@@ -170,16 +193,59 @@ export const useHomeScreenData = (enabled: boolean = true) => {
 export const useCalendarData = (date: Date) => {
   const dateKey = date.toISOString().split('T')[0];
   const cacheKey = `calendarData:${dateKey}`;
+  const [placeholderData, setPlaceholderData] = React.useState<CalendarData | undefined>(undefined);
+
+  // Load cached data as placeholder on mount
+  React.useEffect(() => {
+    if (!date) return;
+    
+    const loadCachedData = async () => {
+      try {
+        const cached = await cache.get<CalendarData>(cacheKey);
+        if (cached) {
+          setPlaceholderData(cached);
+        }
+      } catch (error) {
+        // Ignore cache errors
+      }
+    };
+    
+    loadCachedData();
+  }, [dateKey, cacheKey]);
 
   return useQuery<CalendarData, Error>({
     queryKey: ['calendarData', dateKey],
     queryFn: async () => {
+      try {
       const data = await api.calendar.getData(date);
       // Cache for 1 hour (calendar data for a specific day)
       await cache.setMedium(cacheKey, data);
       return data;
+      } catch (error) {
+        // On auth errors or edge function errors, return empty object instead of throwing
+        // This provides better UX - user sees empty state instead of error screen
+        if (
+          error instanceof Error &&
+          (error.message.includes('No valid session') ||
+            error.message.includes('Failed to refresh token') ||
+            error.message.includes('Session expired') ||
+            error.message.includes('Edge Function returned a non-2xx') ||
+            error.message.includes('Authentication required') ||
+            error.message.includes('Auth session missing'))
+        ) {
+          // Only log warnings in development to reduce production noise
+          if (__DEV__) {
+            console.warn('⚠️ Auth/API error in calendarData, returning empty object:', error.message);
+          }
+          return {};
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
     enabled: !!date,
+    placeholderData, // Show cached data immediately while fetching fresh data
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 };
 
@@ -187,15 +253,58 @@ export const useCalendarData = (date: Date) => {
 export const useCalendarMonthData = (year: number, month: number) => {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
   const cacheKey = `calendarMonthData:${monthKey}`;
+  const [placeholderData, setPlaceholderData] = React.useState<CalendarData | undefined>(undefined);
+
+  // Load cached data as placeholder on mount
+  React.useEffect(() => {
+    if (year === undefined || month === undefined) return;
+    
+    const loadCachedData = async () => {
+      try {
+        const cached = await cache.get<CalendarData>(cacheKey);
+        if (cached) {
+          setPlaceholderData(cached);
+        }
+      } catch (error) {
+        // Ignore cache errors
+      }
+    };
+    
+    loadCachedData();
+  }, [monthKey, cacheKey, year, month]);
 
   return useQuery<CalendarData, Error>({
     queryKey: ['calendarMonthData', monthKey],
     queryFn: async () => {
+      try {
       const data = await api.calendar.getMonthData(year, month);
       // Cache for 1 hour (calendar data for a specific month)
       await cache.setMedium(cacheKey, data);
       return data;
+      } catch (error) {
+        // On auth errors or edge function errors, return empty object instead of throwing
+        // This provides better UX - user sees empty state instead of error screen
+        if (
+          error instanceof Error &&
+          (error.message.includes('No valid session') ||
+            error.message.includes('Failed to refresh token') ||
+            error.message.includes('Session expired') ||
+            error.message.includes('Edge Function returned a non-2xx') ||
+            error.message.includes('Authentication required') ||
+            error.message.includes('Auth session missing'))
+        ) {
+          // Only log warnings in development to reduce production noise
+          if (__DEV__) {
+            console.warn('⚠️ Auth/API error in calendarMonthData, returning empty object:', error.message);
+          }
+          return {};
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
     enabled: year !== undefined && month !== undefined,
+    placeholderData, // Show cached data immediately while fetching fresh data
+    staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 };

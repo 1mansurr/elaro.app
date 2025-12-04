@@ -140,7 +140,7 @@ const NextTaskCard: React.FC<Props> = ({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.header}>What&apos;s Next</Text>
+      <Text style={styles.header}>What&apos;s Next?</Text>
 
       {renderContent()}
     </View>
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 32,
-    marginBottom: 24,
+    marginBottom: 32,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.15,

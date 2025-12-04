@@ -48,7 +48,7 @@ export const useHomeScreenState = () => {
     const hour = new Date().getHours();
     let greeting = 'Good evening';
     if (hour < 12) greeting = 'Good morning';
-    else if (hour < 18) greeting = 'Good afternoon';
+    else if (hour < 17) greeting = 'Good afternoon';
 
     const firstName =
       user?.first_name || user?.user_metadata?.first_name || 'there';

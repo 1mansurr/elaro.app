@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -20,6 +21,8 @@ import { PostChatModal } from '@/shared/components/PostChatModal';
 import { getSecureChatLink } from '@/shared/utils/getSecureChatLink';
 import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
 import { LEGAL_URLS } from '@/constants/legal';
+import { useSubscription } from '@/hooks/useSubscription';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 const ListItem = ({
   label,
@@ -114,6 +117,10 @@ export function AccountScreen() {
   const { theme } = useTheme();
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
   const [isSupportChatLoading, setSupportChatLoading] = useState(false);
+  const { purchasePackage } = useSubscription();
+
+  // Mock offerings for now (consistent with other screens)
+  const offerings = { current: null as { availablePackages: PurchasesPackage[] } | null };
 
   const handleContactSupport = useCallback(async () => {
     if (!user) return;
@@ -130,6 +137,43 @@ export function AccountScreen() {
       setSupportChatLoading(false);
     }
   }, [user, navigation]);
+
+  const handleUpgrade = useCallback(async () => {
+    // If offerings aren't available, navigate to PaywallScreen
+    if (!offerings?.current?.availablePackages || offerings.current.availablePackages.length === 0) {
+      navigation.navigate('PaywallScreen', {
+        variant: 'general',
+      });
+      return;
+    }
+
+    try {
+      // Try to find the oddity_monthly package first
+      const oddityPackage = offerings.current.availablePackages.find(
+        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
+      );
+
+      // Fallback to first available package if oddity_monthly not found
+      const packageToPurchase = oddityPackage || offerings.current.availablePackages[0];
+
+      await purchasePackage(packageToPurchase);
+      showToast({
+        type: 'success',
+        message: 'You have successfully become an Oddity!',
+      });
+    } catch (error: any) {
+      console.error('Upgrade error:', error);
+      
+      // Don't show error if user cancelled
+      if (error?.userCancelled) {
+        return;
+      }
+
+      // Show user-friendly error message
+      const errorMessage = error?.message || 'Failed to complete purchase. Please try again.';
+      Alert.alert('Purchase Failed', errorMessage);
+    }
+  }, [offerings, purchasePackage, navigation]);
 
   const renderGuestView = () => (
     <ScrollView style={styles.container}>
@@ -199,15 +243,6 @@ export function AccountScreen() {
 
   const renderAuthenticatedView = () => (
     <ScrollView style={styles.container}>
-      {user?.role === 'admin' && (
-        <Card title="Admin">
-          <Button
-            title="Admin Dashboard"
-            onPress={() => navigation.navigate('AnalyticsAdmin')}
-          />
-        </Card>
-      )}
-
       <Card title="Profile">
         <View style={styles.profileInfo}>
           <Text style={[styles.profileName, { color: theme.text }]}>
@@ -217,21 +252,45 @@ export function AccountScreen() {
             {user?.email}
           </Text>
         </View>
-        <Button
-          title="View Profile"
+        <TouchableOpacity
+          style={styles.profileButton}
           onPress={() => navigation.navigate('Profile')}
-        />
-        <Button
-          title="My Courses"
+          activeOpacity={0.7}>
+          <View style={styles.profileButtonLeft}>
+            <View style={styles.profileButtonIconContainer}>
+              <Ionicons name="person-outline" size={22} color={theme.accent} />
+            </View>
+            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+              View Profile
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.profileButton}
           onPress={() => navigation.navigate('Courses')}
-        />
-        <Button
-          title="Add a Course"
+          activeOpacity={0.7}>
+          <View style={styles.profileButtonLeft}>
+            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+              My Courses
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.profileButton}
           onPress={() => navigation.navigate('AddCourseFlow')}
-        />
+          activeOpacity={0.7}>
+          <View style={styles.profileButtonLeft}>
+            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+              Add a Course
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+        </TouchableOpacity>
       </Card>
 
-      <Card title="Subscription">
+      <Card title="Membership">
         <SubscriptionManagementCard />
       </Card>
 
@@ -376,56 +435,12 @@ export function AccountScreen() {
                 styles.premiumFeatureButton,
                 { backgroundColor: '#FFD700' },
               ]}
-              onPress={() => {
-                // Navigate to subscription/upgrade flow
-                console.log('Navigate to subscription upgrade');
-              }}>
+              onPress={handleUpgrade}>
               <Ionicons name="chevron-forward" size={16} color="white" />
             </TouchableOpacity>
           </View>
         )}
       </Card>
-
-      {/* Admin Features - Only for admin users */}
-      {user?.role === 'admin' && (
-        <Card title="Admin Features">
-          <View style={styles.premiumFeatureItem}>
-            <View style={styles.premiumFeatureLeft}>
-              <Ionicons
-                name="settings-outline"
-                size={20}
-                color="#9C27B0"
-                style={styles.premiumFeatureIcon}
-              />
-              <View style={styles.premiumFeatureText}>
-                <Text
-                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
-                  Analytics Admin
-                </Text>
-                <Text
-                  style={[
-                    styles.premiumFeatureDescription,
-                    { color: theme.textSecondary },
-                  ]}>
-                  Manage templates, monitor batch processing, and view system
-                  logs
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={[
-                styles.premiumFeatureButton,
-                { backgroundColor: '#9C27B0' },
-              ]}
-              onPress={() => navigation.navigate('AnalyticsAdmin')}
-              accessibilityLabel="Open Analytics Admin"
-              accessibilityHint="Opens the analytics administration dashboard"
-              accessibilityRole="button">
-              <Ionicons name="chevron-forward" size={16} color="white" />
-            </TouchableOpacity>
-          </View>
-        </Card>
-      )}
 
       <PostChatModal
         isVisible={isPostChatModalVisible}
@@ -474,6 +489,33 @@ const styles = StyleSheet.create({
   },
   profileEmail: {
     fontSize: 14,
+  },
+  profileButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  profileButtonLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  profileButtonIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#F0F5FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  profileButtonLabel: {
+    fontSize: 16,
+    fontWeight: '500',
   },
   listItem: {
     paddingVertical: 14,

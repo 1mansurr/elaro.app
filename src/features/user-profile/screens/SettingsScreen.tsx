@@ -16,6 +16,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Card from '@/shared/components/Card';
 import { Button } from '@/shared/components/Button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -122,6 +123,7 @@ export function SettingsScreen() {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme } = useTheme();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isDownloadingData, setIsDownloadingData] = useState(false);
@@ -494,8 +496,22 @@ export function SettingsScreen() {
     );
   }, [user, queryClient]);
 
+  // If no session, show empty state
+  if (!session || !user) {
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+        <View style={styles.emptyState}>
+          <Ionicons name="settings-outline" size={64} color={COLORS.gray} />
+          <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+            Please sign in to access settings
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons
@@ -916,5 +932,17 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.gray,
     marginTop: SPACING.xs,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: SPACING.xxl * 2,
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyStateText: {
+    fontSize: FONT_SIZES.md,
+    marginTop: SPACING.md,
+    textAlign: 'center',
   },
 });

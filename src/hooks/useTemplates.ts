@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
+import { getFreshAccessToken } from '@/utils/getFreshAccessToken';
 
 export interface TaskTemplate {
   id: string;
@@ -28,10 +29,15 @@ export const useTemplates = () => {
   return useQuery({
     queryKey: ['templates'],
     queryFn: async (): Promise<TaskTemplate[]> => {
+      try {
+        const accessToken = await getFreshAccessToken();
       const { data, error } = await supabase.functions.invoke(
         'template-actions',
         {
           method: 'GET',
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
         },
       );
 
@@ -40,6 +46,26 @@ export const useTemplates = () => {
       }
 
       return data.templates || [];
+      } catch (error) {
+        // On auth errors, return empty array instead of throwing
+        if (
+          error instanceof Error &&
+          (error.message.includes('No valid session') ||
+            error.message.includes('Failed to refresh token') ||
+            error.message.includes('Session expired') ||
+            error.message.includes('Edge Function returned a non-2xx') ||
+            error.message.includes('Authentication required') ||
+            error.message.includes('Auth session missing') ||
+            (error as any).name === 'FunctionsHttpError')
+        ) {
+          // Only log warnings in development to reduce production noise
+          if (__DEV__) {
+            console.warn('⚠️ Auth/API error in templates, returning empty array:', error.message);
+          }
+          return [];
+        }
+        throw error;
+      }
     },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -53,10 +79,14 @@ export const useCreateTemplate = () => {
     mutationFn: async (
       templateData: CreateTemplateData,
     ): Promise<TaskTemplate> => {
+      const accessToken = await getFreshAccessToken();
       const { data, error } = await supabase.functions.invoke(
         'template-actions',
         {
           method: 'POST',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: templateData,
         },
       );
@@ -82,10 +112,14 @@ export const useUpdateTemplate = () => {
     mutationFn: async (
       updateData: UpdateTemplateData,
     ): Promise<TaskTemplate> => {
+      const accessToken = await getFreshAccessToken();
       const { data, error } = await supabase.functions.invoke(
         'template-actions',
         {
           method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: updateData,
         },
       );
@@ -109,8 +143,12 @@ export const useDeleteTemplate = () => {
 
   return useMutation({
     mutationFn: async (templateId: string): Promise<void> => {
+      const accessToken = await getFreshAccessToken();
       const { error } = await supabase.functions.invoke('template-actions', {
         method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: { id: templateId },
       });
 
