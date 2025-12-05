@@ -496,6 +496,176 @@ const CalendarScreen = () => {
     }
   };
 
+  // Render calendar content - used both for empty state and normal state
+  const renderCalendarContent = () => (
+    <View style={styles.container}>
+      {/* View Switcher */}
+      <View style={styles.viewSwitcher}>
+        <TouchableOpacity
+          style={[
+            styles.viewButton,
+            viewMode === 'month' && styles.viewButtonActive,
+          ]}
+          onPress={() => setViewMode('month')}
+          accessibilityLabel="Month view"
+          accessibilityHint="Switches calendar to month view"
+          accessibilityRole="button"
+          accessibilityState={{ selected: viewMode === 'month' }}>
+          <Ionicons
+            name="calendar"
+            size={18}
+            color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
+          />
+          <Text
+            style={[
+              styles.viewButtonText,
+              viewMode === 'month' && styles.viewButtonTextActive,
+            ]}>
+            Month
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.viewButton,
+            viewMode === 'week' && styles.viewButtonActive,
+          ]}
+          onPress={() => setViewMode('week')}
+          accessibilityLabel="Week view"
+          accessibilityHint="Switches calendar to week view"
+          accessibilityRole="button"
+          accessibilityState={{ selected: viewMode === 'week' }}>
+          <Ionicons
+            name="grid"
+            size={18}
+            color={viewMode === 'week' ? COLORS.primary : COLORS.gray}
+          />
+          <Text
+            style={[
+              styles.viewButtonText,
+              viewMode === 'week' && styles.viewButtonTextActive,
+            ]}>
+            Week
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.viewButton,
+            viewMode === 'agenda' && styles.viewButtonActive,
+          ]}
+          onPress={() => setViewMode('agenda')}
+          accessibilityLabel="Agenda view"
+          accessibilityHint="Switches calendar to agenda list view"
+          accessibilityRole="button"
+          accessibilityState={{ selected: viewMode === 'agenda' }}>
+          <Ionicons
+            name="list"
+            size={18}
+            color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
+          />
+          <Text
+            style={[
+              styles.viewButtonText,
+              viewMode === 'agenda' && styles.viewButtonTextActive,
+            ]}>
+            Agenda
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Month View */}
+      {viewMode === 'month' && (
+        <View style={styles.monthViewContainer}>
+          <Calendar
+            current={selectedDate.toISOString()}
+            onDayPress={handleMonthDayPress}
+            onVisibleMonthsChange={handleMonthChange}
+            markedDates={markedDates}
+            markingType="multi-dot"
+            theme={{
+              backgroundColor: COLORS.background,
+              calendarBackground: COLORS.background,
+              textSectionTitleColor: COLORS.gray,
+              selectedDayBackgroundColor: COLORS.primary,
+              selectedDayTextColor: COLORS.background,
+              todayTextColor: COLORS.primary,
+              dayTextColor: COLORS.text,
+              textDisabledColor: COLORS.lightGray,
+              monthTextColor: COLORS.text,
+              textMonthFontWeight: 'bold',
+              textDayFontSize: FONT_SIZES.md,
+              textMonthFontSize: FONT_SIZES.lg,
+              textDayHeaderFontSize: FONT_SIZES.sm,
+            }}
+          />
+
+          {/* Task List for Selected Date */}
+          <View style={styles.selectedDateContainer}>
+            <Text style={styles.selectedDateTitle}>
+              {format(selectedDate, 'EEEE, MMMM d')}
+            </Text>
+            {tasksForSelectedDay.length === 0 ? (
+              <View style={styles.noTasksContainer}>
+                <Text style={styles.noTasksText}>No tasks for this day</Text>
+              </View>
+            ) : (
+              <FlatList
+                data={tasksForSelectedDay}
+                renderItem={renderTaskItem}
+                keyExtractor={item => item.id}
+                contentContainerStyle={styles.taskList}
+                showsVerticalScrollIndicator={false}
+                // Performance optimizations
+                removeClippedSubviews={true}
+                maxToRenderPerBatch={10}
+                windowSize={5}
+                updateCellsBatchingPeriod={50}
+                initialNumToRender={10}
+              />
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* Week Grid View */}
+      {viewMode === 'week' && (
+        <WeekGridView
+          tasks={weekTasks}
+          selectedDate={selectedDate}
+          onTaskPress={handleTaskPress}
+          onLockedTaskPress={handleLockedTaskPress}
+        />
+      )}
+
+      {/* Agenda View */}
+      {viewMode === 'agenda' && (
+        <>
+          <WeekStrip
+            selectedDate={selectedDate}
+            onDateSelect={handleDateSelect}
+          />
+
+          <Timeline
+            tasks={tasksForSelectedDay}
+            onTaskPress={handleTaskPress}
+            onLockedTaskPress={handleLockedTaskPress}
+            onScroll={handleScroll}
+          />
+        </>
+      )}
+
+      <TaskDetailSheet
+        task={selectedTask}
+        isVisible={!!selectedTask}
+        onClose={handleCloseSheet}
+        onEdit={handleEditTask}
+        onComplete={handleCompleteTask}
+        onDelete={handleDeleteTask}
+      />
+    </View>
+  );
+
   if (isGuest) {
     return (
       <View style={styles.guestContainer}>
@@ -522,175 +692,8 @@ const CalendarScreen = () => {
       refetch={refetch}
       isRefetching={isRefetching}
       onRefresh={refetch}
-      emptyTitle="No tasks scheduled"
-      emptyMessage={`You don't have any tasks scheduled for this ${viewMode === 'month' ? 'month' : 'week'}. Add a lecture, assignment, or study session to get started!`}
-      emptyIcon="calendar-outline">
-      <View style={styles.container}>
-        {/* View Switcher */}
-        <View style={styles.viewSwitcher}>
-          <TouchableOpacity
-            style={[
-              styles.viewButton,
-              viewMode === 'month' && styles.viewButtonActive,
-            ]}
-            onPress={() => setViewMode('month')}
-            accessibilityLabel="Month view"
-            accessibilityHint="Switches calendar to month view"
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === 'month' }}>
-            <Ionicons
-              name="calendar"
-              size={18}
-              color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
-            />
-            <Text
-              style={[
-                styles.viewButtonText,
-                viewMode === 'month' && styles.viewButtonTextActive,
-              ]}>
-              Month
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.viewButton,
-              viewMode === 'week' && styles.viewButtonActive,
-            ]}
-            onPress={() => setViewMode('week')}
-            accessibilityLabel="Week view"
-            accessibilityHint="Switches calendar to week view"
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === 'week' }}>
-            <Ionicons
-              name="grid"
-              size={18}
-              color={viewMode === 'week' ? COLORS.primary : COLORS.gray}
-            />
-            <Text
-              style={[
-                styles.viewButtonText,
-                viewMode === 'week' && styles.viewButtonTextActive,
-              ]}>
-              Week
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.viewButton,
-              viewMode === 'agenda' && styles.viewButtonActive,
-            ]}
-            onPress={() => setViewMode('agenda')}
-            accessibilityLabel="Agenda view"
-            accessibilityHint="Switches calendar to agenda list view"
-            accessibilityRole="button"
-            accessibilityState={{ selected: viewMode === 'agenda' }}>
-            <Ionicons
-              name="list"
-              size={18}
-              color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
-            />
-            <Text
-              style={[
-                styles.viewButtonText,
-                viewMode === 'agenda' && styles.viewButtonTextActive,
-              ]}>
-              Agenda
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Month View */}
-        {viewMode === 'month' && (
-          <View style={styles.monthViewContainer}>
-            <Calendar
-              current={selectedDate.toISOString()}
-              onDayPress={handleMonthDayPress}
-              onVisibleMonthsChange={handleMonthChange}
-              markedDates={markedDates}
-              markingType="multi-dot"
-              theme={{
-                backgroundColor: COLORS.background,
-                calendarBackground: COLORS.background,
-                textSectionTitleColor: COLORS.gray,
-                selectedDayBackgroundColor: COLORS.primary,
-                selectedDayTextColor: COLORS.background,
-                todayTextColor: COLORS.primary,
-                dayTextColor: COLORS.text,
-                textDisabledColor: COLORS.lightGray,
-                monthTextColor: COLORS.text,
-                textMonthFontWeight: 'bold',
-                textDayFontSize: FONT_SIZES.md,
-                textMonthFontSize: FONT_SIZES.lg,
-                textDayHeaderFontSize: FONT_SIZES.sm,
-              }}
-            />
-
-            {/* Task List for Selected Date */}
-            <View style={styles.selectedDateContainer}>
-              <Text style={styles.selectedDateTitle}>
-                {format(selectedDate, 'EEEE, MMMM d')}
-              </Text>
-              {tasksForSelectedDay.length === 0 ? (
-                <View style={styles.noTasksContainer}>
-                  <Text style={styles.noTasksText}>No tasks for this day</Text>
-                </View>
-              ) : (
-                <FlatList
-                  data={tasksForSelectedDay}
-                  renderItem={renderTaskItem}
-                  keyExtractor={item => item.id}
-                  contentContainerStyle={styles.taskList}
-                  showsVerticalScrollIndicator={false}
-                  // Performance optimizations
-                  removeClippedSubviews={true}
-                  maxToRenderPerBatch={10}
-                  windowSize={5}
-                  updateCellsBatchingPeriod={50}
-                  initialNumToRender={10}
-                />
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* Week Grid View */}
-        {viewMode === 'week' && (
-          <WeekGridView
-            tasks={weekTasks}
-            selectedDate={selectedDate}
-            onTaskPress={handleTaskPress}
-            onLockedTaskPress={handleLockedTaskPress}
-          />
-        )}
-
-        {/* Agenda View */}
-        {viewMode === 'agenda' && (
-          <>
-            <WeekStrip
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-            />
-
-            <Timeline
-              tasks={tasksForSelectedDay}
-              onTaskPress={handleTaskPress}
-              onLockedTaskPress={handleLockedTaskPress}
-              onScroll={handleScroll}
-            />
-          </>
-        )}
-
-        <TaskDetailSheet
-          task={selectedTask}
-          isVisible={!!selectedTask}
-          onClose={handleCloseSheet}
-          onEdit={handleEditTask}
-          onComplete={handleCompleteTask}
-          onDelete={handleDeleteTask}
-        />
-      </View>
+      emptyStateComponent={renderCalendarContent()}>
+      {renderCalendarContent()}
     </QueryStateWrapper>
   );
 };

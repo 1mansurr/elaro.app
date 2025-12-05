@@ -442,20 +442,18 @@ export const AuthenticatedNavigator: React.FC = () => {
             }}
           />
 
-          {Object.entries(modalFlows)
-            .filter(([name]) => name !== 'InAppBrowserScreen')
-            .map(([name, config]) => {
-              // Type narrowing: ensure name is a valid route
-              const routeName = name as keyof RootStackParamList;
-              return (
-                <Stack.Screen
-                  key={name}
-                  name={routeName}
-                  component={config.component}
-                  options={config.options}
-                />
-              );
-            })}
+          {Object.entries(modalFlows).map(([name, config]) => {
+            // Type narrowing: ensure name is a valid route
+            const routeName = name as keyof RootStackParamList;
+            return (
+              <Stack.Screen
+                key={name}
+                name={routeName}
+                component={config.component}
+                options={config.options}
+              />
+            );
+          })}
         </Stack.Group>
       </Stack.Navigator>
     </Suspense>

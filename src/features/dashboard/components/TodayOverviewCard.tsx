@@ -97,7 +97,7 @@ const TodayOverviewCard: React.FC<Props> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    borderRadius: 24,
     padding: 16,
     marginBottom: 20,
     shadowColor: '#000',

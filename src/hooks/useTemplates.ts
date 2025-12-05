@@ -48,21 +48,29 @@ export const useTemplates = () => {
         return data.templates || [];
       } catch (error) {
         // On auth errors, return empty array instead of throwing
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error';
+        
         if (
           error instanceof Error &&
-          (error.message.includes('No valid session') ||
-            error.message.includes('Failed to refresh token') ||
-            error.message.includes('Session expired') ||
-            error.message.includes('Edge Function returned a non-2xx') ||
-            error.message.includes('Authentication required') ||
-            error.message.includes('Auth session missing') ||
+          errorMessage &&
+          (errorMessage.includes('No valid session') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing') ||
             (error as any).name === 'FunctionsHttpError')
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
             console.warn(
               '⚠️ Auth/API error in templates, returning empty array:',
-              error.message,
+              errorMessage,
             );
           }
           return [];

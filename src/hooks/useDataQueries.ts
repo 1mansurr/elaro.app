@@ -164,20 +164,28 @@ export const useHomeScreenData = (enabled: boolean = true) => {
       } catch (error) {
         // On auth errors or edge function errors, return null instead of throwing
         // This provides better UX - user sees empty state instead of error screen
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error';
+        
         if (
           error instanceof Error &&
-          (error.message.includes('No valid session') ||
-            error.message.includes('Failed to refresh token') ||
-            error.message.includes('Session expired') ||
-            error.message.includes('Edge Function returned a non-2xx') ||
-            error.message.includes('Authentication required') ||
-            error.message.includes('Auth session missing'))
+          errorMessage &&
+          (errorMessage.includes('No valid session') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing'))
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
             console.warn(
               '⚠️ Auth/API error in homeScreenData, returning null:',
-              error.message,
+              errorMessage,
             );
           }
           return null;
@@ -229,20 +237,28 @@ export const useCalendarData = (date: Date) => {
       } catch (error) {
         // On auth errors or edge function errors, return empty object instead of throwing
         // This provides better UX - user sees empty state instead of error screen
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error';
+        
         if (
           error instanceof Error &&
-          (error.message.includes('No valid session') ||
-            error.message.includes('Failed to refresh token') ||
-            error.message.includes('Session expired') ||
-            error.message.includes('Edge Function returned a non-2xx') ||
-            error.message.includes('Authentication required') ||
-            error.message.includes('Auth session missing'))
+          errorMessage &&
+          (errorMessage.includes('No valid session') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing'))
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
             console.warn(
               '⚠️ Auth/API error in calendarData, returning empty object:',
-              error.message,
+              errorMessage,
             );
           }
           return {};
@@ -294,20 +310,28 @@ export const useCalendarMonthData = (year: number, month: number) => {
       } catch (error) {
         // On auth errors or edge function errors, return empty object instead of throwing
         // This provides better UX - user sees empty state instead of error screen
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error';
+        
         if (
           error instanceof Error &&
-          (error.message.includes('No valid session') ||
-            error.message.includes('Failed to refresh token') ||
-            error.message.includes('Session expired') ||
-            error.message.includes('Edge Function returned a non-2xx') ||
-            error.message.includes('Authentication required') ||
-            error.message.includes('Auth session missing'))
+          errorMessage &&
+          (errorMessage.includes('No valid session') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing'))
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
             console.warn(
               '⚠️ Auth/API error in calendarMonthData, returning empty object:',
-              error.message,
+              errorMessage,
             );
           }
           return {};

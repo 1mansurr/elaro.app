@@ -24,16 +24,21 @@ export class AppError extends Error {
 
   /**
    * Convert error to a plain object for serialization
+   * Filters out undefined values to prevent JSON.parse errors
    */
   toJSON() {
-    return {
-      name: this.name,
-      message: this.message,
-      statusCode: this.statusCode,
-      code: this.code,
-      details: this.details,
-      stack: this.stack,
+    const obj: Record<string, any> = {
+      name: this.name || 'AppError',
+      message: this.message || 'An error occurred',
+      statusCode: this.statusCode || 500,
     };
+    
+    // Only include optional fields if they exist
+    if (this.code) obj.code = this.code;
+    if (this.details) obj.details = this.details;
+    if (this.stack) obj.stack = this.stack;
+    
+    return obj;
   }
 
   /**

@@ -58,9 +58,12 @@ export const coursesApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Creating course on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth('create-course', {
-        body: request,
-      });
+      const { data, error } = await invokeEdgeFunctionWithAuth(
+        'create-course',
+        {
+          body: request,
+        },
+      );
 
       if (error) throw error;
       return data;

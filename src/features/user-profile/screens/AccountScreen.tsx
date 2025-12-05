@@ -21,9 +21,8 @@ import { PostChatModal } from '@/shared/components/PostChatModal';
 import { getSecureChatLink } from '@/shared/utils/getSecureChatLink';
 import { SubscriptionManagementCard } from '@/features/user-profile/components/SubscriptionManagementCard';
 import { LEGAL_URLS } from '@/constants/legal';
-import { useSubscription } from '@/hooks/useSubscription';
-import type { PurchasesPackage } from 'react-native-purchases';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SPACING, COLORS, FONT_SIZES, FONT_WEIGHTS } from '@/constants/theme';
 
 const ListItem = ({
   label,
@@ -113,19 +112,12 @@ const SettingItem = ({
 };
 
 export function AccountScreen() {
-  const { user, session } = useAuth();
+  const { user, session, signOut } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
   const [isSupportChatLoading, setSupportChatLoading] = useState(false);
-  const [isLegalExpanded, setIsLegalExpanded] = useState(false);
-  const { purchasePackage } = useSubscription();
-
-  // Mock offerings for now (consistent with other screens)
-  const offerings = {
-    current: null as { availablePackages: PurchasesPackage[] } | null,
-  };
 
   const handleContactSupport = useCallback(async () => {
     if (!user) return;
@@ -136,54 +128,33 @@ export function AccountScreen() {
         url: secureUrl,
         title: 'Support Chat',
       });
-    } catch (error) {
-      showToast({ type: 'error', message: 'Could not open support chat.' });
+    } catch (error: unknown) {
+      console.error('Contact Support Error:', error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Could not open support chat. Please try again later.';
+      showToast({ type: 'error', message: errorMessage });
     } finally {
       setSupportChatLoading(false);
     }
   }, [user, navigation]);
 
-  const handleUpgrade = useCallback(async () => {
-    // If offerings aren't available, navigate to PaywallScreen
-    if (
-      !offerings?.current?.availablePackages ||
-      offerings.current.availablePackages.length === 0
-    ) {
-      navigation.navigate('PaywallScreen', {
-        variant: 'general',
-      });
-      return;
-    }
+  const handleLogout = useCallback(async () => {
+    Alert.alert('Log Out', 'Are you sure you want to log out?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log Out',
+        onPress: async () => {
+          await signOut();
+        },
+      },
+    ]);
+  }, [signOut]);
 
-    try {
-      // Try to find the oddity_monthly package first
-      const oddityPackage = offerings.current.availablePackages.find(
-        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
-      );
-
-      // Fallback to first available package if oddity_monthly not found
-      const packageToPurchase =
-        oddityPackage || offerings.current.availablePackages[0];
-
-      await purchasePackage(packageToPurchase);
-      showToast({
-        type: 'success',
-        message: 'You have successfully become an Oddity!',
-      });
-    } catch (error: any) {
-      console.error('Upgrade error:', error);
-
-      // Don't show error if user cancelled
-      if (error?.userCancelled) {
-        return;
-      }
-
-      // Show user-friendly error message
-      const errorMessage =
-        error?.message || 'Failed to complete purchase. Please try again.';
-      Alert.alert('Purchase Failed', errorMessage);
-    }
-  }, [offerings, purchasePackage, navigation]);
+  const handleDeleteAccount = useCallback(() => {
+    navigation.navigate('DeleteAccountScreen');
+  }, [navigation]);
 
   const renderGuestView = () => (
     <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
@@ -252,40 +223,40 @@ export function AccountScreen() {
   );
 
   const renderAuthenticatedView = () => (
-    <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
-      <Card>
-        <View style={styles.profileInfo}>
-          <Text style={[styles.profileName, { color: theme.text }]}>
-            {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+    <ScrollView 
+      style={[styles.container, { paddingTop: insets.top }]}
+      contentContainerStyle={styles.scrollContent}>
+      {/* Profile Section - NOT in a card */}
+      <View style={styles.profileSection}>
+        <Text style={[styles.profileName, { color: theme.text }]}>
+          {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
+        </Text>
+        {user?.username && (
+          <Text style={[styles.profileUsername, { color: theme.textSecondary }]}>
+            @{user.username}
           </Text>
-          <Text style={[styles.profileEmail, { color: theme.textSecondary }]}>
-            {user?.email}
-          </Text>
-        </View>
+        )}
         <TouchableOpacity
-          style={styles.profileButton}
+          style={[styles.viewProfileButton, { backgroundColor: COLORS.primary }]}
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.7}>
-          <View style={styles.profileButtonLeft}>
-            <View style={styles.profileButtonIconContainer}>
-              <Ionicons name="person-outline" size={22} color={theme.accent} />
-            </View>
-            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
-              View Profile
-            </Text>
-          </View>
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={theme.textSecondary}
-          />
+          <Text style={[styles.viewProfileButtonText, { color: COLORS.white }]}>
+            View Profile
+          </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Buttons Card - with rounded corners */}
+      <Card style={styles.buttonsCard}>
         <TouchableOpacity
-          style={styles.profileButton}
+          style={styles.menuButton}
           onPress={() => navigation.navigate('Courses')}
           activeOpacity={0.7}>
-          <View style={styles.profileButtonLeft}>
-            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+          <View style={styles.menuButtonLeft}>
+            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="school-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               My Courses
             </Text>
           </View>
@@ -295,12 +266,18 @@ export function AccountScreen() {
             color={theme.textSecondary}
           />
         </TouchableOpacity>
+        
+        <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+        
         <TouchableOpacity
-          style={styles.profileButton}
+          style={styles.menuButton}
           onPress={() => navigation.navigate('AddCourseFlow')}
           activeOpacity={0.7}>
-          <View style={styles.profileButtonLeft}>
-            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+          <View style={styles.menuButtonLeft}>
+            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               Add a Course
             </Text>
           </View>
@@ -310,12 +287,18 @@ export function AccountScreen() {
             color={theme.textSecondary}
           />
         </TouchableOpacity>
+        
+        <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
+        
         <TouchableOpacity
-          style={styles.profileButton}
+          style={styles.menuButton}
           onPress={() => navigation.navigate('Templates')}
           activeOpacity={0.7}>
-          <View style={styles.profileButtonLeft}>
-            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+          <View style={styles.menuButtonLeft}>
+            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="layers-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               Templates
             </Text>
           </View>
@@ -369,144 +352,93 @@ export function AccountScreen() {
       </Card>
 
       <Card title="Legal">
+        <SettingItem
+          label="Terms of Service"
+          description="Read our terms and conditions"
+          icon="document-text-outline"
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.TERMS_OF_SERVICE,
+              title: 'Terms of Service',
+            })
+          }
+        />
+        <SettingItem
+          label="Privacy Policy"
+          description="Learn how we protect your data"
+          icon="shield-outline"
+          onPress={() =>
+            navigation.navigate('InAppBrowserScreen', {
+              url: LEGAL_URLS.PRIVACY_POLICY,
+              title: 'Privacy Policy',
+            })
+          }
+        />
+      </Card>
+
+      <Card title="Settings">
         <TouchableOpacity
-          style={styles.legalHeader}
-          onPress={() => setIsLegalExpanded(!isLegalExpanded)}
-          activeOpacity={0.7}>
-          <Text style={[styles.legalHeaderText, { color: theme.text }]}>
-            Legal Documents
-          </Text>
+          style={styles.settingsButton}
+          onPress={() => navigation.navigate('Settings')}
+          activeOpacity={0.7}
+          testID="settings-navigation-button">
+          <View style={styles.settingsButtonLeft}>
+            <View style={[styles.settingsIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
+            </View>
+            <Text style={[styles.settingsButtonLabel, { color: theme.text }]}>
+              Settings
+            </Text>
+          </View>
           <Ionicons
-            name={isLegalExpanded ? 'chevron-up' : 'chevron-down'}
+            name="chevron-forward"
             size={20}
             color={theme.textSecondary}
           />
         </TouchableOpacity>
-        {isLegalExpanded && (
-          <View style={styles.legalDropdown}>
-            <TouchableOpacity
-              style={styles.legalItem}
-              onPress={() => {
-            navigation.navigate('InAppBrowserScreen', {
-              url: LEGAL_URLS.TERMS_OF_SERVICE,
-              title: 'Terms of Service',
-                });
-                setIsLegalExpanded(false);
-              }}
-              activeOpacity={0.7}>
-              <Text style={[styles.legalItemText, { color: theme.text }]}>
-                Terms of Service
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.textSecondary}
-              />
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.legalItem}
-              onPress={() => {
-            navigation.navigate('InAppBrowserScreen', {
-              url: LEGAL_URLS.PRIVACY_POLICY,
-              title: 'Privacy Policy',
-                });
-                setIsLegalExpanded(false);
-              }}
-              activeOpacity={0.7}>
-              <Text style={[styles.legalItemText, { color: theme.text }]}>
-                Privacy Policy
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={18}
-                color={theme.textSecondary}
-        />
-            </TouchableOpacity>
-          </View>
-        )}
       </Card>
 
-      <Card title="Settings">
-        <ListItem
-          label="Settings"
-          onPress={() => navigation.navigate('Settings')}
-          testID="settings-navigation-button"
-        />
-      </Card>
-
-      {/* Premium Features - Analytics Dashboard for Oddity users */}
-      <Card title="Premium Features">
-        {user?.subscription_tier === 'oddity' || user?.role === 'admin' ? (
-          <View style={styles.premiumFeatureItem}>
-            <View style={styles.premiumFeatureLeft}>
-              <Ionicons
-                name="analytics-outline"
-                size={20}
-                color={theme.accent}
-                style={styles.premiumFeatureIcon}
-              />
-              <View style={styles.premiumFeatureText}>
-                <Text
-                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
-                  Weekly Analytics
-                </Text>
-                <Text
-                  style={[
-                    styles.premiumFeatureDescription,
-                    { color: theme.textSecondary },
-                  ]}>
-                  Comprehensive insights into your academic progress and study
-                  patterns
-                </Text>
-              </View>
+      {/* Account Actions Card - at the bottom with rounded edges */}
+      <Card style={styles.accountActionsCard}>
+        <TouchableOpacity
+          style={styles.accountActionButton}
+          onPress={handleLogout}
+          activeOpacity={0.7}>
+          <View style={styles.accountActionButtonLeft}>
+            <View style={[styles.accountActionIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="exit-outline" size={22} color={COLORS.primary} />
             </View>
-            <TouchableOpacity
-              style={[
-                styles.premiumFeatureButton,
-                { backgroundColor: theme.accent },
-              ]}
-              onPress={() =>
-                navigation.navigate('InAppBrowserScreen', {
-                  url: 'https://elaro.app/analytics',
-                  title: 'Analytics',
-                })
-              }>
-              <Ionicons name="chevron-forward" size={16} color="white" />
-            </TouchableOpacity>
+            <Text style={[styles.accountActionButtonLabel, { color: theme.text }]}>
+              Log Out
+            </Text>
           </View>
-        ) : (
-          <View style={styles.premiumFeatureItem}>
-            <View style={styles.premiumFeatureLeft}>
-              <Ionicons
-                name="star-outline"
-                size={20}
-                color="#FFD700"
-                style={styles.premiumFeatureIcon}
-              />
-              <View style={styles.premiumFeatureText}>
-                <Text
-                  style={[styles.premiumFeatureTitle, { color: theme.text }]}>
-                  Become an Oddity
-                </Text>
-                <Text
-                  style={[
-                    styles.premiumFeatureDescription,
-                    { color: theme.textSecondary },
-                  ]}>
-                  Unlock comprehensive weekly analytics and academic insights
-                </Text>
-              </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
+        
+        <View style={[styles.accountActionDivider, { backgroundColor: theme.border }]} />
+        
+        <TouchableOpacity
+          style={styles.accountActionButton}
+          onPress={handleDeleteAccount}
+          activeOpacity={0.7}>
+          <View style={styles.accountActionButtonLeft}>
+            <View style={[styles.accountActionIconContainer, { backgroundColor: '#F0F5FF' }]}>
+              <Ionicons name="trash-bin-outline" size={22} color={COLORS.primary} />
             </View>
-            <TouchableOpacity
-              style={[
-                styles.premiumFeatureButton,
-                { backgroundColor: '#FFD700' },
-              ]}
-              onPress={handleUpgrade}>
-              <Ionicons name="chevron-forward" size={16} color="white" />
-            </TouchableOpacity>
+            <Text style={[styles.accountActionButtonLabel, { color: theme.error }]}>
+              Delete Account
+            </Text>
           </View>
-        )}
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
       </Card>
 
       <PostChatModal
@@ -529,7 +461,7 @@ export function AccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: SPACING.md,
   },
   guestProfileContainer: {
     alignItems: 'center',
@@ -546,43 +478,64 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
   },
-  profileInfo: {
-    marginBottom: 16,
+  // Profile Section - NOT in a card
+  profileSection: {
     alignItems: 'center',
+    marginBottom: SPACING.lg,
+    paddingTop: SPACING.lg,
   },
   profileName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginBottom: SPACING.xs,
   },
-  profileEmail: {
-    fontSize: 14,
+  profileUsername: {
+    fontSize: FONT_SIZES.md,
+    marginBottom: SPACING.md,
   },
-  profileButton: {
+  viewProfileButton: {
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.sm,
+    borderRadius: 8,
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  viewProfileButtonText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  // Buttons card with rounded corners
+  buttonsCard: {
+    borderRadius: 24,
+    marginBottom: SPACING.lg,
+  },
+  menuButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 4,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
-  profileButtonLeft: {
+  menuButtonLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  profileButtonIconContainer: {
+  menuIconContainer: {
     width: 36,
     height: 36,
     borderRadius: 8,
-    backgroundColor: '#F0F5FF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
-  profileButtonLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+  menuButtonLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  menuDivider: {
+    height: 1,
+    marginLeft: SPACING.md + 36 + SPACING.md, // Align with text (icon + margin + icon margin)
   },
   listItem: {
     paddingVertical: 14,
@@ -627,71 +580,63 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  premiumFeatureItem: {
+  settingsButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 8,
-    backgroundColor: '#F8F9FA',
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
-  premiumFeatureLeft: {
+  settingsButtonLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
   },
-  premiumFeatureIcon: {
-    marginRight: 12,
-  },
-  premiumFeatureText: {
-    flex: 1,
-  },
-  premiumFeatureTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  premiumFeatureDescription: {
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  premiumFeatureButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
+  settingsIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
-    marginLeft: 12,
+    alignItems: 'center',
+    marginRight: SPACING.md,
   },
-  legalHeader: {
+  settingsButtonLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  scrollContent: {
+    paddingBottom: SPACING.xxxl,
+  },
+  accountActionsCard: {
+    borderRadius: 24,
+    marginBottom: SPACING.lg,
+  },
+  accountActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.md,
   },
-  legalHeaderText: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  legalDropdown: {
-    paddingTop: 4,
-  },
-  legalItem: {
+  accountActionButtonLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
+    flex: 1,
+  },
+  accountActionIconContainer: {
+    width: 36,
+    height: 36,
     borderRadius: 8,
-    marginBottom: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: SPACING.md,
   },
-  legalItemText: {
-    fontSize: 15,
-    fontWeight: '400',
+  accountActionButtonLabel: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  accountActionDivider: {
+    height: 1,
+    marginLeft: SPACING.md + 36 + SPACING.md, // Align with text (icon + margin + icon margin)
   },
 });

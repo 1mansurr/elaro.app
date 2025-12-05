@@ -4,14 +4,14 @@ import { FunctionsInvokeOptions } from '@supabase/supabase-js';
 
 /**
  * Invokes a Supabase Edge Function with automatic fresh token authentication.
- * 
+ *
  * This wrapper ensures we always send a valid, non-expired access token to edge functions,
  * preventing "Auth session missing!" errors that occur when using cached/stale tokens.
- * 
+ *
  * @param functionName - The name of the edge function to invoke
  * @param options - Options for the edge function call (body, signal, etc.)
  * @returns Promise with the edge function response
- * 
+ *
  * @example
  * ```typescript
  * const { data, error } = await invokeEdgeFunctionWithAuth('create-assignment', {
@@ -52,4 +52,3 @@ export async function invokeEdgeFunctionWithAuth<T = any>(
     };
   }
 }
-

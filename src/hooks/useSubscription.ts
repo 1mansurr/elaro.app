@@ -66,18 +66,21 @@ export const useSubscription = (): UseSubscriptionReturn => {
     const timeout = __DEV__ ? 2000 : 5000;
     try {
       const timeoutPromise = new Promise<CustomerInfo>((_, reject) => {
-        setTimeout(() => reject(new Error('Customer info fetch timeout')), timeout);
+        setTimeout(
+          () => reject(new Error('Customer info fetch timeout')),
+          timeout,
+        );
       });
-      
+
       const infoPromise = revenueCatService.getCustomerInfo();
       const info = await Promise.race([infoPromise, timeoutPromise]);
-      
+
       setCustomerInfo(info);
       setError(null);
     } catch (err) {
       // Only log errors in dev mode to reduce noise
       if (__DEV__) {
-      console.error('Error loading customer info:', err);
+        console.error('Error loading customer info:', err);
       }
       // Don't set error state - allow app to continue without subscription info
       // Error will be shown only when user tries to use subscription features

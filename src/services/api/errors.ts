@@ -22,9 +22,17 @@ export const handleApiError = (error: unknown): ApiError => {
 
   const err = error as ErrorWithMessage;
 
+  // Ensure message is always a string, never undefined
+  const errorMessage =
+    (err?.message && typeof err.message === 'string' && err.message.trim())
+      ? err.message
+      : err?.name === 'NetworkError'
+        ? 'Network error. Please check your connection.'
+        : 'An unexpected error occurred.';
+
   // Handle Supabase-specific errors which often have a message property
-  if (err?.message) {
-    return new ApiError(err.message, err.code, err.details, error);
+  if (err?.message && typeof err.message === 'string') {
+    return new ApiError(errorMessage, err.code, err.details, error);
   }
 
   // Handle generic network errors
@@ -39,7 +47,7 @@ export const handleApiError = (error: unknown): ApiError => {
 
   // Fallback for any other unexpected errors
   return new ApiError(
-    'An unexpected error occurred.',
+    errorMessage,
     'UNKNOWN_ERROR',
     undefined,
     error,

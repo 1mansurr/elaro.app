@@ -20,7 +20,7 @@ const Card: React.FC<Props> = ({ title, children, style }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 24,
     padding: 20,
     marginBottom: 20,
     shadowColor: '#000',

@@ -57,7 +57,7 @@ export const TaskCardSkeleton: React.FC = () => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 16,
+    borderRadius: 24,
     padding: 24,
     marginBottom: 20,
     shadowColor: '#000',

@@ -102,22 +102,72 @@ if (__DEV__) {
   // Suppress Metro bundler symbolication errors (harmless noise)
   const originalError = console.error;
   console.error = (...args: any[]) => {
-    // Filter out Metro symbolication errors
-    const errorMessage = args[0]?.toString() || '';
-    const stackTrace = args[1]?.toString() || '';
-    const fullMessage = `${errorMessage} ${stackTrace}`;
-    
-    if (
-      (errorMessage.includes('SyntaxError: "undefined" is not valid JSON') ||
-        errorMessage.includes('"undefined" is not valid JSON')) &&
-      (fullMessage.includes('Server._symbolicate') ||
-        fullMessage.includes('_symbolicate') ||
-        fullMessage.includes('metro/src/Server.js'))
-    ) {
+    // Convert all args to strings for comprehensive pattern matching
+    const allArgsAsString = args
+      .map(arg => {
+        try {
+          if (arg instanceof Error) {
+            return `${arg.name}: ${arg.message} ${arg.stack || ''}`;
+          }
+          if (typeof arg === 'object' && arg !== null) {
+            return JSON.stringify(arg);
+          }
+          return String(arg);
+        } catch {
+          return String(arg);
+        }
+      })
+      .join(' ');
+
+    // Check if this is a Metro symbolication error - be more aggressive
+    const isMetroSymbolicateError =
+      (allArgsAsString.includes('SyntaxError') &&
+        allArgsAsString.includes('undefined') &&
+        allArgsAsString.includes('not valid JSON')) &&
+      (allArgsAsString.includes('_symbolicate') ||
+        allArgsAsString.includes('metro/src/Server.js') ||
+        allArgsAsString.includes('Server._processRequest') ||
+        allArgsAsString.includes('Server._symbolicate'));
+
+    if (isMetroSymbolicateError) {
       return; // Suppress Metro symbolication errors
     }
     originalError.apply(console, args);
   };
+
+  // Patch Error.prototype.toJSON globally to prevent undefined values in serialization
+  // This ensures Metro's symbolication process never encounters undefined when serializing errors
+  if (typeof Error.prototype.toJSON === 'undefined') {
+    Error.prototype.toJSON = function() {
+      const obj: Record<string, any> = {
+        name: this.name || 'Error',
+        message: this.message || 'An error occurred',
+      };
+      
+      // Only include stack if it exists
+      if (this.stack) {
+        obj.stack = this.stack;
+      }
+      
+      // Include any enumerable properties, but filter out undefined
+      for (const key in this) {
+        if (this.hasOwnProperty(key)) {
+          const value = (this as any)[key];
+          if (value !== undefined) {
+            try {
+              // Only include serializable values
+              JSON.stringify(value);
+              obj[key] = value;
+            } catch {
+              // Skip non-serializable values
+            }
+          }
+        }
+      }
+      
+      return obj;
+    };
+  }
 
   // Disable dev menu's Element Inspector option
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
@@ -586,42 +636,58 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
 
         // RevenueCat - Initialize in background, don't wait for it
         // This prevents blocking app startup if RevenueCat is slow or misconfigured
-          (async () => {
-            try {
-              const revenueCatApiKey =
-                Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
+        (async () => {
+          try {
+            const revenueCatApiKey =
+              Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
 
-              if (revenueCatApiKey) {
+            if (revenueCatApiKey) {
               // Add timeout to prevent hanging
               try {
                 const initTimeout = new Promise<boolean>((_, reject) => {
-                  setTimeout(() => reject(new Error('RevenueCat init timeout')), 3000);
+                  setTimeout(
+                    () => reject(new Error('RevenueCat init timeout')),
+                    3000,
+                  );
                 });
 
-                const initPromise = revenueCatService.initialize(revenueCatApiKey);
+                const initPromise =
+                  revenueCatService.initialize(revenueCatApiKey);
                 let initSuccess = false;
-                
+
                 try {
                   initSuccess = await Promise.race([initPromise, initTimeout]);
                 } catch (raceError) {
                   // Timeout occurred - silently continue
-                  if (__DEV__ && raceError instanceof Error && !raceError.message.includes('timeout')) {
-                    console.warn('⚠️ RevenueCat init error:', raceError.message);
+                  if (
+                    __DEV__ &&
+                    raceError instanceof Error &&
+                    !raceError.message.includes('timeout')
+                  ) {
+                    console.warn(
+                      '⚠️ RevenueCat init error:',
+                      raceError.message,
+                    );
                   }
                   return; // Exit early on error
                 }
 
                 if (initSuccess) {
                   if (__DEV__) {
-                  console.log('✅ RevenueCat initialized');
+                    console.log('✅ RevenueCat initialized');
                   }
                   // Verification can happen in background - don't block
                   import('./src/config/verifyRevenuecat')
                     .then(({ verifyRevenueCatSetup }) => {
                       // Add timeout for verification too
-                      const verifyTimeout = new Promise<boolean>((_, reject) => {
-                        setTimeout(() => reject(new Error('Verification timeout')), 2000);
-                      });
+                      const verifyTimeout = new Promise<boolean>(
+                        (_, reject) => {
+                          setTimeout(
+                            () => reject(new Error('Verification timeout')),
+                            2000,
+                          );
+                        },
+                      );
                       return Promise.race([
                         verifyRevenueCatSetup(),
                         verifyTimeout,
@@ -629,19 +695,19 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                     })
                     .then(verified => {
                       if (verified && __DEV__) {
-                      console.log('✅ RevenueCat setup verified');
-                    }
+                        console.log('✅ RevenueCat setup verified');
+                      }
                     })
                     .catch(verifyError => {
                       // Silently fail in dev, only log in production if critical
                       if (!__DEV__) {
-                    errorTracking.captureError(verifyError as Error, {
-                      tags: {
-                        component: 'revenuecat',
-                        phase: 'verification',
-                      },
-                    });
-                  }
+                        errorTracking.captureError(verifyError as Error, {
+                          tags: {
+                            component: 'revenuecat',
+                            phase: 'verification',
+                          },
+                        });
+                      }
                     });
                 } else if (__DEV__) {
                   console.warn(
@@ -650,16 +716,20 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                 }
               } catch (initError) {
                 // Timeout or initialization error - silently continue
-                if (__DEV__ && initError instanceof Error && !initError.message.includes('timeout')) {
+                if (
+                  __DEV__ &&
+                  initError instanceof Error &&
+                  !initError.message.includes('timeout')
+                ) {
                   console.warn('⚠️ RevenueCat init error:', initError.message);
                 }
               }
             } else if (__DEV__) {
-                console.warn(
-                  '⚠️ RevenueCat API key not found - subscription features disabled',
-                );
-              }
-            } catch (error) {
+              console.warn(
+                '⚠️ RevenueCat API key not found - subscription features disabled',
+              );
+            }
+          } catch (error) {
             // Only log errors in dev mode to reduce noise
             if (__DEV__) {
               console.warn('⚠️ RevenueCat init failed (non-blocking):', error);
@@ -673,17 +743,17 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           }
         })();
 
-          // Sync Manager - make non-blocking
+        // Sync Manager - make non-blocking
         const syncManagerInit = (async () => {
-            try {
+          try {
             if (__DEV__) {
               console.log('🔄 Initializing Sync Manager...');
             }
-              await syncManager.start();
+            await syncManager.start();
             if (__DEV__) {
               console.log('✅ Sync Manager initialized');
             }
-            } catch (error) {
+          } catch (error) {
             if (__DEV__) {
               console.warn(
                 '⚠️ Sync Manager init failed (non-blocking):',
@@ -698,7 +768,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           .then(({ startCircuitBreakerMonitoring }) => {
             startCircuitBreakerMonitoring(30000); // Check every 30 seconds
             if (__DEV__) {
-            console.log('✅ Circuit breaker monitoring initialized');
+              console.log('✅ Circuit breaker monitoring initialized');
             }
           })
           .catch(console.error);

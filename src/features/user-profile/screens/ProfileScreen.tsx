@@ -14,14 +14,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { SearchableSelector } from '@/shared/components';
-import { MainTabParamList } from '@/types';
+import { RootStackParamList } from '@/types/navigation';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 // Import the data files
 import countriesData from '@/data/countries.json';
 
-type ScreenNavigationProp = StackNavigationProp<MainTabParamList, 'Account'>;
+type ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
@@ -55,15 +55,18 @@ const ProfileScreen = () => {
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      const { error } = await invokeEdgeFunctionWithAuth('update-user-profile', {
-        body: {
-          firstName,
-          lastName,
-          university,
-          program,
-          country,
+      const { error } = await invokeEdgeFunctionWithAuth(
+        'update-user-profile',
+        {
+          body: {
+            firstName,
+            lastName,
+            university,
+            program,
+            country,
+          },
         },
-      });
+      );
 
       if (error) {
         throw new Error(error.message);

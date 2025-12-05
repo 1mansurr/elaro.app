@@ -87,7 +87,21 @@ function handleError(error: unknown, functionName?: string): Response {
   // Error is already logged by logger in the catch block, but keep this for immediate console visibility in development
   // In production, this will be captured by structured logging
   if (Deno.env.get('ENVIRONMENT') === 'development') {
-    console.error('--- Function Error ---', JSON.stringify(errorForLogging));
+    try {
+      // Safely stringify error, replacing undefined with null to prevent JSON.parse errors
+      const safeErrorForLogging = JSON.parse(
+        JSON.stringify(errorForLogging, (key, value) =>
+          value === undefined ? null : value,
+        ),
+      );
+      console.error('--- Function Error ---', JSON.stringify(safeErrorForLogging));
+    } catch (stringifyError) {
+      // If stringify fails, log a safe message
+      console.error('--- Function Error ---', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        function: functionName,
+      });
+    }
   }
 
   // Base headers with versioning
@@ -100,13 +114,14 @@ function handleError(error: unknown, functionName?: string): Response {
   if (error instanceof AppError) {
     // Use error code from AppError if provided, otherwise default
     const errorCode = (error.code as ErrorCode) || ERROR_CODES.INTERNAL_ERROR;
+    // Ensure userMessage is always a string
     const userMessage =
-      error.code && ERROR_MESSAGES[errorCode]
+      (error.code && ERROR_MESSAGES[errorCode]
         ? ERROR_MESSAGES[errorCode]
-        : sanitizedError;
+        : sanitizedError) || 'An unexpected error occurred';
 
     const response: any = {
-      error: userMessage,
+      error: typeof userMessage === 'string' ? userMessage : 'An unexpected error occurred',
       code: errorCode,
     };
 
@@ -119,7 +134,12 @@ function handleError(error: unknown, functionName?: string): Response {
       response.details = redactedDetails;
     }
 
-    return new Response(JSON.stringify(response), {
+    // Ensure response can be stringified (replace undefined with null)
+    const responseString = JSON.stringify(response, (key, value) =>
+      value === undefined ? null : value,
+    );
+
+    return new Response(responseString, {
       status: error.statusCode,
       headers: baseHeaders,
     });
@@ -127,8 +147,8 @@ function handleError(error: unknown, functionName?: string): Response {
 
   if (error instanceof RateLimitError) {
     const response: any = {
-      error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
-      message: sanitizedError,
+      error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED || 'Rate limit exceeded',
+      message: sanitizedError || 'Too many requests',
       code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
     };
 
@@ -137,7 +157,12 @@ function handleError(error: unknown, functionName?: string): Response {
       baseHeaders.set('Retry-After', error.retryAfter.toString());
     }
 
-    return new Response(JSON.stringify(response), {
+    // Ensure response can be stringified (replace undefined with null)
+    const responseString = JSON.stringify(response, (key, value) =>
+      value === undefined ? null : value,
+    );
+
+    return new Response(responseString, {
       status: ERROR_STATUS_CODES.RATE_LIMIT_EXCEEDED,
       headers: baseHeaders,
     });
@@ -146,29 +171,37 @@ function handleError(error: unknown, functionName?: string): Response {
   // Check if it's a database error
   if (error && typeof error === 'object' && 'code' in error) {
     const dbError = mapDatabaseError(error);
-    return new Response(
-      JSON.stringify({
-        error: dbError.message,
-        code: dbError.code,
-      }),
-      {
-        status: dbError.statusCode,
-        headers: baseHeaders,
-      },
+    const dbResponse = {
+      error: dbError.message || 'Database error occurred',
+      code: dbError.code,
+    };
+    
+    // Ensure response can be stringified (replace undefined with null)
+    const dbResponseString = JSON.stringify(dbResponse, (key, value) =>
+      value === undefined ? null : value,
     );
+    
+    return new Response(dbResponseString, {
+      status: dbError.statusCode,
+      headers: baseHeaders,
+    });
   }
 
   // Generic fallback for unexpected errors
-  return new Response(
-    JSON.stringify({
-      error: ERROR_MESSAGES.INTERNAL_ERROR,
-      code: ERROR_CODES.INTERNAL_ERROR,
-    }),
-    {
-      status: ERROR_STATUS_CODES.INTERNAL_ERROR,
-      headers: baseHeaders,
-    },
+  const fallbackResponse = {
+    error: ERROR_MESSAGES.INTERNAL_ERROR || 'An internal error occurred',
+    code: ERROR_CODES.INTERNAL_ERROR,
+  };
+  
+  // Ensure response can be stringified (replace undefined with null)
+  const fallbackResponseString = JSON.stringify(fallbackResponse, (key, value) =>
+    value === undefined ? null : value,
   );
+  
+  return new Response(fallbackResponseString, {
+    status: ERROR_STATUS_CODES.INTERNAL_ERROR,
+    headers: baseHeaders,
+  });
 }
 
 // The generic handler wrapper
@@ -638,8 +671,13 @@ export function createAuthenticatedHandler(
       // Note: supabaseClient may not be available if auth failed
       const durationMs = Math.round(performance.now() - startTime);
       const statusCode = error instanceof AppError ? error.statusCode : 500;
+      // Ensure errorMessage is always a string, never undefined
       const errorMessage =
-        error instanceof Error ? error.message : String(error);
+        error instanceof Error && error.message
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Unknown error occurred';
 
       // Try to get supabaseClient for tracking (may not exist if auth failed)
       let trackingClient: any;
@@ -717,9 +755,9 @@ export function createAuthenticatedHandler(
           error:
             error instanceof Error
               ? {
-                  message: error.message,
-                  stack: error.stack,
-                  name: error.name,
+                  message: error.message || 'Unknown error',
+                  stack: error.stack || undefined,
+                  name: error.name || 'Error',
                 }
               : { message: String(error) },
         },

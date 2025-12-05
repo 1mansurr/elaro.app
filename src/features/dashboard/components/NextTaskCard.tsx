@@ -150,7 +150,7 @@ const NextTaskCard: React.FC<Props> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: 20,
+    borderRadius: 24,
     padding: 32,
     marginBottom: 32,
     shadowColor: '#000',

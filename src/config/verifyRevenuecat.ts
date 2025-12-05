@@ -7,7 +7,7 @@ import { RevenueCat } from '@/services/revenueCatWrapper';
 export const verifyRevenueCatSetup = async (): Promise<boolean> => {
   if (!RevenueCat.isAvailable || !RevenueCat.Purchases) {
     if (!__DEV__) {
-    console.warn('⚠️ RevenueCat not available - skipping verification');
+      console.warn('⚠️ RevenueCat not available - skipping verification');
     }
     return false;
   }
@@ -20,32 +20,35 @@ export const verifyRevenueCatSetup = async (): Promise<boolean> => {
       setTimeout(() => reject(new Error('Verification timeout')), timeout);
     });
 
-    const customerInfo = await Promise.race([customerInfoPromise, timeoutPromise]);
-    
+    const customerInfo = await Promise.race([
+      customerInfoPromise,
+      timeoutPromise,
+    ]);
+
     if (customerInfo) {
       if (__DEV__) {
-      console.log(
-        '✅ RevenueCat setup verified: SDK initialized and responding.',
-      );
-      console.log('📊 Customer ID:', customerInfo.originalAppUserId);
-      console.log(
-        '🎫 Active Entitlements:',
-        Object.keys(customerInfo.entitlements.active).length,
-      );
+        console.log(
+          '✅ RevenueCat setup verified: SDK initialized and responding.',
+        );
+        console.log('📊 Customer ID:', customerInfo.originalAppUserId);
+        console.log(
+          '🎫 Active Entitlements:',
+          Object.keys(customerInfo.entitlements.active).length,
+        );
       }
       return true;
     } else {
       if (!__DEV__) {
-      console.warn(
-        '⚠️ RevenueCat initialized but no customer info returned yet.',
-      );
+        console.warn(
+          '⚠️ RevenueCat initialized but no customer info returned yet.',
+        );
       }
       return false;
     }
   } catch (error) {
     // Only log errors in production
     if (!__DEV__) {
-    console.error('❌ RevenueCat verification failed:', error);
+      console.error('❌ RevenueCat verification failed:', error);
     }
     return false;
   }

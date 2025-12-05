@@ -1,5 +1,8 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createScheduledHandler, SupabaseClient } from '../_shared/function-handler.ts';
+import {
+  createScheduledHandler,
+  SupabaseClient,
+} from '../_shared/function-handler.ts';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -17,11 +20,19 @@ async function handleNotifyTrialExpired(supabaseAdmin: SupabaseClient) {
     new Request('https://cron.internal'),
   );
 
-  await logger.info('Starting trial expiration notification job', {}, traceContext);
+  await logger.info(
+    'Starting trial expiration notification job',
+    {},
+    traceContext,
+  );
 
   try {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const todayEnd = new Date(todayStart);
     todayEnd.setDate(todayEnd.getDate() + 1);
 
@@ -44,11 +55,7 @@ async function handleNotifyTrialExpired(supabaseAdmin: SupabaseClient) {
     }
 
     if (!expiredTrials || expiredTrials.length === 0) {
-      await logger.info(
-        'No expired trials found for today',
-        {},
-        traceContext,
-      );
+      await logger.info('No expired trials found for today', {}, traceContext);
       return {
         success: true,
         message: 'No expired trials found for today',
@@ -99,7 +106,9 @@ async function handleNotifyTrialExpired(supabaseAdmin: SupabaseClient) {
         }
 
         // Also check notification_deliveries for recent sends (within last 24 hours)
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+        const oneDayAgo = new Date(
+          Date.now() - 24 * 60 * 60 * 1000,
+        ).toISOString();
         const { data: recentDelivery } = await supabaseAdmin
           .from('notification_deliveries')
           .select('id')
@@ -121,13 +130,13 @@ async function handleNotifyTrialExpired(supabaseAdmin: SupabaseClient) {
         }
 
         // Get user preferences
-        const prefs = await getUserNotificationPreferences(supabaseAdmin, user.id);
+        const prefs = await getUserNotificationPreferences(
+          supabaseAdmin,
+          user.id,
+        );
 
         // Check if notifications are enabled
-        if (
-          prefs?.master_toggle === false ||
-          prefs?.do_not_disturb === true
-        ) {
+        if (prefs?.master_toggle === false || prefs?.do_not_disturb === true) {
           await logger.info(
             'Trial expiration notification skipped - user disabled notifications',
             {
@@ -140,21 +149,22 @@ async function handleNotifyTrialExpired(supabaseAdmin: SupabaseClient) {
         }
 
         // Create notification record first
-        const { data: notification, error: notificationError } = await supabaseAdmin
-          .from('notifications')
-          .insert({
-            user_id: user.id,
-            title: 'Your Oddity trial has ended',
-            body: 'Upgrade to continue enjoying premium features and unlock your full academic potential.',
-            type: 'trial_expired',
-            data: {
-              action: 'upgrade',
-              deep_link: 'elaro://paywall?variant=trial_expired',
-            },
-            sent_at: new Date().toISOString(),
-          })
-          .select()
-          .single();
+        const { data: notification, error: notificationError } =
+          await supabaseAdmin
+            .from('notifications')
+            .insert({
+              user_id: user.id,
+              title: 'Your Oddity trial has ended',
+              body: 'Upgrade to continue enjoying premium features and unlock your full academic potential.',
+              type: 'trial_expired',
+              data: {
+                action: 'upgrade',
+                deep_link: 'elaro://paywall?variant=trial_expired',
+              },
+              sent_at: new Date().toISOString(),
+            })
+            .select()
+            .single();
 
         if (notificationError) {
           await logger.error(
@@ -275,4 +285,3 @@ serve(
     secretEnvVar: 'CRON_SECRET',
   }),
 );
-
