@@ -99,6 +99,26 @@ if (__DEV__) {
     originalWarn.apply(console, args);
   };
 
+  // Suppress Metro bundler symbolication errors (harmless noise)
+  const originalError = console.error;
+  console.error = (...args: any[]) => {
+    // Filter out Metro symbolication errors
+    const errorMessage = args[0]?.toString() || '';
+    const stackTrace = args[1]?.toString() || '';
+    const fullMessage = `${errorMessage} ${stackTrace}`;
+    
+    if (
+      (errorMessage.includes('SyntaxError: "undefined" is not valid JSON') ||
+        errorMessage.includes('"undefined" is not valid JSON')) &&
+      (fullMessage.includes('Server._symbolicate') ||
+        fullMessage.includes('_symbolicate') ||
+        fullMessage.includes('metro/src/Server.js'))
+    ) {
+      return; // Suppress Metro symbolication errors
+    }
+    originalError.apply(console, args);
+  };
+
   // Disable dev menu's Element Inspector option
   if (Platform.OS === 'ios' || Platform.OS === 'android') {
     // This prevents the Element Inspector from being activated
@@ -558,42 +578,63 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const prepare = async () => {
       try {
-        // Set a minimum display time for splash (800ms) for better UX
+        // Set a minimum display time for splash (500ms) for better UX
+        // Reduced from 800ms for faster perceived startup
         const minSplashTime = Promise.resolve().then(
-          () => new Promise(resolve => setTimeout(resolve, 800)),
+          () => new Promise(resolve => setTimeout(resolve, 500)),
         );
 
-        // Run initialization in parallel where possible (non-blocking)
-        const initPromises = [
-          // RevenueCat - make non-blocking (run in background)
+        // RevenueCat - Initialize in background, don't wait for it
+        // This prevents blocking app startup if RevenueCat is slow or misconfigured
           (async () => {
             try {
               const revenueCatApiKey =
                 Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
 
               if (revenueCatApiKey) {
-                const initSuccess =
-                  await revenueCatService.initialize(revenueCatApiKey);
+              // Add timeout to prevent hanging
+              try {
+                const initTimeout = new Promise<boolean>((_, reject) => {
+                  setTimeout(() => reject(new Error('RevenueCat init timeout')), 3000);
+                });
+
+                const initPromise = revenueCatService.initialize(revenueCatApiKey);
+                let initSuccess = false;
+                
+                try {
+                  initSuccess = await Promise.race([initPromise, initTimeout]);
+                } catch (raceError) {
+                  // Timeout occurred - silently continue
+                  if (__DEV__ && raceError instanceof Error && !raceError.message.includes('timeout')) {
+                    console.warn('⚠️ RevenueCat init error:', raceError.message);
+                  }
+                  return; // Exit early on error
+                }
 
                 if (initSuccess) {
+                  if (__DEV__) {
                   console.log('✅ RevenueCat initialized');
-                  try {
-                    const { verifyRevenueCatSetup } = await import(
-                      './src/config/verifyRevenuecat'
-                    );
-                    const verified = await verifyRevenueCatSetup();
-                    if (verified) {
+                  }
+                  // Verification can happen in background - don't block
+                  import('./src/config/verifyRevenuecat')
+                    .then(({ verifyRevenueCatSetup }) => {
+                      // Add timeout for verification too
+                      const verifyTimeout = new Promise<boolean>((_, reject) => {
+                        setTimeout(() => reject(new Error('Verification timeout')), 2000);
+                      });
+                      return Promise.race([
+                        verifyRevenueCatSetup(),
+                        verifyTimeout,
+                      ]);
+                    })
+                    .then(verified => {
+                      if (verified && __DEV__) {
                       console.log('✅ RevenueCat setup verified');
-                    } else {
-                      console.warn(
-                        '⚠️ RevenueCat initialized but verification failed',
-                      );
                     }
-                  } catch (verifyError) {
-                    console.warn(
-                      '⚠️ RevenueCat verification error (non-blocking):',
-                      verifyError,
-                    );
+                    })
+                    .catch(verifyError => {
+                      // Silently fail in dev, only log in production if critical
+                      if (!__DEV__) {
                     errorTracking.captureError(verifyError as Error, {
                       tags: {
                         component: 'revenuecat',
@@ -601,44 +642,64 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                       },
                     });
                   }
-                } else {
+                    });
+                } else if (__DEV__) {
                   console.warn(
                     '⚠️ RevenueCat initialization failed - subscription features disabled',
                   );
                 }
-              } else {
+              } catch (initError) {
+                // Timeout or initialization error - silently continue
+                if (__DEV__ && initError instanceof Error && !initError.message.includes('timeout')) {
+                  console.warn('⚠️ RevenueCat init error:', initError.message);
+                }
+              }
+            } else if (__DEV__) {
                 console.warn(
                   '⚠️ RevenueCat API key not found - subscription features disabled',
                 );
               }
             } catch (error) {
+            // Only log errors in dev mode to reduce noise
+            if (__DEV__) {
               console.warn('⚠️ RevenueCat init failed (non-blocking):', error);
+            }
+            // Still track errors in production for monitoring
+            if (!__DEV__) {
               errorTracking.captureError(error as Error, {
                 tags: { component: 'revenuecat', phase: 'initialization' },
               });
             }
-          })(),
+          }
+        })();
 
           // Sync Manager - make non-blocking
-          (async () => {
+        const syncManagerInit = (async () => {
             try {
+            if (__DEV__) {
               console.log('🔄 Initializing Sync Manager...');
+            }
               await syncManager.start();
+            if (__DEV__) {
               console.log('✅ Sync Manager initialized');
+            }
             } catch (error) {
+            if (__DEV__) {
               console.warn(
                 '⚠️ Sync Manager init failed (non-blocking):',
                 error,
               );
             }
-          })(),
-        ];
+          }
+        })();
 
         // Initialize circuit breaker monitoring (non-blocking)
         import('./src/utils/circuitBreakerMonitor')
           .then(({ startCircuitBreakerMonitoring }) => {
             startCircuitBreakerMonitoring(30000); // Check every 30 seconds
+            if (__DEV__) {
             console.log('✅ Circuit breaker monitoring initialized');
+            }
           })
           .catch(console.error);
 
@@ -649,8 +710,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           },
         );
 
-        // Wait for minimum splash time OR initialization (whichever is longer)
-        await Promise.all([minSplashTime, Promise.allSettled(initPromises)]);
+        // Only wait for minimum splash time and sync manager (critical for offline support)
+        // Don't wait for RevenueCat - it can initialize in background
+        await Promise.all([minSplashTime, syncManagerInit]);
       } catch (e) {
         console.error('❌ App initialization error:', e);
         errorTracking.captureError(e as Error, {

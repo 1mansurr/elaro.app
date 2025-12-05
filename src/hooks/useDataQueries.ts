@@ -157,10 +157,10 @@ export const useHomeScreenData = (enabled: boolean = true) => {
     queryKey: ['homeScreenData'],
     queryFn: async () => {
       try {
-      const data = await api.homeScreen.getData();
-      // Cache for 5 minutes (changes more frequently)
-      await cache.setShort(cacheKey, data);
-      return data;
+        const data = await api.homeScreen.getData();
+        // Cache for 5 minutes (changes more frequently)
+        await cache.setShort(cacheKey, data);
+        return data;
       } catch (error) {
         // On auth errors or edge function errors, return null instead of throwing
         // This provides better UX - user sees empty state instead of error screen
@@ -175,7 +175,10 @@ export const useHomeScreenData = (enabled: boolean = true) => {
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
-            console.warn('⚠️ Auth/API error in homeScreenData, returning null:', error.message);
+            console.warn(
+              '⚠️ Auth/API error in homeScreenData, returning null:',
+              error.message,
+            );
           }
           return null;
         }
@@ -193,12 +196,14 @@ export const useHomeScreenData = (enabled: boolean = true) => {
 export const useCalendarData = (date: Date) => {
   const dateKey = date.toISOString().split('T')[0];
   const cacheKey = `calendarData:${dateKey}`;
-  const [placeholderData, setPlaceholderData] = React.useState<CalendarData | undefined>(undefined);
+  const [placeholderData, setPlaceholderData] = React.useState<
+    CalendarData | undefined
+  >(undefined);
 
   // Load cached data as placeholder on mount
   React.useEffect(() => {
     if (!date) return;
-    
+
     const loadCachedData = async () => {
       try {
         const cached = await cache.get<CalendarData>(cacheKey);
@@ -209,7 +214,7 @@ export const useCalendarData = (date: Date) => {
         // Ignore cache errors
       }
     };
-    
+
     loadCachedData();
   }, [dateKey, cacheKey]);
 
@@ -217,10 +222,10 @@ export const useCalendarData = (date: Date) => {
     queryKey: ['calendarData', dateKey],
     queryFn: async () => {
       try {
-      const data = await api.calendar.getData(date);
-      // Cache for 1 hour (calendar data for a specific day)
-      await cache.setMedium(cacheKey, data);
-      return data;
+        const data = await api.calendar.getData(date);
+        // Cache for 1 hour (calendar data for a specific day)
+        await cache.setMedium(cacheKey, data);
+        return data;
       } catch (error) {
         // On auth errors or edge function errors, return empty object instead of throwing
         // This provides better UX - user sees empty state instead of error screen
@@ -235,7 +240,10 @@ export const useCalendarData = (date: Date) => {
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
-            console.warn('⚠️ Auth/API error in calendarData, returning empty object:', error.message);
+            console.warn(
+              '⚠️ Auth/API error in calendarData, returning empty object:',
+              error.message,
+            );
           }
           return {};
         }
@@ -253,12 +261,14 @@ export const useCalendarData = (date: Date) => {
 export const useCalendarMonthData = (year: number, month: number) => {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
   const cacheKey = `calendarMonthData:${monthKey}`;
-  const [placeholderData, setPlaceholderData] = React.useState<CalendarData | undefined>(undefined);
+  const [placeholderData, setPlaceholderData] = React.useState<
+    CalendarData | undefined
+  >(undefined);
 
   // Load cached data as placeholder on mount
   React.useEffect(() => {
     if (year === undefined || month === undefined) return;
-    
+
     const loadCachedData = async () => {
       try {
         const cached = await cache.get<CalendarData>(cacheKey);
@@ -269,7 +279,7 @@ export const useCalendarMonthData = (year: number, month: number) => {
         // Ignore cache errors
       }
     };
-    
+
     loadCachedData();
   }, [monthKey, cacheKey, year, month]);
 
@@ -277,10 +287,10 @@ export const useCalendarMonthData = (year: number, month: number) => {
     queryKey: ['calendarMonthData', monthKey],
     queryFn: async () => {
       try {
-      const data = await api.calendar.getMonthData(year, month);
-      // Cache for 1 hour (calendar data for a specific month)
-      await cache.setMedium(cacheKey, data);
-      return data;
+        const data = await api.calendar.getMonthData(year, month);
+        // Cache for 1 hour (calendar data for a specific month)
+        await cache.setMedium(cacheKey, data);
+        return data;
       } catch (error) {
         // On auth errors or edge function errors, return empty object instead of throwing
         // This provides better UX - user sees empty state instead of error screen
@@ -295,7 +305,10 @@ export const useCalendarMonthData = (year: number, month: number) => {
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
-            console.warn('⚠️ Auth/API error in calendarMonthData, returning empty object:', error.message);
+            console.warn(
+              '⚠️ Auth/API error in calendarMonthData, returning empty object:',
+              error.message,
+            );
           }
           return {};
         }

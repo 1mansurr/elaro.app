@@ -246,6 +246,7 @@ export function canSendNotification(
     // System notifications - no specific preference, only master toggle applies
     welcome: undefined,
     subscription_ended: undefined,
+    trial_expired: undefined,
     grace_period_warning: undefined,
     custom: undefined, // Custom notifications - only master toggle applies
   };

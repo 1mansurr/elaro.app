@@ -16,6 +16,7 @@ import { supabase } from '@/services/supabase';
 import { SearchableSelector } from '@/shared/components';
 import { MainTabParamList } from '@/types';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 // Import the data files
 import countriesData from '@/data/countries.json';
@@ -54,7 +55,7 @@ const ProfileScreen = () => {
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('update-user-profile', {
+      const { error } = await invokeEdgeFunctionWithAuth('update-user-profile', {
         body: {
           firstName,
           lastName,

@@ -2,11 +2,11 @@ import { supabase } from '@/services/supabase';
 
 /**
  * Gets a fresh access token, refreshing if necessary.
- * 
+ *
  * This function ensures we have a valid, non-expired token before making
  * authenticated requests to edge functions. It uses getUser() which automatically
  * refreshes the token if needed and verifies it with a real API call to Supabase.
- * 
+ *
  * @returns Promise<string> - A fresh access token
  * @throws Error - If no valid user or session is found
  */
@@ -34,7 +34,7 @@ export async function getFreshAccessToken(): Promise<string> {
   // If token is expired or expiring soon, refresh it explicitly
   if (isExpiredOrExpiringSoon && currentSession.refresh_token) {
     console.log('🔄 Token expired or expiring soon, refreshing session...');
-    
+
     try {
       const {
         data: { session: refreshedSession },
@@ -45,7 +45,7 @@ export async function getFreshAccessToken(): Promise<string> {
 
       if (refreshError) {
         console.error('❌ Failed to refresh session:', refreshError);
-        
+
         // If refresh token is expired/invalid, user needs to sign in again
         if (
           refreshError.message?.includes('refresh_token_not_found') ||
@@ -93,7 +93,7 @@ export async function getFreshAccessToken(): Promise<string> {
 
   if (userError || !user) {
     console.warn('⚠️ Token verification failed, attempting refresh...');
-    
+
     // Token might be stale, try refreshing
     if (currentSession.refresh_token) {
       try {

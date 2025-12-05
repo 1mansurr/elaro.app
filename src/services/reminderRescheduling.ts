@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import * as Notifications from 'expo-notifications';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export interface RescheduleReminderOptions {
   reminderId: string;
@@ -70,7 +71,7 @@ export async function rescheduleReminder(
     }
 
     // 4. Update reminder via Edge Function
-    const { data, error } = await supabase.functions.invoke(
+    const { data, error } = await invokeEdgeFunctionWithAuth(
       'reschedule-reminder',
       {
         body: {

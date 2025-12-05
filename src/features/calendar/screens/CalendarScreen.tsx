@@ -86,11 +86,12 @@ const CalendarScreen = () => {
   React.useEffect(() => {
     if (__DEV__ && jsThreadMetrics.slowFrameCount > 100) {
       // Only log every 50 frames to reduce noise
-      const framesSinceLastLog = jsThreadMetrics.slowFrameCount - lastLoggedCountRef.current;
+      const framesSinceLastLog =
+        jsThreadMetrics.slowFrameCount - lastLoggedCountRef.current;
       if (framesSinceLastLog >= 50) {
-      console.warn(
-        `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
-      );
+        console.warn(
+          `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+        );
         lastLoggedCountRef.current = jsThreadMetrics.slowFrameCount;
       }
     }

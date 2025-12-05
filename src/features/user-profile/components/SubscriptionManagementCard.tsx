@@ -1,11 +1,5 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Platform,
-  Linking,
-} from 'react-native';
+import { View, Text, StyleSheet, Platform, Linking } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
@@ -26,7 +20,18 @@ export function SubscriptionManagementCard() {
     subscriptionExpiration,
     purchasePackage,
     restorePurchases,
+    refreshCustomerInfo,
   } = useSubscription();
+
+  // Load customer info when component mounts (lazy loading)
+  useEffect(() => {
+    if (user && !customerInfo && !isLoading) {
+      // Load customer info in background - don't block rendering
+      refreshCustomerInfo().catch(() => {
+        // Silently fail - component will show default state
+      });
+    }
+  }, [user, customerInfo, isLoading, refreshCustomerInfo]);
 
   // Mock offerings for now
   const offerings = { current: null as any };
@@ -100,7 +105,8 @@ export function SubscriptionManagementCard() {
       );
 
       // Fallback to first available package if oddity_monthly not found
-      const packageToPurchase = oddityPackage || offerings.current.availablePackages[0];
+      const packageToPurchase =
+        oddityPackage || offerings.current.availablePackages[0];
 
       await purchasePackage(packageToPurchase);
       showToast({
@@ -147,10 +153,10 @@ export function SubscriptionManagementCard() {
   // Detect mismatch between database and RevenueCat
   const hasMismatch = useMemo(() => {
     if (isLoading || !user) return false;
-    
+
     const dbTier = user.subscription_tier || 'free';
     const rcTier = subscriptionTier || 'free';
-    
+
     return (
       (dbTier === 'oddity' && rcTier === 'free') ||
       (dbTier === 'free' && rcTier === 'oddity') ||
@@ -176,12 +182,12 @@ export function SubscriptionManagementCard() {
     if (error) {
       return 'free';
     }
-    
+
     // If mismatch, use database tier as source of truth
     if (hasMismatch && user) {
       return user.subscription_tier || 'free';
     }
-    
+
     // Normal case: use RevenueCat tier
     return subscriptionTier || 'free';
   }, [error, hasMismatch, user, subscriptionTier]);
@@ -192,7 +198,7 @@ export function SubscriptionManagementCard() {
 
   const getBenefitsHeading = () => {
     return currentPlanTier === 'oddity'
-      ? "You get the full experience"
+      ? 'You get the full experience'
       : "You're getting started with the basics";
   };
 

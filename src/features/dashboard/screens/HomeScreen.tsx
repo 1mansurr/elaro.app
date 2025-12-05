@@ -57,9 +57,9 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 // Helper function to get greeting based on time of day
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';      // 0:00 - 11:59
-  if (hour < 17) return 'Good afternoon';    // 12:00 - 16:59
-  return 'Good evening';                      // 17:00 - 23:59
+  if (hour < 12) return 'Good morning'; // 0:00 - 11:59
+  if (hour < 17) return 'Good afternoon'; // 12:00 - 16:59
+  return 'Good evening'; // 17:00 - 23:59
 };
 
 const HomeScreen = () => {
@@ -749,7 +749,7 @@ const HomeScreen = () => {
             isRefetching={false}
             emptyStateComponent={
               !isEmptyStateDismissed ? (
-                <HomeScreenEmptyState 
+                <HomeScreenEmptyState
                   onAddActivity={handleAddActivity}
                   onDismiss={handleDismissEmptyState}
                 />
@@ -759,47 +759,47 @@ const HomeScreen = () => {
           </QueryStateWrapper>
 
           {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
-      {isFabOpen && (
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <Animated.View
-            style={[styles.backdrop, { opacity: backdropOpacity }]}>
-            <BlurView
-              intensity={40}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      )}
+          {isFabOpen && (
+            <TouchableWithoutFeedback onPress={handleBackdropPress}>
+              <Animated.View
+                style={[styles.backdrop, { opacity: backdropOpacity }]}>
+                <BlurView
+                  intensity={40}
+                  tint="dark"
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
+            </TouchableWithoutFeedback>
+          )}
 
-      <FloatingActionButton
-        actions={fabActions}
-        onStateChange={handleFabStateChange}
-        onDoubleTap={handleQuickAddDoubleTap}
-        draftCount={draftCount}
-        onDraftBadgePress={handleDraftBadgePress}
-      />
+          <FloatingActionButton
+            actions={fabActions}
+            onStateChange={handleFabStateChange}
+            onDoubleTap={handleQuickAddDoubleTap}
+            draftCount={draftCount}
+            onDraftBadgePress={handleDraftBadgePress}
+          />
 
-      <QuickAddModal
-        isVisible={isQuickAddVisible}
-        onClose={handleQuickAddClose}
-      />
+          <QuickAddModal
+            isVisible={isQuickAddVisible}
+            onClose={handleQuickAddClose}
+          />
 
-      <TaskDetailSheet
-        task={selectedTask}
-        isVisible={!!selectedTask}
-        onClose={handleCloseSheet}
-        onEdit={handleEditTask}
-        onComplete={handleCompleteTask}
-        onDelete={handleDeleteTask}
-      />
+          <TaskDetailSheet
+            task={selectedTask}
+            isVisible={!!selectedTask}
+            onClose={handleCloseSheet}
+            onEdit={handleEditTask}
+            onComplete={handleCompleteTask}
+            onDelete={handleDeleteTask}
+          />
 
-      <NotificationHistoryModal
-        isVisible={isNotificationHistoryVisible}
-        onClose={handleNotificationHistoryClose}
-      />
-    </View>
-  );
+          <NotificationHistoryModal
+            isVisible={isNotificationHistoryVisible}
+            onClose={handleNotificationHistoryClose}
+          />
+        </View>
+      );
     }
 
     // For existing users: Show empty state immediately if error, update when data arrives
@@ -809,32 +809,33 @@ const HomeScreen = () => {
     const shouldShowError = false; // Never show error - show empty state instead
     const displayData = isError ? null : homeData; // Treat errors as empty data
     // If empty state is dismissed, show content even if data is empty
-    const finalData = isEmptyStateDismissed && !displayData 
-      ? { _dismissed: true } 
-      : displayData;
+    const finalData =
+      isEmptyStateDismissed && !displayData
+        ? { _dismissed: true }
+        : displayData;
 
     return (
       <View style={styles.container}>
-      <QueryStateWrapper
+        <QueryStateWrapper
           isLoading={shouldShowLoading}
           isError={shouldShowError}
           error={null} // Don't show error UI
           data={finalData}
-        refetch={handleRefetch}
-        isRefetching={isRefetching}
-        onRefresh={refetch}
-        emptyStateComponent={
+          refetch={handleRefetch}
+          isRefetching={isRefetching}
+          onRefresh={refetch}
+          emptyStateComponent={
             !isEmptyStateDismissed ? (
-              <HomeScreenEmptyState 
+              <HomeScreenEmptyState
                 onAddActivity={handleAddActivity}
                 onDismiss={handleDismissEmptyState}
               />
             ) : undefined
-        }
-        skeletonComponent={<TaskCardSkeleton />}
-        skeletonCount={3}>
-        {content}
-      </QueryStateWrapper>
+          }
+          skeletonComponent={<TaskCardSkeleton />}
+          skeletonCount={3}>
+          {content}
+        </QueryStateWrapper>
 
         {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
         {isFabOpen && (

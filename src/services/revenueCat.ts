@@ -31,9 +31,10 @@ async function withTimeout<T>(
 }
 
 /**
- * Default timeout for RevenueCat operations (10 seconds)
+ * Default timeout for RevenueCat operations
+ * Shorter timeout in dev mode to prevent long delays
  */
-const REVENUECAT_TIMEOUT = 10000;
+const REVENUECAT_TIMEOUT = __DEV__ ? 3000 : 10000;
 
 /**
  * Check if a RevenueCat error is retryable
@@ -61,25 +62,40 @@ export const revenueCatService = {
    */
   initialize: async (apiKey: string): Promise<boolean> => {
     if (!RevenueCat.isAvailable || !Purchases) {
+      if (!__DEV__) {
       console.warn('⚠️ RevenueCat not available - skipping initialization');
+      }
       return false;
     }
 
     try {
       // Validate API key format
       if (!apiKey || apiKey.length < 10) {
+        if (!__DEV__) {
         console.warn(
           '⚠️ RevenueCat API key is missing or invalid. Skipping initialization.',
         );
+        }
         return false;
       }
 
-      await Purchases.configure({ apiKey });
+      // Add timeout to prevent hanging in dev mode
+      const timeout = __DEV__ ? 2000 : 5000;
+      const configurePromise = Purchases.configure({ apiKey });
+      const timeoutPromise = new Promise<boolean>((_, reject) => {
+        setTimeout(() => reject(new Error('RevenueCat configure timeout')), timeout);
+      });
+
+      await Promise.race([configurePromise, timeoutPromise]);
+      
+      if (__DEV__) {
       console.log('✅ RevenueCat initialized successfully');
+      }
       return true;
     } catch (error: unknown) {
       const err = error as { message?: string };
-      // Handle specific RevenueCat errors gracefully
+      // Only log errors in production or if critical
+      if (!__DEV__) {
       if (err?.message?.includes('Invalid API key')) {
         console.error('❌ RevenueCat API key is invalid:', err.message);
       } else {
@@ -87,6 +103,7 @@ export const revenueCatService = {
           '❌ RevenueCat initialization failed:',
           err?.message || error,
         );
+        }
       }
       // Don't throw - allow app to continue without RevenueCat
       return false;
@@ -99,7 +116,9 @@ export const revenueCatService = {
    */
   getOfferingsDirect: async (): Promise<PurchasesOffering | null> => {
     if (!RevenueCat.isAvailable || !Purchases) {
+      if (!__DEV__) {
       console.warn('⚠️ RevenueCat not available - cannot fetch offerings');
+      }
       return null;
     }
 
@@ -132,28 +151,32 @@ export const revenueCatService = {
 
       // retryWithBackoff returns RetryResult, retryResult is a RetryResult here
       if (!retryResult.success) {
-        if (retryResult.error instanceof RateLimitError) {
+        if (retryResult.error instanceof RateLimitError && !__DEV__) {
           console.warn(
             'Rate limit exceeded for RevenueCat offerings:',
             retryResult.error.message,
           );
           // Could return cached value here if available
         }
+        if (!__DEV__) {
         console.error('Error fetching offerings:', retryResult.error);
+        }
         return null;
       }
 
       return (retryResult.result as { current: PurchasesOffering | null })
         .current;
     } catch (error) {
-      if (error instanceof RateLimitError) {
+      if (error instanceof RateLimitError && !__DEV__) {
         console.warn(
           'Rate limit exceeded for RevenueCat offerings:',
           error.message,
         );
         // Could return cached value here if available
       }
+      if (!__DEV__) {
       console.error('Error fetching offerings:', error);
+      }
       return null;
     }
   },
@@ -327,13 +350,17 @@ export const revenueCatService = {
       );
 
       if (!retryResult.success) {
+        if (!__DEV__) {
         console.error('Error getting customer info:', retryResult.error);
+        }
         throw retryResult.error;
       }
 
       return retryResult.result;
     } catch (error) {
+      if (!__DEV__) {
       console.error('Error getting customer info:', error);
+      }
       throw error;
     }
   },

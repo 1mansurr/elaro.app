@@ -25,24 +25,25 @@ const TrialBanner: React.FC<TrialBannerProps> = ({
 
   return (
     <View style={styles.container}>
+      <View style={styles.topRow}>
+        <Ionicons name="warning-outline" size={24} color="#f59e0b" />
+        <View style={styles.content}>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+      </View>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity onPress={onPressSubscribe} style={styles.button}>
+          <Text style={styles.buttonText}>Become an Oddity</Text>
+        </TouchableOpacity>
+      </View>
       {onDismiss && (
         <TouchableOpacity
           onPress={onDismiss}
           style={styles.closeButton}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-          <Ionicons name="close" size={24} color="#92400e" />
+          <Ionicons name="close" size={20} color="#92400e" />
         </TouchableOpacity>
       )}
-      <Ionicons name="warning-outline" size={24} color="#f59e0b" />
-      <View style={styles.content}>
-        <Text style={styles.message}>{message}</Text>
-      </View>
-      <View style={styles.buttonContainer}>
-        <Text style={styles.priceText}>$1.99 / month</Text>
-        <TouchableOpacity onPress={onPressSubscribe} style={styles.button}>
-          <Text style={styles.buttonText}>Join Oddity</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -53,22 +54,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#fcd34d', // border-yellow-300
     padding: 16, // p-4
+    paddingRight: 48, // Reserve space for X button
     marginHorizontal: 16, // mx-4
     marginVertical: 8, // my-2
     borderRadius: 8, // rounded-lg
-    flexDirection: 'row', // flex-row
-    alignItems: 'center', // items-center
     position: 'relative',
+  },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   closeButton: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: 12,
+    right: 12,
     zIndex: 10,
     padding: 4,
   },
   content: {
-    flex: 1, // flex-1
+    flex: 0.7, // Text takes 70% of available width
     marginLeft: 16, // ml-4
   },
   message: {
@@ -80,14 +85,8 @@ const styles = StyleSheet.create({
     fontSize: 14, // text-sm
   },
   buttonContainer: {
-    alignItems: 'center',
-  },
-  priceText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#78350f',
-    marginBottom: 8,
-    textAlign: 'center',
+    alignItems: 'flex-end', // Align button to the right
+    marginTop: 4, // Add some spacing from the text
   },
   button: {
     backgroundColor: '#fbbf24', // bg-yellow-400

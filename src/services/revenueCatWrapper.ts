@@ -53,9 +53,13 @@ try {
   PurchasesPackage = PurchasesModule.PurchasesPackage;
   CustomerInfo = PurchasesModule.CustomerInfo;
   isAvailable = true;
+  if (__DEV__) {
   console.log('✅ RevenueCat module loaded successfully');
+  }
 } catch (e) {
+  if (!__DEV__) {
   console.warn('⚠️ RevenueCat not available - subscription features disabled');
+  }
   isAvailable = false;
 }
 

@@ -498,8 +498,12 @@ export function SettingsScreen() {
 
   // If no session, show empty state
   if (!session || !user) {
-  return (
-      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    return (
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.background, paddingTop: insets.top },
+        ]}>
         <View style={styles.emptyState}>
           <Ionicons name="settings-outline" size={64} color={COLORS.gray} />
           <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
@@ -511,7 +515,11 @@ export function SettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}>
       {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons

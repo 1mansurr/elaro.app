@@ -60,15 +60,28 @@ export const useSubscription = (): UseSubscriptionReturn => {
     };
   }
 
-  // Load customer information
+  // Load customer information (deferred - only when explicitly called)
   const loadCustomerInfo = useCallback(async () => {
+    // Add timeout in dev mode to prevent hanging
+    const timeout = __DEV__ ? 2000 : 5000;
     try {
-      const info = await revenueCatService.getCustomerInfo();
+      const timeoutPromise = new Promise<CustomerInfo>((_, reject) => {
+        setTimeout(() => reject(new Error('Customer info fetch timeout')), timeout);
+      });
+      
+      const infoPromise = revenueCatService.getCustomerInfo();
+      const info = await Promise.race([infoPromise, timeoutPromise]);
+      
       setCustomerInfo(info);
       setError(null);
     } catch (err) {
+      // Only log errors in dev mode to reduce noise
+      if (__DEV__) {
       console.error('Error loading customer info:', err);
-      setError('Failed to load subscription info');
+      }
+      // Don't set error state - allow app to continue without subscription info
+      // Error will be shown only when user tries to use subscription features
+      setError(null);
     }
   }, []);
 
@@ -189,14 +202,18 @@ export const useSubscription = (): UseSubscriptionReturn => {
     }
   }, [user?.id]);
 
-  // Load customer info when user changes
+  // Defer customer info loading - only load when user is available AND component needs it
+  // This prevents blocking app startup with RevenueCat API calls
+  // Customer info will be loaded lazily when subscription features are accessed
   useEffect(() => {
     if (user) {
-      loadCustomerInfo();
+      // Don't automatically load - let components trigger it when needed
+      // This prevents blocking app startup
+      setCustomerInfo(null);
     } else {
       setCustomerInfo(null);
     }
-  }, [user, loadCustomerInfo]);
+  }, [user]);
 
   return {
     customerInfo,

@@ -4,6 +4,7 @@ import { CreateLectureRequest, UpdateLectureRequest } from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export const lecturesApiMutations = {
   /**
@@ -61,7 +62,7 @@ export const lecturesApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Creating lecture on server');
-      const { data, error } = await supabase.functions.invoke(
+      const { data, error } = await invokeEdgeFunctionWithAuth(
         'create-lecture',
         { body: request },
       );
@@ -124,7 +125,7 @@ export const lecturesApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Updating lecture on server');
-      const { data, error } = await supabase.functions.invoke(
+      const { data, error } = await invokeEdgeFunctionWithAuth(
         'update-lecture',
         {
           body: {

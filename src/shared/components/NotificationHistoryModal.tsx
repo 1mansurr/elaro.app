@@ -319,7 +319,7 @@ export const NotificationHistoryModal: React.FC<
               opacity: swipeOpacity,
             },
           ]}>
-        {/* Header */}
+          {/* Header */}
           <View
             style={[
               styles.header,
@@ -332,126 +332,133 @@ export const NotificationHistoryModal: React.FC<
               onPress={onClose}
               style={styles.closeButton}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Notifications
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}>
-          {filters.map((filter: NotificationFilter) => (
-            <TouchableOpacity
-              key={filter.type}
-              style={[
-                styles.filterTab,
-                activeFilter === filter.type && styles.activeFilterTab,
-                {
-                  backgroundColor:
-                    activeFilter === filter.type ? theme.accent : 'transparent',
-                  borderColor:
-                    activeFilter === filter.type ? theme.accent : theme.border,
-                },
-              ]}
-              onPress={() => setActiveFilter(filter.type)}>
-              <Ionicons
-                name={filter.icon as any}
-                size={16}
-                color={
-                  activeFilter === filter.type ? 'white' : theme.textSecondary
-                }
-              />
-              <Text
-                style={[
-                  styles.filterText,
-                  {
-                    color:
-                      activeFilter === filter.type
-                        ? 'white'
-                        : theme.textSecondary,
-                  },
-                ]}>
-                {filter.label}
-              </Text>
+              <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Mark All as Read Button */}
-        {hasUnread && (
-          <View style={styles.markAllContainer}>
-            <TouchableOpacity
-              style={[styles.markAllButton, { backgroundColor: theme.surface }]}
-              onPress={handleMarkAllAsRead}>
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={theme.accent}
-              />
-              <Text style={[styles.markAllText, { color: theme.accent }]}>
-                Mark All as Read
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: theme.text }]}>
+              Notifications
+            </Text>
+            <View style={styles.headerSpacer} />
           </View>
-        )}
 
-        {/* Notifications List */}
-        <ScrollView
-          style={styles.notificationsList}
-          showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text
-                style={[styles.loadingText, { color: theme.textSecondary }]}>
-                Loading notifications...
-              </Text>
-            </View>
-          ) : filteredNotifications.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons
-                name="notifications-outline"
-                size={48}
-                color={theme.textSecondary}
-              />
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                {activeFilter === 'all'
-                  ? 'No notifications yet'
-                  : 'No notifications in this category'}
-              </Text>
-              <Text
+          {/* Filter Tabs */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterContainer}
+            contentContainerStyle={styles.filterContent}>
+            {filters.map((filter: NotificationFilter) => (
+              <TouchableOpacity
+                key={filter.type}
                 style={[
-                  styles.emptyDescription,
-                  { color: theme.textSecondary },
-                ]}>
-                {activeFilter === 'all'
-                  ? 'Your notifications will appear here'
-                  : 'Try selecting a different filter'}
-              </Text>
+                  styles.filterTab,
+                  activeFilter === filter.type && styles.activeFilterTab,
+                  {
+                    backgroundColor:
+                      activeFilter === filter.type
+                        ? theme.accent
+                        : 'transparent',
+                    borderColor:
+                      activeFilter === filter.type
+                        ? theme.accent
+                        : theme.border,
+                  },
+                ]}
+                onPress={() => setActiveFilter(filter.type)}>
+                <Ionicons
+                  name={filter.icon as any}
+                  size={16}
+                  color={
+                    activeFilter === filter.type ? 'white' : theme.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.filterText,
+                    {
+                      color:
+                        activeFilter === filter.type
+                          ? 'white'
+                          : theme.textSecondary,
+                    },
+                  ]}>
+                  {filter.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {/* Mark All as Read Button */}
+          {hasUnread && (
+            <View style={styles.markAllContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.markAllButton,
+                  { backgroundColor: theme.surface },
+                ]}
+                onPress={handleMarkAllAsRead}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={20}
+                  color={theme.accent}
+                />
+                <Text style={[styles.markAllText, { color: theme.accent }]}>
+                  Mark All as Read
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : (
-            filteredNotifications.map(notification => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onMarkAsRead={() => handleMarkAsRead(notification.id)}
-                onDelete={() => handleDeleteNotification(notification.id)}
-                onCompleteTask={() => handleCompleteTask(notification.id)}
-                isTask={isTaskNotification(notification.notification_type)}
-                getIcon={getNotificationIcon}
-                getColor={getNotificationColor}
-                formatTimestamp={formatTimestamp}
-                truncateTitle={truncateTitle}
-                theme={theme}
-              />
-            ))
           )}
-        </ScrollView>
+
+          {/* Notifications List */}
+          <ScrollView
+            style={styles.notificationsList}
+            showsVerticalScrollIndicator={false}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Text
+                  style={[styles.loadingText, { color: theme.textSecondary }]}>
+                  Loading notifications...
+                </Text>
+              </View>
+            ) : filteredNotifications.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={48}
+                  color={theme.textSecondary}
+                />
+                <Text style={[styles.emptyTitle, { color: theme.text }]}>
+                  {activeFilter === 'all'
+                    ? 'No notifications yet'
+                    : 'No notifications in this category'}
+                </Text>
+                <Text
+                  style={[
+                    styles.emptyDescription,
+                    { color: theme.textSecondary },
+                  ]}>
+                  {activeFilter === 'all'
+                    ? 'Your notifications will appear here'
+                    : 'Try selecting a different filter'}
+                </Text>
+              </View>
+            ) : (
+              filteredNotifications.map(notification => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={() => handleMarkAsRead(notification.id)}
+                  onDelete={() => handleDeleteNotification(notification.id)}
+                  onCompleteTask={() => handleCompleteTask(notification.id)}
+                  isTask={isTaskNotification(notification.notification_type)}
+                  getIcon={getNotificationIcon}
+                  getColor={getNotificationColor}
+                  formatTimestamp={formatTimestamp}
+                  truncateTitle={truncateTitle}
+                  theme={theme}
+                />
+              ))
+            )}
+          </ScrollView>
         </Animated.View>
       </PanGestureHandler>
     </Modal>

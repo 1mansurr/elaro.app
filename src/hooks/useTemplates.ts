@@ -31,21 +31,21 @@ export const useTemplates = () => {
     queryFn: async (): Promise<TaskTemplate[]> => {
       try {
         const accessToken = await getFreshAccessToken();
-      const { data, error } = await supabase.functions.invoke(
-        'template-actions',
-        {
-          method: 'GET',
+        const { data, error } = await supabase.functions.invoke(
+          'template-actions',
+          {
+            method: 'GET',
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
-        },
-      );
+          },
+        );
 
-      if (error) {
-        throw error;
-      }
+        if (error) {
+          throw error;
+        }
 
-      return data.templates || [];
+        return data.templates || [];
       } catch (error) {
         // On auth errors, return empty array instead of throwing
         if (
@@ -60,7 +60,10 @@ export const useTemplates = () => {
         ) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
-            console.warn('⚠️ Auth/API error in templates, returning empty array:', error.message);
+            console.warn(
+              '⚠️ Auth/API error in templates, returning empty array:',
+              error.message,
+            );
           }
           return [];
         }

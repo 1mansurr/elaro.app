@@ -23,6 +23,7 @@ import { SubscriptionManagementCard } from '@/features/user-profile/components/S
 import { LEGAL_URLS } from '@/constants/legal';
 import { useSubscription } from '@/hooks/useSubscription';
 import type { PurchasesPackage } from 'react-native-purchases';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ListItem = ({
   label,
@@ -115,12 +116,16 @@ export function AccountScreen() {
   const { user, session } = useAuth();
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [isPostChatModalVisible, setPostChatModalVisible] = useState(false);
   const [isSupportChatLoading, setSupportChatLoading] = useState(false);
+  const [isLegalExpanded, setIsLegalExpanded] = useState(false);
   const { purchasePackage } = useSubscription();
 
   // Mock offerings for now (consistent with other screens)
-  const offerings = { current: null as { availablePackages: PurchasesPackage[] } | null };
+  const offerings = {
+    current: null as { availablePackages: PurchasesPackage[] } | null,
+  };
 
   const handleContactSupport = useCallback(async () => {
     if (!user) return;
@@ -140,7 +145,10 @@ export function AccountScreen() {
 
   const handleUpgrade = useCallback(async () => {
     // If offerings aren't available, navigate to PaywallScreen
-    if (!offerings?.current?.availablePackages || offerings.current.availablePackages.length === 0) {
+    if (
+      !offerings?.current?.availablePackages ||
+      offerings.current.availablePackages.length === 0
+    ) {
       navigation.navigate('PaywallScreen', {
         variant: 'general',
       });
@@ -154,7 +162,8 @@ export function AccountScreen() {
       );
 
       // Fallback to first available package if oddity_monthly not found
-      const packageToPurchase = oddityPackage || offerings.current.availablePackages[0];
+      const packageToPurchase =
+        oddityPackage || offerings.current.availablePackages[0];
 
       await purchasePackage(packageToPurchase);
       showToast({
@@ -163,20 +172,21 @@ export function AccountScreen() {
       });
     } catch (error: any) {
       console.error('Upgrade error:', error);
-      
+
       // Don't show error if user cancelled
       if (error?.userCancelled) {
         return;
       }
 
       // Show user-friendly error message
-      const errorMessage = error?.message || 'Failed to complete purchase. Please try again.';
+      const errorMessage =
+        error?.message || 'Failed to complete purchase. Please try again.';
       Alert.alert('Purchase Failed', errorMessage);
     }
   }, [offerings, purchasePackage, navigation]);
 
   const renderGuestView = () => (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
       <Card title="Profile">
         <View style={styles.guestProfileContainer}>
           <Text style={[styles.guestTitle, { color: theme.text }]}>
@@ -242,8 +252,8 @@ export function AccountScreen() {
   );
 
   const renderAuthenticatedView = () => (
-    <ScrollView style={styles.container}>
-      <Card title="Profile">
+    <ScrollView style={[styles.container, { paddingTop: insets.top }]}>
+      <Card>
         <View style={styles.profileInfo}>
           <Text style={[styles.profileName, { color: theme.text }]}>
             {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
@@ -264,7 +274,11 @@ export function AccountScreen() {
               View Profile
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.profileButton}
@@ -275,7 +289,11 @@ export function AccountScreen() {
               My Courses
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.profileButton}
@@ -286,15 +304,34 @@ export function AccountScreen() {
               Add a Course
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.textSecondary} />
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.profileButton}
+          onPress={() => navigation.navigate('Templates')}
+          activeOpacity={0.7}>
+          <View style={styles.profileButtonLeft}>
+            <Text style={[styles.profileButtonLabel, { color: theme.text }]}>
+              Templates
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={theme.textSecondary}
+          />
         </TouchableOpacity>
       </Card>
 
-      <Card title="Membership">
+      <Card>
         <SubscriptionManagementCard />
       </Card>
 
-      <Card title="Support & Help">
+      <Card title="Support">
         <SettingItem
           label="Contact Support"
           description="Get help from our support team"
@@ -329,34 +366,64 @@ export function AccountScreen() {
             })
           }
         />
-        <SettingItem
-          label="Templates"
-          description="Manage your saved task templates"
-          icon="library-outline"
-          onPress={() => navigation.navigate('Templates')}
-        />
-        <SettingItem
-          label="Terms of Service"
-          description="Read our terms and conditions"
-          icon="document-text-outline"
-          onPress={() =>
+      </Card>
+
+      <Card title="Legal">
+        <TouchableOpacity
+          style={styles.legalHeader}
+          onPress={() => setIsLegalExpanded(!isLegalExpanded)}
+          activeOpacity={0.7}>
+          <Text style={[styles.legalHeaderText, { color: theme.text }]}>
+            Legal Documents
+          </Text>
+          <Ionicons
+            name={isLegalExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={theme.textSecondary}
+          />
+        </TouchableOpacity>
+        {isLegalExpanded && (
+          <View style={styles.legalDropdown}>
+            <TouchableOpacity
+              style={styles.legalItem}
+              onPress={() => {
             navigation.navigate('InAppBrowserScreen', {
               url: LEGAL_URLS.TERMS_OF_SERVICE,
               title: 'Terms of Service',
-            })
-          }
-        />
-        <SettingItem
-          label="Privacy Policy"
-          description="Learn how we protect your data"
-          icon="shield-outline"
-          onPress={() =>
+                });
+                setIsLegalExpanded(false);
+              }}
+              activeOpacity={0.7}>
+              <Text style={[styles.legalItemText, { color: theme.text }]}>
+                Terms of Service
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.textSecondary}
+              />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.legalItem}
+              onPress={() => {
             navigation.navigate('InAppBrowserScreen', {
               url: LEGAL_URLS.PRIVACY_POLICY,
               title: 'Privacy Policy',
-            })
-          }
+                });
+                setIsLegalExpanded(false);
+              }}
+              activeOpacity={0.7}>
+              <Text style={[styles.legalItemText, { color: theme.text }]}>
+                Privacy Policy
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={theme.textSecondary}
         />
+            </TouchableOpacity>
+          </View>
+        )}
       </Card>
 
       <Card title="Settings">
@@ -599,5 +666,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 12,
+  },
+  legalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  legalHeaderText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  legalDropdown: {
+    paddingTop: 4,
+  },
+  legalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginBottom: 4,
+  },
+  legalItemText: {
+    fontSize: 15,
+    fontWeight: '400',
   },
 });

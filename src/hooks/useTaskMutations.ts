@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { syncManager } from '@/services/syncManager';
 import { cache } from '@/utils/cache';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 interface CompleteTaskParams {
   taskId: string;
@@ -73,7 +74,7 @@ export const useCompleteTask = () => {
         `🌐 Online: Executing COMPLETE action for ${taskType} ${taskId}`,
       );
       const functionName = `update-${taskType}`;
-      const { data, error } = await supabase.functions.invoke(functionName, {
+      const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
         body: {
           [`${taskType}Id`]: taskId,
           updates: { status: 'completed' },
@@ -237,7 +238,7 @@ export const useDeleteTask = () => {
         `🌐 Online: Executing DELETE action for ${taskType} ${taskId}`,
       );
       const functionName = `delete-${taskType}`;
-      const { error } = await supabase.functions.invoke(functionName, {
+      const { error } = await invokeEdgeFunctionWithAuth(functionName, {
         body: { [`${taskType}Id`]: taskId },
       });
 
@@ -400,7 +401,7 @@ export const useRestoreTask = () => {
       const functionName = `restore-${taskType.replace('_', '-')}`;
       const parameterName = getParameterName(taskType);
 
-      const { error } = await supabase.functions.invoke(functionName, {
+      const { error } = await invokeEdgeFunctionWithAuth(functionName, {
         body: { [parameterName]: taskId },
       });
 

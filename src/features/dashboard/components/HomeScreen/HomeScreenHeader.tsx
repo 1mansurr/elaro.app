@@ -9,9 +9,9 @@ import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 // Helper function to get greeting based on time of day
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';      // 0:00 - 11:59
-  if (hour < 17) return 'Good afternoon';    // 12:00 - 16:59
-  return 'Good evening';                      // 17:00 - 23:59
+  if (hour < 12) return 'Good morning'; // 0:00 - 11:59
+  if (hour < 17) return 'Good afternoon'; // 12:00 - 16:59
+  return 'Good evening'; // 17:00 - 23:59
 };
 
 interface HomeScreenHeaderProps {

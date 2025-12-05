@@ -4,6 +4,7 @@ import { cache } from '@/utils/cache';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { syncManager } from '@/services/syncManager';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export type BatchActionType = 'RESTORE' | 'DELETE_PERMANENTLY';
 
@@ -35,7 +36,7 @@ async function batchAction(
 ): Promise<BatchActionResult> {
   console.log(`🔄 Batch ${request.action} for ${request.items.length} items`);
 
-  const { data, error } = await supabase.functions.invoke('batch-action', {
+  const { data, error } = await invokeEdgeFunctionWithAuth('batch-action', {
     body: request,
   });
 

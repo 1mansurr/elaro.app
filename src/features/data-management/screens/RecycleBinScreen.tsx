@@ -15,6 +15,7 @@ import { DeletedItemCard } from '../components/DeletedItemCard';
 import { supabase } from '@/services/supabase';
 import { useBatchAction, BatchItem } from '@/hooks/useBatchAction';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 const RecycleBinScreen = () => {
   const navigation = useNavigation();
@@ -211,7 +212,7 @@ const RecycleBinScreen = () => {
       };
 
       const parameterName = getParameterName(itemType);
-      const { error } = await supabase.functions.invoke(functionName, {
+      const { error } = await invokeEdgeFunctionWithAuth(functionName, {
         body: { [parameterName]: itemId },
       });
 
@@ -259,7 +260,7 @@ const RecycleBinScreen = () => {
               };
 
               const parameterName = getParameterName(itemType);
-              const { error } = await supabase.functions.invoke(functionName, {
+              const { error } = await invokeEdgeFunctionWithAuth(functionName, {
                 body: { [parameterName]: itemId },
               });
 

@@ -16,7 +16,8 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + SPACING.xxl * 2 }]}>
+    <View
+      style={[styles.container, { paddingTop: insets.top + SPACING.xxl * 2 }]}>
       {/* Dismiss button */}
       {onDismiss && (
         <TouchableOpacity
@@ -46,7 +47,8 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
       {/* Content */}
       <Text style={styles.title}>Start building Your Schedule</Text>
       <Text style={styles.subtitle}>
-        Tap the + button below to add your first lecture, assignment, or study session.
+        Tap the + button below to add your first lecture, assignment, or study
+        session.
       </Text>
 
       {/* Removed CTA Button - FAB will be used instead */}

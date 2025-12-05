@@ -14,6 +14,7 @@ import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { isTempId } from '@/utils/uuid';
 import { CircuitBreaker } from '@/utils/circuitBreaker';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 import {
   OfflineAction,
   OfflineActionStatus,
@@ -738,7 +739,7 @@ class SyncManager {
     const functionName = `create-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName}...`);
 
-    const { data, error } = await supabase.functions.invoke(functionName, {
+    const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
       body: createPayload.data,
     });
 
@@ -785,7 +786,7 @@ class SyncManager {
     const functionName = `update-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
 
-    const { data, error } = await supabase.functions.invoke(functionName, {
+    const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
       body: {
         [`${resourceType}Id`]: resourceId,
         ...updates, // Spread updates directly instead of wrapping in 'updates' key
@@ -812,7 +813,7 @@ class SyncManager {
     const functionName = `delete-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
 
-    const { error } = await supabase.functions.invoke(functionName, {
+    const { error } = await invokeEdgeFunctionWithAuth(functionName, {
       body: { [`${resourceType}Id`]: resourceId },
     });
 
@@ -836,7 +837,7 @@ class SyncManager {
     const functionName = `restore-${resourceType.replace('_', '-')}`;
     console.log(`  → Calling ${functionName} for ${resourceId}...`);
 
-    const { data, error } = await supabase.functions.invoke(functionName, {
+    const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
       body: { [`${resourceType}Id`]: resourceId },
     });
 
@@ -862,7 +863,7 @@ class SyncManager {
       `  → Calling ${functionName} to mark ${resourceId} as complete...`,
     );
 
-    const { data, error } = await supabase.functions.invoke(functionName, {
+    const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
       body: {
         [`${resourceType}Id`]: resourceId,
         updates: { status: 'completed' },

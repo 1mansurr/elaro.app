@@ -4,6 +4,7 @@ import { CreateAssignmentRequest, UpdateAssignmentRequest } from '@/types/api';
 import { handleApiError } from '@/services/api/errors';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export const assignmentsApiMutations = {
   /**
@@ -60,7 +61,7 @@ export const assignmentsApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Creating assignment on server');
-      const { data, error } = await supabase.functions.invoke(
+      const { data, error } = await invokeEdgeFunctionWithAuth(
         'create-assignment',
         { body: request },
       );
@@ -128,7 +129,7 @@ export const assignmentsApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Updating assignment on server');
-      const { data, error } = await supabase.functions.invoke(
+      const { data, error } = await invokeEdgeFunctionWithAuth(
         'update-assignment',
         {
           body: {

@@ -91,8 +91,8 @@ export const MainTabNavigator: React.FC = () => {
   return (
     <Tab.Navigator screenOptions={tabBarScreenOptions(insets, theme)}>
       <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen 
-        name="Calendar" 
+      <Tab.Screen
+        name="Calendar"
         component={CalendarScreen}
         options={{
           tabBarLabel: 'Calendar',

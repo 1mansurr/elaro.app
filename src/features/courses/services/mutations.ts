@@ -3,6 +3,7 @@ import { handleApiError } from '@/services/api/errors';
 import { Course, CreateCourseRequest } from '@/types';
 import { syncManager } from '@/services/syncManager';
 import { generateTempId } from '@/utils/uuid';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export const coursesApiMutations = {
   /**
@@ -57,7 +58,7 @@ export const coursesApiMutations = {
 
       // ONLINE MODE: Execute server mutation
       console.log('🌐 Online: Creating course on server');
-      const { data, error } = await supabase.functions.invoke('create-course', {
+      const { data, error } = await invokeEdgeFunctionWithAuth('create-course', {
         body: request,
       });
 
