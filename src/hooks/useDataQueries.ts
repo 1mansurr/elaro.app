@@ -170,7 +170,7 @@ export const useHomeScreenData = (enabled: boolean = true) => {
             : typeof error === 'string'
               ? error
               : 'Unknown error';
-        
+
         if (
           error instanceof Error &&
           errorMessage &&
@@ -243,7 +243,7 @@ export const useCalendarData = (date: Date) => {
             : typeof error === 'string'
               ? error
               : 'Unknown error';
-        
+
         if (
           error instanceof Error &&
           errorMessage &&
@@ -316,7 +316,7 @@ export const useCalendarMonthData = (year: number, month: number) => {
             : typeof error === 'string'
               ? error
               : 'Unknown error';
-        
+
         if (
           error instanceof Error &&
           errorMessage &&

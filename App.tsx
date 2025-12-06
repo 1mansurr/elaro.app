@@ -121,9 +121,9 @@ if (__DEV__) {
 
     // Check if this is a Metro symbolication error - be more aggressive
     const isMetroSymbolicateError =
-      (allArgsAsString.includes('SyntaxError') &&
-        allArgsAsString.includes('undefined') &&
-        allArgsAsString.includes('not valid JSON')) &&
+      allArgsAsString.includes('SyntaxError') &&
+      allArgsAsString.includes('undefined') &&
+      allArgsAsString.includes('not valid JSON') &&
       (allArgsAsString.includes('_symbolicate') ||
         allArgsAsString.includes('metro/src/Server.js') ||
         allArgsAsString.includes('Server._processRequest') ||
@@ -138,17 +138,17 @@ if (__DEV__) {
   // Patch Error.prototype.toJSON globally to prevent undefined values in serialization
   // This ensures Metro's symbolication process never encounters undefined when serializing errors
   if (typeof Error.prototype.toJSON === 'undefined') {
-    Error.prototype.toJSON = function() {
+    Error.prototype.toJSON = function () {
       const obj: Record<string, any> = {
         name: this.name || 'Error',
         message: this.message || 'An error occurred',
       };
-      
+
       // Only include stack if it exists
       if (this.stack) {
         obj.stack = this.stack;
       }
-      
+
       // Include any enumerable properties, but filter out undefined
       for (const key in this) {
         if (this.hasOwnProperty(key)) {
@@ -164,7 +164,7 @@ if (__DEV__) {
           }
         }
       }
-      
+
       return obj;
     };
   }

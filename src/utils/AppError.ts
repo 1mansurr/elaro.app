@@ -32,12 +32,12 @@ export class AppError extends Error {
       message: this.message || 'An error occurred',
       statusCode: this.statusCode || 500,
     };
-    
+
     // Only include optional fields if they exist
     if (this.code) obj.code = this.code;
     if (this.details) obj.details = this.details;
     if (this.stack) obj.stack = this.stack;
-    
+
     return obj;
   }
 

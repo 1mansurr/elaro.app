@@ -24,7 +24,7 @@ export const handleApiError = (error: unknown): ApiError => {
 
   // Ensure message is always a string, never undefined
   const errorMessage =
-    (err?.message && typeof err.message === 'string' && err.message.trim())
+    err?.message && typeof err.message === 'string' && err.message.trim()
       ? err.message
       : err?.name === 'NetworkError'
         ? 'Network error. Please check your connection.'
@@ -46,10 +46,5 @@ export const handleApiError = (error: unknown): ApiError => {
   }
 
   // Fallback for any other unexpected errors
-  return new ApiError(
-    errorMessage,
-    'UNKNOWN_ERROR',
-    undefined,
-    error,
-  );
+  return new ApiError(errorMessage, 'UNKNOWN_ERROR', undefined, error);
 };

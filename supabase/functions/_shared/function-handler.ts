@@ -94,7 +94,10 @@ function handleError(error: unknown, functionName?: string): Response {
           value === undefined ? null : value,
         ),
       );
-      console.error('--- Function Error ---', JSON.stringify(safeErrorForLogging));
+      console.error(
+        '--- Function Error ---',
+        JSON.stringify(safeErrorForLogging),
+      );
     } catch (stringifyError) {
       // If stringify fails, log a safe message
       console.error('--- Function Error ---', {
@@ -121,7 +124,10 @@ function handleError(error: unknown, functionName?: string): Response {
         : sanitizedError) || 'An unexpected error occurred';
 
     const response: any = {
-      error: typeof userMessage === 'string' ? userMessage : 'An unexpected error occurred',
+      error:
+        typeof userMessage === 'string'
+          ? userMessage
+          : 'An unexpected error occurred',
       code: errorCode,
     };
 
@@ -175,12 +181,12 @@ function handleError(error: unknown, functionName?: string): Response {
       error: dbError.message || 'Database error occurred',
       code: dbError.code,
     };
-    
+
     // Ensure response can be stringified (replace undefined with null)
     const dbResponseString = JSON.stringify(dbResponse, (key, value) =>
       value === undefined ? null : value,
     );
-    
+
     return new Response(dbResponseString, {
       status: dbError.statusCode,
       headers: baseHeaders,
@@ -192,12 +198,13 @@ function handleError(error: unknown, functionName?: string): Response {
     error: ERROR_MESSAGES.INTERNAL_ERROR || 'An internal error occurred',
     code: ERROR_CODES.INTERNAL_ERROR,
   };
-  
+
   // Ensure response can be stringified (replace undefined with null)
-  const fallbackResponseString = JSON.stringify(fallbackResponse, (key, value) =>
-    value === undefined ? null : value,
+  const fallbackResponseString = JSON.stringify(
+    fallbackResponse,
+    (key, value) => (value === undefined ? null : value),
   );
-  
+
   return new Response(fallbackResponseString, {
     status: ERROR_STATUS_CODES.INTERNAL_ERROR,
     headers: baseHeaders,

@@ -153,10 +153,7 @@ const sharedScreenOptions = {
 type ScreenConfig<
   K extends keyof RootStackParamList = keyof RootStackParamList,
 > = {
-  component: React.ComponentType<{
-    route: { params: RootStackParamList[K] };
-    navigation: unknown;
-  }>;
+  component: React.ComponentType<any>; // Use any to allow for custom prop types
   options?: StackNavigationOptions;
 };
 

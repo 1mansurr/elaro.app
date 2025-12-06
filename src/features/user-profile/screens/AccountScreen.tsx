@@ -223,7 +223,7 @@ export function AccountScreen() {
   );
 
   const renderAuthenticatedView = () => (
-    <ScrollView 
+    <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
       contentContainerStyle={styles.scrollContent}>
       {/* Profile Section - NOT in a card */}
@@ -232,12 +232,16 @@ export function AccountScreen() {
           {user?.user_metadata?.first_name} {user?.user_metadata?.last_name}
         </Text>
         {user?.username && (
-          <Text style={[styles.profileUsername, { color: theme.textSecondary }]}>
+          <Text
+            style={[styles.profileUsername, { color: theme.textSecondary }]}>
             @{user.username}
           </Text>
         )}
         <TouchableOpacity
-          style={[styles.viewProfileButton, { backgroundColor: COLORS.primary }]}
+          style={[
+            styles.viewProfileButton,
+            { backgroundColor: COLORS.primary },
+          ]}
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.7}>
           <Text style={[styles.viewProfileButtonText, { color: COLORS.white }]}>
@@ -253,8 +257,16 @@ export function AccountScreen() {
           onPress={() => navigation.navigate('Courses')}
           activeOpacity={0.7}>
           <View style={styles.menuButtonLeft}>
-            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
-              <Ionicons name="school-outline" size={22} color={COLORS.primary} />
+            <View
+              style={[
+                styles.menuIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
+              <Ionicons
+                name="school-outline"
+                size={22}
+                color={COLORS.primary}
+              />
             </View>
             <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               My Courses
@@ -266,16 +278,24 @@ export function AccountScreen() {
             color={theme.textSecondary}
           />
         </TouchableOpacity>
-        
+
         <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
-        
+
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => navigation.navigate('AddCourseFlow')}
           activeOpacity={0.7}>
           <View style={styles.menuButtonLeft}>
-            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
-              <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
+            <View
+              style={[
+                styles.menuIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
+              <Ionicons
+                name="add-circle-outline"
+                size={22}
+                color={COLORS.primary}
+              />
             </View>
             <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               Add a Course
@@ -287,16 +307,24 @@ export function AccountScreen() {
             color={theme.textSecondary}
           />
         </TouchableOpacity>
-        
+
         <View style={[styles.menuDivider, { backgroundColor: theme.border }]} />
-        
+
         <TouchableOpacity
           style={styles.menuButton}
           onPress={() => navigation.navigate('Templates')}
           activeOpacity={0.7}>
           <View style={styles.menuButtonLeft}>
-            <View style={[styles.menuIconContainer, { backgroundColor: '#F0F5FF' }]}>
-              <Ionicons name="layers-outline" size={22} color={COLORS.primary} />
+            <View
+              style={[
+                styles.menuIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
+              <Ionicons
+                name="layers-outline"
+                size={22}
+                color={COLORS.primary}
+              />
             </View>
             <Text style={[styles.menuButtonLabel, { color: theme.text }]}>
               Templates
@@ -383,8 +411,16 @@ export function AccountScreen() {
           activeOpacity={0.7}
           testID="settings-navigation-button">
           <View style={styles.settingsButtonLeft}>
-            <View style={[styles.settingsIconContainer, { backgroundColor: '#F0F5FF' }]}>
-              <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
+            <View
+              style={[
+                styles.settingsIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
+              <Ionicons
+                name="settings-outline"
+                size={22}
+                color={COLORS.primary}
+              />
             </View>
             <Text style={[styles.settingsButtonLabel, { color: theme.text }]}>
               Settings
@@ -405,10 +441,15 @@ export function AccountScreen() {
           onPress={handleLogout}
           activeOpacity={0.7}>
           <View style={styles.accountActionButtonLeft}>
-            <View style={[styles.accountActionIconContainer, { backgroundColor: '#F0F5FF' }]}>
+            <View
+              style={[
+                styles.accountActionIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
               <Ionicons name="exit-outline" size={22} color={COLORS.primary} />
             </View>
-            <Text style={[styles.accountActionButtonLabel, { color: theme.text }]}>
+            <Text
+              style={[styles.accountActionButtonLabel, { color: theme.text }]}>
               Log Out
             </Text>
           </View>
@@ -418,18 +459,32 @@ export function AccountScreen() {
             color={theme.textSecondary}
           />
         </TouchableOpacity>
-        
-        <View style={[styles.accountActionDivider, { backgroundColor: theme.border }]} />
-        
+
+        <View
+          style={[
+            styles.accountActionDivider,
+            { backgroundColor: theme.border },
+          ]}
+        />
+
         <TouchableOpacity
           style={styles.accountActionButton}
           onPress={handleDeleteAccount}
           activeOpacity={0.7}>
           <View style={styles.accountActionButtonLeft}>
-            <View style={[styles.accountActionIconContainer, { backgroundColor: '#F0F5FF' }]}>
-              <Ionicons name="trash-bin-outline" size={22} color={COLORS.primary} />
+            <View
+              style={[
+                styles.accountActionIconContainer,
+                { backgroundColor: '#F0F5FF' },
+              ]}>
+              <Ionicons
+                name="trash-bin-outline"
+                size={22}
+                color={COLORS.primary}
+              />
             </View>
-            <Text style={[styles.accountActionButtonLabel, { color: theme.error }]}>
+            <Text
+              style={[styles.accountActionButtonLabel, { color: theme.error }]}>
               Delete Account
             </Text>
           </View>

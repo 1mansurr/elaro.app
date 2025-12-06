@@ -54,7 +54,7 @@ export const useTemplates = () => {
             : typeof error === 'string'
               ? error
               : 'Unknown error';
-        
+
         if (
           error instanceof Error &&
           errorMessage &&
