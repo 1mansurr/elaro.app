@@ -99,9 +99,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
         ]}
         pointerEvents="none">
         {label}
-        {optional && (
-          <Text style={styles.optionalText}> (Optional)</Text>
-        )}
+        {optional && <Text style={styles.optionalText}> (Optional)</Text>}
       </Animated.Text>
       {isFocused && placeholderHint && (
         <Text style={styles.placeholderHint}>{placeholderHint}</Text>
@@ -167,4 +165,3 @@ const styles = StyleSheet.create({
     color: '#f59e0b',
   },
 });
-

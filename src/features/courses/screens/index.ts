@@ -6,8 +6,7 @@ export { default as CourseDetailScreen } from './CourseDetailScreen';
 export { default as EditCourseModal } from './EditCourseModal';
 
 // Course creation flow screens
-export { default as AddCourseNameScreen } from './add-flow/AddCourseNameScreen';
-export { default as AddCourseDescriptionScreen } from './add-flow/AddCourseDescriptionScreen';
+export { default as AddCourseInfoScreen } from './add-flow/AddCourseInfoScreen';
 export { default as AddLectureDateTimeScreen } from './add-flow/AddLectureDateTimeScreen';
-export { default as AddLectureRecurrenceScreen } from './add-flow/AddLectureRecurrenceScreen';
+export { default as AddLectureVenueScreen } from './add-flow/AddLectureVenueScreen';
 export { default as AddLectureRemindersScreen } from './add-flow/AddLectureRemindersScreen';

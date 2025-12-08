@@ -34,8 +34,8 @@ const getTabBarIcon = (routeName: keyof MainTabParamList, focused: boolean) => {
   return (
     <Ionicons
       name={iconName}
-      size={24}
-      color={focused ? '#007AFF' : '#8E8E93'}
+      size={28}
+      color={focused ? '#135bec' : '#9ca3af'}
     />
   );
 };
@@ -46,19 +46,21 @@ const tabBarScreenOptions =
   ({ route }: { route: { name: keyof MainTabParamList } }) => ({
     tabBarIcon: ({ focused }: { focused: boolean }) =>
       getTabBarIcon(route.name, focused),
-    tabBarActiveTintColor: '#007AFF',
-    tabBarInactiveTintColor: '#8E8E93',
+    tabBarActiveTintColor: '#135bec',
+    tabBarInactiveTintColor: '#9ca3af',
     tabBarStyle: {
       backgroundColor: '#FFFFFF',
       borderTopWidth: 1,
       borderTopColor: '#E5E5EA',
       paddingBottom: insets.bottom,
-      height: 60 + insets.bottom,
+      paddingTop: 8,
+      height: 70 + insets.bottom,
     },
     tabBarLabelStyle: {
-      fontSize: 12,
+      fontSize: 14,
       fontWeight: '500' as TextStyle['fontWeight'],
       marginTop: 4,
+      letterSpacing: 0.015,
     },
     headerShown: false,
   });

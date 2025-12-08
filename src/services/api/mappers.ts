@@ -38,6 +38,7 @@ type DbLecture = {
   recurring_pattern?: string;
   lecture_name?: string;
   description?: string;
+  venue?: string;
   created_at: string;
 };
 
@@ -87,6 +88,7 @@ export const mapDbLectureToAppLecture = (dbLecture: DbLecture): AppLecture => ({
   recurringPattern: dbLecture.recurring_pattern,
   lectureName: dbLecture.lecture_name,
   description: dbLecture.description,
+  venue: dbLecture.venue,
   createdAt: dbLecture.created_at,
 });
 

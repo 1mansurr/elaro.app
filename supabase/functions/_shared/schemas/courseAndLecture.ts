@@ -7,5 +7,6 @@ export const CreateCourseAndLectureSchema = z.object({
   startTime: z.string().datetime('Invalid start time format'),
   endTime: z.string().datetime('Invalid end time format'),
   recurrence: z.enum(['none', 'weekly', 'bi-weekly']),
+  venue: z.string().max(200).optional(),
   reminders: z.array(z.number().int().min(0)).optional(),
 });

@@ -26,6 +26,7 @@ async function handleCreateCourseAndLecture(req: AuthenticatedRequest) {
     startTime,
     endTime,
     recurrence,
+    venue,
     reminders,
   } = body;
 
@@ -41,6 +42,7 @@ async function handleCreateCourseAndLecture(req: AuthenticatedRequest) {
       p_start_time: startTime,
       p_end_time: endTime,
       p_recurrence_type: recurrence,
+      p_venue: venue,
       p_reminders: reminders,
     },
   );

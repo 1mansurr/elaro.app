@@ -117,6 +117,7 @@ const AddLectureRemindersScreen = () => {
       startTime: courseData.startTime?.toISOString(),
       endTime: courseData.endTime?.toISOString(),
       recurrence: courseData.recurrence,
+      venue: courseData.venue,
       reminders: selectedReminders,
     };
 
@@ -181,7 +182,7 @@ const AddLectureRemindersScreen = () => {
           <Ionicons name="chevron-back" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.progressContainer}>
-          <ProgressIndicator currentStep={5} totalSteps={5} />
+          <ProgressIndicator currentStep={4} totalSteps={4} />
         </View>
         <View style={styles.headerSpacer} />
       </View>
@@ -250,7 +251,10 @@ const AddLectureRemindersScreen = () => {
           },
         ]}>
         <TouchableOpacity
-          style={[styles.finishButton, isLoading && styles.finishButtonDisabled]}
+          style={[
+            styles.finishButton,
+            isLoading && styles.finishButtonDisabled,
+          ]}
           onPress={handleFinish}
           disabled={isLoading}
           activeOpacity={0.8}>

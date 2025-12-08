@@ -15,6 +15,7 @@ export const CreateLectureSchema = z.object({
   end_time: z.string().datetime('Invalid end time format').optional(),
   is_recurring: z.boolean().optional(),
   recurring_pattern: z.string().optional(),
+  venue: z.string().max(200, 'Venue must be 200 characters or less').optional(),
   reminders: z.array(z.number().int().positive()).optional(),
 });
 

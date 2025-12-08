@@ -132,8 +132,8 @@ const AddLectureDateTimeScreen = () => {
       endTime,
       recurrence: repeats && recurrence ? recurrence : 'none',
     });
-    // Navigate directly to reminders since recurrence is handled in this screen
-    navigation.navigate('AddLectureReminders');
+    // Navigate to venue screen
+    navigation.navigate('AddLectureVenue');
   };
 
   const handleBack = () => {
@@ -203,7 +203,7 @@ const AddLectureDateTimeScreen = () => {
       </View>
 
       {/* Progress Indicator */}
-      <ProgressIndicator currentStep={3} totalSteps={5} />
+      <ProgressIndicator currentStep={2} totalSteps={4} />
 
       <ScrollView
         style={styles.scrollView}
@@ -219,17 +219,23 @@ const AddLectureDateTimeScreen = () => {
         <View
           style={[
             styles.card,
-            { backgroundColor: theme.surface || '#FFFFFF', borderColor: theme.border },
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
           ]}>
           <TouchableOpacity
             style={styles.cardRow}
             onPress={() => setShowDatePicker(true)}
             activeOpacity={0.7}>
             <View style={styles.cardRowLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#fee2e2' }]}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: '#fee2e2' }]}>
                 <Ionicons name="calendar-outline" size={20} color="#dc2626" />
               </View>
-              <Text style={[styles.cardLabel, { color: theme.text }]}>Date</Text>
+              <Text style={[styles.cardLabel, { color: theme.text }]}>
+                Date
+              </Text>
             </View>
             <View style={styles.cardRowRight}>
               <Text style={styles.dateBadge}>{getDateDisplay()}</Text>
@@ -241,7 +247,11 @@ const AddLectureDateTimeScreen = () => {
           <View style={[styles.timeSection, { backgroundColor: '#f8fafc' }]}>
             <View style={styles.timeRow}>
               <View style={styles.timeRowLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#dbeafe' }]}>
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: '#dbeafe' },
+                  ]}>
                   <Ionicons name="time-outline" size={20} color="#2563eb" />
                 </View>
                 <Text style={[styles.cardLabel, { color: theme.text }]}>
@@ -257,8 +267,16 @@ const AddLectureDateTimeScreen = () => {
 
             <View style={styles.timeRow}>
               <View style={styles.timeRowLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
-                  <Ionicons name="stopwatch-outline" size={20} color="#9333ea" />
+                <View
+                  style={[
+                    styles.iconContainer,
+                    { backgroundColor: '#f3e8ff' },
+                  ]}>
+                  <Ionicons
+                    name="stopwatch-outline"
+                    size={20}
+                    color="#9333ea"
+                  />
                 </View>
                 <Text style={[styles.cardLabel, { color: theme.text }]}>
                   Ends
@@ -280,11 +298,15 @@ const AddLectureDateTimeScreen = () => {
         <View
           style={[
             styles.card,
-            { backgroundColor: theme.surface || '#FFFFFF', borderColor: theme.border },
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
           ]}>
           <View style={styles.repeatHeader}>
             <View style={styles.repeatHeaderLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
                 <Ionicons name="repeat-outline" size={20} color="#16a34a" />
               </View>
               <Text style={[styles.cardLabel, { color: theme.text }]}>
@@ -313,7 +335,9 @@ const AddLectureDateTimeScreen = () => {
                       recurrence === option && styles.frequencyButtonActive,
                       {
                         backgroundColor:
-                          recurrence === option ? '#135bec20' : theme.surface || '#FFFFFF',
+                          recurrence === option
+                            ? '#135bec20'
+                            : theme.surface || '#FFFFFF',
                         borderColor:
                           recurrence === option ? '#135bec33' : theme.border,
                       },
@@ -324,8 +348,7 @@ const AddLectureDateTimeScreen = () => {
                       style={[
                         styles.frequencyButtonText,
                         {
-                          color:
-                            recurrence === option ? '#135bec' : theme.text,
+                          color: recurrence === option ? '#135bec' : theme.text,
                           fontWeight: recurrence === option ? '600' : '500',
                         },
                       ]}>

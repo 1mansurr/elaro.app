@@ -82,11 +82,15 @@ const AddLectureRecurrenceScreen = () => {
         <View
           style={[
             styles.card,
-            { backgroundColor: theme.surface || '#FFFFFF', borderColor: theme.border },
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
           ]}>
           <View style={styles.repeatHeader}>
             <View style={styles.repeatHeaderLeft}>
-              <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
                 <Ionicons name="repeat-outline" size={20} color="#16a34a" />
               </View>
               <Text style={[styles.cardLabel, { color: theme.text }]}>
@@ -115,7 +119,9 @@ const AddLectureRecurrenceScreen = () => {
                       recurrence === option && styles.frequencyButtonActive,
                       {
                         backgroundColor:
-                          recurrence === option ? '#135bec20' : theme.surface || '#FFFFFF',
+                          recurrence === option
+                            ? '#135bec20'
+                            : theme.surface || '#FFFFFF',
                         borderColor:
                           recurrence === option ? '#135bec33' : theme.border,
                       },
@@ -126,8 +132,7 @@ const AddLectureRecurrenceScreen = () => {
                       style={[
                         styles.frequencyButtonText,
                         {
-                          color:
-                            recurrence === option ? '#135bec' : theme.text,
+                          color: recurrence === option ? '#135bec' : theme.text,
                           fontWeight: recurrence === option ? '600' : '500',
                         },
                       ]}>

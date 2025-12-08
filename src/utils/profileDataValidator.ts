@@ -32,9 +32,9 @@ export function sanitizeProfileData(user: User | null): {
    */
   const clean = (str: string | undefined | null): string => {
     if (!str || typeof str !== 'string') return '';
-    
+
     const trimmed = str.trim();
-    
+
     // Check for JSON artifacts (common database serialization issues)
     if (
       trimmed.includes('{') ||
@@ -63,7 +63,7 @@ export function sanitizeProfileData(user: User | null): {
         return '';
       }
     }
-    
+
     // Check for database column names that might leak through
     const dbColumnPatterns = [
       /^first_name$/i,
@@ -74,11 +74,11 @@ export function sanitizeProfileData(user: User | null): {
       /^country$/i,
       /^user_metadata$/i,
     ];
-    
+
     if (dbColumnPatterns.some(pattern => pattern.test(trimmed))) {
       return '';
     }
-    
+
     return trimmed;
   };
 
@@ -101,4 +101,3 @@ export function isProfileDataValid(
   // At minimum, we should have a username or name
   return !!(data.username || data.firstName || data.lastName);
 }
-

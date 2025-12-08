@@ -1,21 +1,17 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 
-// We will create these screen components in the next steps.
-// For now, we can use placeholder components.
 import {
-  AddCourseNameScreen,
-  AddCourseDescriptionScreen,
+  AddCourseInfoScreen,
   AddLectureDateTimeScreen,
-  AddLectureRecurrenceScreen,
+  AddLectureVenueScreen,
   AddLectureRemindersScreen,
 } from '@/features/courses/screens';
 
 export type AddCourseStackParamList = {
-  AddCourseName: undefined;
-  AddCourseDescription: undefined;
+  AddCourseInfo: undefined;
   AddLectureDateTime: undefined;
-  AddLectureRecurrence: undefined;
+  AddLectureVenue: undefined;
   AddLectureReminders: undefined;
 };
 
@@ -27,19 +23,12 @@ const AddCourseNavigator = () => {
       screenOptions={{
         headerShown: false, // We will have custom headers/progress bars in each screen
       }}>
-      <Stack.Screen name="AddCourseName" component={AddCourseNameScreen} />
-      <Stack.Screen
-        name="AddCourseDescription"
-        component={AddCourseDescriptionScreen}
-      />
+      <Stack.Screen name="AddCourseInfo" component={AddCourseInfoScreen} />
       <Stack.Screen
         name="AddLectureDateTime"
         component={AddLectureDateTimeScreen}
       />
-      <Stack.Screen
-        name="AddLectureRecurrence"
-        component={AddLectureRecurrenceScreen}
-      />
+      <Stack.Screen name="AddLectureVenue" component={AddLectureVenueScreen} />
       <Stack.Screen
         name="AddLectureReminders"
         component={AddLectureRemindersScreen}

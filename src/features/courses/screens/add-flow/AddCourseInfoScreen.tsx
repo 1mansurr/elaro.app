@@ -21,9 +21,9 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { FloatingLabelInput, ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 
-type AddCourseNameScreenNavigationProp = StackNavigationProp<
+type AddCourseInfoScreenNavigationProp = StackNavigationProp<
   AddCourseStackParamList,
-  'AddCourseName'
+  'AddCourseInfo'
 >;
 
 const COURSE_LIMITS: { [key: string]: number } = {
@@ -31,8 +31,8 @@ const COURSE_LIMITS: { [key: string]: number } = {
   oddity: 7,
 };
 
-const AddCourseNameScreen = () => {
-  const navigation = useNavigation<AddCourseNameScreenNavigationProp>();
+const AddCourseInfoScreen = () => {
+  const navigation = useNavigation<AddCourseInfoScreenNavigationProp>();
   const { courseData, updateCourseData } = useAddCourse();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -119,7 +119,7 @@ const AddCourseNameScreen = () => {
       courseCode: courseCode.trim(),
       courseDescription: description.trim(),
     });
-    navigation.navigate('AddCourseDescription');
+    navigation.navigate('AddLectureDateTime');
   };
 
   const handleCancel = () => {
@@ -127,8 +127,7 @@ const AddCourseNameScreen = () => {
   };
 
   // Course code is optional, so it shouldn't affect button enablement
-  const isButtonEnabled =
-    hasInteractedWithName && courseName.trim().length > 0;
+  const isButtonEnabled = hasInteractedWithName && courseName.trim().length > 0;
 
   return (
     <KeyboardAvoidingView
@@ -144,9 +143,7 @@ const AddCourseNameScreen = () => {
           onPress={handleCancel}
           style={styles.cancelButton}
           activeOpacity={0.7}>
-          <Text style={[styles.cancelText, { color: '#616f89' }]}>
-            Cancel
-          </Text>
+          <Text style={[styles.cancelText, { color: '#616f89' }]}>Cancel</Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
           New Course
@@ -155,7 +152,7 @@ const AddCourseNameScreen = () => {
       </View>
 
       {/* Progress Indicator */}
-      <ProgressIndicator currentStep={1} totalSteps={5} />
+      <ProgressIndicator currentStep={1} totalSteps={4} />
 
       <ScrollView
         style={styles.scrollView}
@@ -171,7 +168,7 @@ const AddCourseNameScreen = () => {
           <FloatingLabelInput
             label="Course Name"
             value={courseName}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setCourseName(text);
               setHasInteractedWithName(true);
             }}
@@ -187,7 +184,7 @@ const AddCourseNameScreen = () => {
             label="Course Code"
             optional
             value={courseCode}
-            onChangeText={(text) => {
+            onChangeText={text => {
               setCourseCode(text);
               setHasInteractedWithCode(true);
             }}
@@ -310,4 +307,5 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AddCourseNameScreen;
+export default AddCourseInfoScreen;
+

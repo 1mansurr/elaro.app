@@ -12,6 +12,7 @@ export interface AddCourseData {
   startTime: Date | null;
   endTime: Date | null;
   recurrence: 'none' | 'weekly' | 'bi-weekly';
+  venue: string;
   reminders: number[];
 }
 
@@ -23,6 +24,7 @@ const initialCourseData: AddCourseData = {
   startTime: null,
   endTime: null,
   recurrence: 'none',
+  venue: '',
   reminders: [30], // Default to a 30-minute reminder
 };
 

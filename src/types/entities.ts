@@ -100,6 +100,7 @@ export interface Lecture {
   recurringPattern?: string;
   lectureName?: string;
   description?: string;
+  venue?: string;
   createdAt: string;
 }
 

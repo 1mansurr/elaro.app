@@ -258,9 +258,7 @@ class NavigationSyncService {
         return true;
       };
 
-      const allRoutesValid = state.routes.every(route =>
-        validateRoute(route),
-      );
+      const allRoutesValid = state.routes.every(route => validateRoute(route));
       if (!allRoutesValid) {
         console.warn(
           '⚠️ NavigationSync: Invalid routes detected. Clearing state.',

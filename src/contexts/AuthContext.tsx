@@ -230,7 +230,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             return newProfile as User;
           }
         } catch (createError) {
-          console.error('AuthContext: Error creating user profile:', createError);
+          console.error(
+            'AuthContext: Error creating user profile:',
+            createError,
+          );
         }
         return null;
       } finally {
@@ -306,7 +309,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   freshProfile &&
                   JSON.stringify(freshProfile) !== JSON.stringify(userProfile)
                 ) {
-                  console.log('🔄 Updating user profile from server (background refresh)');
+                  console.log(
+                    '🔄 Updating user profile from server (background refresh)',
+                  );
                   setUser(freshProfile as User);
                   const cacheKey = `user_profile:${initialSession.user.id}`;
                   await cache.setLong(cacheKey, freshProfile);

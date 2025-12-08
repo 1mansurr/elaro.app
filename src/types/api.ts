@@ -34,6 +34,7 @@ export interface CreateLectureRequest {
   end_time?: string;
   is_recurring?: boolean;
   recurring_pattern?: string;
+  venue?: string;
   reminders?: number[];
 }
 
