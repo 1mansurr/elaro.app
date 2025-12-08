@@ -53,6 +53,12 @@ const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'StudySessionReview',
 ]);
 
+// Valid nested route names for each parent navigator
+// These are routes that exist within nested navigators (e.g., MainTabNavigator)
+const VALID_NESTED_ROUTES: Record<string, Set<string>> = {
+  Main: new Set(['Home', 'Calendar', 'Account']), // MainTabNavigator routes
+};
+
 interface NavigationSnapshot {
   state: NavigationState;
   version: string;
@@ -204,12 +210,35 @@ class NavigationSyncService {
       // Recursively validate routes
       const validateRoute = (
         route: PartialState<NavigationState>['routes'][number] | undefined,
+        parentRouteName?: string,
       ): boolean => {
         if (!route || !route.name) {
           return false;
         }
 
-        // Check if route name is valid
+        // If this is a nested route, check against parent's valid nested routes first
+        if (parentRouteName && VALID_NESTED_ROUTES[parentRouteName]) {
+          if (VALID_NESTED_ROUTES[parentRouteName].has(route.name)) {
+            // Valid nested route, continue validation of its children
+            if (
+              route.state &&
+              'routes' in route.state &&
+              Array.isArray(route.state.routes)
+            ) {
+              return route.state.routes.every(nestedRoute =>
+                validateRoute(nestedRoute, route.name),
+              );
+            }
+            return true;
+          }
+          // Nested route not in parent's valid routes - invalid
+          console.warn(
+            `⚠️ NavigationSync: Invalid nested route "${route.name}" under parent "${parentRouteName}"`,
+          );
+          return false;
+        }
+
+        // Check if route name is valid top-level route
         if (!VALID_ROUTES.has(route.name as keyof RootStackParamList)) {
           console.warn(`⚠️ NavigationSync: Invalid route name: ${route.name}`);
           return false;
@@ -222,15 +251,20 @@ class NavigationSyncService {
           Array.isArray(route.state.routes)
         ) {
           return route.state.routes.every(nestedRoute =>
-            validateRoute(nestedRoute),
+            validateRoute(nestedRoute, route.name),
           );
         }
 
         return true;
       };
 
-      const allRoutesValid = state.routes.every(validateRoute);
+      const allRoutesValid = state.routes.every(route =>
+        validateRoute(route),
+      );
       if (!allRoutesValid) {
+        console.warn(
+          '⚠️ NavigationSync: Invalid routes detected. Clearing state.',
+        );
         return null;
       }
 

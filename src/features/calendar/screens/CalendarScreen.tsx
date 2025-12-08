@@ -7,6 +7,7 @@ import {
   Alert,
   FlatList,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -137,6 +138,11 @@ const CalendarScreen = () => {
   const refetch = viewMode === 'month' ? refetchMonth : refetchWeek;
   const isRefetching =
     viewMode === 'month' ? isRefetchingMonth : isRefetchingWeek;
+
+  // Optimistic rendering: Check if we have data (even empty object) or if it's just refetching
+  const hasData = calendarData !== undefined && calendarData !== null;
+  // Only show full loading screen on true initial load (no data at all)
+  const isInitialLoad = isLoading && !hasData;
 
   // Get all tasks for the week (for week grid view)
   const weekTasks = useMemo(() => {
@@ -683,6 +689,40 @@ const CalendarScreen = () => {
     );
   }
 
+  // Optimistic rendering: Show UI immediately if we have data OR if it's just a refetch
+  // Only show full loading screen on true initial load (no data at all)
+  if (!isInitialLoad) {
+    return (
+      <View style={{ flex: 1, backgroundColor: COLORS.background }}>
+        {/* Subtle loading indicator at top when refetching in background */}
+        {isRefetching && (
+          <View style={styles.refetchIndicator}>
+            <ActivityIndicator size="small" color={COLORS.primary} />
+            <Text style={styles.refetchText}>Updating calendar...</Text>
+          </View>
+        )}
+        {/* Show error banner if there's an error but we have data to display */}
+        {isError && hasData && (
+          <View style={styles.errorBanner}>
+            <Ionicons
+              name="alert-circle-outline"
+              size={16}
+              color={COLORS.destructive}
+            />
+            <Text style={styles.errorBannerText}>
+              Failed to refresh calendar. Showing cached data.
+            </Text>
+            <TouchableOpacity onPress={() => refetch()}>
+              <Text style={styles.retryText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {renderCalendarContent()}
+      </View>
+    );
+  }
+
+  // Only show full loading screen on true initial load (no data at all)
   return (
     <QueryStateWrapper
       isLoading={isLoading}
@@ -855,6 +895,44 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold,
     color: COLORS.background,
+  },
+  refetchIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: COLORS.background,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    gap: SPACING.xs,
+  },
+  refetchText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.gray,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    backgroundColor: '#FFF3E0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#FFB74D',
+    gap: SPACING.xs,
+  },
+  errorBannerText: {
+    flex: 1,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.destructive,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  retryText: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.primary,
+    fontWeight: FONT_WEIGHTS.semibold,
+    textDecorationLine: 'underline',
   },
 });
 

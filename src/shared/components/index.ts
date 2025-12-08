@@ -42,3 +42,5 @@ export { SyncIndicator } from './SyncIndicator';
 export { UndoToast } from './UndoToast';
 export { ProgressHeader } from './ProgressHeader';
 export { QuickAddModal } from './QuickAddModal';
+export { ProgressIndicator } from './ProgressIndicator';
+export { FloatingLabelInput } from './FloatingLabelInput';

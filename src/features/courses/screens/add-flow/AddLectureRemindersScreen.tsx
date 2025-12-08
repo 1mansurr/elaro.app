@@ -2,13 +2,15 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
-  Button,
   StyleSheet,
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { supabase } from '@/services/supabase';
@@ -19,10 +21,12 @@ import {
   clearPendingTask,
 } from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { ProgressIndicator } from '@/shared/components';
+import { useTheme } from '@/hooks/useTheme';
 
 const ReminderOptions = [
-  { label: '10 mins before', value: 10 },
-  { label: '30 mins before', value: 30 },
+  { label: '10 minutes before', value: 10 },
+  { label: '30 minutes before', value: 30 },
   { label: '1 hour before', value: 60 },
   { label: '1 day before', value: 1440 },
 ];
@@ -32,9 +36,11 @@ const AddLectureRemindersScreen = () => {
   const queryClient = useQueryClient();
   const { courseData, updateCourseData, resetCourseData } = useAddCourse();
   const { user, isGuest } = useAuth();
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   const [selectedReminders, setSelectedReminders] = useState<number[]>(
-    courseData.reminders,
+    courseData.reminders || [30],
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -44,7 +50,6 @@ const AddLectureRemindersScreen = () => {
     );
   };
 
-  // Add auto-save function
   const autoCreateTask = async () => {
     try {
       const pendingTask = await getPendingTask();
@@ -62,7 +67,6 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
-      // Create the course using the existing API
       const { error } = await supabase.functions.invoke(
         'create-course-and-lecture',
         {
@@ -72,10 +76,8 @@ const AddLectureRemindersScreen = () => {
 
       if (error) throw new Error(error.message);
 
-      // Clear pending data
       await clearPendingTask();
 
-      // Invalidate queries
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
       await queryClient.invalidateQueries({ queryKey: ['lectures'] });
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
@@ -106,11 +108,8 @@ const AddLectureRemindersScreen = () => {
 
   const handleFinish = async () => {
     setIsLoading(true);
-    // First, update the context with the final reminder selection
     updateCourseData({ reminders: selectedReminders });
 
-    // We need to use a function form of update to get the most recent state
-    // before calling the backend, as the state update above is async.
     const finalPayload = {
       courseName: courseData.courseName,
       courseCode: courseData.courseCode,
@@ -121,11 +120,8 @@ const AddLectureRemindersScreen = () => {
       reminders: selectedReminders,
     };
 
-    // Check if guest user
     if (isGuest) {
-      // Save current task data before navigating to Auth
       await savePendingTask(finalPayload, 'course');
-      // Navigate to Auth screen
       navigation.getParent()?.navigate('Auth', {
         mode: 'signup',
         onAuthSuccess: autoCreateTask,
@@ -135,7 +131,6 @@ const AddLectureRemindersScreen = () => {
     }
 
     try {
-      // We will create this new, combined Edge Function in the next step.
       const { error } = await supabase.functions.invoke(
         'create-course-and-lecture',
         {
@@ -150,14 +145,13 @@ const AddLectureRemindersScreen = () => {
         `${finalPayload.courseName} has been added to your schedule.`,
       );
 
-      // Invalidate all relevant queries to refresh the app state
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
       await queryClient.invalidateQueries({ queryKey: ['lectures'] });
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
 
-      resetCourseData(); // Clear the context for the next time
-      navigation.getParent()?.goBack(); // Close the entire modal flow
+      resetCourseData();
+      navigation.getParent()?.goBack();
     } catch (err) {
       const errorTitle = getErrorTitle(err);
       const errorMessage = mapErrorCodeToMessage(err);
@@ -173,43 +167,99 @@ const AddLectureRemindersScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Set lecture reminders (Optional)</Text>
-
-      <View style={styles.optionsContainer}>
-        {ReminderOptions.map(option => (
-          <TouchableOpacity
-            key={option.value}
-            style={[
-              styles.optionButton,
-              selectedReminders.includes(option.value) &&
-                styles.optionButtonActive,
-            ]}
-            onPress={() => toggleReminder(option.value)}>
-            <Text
-              style={[
-                styles.optionText,
-                selectedReminders.includes(option.value) &&
-                  styles.optionTextActive,
-              ]}>
-              {option.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top, backgroundColor: theme.background },
+        ]}>
+        <TouchableOpacity
+          onPress={handleBack}
+          style={styles.backButton}
+          activeOpacity={0.7}>
+          <Ionicons name="chevron-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <View style={styles.progressContainer}>
+          <ProgressIndicator currentStep={5} totalSteps={5} />
+        </View>
+        <View style={styles.headerSpacer} />
       </View>
 
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Back"
-          onPress={handleBack}
-          color="#888"
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Set Lecture Reminders
+        </Text>
+        <Text style={[styles.subtitle, { color: '#64748b' }]}>
+          When would you like to be notified before each lecture starts? You can
+          select multiple options.
+        </Text>
+
+        <View
+          style={[
+            styles.optionsCard,
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
+          ]}>
+          {ReminderOptions.map((option, index) => {
+            const isSelected = selectedReminders.includes(option.value);
+            return (
+              <TouchableOpacity
+                key={option.value}
+                style={[
+                  styles.optionRow,
+                  index < ReminderOptions.length - 1 && styles.optionRowBorder,
+                  {
+                    borderBottomColor: theme.border,
+                  },
+                ]}
+                onPress={() => toggleReminder(option.value)}
+                activeOpacity={0.7}>
+                <Text style={[styles.optionLabel, { color: theme.text }]}>
+                  {option.label}
+                </Text>
+                <View
+                  style={[
+                    styles.checkbox,
+                    {
+                      borderColor: isSelected ? '#135bec' : theme.border,
+                      backgroundColor: isSelected ? '#135bec' : 'transparent',
+                    },
+                  ]}>
+                  {isSelected && (
+                    <Ionicons name="checkmark" size={14} color="#FFFFFF" />
+                  )}
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      </ScrollView>
+
+      {/* Footer */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.background,
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}>
+        <TouchableOpacity
+          style={[styles.finishButton, isLoading && styles.finishButtonDisabled]}
+          onPress={handleFinish}
           disabled={isLoading}
-        />
-        {isLoading ? (
-          <ActivityIndicator />
-        ) : (
-          <Button title="Finish Setup" onPress={handleFinish} />
-        )}
+          activeOpacity={0.8}>
+          {isLoading ? (
+            <ActivityIndicator color="#FFFFFF" />
+          ) : (
+            <Text style={styles.finishButtonText}>Finish</Text>
+          )}
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -218,31 +268,98 @@ const AddLectureRemindersScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  progressContainer: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  headerSpacer: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 40,
+    lineHeight: 38,
+    marginBottom: 8,
   },
-  optionsContainer: { marginBottom: 40 },
-  optionButton: {
+  subtitle: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  optionsCard: {
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#007AFF',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  optionButtonActive: { backgroundColor: '#007AFF' },
-  optionText: { fontSize: 16, textAlign: 'center', color: '#007AFF' },
-  optionTextActive: { color: '#fff' },
-  buttonContainer: {
+  optionRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 40,
+    padding: 16,
+  },
+  optionRowBorder: {
+    borderBottomWidth: 1,
+  },
+  optionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  finishButton: {
+    width: '100%',
+    height: 56,
+    backgroundColor: '#135bec',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  finishButtonDisabled: {
+    opacity: 0.6,
+  },
+  finishButtonText: {
+    color: '#FFFFFF',
+    fontSize: 17,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 });
 

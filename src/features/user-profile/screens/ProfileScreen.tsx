@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Alert,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -17,6 +18,8 @@ import { SearchableSelector } from '@/shared/components';
 import { RootStackParamList } from '@/types/navigation';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+import { sanitizeProfileData } from '@/utils/profileDataValidator';
+import { COLORS } from '@/constants/theme';
 
 // Import the data files
 import countriesData from '@/data/countries.json';
@@ -25,7 +28,7 @@ type ScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Profile'>;
 
 const ProfileScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
-  const { user, refreshUser } = useAuth();
+  const { user, refreshUser, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
 
   const [firstName, setFirstName] = useState('');
@@ -35,6 +38,7 @@ const ProfileScreen = () => {
   const [program, setProgram] = useState('');
   const [country, setCountry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Extract country names for the selector
   const countryData = useMemo(() => {
@@ -42,15 +46,23 @@ const ProfileScreen = () => {
   }, []);
 
   useEffect(() => {
-    if (user) {
-      setFirstName(user.first_name || '');
-      setLastName(user.last_name || '');
-      setUsername(user.username || '');
-      setUniversity(user.university || '');
-      setProgram(user.program || '');
-      setCountry(user.country || '');
+    // Wait for auth to finish loading
+    if (authLoading) {
+      return;
     }
-  }, [user]);
+
+    setIsInitializing(false);
+
+    // Use sanitizeProfileData to ensure clean, validated data
+    const sanitizedData = sanitizeProfileData(user);
+
+    setFirstName(sanitizedData.firstName);
+    setLastName(sanitizedData.lastName);
+    setUsername(sanitizedData.username);
+    setUniversity(sanitizedData.university);
+    setProgram(sanitizedData.program);
+    setCountry(sanitizedData.country);
+  }, [user, authLoading]);
 
   const handleSaveChanges = async () => {
     setIsLoading(true);
@@ -89,6 +101,16 @@ const ProfileScreen = () => {
     }
   };
 
+  // Show loading state while initializing or auth is loading
+  if (isInitializing || authLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Edit Profile</Text>
@@ -98,6 +120,7 @@ const ProfileScreen = () => {
         style={styles.input}
         value={firstName}
         onChangeText={setFirstName}
+        placeholder="Enter your first name"
       />
 
       <Text style={styles.label}>Last Name</Text>
@@ -105,6 +128,7 @@ const ProfileScreen = () => {
         style={styles.input}
         value={lastName}
         onChangeText={setLastName}
+        placeholder="Enter your last name"
       />
 
       <Text style={styles.label}>Username</Text>
@@ -113,6 +137,7 @@ const ProfileScreen = () => {
         value={username}
         onChangeText={setUsername}
         editable={false}
+        placeholder="Username"
       />
       {/* Username is not editable for now to avoid complexity with uniqueness checks */}
 
@@ -130,6 +155,7 @@ const ProfileScreen = () => {
         style={styles.input}
         value={university}
         onChangeText={setUniversity}
+        placeholder="Enter your university"
       />
 
       <Text style={styles.label}>Program of Study</Text>
@@ -137,6 +163,7 @@ const ProfileScreen = () => {
         style={styles.input}
         value={program}
         onChangeText={setProgram}
+        placeholder="Enter your program of study"
       />
 
       <Button
@@ -158,6 +185,17 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     fontSize: 16,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
 });
 

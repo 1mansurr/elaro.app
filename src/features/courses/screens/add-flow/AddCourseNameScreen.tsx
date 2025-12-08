@@ -1,36 +1,53 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, Button, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { FloatingLabelInput, ProgressIndicator } from '@/shared/components';
+import { useTheme } from '@/hooks/useTheme';
+
+type AddCourseNameScreenNavigationProp = StackNavigationProp<
+  AddCourseStackParamList,
+  'AddCourseName'
+>;
 
 const COURSE_LIMITS: { [key: string]: number } = {
   free: 2,
   oddity: 7,
 };
 
-// Define the navigation prop type for this screen
-type AddCourseNameScreenNavigationProp = StackNavigationProp<
-  AddCourseStackParamList,
-  'AddCourseName'
->;
-
 const AddCourseNameScreen = () => {
   const navigation = useNavigation<AddCourseNameScreenNavigationProp>();
   const { courseData, updateCourseData } = useAddCourse();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
 
   const [courseName, setCourseName] = useState(courseData.courseName || '');
   const [courseCode, setCourseCode] = useState(courseData.courseCode || '');
+  const [description, setDescription] = useState(
+    courseData.courseDescription || '',
+  );
   const [courseCount, setCourseCount] = useState(0);
+  const [hasInteractedWithName, setHasInteractedWithName] = useState(false);
+  const [hasInteractedWithCode, setHasInteractedWithCode] = useState(false);
 
-  // Check course count on component mount
   useEffect(() => {
     const checkCourseCount = async () => {
       if (!user?.id) return;
@@ -54,7 +71,6 @@ const AddCourseNameScreen = () => {
       return;
     }
 
-    // Check course limits before proceeding
     const userTier = user?.subscription_tier || 'free';
     const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
 
@@ -64,14 +80,11 @@ const AddCourseNameScreen = () => {
         `You have reached the limit of ${courseLimit} courses for the 'free' plan. Upgrade to Oddity for just $1.99/month to add more courses.`,
         [
           { text: 'OK', style: 'cancel' },
-          // The "Become an Oddity" button for the free upgrade flow can remain if desired,
-          // but it will only be relevant for 'free' users.
           ...(userTier === 'free'
             ? [
                 {
                   text: 'Become an Oddity',
                   onPress: async () => {
-                    // This should trigger the free upgrade flow
                     try {
                       const { error } = await supabase.functions.invoke(
                         'grant-premium-access',
@@ -104,70 +117,196 @@ const AddCourseNameScreen = () => {
     updateCourseData({
       courseName: courseName.trim(),
       courseCode: courseCode.trim(),
+      courseDescription: description.trim(),
     });
     navigation.navigate('AddCourseDescription');
   };
 
   const handleCancel = () => {
-    // This will close the modal navigator
     navigation.getParent()?.goBack();
   };
 
+  // Course code is optional, so it shouldn't affect button enablement
+  const isButtonEnabled =
+    hasInteractedWithName && courseName.trim().length > 0;
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>What&apos;s the course name?</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., Introduction to Psychology"
-        value={courseName}
-        onChangeText={setCourseName}
-        autoFocus={true} // Automatically focus the input
-        autoCapitalize="words"
-      />
-
-      <Text style={styles.label}>Course Code (Optional)</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., PSY 101"
-        value={courseCode}
-        onChangeText={setCourseCode}
-        autoCapitalize="characters"
-      />
-
-      <View style={styles.buttonContainer}>
-        <Button title="Cancel" onPress={handleCancel} color="#888" />
-        <Button title="Next" onPress={handleNext} />
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: theme.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top, backgroundColor: theme.background },
+        ]}>
+        <TouchableOpacity
+          onPress={handleCancel}
+          style={styles.cancelButton}
+          activeOpacity={0.7}>
+          <Text style={[styles.cancelText, { color: '#616f89' }]}>
+            Cancel
+          </Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          New Course
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
-    </View>
+
+      {/* Progress Indicator */}
+      <ProgressIndicator currentStep={1} totalSteps={5} />
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled">
+        {/* Title */}
+        <Text style={[styles.title, { color: theme.text }]}>
+          What are you studying?
+        </Text>
+
+        {/* Inputs */}
+        <View style={styles.inputsContainer}>
+          <FloatingLabelInput
+            label="Course Name"
+            value={courseName}
+            onChangeText={(text) => {
+              setCourseName(text);
+              setHasInteractedWithName(true);
+            }}
+            onFocus={() => setHasInteractedWithName(true)}
+            autoFocus
+            autoCapitalize="words"
+            returnKeyType="next"
+            onSubmitEditing={() => {
+              // Focus next input if needed
+            }}
+          />
+          <FloatingLabelInput
+            label="Course Code"
+            optional
+            value={courseCode}
+            onChangeText={(text) => {
+              setCourseCode(text);
+              setHasInteractedWithCode(true);
+            }}
+            onFocus={() => setHasInteractedWithCode(true)}
+            autoCapitalize="characters"
+            returnKeyType="next"
+          />
+          <FloatingLabelInput
+            label="About"
+            optional
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            numberOfLines={4}
+            maxLength={300}
+            showCharacterCount
+            placeholderHint="Description"
+            textAlignVertical="top"
+          />
+        </View>
+      </ScrollView>
+
+      {/* Footer Button */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.background,
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}>
+        <TouchableOpacity
+          style={[
+            styles.nextButton,
+            !isButtonEnabled && styles.nextButtonDisabled,
+          ]}
+          onPress={handleNext}
+          disabled={!isButtonEnabled}
+          activeOpacity={0.8}>
+          <Text style={styles.nextButtonText}>Next</Text>
+        </TouchableOpacity>
+      </View>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+  },
+  cancelButton: {
+    height: 48,
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    paddingHorizontal: 8,
+  },
+  cancelText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+    letterSpacing: -0.015,
+  },
+  headerSpacer: {
+    width: 64,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   title: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 30,
+    lineHeight: 34,
+    marginBottom: 24,
+    letterSpacing: -0.5,
   },
-  label: { fontSize: 16, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    padding: 15,
-    borderRadius: 8,
+  inputsContainer: {
+    flex: 1,
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  nextButton: {
+    width: '100%',
+    height: 56,
+    backgroundColor: '#135bec',
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  nextButtonDisabled: {
+    backgroundColor: '#e5e7eb',
+    opacity: 0.6,
+  },
+  nextButtonText: {
+    color: '#FFFFFF',
     fontSize: 18,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 40,
+    fontWeight: 'bold',
   },
 });
 

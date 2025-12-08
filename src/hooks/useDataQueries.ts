@@ -204,9 +204,10 @@ export const useHomeScreenData = (enabled: boolean = true) => {
 export const useCalendarData = (date: Date) => {
   const dateKey = date.toISOString().split('T')[0];
   const cacheKey = `calendarData:${dateKey}`;
+  // Initialize with empty object for instant UI rendering
   const [placeholderData, setPlaceholderData] = React.useState<
     CalendarData | undefined
-  >(undefined);
+  >({});
 
   // Load cached data as placeholder on mount
   React.useEffect(() => {
@@ -219,7 +220,7 @@ export const useCalendarData = (date: Date) => {
           setPlaceholderData(cached);
         }
       } catch (error) {
-        // Ignore cache errors
+        // Ignore cache errors - keep empty object for instant rendering
       }
     };
 
@@ -277,9 +278,10 @@ export const useCalendarData = (date: Date) => {
 export const useCalendarMonthData = (year: number, month: number) => {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
   const cacheKey = `calendarMonthData:${monthKey}`;
+  // Initialize with empty object for instant UI rendering
   const [placeholderData, setPlaceholderData] = React.useState<
     CalendarData | undefined
-  >(undefined);
+  >({});
 
   // Load cached data as placeholder on mount
   React.useEffect(() => {
@@ -292,7 +294,7 @@ export const useCalendarMonthData = (year: number, month: number) => {
           setPlaceholderData(cached);
         }
       } catch (error) {
-        // Ignore cache errors
+        // Ignore cache errors - keep empty object for instant rendering
       }
     };
 

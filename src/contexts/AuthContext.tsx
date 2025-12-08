@@ -77,149 +77,171 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Social providers removed; email-only auth
 
+  // Track ongoing profile fetches to prevent duplicates
+  const profileFetchPromises = new Map<string, Promise<User | null>>();
+
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
-    try {
-      // Try to get from cache first for instant load
-      const cacheKey = `user_profile:${userId}`;
-      const cachedProfile = await cache.get<User>(cacheKey);
-
-      if (cachedProfile) {
-        console.log('📱 Using cached user profile');
-        // Set cached data immediately for instant UI
-        setUser(cachedProfile);
-
-        // Still fetch fresh data in background to stay up-to-date
-        supabaseAuthService
-          .getUserProfile(userId)
-          .then(async freshProfile => {
-            if (
-              freshProfile &&
-              JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)
-            ) {
-              console.log('🔄 Updating user profile from server');
-              setUser(freshProfile as User);
-              await cache.setLong(cacheKey, freshProfile);
-            }
-          })
-          .catch(err => {
-            console.error('Background profile fetch failed:', err);
-            // Keep using cached data
-          });
-
-        return cachedProfile;
+    // If already fetching for this user, return the existing promise
+    const existingFetch = profileFetchPromises.get(userId);
+    if (existingFetch) {
+      if (__DEV__) {
+        console.log('⏳ Profile fetch already in progress, reusing promise');
       }
-
-      // No cache - fetch from server
-      console.log('🌐 Fetching user profile from server');
-      const userProfile = await supabaseAuthService.getUserProfile(userId);
-
-      if (!userProfile) {
-        return null;
-      }
-
-      // Cache the profile (24 hours) for future use
-      await cache.setLong(cacheKey, userProfile);
-
-      // Check if account is in deleted status
-      if (userProfile.account_status === 'deleted') {
-        // Check if restoration is still possible
-        if (userProfile.deletion_scheduled_at) {
-          const deletionDate = new Date(userProfile.deletion_scheduled_at);
-          const now = new Date();
-
-          if (now <= deletionDate) {
-            // Show restoration option to user
-            Alert.alert(
-              'Account Deleted',
-              'Your account was deleted but can still be restored. Would you like to restore it?',
-              [
-                {
-                  text: 'No',
-                  style: 'cancel',
-                  onPress: () => authService.signOut(),
-                },
-                {
-                  text: 'Restore',
-                  onPress: async () => {
-                    try {
-                      await authService.restoreAccount();
-                      // Refresh user profile after restoration
-                      const restoredProfile =
-                        await supabaseAuthService.getUserProfile(userId);
-                      setUser(restoredProfile as User);
-                    } catch (error) {
-                      console.error('Error restoring account:', error);
-                      Alert.alert(
-                        'Restoration Failed',
-                        'Could not restore your account. Please contact support.',
-                      );
-                      await authService.signOut();
-                    }
-                  },
-                },
-              ],
-            );
-            return null; // Don't set user as logged in
-          } else {
-            // Restoration period expired
-            Alert.alert(
-              'Account Permanently Deleted',
-              'Your account has been permanently deleted and cannot be restored.',
-            );
-            await authService.signOut();
-            return null;
-          }
-        }
-      }
-
-      // Check if account is suspended
-      if (userProfile.account_status === 'suspended') {
-        // Check if suspension has expired
-        if (userProfile.suspension_end_date) {
-          const endDate = new Date(userProfile.suspension_end_date);
-          const now = new Date();
-
-          if (now > endDate) {
-            // Suspension expired, auto-unsuspend
-            try {
-              // Note: This would typically be handled by a cron job, but we can handle it here as a fallback
-              console.log(
-                'Suspension expired, but auto-unsuspend should be handled by cron job',
-              );
-            } catch (error) {
-              console.error('Error auto-unsuspending account:', error);
-            }
-          }
-        }
-
-        // Account is still suspended
-        Alert.alert(
-          'Account Suspended',
-          'Your account has been suspended. Please contact support for assistance.',
-        );
-        await authService.signOut();
-        return null;
-      }
-
-      return userProfile as User;
-    } catch (error) {
-      console.error('AuthContext: Error fetching user profile:', error);
-      // If user profile doesn't exist, create it
-      try {
-        const session = await authService.getSession();
-        if (session?.user) {
-          await supabaseAuthService.createUserProfile(
-            session.user.id,
-            session.user.email || '',
-          );
-          const newProfile = await supabaseAuthService.getUserProfile(userId);
-          return newProfile as User;
-        }
-      } catch (createError) {
-        console.error('AuthContext: Error creating user profile:', createError);
-      }
-      return null;
+      return existingFetch;
     }
+
+    // Create new fetch promise
+    const fetchPromise = (async () => {
+      try {
+        // Try to get from cache first for instant load
+        const cacheKey = `user_profile:${userId}`;
+        const cachedProfile = await cache.get<User>(cacheKey);
+
+        if (cachedProfile) {
+          console.log('📱 Using cached user profile');
+          // Set cached data immediately for instant UI
+          setUser(cachedProfile);
+
+          // Still fetch fresh data in background to stay up-to-date
+          supabaseAuthService
+            .getUserProfile(userId)
+            .then(async freshProfile => {
+              if (
+                freshProfile &&
+                JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)
+              ) {
+                console.log('🔄 Updating user profile from server');
+                setUser(freshProfile as User);
+                await cache.setLong(cacheKey, freshProfile);
+              }
+            })
+            .catch(err => {
+              console.error('Background profile fetch failed:', err);
+              // Keep using cached data
+            });
+
+          return cachedProfile;
+        }
+
+        // No cache - fetch from server
+        console.log('🌐 Fetching user profile from server');
+        const userProfile = await supabaseAuthService.getUserProfile(userId);
+
+        if (!userProfile) {
+          return null;
+        }
+
+        // Cache the profile (24 hours) for future use
+        await cache.setLong(cacheKey, userProfile);
+
+        // Check if account is in deleted status
+        if (userProfile.account_status === 'deleted') {
+          // Check if restoration is still possible
+          if (userProfile.deletion_scheduled_at) {
+            const deletionDate = new Date(userProfile.deletion_scheduled_at);
+            const now = new Date();
+
+            if (now <= deletionDate) {
+              // Show restoration option to user
+              Alert.alert(
+                'Account Deleted',
+                'Your account was deleted but can still be restored. Would you like to restore it?',
+                [
+                  {
+                    text: 'No',
+                    style: 'cancel',
+                    onPress: () => authService.signOut(),
+                  },
+                  {
+                    text: 'Restore',
+                    onPress: async () => {
+                      try {
+                        await authService.restoreAccount();
+                        // Refresh user profile after restoration
+                        const restoredProfile =
+                          await supabaseAuthService.getUserProfile(userId);
+                        setUser(restoredProfile as User);
+                      } catch (error) {
+                        console.error('Error restoring account:', error);
+                        Alert.alert(
+                          'Restoration Failed',
+                          'Could not restore your account. Please contact support.',
+                        );
+                        await authService.signOut();
+                      }
+                    },
+                  },
+                ],
+              );
+              return null; // Don't set user as logged in
+            } else {
+              // Restoration period expired
+              Alert.alert(
+                'Account Permanently Deleted',
+                'Your account has been permanently deleted and cannot be restored.',
+              );
+              await authService.signOut();
+              return null;
+            }
+          }
+        }
+
+        // Check if account is suspended
+        if (userProfile.account_status === 'suspended') {
+          // Check if suspension has expired
+          if (userProfile.suspension_end_date) {
+            const endDate = new Date(userProfile.suspension_end_date);
+            const now = new Date();
+
+            if (now > endDate) {
+              // Suspension expired, auto-unsuspend
+              try {
+                // Note: This would typically be handled by a cron job, but we can handle it here as a fallback
+                console.log(
+                  'Suspension expired, but auto-unsuspend should be handled by cron job',
+                );
+              } catch (error) {
+                console.error('Error auto-unsuspending account:', error);
+              }
+            }
+          }
+
+          // Account is still suspended
+          Alert.alert(
+            'Account Suspended',
+            'Your account has been suspended. Please contact support for assistance.',
+          );
+          await authService.signOut();
+          return null;
+        }
+
+        return userProfile as User;
+      } catch (error) {
+        console.error('AuthContext: Error fetching user profile:', error);
+        // If user profile doesn't exist, create it
+        try {
+          const session = await authService.getSession();
+          if (session?.user) {
+            await supabaseAuthService.createUserProfile(
+              session.user.id,
+              session.user.email || '',
+            );
+            const newProfile = await supabaseAuthService.getUserProfile(userId);
+            return newProfile as User;
+          }
+        } catch (createError) {
+          console.error('AuthContext: Error creating user profile:', createError);
+        }
+        return null;
+      } finally {
+        // Remove from map when done
+        profileFetchPromises.delete(userId);
+      }
+    })();
+
+    // Store the promise
+    profileFetchPromises.set(userId, fetchPromise);
+    return fetchPromise;
   };
 
   const refreshUser = async () => {
@@ -272,11 +294,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               profileTimeoutPromise,
             ]);
             setUser(userProfile);
+
+            // Force a background refresh after initial load to ensure data is up-to-date
+            // This happens after the UI is already showing cached data, so it's non-blocking
+            setTimeout(async () => {
+              try {
+                const freshProfile = await supabaseAuthService.getUserProfile(
+                  initialSession.user.id,
+                );
+                if (
+                  freshProfile &&
+                  JSON.stringify(freshProfile) !== JSON.stringify(userProfile)
+                ) {
+                  console.log('🔄 Updating user profile from server (background refresh)');
+                  setUser(freshProfile as User);
+                  const cacheKey = `user_profile:${initialSession.user.id}`;
+                  await cache.setLong(cacheKey, freshProfile);
+                }
+              } catch (error) {
+                // Silently fail - we already have cached data
+                if (__DEV__) {
+                  console.warn('Background profile refresh failed:', error);
+                }
+              }
+            }, 2000); // Wait 2 seconds after initial load
           } catch (profileError) {
-            console.warn(
-              '⚠️ User profile fetch timed out or failed, continuing without profile:',
-              profileError,
-            );
+            if (__DEV__) {
+              console.warn(
+                '⚠️ User profile fetch timed out, using cached data if available:',
+                profileError instanceof Error
+                  ? profileError.message
+                  : 'Unknown error',
+              );
+            }
             // Continue without user profile - it can be fetched later
             setUser(null);
             // Try to fetch in background (non-blocking)
@@ -288,7 +338,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 }
               })
               .catch(err => {
-                console.error('Background profile fetch failed:', err);
+                if (__DEV__) {
+                  console.error('Background profile fetch failed:', err);
+                }
               });
           }
         } else {
@@ -331,10 +383,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           ]);
           setUser(userProfile);
         } catch (error) {
-          console.warn(
-            '⚠️ User profile fetch timed out, continuing without profile:',
-            error,
-          );
+          if (__DEV__) {
+            console.warn(
+              '⚠️ User profile fetch timed out, using cached data if available:',
+              error instanceof Error ? error.message : 'Unknown error',
+            );
+          }
           setUser(null);
           // Try to fetch in background (non-blocking)
           fetchUserProfile(session.user.id)
@@ -379,10 +433,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           ]);
           setUser(userProfile);
         } catch (error) {
-          console.warn(
-            '⚠️ User profile fetch timed out in auth change listener:',
-            error,
-          );
+          if (__DEV__) {
+            console.warn(
+              '⚠️ User profile fetch timed out in auth change listener:',
+              error instanceof Error ? error.message : 'Unknown error',
+            );
+          }
           setUser(null);
           // Try to fetch in background (non-blocking)
           fetchUserProfile(session.user.id)
