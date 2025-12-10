@@ -222,7 +222,15 @@ const AddLectureScreen = () => {
     return () => {
       debouncedSave.cancel();
     };
-  }, [selectedCourse, lectureName, startTime, endTime, venue, recurrence, reminders]);
+  }, [
+    selectedCourse,
+    lectureName,
+    startTime,
+    endTime,
+    venue,
+    recurrence,
+    reminders,
+  ]);
 
   const handleStartTimeChange = (time: Date) => {
     setStartTime(time);
@@ -961,9 +969,7 @@ const AddLectureScreen = () => {
         style={[
           styles.footer,
           {
-            backgroundColor: theme.isDark
-              ? '#101922' + 'E6'
-              : '#F6F7F8' + 'E6',
+            backgroundColor: theme.isDark ? '#101922' + 'E6' : '#F6F7F8' + 'E6',
             borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
             paddingBottom: insets.bottom + 16,
           },
@@ -1012,11 +1018,7 @@ const AddLectureScreen = () => {
                 backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
               },
             ]}>
-            <Text
-              style={[
-                styles.modalTitle,
-                { color: theme.text },
-              ]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
               Select Reminder
             </Text>
             <Text
@@ -1029,8 +1031,7 @@ const AddLectureScreen = () => {
             <ScrollView style={styles.reminderOptionsList}>
               {REMINDER_OPTIONS.map(option => {
                 const isSelected = reminders.includes(option.value);
-                const isDisabled =
-                  !isSelected && reminders.length >= 2;
+                const isDisabled = !isSelected && reminders.length >= 2;
                 return (
                   <TouchableOpacity
                     key={option.value}

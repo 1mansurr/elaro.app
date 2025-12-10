@@ -30,13 +30,7 @@ export const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text
-        style={[
-          styles.label,
-          { color: theme.text },
-        ]}>
-        {label}
-      </Text>
+      <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
       <View style={styles.inputContainer}>
         {icon && (
           <View style={styles.iconContainer}>
@@ -110,4 +104,3 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
 });
-

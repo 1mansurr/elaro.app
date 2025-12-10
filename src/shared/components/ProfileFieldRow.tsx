@@ -33,11 +33,7 @@ export const ProfileFieldRow: React.FC<ProfileFieldRowProps> = ({
           borderBottomColor: theme.isDark ? '#374151' : '#F3F4F6',
         },
       ]}>
-      <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: iconBgColor },
-        ]}>
+      <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
         <Ionicons name={icon} size={20} color={iconColor} />
       </View>
       <View style={styles.textContainer}>
@@ -98,4 +94,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

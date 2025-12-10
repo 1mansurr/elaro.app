@@ -38,13 +38,7 @@ export const ReminderChip: React.FC<ReminderChipProps> = ({
             color={COLORS.primary}
           />
         </View>
-        <Text
-          style={[
-            styles.label,
-            { color: theme.text },
-          ]}>
-          {label}
-        </Text>
+        <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
       </View>
       <TouchableOpacity
         onPress={onRemove}
@@ -96,4 +90,3 @@ const styles = StyleSheet.create({
     padding: 4,
   },
 });
-

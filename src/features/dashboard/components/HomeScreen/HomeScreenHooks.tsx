@@ -354,4 +354,3 @@ export const useWelcomePrompt = (
     checkAndShowWelcomePrompt();
   }, [isGuest, user, navigation]);
 };
-

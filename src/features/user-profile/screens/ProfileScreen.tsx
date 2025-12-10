@@ -15,7 +15,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { SearchableSelector, ProfileFieldRow, ProfileFormInput } from '@/shared/components';
+import {
+  SearchableSelector,
+  ProfileFieldRow,
+  ProfileFormInput,
+} from '@/shared/components';
 import { RootStackParamList } from '@/types/navigation';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
@@ -176,11 +180,7 @@ const ProfileScreen = () => {
                   Cancel
                 </Text>
               </TouchableOpacity>
-              <Text
-                style={[
-                  styles.headerTitle,
-                  { color: theme.text },
-                ]}>
+              <Text style={[styles.headerTitle, { color: theme.text }]}>
                 Edit Profile
               </Text>
               <TouchableOpacity
@@ -269,13 +269,7 @@ const ProfileScreen = () => {
             </View>
 
             <View style={styles.countryContainer}>
-              <Text
-                style={[
-                  styles.label,
-                  { color: theme.text },
-                ]}>
-                Country
-              </Text>
+              <Text style={[styles.label, { color: theme.text }]}>Country</Text>
               <SearchableSelector
                 label="Country"
                 data={countryData}
@@ -294,11 +288,7 @@ const ProfileScreen = () => {
               ]}
             />
 
-            <Text
-              style={[
-                styles.sectionTitle,
-                { color: theme.text },
-              ]}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Academic Details
             </Text>
 
@@ -322,19 +312,12 @@ const ProfileScreen = () => {
           // View Mode
           <>
             <View style={styles.profileHeader}>
-              <Text
-                style={[
-                  styles.profileName,
-                  { color: theme.text },
-                ]}>
+              <Text style={[styles.profileName, { color: theme.text }]}>
                 {fullName}
               </Text>
               {displayUsername && (
                 <Text
-                  style={[
-                    styles.profileUsername,
-                    { color: COLORS.primary },
-                  ]}>
+                  style={[styles.profileUsername, { color: COLORS.primary }]}>
                   {displayUsername}
                 </Text>
               )}
@@ -404,8 +387,8 @@ const ProfileScreen = () => {
                   { color: theme.isDark ? '#6B7280' : '#9CA3AF' },
                 ]}>
                 Review your academic details carefully. To update your
-                university or program, please contact student support or use
-                the edit button.
+                university or program, please contact student support or use the
+                edit button.
               </Text>
             </View>
           </>

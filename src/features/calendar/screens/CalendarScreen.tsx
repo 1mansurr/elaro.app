@@ -506,13 +506,14 @@ const CalendarScreen = () => {
         return '#137FEC';
     }
   };
-  
-  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] = useState(false);
-  
+
+  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
+    useState(false);
+
   const handleNotificationBellPress = useCallback(() => {
     setIsNotificationHistoryVisible(true);
   }, []);
-  
+
   const handleNotificationHistoryClose = useCallback(() => {
     setIsNotificationHistoryVisible(false);
   }, []);
@@ -525,13 +526,10 @@ const CalendarScreen = () => {
         <Text style={styles.headerTitle}>Schedule</Text>
         <NotificationBell onPress={handleNotificationBellPress} />
       </View>
-      
+
       {/* View Mode Toggle */}
       <View style={styles.viewToggleContainer}>
-        <ViewModeToggle
-          selectedMode={viewMode}
-          onModeChange={setViewMode}
-        />
+        <ViewModeToggle selectedMode={viewMode} onModeChange={setViewMode} />
       </View>
 
       {/* Month View */}
@@ -625,9 +623,11 @@ const CalendarScreen = () => {
                 const endTime = task.endTime ? new Date(task.endTime) : null;
                 const timeStr = format(taskTime, 'h:mm');
                 const endTimeStr = endTime ? format(endTime, 'h:mm') : null;
-                
+
                 return (
-                  <View key={`${task.type}-${task.id}-${index}`} style={styles.agendaRow}>
+                  <View
+                    key={`${task.type}-${task.id}-${index}`}
+                    style={styles.agendaRow}>
                     <View style={styles.timeColumn}>
                       <Text style={styles.timeText}>{timeStr}</Text>
                       {endTimeStr && (
@@ -729,7 +729,7 @@ const CalendarScreen = () => {
       onRefresh={refetch}
       emptyStateComponent={renderCalendarContent()}>
       {renderCalendarContent()}
-      
+
       <NotificationHistoryModal
         isVisible={isNotificationHistoryVisible}
         onClose={handleNotificationHistoryClose}

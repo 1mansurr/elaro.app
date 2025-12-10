@@ -38,16 +38,16 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
   ({ item, onPress }) => {
     const { theme } = useTheme();
     return (
-    <TouchableOpacity
+      <TouchableOpacity
         style={[
           styles.courseItem,
           { backgroundColor: theme.surface || '#FFFFFF' },
         ]}
-      onPress={() => onPress(item.id)}
+        onPress={() => onPress(item.id)}
         activeOpacity={0.7}
         accessibilityLabel={item.courseName}
-      accessibilityHint="Opens course details"
-      accessibilityRole="button">
+        accessibilityHint="Opens course details"
+        accessibilityRole="button">
         <Text style={[styles.courseName, { color: theme.text }]}>
           {item.courseName}
         </Text>
@@ -56,7 +56,7 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
           size={20}
           color={theme.textSecondary || '#9ca3af'}
         />
-    </TouchableOpacity>
+      </TouchableOpacity>
     );
   },
 );
@@ -275,7 +275,7 @@ const CoursesScreen = () => {
               )}
             </View>
           </View>
-            </View>
+        </View>
 
         {/* Course List */}
         <QueryStateWrapper

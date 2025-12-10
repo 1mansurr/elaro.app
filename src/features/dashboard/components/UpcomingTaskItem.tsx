@@ -94,12 +94,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         <Ionicons name={category.icon} size={24} color={category.iconColor} />
       </View>
       <View style={styles.content}>
-        <Text
-          style={[
-            styles.title,
-            { color: theme.text },
-          ]}
-          numberOfLines={1}>
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {task.name}
         </Text>
         {subtitle && (
@@ -114,13 +109,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         )}
       </View>
       <View style={styles.timeContainer}>
-        <Text
-          style={[
-            styles.time,
-            { color: theme.text },
-          ]}>
-          {timeStr}
-        </Text>
+        <Text style={[styles.time, { color: theme.text }]}>{timeStr}</Text>
         <Text
           style={[
             styles.date,
@@ -184,4 +173,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

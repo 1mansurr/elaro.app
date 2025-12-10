@@ -49,13 +49,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           />
         </View>
         <View style={styles.textContainer}>
-          <Text
-            style={[
-              styles.title,
-              { color: theme.text },
-            ]}>
-            {title}
-          </Text>
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
           <Text
             style={[
               styles.description,
@@ -120,4 +114,3 @@ const styles = StyleSheet.create({
     lineHeight: 16,
   },
 });
-

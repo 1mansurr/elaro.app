@@ -36,7 +36,7 @@ const RecycleBinScreen = () => {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: false,
-              });
+    });
   }, [navigation]);
 
   const handleRestore = useCallback(
@@ -92,19 +92,19 @@ const RecycleBinScreen = () => {
   };
 
   const getItemIconColor = (type: string) => {
-                switch (type) {
-                  case 'course':
+    switch (type) {
+      case 'course':
         return { light: '#a855f7', dark: '#c084fc' };
-                  case 'assignment':
+      case 'assignment':
         return { light: '#14b8a6', dark: '#5eead4' };
-                  case 'lecture':
+      case 'lecture':
         return { light: '#f59e0b', dark: '#fbbf24' };
-                  case 'study_session':
+      case 'study_session':
         return { light: '#3b82f6', dark: '#60a5fa' };
-                  default:
+      default:
         return { light: '#6b7280', dark: '#9ca3af' };
-                }
-              };
+    }
+  };
 
   const getItemName = (item: any) => {
     if (item.type === 'course') {
@@ -156,9 +156,7 @@ const RecycleBinScreen = () => {
             <Ionicons
               name={getItemIcon(item.type) as any}
               size={24}
-              color={
-                theme.mode === 'dark' ? iconColor.dark : iconColor.light
-              }
+              color={theme.mode === 'dark' ? iconColor.dark : iconColor.light}
             />
           </View>
           <View style={styles.itemInfo}>
@@ -194,7 +192,7 @@ const RecycleBinScreen = () => {
               styles.restoreButtonText,
               {
                 color: theme.mode === 'dark' ? '#60a5fa' : '#135bec',
-          },
+              },
             ]}>
             {isRestoring ? 'Restoring...' : 'Restore'}
           </Text>
@@ -227,17 +225,17 @@ const RecycleBinScreen = () => {
         <View style={styles.headerSpacer} />
       </View>
 
-    <QueryStateWrapper
-      isLoading={isLoading}
-      isError={isError}
-      error={error}
-      data={items}
-      refetch={refetch}
-      isRefetching={isRefetching}
-      onRefresh={refetch}
-      emptyTitle="Trash can is empty"
-      emptyMessage="Deleted items will appear here. Items are automatically deleted after 30 days."
-      emptyIcon="trash-outline">
+      <QueryStateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        data={items}
+        refetch={refetch}
+        isRefetching={isRefetching}
+        onRefresh={refetch}
+        emptyTitle="Trash can is empty"
+        emptyMessage="Deleted items will appear here. Items are automatically deleted after 30 days."
+        emptyIcon="trash-outline">
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -249,8 +247,7 @@ const RecycleBinScreen = () => {
               {
                 backgroundColor:
                   theme.mode === 'dark' ? '#f59e0b20' : '#fef3c7',
-                borderColor:
-                  theme.mode === 'dark' ? '#f59e0b30' : '#fde68a',
+                borderColor: theme.mode === 'dark' ? '#f59e0b30' : '#fde68a',
               },
             ]}>
             <Ionicons
@@ -267,7 +264,7 @@ const RecycleBinScreen = () => {
               ]}>
               Items are permanently removed after 30 days. Restore courses to
               add them back to your schedule.
-              </Text>
+            </Text>
           </View>
 
           {/* Items List */}
@@ -277,12 +274,12 @@ const RecycleBinScreen = () => {
                 {renderItem({ item })}
               </View>
             ))}
-      </View>
+          </View>
 
           {/* Bottom spacing */}
           <View style={styles.bottomSpacing} />
         </ScrollView>
-    </QueryStateWrapper>
+      </QueryStateWrapper>
     </View>
   );
 };

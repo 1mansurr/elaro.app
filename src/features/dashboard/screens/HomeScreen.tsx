@@ -82,10 +82,10 @@ const HomeScreen = () => {
     isRefetching,
   } = useHomeScreenData(shouldFetchData);
   const { monthlyTaskCount } = useMonthlyTaskCount();
-  
+
   // Get calendar data for upcoming tasks
   const { data: calendarData } = useCalendarData(new Date());
-  
+
   // Extract upcoming tasks (next 4, excluding the "Up Next" task)
   const upcomingTasks = useMemo(() => {
     if (!calendarData || isGuest) return [];
@@ -445,12 +445,12 @@ const HomeScreen = () => {
     const name = user?.username || user?.first_name || 'there';
     return `${getGreeting()}, ${name}!`;
   }, [isGuest, user?.username, user?.first_name]);
-  
+
   // Get formatted date for header
   const formattedDate = useMemo(() => {
     return format(new Date(), 'EEEE, MMM d');
   }, []);
-  
+
   // Get subscription limit
   const subscriptionLimit = useMemo(() => {
     return user?.subscription_tier === 'oddity' ? 70 : 15;
@@ -511,7 +511,6 @@ const HomeScreen = () => {
     checkAndShowWelcomePrompt();
   }, [isGuest, user, navigation]);
 
-
   // Memoized callbacks for better performance
   const handleNotificationBellPress = useCallback(() => {
     setIsNotificationHistoryVisible(true);
@@ -563,11 +562,14 @@ const HomeScreen = () => {
       handleViewDetails(homeData.nextUpcomingTask);
     }
   }, [homeData?.nextUpcomingTask, handleViewDetails]);
-  
+
   // Handle upcoming task item press
-  const handleUpcomingTaskPress = useCallback((task: Task) => {
-    handleViewDetails(task);
-  }, [handleViewDetails]);
+  const handleUpcomingTaskPress = useCallback(
+    (task: Task) => {
+      handleViewDetails(task);
+    },
+    [handleViewDetails],
+  );
 
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
@@ -600,7 +602,7 @@ const HomeScreen = () => {
           />
         )}
         {isGuest && <Text style={styles.title}>{personalizedTitle}</Text>}
-        
+
         {/* Up Next Section */}
         {!isGuest && (
           <View style={styles.section}>
@@ -611,26 +613,24 @@ const HomeScreen = () => {
             />
           </View>
         )}
-        
+
         {/* Today's Overview Section */}
         {!isGuest && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Overview</Text>
-            <TodayOverviewGrid
-              overview={homeData?.todayOverview || null}
-            />
+            <TodayOverviewGrid overview={homeData?.todayOverview || null} />
             <MonthlyLimitCard
               monthlyTaskCount={monthlyTaskCount}
               limit={subscriptionLimit}
             />
           </View>
         )}
-        
+
         {/* Upcoming Section */}
         {!isGuest && upcomingTasks.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Upcoming</Text>
-            {upcomingTasks.map((task) => (
+            {upcomingTasks.map(task => (
               <UpcomingTaskItem
                 key={`${task.type}-${task.id}`}
                 task={task}

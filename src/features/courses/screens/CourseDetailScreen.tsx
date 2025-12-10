@@ -76,36 +76,38 @@ const CourseDetailScreen = () => {
   };
 
   const handleConfirmDelete = async () => {
-            if (!user?.id) {
-              Alert.alert('Error', 'User not authenticated.');
-              return;
-            }
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated.');
+      return;
+    }
 
-            setIsDeleting(true);
-            try {
-              await coursesApiMutations.delete(courseId, isOnline, user.id);
+    setIsDeleting(true);
+    try {
+      await coursesApiMutations.delete(courseId, isOnline, user.id);
 
       // Invalidate React Query caches to update UI immediately
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
-      await queryClient.invalidateQueries({ queryKey: ['courseDetail', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['courseDetail', courseId],
+      });
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
       await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      
+
       setShowDeleteModal(false);
-              Alert.alert('Success', 'Course deleted successfully.');
-              navigation.goBack();
-            } catch (error) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-              console.error(
-                'Delete Error:',
-                error instanceof Error ? error.message : 'Unknown error',
-              );
-            } finally {
-              setIsDeleting(false);
-            }
+      Alert.alert('Success', 'Course deleted successfully.');
+      navigation.goBack();
+    } catch (error) {
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
+      console.error(
+        'Delete Error:',
+        error instanceof Error ? error.message : 'Unknown error',
+      );
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const formatTime = (dateString: string) => {
@@ -164,17 +166,17 @@ const CourseDetailScreen = () => {
         </TouchableOpacity>
       </View>
 
-    <QueryStateWrapper
-      isLoading={isLoading}
-      isError={isError}
-      error={error}
-      data={course}
-      refetch={refetch}
-      isRefetching={isRefetching}
-      onRefresh={refetch}
-      emptyTitle="Course not found"
-      emptyMessage="This course may have been deleted or doesn't exist."
-      emptyIcon="book-outline">
+      <QueryStateWrapper
+        isLoading={isLoading}
+        isError={isError}
+        error={error}
+        data={course}
+        refetch={refetch}
+        isRefetching={isRefetching}
+        onRefresh={refetch}
+        emptyTitle="Course not found"
+        emptyMessage="This course may have been deleted or doesn't exist."
+        emptyIcon="book-outline">
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -184,11 +186,11 @@ const CourseDetailScreen = () => {
             <Text style={[styles.courseTitle, { color: theme.text }]}>
               {course?.courseName}
             </Text>
-          {course?.courseCode && (
+            {course?.courseCode && (
               <View style={styles.courseCodeBadge}>
                 <Text style={styles.courseCodeText}>{course.courseCode}</Text>
               </View>
-          )}
+            )}
           </View>
 
           {/* About Section */}
@@ -205,9 +207,9 @@ const CourseDetailScreen = () => {
             </View>
             <Text
               style={[styles.sectionContent, { color: theme.textSecondary }]}>
-            {course?.aboutCourse || 'No description provided.'}
-          </Text>
-        </View>
+              {course?.aboutCourse || 'No description provided.'}
+            </Text>
+          </View>
 
           {/* Schedule Section */}
           {lectures && (
@@ -377,7 +379,7 @@ const CourseDetailScreen = () => {
 
           {/* Delete Button */}
           <View style={styles.deleteButtonContainer}>
-          <TouchableOpacity
+            <TouchableOpacity
               style={[
                 styles.deleteButton,
                 {
@@ -385,7 +387,7 @@ const CourseDetailScreen = () => {
                     theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
                 },
               ]}
-            onPress={handleDelete}
+              onPress={handleDelete}
               disabled={isDeleting}
               activeOpacity={0.8}>
               <Ionicons
@@ -400,10 +402,10 @@ const CourseDetailScreen = () => {
                     color: theme.mode === 'dark' ? '#f87171' : '#dc2626',
                   },
                 ]}>
-              {isDeleting ? 'Deleting...' : 'Delete Course'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+                {isDeleting ? 'Deleting...' : 'Delete Course'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </QueryStateWrapper>
 
@@ -415,7 +417,7 @@ const CourseDetailScreen = () => {
         courseName={course?.courseName}
         isLoading={isDeleting}
       />
-      </View>
+    </View>
   );
 };
 

@@ -209,20 +209,20 @@ const AddLectureRemindersScreen = () => {
           {ReminderOptions.map((option, index) => {
             const isSelected = selectedReminders.includes(option.value);
             return (
-          <TouchableOpacity
-            key={option.value}
-            style={[
+              <TouchableOpacity
+                key={option.value}
+                style={[
                   styles.optionRow,
                   index < ReminderOptions.length - 1 && styles.optionRowBorder,
                   {
                     borderBottomColor: theme.border,
                   },
-            ]}
+                ]}
                 onPress={() => toggleReminder(option.value)}
                 activeOpacity={0.7}>
                 <Text style={[styles.optionLabel, { color: theme.text }]}>
-              {option.label}
-            </Text>
+                  {option.label}
+                </Text>
                 <View
                   style={[
                     styles.checkbox,
@@ -235,10 +235,10 @@ const AddLectureRemindersScreen = () => {
                     <Ionicons name="checkmark" size={14} color="#FFFFFF" />
                   )}
                 </View>
-          </TouchableOpacity>
+              </TouchableOpacity>
             );
           })}
-      </View>
+        </View>
       </ScrollView>
 
       {/* Footer */}
@@ -258,11 +258,11 @@ const AddLectureRemindersScreen = () => {
           onPress={handleFinish}
           disabled={isLoading}
           activeOpacity={0.8}>
-        {isLoading ? (
+          {isLoading ? (
             <ActivityIndicator color="#FFFFFF" />
-        ) : (
+          ) : (
             <Text style={styles.finishButtonText}>Finish</Text>
-        )}
+          )}
         </TouchableOpacity>
       </View>
     </View>

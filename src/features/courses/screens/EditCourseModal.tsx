@@ -242,14 +242,16 @@ const EditCourseModal = () => {
     setIsSaving(true);
     try {
       await coursesApiMutations.delete(courseId, isOnline, user.id);
-      
+
       // Invalidate React Query caches to update UI immediately
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
-      await queryClient.invalidateQueries({ queryKey: ['courseDetail', courseId] });
+      await queryClient.invalidateQueries({
+        queryKey: ['courseDetail', courseId],
+      });
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
       await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      
+
       setShowDeleteModal(false);
       Alert.alert('Success', 'Course deleted successfully.');
       navigation.goBack();
@@ -334,8 +336,8 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-          value={courseName}
-          onChangeText={setCourseName}
+                value={courseName}
+                onChangeText={setCourseName}
                 placeholder="e.g. Introduction to Psychology"
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
               />
@@ -355,8 +357,8 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-          value={courseCode}
-          onChangeText={setCourseCode}
+                value={courseCode}
+                onChangeText={setCourseCode}
                 placeholder="e.g. PSY101"
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
               />
@@ -376,12 +378,12 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-          value={aboutCourse}
-          onChangeText={setAboutCourse}
+                value={aboutCourse}
+                onChangeText={setAboutCourse}
                 placeholder="Add optional notes..."
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
-          multiline
-          numberOfLines={4}
+                multiline
+                numberOfLines={4}
                 textAlignVertical="top"
               />
             </View>
@@ -787,8 +789,8 @@ const EditCourseModal = () => {
         onConfirm={handleConfirmDelete}
         courseName={courseData?.courseName}
         isLoading={isSaving}
-        />
-      </View>
+      />
+    </View>
   );
 };
 

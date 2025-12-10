@@ -16,6 +16,7 @@ interface CompleteTaskParams {
   taskId: string;
   taskType: 'lecture' | 'study_session' | 'assignment';
   taskTitle: string;
+  skipNotificationCancellation?: boolean; // For recurring lectures - don't cancel future reminders
 }
 
 interface DeleteTaskParams {
@@ -166,7 +167,7 @@ export const useCompleteTask = () => {
     },
 
     // On success, track the event and cancel notifications
-    onSuccess: async (data, { taskId, taskType, taskTitle }) => {
+    onSuccess: async (data, { taskId, taskType, taskTitle, skipNotificationCancellation }) => {
       // Track successful completion (includes both online and offline modes)
       mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED.name, {
         task_id: taskId,
@@ -177,18 +178,24 @@ export const useCompleteTask = () => {
         offline_mode: !isOnline,
       });
 
-      // Cancel local notifications for this task
-      try {
-        const { notificationService } = await import(
-          '@/services/notifications'
+      // Cancel local notifications for this task (skip for recurring lectures)
+      if (!skipNotificationCancellation) {
+        try {
+          const { notificationService } = await import(
+            '@/services/notifications'
+          );
+          await notificationService.cancelItemReminders(taskId);
+        } catch (error) {
+          console.error(
+            'Error cancelling notifications for completed task:',
+            error,
+          );
+          // Don't block completion if notification cancellation fails
+        }
+      } else {
+        console.log(
+          `⏭️ Skipping notification cancellation for recurring lecture ${taskId}`,
         );
-        await notificationService.cancelItemReminders(taskId);
-      } catch (error) {
-        console.error(
-          'Error cancelling notifications for completed task:',
-          error,
-        );
-        // Don't block completion if notification cancellation fails
       }
     },
   });

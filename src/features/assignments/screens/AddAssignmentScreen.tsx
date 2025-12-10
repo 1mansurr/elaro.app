@@ -706,10 +706,16 @@ const AddAssignmentScreen = () => {
             <SegmentedControl
               options={[
                 { label: 'Online', value: 'Online', icon: 'wifi-outline' },
-                { label: 'In-Person', value: 'In-person', icon: 'school-outline' },
+                {
+                  label: 'In-Person',
+                  value: 'In-person',
+                  icon: 'school-outline',
+                },
               ]}
               selectedValue={submissionMethod}
-              onValueChange={value => setSubmissionMethod(value as SubmissionMethod)}
+              onValueChange={value =>
+                setSubmissionMethod(value as SubmissionMethod)
+              }
             />
           </View>
 
@@ -840,9 +846,7 @@ const AddAssignmentScreen = () => {
         style={[
           styles.footer,
           {
-            backgroundColor: theme.isDark
-              ? '#101922' + 'E6'
-              : '#F6F7F8' + 'E6',
+            backgroundColor: theme.isDark ? '#101922' + 'E6' : '#F6F7F8' + 'E6',
             borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
             paddingBottom: insets.bottom + 16,
           },
@@ -888,11 +892,7 @@ const AddAssignmentScreen = () => {
                 backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
               },
             ]}>
-            <Text
-              style={[
-                styles.modalTitle,
-                { color: theme.text },
-              ]}>
+            <Text style={[styles.modalTitle, { color: theme.text }]}>
               Select Reminder
             </Text>
             <Text
@@ -905,8 +905,7 @@ const AddAssignmentScreen = () => {
             <ScrollView style={styles.reminderOptionsList}>
               {REMINDER_OPTIONS.map(option => {
                 const isSelected = reminders.includes(option.value);
-                const isDisabled =
-                  !isSelected && reminders.length >= 2;
+                const isDisabled = !isSelected && reminders.length >= 2;
                 return (
                   <TouchableOpacity
                     key={option.value}

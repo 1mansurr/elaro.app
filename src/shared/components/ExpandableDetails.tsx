@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -54,11 +60,7 @@ export const ExpandableDetails: React.FC<ExpandableDetailsProps> = ({
           />
         </Animated.View>
       </TouchableOpacity>
-      {isOpen && (
-        <View style={styles.content}>
-          {children}
-        </View>
-      )}
+      {isOpen && <View style={styles.content}>{children}</View>}
     </View>
   );
 };
@@ -77,4 +79,3 @@ const styles = StyleSheet.create({
     paddingLeft: 72, // Match indentation from HTML (4.5rem = 72px)
   },
 });
-

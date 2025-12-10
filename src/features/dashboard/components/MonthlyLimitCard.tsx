@@ -34,11 +34,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
             ]}>
             MONTHLY LIMIT
           </Text>
-          <Text
-            style={[
-              styles.countText,
-              { color: theme.text },
-            ]}>
+          <Text style={[styles.countText, { color: theme.text }]}>
             <Text style={[styles.bold, { color: COLORS.primary }]}>
               {monthlyTaskCount}
             </Text>
@@ -59,11 +55,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
               backgroundColor: COLORS.primary + '1A',
             },
           ]}>
-          <Text
-            style={[
-              styles.percentageText,
-              { color: COLORS.primary },
-            ]}>
+          <Text style={[styles.percentageText, { color: COLORS.primary }]}>
             {Math.round(percentage)}%
           </Text>
         </View>
@@ -143,4 +135,3 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
 });
-

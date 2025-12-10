@@ -107,11 +107,7 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
                 {category.label}
               </Text>
             </View>
-            <Text
-              style={[
-                styles.title,
-                { color: theme.text },
-              ]}>
+            <Text style={[styles.title, { color: theme.text }]}>
               {task.name}
             </Text>
           </View>
@@ -293,4 +289,3 @@ const styles = StyleSheet.create({
     color: '#D97706',
   },
 });
-

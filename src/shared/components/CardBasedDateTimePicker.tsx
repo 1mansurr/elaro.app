@@ -72,7 +72,10 @@ export const CardBasedDateTimePicker: React.FC<
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date,
+  ) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
@@ -123,13 +126,7 @@ export const CardBasedDateTimePicker: React.FC<
             },
           ]}>
           <View style={styles.cardRow}>
-            <Text
-              style={[
-                styles.label,
-                { color: theme.text },
-              ]}>
-              {label}
-            </Text>
+            <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               style={styles.dateButton}>
@@ -147,11 +144,7 @@ export const CardBasedDateTimePicker: React.FC<
               },
             ]}>
             <View style={styles.timeRow}>
-              <Text
-                style={[
-                  styles.timeLabel,
-                  { color: theme.text },
-                ]}>
+              <Text style={[styles.timeLabel, { color: theme.text }]}>
                 {startLabel}
               </Text>
               <TouchableOpacity
@@ -165,11 +158,7 @@ export const CardBasedDateTimePicker: React.FC<
 
             <View style={styles.timeRow}>
               <View style={styles.endTimeRow}>
-                <Text
-                  style={[
-                    styles.timeLabel,
-                    { color: theme.text },
-                  ]}>
+                <Text style={[styles.timeLabel, { color: theme.text }]}>
                   {endLabel}
                 </Text>
                 {showDuration && (
@@ -187,10 +176,7 @@ export const CardBasedDateTimePicker: React.FC<
                       color={COLORS.primary}
                     />
                     <Text
-                      style={[
-                        styles.durationText,
-                        { color: COLORS.primary },
-                      ]}>
+                      style={[styles.durationText, { color: COLORS.primary }]}>
                       {getDuration()}
                     </Text>
                   </View>
@@ -253,11 +239,7 @@ export const CardBasedDateTimePicker: React.FC<
               size={20}
               color={COLORS.primary}
             />
-            <Text
-              style={[
-                styles.singleButtonText,
-                { color: theme.text },
-              ]}>
+            <Text style={[styles.singleButtonText, { color: theme.text }]}>
               Select Date
             </Text>
           </TouchableOpacity>
@@ -272,16 +254,8 @@ export const CardBasedDateTimePicker: React.FC<
                 },
               ]}
               onPress={() => setShowTimePicker('single')}>
-              <Ionicons
-                name="time-outline"
-                size={20}
-                color={COLORS.primary}
-              />
-              <Text
-                style={[
-                  styles.singleButtonText,
-                  { color: theme.text },
-                ]}>
+              <Ionicons name="time-outline" size={20} color={COLORS.primary} />
+              <Text style={[styles.singleButtonText, { color: theme.text }]}>
                 Select Time
               </Text>
             </TouchableOpacity>
@@ -411,4 +385,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

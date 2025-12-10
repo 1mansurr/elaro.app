@@ -49,11 +49,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
                 name={option.icon}
                 size={18}
                 color={
-                  isSelected
-                    ? '#FFFFFF'
-                    : theme.isDark
-                      ? '#9CA3AF'
-                      : '#6B7280'
+                  isSelected ? '#FFFFFF' : theme.isDark ? '#9CA3AF' : '#6B7280'
                 }
               />
             )}
@@ -122,4 +118,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold,
   },
 });
-

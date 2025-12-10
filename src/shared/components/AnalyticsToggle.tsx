@@ -49,11 +49,11 @@ export const AnalyticsToggle: React.FC = () => {
   }
 
   return (
-      <Switch
-        value={isEnabled}
-        onValueChange={handleToggle}
+    <Switch
+      value={isEnabled}
+      onValueChange={handleToggle}
       trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
       thumbColor="#FFFFFF"
-      />
+    />
   );
 };

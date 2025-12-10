@@ -136,11 +136,7 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
                   backgroundColor: COLORS.primary + '0D',
                 },
               ]}>
-              <Ionicons
-                name="time-outline"
-                size={18}
-                color={COLORS.primary}
-              />
+              <Ionicons name="time-outline" size={18} color={COLORS.primary} />
               <Text style={[styles.timerText, { color: COLORS.primary }]}>
                 {formatDuration(timeRemaining)}
               </Text>
@@ -148,11 +144,7 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
           )}
         </View>
 
-        <Text
-          style={[
-            styles.taskTitle,
-            { color: theme.text },
-          ]}>
+        <Text style={[styles.taskTitle, { color: theme.text }]}>
           {task.name}
         </Text>
         {task.courses?.courseName && (
@@ -233,4 +225,3 @@ const styles = StyleSheet.create({
     paddingVertical: SPACING.xl,
   },
 });
-

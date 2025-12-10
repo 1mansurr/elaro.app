@@ -51,13 +51,7 @@ const StatCard: React.FC<{
           {label}
         </Text>
       </View>
-      <Text
-        style={[
-          styles.statCount,
-          { color: theme.text },
-        ]}>
-        {count}
-      </Text>
+      <Text style={[styles.statCount, { color: theme.text }]}>{count}</Text>
     </View>
   );
 };
@@ -142,4 +136,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.bold,
   },
 });
-

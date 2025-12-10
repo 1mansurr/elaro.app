@@ -18,7 +18,10 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 import { supabase } from '@/services/supabase';
-import { ExpandableDetails, InlineNotificationSettings } from '@/shared/components';
+import {
+  ExpandableDetails,
+  InlineNotificationSettings,
+} from '@/shared/components';
 import { AnalyticsToggle } from '@/shared/components/AnalyticsToggle';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/utils/showToast';
@@ -72,11 +75,7 @@ const SettingItem: React.FC<SettingItemProps> = ({
       ]}
       disabled={disabled}
       activeOpacity={0.7}>
-      <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: defaultIconBg },
-        ]}>
+      <View style={[styles.iconContainer, { backgroundColor: defaultIconBg }]}>
         <Ionicons name={icon} size={22} color={defaultIconColor} />
       </View>
       <Text
@@ -117,7 +116,9 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
         styles.categoryCard,
         {
           backgroundColor: theme.isDark ? '#1E2330' : '#FFFFFF',
-          borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)',
+          borderColor: theme.isDark
+            ? 'rgba(255, 255, 255, 0.05)'
+            : 'rgba(0, 0, 0, 0.05)',
         },
       ]}>
       <View
@@ -128,7 +129,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           },
         ]}>
         <Ionicons name={icon} size={20} color={COLORS.primary} />
-        <Text style={[styles.categoryTitle, { color: theme.isDark ? '#9CA3AF' : '#6B7280' }]}>
+        <Text
+          style={[
+            styles.categoryTitle,
+            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+          ]}>
           {title}
         </Text>
       </View>
@@ -380,7 +385,12 @@ export function SettingsScreen() {
             iconBgColor={theme.isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
             showChevron
           />
-          <View style={[styles.divider, { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+            ]}
+          />
           <SettingItem
             label="Multi-Factor Authentication"
             onPress={handleEnableMfa}
@@ -412,7 +422,8 @@ export function SettingsScreen() {
                 />
               </View>
               <View style={styles.notificationsHeaderText}>
-                <Text style={[styles.notificationsTitle, { color: theme.text }]}>
+                <Text
+                  style={[styles.notificationsTitle, { color: theme.text }]}>
                   Notifications
                 </Text>
                 <Text
@@ -429,7 +440,12 @@ export function SettingsScreen() {
             </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+            ]}
+          />
 
           {/* Privacy & Analytics - Expandable */}
           <ExpandableDetails
@@ -475,14 +491,20 @@ export function SettingsScreen() {
                     : '#E5E7EB',
                 },
               ]}>
-              <Text style={[styles.analyticsToggleLabel, { color: theme.text }]}>
+              <Text
+                style={[styles.analyticsToggleLabel, { color: theme.text }]}>
                 Share Data
               </Text>
               <AnalyticsToggle />
             </View>
           </ExpandableDetails>
 
-          <View style={[styles.divider, { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+            ]}
+          />
 
           {/* Clear Cache */}
           <SettingItem
@@ -500,7 +522,12 @@ export function SettingsScreen() {
             showChevron={false}
           />
 
-          <View style={[styles.divider, { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+            ]}
+          />
 
           {/* Reset All Settings */}
           <SettingItem
@@ -525,7 +552,12 @@ export function SettingsScreen() {
             iconBgColor={theme.isDark ? '#374151' : '#F3F4F6'}
             showChevron
           />
-          <View style={[styles.divider, { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' }]} />
+          <View
+            style={[
+              styles.divider,
+              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+            ]}
+          />
           <SettingItem
             label="Log Out From All Devices"
             onPress={handleGlobalSignOut}
