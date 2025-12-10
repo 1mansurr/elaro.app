@@ -166,9 +166,7 @@ export const LectureDetailSheet: React.FC<LectureDetailSheetProps> = ({
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: theme.isDark
-                      ? '#283039'
-                      : '#EFF6FF',
+                    backgroundColor: theme.isDark ? '#283039' : '#EFF6FF',
                   },
                 ]}>
                 <Ionicons
@@ -199,9 +197,7 @@ export const LectureDetailSheet: React.FC<LectureDetailSheetProps> = ({
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: theme.isDark
-                      ? '#283039'
-                      : '#EFF6FF',
+                    backgroundColor: theme.isDark ? '#283039' : '#EFF6FF',
                   },
                 ]}>
                 <Ionicons
@@ -323,4 +319,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
   },
 });
-

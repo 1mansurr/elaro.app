@@ -167,7 +167,10 @@ export const useCompleteTask = () => {
     },
 
     // On success, track the event and cancel notifications
-    onSuccess: async (data, { taskId, taskType, taskTitle, skipNotificationCancellation }) => {
+    onSuccess: async (
+      data,
+      { taskId, taskType, taskTitle, skipNotificationCancellation },
+    ) => {
       // Track successful completion (includes both online and offline modes)
       mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED.name, {
         task_id: taskId,

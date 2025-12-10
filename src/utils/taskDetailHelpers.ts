@@ -60,7 +60,9 @@ export const formatDuration = (
   const start = typeof startTime === 'string' ? new Date(startTime) : startTime;
   const end = typeof endTime === 'string' ? new Date(endTime) : endTime;
 
-  const diffMinutes = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+  const diffMinutes = Math.round(
+    (end.getTime() - start.getTime()) / (1000 * 60),
+  );
 
   if (diffMinutes < 60) {
     return `${diffMinutes}m`;
@@ -99,4 +101,3 @@ export const formatTimeOnly = (date: string | Date): string => {
   const d = typeof date === 'string' ? new Date(date) : date;
   return format(d, 'h:mm a');
 };
-

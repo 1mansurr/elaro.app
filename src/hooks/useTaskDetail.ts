@@ -73,7 +73,13 @@ export const useTaskDetail = (
                 courseCode: data.courses.course_code,
               }
             : null,
-        } as Assignment & { course: { id: string; courseName: string; courseCode?: string } | null };
+        } as Assignment & {
+          course: {
+            id: string;
+            courseName: string;
+            courseCode?: string;
+          } | null;
+        };
       }
 
       if (taskType === 'lecture') {
@@ -97,7 +103,13 @@ export const useTaskDetail = (
                 courseCode: data.courses.course_code,
               }
             : null,
-        } as Lecture & { course: { id: string; courseName: string; courseCode?: string } | null };
+        } as Lecture & {
+          course: {
+            id: string;
+            courseName: string;
+            courseCode?: string;
+          } | null;
+        };
       }
 
       if (taskType === 'study_session') {
@@ -117,7 +129,13 @@ export const useTaskDetail = (
                 courseCode: data.courses.course_code,
               }
             : null,
-        } as StudySession & { course: { id: string; courseName: string; courseCode?: string } | null };
+        } as StudySession & {
+          course: {
+            id: string;
+            courseName: string;
+            courseCode?: string;
+          } | null;
+        };
       }
 
       return null;
@@ -125,4 +143,3 @@ export const useTaskDetail = (
     enabled: enabled && !!taskId && !!taskType && !!user,
   });
 };
-

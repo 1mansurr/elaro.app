@@ -88,11 +88,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
             ]}
             onPress={onDelete}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons
-              name="trash-outline"
-              size={20}
-              color="#EF4444"
-            />
+            <Ionicons name="trash-outline" size={20} color="#EF4444" />
           </TouchableOpacity>
         )}
 
@@ -151,4 +147,3 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
-

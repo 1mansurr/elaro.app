@@ -1,10 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -44,7 +39,9 @@ export const StudySessionDetailSheet: React.FC<
     ? new Date(studySession.sessionDate)
     : null;
 
-  const scheduledTime = sessionDate ? formatDateTime(sessionDate) : 'Not scheduled';
+  const scheduledTime = sessionDate
+    ? formatDateTime(sessionDate)
+    : 'Not scheduled';
 
   return (
     <View
@@ -177,18 +174,14 @@ export const StudySessionDetailSheet: React.FC<
               style={[
                 styles.settingItem,
                 {
-                  backgroundColor: theme.isDark
-                    ? 'transparent'
-                    : 'transparent',
+                  backgroundColor: theme.isDark ? 'transparent' : 'transparent',
                 },
               ]}>
               <View
                 style={[
                   styles.settingIconContainer,
                   {
-                    backgroundColor: theme.isDark
-                      ? '#374151'
-                      : '#F3F4F6',
+                    backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
                   },
                 ]}>
                 <Ionicons
@@ -262,9 +255,7 @@ export const StudySessionDetailSheet: React.FC<
                   style={[
                     styles.settingIconContainer,
                     {
-                      backgroundColor: theme.isDark
-                        ? '#374151'
-                        : '#F3F4F6',
+                      backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
                     },
                   ]}>
                   <Ionicons
@@ -302,18 +293,14 @@ export const StudySessionDetailSheet: React.FC<
               style={[
                 styles.settingItem,
                 {
-                  backgroundColor: theme.isDark
-                    ? 'transparent'
-                    : 'transparent',
+                  backgroundColor: theme.isDark ? 'transparent' : 'transparent',
                 },
               ]}>
               <View
                 style={[
                   styles.settingIconContainer,
                   {
-                    backgroundColor: theme.isDark
-                      ? '#374151'
-                      : '#F3F4F6',
+                    backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
                   },
                 ]}>
                 <Ionicons
@@ -338,11 +325,7 @@ export const StudySessionDetailSheet: React.FC<
                   {isTemplate ? 'Yes' : 'No'}
                 </Text>
                 {isTemplate && (
-                  <Ionicons
-                    name="checkmark-circle"
-                    size={20}
-                    color="#10B981"
-                  />
+                  <Ionicons name="checkmark-circle" size={20} color="#10B981" />
                 )}
               </View>
             </View>
@@ -493,4 +476,3 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 });
-

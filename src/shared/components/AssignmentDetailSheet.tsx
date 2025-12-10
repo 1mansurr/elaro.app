@@ -14,7 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DetailSheetHeader } from './DetailSheetHeader';
 import { DetailSheetFooter } from './DetailSheetFooter';
 import { ReminderChipsList } from './ReminderChipsList';
-import { formatCountdown, formatDateOnly, formatTimeOnly } from '@/utils/taskDetailHelpers';
+import {
+  formatCountdown,
+  formatDateOnly,
+  formatTimeOnly,
+} from '@/utils/taskDetailHelpers';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { Assignment } from '@/types';
 
@@ -126,9 +130,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               style={[
                 styles.countdownDot,
                 {
-                  backgroundColor: isOverdue
-                    ? '#EF4444'
-                    : COLORS.primary,
+                  backgroundColor: isOverdue ? '#EF4444' : COLORS.primary,
                 },
               ]}
             />
@@ -136,9 +138,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               style={[
                 styles.countdownText,
                 {
-                  color: isOverdue
-                    ? '#EF4444'
-                    : COLORS.primary,
+                  color: isOverdue ? '#EF4444' : COLORS.primary,
                 },
               ]}>
               {countdown}
@@ -174,11 +174,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
             {shouldTruncate && (
               <TouchableOpacity
                 onPress={() => setShowFullDescription(!showFullDescription)}>
-                <Text
-                  style={[
-                    styles.readMoreText,
-                    { color: COLORS.primary },
-                  ]}>
+                <Text style={[styles.readMoreText, { color: COLORS.primary }]}>
                   {showFullDescription ? 'Read less' : 'Read more'}
                 </Text>
               </TouchableOpacity>
@@ -200,9 +196,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               style={[
                 styles.submissionCard,
                 {
-                  backgroundColor: theme.isDark
-                    ? '#202A36'
-                    : '#F9FAFB',
+                  backgroundColor: theme.isDark ? '#202A36' : '#F9FAFB',
                   borderColor: theme.isDark ? '#374151' : '#E5E7EB',
                 },
               ]}>
@@ -456,4 +450,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
   },
 });
-

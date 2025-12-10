@@ -17,14 +17,16 @@ import {
   GestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme, ThemeType } from '@/contexts/ThemeContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   NotificationHistoryItem,
   NotificationFilter,
   notificationHistoryService,
 } from '@/services/notifications/NotificationHistoryService';
 import { formatDate } from '@/i18n';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 interface NotificationHistoryModalProps {
   isVisible: boolean;
@@ -32,12 +34,35 @@ interface NotificationHistoryModalProps {
 }
 
 const { width: screenWidth } = Dimensions.get('window');
+const SWIPE_THRESHOLD = screenWidth * 0.3; // 30% of screen width for completion
+const EDGE_SWIPE_THRESHOLD = 50; // Pixels from right edge to trigger back
+
+// Map Material Symbols to Ionicons
+const getFilterIcon = (type: string): keyof typeof Ionicons.glyphMap => {
+  switch (type) {
+    case 'all':
+      return 'notifications-outline';
+    case 'assignments':
+      return 'document-text-outline';
+    case 'lectures':
+      return 'school-outline';
+    case 'study_sessions':
+      return 'people-outline';
+    case 'analytics':
+      return 'stats-chart-outline';
+    case 'summaries':
+      return 'document-text-outline';
+    default:
+      return 'notifications-outline';
+  }
+};
 
 export const NotificationHistoryModal: React.FC<
   NotificationHistoryModalProps
 > = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<NotificationHistoryItem[]>(
     [],
   );
@@ -48,7 +73,10 @@ export const NotificationHistoryModal: React.FC<
     useState<NotificationFilter['type']>('all');
   const [loading, setLoading] = useState(true);
   const [hasUnread, setHasUnread] = useState(false);
-  const [swipeAnimations] = useState<{ [key: string]: Animated.Value }>({});
+
+  // Swipe from right edge to go back
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   const filters = notificationHistoryService.getNotificationFilters();
 
@@ -142,20 +170,6 @@ export const NotificationHistoryModal: React.FC<
     }
   };
 
-  const handleDeleteNotification = async (notificationId: string) => {
-    if (!user) return;
-
-    try {
-      await notificationHistoryService.deleteNotification(
-        notificationId,
-        user.id,
-      );
-      await loadNotifications();
-    } catch (error) {
-      console.error('Error deleting notification:', error);
-    }
-  };
-
   const handleCompleteTask = async (notificationId: string) => {
     if (!user) return;
 
@@ -177,44 +191,20 @@ export const NotificationHistoryModal: React.FC<
         return '📝';
       case 'lecture':
       case 'lecture_reminder':
-        return '👨‍🏫';
+        return '🧑‍🏫';
       case 'srs':
       case 'study_session':
       case 'srs_reminder':
-        return '📚';
+        return '👥';
       case 'weekly_report':
       case 'analytics':
-        return '📈';
+        return '📊';
       case 'daily_summary':
       case 'achievement':
       case 'update':
         return '📊';
       default:
         return '🔔';
-    }
-  };
-
-  const getNotificationColor = (type: string) => {
-    switch (type) {
-      case 'assignment':
-      case 'assignment_reminder':
-        return '#FF6B6B';
-      case 'lecture':
-      case 'lecture_reminder':
-        return '#4ECDC4';
-      case 'srs':
-      case 'study_session':
-      case 'srs_reminder':
-        return '#45B7D1';
-      case 'weekly_report':
-      case 'analytics':
-        return '#9C27B0';
-      case 'daily_summary':
-      case 'achievement':
-      case 'update':
-        return '#FFA726';
-      default:
-        return theme.accent;
     }
   };
 
@@ -231,10 +221,6 @@ export const NotificationHistoryModal: React.FC<
     return formatDate(date);
   };
 
-  const truncateTitle = (title: string) => {
-    return title.length > 35 ? title.substring(0, 35) + '...' : title;
-  };
-
   const isTaskNotification = (type: string) => {
     return (
       type === 'assignment' ||
@@ -244,7 +230,65 @@ export const NotificationHistoryModal: React.FC<
     );
   };
 
+  // Handle swipe from right edge to go back
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX, x } = event.nativeEvent;
+    // Check if swipe starts from right edge (within 20px of right edge)
+    if (x > screenWidth - 20 && translationX < 0) {
+      const progress = Math.min(1, Math.abs(translationX) / screenWidth);
+      edgeSwipeTranslateX.setValue(translationX);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
+        // Animate out and close
+        Animated.parallel([
+          Animated.timing(edgeSwipeTranslateX, {
+            toValue: -screenWidth,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(edgeSwipeOpacity, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          onClose();
+          // Reset
+          edgeSwipeTranslateX.setValue(0);
+          edgeSwipeOpacity.setValue(1);
+        });
+      } else {
+        // Snap back
+        Animated.parallel([
+          Animated.spring(edgeSwipeTranslateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 7,
+          }),
+          Animated.spring(edgeSwipeOpacity, {
+            toValue: 1,
+            useNativeDriver: true,
+            friction: 7,
+          }),
+        ]).start();
+      }
+    }
+  };
+
   if (!isVisible) return null;
+
+  // Light mode default colors
+  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = theme.isDark ? 'rgba(30, 41, 59, 0.5)' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
 
   return (
     <Modal
@@ -252,131 +296,144 @@ export const NotificationHistoryModal: React.FC<
       animationType="slide"
       presentationStyle="fullScreen"
       onRequestClose={onClose}>
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: theme.border }]}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Notifications
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Filter Tabs */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}>
-          {filters.map((filter: NotificationFilter) => (
+      <PanGestureHandler
+        onGestureEvent={handleEdgeSwipe}
+        onHandlerStateChange={handleEdgeSwipeEnd}
+        activeOffsetX={-10}
+        failOffsetY={[-10, 10]}>
+        <Animated.View
+          style={[
+            styles.container,
+            {
+              backgroundColor: bgColor,
+              transform: [{ translateX: edgeSwipeTranslateX }],
+              opacity: edgeSwipeOpacity,
+            },
+          ]}>
+          {/* Header */}
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: bgColor,
+                paddingTop: insets.top + SPACING.md,
+              },
+            ]}>
             <TouchableOpacity
-              key={filter.type}
+              onPress={onClose}
               style={[
-                styles.filterTab,
-                activeFilter === filter.type && styles.activeFilterTab,
+                styles.closeButton,
                 {
-                  backgroundColor:
-                    activeFilter === filter.type ? theme.accent : 'transparent',
-                  borderColor:
-                    activeFilter === filter.type ? theme.accent : theme.border,
+                  backgroundColor: theme.isDark
+                    ? 'rgba(255, 255, 255, 0.1)'
+                    : 'transparent',
                 },
               ]}
-              onPress={() => setActiveFilter(filter.type)}>
-              <Ionicons
-                name={filter.icon}
-                size={16}
-                color={
-                  activeFilter === filter.type ? 'white' : theme.textSecondary
-                }
-              />
-              <Text
-                style={[
-                  styles.filterText,
-                  {
-                    color:
-                      activeFilter === filter.type
-                        ? 'white'
-                        : theme.textSecondary,
-                  },
-                ]}>
-                {filter.label}
-              </Text>
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close" size={24} color={textColor} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        {/* Mark All as Read Button */}
-        {hasUnread && (
-          <View style={styles.markAllContainer}>
-            <TouchableOpacity
-              style={[styles.markAllButton, { backgroundColor: theme.surface }]}
-              onPress={handleMarkAllAsRead}>
-              <Ionicons
-                name="checkmark-circle"
-                size={20}
-                color={theme.accent}
-              />
-              <Text style={[styles.markAllText, { color: theme.accent }]}>
-                Mark All as Read
-              </Text>
-            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Notifications
+            </Text>
+            <View style={styles.headerSpacer} />
           </View>
-        )}
 
-        {/* Notifications List */}
-        <ScrollView
-          style={styles.notificationsList}
-          showsVerticalScrollIndicator={false}>
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <Text
-                style={[styles.loadingText, { color: theme.textSecondary }]}>
-                Loading notifications...
-              </Text>
+          {/* Filter Chips */}
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterContainer}
+            contentContainerStyle={styles.filterContent}>
+            {filters.map((filter: NotificationFilter) => {
+              const isActive = activeFilter === filter.type;
+              return (
+                <TouchableOpacity
+                  key={filter.type}
+                  style={[
+                    styles.filterChip,
+                    {
+                      backgroundColor: isActive
+                        ? COLORS.primary
+                        : theme.isDark
+                          ? '#1F2937'
+                          : '#E5E7EB',
+                    },
+                  ]}
+                  onPress={() => setActiveFilter(filter.type)}>
+                  <Ionicons
+                    name={getFilterIcon(filter.type)}
+                    size={20}
+                    color={isActive ? '#FFFFFF' : textSecondaryColor}
+                  />
+                  <Text
+                    style={[
+                      styles.filterText,
+                      {
+                        color: isActive ? '#FFFFFF' : textSecondaryColor,
+                      },
+                    ]}>
+                    {filter.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+
+          {/* Mark All as Read Button */}
+          {hasUnread && (
+            <View style={styles.markAllContainer}>
+              <TouchableOpacity
+                style={styles.markAllButton}
+                onPress={handleMarkAllAsRead}>
+                <Text style={[styles.markAllText, { color: COLORS.primary }]}>
+                  Mark All as Read
+                </Text>
+              </TouchableOpacity>
             </View>
-          ) : filteredNotifications.length === 0 ? (
-            <View style={styles.emptyContainer}>
-              <Ionicons
-                name="notifications-outline"
-                size={48}
-                color={theme.textSecondary}
-              />
-              <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                {activeFilter === 'all'
-                  ? 'No notifications yet'
-                  : 'No notifications in this category'}
-              </Text>
-              <Text
-                style={[
-                  styles.emptyDescription,
-                  { color: theme.textSecondary },
-                ]}>
-                {activeFilter === 'all'
-                  ? 'Your notifications will appear here'
-                  : 'Try selecting a different filter'}
-              </Text>
-            </View>
-          ) : (
-            filteredNotifications.map(notification => (
-              <NotificationItem
-                key={notification.id}
-                notification={notification}
-                onMarkAsRead={() => handleMarkAsRead(notification.id)}
-                onDelete={() => handleDeleteNotification(notification.id)}
-                onCompleteTask={() => handleCompleteTask(notification.id)}
-                isTask={isTaskNotification(notification.notification_type)}
-                getIcon={getNotificationIcon}
-                getColor={getNotificationColor}
-                formatTimestamp={formatTimestamp}
-                truncateTitle={truncateTitle}
-                theme={theme}
-              />
-            ))
           )}
-        </ScrollView>
-      </View>
+
+          {/* Notifications List */}
+          <ScrollView
+            style={styles.notificationsList}
+            contentContainerStyle={styles.notificationsContent}
+            showsVerticalScrollIndicator={false}>
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
+                  Loading notifications...
+                </Text>
+              </View>
+            ) : filteredNotifications.length === 0 ? (
+              <View style={styles.emptyContainer}>
+                <Ionicons
+                  name="notifications-outline"
+                  size={48}
+                  color={textSecondaryColor}
+                />
+                <Text style={[styles.emptyTitle, { color: textColor }]}>
+                  You have no notifications...
+                </Text>
+              </View>
+            ) : (
+              filteredNotifications.map(notification => (
+                <NotificationItem
+                  key={notification.id}
+                  notification={notification}
+                  onMarkAsRead={() => handleMarkAsRead(notification.id)}
+                  onCompleteTask={() => handleCompleteTask(notification.id)}
+                  isTask={isTaskNotification(notification.notification_type)}
+                  getIcon={getNotificationIcon}
+                  formatTimestamp={formatTimestamp}
+                  surfaceColor={surfaceColor}
+                  textColor={textColor}
+                  textSecondaryColor={textSecondaryColor}
+                  borderColor={borderColor}
+                />
+              ))
+            )}
+          </ScrollView>
+        </Animated.View>
+      </PanGestureHandler>
     </Modal>
   );
 };
@@ -388,170 +445,182 @@ export const NotificationHistoryModal: React.FC<
 interface NotificationItemProps {
   notification: NotificationHistoryItem;
   onMarkAsRead: () => void;
-  onDelete: () => void;
   onCompleteTask: () => void;
   isTask: boolean;
   getIcon: (type: string) => string;
-  getColor: (type: string) => string;
   formatTimestamp: (timestamp: string) => string;
-  truncateTitle: (title: string) => string;
-  theme: ThemeType;
+  surfaceColor: string;
+  textColor: string;
+  textSecondaryColor: string;
+  borderColor: string;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
   onMarkAsRead,
-  onDelete,
   onCompleteTask,
   isTask,
   getIcon,
-  getColor,
   formatTimestamp,
-  truncateTitle,
-  theme,
+  surfaceColor,
+  textColor,
+  textSecondaryColor,
+  borderColor,
 }) => {
-  const [swipeProgress, setSwipeProgress] = useState(0);
-  const [isCompleting, setIsCompleting] = useState(false);
   const translateX = useRef(new Animated.Value(0)).current;
+  const swipeActionOpacity = useRef(new Animated.Value(0)).current;
+  const [isCompleting, setIsCompleting] = useState(false);
 
   const isRead = !!notification.opened_at;
   const icon = getIcon(notification.notification_type);
-  const color = getColor(notification.notification_type);
 
-  const handleSwipeRight = (progress: number) => {
-    setSwipeProgress(progress);
+  const handleSwipe = (event: GestureHandlerGestureEvent) => {
+    if (!isTask) return;
 
-    if (progress >= 0.5 && isTask && !isCompleting) {
-      setIsCompleting(true);
-      // Animate to blue background
-      translateX.setValue(progress * screenWidth);
+    const { translationX } = event.nativeEvent;
+    if (translationX < 0) {
+      // Right to left swipe
+      const progress = Math.min(1, Math.abs(translationX) / SWIPE_THRESHOLD);
+      translateX.setValue(translationX);
+      swipeActionOpacity.setValue(progress);
     }
   };
 
-  const handleSwipeComplete = () => {
-    if (swipeProgress >= 0.5) {
-      if (isTask) {
+  const handleSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    if (event.nativeEvent.state === State.END) {
+      const { translationX } = event.nativeEvent;
+      if (Math.abs(translationX) > SWIPE_THRESHOLD && isTask) {
+        // Complete task
+        setIsCompleting(true);
         onCompleteTask();
         onMarkAsRead();
+        // Animate out
+        Animated.timing(translateX, {
+          toValue: -screenWidth,
+          duration: 300,
+          useNativeDriver: true,
+        }).start(() => {
+          // Reset after animation
+          setTimeout(() => {
+            translateX.setValue(0);
+            swipeActionOpacity.setValue(0);
+            setIsCompleting(false);
+          }, 100);
+        });
+      } else {
+        // Snap back
+        Animated.parallel([
+          Animated.spring(translateX, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 7,
+          }),
+          Animated.spring(swipeActionOpacity, {
+            toValue: 0,
+            useNativeDriver: true,
+            friction: 7,
+          }),
+        ]).start();
       }
     }
-
-    // Reset animation
-    translateX.setValue(0);
-    setSwipeProgress(0);
-    setIsCompleting(false);
   };
 
   const handleTap = () => {
-    if (isTask) {
-      // Show action options for task notifications
-      Alert.alert('Task Notification', 'What would you like to do?', [
-        {
-          text: 'View Task Details',
-          onPress: () => {
-            /* Navigate to task details */
-          },
-        },
-        { text: 'Complete Task', onPress: onCompleteTask },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
-    } else {
-      // Navigate to relevant screen for other notifications
-      if (notification.deep_link_url) {
-        // Handle deep linking
-        console.log('Navigate to:', notification.deep_link_url);
-      }
-    }
-
     if (!isRead) {
       onMarkAsRead();
     }
   };
 
   return (
-    <PanGestureHandler
-      onGestureEvent={(event: GestureHandlerGestureEvent) => {
-        if (isTask) {
-          const progress = Math.max(
-            0,
-            Math.min(1, event.nativeEvent.translationX / (screenWidth * 0.3)),
-          );
-          handleSwipeRight(progress);
-        }
-      }}
-      onHandlerStateChange={(event: GestureHandlerStateChangeEvent) => {
-        if (event.nativeEvent.state === State.END) {
-          handleSwipeComplete();
-        }
-      }}
-      enabled={isTask}>
-      <Animated.View
-        style={[
-          styles.notificationItem,
-          {
-            backgroundColor: isCompleting ? '#007AFF' : theme.surface,
-            transform: [{ translateX }],
-          },
-        ]}>
-        {isCompleting && (
-          <View style={styles.completingOverlay}>
-            <Text style={styles.completingText}>Task Completed</Text>
-          </View>
-        )}
+    <View style={styles.notificationWrapper}>
+      {/* Swipe Action Background */}
+      {isTask && (
+        <Animated.View
+          style={[
+            styles.swipeActionBackground,
+            {
+              opacity: swipeActionOpacity,
+              backgroundColor: COLORS.primary,
+            },
+          ]}>
+          <Ionicons name="checkmark-circle" size={24} color="#FFFFFF" />
+          <Text style={styles.swipeActionText}>Complete</Text>
+        </Animated.View>
+      )}
 
-        <TouchableOpacity
-          style={styles.notificationContent}
-          onPress={handleTap}
-          activeOpacity={0.7}>
-          <View style={styles.notificationLeft}>
+      <PanGestureHandler
+        onGestureEvent={handleSwipe}
+        onHandlerStateChange={handleSwipeEnd}
+        enabled={isTask}
+        activeOffsetX={-10}>
+        <Animated.View
+          style={[
+            styles.notificationItem,
+            {
+              backgroundColor: surfaceColor,
+              borderColor: borderColor,
+              transform: [{ translateX }],
+            },
+          ]}>
+          <TouchableOpacity
+            style={styles.notificationContent}
+            onPress={handleTap}
+            activeOpacity={0.7}>
+            {/* Unread Indicator */}
             <View
-              style={[styles.iconContainer, { backgroundColor: color + '20' }]}>
-              <Text style={styles.notificationIcon}>{icon}</Text>
-            </View>
+              style={[
+                styles.unreadIndicator,
+                {
+                  backgroundColor: isRead ? 'transparent' : COLORS.primary,
+                },
+              ]}
+            />
 
-            <View style={styles.notificationText}>
-              <Text
+            <View style={styles.notificationLeft}>
+              {/* Icon */}
+              <View
                 style={[
-                  styles.notificationTitle,
+                  styles.iconContainer,
                   {
-                    color: isCompleting ? 'white' : theme.text,
-                    fontWeight: isRead ? 'normal' : 'bold',
+                    backgroundColor: surfaceColor === '#FFFFFF' ? '#E5E7EB' : '#374151',
                   },
                 ]}>
-                {isCompleting
-                  ? 'Task Completed'
-                  : truncateTitle(notification.title)}
-              </Text>
+                <Text style={styles.notificationIcon}>{icon}</Text>
+              </View>
 
-              {!isCompleting && (
+              {/* Text Content */}
+              <View style={styles.notificationText}>
                 <Text
                   style={[
-                    styles.notificationTime,
-                    { color: theme.textSecondary },
+                    styles.notificationTitle,
+                    {
+                      color: textColor,
+                      fontWeight: isRead ? FONT_WEIGHTS.medium : FONT_WEIGHTS.bold,
+                    },
+                  ]}
+                  numberOfLines={1}>
+                  {notification.title}
+                </Text>
+                <Text
+                  style={[
+                    styles.notificationSubtitle,
+                    { color: textSecondaryColor },
                   ]}>
                   {formatTimestamp(notification.sent_at)}
                 </Text>
-              )}
+              </View>
             </View>
-          </View>
 
-          {!isCompleting && (
-            <View style={styles.notificationRight}>
-              {!isRead && (
-                <View
-                  style={[styles.unreadDot, { backgroundColor: theme.accent }]}
-                />
-              )}
-              <Ionicons
-                name="chevron-forward"
-                size={16}
-                color={theme.textSecondary}
-              />
-            </View>
-          )}
-        </TouchableOpacity>
-      </Animated.View>
-    </PanGestureHandler>
+            {/* Chevron */}
+            <Ionicons
+              name="chevron-forward"
+              size={24}
+              color={textSecondaryColor}
+            />
+          </TouchableOpacity>
+        </Animated.View>
+      </PanGestureHandler>
+    </View>
   );
 };
 
@@ -567,64 +636,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.sm,
   },
   closeButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 18,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   headerSpacer: {
-    width: 32,
+    width: 40,
   },
   filterContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    paddingVertical: SPACING.sm,
   },
   filterContent: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 12,
+    paddingHorizontal: SPACING.md,
+    gap: SPACING.sm,
   },
-  filterTab: {
+  filterChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    gap: 8,
+    height: 40,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    gap: 6,
-  },
-  activeFilterTab: {
-    borderWidth: 1,
+    borderRadius: 12,
+    flexShrink: 0,
   },
   filterText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   markAllContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
   },
   markAllButton: {
-    flexDirection: 'row',
+    height: 32,
+    paddingHorizontal: 12,
+    justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
   },
   markAllText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.bold,
+    letterSpacing: 0.5,
   },
   notificationsList: {
     flex: 1,
+  },
+  notificationsContent: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    gap: SPACING.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -633,89 +709,88 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
     paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginTop: SPACING.md,
   },
-  emptyDescription: {
-    fontSize: 16,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  notificationItem: {
-    marginHorizontal: 20,
-    marginVertical: 4,
-    borderRadius: 12,
+  notificationWrapper: {
+    position: 'relative',
     overflow: 'hidden',
+    borderRadius: 12,
   },
-  notificationContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-  },
-  notificationLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  notificationIcon: {
-    fontSize: 20,
-  },
-  notificationText: {
-    flex: 1,
-  },
-  notificationTitle: {
-    fontSize: 16,
-    lineHeight: 20,
-    marginBottom: 4,
-  },
-  notificationTime: {
-    fontSize: 14,
-  },
-  notificationRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  completingOverlay: {
+  swipeActionBackground: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: '#007AFF',
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingRight: SPACING.lg,
+    gap: SPACING.sm,
     zIndex: 1,
   },
-  completingText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
+  swipeActionText: {
+    color: '#FFFFFF',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+  },
+  notificationItem: {
+    borderRadius: 12,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  notificationContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.sm,
+    gap: SPACING.md,
+  },
+  unreadIndicator: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    flexShrink: 0,
+  },
+  notificationLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: SPACING.md,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  notificationIcon: {
+    fontSize: 18,
+  },
+  notificationText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  notificationTitle: {
+    fontSize: FONT_SIZES.md,
+    lineHeight: 20,
+    marginBottom: 2,
+  },
+  notificationSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    lineHeight: 18,
   },
 });
 
