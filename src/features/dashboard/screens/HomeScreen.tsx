@@ -27,8 +27,8 @@ import { NotificationHistoryModal } from '@/shared/components/NotificationHistor
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import TrialBanner from '../components/TrialBanner';
-import { differenceInCalendarDays } from 'date-fns';
-import { useHomeScreenData } from '@/hooks/useDataQueries';
+import { differenceInCalendarDays, format, isAfter } from 'date-fns';
+import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
@@ -37,8 +37,10 @@ import { Button, QueryStateWrapper, QuickAddModal } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import NextTaskCard from '../components/NextTaskCard';
-import TodayOverviewCard from '../components/TodayOverviewCard';
+import { UpNextCard } from '../components/UpNextCard';
+import { TodayOverviewGrid } from '../components/TodayOverviewGrid';
+import { MonthlyLimitCard } from '../components/MonthlyLimitCard';
+import { UpcomingTaskItem } from '../components/UpcomingTaskItem';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
 import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
@@ -47,7 +49,6 @@ import { supabase } from '@/services/supabase';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { TASK_EVENTS } from '@/utils/analyticsEvents';
-import { createExampleData } from '@/utils/exampleData';
 import { getDraftCount } from '@/utils/draftStorage';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
@@ -69,60 +70,8 @@ const HomeScreen = () => {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
-  // Check if user is new (just completed onboarding, no example data yet)
-  // Skip API call for new users to avoid unnecessary Edge Function calls
-  const [isNewUser, setIsNewUser] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const checkIfNewUser = async () => {
-      if (isGuest || !user || !user.onboarding_completed) {
-        setIsNewUser(false);
-        return;
-      }
-
-      // Check if example data has been created
-      const hasCreatedExamples = await AsyncStorage.getItem(
-        'hasCreatedExampleData',
-      );
-
-      // If user just completed onboarding and no example data created yet,
-      // they're a new user - skip API call
-      const userIsNew = !hasCreatedExamples;
-      setIsNewUser(userIsNew);
-
-      // If user is new, completely remove query from cache to prevent any retries
-      if (userIsNew) {
-        queryClient.cancelQueries({ queryKey: ['homeScreenData'] });
-        // Remove query from cache completely to prevent retries
-        queryClient.removeQueries({ queryKey: ['homeScreenData'] });
-      }
-    };
-
-    checkIfNewUser();
-  }, [user, isGuest, queryClient]);
-
-  // If user creates data manually (not through example data), update isNewUser
-  useEffect(() => {
-    if (
-      !isGuest &&
-      user &&
-      homeData &&
-      (homeData.nextUpcomingTask ||
-        (homeData.todayOverview &&
-          (homeData.todayOverview.lectures > 0 ||
-            homeData.todayOverview.assignments > 0 ||
-            homeData.todayOverview.studySessions > 0)))
-    ) {
-      // User has data, they're no longer a new user
-      if (isNewUser === true) {
-        setIsNewUser(false);
-      }
-    }
-  }, [homeData, isGuest, user, isNewUser]);
-
-  // Only fetch data if user is not new (has data or example data was created)
-  // Wait until we've determined if user is new before enabling query
-  const shouldFetchData = !isGuest && isNewUser === false;
+  // Always fetch data for authenticated users
+  const shouldFetchData = !isGuest;
 
   const {
     data: homeData,
@@ -133,6 +82,28 @@ const HomeScreen = () => {
     isRefetching,
   } = useHomeScreenData(shouldFetchData);
   const { monthlyTaskCount } = useMonthlyTaskCount();
+  
+  // Get calendar data for upcoming tasks
+  const { data: calendarData } = useCalendarData(new Date());
+  
+  // Extract upcoming tasks (next 4, excluding the "Up Next" task)
+  const upcomingTasks = useMemo(() => {
+    if (!calendarData || isGuest) return [];
+    const now = new Date();
+    const allTasks = Object.values(calendarData).flat();
+    const upcoming = allTasks
+      .filter(task => {
+        const taskDate = new Date(task.startTime || task.date);
+        return isAfter(taskDate, now);
+      })
+      .sort((a, b) => {
+        const dateA = new Date(a.startTime || a.date);
+        const dateB = new Date(b.startTime || b.date);
+        return dateA.getTime() - dateB.getTime();
+      })
+      .slice(0, 4);
+    return upcoming;
+  }, [calendarData, isGuest]);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
@@ -462,47 +433,8 @@ const HomeScreen = () => {
   }, [user?.id, trialDaysRemaining]);
 
   const handleSubscribePress = useCallback(() => {
-    Alert.alert(
-      'Unlock Premium Access',
-      'As an early user, you can unlock all premium features for free. Would you like to upgrade your account?',
-      [
-        { text: 'Not Now', style: 'cancel' },
-        {
-          text: 'Upgrade for Free',
-          onPress: async () => {
-            try {
-              const { error } = await supabase.functions.invoke(
-                'grant-premium-access',
-              );
-              if (error) throw new Error(error.message);
-
-              // Invalidate user data to refresh their subscription status and unlock features.
-              queryClient.invalidateQueries({ queryKey: ['user'] });
-              queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }); // Also refresh home screen data
-
-              Alert.alert(
-                'Success!',
-                'You now have access to all premium features.',
-              );
-            } catch (error: unknown) {
-              if (error instanceof Error) {
-                const errorTitle = getErrorTitle(error);
-                const errorMessage = mapErrorCodeToMessage(error);
-                Alert.alert(errorTitle, errorMessage);
-                console.error('Free upgrade error:', error);
-              } else {
-                Alert.alert(
-                  'Error',
-                  'An unknown error occurred. Please try again.',
-                );
-                console.error('Free upgrade error:', error);
-              }
-            }
-          },
-        },
-      ],
-    );
-  }, [queryClient]);
+    navigation.navigate('PaywallScreen', { variant: 'general' });
+  }, [navigation]);
 
   // Get personalized title - memoized to prevent recalculation on every render
   const personalizedTitle = useMemo(() => {
@@ -513,6 +445,16 @@ const HomeScreen = () => {
     const name = user?.username || user?.first_name || 'there';
     return `${getGreeting()}, ${name}!`;
   }, [isGuest, user?.username, user?.first_name]);
+  
+  // Get formatted date for header
+  const formattedDate = useMemo(() => {
+    return format(new Date(), 'EEEE, MMM d');
+  }, []);
+  
+  // Get subscription limit
+  const subscriptionLimit = useMemo(() => {
+    return user?.subscription_tier === 'oddity' ? 70 : 15;
+  }, [user?.subscription_tier]);
 
   // Show one-time "How It Works" prompt for new users
   useEffect(() => {
@@ -569,74 +511,6 @@ const HomeScreen = () => {
     checkAndShowWelcomePrompt();
   }, [isGuest, user, navigation]);
 
-  // Create example data for brand new users
-  useEffect(() => {
-    const checkAndCreateExampleData = async () => {
-      // Only for authenticated users and new users
-      if (isGuest || !user || isLoading || isNewUser !== true) return;
-
-      try {
-        const hasCreatedExamples = await AsyncStorage.getItem(
-          'hasCreatedExampleData',
-        );
-
-        // If we haven't created examples yet
-        if (!hasCreatedExamples) {
-          console.log(
-            '📚 New user with no data detected. Creating example data...',
-          );
-
-          // Set flag immediately to prevent duplicate creation
-          await AsyncStorage.setItem('hasCreatedExampleData', 'true');
-
-          // Create example data
-          const result = await createExampleData(user.id);
-
-          if (result.success) {
-            console.log('✅ Example data created successfully');
-
-            // Update isNewUser state to enable data fetching
-            setIsNewUser(false);
-
-            // Refresh home screen data to show examples
-            await queryClient.invalidateQueries({
-              queryKey: ['homeScreenData'],
-            });
-            await queryClient.invalidateQueries({ queryKey: ['courses'] });
-            await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-            await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-            await queryClient.invalidateQueries({
-              queryKey: ['studySessions'],
-            });
-
-            // Show a subtle toast notification
-            showToast({
-              message:
-                "📚 We've added some example tasks to help you get started!",
-              duration: 4000,
-            });
-          } else {
-            console.error('Failed to create example data:', result.error);
-            // Reset flag if creation failed so user can try again
-            await AsyncStorage.removeItem('hasCreatedExampleData');
-            // Don't show error to user - it's not critical
-          }
-        }
-      } catch (error) {
-        console.error('Error in checkAndCreateExampleData:', error);
-        // Reset flag if error occurred
-        await AsyncStorage.removeItem('hasCreatedExampleData').catch(() => {});
-        // Fail silently - not critical for app function
-      }
-    };
-
-    // Wait a bit after component mounts to avoid blocking initial render
-    const timer = setTimeout(() => {
-      checkAndCreateExampleData();
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [isGuest, user, isLoading, isNewUser, queryClient, showToast]);
 
   // Memoized callbacks for better performance
   const handleNotificationBellPress = useCallback(() => {
@@ -683,19 +557,35 @@ const HomeScreen = () => {
     setIsEmptyStateDismissed(true);
   }, []);
 
+  // Handle Up Next card press
+  const handleUpNextPress = useCallback(() => {
+    if (homeData?.nextUpcomingTask) {
+      handleViewDetails(homeData.nextUpcomingTask);
+    }
+  }, [homeData?.nextUpcomingTask, handleViewDetails]);
+  
+  // Handle upcoming task item press
+  const handleUpcomingTaskPress = useCallback((task: Task) => {
+    handleViewDetails(task);
+  }, [handleViewDetails]);
+
   // Wrap content with QueryStateWrapper for authenticated users
   const content = (
     <View style={styles.container} testID="home-screen">
-      {/* Header with Notification Bell */}
+      {/* Header with Date, Greeting, and Notification Bell */}
       {!isGuest && (
         <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
-          <Text style={styles.headerTitle}>{personalizedTitle}</Text>
+          <View style={styles.headerLeft}>
+            <Text style={styles.headerDate}>{formattedDate}</Text>
+            <Text style={styles.headerTitle}>{personalizedTitle}</Text>
+          </View>
           <NotificationBell onPress={handleNotificationBellPress} />
         </View>
       )}
 
       <ScrollView
         style={styles.scrollContainer}
+        contentContainerStyle={styles.scrollContent}
         refreshControl={
           !isGuest ? (
             <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
@@ -710,24 +600,44 @@ const HomeScreen = () => {
           />
         )}
         {isGuest && <Text style={styles.title}>{personalizedTitle}</Text>}
-        <SwipeableTaskCard
-          onSwipeComplete={handleSwipeComplete}
-          enabled={!isGuest && !!homeData?.nextUpcomingTask}>
-          <NextTaskCard
-            task={isGuest ? null : homeData?.nextUpcomingTask || null}
-            isGuestMode={isGuest}
-            onAddActivity={handleAddActivity}
-            onViewDetails={handleViewDetails}
-          />
-        </SwipeableTaskCard>
-        <TodayOverviewCard
-          overview={isGuest ? null : homeData?.todayOverview || null}
-          monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
-          subscriptionTier={user?.subscription_tier || 'free'}
-        />
-        {/* Only show calendar button for authenticated users with data */}
-        {!isGuest && homeData && (
-          <Button title="View Full Calendar" onPress={handleCalendarPress} />
+        
+        {/* Up Next Section */}
+        {!isGuest && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Up Next</Text>
+            <UpNextCard
+              task={homeData?.nextUpcomingTask || null}
+              onPress={handleUpNextPress}
+            />
+          </View>
+        )}
+        
+        {/* Today's Overview Section */}
+        {!isGuest && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Today's Overview</Text>
+            <TodayOverviewGrid
+              overview={homeData?.todayOverview || null}
+            />
+            <MonthlyLimitCard
+              monthlyTaskCount={monthlyTaskCount}
+              limit={subscriptionLimit}
+            />
+          </View>
+        )}
+        
+        {/* Upcoming Section */}
+        {!isGuest && upcomingTasks.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Upcoming</Text>
+            {upcomingTasks.map((task) => (
+              <UpcomingTaskItem
+                key={`${task.type}-${task.id}`}
+                task={task}
+                onPress={() => handleUpcomingTaskPress(task)}
+              />
+            ))}
+          </View>
         )}
       </ScrollView>
     </View>
@@ -892,21 +802,43 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
+    paddingBottom: SPACING.md,
     backgroundColor: COLORS.background,
+  },
+  headerLeft: {
+    flex: 1,
+  },
+  headerDate: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    color: COLORS.textSecondary,
+    marginBottom: 2,
   },
   headerTitle: {
     fontSize: FONT_SIZES.xxl,
     fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.textPrimary,
-    flex: 1,
+    lineHeight: 28,
   },
   scrollContainer: {
-    padding: SPACING.lg,
-    paddingBottom: 80,
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: SPACING.md,
+    paddingBottom: 120,
+  },
+  section: {
+    marginBottom: SPACING.xl,
+  },
+  sectionTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.md,
+    paddingHorizontal: SPACING.xs,
   },
   title: {
     fontSize: FONT_SIZES.xxl,

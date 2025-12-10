@@ -20,7 +20,13 @@ import { format } from 'date-fns';
 import { RootStackParamList, Course } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { Button, ReminderSelector, Input } from '@/shared/components';
+import {
+  Button,
+  TemplateCard,
+  CardBasedDateTimePicker,
+  ReminderChip,
+  Input,
+} from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,6 +50,9 @@ import {
   clearDateFields,
   canSaveAsTemplate,
 } from '@/shared/utils/templateUtils';
+import { formatReminderLabel, REMINDER_OPTIONS } from '@/utils/reminderUtils';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type RecurrenceType = 'none' | 'weekly' | 'bi-weekly';
 type AddLectureScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -62,6 +71,8 @@ const AddLectureScreen = () => {
     useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const isGuest = !session;
 
@@ -111,16 +122,14 @@ const AddLectureScreen = () => {
   });
 
   // Optional fields
+  const [venue, setVenue] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
   const [reminders, setReminders] = useState<number[]>([30]); // Default 30-min reminder
 
   // UI state
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [showOptionalFields, setShowOptionalFields] = useState(true);
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [showStartDatePicker, setShowStartDatePicker] = useState(false);
-  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
-  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -202,6 +211,7 @@ const AddLectureScreen = () => {
         course: selectedCourse,
         dateTime: startTime,
         endTime,
+        venue,
         recurrence,
         reminders,
       });
@@ -212,7 +222,56 @@ const AddLectureScreen = () => {
     return () => {
       debouncedSave.cancel();
     };
-  }, [selectedCourse, lectureName, startTime, endTime, recurrence, reminders]);
+  }, [selectedCourse, lectureName, startTime, endTime, venue, recurrence, reminders]);
+
+  const handleStartTimeChange = (time: Date) => {
+    setStartTime(time);
+    // Ensure end time is after start time
+    if (endTime <= time) {
+      const newEndTime = new Date(time);
+      newEndTime.setHours(newEndTime.getHours() + 1);
+      setEndTime(newEndTime);
+    }
+  };
+
+  const handleEndTimeChange = (time: Date) => {
+    setEndTime(time);
+  };
+
+  const handleDateChange = (date: Date) => {
+    const newStartTime = new Date(date);
+    newStartTime.setHours(startTime.getHours());
+    newStartTime.setMinutes(startTime.getMinutes());
+    setStartTime(newStartTime);
+
+    const newEndTime = new Date(date);
+    newEndTime.setHours(endTime.getHours());
+    newEndTime.setMinutes(endTime.getMinutes());
+    setEndTime(newEndTime);
+  };
+
+  const handleRemoveReminder = (minutes: number) => {
+    setReminders(reminders.filter(r => r !== minutes));
+  };
+
+  const handleAddReminder = () => {
+    if (reminders.length >= 2) {
+      Alert.alert('Limit Reached', 'You can only add up to 2 reminders.');
+      return;
+    }
+    setShowReminderModal(true);
+  };
+
+  const handleSelectReminder = (minutes: number) => {
+    if (reminders.includes(minutes)) {
+      handleRemoveReminder(minutes);
+    } else {
+      if (reminders.length < 2) {
+        setReminders([...reminders, minutes].sort((a, b) => a - b));
+      }
+    }
+    setShowReminderModal(false);
+  };
 
   // Fetch courses
   useEffect(() => {
@@ -389,6 +448,7 @@ const AddLectureScreen = () => {
         description: `A lecture for the course: ${selectedCourse!.courseName}.`,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
+        venue: venue.trim() || undefined,
         is_recurring: recurrence !== 'none',
         recurring_pattern: recurrence,
         reminders,
@@ -499,298 +559,525 @@ const AddLectureScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8' },
+      ]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+            borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+          },
+        ]}>
         <TouchableOpacity
           onPress={() => {
             clearDraft('lecture');
             navigation.goBack();
           }}
           style={styles.headerButton}>
-          <Ionicons name="close" size={28} color={COLORS.text} />
+          <Ionicons
+            name="close"
+            size={24}
+            color={theme.isDark ? '#FFFFFF' : '#111418'}
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Lecture</Text>
-        <TouchableOpacity
-          onPress={handleSave}
-          disabled={!isFormValid || isSaving}
+        <Text
           style={[
-            styles.headerButton,
-            (!isFormValid || isSaving) && styles.headerButtonDisabled,
+            styles.headerTitle,
+            { color: theme.isDark ? '#FFFFFF' : '#111418' },
           ]}>
-          {isSaving ? (
-            <ActivityIndicator size="small" color={COLORS.primary} />
-          ) : (
-            <Text
-              style={[
-                styles.saveButtonText,
-                !isFormValid && styles.saveButtonTextDisabled,
-              ]}>
-              Save
-            </Text>
-          )}
-        </TouchableOpacity>
+          New Lecture
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
-
-      {/* My Templates Button */}
-      <TouchableOpacity
-        style={styles.myTemplatesButton}
-        onPress={handleMyTemplatesPress}>
-        <Text style={styles.myTemplatesButtonText}>My Templates</Text>
-      </TouchableOpacity>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 100 },
+        ]}>
         {/* Required Fields Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Required Information</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            ]}>
+            Required Information
+          </Text>
 
           {/* Course Selector */}
           <View style={styles.field}>
-            <Text style={styles.label}>Course *</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Course
+            </Text>
             <TouchableOpacity
-              style={styles.selectButton}
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                },
+              ]}
               onPress={() => setShowCourseModal(true)}
               disabled={isLoadingCourses}>
               <Text
                 style={[
                   styles.selectButtonText,
-                  !selectedCourse && styles.selectButtonPlaceholder,
+                  {
+                    color: !selectedCourse
+                      ? theme.isDark
+                        ? '#9CA3AF'
+                        : '#9CA3AF'
+                      : theme.isDark
+                        ? '#FFFFFF'
+                        : '#111418',
+                  },
                 ]}>
                 {isLoadingCourses
                   ? 'Loading courses...'
-                  : selectedCourse?.courseName || 'Select a course'}
+                  : selectedCourse?.courseName || 'Select Course'}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.gray} />
+              <Ionicons
+                name="expand-more"
+                size={24}
+                color={theme.isDark ? '#FFFFFF' : '#111418'}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Lecture Name Input */}
           <View style={styles.field}>
-            <Text style={styles.label}>Lecture Name *</Text>
+            <View style={styles.labelRow}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                ]}>
+                Lecture Name
+              </Text>
+              <Text
+                style={[
+                  styles.characterCount,
+                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                {lectureName.length}/35
+              </Text>
+            </View>
             <Input
               value={lectureName}
               onChangeText={setLectureName}
               placeholder="e.g., Introduction to Psychology"
               maxLength={35}
             />
-            <Text style={styles.characterCount}>{lectureName.length}/35</Text>
           </View>
 
-          {/* Start Date & Time */}
+          {/* Date & Time */}
           <View style={styles.field}>
-            <Text style={styles.label}>Start Date & Time *</Text>
-            <View style={styles.dateTimeRow}>
+            <CardBasedDateTimePicker
+              date={startTime}
+              startTime={startTime}
+              endTime={endTime}
+              onDateChange={handleDateChange}
+              onStartTimeChange={handleStartTimeChange}
+              onEndTimeChange={handleEndTimeChange}
+              label="Date & Time"
+              mode="range"
+              showDuration={true}
+            />
+          </View>
+        </View>
+
+        {/* Divider */}
+        <View
+          style={[
+            styles.divider,
+            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+          ]}
+        />
+
+        {/* Optional Fields Section */}
+        <View style={styles.section}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            ]}>
+            Optional Details
+          </Text>
+
+          {/* Venue */}
+          <View style={styles.field}>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Venue
+            </Text>
+            <View style={styles.venueInputContainer}>
+              <Ionicons
+                name="location-outline"
+                size={20}
+                color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+                style={styles.venueIcon}
+              />
+              <TextInput
+                style={[
+                  styles.venueInput,
+                  {
+                    backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                    borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                    color: theme.isDark ? '#FFFFFF' : '#111418',
+                  },
+                ]}
+                value={venue}
+                onChangeText={setVenue}
+                placeholder="e.g., Room 404, Main Building"
+                placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+                maxLength={200}
+              />
+            </View>
+          </View>
+
+          {/* Recurrence Pattern */}
+          <View style={styles.field}>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Recurrence
+            </Text>
+            <View style={styles.recurrenceGrid}>
               <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowStartDatePicker(true)}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(startTime, 'MMM dd, yyyy')}
+                style={[
+                  styles.recurrenceOption,
+                  recurrence === 'none' && styles.recurrenceOptionSelected,
+                  {
+                    backgroundColor:
+                      recurrence === 'none'
+                        ? COLORS.primary + '1A'
+                        : theme.isDark
+                          ? '#1C252E'
+                          : '#FFFFFF',
+                    borderColor:
+                      recurrence === 'none'
+                        ? COLORS.primary + '33'
+                        : theme.isDark
+                          ? '#3B4754'
+                          : '#E5E7EB',
+                  },
+                ]}
+                onPress={() => setRecurrence('none')}>
+                <Text
+                  style={[
+                    styles.recurrenceOptionText,
+                    {
+                      color:
+                        recurrence === 'none'
+                          ? COLORS.primary
+                          : theme.isDark
+                            ? '#FFFFFF'
+                            : '#111418',
+                      fontWeight: recurrence === 'none' ? '600' : '500',
+                    },
+                  ]}>
+                  None
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowStartTimePicker(true)}>
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(startTime, 'h:mm a')}
+                style={[
+                  styles.recurrenceOption,
+                  recurrence === 'weekly' && styles.recurrenceOptionSelected,
+                  {
+                    backgroundColor:
+                      recurrence === 'weekly'
+                        ? COLORS.primary + '1A'
+                        : theme.isDark
+                          ? '#1C252E'
+                          : '#FFFFFF',
+                    borderColor:
+                      recurrence === 'weekly'
+                        ? COLORS.primary + '33'
+                        : theme.isDark
+                          ? '#3B4754'
+                          : '#E5E7EB',
+                  },
+                ]}
+                onPress={() => setRecurrence('weekly')}>
+                <Text
+                  style={[
+                    styles.recurrenceOptionText,
+                    {
+                      color:
+                        recurrence === 'weekly'
+                          ? COLORS.primary
+                          : theme.isDark
+                            ? '#FFFFFF'
+                            : '#111418',
+                      fontWeight: recurrence === 'weekly' ? '600' : '500',
+                    },
+                  ]}>
+                  Weekly
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.recurrenceOption,
+                  recurrence === 'bi-weekly' && styles.recurrenceOptionSelected,
+                  {
+                    backgroundColor:
+                      recurrence === 'bi-weekly'
+                        ? COLORS.primary + '1A'
+                        : theme.isDark
+                          ? '#1C252E'
+                          : '#FFFFFF',
+                    borderColor:
+                      recurrence === 'bi-weekly'
+                        ? COLORS.primary + '33'
+                        : theme.isDark
+                          ? '#3B4754'
+                          : '#E5E7EB',
+                  },
+                ]}
+                onPress={() => setRecurrence('bi-weekly')}>
+                <Text
+                  style={[
+                    styles.recurrenceOptionText,
+                    {
+                      color:
+                        recurrence === 'bi-weekly'
+                          ? COLORS.primary
+                          : theme.isDark
+                            ? '#FFFFFF'
+                            : '#111418',
+                      fontWeight: recurrence === 'bi-weekly' ? '600' : '500',
+                    },
+                  ]}>
+                  Bi-weekly
                 </Text>
               </TouchableOpacity>
             </View>
-
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startTime}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleStartDateChange}
-                minimumDate={new Date()}
-              />
-            )}
-
-            {showStartTimePicker && (
-              <DateTimePicker
-                value={startTime}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleStartTimeChange}
-              />
-            )}
           </View>
 
-          {/* End Date & Time */}
+          {/* Reminders */}
           <View style={styles.field}>
-            <Text style={styles.label}>End Date & Time *</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowEndDatePicker(true)}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(endTime, 'MMM dd, yyyy')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowEndTimePicker(true)}>
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(endTime, 'h:mm a')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={endTime}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleEndDateChange}
-                minimumDate={startTime}
-              />
-            )}
-
-            {showEndTimePicker && (
-              <DateTimePicker
-                value={endTime}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleEndTimeChange}
-              />
-            )}
-          </View>
-
-          {/* Duration Display */}
-          {isFormValid && (
-            <View style={styles.durationDisplay}>
-              <Ionicons name="time" size={16} color={COLORS.gray} />
-              <Text style={styles.durationText}>
-                Duration:{' '}
-                {Math.round(
-                  (endTime.getTime() - startTime.getTime()) / (1000 * 60),
-                )}{' '}
-                minutes
+            <View style={styles.reminderHeader}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                ]}>
+                Reminders
               </Text>
+              <Text
+                style={[
+                  styles.maxReminders,
+                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                Max 2
+              </Text>
+            </View>
+            {reminders.length > 0 && (
+              <View style={styles.remindersList}>
+                {reminders.map(minutes => (
+                  <ReminderChip
+                    key={minutes}
+                    label={formatReminderLabel(minutes)}
+                    onRemove={() => handleRemoveReminder(minutes)}
+                  />
+                ))}
+              </View>
+            )}
+            <TouchableOpacity
+              style={[
+                styles.addReminderButton,
+                {
+                  borderColor: theme.isDark ? '#3B4754' : '#D1D5DB',
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                },
+              ]}
+              onPress={handleAddReminder}
+              disabled={reminders.length >= 2}>
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={
+                  reminders.length >= 2
+                    ? theme.isDark
+                      ? '#6B7280'
+                      : '#9CA3AF'
+                    : COLORS.primary
+                }
+              />
+              <Text
+                style={[
+                  styles.addReminderText,
+                  {
+                    color:
+                      reminders.length >= 2
+                        ? theme.isDark
+                          ? '#6B7280'
+                          : '#9CA3AF'
+                        : COLORS.primary,
+                  },
+                ]}>
+                Add Reminder
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Template Card */}
+          {!isUsingTemplate && (
+            <View style={styles.field}>
+              <TemplateCard
+                title="Save as template"
+                description="Reuse these settings later"
+                value={saveAsTemplate}
+                onValueChange={setSaveAsTemplate}
+                icon="bookmark-outline"
+                iconColor={COLORS.primary}
+                iconBgColor="#E5E7EB"
+              />
             </View>
           )}
         </View>
-
-        {/* Optional Fields Section */}
-        <TouchableOpacity
-          style={styles.optionalToggle}
-          onPress={() => setShowOptionalFields(!showOptionalFields)}>
-          <Text style={styles.optionalToggleText}>Optional Details</Text>
-          <Ionicons
-            name={showOptionalFields ? 'chevron-up' : 'chevron-down'}
-            size={24}
-            color={COLORS.primary}
-          />
-        </TouchableOpacity>
-
-        {showOptionalFields && (
-          <View style={styles.section}>
-            {/* Recurrence Pattern */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Recurrence (Optional)</Text>
-              <View style={styles.recurrenceOptions}>
-                <TouchableOpacity
-                  style={[
-                    styles.recurrenceOption,
-                    recurrence === 'none' && styles.recurrenceOptionSelected,
-                  ]}
-                  onPress={() => setRecurrence('none')}>
-                  <Text
-                    style={[
-                      styles.recurrenceOptionText,
-                      recurrence === 'none' &&
-                        styles.recurrenceOptionTextSelected,
-                    ]}>
-                    One-time
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.recurrenceOption,
-                    recurrence === 'weekly' && styles.recurrenceOptionSelected,
-                  ]}
-                  onPress={() => setRecurrence('weekly')}>
-                  <Text
-                    style={[
-                      styles.recurrenceOptionText,
-                      recurrence === 'weekly' &&
-                        styles.recurrenceOptionTextSelected,
-                    ]}>
-                    Weekly
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.recurrenceOption,
-                    recurrence === 'bi-weekly' &&
-                      styles.recurrenceOptionSelected,
-                  ]}
-                  onPress={() => setRecurrence('bi-weekly')}>
-                  <Text
-                    style={[
-                      styles.recurrenceOptionText,
-                      recurrence === 'bi-weekly' &&
-                        styles.recurrenceOptionTextSelected,
-                    ]}>
-                    Bi-weekly
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Reminders */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Reminders (Optional)</Text>
-              <ReminderSelector
-                selectedReminders={reminders}
-                onSelectionChange={setReminders}
-                maxReminders={2}
-              />
-            </View>
-
-            {/* Save as Template Toggle - Only show when not using a template */}
-            {!isUsingTemplate && (
-              <View style={styles.saveTemplateContainer}>
-                <Switch
-                  value={saveAsTemplate}
-                  onValueChange={setSaveAsTemplate}
-                  trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
-                  thumbColor={saveAsTemplate ? '#FFFFFF' : '#FFFFFF'}
-                />
-                <Text style={styles.saveTemplateText}>
-                  Save as template for future use
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
       </ScrollView>
+
+      {/* Footer */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.isDark
+              ? '#101922' + 'E6'
+              : '#F6F7F8' + 'E6',
+            borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!isFormValid || isSaving) && styles.saveButtonDisabled,
+            {
+              backgroundColor:
+                !isFormValid || isSaving
+                  ? theme.isDark
+                    ? '#1C252E'
+                    : '#D1D5DB'
+                  : COLORS.primary,
+            },
+          ]}
+          onPress={handleSave}
+          disabled={!isFormValid || isSaving}
+          activeOpacity={0.8}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <View style={styles.saveButtonContent}>
+              <Text style={styles.saveButtonText}>Save Lecture</Text>
+              <Ionicons name="arrow-forward" size={20} color="#FFFFFF" />
+            </View>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Reminder Selection Modal */}
+      <Modal
+        visible={showReminderModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReminderModal(false)}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowReminderModal(false)}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+              },
+            ]}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: theme.text },
+              ]}>
+              Select Reminder
+            </Text>
+            <Text
+              style={[
+                styles.modalSubtitle,
+                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              ]}>
+              Choose up to 2 reminders
+            </Text>
+            <ScrollView style={styles.reminderOptionsList}>
+              {REMINDER_OPTIONS.map(option => {
+                const isSelected = reminders.includes(option.value);
+                const isDisabled =
+                  !isSelected && reminders.length >= 2;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.reminderOption,
+                      isSelected && styles.reminderOptionSelected,
+                      {
+                        backgroundColor: isSelected
+                          ? COLORS.primary + '1A'
+                          : 'transparent',
+                        borderColor: isSelected
+                          ? COLORS.primary + '33'
+                          : theme.isDark
+                            ? '#374151'
+                            : '#E5E7EB',
+                      },
+                    ]}
+                    onPress={() => handleSelectReminder(option.value)}
+                    disabled={isDisabled}>
+                    <Text
+                      style={[
+                        styles.reminderOptionText,
+                        {
+                          color: isSelected
+                            ? COLORS.primary
+                            : theme.isDark
+                              ? '#FFFFFF'
+                              : '#111418',
+                        },
+                        isDisabled && { opacity: 0.5 },
+                      ]}>
+                      {option.label}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Course Selection Modal */}
       <Modal
@@ -866,84 +1153,239 @@ const AddLectureScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xxl * 2,
-    paddingBottom: SPACING.md,
-    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerButton: {
-    padding: SPACING.xs,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
   },
-  headerButtonDisabled: {
-    opacity: 0.5,
+  headerSpacer: {
+    width: 40,
   },
   headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
-  },
-  saveButtonText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.primary,
-  },
-  saveButtonTextDisabled: {
-    color: COLORS.gray,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    textAlign: 'center',
+    flex: 1,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   section: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.bold,
     marginBottom: SPACING.md,
+    paddingLeft: SPACING.xs,
   },
   field: {
     marginBottom: SPACING.lg,
   },
   label: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
-    color: COLORS.text,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    marginBottom: SPACING.sm,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
     marginBottom: SPACING.sm,
   },
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    height: 56,
+    paddingHorizontal: SPACING.md,
     borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   selectButtonText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.text,
-  },
-  selectButtonPlaceholder: {
-    color: COLORS.gray,
+    fontWeight: FONT_WEIGHTS.normal,
+    flex: 1,
   },
   characterCount: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  divider: {
+    height: 1,
+    marginVertical: SPACING.md,
+    marginHorizontal: SPACING.md,
+  },
+  venueInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  venueIcon: {
+    position: 'absolute',
+    left: SPACING.md,
+    zIndex: 1,
+  },
+  venueInput: {
+    flex: 1,
+    height: 48,
+    paddingLeft: 44,
+    paddingRight: SPACING.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: FONT_SIZES.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  recurrenceGrid: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+  },
+  recurrenceOption: {
+    flex: 1,
+    padding: SPACING.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  recurrenceOptionSelected: {
+    borderWidth: 1,
+  },
+  recurrenceOptionText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
-    textAlign: 'right',
-    marginTop: SPACING.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  maxReminders: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  remindersList: {
+    marginBottom: SPACING.sm,
+  },
+  addReminderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addReminderText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  reminderOptionsList: {
+    maxHeight: 300,
+  },
+  reminderOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: SPACING.xs,
+  },
+  reminderOptionSelected: {
+    borderWidth: 1,
+  },
+  reminderOptionText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: SPACING.md,
+    borderTopWidth: 1,
+  },
+  saveButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  saveButtonText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: '#FFFFFF',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.lg,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    marginBottom: SPACING.xs,
+  },
+  modalSubtitle: {
+    fontSize: FONT_SIZES.sm,
+    marginBottom: SPACING.md,
   },
   dateTimeRow: {
     flexDirection: 'row',

@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, Switch, StyleSheet } from 'react-native';
-import { useTheme } from '@/contexts/ThemeContext';
+import { Switch } from 'react-native';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
+import { COLORS } from '@/constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ANALYTICS_CONSENT_KEY = 'analytics_consent';
 
 export const AnalyticsToggle: React.FC = () => {
-  const { theme } = useTheme();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -50,45 +49,11 @@ export const AnalyticsToggle: React.FC = () => {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.surface }]}>
-      <View style={styles.textContainer}>
-        <Text style={[styles.title, { color: theme.text }]}>
-          Share Usage Analytics
-        </Text>
-        <Text style={[styles.description, { color: theme.textSecondary }]}>
-          Help us improve the app by sharing anonymous usage data. No personal
-          information is collected.
-        </Text>
-      </View>
       <Switch
         value={isEnabled}
         onValueChange={handleToggle}
-        trackColor={{ false: theme.border, true: theme.primary }}
-        thumbColor={isEnabled ? theme.surface : theme.border}
+      trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
+      thumbColor="#FFFFFF"
       />
-    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginVertical: 8,
-  },
-  textContainer: {
-    flex: 1,
-    marginRight: 16,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  description: {
-    fontSize: 14,
-    lineHeight: 20,
-  },
-});

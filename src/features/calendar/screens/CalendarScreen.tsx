@@ -22,6 +22,10 @@ import {
   Timeline,
   WeekGridView,
 } from '@/features/calendar/components';
+import { CalendarTaskCard } from '@/features/calendar/components/CalendarTaskCard';
+import { ViewModeToggle } from '@/features/calendar/components/ViewModeToggle';
+import { NotificationBell } from '@/shared/components/NotificationBell';
+import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { QueryStateWrapper } from '@/shared/components';
 import {
@@ -344,10 +348,10 @@ const CalendarScreen = () => {
       // Add color-coded dots based on task type
       const dotColor =
         task.type === 'lecture'
-          ? COLORS.primary
+          ? '#10B981' // Green
           : task.type === 'assignment'
-            ? '#FF9500'
-            : '#34C759'; // study_session
+            ? '#F97316' // Orange
+            : '#137FEC'; // Blue for study_session and reviews
 
       if (marked[dateKey].dots.length < 3) {
         marked[dateKey].dots.push({ color: dotColor });
@@ -492,92 +496,42 @@ const CalendarScreen = () => {
   const getTaskColor = (type: string) => {
     switch (type) {
       case 'lecture':
-        return COLORS.primary;
+        return '#10B981'; // Green
       case 'assignment':
-        return '#FF9500';
+        return '#F97316'; // Orange
       case 'study_session':
-        return '#34C759';
+        return '#137FEC'; // Blue
       default:
-        return COLORS.gray;
+        // Review sessions also use blue
+        return '#137FEC';
     }
   };
+  
+  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] = useState(false);
+  
+  const handleNotificationBellPress = useCallback(() => {
+    setIsNotificationHistoryVisible(true);
+  }, []);
+  
+  const handleNotificationHistoryClose = useCallback(() => {
+    setIsNotificationHistoryVisible(false);
+  }, []);
 
   // Render calendar content - used both for empty state and normal state
   const renderCalendarContent = () => (
     <View style={styles.container}>
-      {/* View Switcher */}
-      <View style={styles.viewSwitcher}>
-        <TouchableOpacity
-          style={[
-            styles.viewButton,
-            viewMode === 'month' && styles.viewButtonActive,
-          ]}
-          onPress={() => setViewMode('month')}
-          accessibilityLabel="Month view"
-          accessibilityHint="Switches calendar to month view"
-          accessibilityRole="button"
-          accessibilityState={{ selected: viewMode === 'month' }}>
-          <Ionicons
-            name="calendar"
-            size={18}
-            color={viewMode === 'month' ? COLORS.primary : COLORS.gray}
-          />
-          <Text
-            style={[
-              styles.viewButtonText,
-              viewMode === 'month' && styles.viewButtonTextActive,
-            ]}>
-            Month
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.viewButton,
-            viewMode === 'week' && styles.viewButtonActive,
-          ]}
-          onPress={() => setViewMode('week')}
-          accessibilityLabel="Week view"
-          accessibilityHint="Switches calendar to week view"
-          accessibilityRole="button"
-          accessibilityState={{ selected: viewMode === 'week' }}>
-          <Ionicons
-            name="grid"
-            size={18}
-            color={viewMode === 'week' ? COLORS.primary : COLORS.gray}
-          />
-          <Text
-            style={[
-              styles.viewButtonText,
-              viewMode === 'week' && styles.viewButtonTextActive,
-            ]}>
-            Week
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.viewButton,
-            viewMode === 'agenda' && styles.viewButtonActive,
-          ]}
-          onPress={() => setViewMode('agenda')}
-          accessibilityLabel="Agenda view"
-          accessibilityHint="Switches calendar to agenda list view"
-          accessibilityRole="button"
-          accessibilityState={{ selected: viewMode === 'agenda' }}>
-          <Ionicons
-            name="list"
-            size={18}
-            color={viewMode === 'agenda' ? COLORS.primary : COLORS.gray}
-          />
-          <Text
-            style={[
-              styles.viewButtonText,
-              viewMode === 'agenda' && styles.viewButtonTextActive,
-            ]}>
-            Agenda
-          </Text>
-        </TouchableOpacity>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Schedule</Text>
+        <NotificationBell onPress={handleNotificationBellPress} />
+      </View>
+      
+      {/* View Mode Toggle */}
+      <View style={styles.viewToggleContainer}>
+        <ViewModeToggle
+          selectedMode={viewMode}
+          onModeChange={setViewMode}
+        />
       </View>
 
       {/* Month View */}
@@ -647,17 +601,58 @@ const CalendarScreen = () => {
       {/* Agenda View */}
       {viewMode === 'agenda' && (
         <>
-          <WeekStrip
-            selectedDate={selectedDate}
-            onDateSelect={handleDateSelect}
-          />
+          <View style={styles.weekStripContainer}>
+            <WeekStrip
+              selectedDate={selectedDate}
+              onDateSelect={handleDateSelect}
+            />
+          </View>
 
-          <Timeline
-            tasks={tasksForSelectedDay}
-            onTaskPress={handleTaskPress}
-            onLockedTaskPress={handleLockedTaskPress}
+          <ScrollView
+            style={styles.agendaScrollView}
+            contentContainerStyle={styles.agendaContent}
             onScroll={handleScroll}
-          />
+            scrollEventThrottle={16}>
+            {tasksForSelectedDay.length === 0 ? (
+              <View style={styles.emptyAgendaContainer}>
+                <Text style={styles.emptyAgendaText}>
+                  No tasks scheduled for this day
+                </Text>
+              </View>
+            ) : (
+              tasksForSelectedDay.map((task, index) => {
+                const taskTime = new Date(task.startTime || task.date);
+                const endTime = task.endTime ? new Date(task.endTime) : null;
+                const timeStr = format(taskTime, 'h:mm');
+                const endTimeStr = endTime ? format(endTime, 'h:mm') : null;
+                
+                return (
+                  <View key={`${task.type}-${task.id}-${index}`} style={styles.agendaRow}>
+                    <View style={styles.timeColumn}>
+                      <Text style={styles.timeText}>{timeStr}</Text>
+                      {endTimeStr && (
+                        <Text style={styles.endTimeText}>{endTimeStr}</Text>
+                      )}
+                    </View>
+                    <CalendarTaskCard
+                      task={task}
+                      onPress={() =>
+                        task.isLocked
+                          ? handleLockedTaskPress(task)
+                          : handleTaskPress(task)
+                      }
+                      onMorePress={() => {
+                        if (!task.isLocked) {
+                          handleTaskPress(task);
+                        }
+                      }}
+                      isLocked={task.isLocked}
+                    />
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
         </>
       )}
 
@@ -734,6 +729,11 @@ const CalendarScreen = () => {
       onRefresh={refetch}
       emptyStateComponent={renderCalendarContent()}>
       {renderCalendarContent()}
+      
+      <NotificationHistoryModal
+        isVisible={isNotificationHistoryVisible}
+        onClose={handleNotificationHistoryClose}
+      />
     </QueryStateWrapper>
   );
 };
@@ -742,6 +742,62 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    backgroundColor: COLORS.background,
+  },
+  headerTitle: {
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: COLORS.textPrimary,
+  },
+  viewToggleContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  weekStripContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  agendaScrollView: {
+    flex: 1,
+  },
+  agendaContent: {
+    padding: SPACING.md,
+    gap: SPACING.lg,
+  },
+  agendaRow: {
+    flexDirection: 'row',
+    gap: SPACING.md,
+  },
+  timeColumn: {
+    width: 56,
+    alignItems: 'flex-end',
+    paddingTop: SPACING.xs,
+  },
+  timeText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.textPrimary,
+  },
+  endTimeText: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    marginTop: 2,
+  },
+  emptyAgendaContainer: {
+    paddingVertical: SPACING.xl,
+    alignItems: 'center',
+  },
+  emptyAgendaText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
   },
   viewSwitcher: {
     flexDirection: 'row',

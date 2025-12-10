@@ -114,7 +114,7 @@ const AddLectureDateTimeScreen = () => {
     setHasInteractedWithRecurrence(true);
     if (!value) {
       setRecurrence(null);
-    }
+      }
   };
 
   const handleRecurrenceSelect = (option: 'weekly' | 'bi-weekly') => {

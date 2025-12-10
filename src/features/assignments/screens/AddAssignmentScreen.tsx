@@ -21,7 +21,14 @@ import { format } from 'date-fns';
 import { RootStackParamList, Course } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { Button, Input, ReminderSelector } from '@/shared/components';
+import {
+  Button,
+  Input,
+  TemplateCard,
+  CardBasedDateTimePicker,
+  ReminderChip,
+  SegmentedControl,
+} from '@/shared/components';
 import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
@@ -42,6 +49,9 @@ import {
   clearDateFields,
   canSaveAsTemplate,
 } from '@/shared/utils/templateUtils';
+import { formatReminderLabel, REMINDER_OPTIONS } from '@/utils/reminderUtils';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SubmissionMethod = 'Online' | 'In-person' | null;
 
@@ -103,10 +113,9 @@ const AddAssignmentScreen = () => {
   const [reminders, setReminders] = useState<number[]>([120]); // Default 2-hour reminder
 
   // UI state
-  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [showOptionalFields, setShowOptionalFields] = useState(true); // Default to showing optional fields
   const [showCourseModal, setShowCourseModal] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [showReminderModal, setShowReminderModal] = useState(false);
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -496,290 +505,455 @@ const AddAssignmentScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8' },
+      ]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+            borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+          },
+        ]}>
         <TouchableOpacity
           onPress={() => {
             clearDraft('assignment');
             navigation.goBack();
           }}
           style={styles.headerButton}>
-          <Ionicons name="close" size={28} color={COLORS.text} />
+          <Ionicons
+            name="close"
+            size={24}
+            color={theme.isDark ? '#FFFFFF' : '#111418'}
+          />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>New Assignment</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            onPress={handleSaveAsTemplate}
-            style={styles.templateButton}>
-            <Ionicons name="library-outline" size={20} color={COLORS.gray} />
-            <Text style={styles.templateButtonText}>Save as Template</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={handleSave}
-            disabled={!isFormValid || isSaving}
-            style={[
-              styles.headerButton,
-              (!isFormValid || isSaving) && styles.headerButtonDisabled,
-            ]}>
-            {isSaving ? (
-              <ActivityIndicator size="small" color={COLORS.primary} />
-            ) : (
-              <Text
-                style={[
-                  styles.saveButtonText,
-                  !isFormValid && styles.saveButtonTextDisabled,
-                ]}>
-                Save
-              </Text>
-            )}
-          </TouchableOpacity>
-        </View>
+        <Text
+          style={[
+            styles.headerTitle,
+            { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          ]}>
+          New Assignment
+        </Text>
+        <View style={styles.headerSpacer} />
       </View>
-
-      {/* My Templates Button */}
-      <TouchableOpacity
-        style={styles.myTemplatesButton}
-        onPress={handleMyTemplatesPress}>
-        <Text style={styles.myTemplatesButtonText}>My Templates</Text>
-      </TouchableOpacity>
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 100 },
+        ]}>
         {/* Required Fields Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Required Information</Text>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            ]}>
+            Required Information
+          </Text>
 
           {/* Course Selector */}
           <View style={styles.field}>
-            <Text style={styles.label}>Course *</Text>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Course
+            </Text>
             <TouchableOpacity
-              style={styles.selectButton}
+              style={[
+                styles.selectButton,
+                {
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                },
+              ]}
               onPress={() => setShowCourseModal(true)}
               disabled={isLoadingCourses}>
               <Text
                 style={[
                   styles.selectButtonText,
-                  !selectedCourse && styles.selectButtonPlaceholder,
+                  {
+                    color: !selectedCourse
+                      ? theme.isDark
+                        ? '#9CA3AF'
+                        : '#9CA3AF'
+                      : theme.isDark
+                        ? '#FFFFFF'
+                        : '#111418',
+                  },
                 ]}>
                 {isLoadingCourses
                   ? 'Loading courses...'
-                  : selectedCourse?.courseName || 'Select a course'}
+                  : selectedCourse?.courseName || 'Select Course'}
               </Text>
-              <Ionicons name="chevron-down" size={20} color={COLORS.gray} />
+              <Ionicons
+                name="expand-more"
+                size={24}
+                color={theme.isDark ? '#FFFFFF' : '#111418'}
+              />
             </TouchableOpacity>
           </View>
 
           {/* Title Input */}
           <View style={styles.field}>
-            <Text style={styles.label}>Assignment Title *</Text>
+            <View style={styles.labelRow}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                ]}>
+                Assignment Title
+              </Text>
+              <Text
+                style={[
+                  styles.characterCount,
+                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                {title.length}/35
+              </Text>
+            </View>
             <Input
               value={title}
               onChangeText={setTitle}
-              placeholder="e.g., Essay on Climate Change"
+              placeholder="e.g., History Essay"
               maxLength={35}
             />
-            <Text style={styles.characterCount}>{title.length}/35</Text>
           </View>
 
           {/* Due Date & Time */}
           <View style={styles.field}>
-            <Text style={styles.label}>Due Date & Time *</Text>
-            <View style={styles.dateTimeRow}>
-              <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1, marginRight: 8 }]}
-                onPress={() => setShowDatePicker(true)}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(dueDate, 'MMM dd, yyyy')}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.dateTimeButton, { flex: 1 }]}
-                onPress={() => setShowTimePicker(true)}>
-                <Ionicons
-                  name="time-outline"
-                  size={20}
-                  color={COLORS.primary}
-                />
-                <Text style={styles.dateTimeButtonText}>
-                  {format(dueDate, 'h:mm a')}
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {showDatePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleDateChange}
-                minimumDate={new Date()}
-              />
-            )}
-
-            {showTimePicker && (
-              <DateTimePicker
-                value={dueDate}
-                mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleTimeChange}
-              />
-            )}
+            <CardBasedDateTimePicker
+              date={dueDate}
+              time={dueDate}
+              onDateChange={handleDateChange}
+              onTimeChange={handleTimeChange}
+              label="Due Date & Time"
+            />
           </View>
         </View>
 
-        {/* Optional Fields Section */}
-        <TouchableOpacity
-          style={styles.optionalToggle}
-          onPress={() => setShowOptionalFields(!showOptionalFields)}>
-          <Text style={styles.optionalToggleText}>Optional Details</Text>
-          <Ionicons
-            name={showOptionalFields ? 'chevron-up' : 'chevron-down'}
-            size={24}
-            color={COLORS.primary}
-          />
-        </TouchableOpacity>
+        {/* Divider */}
+        <View
+          style={[
+            styles.divider,
+            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+          ]}
+        />
 
-        {showOptionalFields && (
-          <View style={styles.section}>
-            {/* Description */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Description (Optional)</Text>
-              <TextInput
-                style={styles.textArea}
-                value={description}
-                onChangeText={setDescription}
-                placeholder="Add any notes or details about this assignment..."
-                multiline
-                numberOfLines={4}
-                maxLength={500}
-              />
-              <Text style={styles.characterCount}>
+        {/* Optional Fields Section */}
+        <View style={styles.section}>
+          <Text
+            style={[
+              styles.sectionTitle,
+              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            ]}>
+            Optional Details
+          </Text>
+
+          {/* Description */}
+          <View style={styles.field}>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Description
+            </Text>
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                  color: theme.isDark ? '#FFFFFF' : '#111418',
+                },
+              ]}
+              value={description}
+              onChangeText={setDescription}
+              placeholder="Add notes, requirements, or details..."
+              placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+              multiline
+              numberOfLines={3}
+              maxLength={500}
+            />
+            <View style={styles.characterCountContainer}>
+              <Text
+                style={[
+                  styles.characterCount,
+                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
                 {description.length}/500
               </Text>
             </View>
+          </View>
 
-            {/* Submission Method */}
+          {/* Submission Method */}
+          <View style={styles.field}>
+            <Text
+              style={[
+                styles.label,
+                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              ]}>
+              Submission Method
+            </Text>
+            <SegmentedControl
+              options={[
+                { label: 'Online', value: 'Online', icon: 'wifi-outline' },
+                { label: 'In-Person', value: 'In-person', icon: 'school-outline' },
+              ]}
+              selectedValue={submissionMethod}
+              onValueChange={value => setSubmissionMethod(value as SubmissionMethod)}
+            />
+          </View>
+
+          {/* Submission Link - Only show when Online is selected */}
+          {submissionMethod === 'Online' && (
             <View style={styles.field}>
-              <Text style={styles.label}>Submission Method (Optional)</Text>
-              <View style={styles.submissionOptions}>
-                <TouchableOpacity
-                  style={[
-                    styles.submissionOption,
-                    submissionMethod === 'Online' &&
-                      styles.submissionOptionSelected,
-                  ]}
-                  onPress={() => setSubmissionMethod('Online')}>
-                  <Ionicons
-                    name="cloud-upload-outline"
-                    size={24}
-                    color={
-                      submissionMethod === 'Online'
-                        ? COLORS.primary
-                        : COLORS.gray
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.submissionOptionText,
-                      submissionMethod === 'Online' &&
-                        styles.submissionOptionTextSelected,
-                    ]}>
-                    Online
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.submissionOption,
-                    submissionMethod === 'In-person' &&
-                      styles.submissionOptionSelected,
-                  ]}
-                  onPress={() => setSubmissionMethod('In-person')}>
-                  <Ionicons
-                    name="document-text-outline"
-                    size={24}
-                    color={
-                      submissionMethod === 'In-person'
-                        ? COLORS.primary
-                        : COLORS.gray
-                    }
-                  />
-                  <Text
-                    style={[
-                      styles.submissionOptionText,
-                      submissionMethod === 'In-person' &&
-                        styles.submissionOptionTextSelected,
-                    ]}>
-                    In-person
-                  </Text>
-                </TouchableOpacity>
-
-                {submissionMethod && (
-                  <TouchableOpacity
-                    style={styles.clearButton}
-                    onPress={() => {
-                      setSubmissionMethod(null);
-                      setSubmissionLink('');
-                    }}>
-                    <Ionicons
-                      name="close-circle"
-                      size={20}
-                      color={COLORS.gray}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              {submissionMethod === 'Online' && (
-                <View style={styles.submissionLinkContainer}>
-                  <Input
-                    value={submissionLink}
-                    onChangeText={setSubmissionLink}
-                    placeholder="https://canvas.university.edu/..."
-                    keyboardType="url"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                  />
-                </View>
-              )}
-            </View>
-
-            {/* Reminders */}
-            <View style={styles.field}>
-              <Text style={styles.label}>Reminders (Optional)</Text>
-              <ReminderSelector
-                selectedReminders={reminders}
-                onSelectionChange={setReminders}
-                maxReminders={2}
-              />
-            </View>
-
-            {/* Save as Template Toggle - Only show when not using a template */}
-            {!isUsingTemplate && (
-              <View style={styles.saveTemplateContainer}>
-                <Switch
-                  value={saveAsTemplate}
-                  onValueChange={setSaveAsTemplate}
-                  trackColor={{ false: '#E5E5E7', true: '#007AFF' }}
-                  thumbColor={saveAsTemplate ? '#FFFFFF' : '#FFFFFF'}
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                ]}>
+                Submission Link
+              </Text>
+              <View style={styles.linkInputContainer}>
+                <Ionicons
+                  name="link-outline"
+                  size={20}
+                  color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+                  style={styles.linkIcon}
                 />
-                <Text style={styles.saveTemplateText}>
-                  Save as template for future use
-                </Text>
+                <TextInput
+                  style={[
+                    styles.linkInput,
+                    {
+                      backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                      borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                      color: theme.isDark ? '#FFFFFF' : '#111418',
+                    },
+                  ]}
+                  value={submissionLink}
+                  onChangeText={setSubmissionLink}
+                  placeholder="https://"
+                  placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+                  keyboardType="url"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
+          )}
+
+          {/* Reminders */}
+          <View style={styles.field}>
+            <View style={styles.reminderHeader}>
+              <Text
+                style={[
+                  styles.label,
+                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                ]}>
+                Reminders
+              </Text>
+              <Text
+                style={[
+                  styles.maxReminders,
+                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                ]}>
+                Max 2
+              </Text>
+            </View>
+            {reminders.length > 0 && (
+              <View style={styles.remindersList}>
+                {reminders.map(minutes => (
+                  <ReminderChip
+                    key={minutes}
+                    label={formatReminderLabel(minutes)}
+                    onRemove={() => handleRemoveReminder(minutes)}
+                  />
+                ))}
               </View>
             )}
+            <TouchableOpacity
+              style={[
+                styles.addReminderButton,
+                {
+                  borderColor: theme.isDark ? '#3B4754' : '#D1D5DB',
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                },
+              ]}
+              onPress={handleAddReminder}
+              disabled={reminders.length >= 2}>
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={
+                  reminders.length >= 2
+                    ? theme.isDark
+                      ? '#6B7280'
+                      : '#9CA3AF'
+                    : COLORS.primary
+                }
+              />
+              <Text
+                style={[
+                  styles.addReminderText,
+                  {
+                    color:
+                      reminders.length >= 2
+                        ? theme.isDark
+                          ? '#6B7280'
+                          : '#9CA3AF'
+                        : COLORS.primary,
+                  },
+                ]}>
+                Add Reminder
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
+
+          {/* Template Card */}
+          {!isUsingTemplate && (
+            <View style={styles.field}>
+              <TemplateCard
+                title="Save as template"
+                description="Reuse these settings later"
+                value={saveAsTemplate}
+                onValueChange={setSaveAsTemplate}
+                icon="bookmark-outline"
+                iconColor={COLORS.primary}
+                iconBgColor="#E5E7EB"
+              />
+            </View>
+          )}
+        </View>
       </ScrollView>
+
+      {/* Footer */}
+      <View
+        style={[
+          styles.footer,
+          {
+            backgroundColor: theme.isDark
+              ? '#101922' + 'E6'
+              : '#F6F7F8' + 'E6',
+            borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+            paddingBottom: insets.bottom + 16,
+          },
+        ]}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            (!isFormValid || isSaving) && styles.saveButtonDisabled,
+            {
+              backgroundColor:
+                !isFormValid || isSaving
+                  ? theme.isDark
+                    ? '#1C252E'
+                    : '#D1D5DB'
+                  : COLORS.primary,
+            },
+          ]}
+          onPress={handleSave}
+          disabled={!isFormValid || isSaving}
+          activeOpacity={0.8}>
+          {isSaving ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.saveButtonText}>Save Assignment</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Reminder Selection Modal */}
+      <Modal
+        visible={showReminderModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowReminderModal(false)}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowReminderModal(false)}>
+          <View
+            style={[
+              styles.modalContent,
+              {
+                backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+              },
+            ]}>
+            <Text
+              style={[
+                styles.modalTitle,
+                { color: theme.text },
+              ]}>
+              Select Reminder
+            </Text>
+            <Text
+              style={[
+                styles.modalSubtitle,
+                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              ]}>
+              Choose up to 2 reminders
+            </Text>
+            <ScrollView style={styles.reminderOptionsList}>
+              {REMINDER_OPTIONS.map(option => {
+                const isSelected = reminders.includes(option.value);
+                const isDisabled =
+                  !isSelected && reminders.length >= 2;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[
+                      styles.reminderOption,
+                      isSelected && styles.reminderOptionSelected,
+                      {
+                        backgroundColor: isSelected
+                          ? COLORS.primary + '1A'
+                          : 'transparent',
+                        borderColor: isSelected
+                          ? COLORS.primary + '33'
+                          : theme.isDark
+                            ? '#374151'
+                            : '#E5E7EB',
+                      },
+                    ]}
+                    onPress={() => handleSelectReminder(option.value)}
+                    disabled={isDisabled}>
+                    <Text
+                      style={[
+                        styles.reminderOptionText,
+                        {
+                          color: isSelected
+                            ? COLORS.primary
+                            : theme.isDark
+                              ? '#FFFFFF'
+                              : '#111418',
+                        },
+                        isDisabled && { opacity: 0.5 },
+                      ]}>
+                      {option.label}
+                    </Text>
+                    {isSelected && (
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={20}
+                        color={COLORS.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {/* Course Selection Modal */}
       <Modal
@@ -903,29 +1077,30 @@ const AddAssignmentScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xxl * 2,
-    paddingBottom: SPACING.md,
-    backgroundColor: COLORS.background,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
   },
   headerButton: {
-    padding: SPACING.xs,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
   },
-  headerButtonDisabled: {
-    opacity: 0.5,
+  headerSpacer: {
+    width: 40,
   },
   headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    textAlign: 'center',
+    flex: 1,
   },
   saveButtonText: {
     fontSize: FONT_SIZES.md,
@@ -939,48 +1114,65 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: SPACING.lg,
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   section: {
-    marginBottom: SPACING.xl,
+    marginBottom: SPACING.lg,
   },
   sectionTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.bold,
     marginBottom: SPACING.md,
+    paddingLeft: SPACING.xs,
   },
   field: {
     marginBottom: SPACING.lg,
   },
   label: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
-    color: COLORS.text,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+    marginBottom: SPACING.sm,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'baseline',
     marginBottom: SPACING.sm,
   },
   selectButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: SPACING.md,
-    backgroundColor: COLORS.background,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    height: 56,
+    paddingHorizontal: SPACING.md,
     borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   selectButtonText: {
     fontSize: FONT_SIZES.md,
-    color: COLORS.text,
-  },
-  selectButtonPlaceholder: {
-    color: COLORS.gray,
+    fontWeight: FONT_WEIGHTS.normal,
+    flex: 1,
   },
   characterCount: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
-    textAlign: 'right',
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  characterCountContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     marginTop: SPACING.xs,
+  },
+  divider: {
+    height: 1,
+    marginVertical: SPACING.md,
+    marginHorizontal: SPACING.md,
   },
   dateTimeRow: {
     flexDirection: 'row',
@@ -1015,14 +1207,87 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
   },
   textArea: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
     borderRadius: 12,
     padding: SPACING.md,
     fontSize: FONT_SIZES.md,
-    color: COLORS.text,
     textAlignVertical: 'top',
     minHeight: 100,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  linkInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  linkIcon: {
+    position: 'absolute',
+    left: SPACING.md,
+    zIndex: 1,
+  },
+  linkInput: {
+    flex: 1,
+    height: 48,
+    paddingLeft: 44,
+    paddingRight: SPACING.md,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: FONT_SIZES.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING.sm,
+  },
+  maxReminders: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  remindersList: {
+    marginBottom: SPACING.sm,
+  },
+  addReminderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+  },
+  addReminderText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
+  },
+  reminderOptionsList: {
+    maxHeight: 300,
+  },
+  reminderOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: SPACING.md,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: SPACING.xs,
+  },
+  reminderOptionSelected: {
+    borderWidth: 1,
+  },
+  reminderOptionText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   submissionOptions: {
     flexDirection: 'row',
@@ -1128,6 +1393,35 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: SPACING.sm,
   },
+  footer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: SPACING.md,
+    borderTopWidth: 1,
+  },
+  saveButton: {
+    width: '100%',
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonDisabled: {
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveButtonText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    color: '#FFFFFF',
+  },
   modalMessage: {
     fontSize: FONT_SIZES.md,
     color: COLORS.gray,
@@ -1160,9 +1454,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.semibold as any,
-  },
-  saveButton: {
-    backgroundColor: COLORS.primary,
   },
   myTemplatesButton: {
     backgroundColor: '#007AFF',

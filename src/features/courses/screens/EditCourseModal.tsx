@@ -25,9 +25,10 @@ import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { formatDate } from '@/i18n';
+import { DeleteCourseModal } from '@/shared/components';
 
 type EditCourseModalRouteProp = RouteProp<
   RootStackParamList,
@@ -42,6 +43,7 @@ const EditCourseModal = () => {
   const { isOnline } = useNetwork();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
 
   // Fetch course details
   const {
@@ -95,6 +97,7 @@ const EditCourseModal = () => {
   );
   const [showRecurrenceModal, setShowRecurrenceModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Update form fields when course data is loaded
   useEffect(() => {
@@ -162,7 +165,10 @@ const EditCourseModal = () => {
     }
   };
 
-  const handleDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date,
+  ) => {
     if (Platform.OS === 'android') {
       setShowDatePicker(false);
     }
@@ -224,36 +230,36 @@ const EditCourseModal = () => {
   ];
 
   const handleDelete = () => {
-    Alert.alert(
-      'Delete Course',
-      'Are you sure you want to delete this course? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            if (!user?.id) {
-              Alert.alert('Error', 'User not authenticated.');
-              return;
-            }
+    setShowDeleteModal(true);
+  };
 
-            try {
-              await coursesApiMutations.delete(courseId, isOnline, user.id);
-              Alert.alert('Success', 'Course deleted successfully.');
-              navigation.goBack();
-            } catch (error) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-            }
-          },
-        },
-      ],
-    );
+  const handleConfirmDelete = async () => {
+    if (!user?.id) {
+      Alert.alert('Error', 'User not authenticated.');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await coursesApiMutations.delete(courseId, isOnline, user.id);
+      
+      // Invalidate React Query caches to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ['courses'] });
+      await queryClient.invalidateQueries({ queryKey: ['courseDetail', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      
+      setShowDeleteModal(false);
+      Alert.alert('Success', 'Course deleted successfully.');
+      navigation.goBack();
+    } catch (error) {
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -316,10 +322,7 @@ const EditCourseModal = () => {
             ]}>
             <View style={styles.inputGroup}>
               <Text
-                style={[
-                  styles.inputLabel,
-                  { color: theme.text || '#111827' },
-                ]}>
+                style={[styles.inputLabel, { color: theme.text || '#111827' }]}>
                 Course Name
               </Text>
               <TextInput
@@ -331,8 +334,8 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-                value={courseName}
-                onChangeText={setCourseName}
+          value={courseName}
+          onChangeText={setCourseName}
                 placeholder="e.g. Introduction to Psychology"
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
               />
@@ -340,10 +343,7 @@ const EditCourseModal = () => {
 
             <View style={styles.inputGroup}>
               <Text
-                style={[
-                  styles.inputLabel,
-                  { color: theme.text || '#111827' },
-                ]}>
+                style={[styles.inputLabel, { color: theme.text || '#111827' }]}>
                 Course Code
               </Text>
               <TextInput
@@ -355,8 +355,8 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-                value={courseCode}
-                onChangeText={setCourseCode}
+          value={courseCode}
+          onChangeText={setCourseCode}
                 placeholder="e.g. PSY101"
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
               />
@@ -364,10 +364,7 @@ const EditCourseModal = () => {
 
             <View style={styles.inputGroup}>
               <Text
-                style={[
-                  styles.inputLabel,
-                  { color: theme.text || '#111827' },
-                ]}>
+                style={[styles.inputLabel, { color: theme.text || '#111827' }]}>
                 Description
               </Text>
               <TextInput
@@ -379,12 +376,12 @@ const EditCourseModal = () => {
                     color: theme.text,
                   },
                 ]}
-                value={aboutCourse}
-                onChangeText={setAboutCourse}
+          value={aboutCourse}
+          onChangeText={setAboutCourse}
                 placeholder="Add optional notes..."
                 placeholderTextColor={theme.textSecondary || '#9ca3af'}
-                multiline
-                numberOfLines={4}
+          multiline
+          numberOfLines={4}
                 textAlignVertical="top"
               />
             </View>
@@ -426,11 +423,7 @@ const EditCourseModal = () => {
                   Lecture Date
                 </Text>
               </View>
-              <Text
-                style={[
-                  styles.scheduleRowValue,
-                  { color: '#135bec' },
-                ]}>
+              <Text style={[styles.scheduleRowValue, { color: '#135bec' }]}>
                 {formatDisplayDate(lectureDate)}
               </Text>
             </TouchableOpacity>
@@ -463,11 +456,7 @@ const EditCourseModal = () => {
                     styles.timeBadge,
                     { backgroundColor: theme.background || '#f1f5f9' },
                   ]}>
-                  <Text
-                    style={[
-                      styles.timeBadgeText,
-                      { color: theme.text },
-                    ]}>
+                  <Text style={[styles.timeBadgeText, { color: theme.text }]}>
                     {formatDisplayTime(startTime)}
                   </Text>
                 </View>
@@ -477,11 +466,7 @@ const EditCourseModal = () => {
                     styles.timeBadge,
                     { backgroundColor: theme.background || '#f1f5f9' },
                   ]}>
-                  <Text
-                    style={[
-                      styles.timeBadgeText,
-                      { color: theme.text },
-                    ]}>
+                  <Text style={[styles.timeBadgeText, { color: theme.text }]}>
                     {formatDisplayTime(endTime)}
                   </Text>
                 </View>
@@ -548,7 +533,11 @@ const EditCourseModal = () => {
                     styles.scheduleIcon,
                     { backgroundColor: '#135bec10' },
                   ]}>
-                  <Ionicons name="notifications-outline" size={20} color="#135bec" />
+                  <Ionicons
+                    name="notifications-outline"
+                    size={20}
+                    color="#135bec"
+                  />
                 </View>
                 <Text style={[styles.scheduleRowLabel, { color: theme.text }]}>
                   Revision Reminders
@@ -670,10 +659,7 @@ const EditCourseModal = () => {
           activeOpacity={1}
           onPress={() => setShowRecurrenceModal(false)}>
           <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: theme.surface },
-            ]}
+            style={[styles.modalContent, { backgroundColor: theme.surface }]}
             onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>
@@ -698,7 +684,10 @@ const EditCourseModal = () => {
                 style={[
                   styles.modalOptionText,
                   { color: theme.text },
-                  recurrence === 'none' && { color: '#135bec', fontWeight: '600' },
+                  recurrence === 'none' && {
+                    color: '#135bec',
+                    fontWeight: '600',
+                  },
                 ]}>
                 Does not repeat
               </Text>
@@ -748,10 +737,7 @@ const EditCourseModal = () => {
           activeOpacity={1}
           onPress={() => setShowReminderModal(false)}>
           <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: theme.surface },
-            ]}
+            style={[styles.modalContent, { backgroundColor: theme.surface }]}
             onStartShouldSetResponder={() => true}>
             <View style={styles.modalHeader}>
               <Text style={[styles.modalTitle, { color: theme.text }]}>
@@ -793,7 +779,16 @@ const EditCourseModal = () => {
           </View>
         </TouchableOpacity>
       </Modal>
-    </View>
+
+      {/* Delete Course Modal */}
+      <DeleteCourseModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        courseName={courseData?.courseName}
+        isLoading={isSaving}
+        />
+      </View>
   );
 };
 

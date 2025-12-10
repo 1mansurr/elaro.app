@@ -3,22 +3,25 @@ import {
   View,
   FlatList,
   StyleSheet,
-  Alert,
   TouchableOpacity,
   Text,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useDeletedItemsQuery } from '@/hooks/useDeletedItemsQuery';
 import { QueryStateWrapper } from '@/shared/components';
-import { DeletedItemCard } from '../components/DeletedItemCard';
-import { supabase } from '@/services/supabase';
-import { useBatchAction, BatchItem } from '@/hooks/useBatchAction';
-import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { useTheme } from '@/hooks/useTheme';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { Alert } from 'react-native';
+import { formatDistanceToNow } from 'date-fns';
 
 const RecycleBinScreen = () => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+  const { theme } = useTheme();
   const {
     data: items,
     isLoading,
@@ -29,173 +32,18 @@ const RecycleBinScreen = () => {
   } = useDeletedItemsQuery();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
-  // Selection mode state
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-
-  // Batch action mutation
-  const batchMutation = useBatchAction();
-
-  // Configure header buttons
+  // Configure header
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => {
-            if (isSelectionMode) {
-              // Exit selection mode
-              setIsSelectionMode(false);
-              setSelectedIds(new Set());
-            } else {
-              // Enter selection mode
-              setIsSelectionMode(true);
-            }
-          }}
-          style={{ marginRight: 16 }}>
-          <Text style={{ color: '#007AFF', fontSize: 16, fontWeight: '600' }}>
-            {isSelectionMode ? 'Cancel' : 'Select'}
-          </Text>
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, isSelectionMode]);
-
-  // Toggle item selection
-  const handleToggleSelect = useCallback((itemId: string) => {
-    setSelectedIds(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(itemId)) {
-        newSet.delete(itemId);
-      } else {
-        newSet.add(itemId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  // Select all items
-  const handleSelectAll = useCallback(() => {
-    if (items) {
-      setSelectedIds(new Set(items.map(item => item.id)));
-    }
-  }, [items]);
-
-  // Deselect all items
-  const handleDeselectAll = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
-
-  // Batch restore selected items
-  const handleBatchRestore = useCallback(async () => {
-    if (selectedIds.size === 0) {
-      Alert.alert('No Selection', 'Please select items to restore.');
-      return;
-    }
-
-    Alert.alert(
-      'Restore Selected Items',
-      `Are you sure you want to restore ${selectedIds.size} item(s)?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Restore',
-          onPress: async () => {
-            const batchItems: BatchItem[] = items!
-              .filter(item => selectedIds.has(item.id))
-              .map(item => ({
-                id: item.id,
-                type: (item as any).type,
-              }));
-
-            try {
-              const result = await batchMutation.mutateAsync({
-                action: 'RESTORE',
-                items: batchItems,
+      headerShown: false,
               });
-
-              // Show results
-              if (result.results.failed === 0) {
-                Alert.alert('Success', result.message);
-              } else {
-                Alert.alert(
-                  'Partially Complete',
-                  `${result.results.succeeded} items restored successfully.\n${result.results.failed} items failed.`,
-                );
-              }
-
-              // Exit selection mode and clear selection
-              setIsSelectionMode(false);
-              setSelectedIds(new Set());
-            } catch (error) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-            }
-          },
-        },
-      ],
-    );
-  }, [selectedIds, items, batchMutation]);
-
-  // Batch delete selected items permanently
-  const handleBatchDelete = useCallback(async () => {
-    if (selectedIds.size === 0) {
-      Alert.alert('No Selection', 'Please select items to delete.');
-      return;
-    }
-
-    Alert.alert(
-      'Delete Selected Items',
-      `Are you sure you want to permanently delete ${selectedIds.size} item(s)? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            const batchItems: BatchItem[] = items!
-              .filter(item => selectedIds.has(item.id))
-              .map(item => ({
-                id: item.id,
-                type: (item as any).type,
-              }));
-
-            try {
-              const result = await batchMutation.mutateAsync({
-                action: 'DELETE_PERMANENTLY',
-                items: batchItems,
-              });
-
-              // Show results
-              if (result.results.failed === 0) {
-                Alert.alert('Success', result.message);
-              } else {
-                Alert.alert(
-                  'Partially Complete',
-                  `${result.results.succeeded} items deleted successfully.\n${result.results.failed} items failed.`,
-                );
-              }
-
-              // Exit selection mode and clear selection
-              setIsSelectionMode(false);
-              setSelectedIds(new Set());
-            } catch (error) {
-              const errorTitle = getErrorTitle(error);
-              const errorMessage = mapErrorCodeToMessage(error);
-              Alert.alert(errorTitle, errorMessage);
-            }
-          },
-        },
-      ],
-    );
-  }, [selectedIds, items, batchMutation]);
+  }, [navigation]);
 
   const handleRestore = useCallback(
     async (itemId: string, itemType: string) => {
       setActionLoading(itemId);
       const functionName = `restore-${itemType.replace('_', '-')}`;
 
-      // Map item type to the correct parameter name expected by backend
       const getParameterName = (type: string) => {
         switch (type) {
           case 'course':
@@ -221,70 +69,164 @@ const RecycleBinScreen = () => {
         const errorMessage = mapErrorCodeToMessage(error);
         Alert.alert(errorTitle, errorMessage);
       } else {
-        Alert.alert('Success', `${itemType.replace('_', ' ')} restored.`);
-        await refetch(); // Refresh list
+        await refetch();
       }
       setActionLoading(null);
     },
     [refetch],
   );
 
-  const handleDeletePermanently = useCallback(
-    (itemId: string, itemType: string) => {
-      Alert.alert(
-        'Delete Permanently',
-        'This action is irreversible. Are you sure?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Delete',
-            style: 'destructive',
-            onPress: async () => {
-              setActionLoading(itemId);
-              const functionName = `delete-${itemType.replace('_', '-')}-permanently`;
+  const getItemIcon = (type: string) => {
+    switch (type) {
+      case 'course':
+        return 'book-outline';
+      case 'assignment':
+        return 'document-text-outline';
+      case 'lecture':
+        return 'calendar-outline';
+      case 'study_session':
+        return 'time-outline';
+      default:
+        return 'ellipse-outline';
+    }
+  };
 
-              // Map item type to the correct parameter name expected by backend
-              const getParameterName = (type: string) => {
+  const getItemIconColor = (type: string) => {
                 switch (type) {
                   case 'course':
-                    return 'courseId';
+        return { light: '#a855f7', dark: '#c084fc' };
                   case 'assignment':
-                    return 'assignmentId';
+        return { light: '#14b8a6', dark: '#5eead4' };
                   case 'lecture':
-                    return 'lectureId';
+        return { light: '#f59e0b', dark: '#fbbf24' };
                   case 'study_session':
-                    return 'studySessionId';
+        return { light: '#3b82f6', dark: '#60a5fa' };
                   default:
-                    return 'id';
+        return { light: '#6b7280', dark: '#9ca3af' };
                 }
               };
 
-              const parameterName = getParameterName(itemType);
-              const { error } = await invokeEdgeFunctionWithAuth(functionName, {
-                body: { [parameterName]: itemId },
-              });
+  const getItemName = (item: any) => {
+    if (item.type === 'course') {
+      return item.course_name || 'Unnamed Course';
+    } else if (item.type === 'assignment') {
+      return item.title || 'Unnamed Assignment';
+    } else if (item.type === 'lecture') {
+      return item.lecture_name || 'Unnamed Lecture';
+    } else if (item.type === 'study_session') {
+      return 'Study Session';
+    }
+    return 'Unknown Item';
+  };
 
-              if (error) {
-                const errorTitle = getErrorTitle(error);
-                const errorMessage = mapErrorCodeToMessage(error);
-                Alert.alert(errorTitle, errorMessage);
-              } else {
-                Alert.alert(
-                  'Success',
-                  `${itemType.replace('_', ' ')} permanently deleted.`,
-                );
-                await refetch(); // Refresh list
-              }
-              setActionLoading(null);
-            },
+  const formatDeletedDate = (deletedAt: string) => {
+    try {
+      const date = new Date(deletedAt);
+      const distance = formatDistanceToNow(date, { addSuffix: true });
+      return `Deleted ${distance}`;
+    } catch {
+      return 'Deleted recently';
+    }
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const iconColor = getItemIconColor(item.type);
+    const isRestoring = actionLoading === item.id;
+
+    return (
+      <View
+        style={[
+          styles.itemCard,
+          {
+            backgroundColor: theme.surface || '#FFFFFF',
+            borderColor: theme.border,
           },
-        ],
-      );
-    },
-    [refetch],
-  );
+        ]}>
+        <View style={styles.itemLeft}>
+          <View
+            style={[
+              styles.iconContainer,
+              {
+                backgroundColor:
+                  theme.mode === 'dark'
+                    ? `${iconColor.dark}20`
+                    : `${iconColor.light}15`,
+              },
+            ]}>
+            <Ionicons
+              name={getItemIcon(item.type) as any}
+              size={24}
+              color={
+                theme.mode === 'dark' ? iconColor.dark : iconColor.light
+              }
+            />
+          </View>
+          <View style={styles.itemInfo}>
+            <Text
+              style={[styles.itemName, { color: theme.text }]}
+              numberOfLines={1}>
+              {getItemName(item)}
+            </Text>
+            <View style={styles.itemMeta}>
+              <View style={styles.redDot} />
+              <Text
+                style={[styles.itemDate, { color: theme.textSecondary }]}
+                numberOfLines={1}>
+                {formatDeletedDate(item.deleted_at)}
+              </Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.restoreButton,
+            {
+              backgroundColor:
+                theme.mode === 'dark' ? '#135bec30' : '#135bec15',
+            },
+            isRestoring && styles.restoreButtonDisabled,
+          ]}
+          onPress={() => handleRestore(item.id, item.type)}
+          disabled={isRestoring}
+          activeOpacity={0.7}>
+          <Text
+            style={[
+              styles.restoreButtonText,
+              {
+                color: theme.mode === 'dark' ? '#60a5fa' : '#135bec',
+          },
+            ]}>
+            {isRestoring ? 'Restoring...' : 'Restore'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View
+        style={[
+          styles.header,
+          {
+            paddingTop: insets.top,
+            backgroundColor: theme.background,
+            borderBottomColor: theme.border,
+          },
+        ]}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backButton}
+          activeOpacity={0.7}>
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>
+          Recycle Bin
+        </Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
     <QueryStateWrapper
       isLoading={isLoading}
       isError={isError}
@@ -296,80 +238,52 @@ const RecycleBinScreen = () => {
       emptyTitle="Trash can is empty"
       emptyMessage="Deleted items will appear here. Items are automatically deleted after 30 days."
       emptyIcon="trash-outline">
-      <View style={styles.container}>
-        {/* Selection toolbar */}
-        {isSelectionMode && (
-          <View style={styles.selectionToolbar}>
-            <View style={styles.toolbarLeft}>
-              <TouchableOpacity
-                onPress={handleSelectAll}
-                style={styles.toolbarButton}>
-                <Text style={styles.toolbarButtonText}>Select All</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleDeselectAll}
-                style={styles.toolbarButton}>
-                <Text style={styles.toolbarButtonText}>Deselect All</Text>
-              </TouchableOpacity>
-              <Text style={styles.selectedCount}>
-                {selectedIds.size} selected
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* List */}
-        <FlatList
-          data={items}
-          keyExtractor={(item, index) =>
-            `${(item as any).type || 'unknown'}-${item.id || index}`
-          }
-          renderItem={({ item }) => (
-            <DeletedItemCard
-              item={item as any}
-              onRestore={handleRestore}
-              onDeletePermanently={handleDeletePermanently}
-              isActionLoading={actionLoading === item.id}
-              isSelectionMode={isSelectionMode}
-              isSelected={selectedIds.has(item.id)}
-              onToggleSelect={handleToggleSelect}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}>
+          {/* Info Banner */}
+          <View
+            style={[
+              styles.infoBanner,
+              {
+                backgroundColor:
+                  theme.mode === 'dark' ? '#f59e0b20' : '#fef3c7',
+                borderColor:
+                  theme.mode === 'dark' ? '#f59e0b30' : '#fde68a',
+              },
+            ]}>
+            <Ionicons
+              name="information-circle"
+              size={20}
+              color={theme.mode === 'dark' ? '#fbbf24' : '#d97706'}
             />
-          )}
-          contentContainerStyle={styles.list}
-          // Performance optimizations
-          removeClippedSubviews={true}
-          maxToRenderPerBatch={10}
-          windowSize={5}
-          updateCellsBatchingPeriod={50}
-          initialNumToRender={10}
-        />
-
-        {/* Batch action buttons */}
-        {isSelectionMode && selectedIds.size > 0 && (
-          <View style={styles.batchActionsContainer}>
-            <TouchableOpacity
-              style={[styles.batchButton, styles.restoreBatchButton]}
-              onPress={handleBatchRestore}
-              disabled={batchMutation.isPending}>
-              <Ionicons name="refresh" size={20} color="#fff" />
-              <Text style={styles.batchButtonText}>
-                Restore ({selectedIds.size})
+            <Text
+              style={[
+                styles.infoText,
+                {
+                  color: theme.mode === 'dark' ? '#fbbf24' : '#92400e',
+                },
+              ]}>
+              Items are permanently removed after 30 days. Restore courses to
+              add them back to your schedule.
               </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.batchButton, styles.deleteBatchButton]}
-              onPress={handleBatchDelete}
-              disabled={batchMutation.isPending}>
-              <Ionicons name="trash" size={20} color="#fff" />
-              <Text style={styles.batchButtonText}>
-                Delete ({selectedIds.size})
-              </Text>
-            </TouchableOpacity>
           </View>
-        )}
+
+          {/* Items List */}
+          <View style={styles.itemsContainer}>
+            {items?.map((item, index) => (
+              <View key={`${item.type}-${item.id}-${index}`}>
+                {renderItem({ item })}
+              </View>
+            ))}
       </View>
+
+          {/* Bottom spacing */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
     </QueryStateWrapper>
+    </View>
   );
 };
 
@@ -377,70 +291,120 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  list: {
-    flexGrow: 1,
-  },
-  selectionToolbar: {
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: '#F3F4F6',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  toolbarLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  toolbarButton: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  toolbarButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  selectedCount: {
-    fontSize: 14,
-    color: '#6B7280',
-    marginLeft: 8,
-  },
-  batchActionsContainer: {
-    flexDirection: 'row',
-    padding: 16,
-    gap: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 8,
-  },
-  batchButton: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 8,
-    gap: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
   },
-  restoreBatchButton: {
-    backgroundColor: '#007AFF',
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
   },
-  deleteBatchButton: {
-    backgroundColor: '#FF3B30',
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'center',
+    letterSpacing: -0.015,
   },
-  batchButtonText: {
-    color: '#fff',
+  headerSpacer: {
+    width: 40,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 16,
+  },
+  infoBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  itemsContainer: {
+    gap: 12,
+  },
+  itemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    flex: 1,
+    minWidth: 0,
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  itemInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  itemName: {
     fontSize: 16,
     fontWeight: '600',
+    marginBottom: 4,
+  },
+  itemMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  redDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#dc2626',
+  },
+  itemDate: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  restoreButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 80,
+  },
+  restoreButtonDisabled: {
+    opacity: 0.5,
+  },
+  restoreButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  bottomSpacing: {
+    height: 20,
   },
 });
 

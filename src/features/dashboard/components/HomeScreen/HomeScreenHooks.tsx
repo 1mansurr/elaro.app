@@ -16,7 +16,6 @@ import { supabase } from '@/services/supabase';
 import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { TASK_EVENTS } from '@/utils/analyticsEvents';
-import { createExampleData } from '@/utils/exampleData';
 import { getDraftCount } from '@/utils/draftStorage';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Task, User, HomeScreenData, RootStackParamList } from '@/types';
@@ -356,72 +355,3 @@ export const useWelcomePrompt = (
   }, [isGuest, user, navigation]);
 };
 
-// Custom hook for example data creation
-export const useExampleData = (
-  isGuest: boolean,
-  user: User | null,
-  isLoading: boolean,
-  homeData: HomeScreenData | null | undefined,
-  queryClient: QueryClient,
-  showToast: (options: ToastOptions) => void,
-) => {
-  useEffect(() => {
-    const checkAndCreateExampleData = async () => {
-      if (isGuest || !user || isLoading) return;
-
-      try {
-        const hasCreatedExamples = await AsyncStorage.getItem(
-          'hasCreatedExampleData',
-        );
-
-        const hasAnyData =
-          homeData &&
-          (homeData.nextUpcomingTask ||
-            (homeData.todayOverview &&
-              (homeData.todayOverview.lectures > 0 ||
-                homeData.todayOverview.assignments > 0 ||
-                homeData.todayOverview.studySessions > 0)));
-
-        if (!hasAnyData && !hasCreatedExamples) {
-          console.log(
-            '📚 New user with no data detected. Creating example data...',
-          );
-
-          await AsyncStorage.setItem('hasCreatedExampleData', 'true');
-
-          const result = await createExampleData(user.id);
-
-          if (result.success) {
-            console.log('✅ Example data created successfully');
-
-            await queryClient.invalidateQueries({
-              queryKey: ['homeScreenData'],
-            });
-            await queryClient.invalidateQueries({ queryKey: ['courses'] });
-            await queryClient.invalidateQueries({ queryKey: ['assignments'] });
-            await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-            await queryClient.invalidateQueries({
-              queryKey: ['studySessions'],
-            });
-
-            showToast({
-              message:
-                "📚 We've added some example tasks to help you get started!",
-              duration: 4000,
-            });
-          } else {
-            console.error('Failed to create example data:', result.error);
-          }
-        }
-      } catch (error) {
-        console.error('Error in checkAndCreateExampleData:', error);
-      }
-    };
-
-    const timer = setTimeout(() => {
-      checkAndCreateExampleData();
-    }, 1500);
-
-    return () => clearTimeout(timer);
-  }, [isGuest, user, isLoading, homeData, queryClient, showToast]);
-};

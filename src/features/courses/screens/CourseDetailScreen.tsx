@@ -21,8 +21,9 @@ import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/i18n';
+import { DeleteCourseModal } from '@/shared/components';
 
 // Define the route prop type for this screen
 type CourseDetailScreenRouteProp = RouteProp<
@@ -40,6 +41,7 @@ const CourseDetailScreen = () => {
   const { isOnline } = useNetwork();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
+  const queryClient = useQueryClient();
   const {
     data: course,
     isLoading,
@@ -49,6 +51,7 @@ const CourseDetailScreen = () => {
     isRefetching,
   } = useCourseDetail(courseId);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // Fetch lectures for this course
   const { data: lectures } = useQuery({
@@ -69,18 +72,10 @@ const CourseDetailScreen = () => {
   });
 
   const handleDelete = () => {
-    Alert.alert(
-      'Delete Course',
-      'Are you sure you want to delete this course? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
             if (!user?.id) {
               Alert.alert('Error', 'User not authenticated.');
               return;
@@ -89,6 +84,15 @@ const CourseDetailScreen = () => {
             setIsDeleting(true);
             try {
               await coursesApiMutations.delete(courseId, isOnline, user.id);
+
+      // Invalidate React Query caches to update UI immediately
+      await queryClient.invalidateQueries({ queryKey: ['courses'] });
+      await queryClient.invalidateQueries({ queryKey: ['courseDetail', courseId] });
+      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
+      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
+      
+      setShowDeleteModal(false);
               Alert.alert('Success', 'Course deleted successfully.');
               navigation.goBack();
             } catch (error) {
@@ -102,10 +106,6 @@ const CourseDetailScreen = () => {
             } finally {
               setIsDeleting(false);
             }
-          },
-        },
-      ],
-    );
   };
 
   const formatTime = (dateString: string) => {
@@ -122,7 +122,15 @@ const CourseDetailScreen = () => {
 
   const getDayOfWeek = (dateString: string) => {
     const date = new Date(dateString);
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
     return days[date.getDay()];
   };
 
@@ -180,7 +188,7 @@ const CourseDetailScreen = () => {
               <View style={styles.courseCodeBadge}>
                 <Text style={styles.courseCodeText}>{course.courseCode}</Text>
               </View>
-            )}
+          )}
           </View>
 
           {/* About Section */}
@@ -195,7 +203,8 @@ const CourseDetailScreen = () => {
                 About this course
               </Text>
             </View>
-            <Text style={[styles.sectionContent, { color: theme.textSecondary }]}>
+            <Text
+              style={[styles.sectionContent, { color: theme.textSecondary }]}>
             {course?.aboutCourse || 'No description provided.'}
           </Text>
         </View>
@@ -230,8 +239,13 @@ const CourseDetailScreen = () => {
                       />
                     </View>
                     <View style={styles.scheduleItemContent}>
-                      <Text style={[styles.scheduleItemTitle, { color: theme.text }]}>
-                        {formatTime(lectures.start_time)} - {formatTime(lectures.end_time)}
+                      <Text
+                        style={[
+                          styles.scheduleItemTitle,
+                          { color: theme.text },
+                        ]}>
+                        {formatTime(lectures.start_time)} -{' '}
+                        {formatTime(lectures.end_time)}
                       </Text>
                       <Text
                         style={[
@@ -245,33 +259,41 @@ const CourseDetailScreen = () => {
                 )}
 
                 {/* Recurrence */}
-                {lectures.recurring_pattern && lectures.recurring_pattern !== 'none' && (
-                  <View style={styles.scheduleItem}>
-                    <View
-                      style={[
-                        styles.scheduleIconContainer,
-                        { backgroundColor: theme.background },
-                      ]}>
-                      <Ionicons
-                        name="repeat-outline"
-                        size={20}
-                        color={theme.textSecondary || '#64748b'}
-                      />
-                    </View>
-                    <View style={styles.scheduleItemContent}>
-                      <Text style={[styles.scheduleItemTitle, { color: theme.text }]}>
-                        {formatRecurrence(lectures.recurring_pattern)} on {lectures.start_time ? getDayOfWeek(lectures.start_time) + 's' : ''}
-                      </Text>
-                      <Text
+                {lectures.recurring_pattern &&
+                  lectures.recurring_pattern !== 'none' && (
+                    <View style={styles.scheduleItem}>
+                      <View
                         style={[
-                          styles.scheduleItemLabel,
-                          { color: theme.textSecondary },
+                          styles.scheduleIconContainer,
+                          { backgroundColor: theme.background },
                         ]}>
-                        Recurrence
-                      </Text>
+                        <Ionicons
+                          name="repeat-outline"
+                          size={20}
+                          color={theme.textSecondary || '#64748b'}
+                        />
+                      </View>
+                      <View style={styles.scheduleItemContent}>
+                        <Text
+                          style={[
+                            styles.scheduleItemTitle,
+                            { color: theme.text },
+                          ]}>
+                          {formatRecurrence(lectures.recurring_pattern)} on{' '}
+                          {lectures.start_time
+                            ? getDayOfWeek(lectures.start_time) + 's'
+                            : ''}
+                        </Text>
+                        <Text
+                          style={[
+                            styles.scheduleItemLabel,
+                            { color: theme.textSecondary },
+                          ]}>
+                          Recurrence
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                )}
+                  )}
 
                 {/* Location */}
                 {lectures.venue && (
@@ -288,7 +310,11 @@ const CourseDetailScreen = () => {
                       />
                     </View>
                     <View style={styles.scheduleItemContent}>
-                      <Text style={[styles.scheduleItemTitle, { color: theme.text }]}>
+                      <Text
+                        style={[
+                          styles.scheduleItemTitle,
+                          { color: theme.text },
+                        ]}>
                         {lectures.venue}
                       </Text>
                       <Text
@@ -325,7 +351,8 @@ const CourseDetailScreen = () => {
                 ]}>
                 <View style={styles.reminderItemLeft}>
                   <Ionicons name="time-outline" size={20} color="#135bec" />
-                  <Text style={[styles.reminderItemText, { color: theme.text }]}>
+                  <Text
+                    style={[styles.reminderItemText, { color: theme.text }]}>
                     1 day before
                   </Text>
                 </View>
@@ -338,7 +365,8 @@ const CourseDetailScreen = () => {
                 ]}>
                 <View style={styles.reminderItemLeft}>
                   <Ionicons name="time-outline" size={20} color="#135bec" />
-                  <Text style={[styles.reminderItemText, { color: theme.text }]}>
+                  <Text
+                    style={[styles.reminderItemText, { color: theme.text }]}>
                     1 hour before
                   </Text>
                 </View>
@@ -353,7 +381,8 @@ const CourseDetailScreen = () => {
               style={[
                 styles.deleteButton,
                 {
-                  backgroundColor: theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
+                  backgroundColor:
+                    theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
                 },
               ]}
             onPress={handleDelete}
@@ -377,6 +406,15 @@ const CourseDetailScreen = () => {
         </View>
         </ScrollView>
       </QueryStateWrapper>
+
+      {/* Delete Course Modal */}
+      <DeleteCourseModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        courseName={course?.courseName}
+        isLoading={isDeleting}
+      />
       </View>
   );
 };
