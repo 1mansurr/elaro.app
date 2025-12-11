@@ -76,8 +76,9 @@ export class NotificationHistoryService {
       { type: 'assignments', label: 'Assignments', icon: 'document-outline' },
       { type: 'lectures', label: 'Lectures', icon: 'person-outline' },
       { type: 'study_sessions', label: 'Study Sessions', icon: 'book-outline' },
-      { type: 'analytics', label: 'Analytics', icon: 'trending-up-outline' },
-      { type: 'summaries', label: 'Summaries', icon: 'bar-chart-outline' },
+      // TEMPORARY: Analytics and Summaries filters removed
+      // { type: 'analytics', label: 'Analytics', icon: 'trending-up-outline' },
+      // { type: 'summaries', label: 'Summaries', icon: 'bar-chart-outline' },
     ];
   }
 

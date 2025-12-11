@@ -48,10 +48,11 @@ const getFilterIcon = (type: string): keyof typeof Ionicons.glyphMap => {
       return 'school-outline';
     case 'study_sessions':
       return 'people-outline';
-    case 'analytics':
-      return 'stats-chart-outline';
-    case 'summaries':
-      return 'document-text-outline';
+    // TEMPORARY: Analytics and Summaries removed
+    // case 'analytics':
+    //   return 'stats-chart-outline';
+    // case 'summaries':
+    //   return 'document-text-outline';
     default:
       return 'notifications-outline';
   }
@@ -103,14 +104,15 @@ export const NotificationHistoryModal: React.FC<
             type === 'study_session' ||
             type === 'srs_reminder'
           );
-        case 'analytics':
-          return type === 'weekly_report' || type === 'analytics';
-        case 'summaries':
-          return (
-            type === 'daily_summary' ||
-            type === 'achievement' ||
-            type === 'update'
-          );
+        // TEMPORARY: Analytics and Summaries filters removed
+        // case 'analytics':
+        //   return type === 'weekly_report' || type === 'analytics';
+        // case 'summaries':
+        //   return (
+        //     type === 'daily_summary' ||
+        //     type === 'achievement' ||
+        //     type === 'update'
+        //   );
         default:
           return true;
       }
@@ -399,7 +401,8 @@ export const NotificationHistoryModal: React.FC<
             showsVerticalScrollIndicator={false}>
             {loading ? (
               <View style={styles.loadingContainer}>
-                <Text style={[styles.loadingText, { color: textSecondaryColor }]}>
+                <Text
+                  style={[styles.loadingText, { color: textSecondaryColor }]}>
                   Loading notifications...
                 </Text>
               </View>
@@ -582,7 +585,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor: surfaceColor === '#FFFFFF' ? '#E5E7EB' : '#374151',
+                    backgroundColor:
+                      surfaceColor === '#FFFFFF' ? '#E5E7EB' : '#374151',
                   },
                 ]}>
                 <Text style={styles.notificationIcon}>{icon}</Text>
@@ -595,7 +599,9 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
                     styles.notificationTitle,
                     {
                       color: textColor,
-                      fontWeight: isRead ? FONT_WEIGHTS.medium : FONT_WEIGHTS.bold,
+                      fontWeight: isRead
+                        ? FONT_WEIGHTS.medium
+                        : FONT_WEIGHTS.bold,
                     },
                   ]}
                   numberOfLines={1}>

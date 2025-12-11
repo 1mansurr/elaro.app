@@ -53,8 +53,19 @@ export class BatchProcessingService {
 
   /**
    * Process weekly reports for all eligible users
+   * TEMPORARY: This feature is currently disabled
    */
   async processWeeklyReports(): Promise<BatchProcessingLog> {
+    // TEMPORARY: Weekly report generation is disabled
+    console.log('⚠️ Weekly report generation is temporarily disabled');
+    throw new AppError(
+      'Weekly report generation is temporarily disabled',
+      503,
+      'FEATURE_DISABLED',
+      { feature: 'weekly_reports' },
+    );
+
+    /* DISABLED - Uncomment to re-enable weekly reports
     const processingDate = new Date().toISOString().split('T')[0];
 
     try {
@@ -163,6 +174,7 @@ export class BatchProcessingService {
         { processingDate },
       );
     }
+    */ // END DISABLED CODE
   }
 
   /**

@@ -176,10 +176,7 @@ const TemplatesScreen = () => {
     });
   };
 
-  const handleOptionsPress = (
-    template: TaskTemplate,
-    event: any,
-  ) => {
+  const handleOptionsPress = (template: TaskTemplate, event: any) => {
     event.persist?.();
     const { pageX, pageY } = event.nativeEvent || {};
     setSelectedTemplate(template);
@@ -253,10 +250,7 @@ const TemplatesScreen = () => {
         <View style={styles.templateHeader}>
           <View style={styles.templateLeft}>
             <View
-              style={[
-                styles.typeIcon,
-                { backgroundColor: typeInfo.bgColor },
-              ]}>
+              style={[styles.typeIcon, { backgroundColor: typeInfo.bgColor }]}>
               <Ionicons
                 name={typeInfo.icon}
                 size={20}
@@ -293,10 +287,7 @@ const TemplatesScreen = () => {
           </TouchableOpacity>
         </View>
         <TouchableOpacity
-          style={[
-            styles.useButton,
-            { backgroundColor: COLORS.primary },
-          ]}
+          style={[styles.useButton, { backgroundColor: COLORS.primary }]}
           onPress={() => handleUseTemplate(item)}>
           <Text style={styles.useButtonText}>Use Template</Text>
         </TouchableOpacity>
@@ -388,11 +379,7 @@ const TemplatesScreen = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons
-              name="arrow-back-ios"
-              size={20}
-              color={textColor}
-            />
+            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: textColor }]}>
             Saved Templates
@@ -402,11 +389,7 @@ const TemplatesScreen = () => {
 
         {/* Description */}
         <View style={styles.descriptionContainer}>
-          <Text
-            style={[
-              styles.descriptionText,
-              { color: textSecondaryColor },
-            ]}>
+          <Text style={[styles.descriptionText, { color: textSecondaryColor }]}>
             Select a template to quickly create a new item with pre-filled
             details.
           </Text>
@@ -458,11 +441,7 @@ const TemplatesScreen = () => {
                 onPress={() =>
                   selectedTemplate && handleEditTemplate(selectedTemplate)
                 }>
-                <Ionicons
-                  name="pencil-outline"
-                  size={18}
-                  color={textColor}
-                />
+                <Ionicons name="pencil-outline" size={18} color={textColor} />
                 <Text style={[styles.popoverText, { color: textColor }]}>
                   Edit
                 </Text>
@@ -506,11 +485,9 @@ const TemplatesScreen = () => {
                 Delete Template
               </Text>
               <Text
-                style={[
-                  styles.modalMessage,
-                  { color: textSecondaryColor },
-                ]}>
-                Are you sure you want to delete "{templateToDelete?.template_name}
+                style={[styles.modalMessage, { color: textSecondaryColor }]}>
+                Are you sure you want to delete "
+                {templateToDelete?.template_name}
                 "? This action cannot be undone.
               </Text>
               <View style={styles.modalActions}>
@@ -521,11 +498,7 @@ const TemplatesScreen = () => {
                     { borderColor: borderColor },
                   ]}
                   onPress={() => setShowDeleteModal(false)}>
-                  <Text
-                    style={[
-                      styles.cancelButtonText,
-                      { color: textColor },
-                    ]}>
+                  <Text style={[styles.cancelButtonText, { color: textColor }]}>
                     Cancel
                   </Text>
                 </TouchableOpacity>
@@ -534,7 +507,9 @@ const TemplatesScreen = () => {
                   onPress={confirmDelete}
                   disabled={deleteTemplateMutation.isPending}>
                   <Text style={styles.confirmButtonText}>
-                    {deleteTemplateMutation.isPending ? 'Deleting...' : 'Delete'}
+                    {deleteTemplateMutation.isPending
+                      ? 'Deleting...'
+                      : 'Delete'}
                   </Text>
                 </TouchableOpacity>
               </View>
