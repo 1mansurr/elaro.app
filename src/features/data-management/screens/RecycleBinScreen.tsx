@@ -202,13 +202,12 @@ const RecycleBinScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
+    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
       {/* Header */}
       <View
         style={[
           styles.header,
           {
-            paddingTop: insets.top,
             backgroundColor: theme.background,
             borderBottomColor: theme.border,
           },

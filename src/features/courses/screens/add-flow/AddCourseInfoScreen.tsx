@@ -131,13 +131,13 @@ const AddCourseInfoScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
+      style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Header */}
       <View
         style={[
           styles.header,
-          { paddingTop: insets.top, backgroundColor: theme.background },
+          { backgroundColor: theme.background },
         ]}>
         <TouchableOpacity
           onPress={handleCancel}

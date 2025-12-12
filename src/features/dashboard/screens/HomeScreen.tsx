@@ -576,7 +576,7 @@ const HomeScreen = () => {
     <View style={styles.container} testID="home-screen">
       {/* Header with Date, Greeting, and Notification Bell */}
       {!isGuest && (
-        <View style={[styles.header, { paddingTop: insets.top + SPACING.md }]}>
+        <View style={[styles.header, { paddingTop: SPACING.md }]}>
           <View style={styles.headerLeft}>
             <Text style={styles.headerDate}>{formattedDate}</Text>
             <Text style={styles.headerTitle}>{personalizedTitle}</Text>
@@ -645,77 +645,9 @@ const HomeScreen = () => {
 
   // For authenticated users, wrap with QueryStateWrapper
   if (!isGuest) {
-    // For new users (just completed onboarding, no data yet), show empty state immediately
-    // Skip API call to avoid unnecessary Edge Function errors
-    if (isNewUser === true) {
-      return (
-        <View style={styles.container}>
-          <QueryStateWrapper
-            isLoading={false}
-            isError={false}
-            error={null}
-            data={isEmptyStateDismissed ? { _dismissed: true } : null}
-            refetch={handleRefetch}
-            isRefetching={false}
-            emptyStateComponent={
-              !isEmptyStateDismissed ? (
-                <HomeScreenEmptyState
-                  onAddActivity={handleAddActivity}
-                  onDismiss={handleDismissEmptyState}
-                />
-              ) : undefined
-            }>
-            {content}
-          </QueryStateWrapper>
-
-          {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
-          {isFabOpen && (
-            <TouchableWithoutFeedback onPress={handleBackdropPress}>
-              <Animated.View
-                style={[styles.backdrop, { opacity: backdropOpacity }]}>
-                <BlurView
-                  intensity={40}
-                  tint="dark"
-                  style={StyleSheet.absoluteFill}
-                />
-              </Animated.View>
-            </TouchableWithoutFeedback>
-          )}
-
-          <FloatingActionButton
-            actions={fabActions}
-            onStateChange={handleFabStateChange}
-            onDoubleTap={handleQuickAddDoubleTap}
-            draftCount={draftCount}
-            onDraftBadgePress={handleDraftBadgePress}
-          />
-
-          <QuickAddModal
-            isVisible={isQuickAddVisible}
-            onClose={handleQuickAddClose}
-          />
-
-          <TaskDetailSheet
-            task={selectedTask}
-            isVisible={!!selectedTask}
-            onClose={handleCloseSheet}
-            onEdit={handleEditTask}
-            onComplete={handleCompleteTask}
-            onDelete={handleDeleteTask}
-          />
-
-          <NotificationHistoryModal
-            isVisible={isNotificationHistoryVisible}
-            onClose={handleNotificationHistoryClose}
-          />
-        </View>
-      );
-    }
-
-    // For existing users: Show empty state immediately if error, update when data arrives
+    // Show empty state immediately if error, update when data arrives
     // Don't block UI with error states - show empty state instead for better UX
-    // Only show loading skeleton while checking if user is new
-    const shouldShowLoading = isNewUser === null;
+    const shouldShowLoading = isLoading;
     const shouldShowError = false; // Never show error - show empty state instead
     const displayData = isError ? null : homeData; // Treat errors as empty data
     // If empty state is dismissed, show content even if data is empty
@@ -725,7 +657,7 @@ const HomeScreen = () => {
         : displayData;
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <QueryStateWrapper
           isLoading={shouldShowLoading}
           isError={shouldShowError}

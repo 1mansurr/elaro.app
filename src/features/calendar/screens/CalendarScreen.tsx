@@ -12,6 +12,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Calendar, DateData } from 'react-native-calendars';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCalendarTasksWithLockState } from '@/features/calendar/hooks/useCalendarTasksWithLockState';
 import { useCalendarData, useCalendarMonthData } from '@/hooks/useDataQueries';
@@ -63,6 +64,7 @@ const CalendarScreen = () => {
   const { session, user } = useAuth();
   const queryClient = useQueryClient();
   const isGuest = !session;
+  const insets = useSafeAreaInsets();
 
   // const { offerings, purchasePackage } = useSubscription();
   const { purchasePackage } = useSubscription();
@@ -520,7 +522,7 @@ const CalendarScreen = () => {
 
   // Render calendar content - used both for empty state and normal state
   const renderCalendarContent = () => (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Schedule</Text>

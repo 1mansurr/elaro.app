@@ -508,7 +508,7 @@ const AddAssignmentScreen = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8' },
+        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8', paddingTop: insets.top },
       ]}>
       {/* Header */}
       <View

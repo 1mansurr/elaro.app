@@ -343,7 +343,7 @@ export function SettingsScreen() {
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}>
       {/* Header with backdrop blur */}
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
         <BlurView
           intensity={80}
           tint={theme.isDark ? 'dark' : 'light'}

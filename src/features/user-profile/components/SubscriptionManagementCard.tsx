@@ -1,15 +1,19 @@
 import React, { useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, Platform, Linking } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Button } from '@/shared/components/Button';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useTheme } from '@/hooks/useTheme';
 import { useAuth } from '@/contexts/AuthContext';
 import { showToast } from '@/utils/showToast';
 import { formatDate } from '@/i18n';
+import { RootStackParamList } from '@/types/navigation';
 
 export function SubscriptionManagementCard() {
   const { theme } = useTheme();
   const { user } = useAuth();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const {
     customerInfo,
     // offerings,
@@ -89,12 +93,8 @@ export function SubscriptionManagementCard() {
       !offerings?.current?.availablePackages ||
       offerings.current.availablePackages.length === 0
     ) {
-      // Navigate to PaywallScreen - but we need navigation prop
-      // For now, show error toast
-      showToast({
-        type: 'error',
-        message: 'No subscription packages available.',
-      });
+      // Navigate to PaywallScreen when offerings aren't available
+      navigation.navigate('PaywallScreen', { variant: 'general' });
       return;
     }
 
@@ -121,7 +121,7 @@ export function SubscriptionManagementCard() {
       // Error is already handled by the hook
       console.error('Purchase error:', error);
     }
-  }, [offerings, purchasePackage]);
+  }, [offerings, purchasePackage, navigation]);
 
   const handleRestore = useCallback(async () => {
     try {
