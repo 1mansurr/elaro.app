@@ -44,7 +44,9 @@ export const UsageLimitPaywallProvider: React.FC<{
   const [paywallState, setPaywallState] =
     useState<UsageLimitPaywallState | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
 
   const showUsageLimitPaywall = useCallback(
     (
