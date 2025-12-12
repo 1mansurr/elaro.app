@@ -404,8 +404,9 @@ export const AuthenticatedNavigator: React.FC = () => {
 
   // Show main app if onboarding is completed
   return (
-    <Suspense fallback={<LoadingFallback />}>
-      <Stack.Navigator screenOptions={sharedScreenOptions}>
+    <UsageLimitPaywallProvider>
+      <Suspense fallback={<LoadingFallback />}>
+        <Stack.Navigator screenOptions={sharedScreenOptions}>
         {/* Launch screen removed - AppNavigator handles initial routing */}
         {/* Main app screens */}
         {renderScreens(mainScreens)}
@@ -453,6 +454,7 @@ export const AuthenticatedNavigator: React.FC = () => {
           })}
         </Stack.Group>
       </Stack.Navigator>
-    </Suspense>
+      </Suspense>
+    </UsageLimitPaywallProvider>
   );
 };

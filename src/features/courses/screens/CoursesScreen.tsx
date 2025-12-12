@@ -216,7 +216,11 @@ const CoursesScreen = () => {
 
   return (
     <>
-      <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: theme.background, paddingTop: insets.top },
+        ]}>
         {/* Sticky Header */}
         <View
           style={[

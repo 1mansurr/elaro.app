@@ -69,8 +69,6 @@ export type RootStackParamList = {
     | undefined;
   OddityWelcomeScreen: {
     variant:
-      | 'trial-early'
-      | 'trial-expired'
       | 'direct'
       | 'renewal'
       | 'restore'

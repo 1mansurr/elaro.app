@@ -13,6 +13,8 @@ import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDraftCount } from '@/utils/draftStorage';
 import { COLORS } from '@/constants/theme';
+import { useLimitCheck } from '@/hooks/useLimitCheck';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 
@@ -36,6 +38,8 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const { checkCourseLimit, checkActivityLimit } = useLimitCheck();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
 
   // Load draft count on mount
   useEffect(() => {
@@ -70,23 +74,53 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
     // Note: QuickAddModal is not a navigation route - it's a state-controlled component
   };
 
+  const handleAddCourse = async () => {
+    const limitCheck = await checkCourseLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        { route: 'AddCourseFlow', params: undefined },
+      );
+      return;
+    }
+    navigation.navigate('AddCourseFlow');
+  };
+
+  const handleAddActivity = async (flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow') => {
+    const limitCheck = await checkActivityLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        { route: flowName, params: undefined },
+      );
+      return;
+    }
+    navigation.navigate(flowName);
+  };
+
   const fabActions = [
     {
       icon: 'book-outline' as any,
       label: 'Add Course',
-      onPress: () => navigation.navigate('AddCourseFlow'),
+      onPress: handleAddCourse,
       backgroundColor: COLORS.primary,
     },
     {
       icon: 'calendar-outline' as any,
       label: 'Add Assignment',
-      onPress: () => navigation.navigate('AddAssignmentFlow'),
+      onPress: () => handleAddActivity('AddAssignmentFlow'),
       backgroundColor: COLORS.secondary,
     },
     {
       icon: 'time-outline' as any,
       label: 'Add Study Session',
-      onPress: () => navigation.navigate('AddStudySessionFlow'),
+      onPress: () => handleAddActivity('AddStudySessionFlow'),
       backgroundColor: COLORS.success,
     },
   ];

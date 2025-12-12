@@ -52,10 +52,7 @@ const GrantPremiumSchema = z.object({
   subscription_tier: z.enum(['oddity', 'admin']).optional(),
 });
 
-const StartTrialSchema = z.object({
-  user_id: z.string().uuid(),
-  trial_days: z.number().int().min(1).max(90).optional(),
-});
+// StartTrialSchema removed - no longer supporting free trials
 
 const GetMetricsSchema = z.object({
   period: z.enum(['7d', '30d', '90d']).optional(),
@@ -164,12 +161,7 @@ function getHandler(action: string | null) {
       GrantPremiumSchema,
       true,
     ),
-    'start-trial': createAdminHandler(
-      handleStartTrial,
-      'admin-start-trial',
-      StartTrialSchema,
-      true,
-    ),
+    // 'start-trial' handler removed - no longer supporting free trials
     metrics: createAdminHandler(
       handleGetMetrics,
       'admin-metrics',
@@ -445,27 +437,7 @@ async function handleGrantPremium({ body }: AuthenticatedRequest) {
   return data;
 }
 
-async function handleStartTrial({ body }: AuthenticatedRequest) {
-  const { user_id, trial_days = 7 } = body;
-  const supabaseAdmin = getAdminClient();
-
-  const trialEndDate = new Date(
-    Date.now() + trial_days * 24 * 60 * 60 * 1000,
-  ).toISOString();
-
-  const { data, error } = await supabaseAdmin
-    .from('users')
-    .update({
-      subscription_tier: 'trial',
-      trial_ends_at: trialEndDate,
-    })
-    .eq('id', user_id)
-    .select()
-    .single();
-
-  if (error) handleDbError(error);
-  return data;
-}
+// handleStartTrial function removed - no longer supporting free trials
 
 async function handleGetMetrics({ body }: AuthenticatedRequest) {
   const { period = '30d' } = body || {};

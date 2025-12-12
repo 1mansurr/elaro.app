@@ -301,24 +301,7 @@ export const SUBSCRIPTION_EVENTS = {
     },
   },
 
-  // Trial events
-  TRIAL_STARTED: {
-    name: 'Subscription Trial Started',
-    properties: {
-      user_id: 'string',
-      trial_type: 'string', // 'free_trial', 'premium_trial'
-      trial_duration: 'number', // in days
-    },
-  },
-  TRIAL_ENDED: {
-    name: 'Subscription Trial Ended',
-    properties: {
-      user_id: 'string',
-      trial_type: 'string',
-      converted_to_paid: 'boolean',
-      final_tier: 'string', // 'free', 'premium', etc.
-    },
-  },
+  // Trial events removed - no longer using free trials
 
   // Payment events
   PAYMENT_COMPLETED: {

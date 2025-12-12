@@ -53,6 +53,8 @@ import {
 import { formatReminderLabel, REMINDER_OPTIONS } from '@/utils/reminderUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useLimitCheck } from '@/hooks/useLimitCheck';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 
 type RecurrenceType = 'none' | 'weekly' | 'bi-weekly';
 type AddLectureScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -71,6 +73,8 @@ const AddLectureScreen = () => {
     useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
+  const { checkActivityLimit } = useLimitCheck();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -447,6 +451,19 @@ const AddLectureScreen = () => {
       return;
     }
 
+    // Check activity limit before saving
+    const limitCheck = await checkActivityLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        null, // No pending action - user can retry after upgrade
+      );
+      return;
+    }
+
     setIsSaving(true);
 
     try {
@@ -570,7 +587,10 @@ const AddLectureScreen = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8', paddingTop: insets.top },
+        {
+          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+          paddingTop: insets.top,
+        },
       ]}>
       {/* Header */}
       <View

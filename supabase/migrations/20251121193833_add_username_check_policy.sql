@@ -13,7 +13,7 @@ USING (true);
 
 -- Add RLS policy to allow users to update their own profile
 -- This policy allows users to update their own user record, which is necessary
--- for functions like start-user-trial that need to update subscription information
+-- for functions that need to update subscription information
 
 CREATE POLICY "Users can update their own profile" ON "public"."users"
 FOR UPDATE

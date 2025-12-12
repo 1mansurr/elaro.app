@@ -18,7 +18,6 @@ interface UseSubscriptionReturn {
   hasActiveSubscription: boolean;
   subscriptionTier: string;
   subscriptionExpiration: string | null;
-  isInTrial: boolean;
   isInGracePeriod: boolean;
   gracePeriodExpiration: string | null;
 
@@ -46,7 +45,6 @@ export const useSubscription = (): UseSubscriptionReturn => {
       hasActiveSubscription: false,
       subscriptionTier: 'free',
       subscriptionExpiration: null,
-      isInTrial: false,
       isInGracePeriod: false,
       gracePeriodExpiration: null,
       purchasePackage: async () => {
@@ -186,9 +184,6 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const subscriptionExpiration = customerInfo
     ? revenueCatService.getSubscriptionExpiration(customerInfo)
     : null;
-  const isInTrial = customerInfo
-    ? revenueCatService.isInTrial(customerInfo)
-    : false;
   const isInGracePeriod = customerInfo
     ? revenueCatService.isInGracePeriod(customerInfo)
     : false;
@@ -225,7 +220,6 @@ export const useSubscription = (): UseSubscriptionReturn => {
     hasActiveSubscription,
     subscriptionTier,
     subscriptionExpiration,
-    isInTrial,
     isInGracePeriod,
     gracePeriodExpiration,
     purchasePackage,

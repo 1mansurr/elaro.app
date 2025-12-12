@@ -50,14 +50,13 @@ const AddLectureVenueScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: theme.background },
-        ]}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity
           onPress={handleBack}
           style={styles.backButton}

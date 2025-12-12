@@ -367,15 +367,15 @@ const TemplatesScreen = () => {
           },
         ]}>
         {/* Header */}
-          <View
-            style={[
-              styles.header,
-              {
-                backgroundColor: bgColor,
-                borderBottomColor: borderColor,
-                paddingTop: SPACING.md,
-              },
-            ]}>
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: bgColor,
+              borderBottomColor: borderColor,
+              paddingTop: SPACING.md,
+            },
+          ]}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}

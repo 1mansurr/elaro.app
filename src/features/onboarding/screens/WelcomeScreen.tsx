@@ -197,6 +197,34 @@ const WelcomeScreen = () => {
         </Text>
       </View>
 
+      {/* Free Plan Limits Section */}
+      <View style={styles.limitsSection}>
+        <Text style={styles.limitsTitle}>What you can do with ELARO Free:</Text>
+        <View style={styles.limitsList}>
+          <View style={styles.limitItem}>
+            <Text style={styles.limitIcon}>📚</Text>
+            <Text style={styles.limitText}>
+              <Text style={styles.limitNumber}>2 courses</Text> to organize your studies
+            </Text>
+          </View>
+          <View style={styles.limitItem}>
+            <Text style={styles.limitIcon}>⚡</Text>
+            <Text style={styles.limitText}>
+              <Text style={styles.limitNumber}>15 activities/month</Text> (assignments, lectures, study sessions)
+            </Text>
+          </View>
+          <View style={styles.limitItem}>
+            <Text style={styles.limitIcon}>🔔</Text>
+            <Text style={styles.limitText}>
+              <Text style={styles.limitNumber}>5 spaced repetition reminders/month</Text> for effective learning
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.limitsNote}>
+          Upgrade to Oddity anytime for more capacity and advanced features!
+        </Text>
+      </View>
+
       {/* Age Verification Section */}
       <View style={styles.ageSection}>
         <Text style={styles.sectionTitle}>Age Verification</Text>
@@ -459,6 +487,49 @@ const styles = StyleSheet.create({
   },
   buttonContainerWithPicker: {
     marginTop: SPACING.lg, // Reduce top margin when picker/age info is showing
+  },
+  limitsSection: {
+    backgroundColor: '#f0f9ff',
+    padding: SPACING.md,
+    borderRadius: 12,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+  },
+  limitsTitle: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold as any,
+    color: COLORS.text,
+    marginBottom: SPACING.sm,
+    textAlign: 'center',
+  },
+  limitsList: {
+    marginBottom: SPACING.sm,
+  },
+  limitItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: SPACING.xs,
+  },
+  limitIcon: {
+    fontSize: FONT_SIZES.lg,
+    marginRight: SPACING.sm,
+  },
+  limitText: {
+    flex: 1,
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  limitNumber: {
+    fontWeight: FONT_WEIGHTS.semibold as any,
+    color: COLORS.primary,
+  },
+  limitsNote: {
+    fontSize: FONT_SIZES.xs,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
 });
 

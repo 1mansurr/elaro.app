@@ -63,32 +63,7 @@ interface SimplifiedHomeScreenContentProps {
 // 🧩 FOCUSED SUB-COMPONENTS
 // ===========================================
 
-// Trial Banner Component
-const TrialBannerSection: React.FC<{
-  shouldShowBanner: boolean;
-  trialDaysRemaining: number | null;
-  onSubscribePress: () => void;
-  onDismissBanner: () => void;
-}> = memo(
-  ({
-    shouldShowBanner,
-    trialDaysRemaining,
-    onSubscribePress,
-    onDismissBanner,
-  }) => {
-    if (!shouldShowBanner) return null;
-
-    return (
-      <TrialBanner
-        daysRemaining={trialDaysRemaining}
-        onPressSubscribe={onSubscribePress}
-        onDismiss={onDismissBanner}
-      />
-    );
-  },
-);
-
-TrialBannerSection.displayName = 'TrialBannerSection';
+// Trial Banner Component removed - no longer using free trials
 
 // Next Task Card Component
 const NextTaskSection: React.FC<{
@@ -283,12 +258,6 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
               tintColor={COLORS.primary}
             />
           }>
-          <TrialBannerSection
-            shouldShowBanner={shouldShowBanner}
-            trialDaysRemaining={trialDaysRemaining}
-            onSubscribePress={onSubscribePress}
-            onDismissBanner={onDismissBanner}
-          />
           <EmptyStateSection
             isGuest={isGuest}
             onAddActivity={handleAddActivity}
@@ -309,12 +278,6 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
             tintColor={COLORS.primary}
           />
         }>
-        <TrialBannerSection
-          shouldShowBanner={shouldShowBanner}
-          trialDaysRemaining={trialDaysRemaining}
-          onSubscribePress={onSubscribePress}
-          onDismissBanner={onDismissBanner}
-        />
 
         <NextTaskSection
           homeData={homeData}

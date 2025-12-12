@@ -638,54 +638,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           });
         }
 
-        // --- START: NEW TRIAL LOGIC ---
-        if (
-          userProfile &&
-          userProfile.subscription_tier === 'free' &&
-          userProfile.subscription_expires_at === null
-        ) {
-          console.log('New free user detected. Attempting to start trial...');
-          try {
-            // Get fresh access token to ensure it's valid
-            const { getFreshAccessToken } = await import(
-              '@/utils/getFreshAccessToken'
-            );
-            const accessToken = await getFreshAccessToken();
-
-            const { error } = await supabase.functions.invoke(
-              'start-user-trial',
-              {
-                headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
-              },
-            );
-            if (error) {
-              console.error('Failed to start user trial:', error.message);
-            } else {
-              console.log(
-                'Trial started successfully. Refreshing user profile...',
-              );
-              // Refresh the user profile to get the new subscription status
-              const refreshedUserProfile = await fetchUserProfile(
-                session.user.id,
-              );
-              setUser(refreshedUserProfile);
-
-              // Track trial start
-              mixpanelService.track(AnalyticsEvents.TRIAL_STARTED, {
-                trial_type: 'free_trial',
-                trial_duration: 7,
-              });
-            }
-          } catch (e) {
-            console.error(
-              'An unexpected error occurred while starting trial:',
-              e,
-            );
-          }
-        }
-        // --- END: NEW TRIAL LOGIC ---
+        // Trial logic removed - all new users start on free plan
 
         // Navigation is now handled in AppNavigator based on auth state changes
       } else {

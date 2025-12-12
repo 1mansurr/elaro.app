@@ -33,13 +33,14 @@ const OddityWelcomeScreen = () => {
 
   // Fire confetti on mount
   useEffect(() => {
-    // Only fire confetti for active variants, not placeholders
+    // Only fire confetti for active variants (trial variants removed)
     const activeVariants = [
-      'trial-early',
-      'trial-expired',
       'direct',
       'renewal',
       'restore',
+      'promo',
+      'granted',
+      'plan-change',
     ];
     if (activeVariants.includes(variant)) {
       confettiRef.current?.start();

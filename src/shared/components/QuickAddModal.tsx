@@ -29,6 +29,8 @@ import { notificationService } from '@/services/notifications';
 import { useTotalTaskCount } from '@/hooks';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { savePendingTask } from '@/utils/taskPersistence';
+import { useLimitCheck } from '@/hooks/useLimitCheck';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
 import { EmptyStateModal } from '@/features/templates/components/EmptyStateModal';
 import { useTemplateManagement } from '@/features/templates/hooks/useTemplateManagement';
@@ -57,6 +59,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const queryClient = useQueryClient();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
+  const { checkActivityLimit } = useLimitCheck();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
 
   // Template management
   const { createTemplate, hasTemplates } = useTemplateManagement();
@@ -257,7 +261,20 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       return;
     }
 
-    // Handle authenticated users: create task immediately
+    // Handle authenticated users: check limit first, then create task
+    // Check activity limit before creating
+    const limitCheck = await checkActivityLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        null, // No pending action - user can retry after upgrade
+      );
+      return;
+    }
+
     setIsSaving(true);
 
     try {

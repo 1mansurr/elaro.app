@@ -20,6 +20,8 @@ import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { FloatingLabelInput, ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
+import { useLimitCheck } from '@/hooks/useLimitCheck';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 
 type AddCourseInfoScreenNavigationProp = StackNavigationProp<
   AddCourseStackParamList,
@@ -65,51 +67,24 @@ const AddCourseInfoScreen = () => {
     checkCourseCount();
   }, [user?.id]);
 
-  const handleNext = () => {
+  const { checkCourseLimit } = useLimitCheck();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
+
+  const handleNext = async () => {
     if (!courseName.trim()) {
       Alert.alert('Course name is required.');
       return;
     }
 
-    const userTier = user?.subscription_tier || 'free';
-    const courseLimit = COURSE_LIMITS[userTier] || COURSE_LIMITS.free;
-
-    if (courseCount >= courseLimit) {
-      Alert.alert(
-        'Course Limit Reached',
-        `You have reached the limit of ${courseLimit} courses for the 'free' plan. Upgrade to Oddity for just $1.99/month to add more courses.`,
-        [
-          { text: 'OK', style: 'cancel' },
-          ...(userTier === 'free'
-            ? [
-                {
-                  text: 'Become an Oddity',
-                  onPress: async () => {
-                    try {
-                      const { error } = await supabase.functions.invoke(
-                        'grant-premium-access',
-                      );
-                      if (error) throw error;
-                      await queryClient.invalidateQueries({
-                        queryKey: ['user'],
-                      });
-                      await queryClient.invalidateQueries({
-                        queryKey: ['courses'],
-                      });
-                      Alert.alert(
-                        'Success!',
-                        'You now have access to all premium features.',
-                      );
-                    } catch (e) {
-                      const errorTitle = getErrorTitle(e);
-                      const errorMessage = mapErrorCodeToMessage(e);
-                      Alert.alert(errorTitle, errorMessage);
-                    }
-                  },
-                },
-              ]
-            : []),
-        ],
+    // Check course limit before proceeding
+    const limitCheck = await checkCourseLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        null, // No pending action - user can retry after upgrade
       );
       return;
     }
@@ -131,14 +106,13 @@ const AddCourseInfoScreen = () => {
 
   return (
     <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: theme.background },
-        ]}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity
           onPress={handleCancel}
           style={styles.cancelButton}

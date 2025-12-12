@@ -183,13 +183,13 @@ const AddLectureDateTimeScreen = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background, paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.container,
+        { backgroundColor: theme.background, paddingTop: insets.top },
+      ]}>
       {/* Header */}
-      <View
-        style={[
-          styles.header,
-          { backgroundColor: theme.background },
-        ]}>
+      <View style={[styles.header, { backgroundColor: theme.background }]}>
         <TouchableOpacity
           onPress={handleBack}
           style={styles.backButton}

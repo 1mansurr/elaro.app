@@ -26,12 +26,13 @@ import { NotificationHistoryModal } from '@/shared/components/NotificationHistor
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import TrialBanner from '../components/TrialBanner';
-import { differenceInCalendarDays, format, isAfter } from 'date-fns';
+import { format } from 'date-fns';
 import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
+import { useLimitCheck } from '@/hooks/useLimitCheck';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 import { Button, QueryStateWrapper, QuickAddModal } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
@@ -162,49 +163,65 @@ const HomeScreen = () => {
     navigation.navigate('Auth', { mode: 'signup' });
   }, [isGuest, navigation]);
 
+  const { checkCourseLimit, checkActivityLimit } = useLimitCheck();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
+
+  const handleAddCourse = useCallback(async () => {
+    const limitCheck = await checkCourseLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        { route: 'AddCourseFlow', params: undefined },
+      );
+      return;
+    }
+    navigation.navigate('AddCourseFlow');
+  }, [checkCourseLimit, showUsageLimitPaywall, navigation]);
+
+  const handleAddActivity = useCallback(async (flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow', eventName: string) => {
+    const limitCheck = await checkActivityLimit();
+    if (!limitCheck.allowed && limitCheck.limitType) {
+      showUsageLimitPaywall(
+        limitCheck.limitType,
+        limitCheck.currentUsage!,
+        limitCheck.maxLimit!,
+        limitCheck.actionLabel!,
+        { route: flowName, params: undefined },
+      );
+      return;
+    }
+    // Track analytics before navigating
+    mixpanelService.track(eventName as any, {
+      task_type: flowName.replace('Add', '').replace('Flow', '').toLowerCase(),
+      source: 'home_screen_fab',
+      creation_method: 'manual',
+      timestamp: new Date().toISOString(),
+    });
+    navigation.navigate(flowName);
+  }, [checkActivityLimit, showUsageLimitPaywall, navigation]);
+
   const fabActions = useMemo(
     () => [
       {
         icon: 'book-outline' as const,
         label: 'Add Study Session',
-        onPress: () => {
-          mixpanelService.track(AnalyticsEvents.STUDY_SESSION_CREATED, {
-            task_type: 'study_session',
-            source: 'home_screen_fab',
-            creation_method: 'manual',
-            timestamp: new Date().toISOString(),
-          });
-          navigation.navigate('AddStudySessionFlow');
-        },
+        onPress: () => handleAddActivity('AddStudySessionFlow', AnalyticsEvents.STUDY_SESSION_CREATED),
       },
       {
         icon: 'document-text-outline' as const,
         label: 'Add Assignment',
-        onPress: () => {
-          mixpanelService.track(AnalyticsEvents.ASSIGNMENT_CREATED, {
-            task_type: 'assignment',
-            source: 'home_screen_fab',
-            creation_method: 'manual',
-            timestamp: new Date().toISOString(),
-          });
-          navigation.navigate('AddAssignmentFlow');
-        },
+        onPress: () => handleAddActivity('AddAssignmentFlow', AnalyticsEvents.ASSIGNMENT_CREATED),
       },
       {
         icon: 'school-outline' as const,
         label: 'Add Lecture',
-        onPress: () => {
-          mixpanelService.track(AnalyticsEvents.LECTURE_CREATED, {
-            task_type: 'lecture',
-            source: 'home_screen_fab',
-            creation_method: 'manual',
-            timestamp: new Date().toISOString(),
-          });
-          navigation.navigate('AddLectureFlow');
-        },
+        onPress: () => handleAddActivity('AddLectureFlow', AnalyticsEvents.LECTURE_CREATED),
       },
     ],
-    [navigation],
+    [handleAddActivity],
   );
 
   // Memoize backdrop opacity interpolation to prevent recalculation
@@ -372,69 +389,6 @@ const HomeScreen = () => {
     handleCloseSheet,
   ]);
 
-  // Trial banner logic - memoized to prevent recalculation
-  const trialDaysRemaining = useMemo(() => {
-    if (
-      user?.subscription_status !== 'trialing' ||
-      !user?.subscription_expires_at
-    ) {
-      return null;
-    }
-    const today = new Date();
-    const expirationDate = new Date(user.subscription_expires_at);
-    return differenceInCalendarDays(expirationDate, today);
-  }, [user?.subscription_status, user?.subscription_expires_at]);
-
-  const shouldShowBanner = useMemo(
-    () =>
-      trialDaysRemaining !== null &&
-      trialDaysRemaining <= 3 &&
-      !isBannerDismissed,
-    [trialDaysRemaining, isBannerDismissed],
-  );
-
-  // Check AsyncStorage for banner dismissal state
-  useEffect(() => {
-    let isMounted = true;
-
-    const checkBannerDismissal = async () => {
-      if (!user?.id || trialDaysRemaining === null) {
-        if (isMounted) setIsBannerDismissed(false);
-        return;
-      }
-
-      try {
-        const storageKey = `@trial_banner_dismissed_${user.id}_${trialDaysRemaining}`;
-        const dismissed = await AsyncStorage.getItem(storageKey);
-        if (isMounted) setIsBannerDismissed(dismissed === 'true');
-      } catch (error) {
-        console.error('Error checking banner dismissal state:', error);
-        if (isMounted) setIsBannerDismissed(false);
-      }
-    };
-
-    checkBannerDismissal();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user?.id, trialDaysRemaining]);
-
-  const handleDismissBanner = useCallback(async () => {
-    if (!user?.id || trialDaysRemaining === null) return;
-
-    try {
-      const storageKey = `@trial_banner_dismissed_${user.id}_${trialDaysRemaining}`;
-      await AsyncStorage.setItem(storageKey, 'true');
-      setIsBannerDismissed(true);
-    } catch (error) {
-      console.error('Error saving banner dismissal state:', error);
-    }
-  }, [user?.id, trialDaysRemaining]);
-
-  const handleSubscribePress = useCallback(() => {
-    navigation.navigate('PaywallScreen', { variant: 'general' });
-  }, [navigation]);
 
   // Get personalized title - memoized to prevent recalculation on every render
   const personalizedTitle = useMemo(() => {
@@ -594,13 +548,6 @@ const HomeScreen = () => {
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
-        {shouldShowBanner && (
-          <TrialBanner
-            daysRemaining={trialDaysRemaining as number}
-            onPressSubscribe={handleSubscribePress}
-            onDismiss={handleDismissBanner}
-          />
-        )}
         {isGuest && <Text style={styles.title}>{personalizedTitle}</Text>}
 
         {/* Up Next Section */}

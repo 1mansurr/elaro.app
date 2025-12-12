@@ -19,8 +19,8 @@ export interface User {
   role: 'user' | 'admin';
   onboarding_completed: boolean;
   subscription_tier: 'free' | 'oddity' | null;
-  subscription_status?: 'trialing' | 'active' | 'past_due' | 'canceled' | null;
-  subscription_expires_at: string | null;
+  subscription_status?: 'active' | 'past_due' | 'canceled' | null;
+  subscription_expires_at: string | null; // For actual subscriptions, not trials
   account_status: 'active' | 'deleted' | 'suspended';
   deleted_at: string | null;
   deletion_scheduled_at: string | null;

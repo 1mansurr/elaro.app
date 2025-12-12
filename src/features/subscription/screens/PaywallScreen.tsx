@@ -80,12 +80,10 @@ export const PaywallScreen: React.FC = () => {
     },
   ];
 
-  // Helper function to determine welcome screen variant
+  // Helper function to determine welcome screen variant (trial variants removed)
   const determineWelcomeVariant = async (
     userId: string | undefined,
   ): Promise<
-    | 'trial-early'
-    | 'trial-expired'
     | 'direct'
     | 'renewal'
     | 'restore'
@@ -98,9 +96,7 @@ export const PaywallScreen: React.FC = () => {
     try {
       const { data: userData, error } = await supabase
         .from('users')
-        .select(
-          'trial_start_date, subscription_expires_at, subscription_status',
-        )
+        .select('subscription_status')
         .eq('id', userId)
         .single();
 
@@ -112,13 +108,6 @@ export const PaywallScreen: React.FC = () => {
         return 'direct'; // Fallback
       }
 
-      const now = new Date();
-      const trialStart = userData.trial_start_date
-        ? new Date(userData.trial_start_date)
-        : null;
-      const trialExpires = userData.subscription_expires_at
-        ? new Date(userData.subscription_expires_at)
-        : null;
       const previousStatus = userData.subscription_status;
 
       // Check if this is a renewal (previously expired/canceled)
@@ -126,28 +115,7 @@ export const PaywallScreen: React.FC = () => {
         return 'renewal';
       }
 
-      // Check trial-based variants
-      if (trialStart && trialExpires) {
-        // Trial-early: Purchase during trial
-        if (now >= trialStart && now <= trialExpires) {
-          return 'trial-early';
-        }
-
-        // Trial-expired: Purchase within 4 days after trial expiration
-        const fourDaysAfterExpiration = new Date(trialExpires);
-        fourDaysAfterExpiration.setDate(fourDaysAfterExpiration.getDate() + 4);
-
-        if (now > trialExpires && now <= fourDaysAfterExpiration) {
-          return 'trial-expired';
-        }
-
-        // Direct: Purchase 4+ days after trial expiration
-        if (now > fourDaysAfterExpiration) {
-          return 'direct';
-        }
-      }
-
-      // Default to direct if no trial data
+      // Default to direct
       return 'direct';
     } catch (error) {
       console.error('Error determining welcome variant:', error);

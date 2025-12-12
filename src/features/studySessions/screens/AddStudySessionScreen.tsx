@@ -54,6 +54,9 @@ import {
 import { formatReminderLabel, REMINDER_OPTIONS } from '@/utils/reminderUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSRSReminderLimit } from '@/hooks/useSRSReminderLimit';
+import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
+import { formatActionLabel } from '@/utils/limitChecking';
 
 type AddStudySessionScreenNavigationProp =
   StackNavigationProp<RootStackParamList>;
@@ -74,6 +77,8 @@ const AddStudySessionScreen = () => {
     useTotalTaskCount();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { currentReminders, maxLimit: srsMaxLimit, isAtLimit: isSRSAtLimit } = useSRSReminderLimit();
+  const { showUsageLimitPaywall } = useUsageLimitPaywall();
 
   const isGuest = !session;
 
@@ -476,7 +481,10 @@ const AddStudySessionScreen = () => {
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.isDark ? '#101922' : '#F6F7F8', paddingTop: insets.top },
+        {
+          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+          paddingTop: insets.top,
+        },
       ]}>
       {/* Header */}
       <View
@@ -668,7 +676,25 @@ const AddStudySessionScreen = () => {
               title="Spaced Repetition"
               description="Get reminders to review at optimal intervals"
               value={hasSpacedRepetition}
-              onValueChange={setHasSpacedRepetition}
+              onValueChange={(value) => {
+                // Check limit when user tries to toggle SRS on
+                if (value && !hasSpacedRepetition) {
+                  // Check if adding one more would exceed limit
+                  if (currentReminders + 1 > srsMaxLimit) {
+                    // Show paywall
+                    const nextCount = currentReminders + 1;
+                    showUsageLimitPaywall(
+                      'reminder',
+                      currentReminders,
+                      srsMaxLimit,
+                      formatActionLabel('reminder', nextCount),
+                      null, // No pending action - they can retry after upgrade
+                    );
+                    return; // Don't toggle on
+                  }
+                }
+                setHasSpacedRepetition(value);
+              }}
               icon="repeat-outline"
               iconColor={COLORS.primary}
               iconBgColor="#E5E7EB"

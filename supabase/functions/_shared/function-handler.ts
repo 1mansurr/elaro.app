@@ -503,7 +503,7 @@ export function createAuthenticatedHandler(
       const hasBody = Object.keys(body).length > 0;
 
       // Enforce schema validation for mutations that have a body
-      // Mutations without a body (like start-user-trial) don't need a schema
+      // Mutations without a body don't need a schema
       if (isMutation && hasBody && !options.schema) {
         throw new AppError(
           'Validation schema required for mutation operations with a body',

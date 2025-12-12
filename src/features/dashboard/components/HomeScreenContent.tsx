@@ -11,7 +11,6 @@ import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { COLORS, SPACING } from '@/constants/theme';
 
-import { TrialBannerWrapper } from '../components/TrialBannerWrapper';
 import NextTaskCard from '../components/NextTaskCard';
 import TodayOverviewCard from '../components/TodayOverviewCard';
 import { Button } from '@/shared/components';
@@ -58,12 +57,6 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         ) : undefined
       }>
-      <TrialBannerWrapper
-        user={user}
-        isPremium={isPremium}
-        onPressSubscribe={() => navigation.navigate('Auth', { mode: 'signin' })}
-        onDismiss={() => {}}
-      />
 
       <NextTaskCard
         task={isGuest ? null : homeData?.nextUpcomingTask || null}

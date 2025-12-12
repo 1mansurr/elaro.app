@@ -31,8 +31,6 @@ import { performanceMonitoringService } from '@/services/PerformanceMonitoringSe
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import TrialBanner from '../components/TrialBanner';
-import { differenceInCalendarDays } from 'date-fns';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
@@ -78,7 +76,6 @@ const HomeScreen = () => {
   // State management with performance optimizations
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
   const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
@@ -232,41 +229,7 @@ const HomeScreen = () => {
     return `Good evening, ${user?.first_name || 'there'}!`;
   }, [user?.first_name]);
 
-  const shouldShowBanner = useMemo(() => {
-    if (isGuest || isBannerDismissed) return false;
-    if (!user?.subscription_tier || user.subscription_tier === 'oddity')
-      return false;
-
-    const trialDaysRemaining = user.subscription_expires_at
-      ? differenceInCalendarDays(
-          new Date(user.subscription_expires_at),
-          new Date(),
-        )
-      : 0;
-
-    return trialDaysRemaining > 0 && trialDaysRemaining <= 7;
-  }, [
-    isGuest,
-    isBannerDismissed,
-    user?.subscription_tier,
-    user?.subscription_expires_at,
-  ]);
-
-  const trialDaysRemaining = useMemo(() => {
-    if (!user?.subscription_expires_at) return 0;
-    return differenceInCalendarDays(
-      new Date(user.subscription_expires_at),
-      new Date(),
-    );
-  }, [user?.subscription_expires_at]);
-
-  const handleSubscribePress = useCallback(() => {
-    navigation.navigate('Profile');
-  }, [navigation]);
-
-  const handleDismissBanner = useCallback(() => {
-    setIsBannerDismissed(true);
-  }, []);
+  // Trial banner logic removed - no longer using free trials
 
   const handleFabStateChange = useCallback((state: { isOpen: boolean }) => {
     setIsFabOpen(state.isOpen);
@@ -333,13 +296,6 @@ const HomeScreen = () => {
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
-        {shouldShowBanner && (
-          <TrialBanner
-            daysRemaining={trialDaysRemaining as number}
-            onPressSubscribe={handleSubscribePress}
-            onDismiss={handleDismissBanner}
-          />
-        )}
 
         {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
 
