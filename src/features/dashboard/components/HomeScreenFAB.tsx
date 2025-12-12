@@ -89,7 +89,9 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
     navigation.navigate('AddCourseFlow');
   };
 
-  const handleAddActivity = async (flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow') => {
+  const handleAddActivity = async (
+    flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
+  ) => {
     const limitCheck = await checkActivityLimit();
     if (!limitCheck.allowed && limitCheck.limitType) {
       showUsageLimitPaywall(

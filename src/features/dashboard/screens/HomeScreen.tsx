@@ -181,44 +181,62 @@ const HomeScreen = () => {
     navigation.navigate('AddCourseFlow');
   }, [checkCourseLimit, showUsageLimitPaywall, navigation]);
 
-  const handleAddActivity = useCallback(async (flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow', eventName: string) => {
-    const limitCheck = await checkActivityLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        { route: flowName, params: undefined },
-      );
-      return;
-    }
-    // Track analytics before navigating
-    mixpanelService.track(eventName as any, {
-      task_type: flowName.replace('Add', '').replace('Flow', '').toLowerCase(),
-      source: 'home_screen_fab',
-      creation_method: 'manual',
-      timestamp: new Date().toISOString(),
-    });
-    navigation.navigate(flowName);
-  }, [checkActivityLimit, showUsageLimitPaywall, navigation]);
+  const handleAddActivity = useCallback(
+    async (
+      flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
+      eventName: string,
+    ) => {
+      const limitCheck = await checkActivityLimit();
+      if (!limitCheck.allowed && limitCheck.limitType) {
+        showUsageLimitPaywall(
+          limitCheck.limitType,
+          limitCheck.currentUsage!,
+          limitCheck.maxLimit!,
+          limitCheck.actionLabel!,
+          { route: flowName, params: undefined },
+        );
+        return;
+      }
+      // Track analytics before navigating
+      mixpanelService.track(eventName as any, {
+        task_type: flowName
+          .replace('Add', '')
+          .replace('Flow', '')
+          .toLowerCase(),
+        source: 'home_screen_fab',
+        creation_method: 'manual',
+        timestamp: new Date().toISOString(),
+      });
+      navigation.navigate(flowName);
+    },
+    [checkActivityLimit, showUsageLimitPaywall, navigation],
+  );
 
   const fabActions = useMemo(
     () => [
       {
         icon: 'book-outline' as const,
         label: 'Add Study Session',
-        onPress: () => handleAddActivity('AddStudySessionFlow', AnalyticsEvents.STUDY_SESSION_CREATED),
+        onPress: () =>
+          handleAddActivity(
+            'AddStudySessionFlow',
+            AnalyticsEvents.STUDY_SESSION_CREATED,
+          ),
       },
       {
         icon: 'document-text-outline' as const,
         label: 'Add Assignment',
-        onPress: () => handleAddActivity('AddAssignmentFlow', AnalyticsEvents.ASSIGNMENT_CREATED),
+        onPress: () =>
+          handleAddActivity(
+            'AddAssignmentFlow',
+            AnalyticsEvents.ASSIGNMENT_CREATED,
+          ),
       },
       {
         icon: 'school-outline' as const,
         label: 'Add Lecture',
-        onPress: () => handleAddActivity('AddLectureFlow', AnalyticsEvents.LECTURE_CREATED),
+        onPress: () =>
+          handleAddActivity('AddLectureFlow', AnalyticsEvents.LECTURE_CREATED),
       },
     ],
     [handleAddActivity],
@@ -388,7 +406,6 @@ const HomeScreen = () => {
     showToast,
     handleCloseSheet,
   ]);
-
 
   // Get personalized title - memoized to prevent recalculation on every render
   const personalizedTitle = useMemo(() => {

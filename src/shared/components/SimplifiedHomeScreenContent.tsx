@@ -278,7 +278,6 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
             tintColor={COLORS.primary}
           />
         }>
-
         <NextTaskSection
           homeData={homeData}
           isGuest={isGuest}

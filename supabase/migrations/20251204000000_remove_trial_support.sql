@@ -1,16 +1,11 @@
 -- Remove trial support from database
 -- This migration removes all trial-related columns, constraints, and data
 
--- Step 1: Update all users with 'trialing' status to appropriate status
+-- Step 1: Update all users with 'trialing' status to free (NULL)
+-- Since we're removing trials entirely, all trial users become free users
+-- Their subscription_expires_at may still exist but is no longer relevant
 UPDATE public.users 
-SET subscription_status = CASE
-  -- If they have an expiration date in the future, mark as expired (trial ended)
-  WHEN subscription_expires_at IS NOT NULL AND subscription_expires_at > NOW() THEN 'expired'
-  -- If they have an expired subscription, keep as expired
-  WHEN subscription_expires_at IS NOT NULL AND subscription_expires_at <= NOW() THEN 'expired'
-  -- Otherwise, set to NULL (free user)
-  ELSE NULL
-END
+SET subscription_status = NULL
 WHERE subscription_status = 'trialing';
 
 -- Step 2: Drop the index on trial_start_date
@@ -57,7 +52,7 @@ BEGIN
   -- Count users that were updated
   SELECT COUNT(*) INTO updated_users_count 
   FROM public.users 
-  WHERE subscription_status IN ('expired', NULL);
+  WHERE subscription_status = 'expired' OR subscription_status IS NULL;
   
   -- Count any remaining trial_start_date references (should be 0)
   SELECT COUNT(*) INTO trial_users_count 

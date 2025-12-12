@@ -84,12 +84,7 @@ export const PaywallScreen: React.FC = () => {
   const determineWelcomeVariant = async (
     userId: string | undefined,
   ): Promise<
-    | 'direct'
-    | 'renewal'
-    | 'restore'
-    | 'promo'
-    | 'granted'
-    | 'plan-change'
+    'direct' | 'renewal' | 'restore' | 'promo' | 'granted' | 'plan-change'
   > => {
     if (!userId) return 'direct'; // Fallback
 

@@ -107,13 +107,15 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
 
   const handleUpgrade = useCallback(async () => {
     setErrorMessage(null);
-    
+
     try {
       // Get offerings with recovery strategy
       const offerings = await getOfferingsWithRecovery();
-      
+
       if (!offerings) {
-        throw new Error('Subscription offerings are not available at the moment.');
+        throw new Error(
+          'Subscription offerings are not available at the moment.',
+        );
       }
 
       const oddityPackage = offerings.availablePackages.find(
@@ -125,22 +127,25 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
       }
 
       await purchasePackage(oddityPackage);
-      
+
       // Reset error count on success
       setErrorCount(0);
-      
+
       // Call success callback
       if (onUpgradeSuccess) {
         onUpgradeSuccess();
       }
-      
+
       // Close the paywall
       onClose();
     } catch (error: any) {
       const newErrorCount = errorCount + 1;
       setErrorCount(newErrorCount);
 
-      if (error.message?.includes('cancelled') || error.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED') {
+      if (
+        error.message?.includes('cancelled') ||
+        error.code === 'PURCHASES_ERROR_PURCHASE_CANCELLED'
+      ) {
         // User cancelled - no need to show error
         return;
       }
@@ -197,11 +202,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
             </View>
           </View>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-            <Ionicons
-              name="close-outline"
-              size={28}
-              color={theme.text}
-            />
+            <Ionicons name="close-outline" size={28} color={theme.text} />
           </TouchableOpacity>
         </View>
 
@@ -297,11 +298,17 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
                   borderColor: COLORS.error + '30',
                 },
               ]}>
-              <Ionicons name="alert-circle-outline" size={20} color={COLORS.error} />
+              <Ionicons
+                name="alert-circle-outline"
+                size={20}
+                color={COLORS.error}
+              />
               <Text style={[styles.errorText, { color: COLORS.error }]}>
                 {errorMessage}
               </Text>
-              <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
+              <TouchableOpacity
+                onPress={handleRetry}
+                style={styles.retryButton}>
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
@@ -484,4 +491,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-

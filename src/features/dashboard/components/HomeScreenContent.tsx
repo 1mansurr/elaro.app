@@ -57,7 +57,6 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         ) : undefined
       }>
-
       <NextTaskCard
         task={isGuest ? null : homeData?.nextUpcomingTask || null}
         isGuestMode={isGuest}

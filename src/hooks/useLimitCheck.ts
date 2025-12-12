@@ -57,7 +57,10 @@ export const useLimitCheck = () => {
       console.error('Error checking course limit:', error);
       return {
         allowed: false,
-        error: error instanceof Error ? error.message : 'Failed to check course limit',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to check course limit',
       };
     } finally {
       setIsChecking(false);
@@ -67,29 +70,30 @@ export const useLimitCheck = () => {
   /**
    * Check if user can add more activities (assignments, lectures, study sessions)
    */
-  const checkActivityLimit = useCallback(async (): Promise<LimitCheckResult> => {
-    if (!user) {
-      return { allowed: false, error: 'User not authenticated' };
-    }
+  const checkActivityLimit =
+    useCallback(async (): Promise<LimitCheckResult> => {
+      if (!user) {
+        return { allowed: false, error: 'User not authenticated' };
+      }
 
-    // Premium users have unlimited
-    if (user.subscription_tier !== 'free') {
+      // Premium users have unlimited
+      if (user.subscription_tier !== 'free') {
+        return { allowed: true };
+      }
+
+      if (monthlyTaskCount >= monthlyLimit) {
+        const nextCount = monthlyTaskCount + 1;
+        return {
+          allowed: false,
+          limitType: 'activity',
+          currentUsage: monthlyTaskCount,
+          maxLimit: monthlyLimit,
+          actionLabel: formatActionLabel('activity', nextCount),
+        };
+      }
+
       return { allowed: true };
-    }
-
-    if (monthlyTaskCount >= monthlyLimit) {
-      const nextCount = monthlyTaskCount + 1;
-      return {
-        allowed: false,
-        limitType: 'activity',
-        currentUsage: monthlyTaskCount,
-        maxLimit: monthlyLimit,
-        actionLabel: formatActionLabel('activity', nextCount),
-      };
-    }
-
-    return { allowed: true };
-  }, [user, monthlyTaskCount, monthlyLimit]);
+    }, [user, monthlyTaskCount, monthlyLimit]);
 
   /**
    * Check if user can add more SRS reminders
@@ -151,4 +155,3 @@ export const useLimitCheck = () => {
     isChecking,
   };
 };
-

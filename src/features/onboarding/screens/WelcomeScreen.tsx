@@ -204,19 +204,24 @@ const WelcomeScreen = () => {
           <View style={styles.limitItem}>
             <Text style={styles.limitIcon}>📚</Text>
             <Text style={styles.limitText}>
-              <Text style={styles.limitNumber}>2 courses</Text> to organize your studies
+              <Text style={styles.limitNumber}>2 courses</Text> to organize your
+              studies
             </Text>
           </View>
           <View style={styles.limitItem}>
             <Text style={styles.limitIcon}>⚡</Text>
             <Text style={styles.limitText}>
-              <Text style={styles.limitNumber}>15 activities/month</Text> (assignments, lectures, study sessions)
+              <Text style={styles.limitNumber}>15 activities/month</Text>{' '}
+              (assignments, lectures, study sessions)
             </Text>
           </View>
           <View style={styles.limitItem}>
             <Text style={styles.limitIcon}>🔔</Text>
             <Text style={styles.limitText}>
-              <Text style={styles.limitNumber}>5 spaced repetition reminders/month</Text> for effective learning
+              <Text style={styles.limitNumber}>
+                5 spaced repetition reminders/month
+              </Text>{' '}
+              for effective learning
             </Text>
           </View>
         </View>

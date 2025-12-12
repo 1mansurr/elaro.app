@@ -71,7 +71,11 @@ export const UpgradeSuccessModal: React.FC<UpgradeSuccessModalProps> = ({
               styles.iconContainer,
               { backgroundColor: COLORS.success + '20' },
             ]}>
-            <Ionicons name="checkmark-circle" size={64} color={COLORS.success} />
+            <Ionicons
+              name="checkmark-circle"
+              size={64}
+              color={COLORS.success}
+            />
           </View>
 
           {/* Title */}
@@ -124,4 +128,3 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
 });
-

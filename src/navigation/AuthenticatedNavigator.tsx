@@ -407,53 +407,53 @@ export const AuthenticatedNavigator: React.FC = () => {
     <UsageLimitPaywallProvider>
       <Suspense fallback={<LoadingFallback />}>
         <Stack.Navigator screenOptions={sharedScreenOptions}>
-        {/* Launch screen removed - AppNavigator handles initial routing */}
-        {/* Main app screens */}
-        {renderScreens(mainScreens)}
+          {/* Launch screen removed - AppNavigator handles initial routing */}
+          {/* Main app screens */}
+          {renderScreens(mainScreens)}
 
-        {/* Modal flows */}
-        <Stack.Group>
-          {/* Auth screen - available for switching accounts */}
-          <Stack.Screen
-            name="Auth"
-            component={AuthScreen}
-            options={SCREEN_CONFIGS.Auth}
-          />
+          {/* Modal flows */}
+          <Stack.Group>
+            {/* Auth screen - available for switching accounts */}
+            <Stack.Screen
+              name="Auth"
+              component={AuthScreen}
+              options={SCREEN_CONFIGS.Auth}
+            />
 
-          {/* Forgot Password screen */}
-          <Stack.Screen
-            name="ForgotPassword"
-            component={ForgotPasswordScreen}
-            options={{
-              presentation: 'modal' as const,
-              headerShown: false,
-            }}
-          />
+            {/* Forgot Password screen */}
+            <Stack.Screen
+              name="ForgotPassword"
+              component={ForgotPasswordScreen}
+              options={{
+                presentation: 'modal' as const,
+                headerShown: false,
+              }}
+            />
 
-          {/* Reset Password screen */}
-          <Stack.Screen
-            name="ResetPassword"
-            component={ResetPasswordScreen}
-            options={{
-              presentation: 'modal' as const,
-              headerShown: false,
-            }}
-          />
+            {/* Reset Password screen */}
+            <Stack.Screen
+              name="ResetPassword"
+              component={ResetPasswordScreen}
+              options={{
+                presentation: 'modal' as const,
+                headerShown: false,
+              }}
+            />
 
-          {Object.entries(modalFlows).map(([name, config]) => {
-            // Type narrowing: ensure name is a valid route
-            const routeName = name as keyof RootStackParamList;
-            return (
-              <Stack.Screen
-                key={name}
-                name={routeName}
-                component={config.component}
-                options={config.options}
-              />
-            );
-          })}
-        </Stack.Group>
-      </Stack.Navigator>
+            {Object.entries(modalFlows).map(([name, config]) => {
+              // Type narrowing: ensure name is a valid route
+              const routeName = name as keyof RootStackParamList;
+              return (
+                <Stack.Screen
+                  key={name}
+                  name={routeName}
+                  component={config.component}
+                  options={config.options}
+                />
+              );
+            })}
+          </Stack.Group>
+        </Stack.Navigator>
       </Suspense>
     </UsageLimitPaywallProvider>
   );

@@ -41,7 +41,7 @@ export function formatActionLabel(
   nextCount: number,
 ): string {
   const ordinal = `${nextCount}${getOrdinalSuffix(nextCount)}`;
-  
+
   switch (limitType) {
     case 'course':
       return `Add ${ordinal} Course`;
@@ -55,7 +55,10 @@ export function formatActionLabel(
 /**
  * Check if a limit is reached
  */
-export function isLimitReached(currentUsage: number, maxLimit: number): boolean {
+export function isLimitReached(
+  currentUsage: number,
+  maxLimit: number,
+): boolean {
   return currentUsage >= maxLimit;
 }
 
@@ -68,4 +71,3 @@ export function wouldExceedLimit(
 ): boolean {
   return currentUsage + 1 > maxLimit;
 }
-

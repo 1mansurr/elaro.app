@@ -38,7 +38,9 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
       const reminderLimit = limits.find(l => l.type === 'srs_reminders');
 
       if (reminderLimit) {
-        setMaxLimit(reminderLimit.limit === -1 ? Infinity : reminderLimit.limit);
+        setMaxLimit(
+          reminderLimit.limit === -1 ? Infinity : reminderLimit.limit,
+        );
       }
 
       // Count SRS reminders created this month
@@ -82,4 +84,3 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
     error,
   };
 };
-

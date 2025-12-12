@@ -77,7 +77,11 @@ const AddStudySessionScreen = () => {
     useTotalTaskCount();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { currentReminders, maxLimit: srsMaxLimit, isAtLimit: isSRSAtLimit } = useSRSReminderLimit();
+  const {
+    currentReminders,
+    maxLimit: srsMaxLimit,
+    isAtLimit: isSRSAtLimit,
+  } = useSRSReminderLimit();
   const { showUsageLimitPaywall } = useUsageLimitPaywall();
 
   const isGuest = !session;
@@ -676,7 +680,7 @@ const AddStudySessionScreen = () => {
               title="Spaced Repetition"
               description="Get reminders to review at optimal intervals"
               value={hasSpacedRepetition}
-              onValueChange={(value) => {
+              onValueChange={value => {
                 // Check limit when user tries to toggle SRS on
                 if (value && !hasSpacedRepetition) {
                   // Check if adding one more would exceed limit

@@ -1,5 +1,8 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import { UsageLimitPaywall, LimitType } from '@/shared/components/UsageLimitPaywall';
+import {
+  UsageLimitPaywall,
+  LimitType,
+} from '@/shared/components/UsageLimitPaywall';
 import { UpgradeSuccessModal } from '@/shared/components/UpgradeSuccessModal';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -41,6 +44,7 @@ export const UsageLimitPaywallProvider: React.FC<{
   const [paywallState, setPaywallState] =
     useState<UsageLimitPaywallState | null>(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
   const showUsageLimitPaywall = useCallback(
     (
@@ -67,19 +71,25 @@ export const UsageLimitPaywallProvider: React.FC<{
   }, []);
 
   const handleUpgradeSuccess = useCallback(() => {
+    // Store pending action before clearing paywall state
+    if (paywallState?.pendingAction) {
+      setPendingAction(paywallState.pendingAction);
+    }
     hideUsageLimitPaywall();
     setShowSuccessModal(true);
-  }, [hideUsageLimitPaywall]);
+  }, [hideUsageLimitPaywall, paywallState]);
 
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
-    
+
     // Retry the pending action
-    if (paywallState?.pendingAction) {
-      const { route, params } = paywallState.pendingAction;
+    if (pendingAction) {
+      const { route, params } = pendingAction;
       navigation.navigate(route as any, params);
+      // Clear pending action after navigation
+      setPendingAction(null);
     }
-  }, [paywallState, navigation]);
+  }, [pendingAction, navigation]);
 
   return (
     <UsageLimitPaywallContext.Provider
@@ -114,4 +124,3 @@ export const useUsageLimitPaywall = () => {
   }
   return context;
 };
-

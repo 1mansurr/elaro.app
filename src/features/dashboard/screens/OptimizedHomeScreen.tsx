@@ -296,7 +296,6 @@ const HomeScreen = () => {
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
-
         {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
 
         <SwipeableTaskCard
