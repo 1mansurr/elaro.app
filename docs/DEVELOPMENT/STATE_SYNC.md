@@ -1,4 +1,14 @@
-# State Sync - Quick Reference Guide
+# State Sync Guide
+
+This guide covers the state synchronization system used in ELARO for managing auth, navigation, study sessions, and settings across app lifecycle events.
+
+## Overview
+
+The state sync system ensures data consistency across:
+- **Auth State**: Session management and token refresh
+- **Navigation State**: Screen state persistence
+- **Study Sessions**: Active session tracking and SRS queue
+- **Settings**: User preferences and configuration
 
 ## Service Imports
 
@@ -10,9 +20,9 @@ import { settingsSyncService } from '@/services/settingsSync';
 import { useSyncDebug, useSyncHealth } from '@/hooks/useSyncDebug';
 ```
 
-## Common Operations
+## Auth Sync
 
-### Auth Sync
+### Initialization
 
 ```typescript
 // Initialize on app start
@@ -31,7 +41,9 @@ await authSyncService.clearAuthState();
 await authSyncService.onAppResume();
 ```
 
-### Navigation Sync
+## Navigation Sync
+
+### State Persistence
 
 ```typescript
 // Save navigation state
@@ -47,7 +59,9 @@ await navigationSyncService.clearState();
 const stats = await navigationSyncService.getStats();
 ```
 
-### Study Session Sync
+## Study Session Sync
+
+### Session Management
 
 ```typescript
 // Start tracking session
@@ -79,7 +93,9 @@ await studySessionSyncService.recordSRSPerformance(sessionId, userId, {
 await studySessionSyncService.syncSRSQueue();
 ```
 
-### Settings Sync
+## Settings Sync
+
+### Local-First Strategy
 
 ```typescript
 // Load from cache (fast)
@@ -104,6 +120,8 @@ await settingsSyncService.refreshSettings(userId);
 ```
 
 ## Debug Hooks
+
+### Development Tools
 
 ```typescript
 // Get sync debug info
@@ -143,6 +161,8 @@ await importSyncState(json);
 
 ## Global Debug (Console)
 
+Available in dev mode only:
+
 ```javascript
 // Available in dev mode only
 global.__ELARO_SYNC_DEBUG__.summary();
@@ -163,3 +183,45 @@ global.__ELARO_SYNC_DEBUG__.import(jsonString);
 | `@elaro_srs_queue_v1`                  | Study Session | SRS performance queue      |
 | `@elaro_settings_cache_v1:${userId}`   | Settings      | Settings cache             |
 | `@elaro_settings_pending_v1:${userId}` | Settings      | Pending changes            |
+
+## Best Practices
+
+### ✅ DO
+
+- Initialize auth sync on app start
+- Save navigation state on state changes
+- Use local-first strategy for settings
+- Monitor sync health in development
+- Handle app resume events properly
+
+### ❌ DON'T
+
+- Don't skip sync initialization
+- Don't ignore sync errors
+- Don't modify storage keys directly
+- Don't sync sensitive data unnecessarily
+- Don't forget to clear state on logout
+
+## Troubleshooting
+
+### Sync Not Working?
+
+1. Check sync health: `useSyncHealth()`
+2. Verify storage keys are accessible
+3. Check for errors in console
+4. Use debug utilities to inspect state
+
+### State Not Persisting?
+
+1. Verify storage permissions
+2. Check storage key format
+3. Ensure userId is available
+4. Check for storage quota issues
+
+### Performance Issues?
+
+1. Use cache-first for settings
+2. Debounce sync operations
+3. Batch multiple updates
+4. Monitor sync frequency
+

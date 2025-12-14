@@ -216,8 +216,8 @@ After setup, you should have:
 
 ## 🔗 Related Documentation
 
-- `DATABASE_SETUP.md` - General database setup
-- `docs/database-operations-runbook.md` - Operational procedures
+- `docs/DATABASE/SETUP.md` - General database setup
+- `docs/DATABASE/OPERATIONS_RUNBOOK.md` - Operational procedures
 - `MIGRATION_EXECUTION_COMMANDS.md` - Migration commands
 
 ---

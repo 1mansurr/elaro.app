@@ -1,4 +1,4 @@
-# Path Aliasing Configuration
+# Path Aliasing Guide
 
 ## ✅ Successfully Configured Path Aliasing
 
@@ -145,6 +145,142 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TodayOverviewCard } from '@/components/TodayOverviewCard';
 ```
 
+## 📱 Usage Examples
+
+### **Component Examples**
+
+#### **Creating a New Component**
+
+```typescript
+// src/components/NewFeature.tsx
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { PrimaryButton } from '@/shared/components';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+
+export const NewFeature: React.FC = () => {
+  const { theme } = useTheme();
+  const { user } = useAuth();
+
+  return (
+    <View style={styles.container}>
+      <Text style={[styles.title, { color: theme.text }]}>
+        Welcome, {user?.name}!
+      </Text>
+      <PrimaryButton title="Click Me" onPress={() => console.log('Clicked!')} />
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    padding: SPACING.md,
+  },
+  title: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold as any,
+  },
+});
+```
+
+#### **Screen Component**
+
+```typescript
+// src/screens/NewScreen.tsx
+import React from 'react';
+import { View, Text } from 'react-native';
+import { Card } from '@/shared/components';
+import { useHealthCheck } from '@/hooks/useHealthCheck';
+import { api } from '@/services/api';
+import { User } from '@/types';
+
+export const NewScreen: React.FC = () => {
+  const { isHealthy } = useHealthCheck();
+
+  return (
+    <View>
+      <Card title="System Status">
+        <Text>Health Status: {isHealthy ? 'OK' : 'Issues Detected'}</Text>
+      </Card>
+    </View>
+  );
+};
+```
+
+### **Service Layer Examples**
+
+#### **Creating a New Service**
+
+```typescript
+// src/services/newService.ts
+import { supabase } from '@/services/supabase';
+import { handleApiError } from '@/services/api/errors';
+import { User } from '@/types';
+
+export class NewService {
+  async getUserData(userId: string): Promise<User | null> {
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      throw handleApiError(error);
+    }
+  }
+}
+
+export const newService = new NewService();
+```
+
+### **Hook Examples**
+
+#### **Creating a Custom Hook**
+
+```typescript
+// src/hooks/useNewFeature.ts
+import { useState, useEffect } from 'react';
+import { api } from '@/services/api';
+import { useAuth } from '@/contexts/AuthContext';
+import { User } from '@/types';
+
+export const useNewFeature = () => {
+  const [data, setData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user) {
+      fetchData();
+    }
+  }, [user]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const result = await api.newFeature.getData();
+      setData(result);
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    data,
+    loading,
+    refetch: fetchData,
+  };
+};
+```
+
 ## 🔧 Common Import Patterns
 
 ### **Components**
@@ -201,6 +337,76 @@ import { formatDate } from '@/utils/dateUtils';
 import { validateEmail } from '@/utils/validation';
 ```
 
+## 🔄 Refactoring Examples
+
+### **Moving a Component**
+
+When you move a component from one directory to another, only the imports **to** that component need to be updated, not the imports **from** that component:
+
+```typescript
+// Before: src/components/OldLocation.tsx
+import { Button } from '@/components/Button'; // ✅ This stays the same
+import { useAuth } from '@/contexts/AuthContext'; // ✅ This stays the same
+
+// After moving to: src/components/new/location/OldLocation.tsx
+import { Button } from '@/components/Button'; // ✅ Still works!
+import { useAuth } from '@/contexts/AuthContext'; // ✅ Still works!
+```
+
+### **Restructuring Directories**
+
+```typescript
+// Before: src/features/auth/AuthButton.tsx
+import { Button } from '../../../components/Button'; // ❌ Breaks if moved
+
+// After: src/features/auth/AuthButton.tsx
+import { Button } from '@/components/Button'; // ✅ Always works!
+```
+
+## 🎨 Best Practices
+
+### **1. Consistent Import Order**
+
+```typescript
+// 1. React and React Native imports first
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+
+// 2. Third-party libraries
+import { useNavigation } from '@react-navigation/native';
+
+// 3. Internal imports using @/ aliases
+import { Button } from '@/components/Button';
+import { useAuth } from '@/contexts/AuthContext';
+import { api } from '@/services/api';
+import { User } from '@/types';
+```
+
+### **2. Group Related Imports**
+
+```typescript
+// Group by functionality
+import { Button } from '@/components/Button';
+import { Input } from '@/components/Input';
+
+import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
+
+import { api } from '@/services/api';
+import { supabase } from '@/services/supabase';
+```
+
+### **3. Use Descriptive Paths**
+
+```typescript
+// Good: Specific and clear
+import { NotificationSettings } from '@/components/settings/NotificationSettings';
+import { useHealthCheck } from '@/hooks/useHealthCheck';
+
+// Avoid: Too generic
+import { Settings } from '@/components/Settings'; // Less clear
+```
+
 ## 🛠️ Development Workflow
 
 ### **IDE Support**
@@ -233,6 +439,17 @@ The path aliasing configuration has been tested and verified to work correctly:
 3. ✅ **IDE Support**: IntelliSense and navigation work with `@/` paths
 4. ✅ **No Breaking Changes**: Existing relative imports continue to work
 
+## 📋 Verification Checklist
+
+- ✅ **TypeScript Configuration**: `tsconfig.json` updated with `baseUrl` and `paths`
+- ✅ **Babel Configuration**: `babel.config.js` updated with `module-resolver` plugin
+- ✅ **Dependencies**: `babel-plugin-module-resolver` installed
+- ✅ **Path Resolution**: `@/` imports resolve correctly to `src/`
+- ✅ **File Extensions**: All common React Native file types supported
+- ✅ **Backward Compatibility**: Existing relative imports continue to work
+- ✅ **IDE Support**: IntelliSense and navigation work with new paths
+- ✅ **Testing**: Configuration verified with test imports
+
 ## 🚀 Next Steps
 
 ### **Immediate Benefits**
@@ -259,17 +476,6 @@ The path aliasing configuration has been tested and verified to work correctly:
   }
   ```
 
-## 📋 Verification Checklist
-
-- ✅ **TypeScript Configuration**: `tsconfig.json` updated with `baseUrl` and `paths`
-- ✅ **Babel Configuration**: `babel.config.js` updated with `module-resolver` plugin
-- ✅ **Dependencies**: `babel-plugin-module-resolver` installed
-- ✅ **Path Resolution**: `@/` imports resolve correctly to `src/`
-- ✅ **File Extensions**: All common React Native file types supported
-- ✅ **Backward Compatibility**: Existing relative imports continue to work
-- ✅ **IDE Support**: IntelliSense and navigation work with new paths
-- ✅ **Testing**: Configuration verified with test imports
-
 ## 🎉 Conclusion
 
 Path aliasing has been successfully configured for the ELARO project. This configuration provides:
@@ -281,3 +487,4 @@ Path aliasing has been successfully configured for the ELARO project. This confi
 5. **✅ Future-Proof Architecture**: Robust foundation for code organization
 
 The project is now ready to benefit from clean, absolute import paths that make the codebase more professional, maintainable, and developer-friendly.
+

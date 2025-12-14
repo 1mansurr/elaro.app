@@ -8,45 +8,75 @@ Welcome to the ELARO documentation. This index provides quick access to all docu
 
 - **[Getting Started Guide](../docs/GETTING_STARTED.md)** - Quick start guide for new developers
 - **[Architecture Documentation](../ARCHITECTURE.md)** - System architecture and design decisions
-- **[Comprehensive Developer Guide](../COMPREHENSIVE_DEVELOPER_GUIDE.md)** - Complete developer reference
+- **[Comprehensive Developer Guide](./COMPREHENSIVE_DEVELOPER_GUIDE.md)** - Complete developer reference
 
 ### Development
 
 #### Guides
 
 - **[UI/UX Guide](./DEVELOPMENT/UI_UX_GUIDE.md)** - Design system, components, and styling patterns
-- **[Frontend Patterns](./DEVELOPMENT/FRONTEND_PATTERNS.md)** - Common frontend patterns and implementations
+- **[Frontend Patterns](./DEVELOPMENT/FRONTEND_PATTERNS.md)** - Common frontend patterns, TypeScript types, and implementations
 - **[Performance Guide](./DEVELOPMENT/PERFORMANCE.md)** - Performance optimization strategies
 - **[Testing Guide](./DEVELOPMENT/TESTING.md)** - Testing strategies and best practices
+- **[State Sync Guide](./DEVELOPMENT/STATE_SYNC.md)** - State synchronization patterns and best practices
+- **[API Migration Guide](./DEVELOPMENT/API_MIGRATION_GUIDE.md)** - Migrating from legacy to versioned API
+- **[Path Aliasing](./DEVELOPMENT/PATH_ALIASING.md)** - Path aliasing configuration and usage
+- **[Typography Guide](./DEVELOPMENT/TYPOGRAPHY_GUIDE.md)** - Typography token enforcement
+- **[Color Migration](./DEVELOPMENT/COLOR_MIGRATION.md)** - Color system migration guide
+- **[Component Standards](./DEVELOPMENT/COMPONENT_STANDARDS.md)** - Component interface simplification standards
+- **[NativeWind Guide](./DEVELOPMENT/NATIVEWIND_GUIDE.md)** - NativeWind implementation guide
+- **[Error Boundaries](./DEVELOPMENT/ERROR_BOUNDARIES.md)** - Error boundary implementation guide
 
 ### Database
 
-- **[Database Setup](../DATABASE_SETUP.md)** - Database setup and configuration
+- **[Database Setup](./DATABASE/SETUP.md)** - Database setup and configuration
 - **[Migrations Guide](./DATABASE/MIGRATIONS.md)** - Database migration procedures
-- **[Operations Runbook](./database-operations-runbook.md)** - Database operations and monitoring
+- **[Operations Runbook](./DATABASE/OPERATIONS_RUNBOOK.md)** - Database operations and monitoring
+- **[Caching Strategy](./DATABASE/CACHING_STRATEGY.md)** - Database caching strategies
+- **[Query Wrapper Guide](./DATABASE/QUERY_WRAPPER.md)** - Supabase query wrapper usage
+- **[Verification Queries](./DATABASE/VERIFICATION_QUERIES.md)** - Database verification queries
 
 ### Security
 
 - **[Security Guide](./SECURITY/GUIDE.md)** - Security best practices and configuration
-- **[Secret Rotation Guide](./SECRET_ROTATION_GUIDE.md)** - Procedures for rotating secrets
-- **[Security Boundaries](./SECURITY_BOUNDARIES.md)** - Security architecture and boundaries
+- **[Secret Rotation Guide](./SECURITY/SECRET_ROTATION_GUIDE.md)** - Procedures for rotating secrets
+- **[Security Boundaries](./SECURITY/BOUNDARIES.md)** - Security architecture and boundaries
+- **[Master Key System](./SECURITY/MASTER_KEY_SYSTEM.md)** - Master key security system
+- **[Environment Variables Setup](./SECURITY/ENV_VARIABLES_SETUP.md)** - Security environment variables setup
+- **[Password Security](./SECURITY/PASSWORD_GUIDE.md)** - Password security guidelines
+- **[Assignment Security](./SECURITY/ASSIGNMENT_SECURITY.md)** - Assignment security enhancements
 
 ### Features
 
 - **[Notification System](./FEATURES/NOTIFICATIONS.md)** - Notification system architecture and usage
+- **[Analytics](./FEATURES/ANALYTICS.md)** - Analytics implementation guide
+- **[Mixpanel Setup](./FEATURES/MIXPANEL_SETUP.md)** - Mixpanel analytics setup
+- **[Health Check](./FEATURES/HEALTH_CHECK.md)** - Health check integration guide
+- **[Offline Support](./FEATURES/OFFLINE_SUPPORT.md)** - Offline support implementation
+- **[Deep Linking](./FEATURES/DEEP_LINKING.md)** - Deep linking guide
 
 ### Operations
 
-- **[Deployment Guide](../docs/DEPLOYMENT.md)** - Deployment procedures
+- **[Deployment Guide](./OPERATIONS/DEPLOYMENT.md)** - Deployment procedures
+- **[Build Guide](./OPERATIONS/BUILD_GUIDE.md)** - Application build procedures
+- **[Backup Setup](./OPERATIONS/BACKUP_SETUP.md)** - Backup setup instructions
+- **[Batch Operations](./OPERATIONS/BATCH_OPERATIONS.md)** - Batch operations guide
+- **[Rate Limiting](./OPERATIONS/RATE_LIMITING.md)** - Rate limiting strategy
+- **[Per-User Rate Limiting](./OPERATIONS/PER_USER_RATE_LIMITING.md)** - Per-user rate limiting guide
+- **[Quota Limits](./OPERATIONS/QUOTA_LIMITS.md)** - Service quota limits
+- **[Account Management](./OPERATIONS/ACCOUNT_MANAGEMENT.md)** - Account management setup
+- **[Admin Export](./OPERATIONS/ADMIN_EXPORT.md)** - Admin export data function
 - **[Incident Response](./OPERATIONS/INCIDENT_RESPONSE.md)** - Incident response procedures
-- **[Rollback Procedure](./ROLLBACK_PROCEDURE.md)** - Rollback procedures for deployments
+- **[Rollback Procedure](./OPERATIONS/ROLLBACK_PROCEDURE.md)** - Rollback procedures for deployments
 
 ### Additional Resources
 
-- **[Migration Application Guide](./MIGRATION_APPLICATION_GUIDE.md)** - How to apply migrations
-- **[Supabase Migration Strategy](./SUPABASE_MIGRATION_STRATEGY.md)** - Supabase-specific migration strategies
-- **[Compliance & PII Mapping](./COMPLIANCE_PII_DATA_MAPPING.md)** - Data compliance documentation
-- **[Data Retention Policy](./DATA_RETENTION_POLICY.md)** - Data retention policies
+- **[Migration Application Guide](./DATABASE/MIGRATION_APPLICATION_GUIDE.md)** - How to apply migrations
+- **[Supabase Migration Strategy](./DATABASE/SUPABASE_MIGRATION_STRATEGY.md)** - Supabase-specific migration strategies
+- **[Compliance & PII Mapping](./COMPLIANCE/PII_DATA_MAPPING.md)** - Data compliance documentation
+- **[Data Retention Policy](./COMPLIANCE/DATA_RETENTION_POLICY.md)** - Data retention policies
+- **[TODO Backlog](./TODO_BACKLOG.md)** - Active TODO items and tracking
+- **[Deferred Features](./DEFERRED_FEATURES.md)** - Features deferred or soft-launched
 
 ## 🚀 Quick Links
 
@@ -58,21 +88,23 @@ Welcome to the ELARO documentation. This index provides quick access to all docu
 
 ### For Database Work
 
-1. [Database Setup](../DATABASE_SETUP.md)
+1. [Database Setup](./DATABASE/SETUP.md)
 2. [Migrations Guide](./DATABASE/MIGRATIONS.md)
-3. [Operations Runbook](./database-operations-runbook.md)
+3. [Operations Runbook](./DATABASE/OPERATIONS_RUNBOOK.md)
 
 ### For Deployment
 
-1. [Deployment Guide](./DEPLOYMENT.md)
-2. [Rollback Procedure](./ROLLBACK_PROCEDURE.md)
-3. [Incident Response](./OPERATIONS/INCIDENT_RESPONSE.md)
+1. [Deployment Guide](./OPERATIONS/DEPLOYMENT.md)
+2. [Build Guide](./OPERATIONS/BUILD_GUIDE.md)
+3. [Rollback Procedure](./OPERATIONS/ROLLBACK_PROCEDURE.md)
+4. [Incident Response](./OPERATIONS/INCIDENT_RESPONSE.md)
 
 ### For Security
 
 1. [Security Guide](./SECURITY/GUIDE.md)
-2. [Secret Rotation Guide](./SECRET_ROTATION_GUIDE.md)
-3. [Security Boundaries](./SECURITY_BOUNDARIES.md)
+2. [Secret Rotation Guide](./SECURITY/SECRET_ROTATION_GUIDE.md)
+3. [Security Boundaries](./SECURITY/BOUNDARIES.md)
+4. [Master Key System](./SECURITY/MASTER_KEY_SYSTEM.md)
 
 ## 📝 Documentation Standards
 
@@ -108,7 +140,7 @@ When making code changes:
 - **Setting up locally**: [Getting Started](../docs/GETTING_STARTED.md)
 - **Adding a feature**: [Architecture Documentation](../ARCHITECTURE.md) → Development Guidelines
 - **Database changes**: [Migrations Guide](./DATABASE/MIGRATIONS.md)
-- **Deploying**: [Deployment Guide](./DEPLOYMENT.md)
+- **Deploying**: [Deployment Guide](./OPERATIONS/DEPLOYMENT.md)
 - **Security issues**: [Security Guide](./SECURITY/GUIDE.md)
 
 ## 📞 Getting Help

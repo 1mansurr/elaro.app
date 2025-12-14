@@ -248,7 +248,7 @@ This script checks for:
 
 If a server secret is accidentally exposed:
 
-1. **Immediately rotate the secret** - See `docs/SECRET_ROTATION_GUIDE.md`
+1. **Immediately rotate the secret** - See `docs/SECURITY/SECRET_ROTATION_GUIDE.md`
 2. **Remove from codebase** - Remove any hardcoded references
 3. **Review git history** - Check if secret was committed
 4. **Notify team** - Alert security team immediately

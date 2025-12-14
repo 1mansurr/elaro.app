@@ -236,7 +236,7 @@ Follow specific procedures based on incident type (see below).
    - API keys
    - Database credentials
    - Service tokens
-   - See [Secret Rotation Guide](../SECURITY/SECRET_ROTATION.md)
+   - See [Secret Rotation Guide](../SECURITY/SECRET_ROTATION_GUIDE.md)
 
 2. **Review access logs:**
 
@@ -275,7 +275,7 @@ Follow specific procedures based on incident type (see below).
 
 ### Database Rollback
 
-See [Rollback Procedure](../ROLLBACK_PROCEDURE.md) for detailed steps.
+See [Rollback Procedure](./ROLLBACK_PROCEDURE.md) for detailed steps.
 
 **Quick Rollback:**
 

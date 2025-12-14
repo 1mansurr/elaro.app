@@ -79,7 +79,7 @@ npm run android
 
 ## Database Setup
 
-For detailed database setup instructions, see [Database Setup Guide](./DATABASE_SETUP.md).
+For detailed database setup instructions, see [Database Setup Guide](./DATABASE/SETUP.md).
 
 **Quick Start:**
 

@@ -342,8 +342,125 @@ function App() {
 - Don't forget to handle network timeouts
 - Don't ignore form validation
 
+## TypeScript Types Reference
+
+### Type System Organization
+
+The ELARO app uses a modular TypeScript type system organized by domain:
+
+```
+src/types/
+├── index.ts          # Barrel file (imports everything)
+├── navigation.ts     # Navigation types
+├── entities.ts       # Core data models
+└── api.ts           # API request/response types
+```
+
+### Import Best Practices
+
+**✅ Recommended: Domain-Specific Imports**
+
+```typescript
+// Import only what you need from specific domains
+import { User, Course, Assignment } from '@/types/entities';
+import { CreateAssignmentRequest } from '@/types/api';
+import { RootStackParamList } from '@/types/navigation';
+```
+
+**✅ Also Good: Barrel File Imports**
+
+```typescript
+// Import from barrel file (backward compatible)
+import { User, Course, CreateAssignmentRequest } from '@/types';
+```
+
+**❌ Avoid: Wildcard Imports**
+
+```typescript
+// Don't do this - imports everything
+import * as Types from '@/types';
+```
+
+### Common Type Imports
+
+**Navigation Types:**
+```typescript
+import { RootStackParamList, MainTabParamList } from '@/types/navigation';
+```
+
+**Entity Types:**
+```typescript
+import {
+  User,
+  Course,
+  Assignment,
+  Lecture,
+  StudySession,
+  NotificationPreferences,
+  AuthContextType,
+  Task,
+  OverviewData,
+  HomeScreenData,
+  CalendarData,
+  AppError,
+} from '@/types/entities';
+```
+
+**API Types:**
+```typescript
+import {
+  CreateAssignmentRequest,
+  CreateStudySessionRequest,
+  CreateLectureRequest,
+  CreateCourseRequest,
+  UpdateCourseRequest,
+  PaginationParams,
+  SortParams,
+  FilterParams,
+  DashboardStats,
+  PerformanceMetrics,
+} from '@/types/api';
+```
+
+### Adding New Types
+
+**Navigation Types** → `src/types/navigation.ts`
+```typescript
+export type NewScreenParamList = {
+  NewScreen: { id: string };
+};
+```
+
+**Entity Types** → `src/types/entities.ts`
+```typescript
+export interface NewEntity {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+```
+
+**API Types** → `src/types/api.ts`
+```typescript
+export interface CreateNewEntityRequest {
+  name: string;
+  description?: string;
+}
+```
+
+### Type Troubleshooting
+
+- **Type Not Found?** Check which domain the type belongs to and import from the correct module
+- **Import Errors?** Verify the file exists, check export statements, and ensure path aliasing is configured
+- **Need Help Finding a Type?**
+  - User/Course/Assignment → Check `entities.ts`
+  - Navigation → Check `navigation.ts`
+  - API Requests → Check `api.ts`
+  - Everything → Check `index.ts` (barrel file)
+
 ## Additional Resources
 
 - [React Query Patterns](https://tanstack.com/query/latest/docs/react/guides/optimistic-updates)
 - [Zod Validation](https://zod.dev/)
 - [React Navigation Deep Linking](https://reactnavigation.org/docs/deep-linking/)
+- [TypeScript Best Practices](https://www.typescriptlang.org/docs/handbook/declaration-files/do-s-and-don-ts.html)

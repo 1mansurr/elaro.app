@@ -246,7 +246,7 @@ After applying migrations, verify:
 
 - `FINAL_ISSUES_FIX_IMPLEMENTATION.md` - Implementation summary
 - `scripts/check-migration-status.sql` - Migration verification script
-- `docs/DATA_RETENTION_POLICY.md` - Data retention policy
+- `docs/COMPLIANCE/DATA_RETENTION_POLICY.md` - Data retention policy
 - `supabase/migrations/20251102000001_schedule_cleanup_deleted_items.sql` - Cleanup cron migration
 - `supabase/migrations/20251102000002_fix_deprecated_function_permissions.sql` - Permissions fix migration
 
