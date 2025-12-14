@@ -502,7 +502,8 @@ const DeepLinkHandler: React.FC = () => {
               if (navigationRef.current) {
                 try {
                   const screen = parsed.screen as keyof RootStackParamList;
-                  const params = parsed.params as RootStackParamList[typeof screen];
+                  const params =
+                    parsed.params as RootStackParamList[typeof screen];
                   // Use type assertion for navigation since React Navigation types are complex
                   (navigationRef.current as any).navigate(screen, params);
                 } catch (error) {
@@ -519,21 +520,24 @@ const DeepLinkHandler: React.FC = () => {
 
     // Listen for deep links while app is running
     // React Navigation's linking prop handles this, but we add a listener for edge cases
-    const subscription = Linking.addEventListener('url', ({ url }: { url: string }) => {
-      if (isDeepLink(url) && navigationRef.current) {
-        const parsed = parseDeepLink(url);
-        if (parsed?.screen) {
-          try {
-            const screen = parsed.screen as keyof RootStackParamList;
-            const params = parsed.params as RootStackParamList[typeof screen];
-            // Use type assertion for navigation since React Navigation types are complex
-            (navigationRef.current as any).navigate(screen, params);
-          } catch (error) {
-            console.error('Failed to navigate from deep link:', error);
+    const subscription = Linking.addEventListener(
+      'url',
+      ({ url }: { url: string }) => {
+        if (isDeepLink(url) && navigationRef.current) {
+          const parsed = parseDeepLink(url);
+          if (parsed?.screen) {
+            try {
+              const screen = parsed.screen as keyof RootStackParamList;
+              const params = parsed.params as RootStackParamList[typeof screen];
+              // Use type assertion for navigation since React Navigation types are complex
+              (navigationRef.current as any).navigate(screen, params);
+            } catch (error) {
+              console.error('Failed to navigate from deep link:', error);
+            }
           }
         }
-      }
-    });
+      },
+    );
 
     return () => subscription.remove();
   }, []);

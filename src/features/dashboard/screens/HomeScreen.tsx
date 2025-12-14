@@ -26,7 +26,7 @@ import { NotificationHistoryModal } from '@/shared/components/NotificationHistor
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { format } from 'date-fns';
+import { format, isAfter } from 'date-fns';
 import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
@@ -515,7 +515,7 @@ const HomeScreen = () => {
     handleFabStateChange({ isOpen: false });
   }, [handleFabStateChange]);
 
-  const handleAddActivity = useCallback(() => {
+  const handleOpenFab = useCallback(() => {
     handleFabStateChange({ isOpen: true });
   }, [handleFabStateChange]);
 
@@ -633,7 +633,7 @@ const HomeScreen = () => {
           emptyStateComponent={
             !isEmptyStateDismissed ? (
               <HomeScreenEmptyState
-                onAddActivity={handleAddActivity}
+                onAddActivity={handleOpenFab}
                 onDismiss={handleDismissEmptyState}
               />
             ) : undefined
