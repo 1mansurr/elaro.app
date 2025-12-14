@@ -5,6 +5,7 @@ This guide covers the state synchronization system used in ELARO for managing au
 ## Overview
 
 The state sync system ensures data consistency across:
+
 - **Auth State**: Session management and token refresh
 - **Navigation State**: Screen state persistence
 - **Study Sessions**: Active session tracking and SRS queue
@@ -224,4 +225,3 @@ global.__ELARO_SYNC_DEBUG__.import(jsonString);
 2. Debounce sync operations
 3. Batch multiple updates
 4. Monitor sync frequency
-

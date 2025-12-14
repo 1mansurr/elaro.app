@@ -384,11 +384,13 @@ import * as Types from '@/types';
 ### Common Type Imports
 
 **Navigation Types:**
+
 ```typescript
 import { RootStackParamList, MainTabParamList } from '@/types/navigation';
 ```
 
 **Entity Types:**
+
 ```typescript
 import {
   User,
@@ -407,6 +409,7 @@ import {
 ```
 
 **API Types:**
+
 ```typescript
 import {
   CreateAssignmentRequest,
@@ -425,6 +428,7 @@ import {
 ### Adding New Types
 
 **Navigation Types** → `src/types/navigation.ts`
+
 ```typescript
 export type NewScreenParamList = {
   NewScreen: { id: string };
@@ -432,6 +436,7 @@ export type NewScreenParamList = {
 ```
 
 **Entity Types** → `src/types/entities.ts`
+
 ```typescript
 export interface NewEntity {
   id: string;
@@ -441,6 +446,7 @@ export interface NewEntity {
 ```
 
 **API Types** → `src/types/api.ts`
+
 ```typescript
 export interface CreateNewEntityRequest {
   name: string;
