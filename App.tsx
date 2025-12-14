@@ -137,8 +137,8 @@ if (__DEV__) {
 
   // Patch Error.prototype.toJSON globally to prevent undefined values in serialization
   // This ensures Metro's symbolication process never encounters undefined when serializing errors
-  if (typeof Error.prototype.toJSON === 'undefined') {
-    Error.prototype.toJSON = function () {
+  if (typeof (Error.prototype as any).toJSON === 'undefined') {
+    (Error.prototype as any).toJSON = function () {
       const obj: Record<string, any> = {
         name: this.name || 'Error',
         message: this.message || 'An error occurred',
@@ -478,8 +478,6 @@ const linking: LinkingOptions<RootStackParamList> = {
       ResetPassword: 'reset-password',
       // Onboarding
       OnboardingFlow: 'onboarding',
-      // Guest
-      GuestHome: 'guest',
     },
   },
 };
@@ -495,7 +493,7 @@ const DeepLinkHandler: React.FC = () => {
     // Handle initial URL (if app was opened via deep link)
     // React Navigation's linking prop should handle this, but we add a fallback
     Linking.getInitialURL()
-      .then(url => {
+      .then((url: string | null) => {
         if (url && isDeepLink(url) && navigationRef.current) {
           const parsed = parseDeepLink(url);
           if (parsed?.screen) {
@@ -503,10 +501,10 @@ const DeepLinkHandler: React.FC = () => {
             setTimeout(() => {
               if (navigationRef.current) {
                 try {
-                  navigationRef.current.navigate(
-                    parsed.screen as keyof RootStackParamList,
-                    parsed.params as any,
-                  );
+                  const screen = parsed.screen as keyof RootStackParamList;
+                  const params = parsed.params as RootStackParamList[typeof screen];
+                  // Use type assertion for navigation since React Navigation types are complex
+                  (navigationRef.current as any).navigate(screen, params);
                 } catch (error) {
                   console.error('Failed to navigate from deep link:', error);
                 }
@@ -515,21 +513,21 @@ const DeepLinkHandler: React.FC = () => {
           }
         }
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error('Failed to get initial URL:', error);
       });
 
     // Listen for deep links while app is running
     // React Navigation's linking prop handles this, but we add a listener for edge cases
-    const subscription = Linking.addEventListener('url', ({ url }) => {
+    const subscription = Linking.addEventListener('url', ({ url }: { url: string }) => {
       if (isDeepLink(url) && navigationRef.current) {
         const parsed = parseDeepLink(url);
         if (parsed?.screen) {
           try {
-            navigationRef.current.navigate(
-              parsed.screen as keyof RootStackParamList,
-              parsed.params as any,
-            );
+            const screen = parsed.screen as keyof RootStackParamList;
+            const params = parsed.params as RootStackParamList[typeof screen];
+            // Use type assertion for navigation since React Navigation types are complex
+            (navigationRef.current as any).navigate(screen, params);
           } catch (error) {
             console.error('Failed to navigate from deep link:', error);
           }
@@ -588,7 +586,7 @@ const AppWithErrorBoundary: React.FC<{
               <ThemedStatusBar />
               <NavigationContainer
                 ref={navigationRef}
-                initialState={safeInitialState}
+                initialState={safeInitialState ?? undefined}
                 linking={linking}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
