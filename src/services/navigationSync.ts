@@ -59,6 +59,25 @@ const VALID_NESTED_ROUTES: Record<string, Set<string>> = {
   Main: new Set(['Home', 'Calendar', 'Account']), // MainTabNavigator routes
 };
 
+// Routes that should NOT be restored on app startup (modal flows)
+// These are temporary screens that shouldn't persist across app restarts
+const MODAL_FLOW_ROUTES: Set<keyof RootStackParamList> = new Set([
+  'AddCourseFlow',
+  'AddLectureFlow',
+  'AddAssignmentFlow',
+  'AddStudySessionFlow',
+  'TaskDetailModal',
+  'EditCourseModal',
+  'InAppBrowserScreen',
+  'PaywallScreen',
+  'OddityWelcomeScreen',
+  'StudyResult',
+  'StudySessionReview',
+  'ForgotPassword',
+  'ResetPassword',
+  'Auth', // Auth screen shouldn't be restored either
+]);
+
 interface NavigationSnapshot {
   state: NavigationState;
   version: string;
@@ -356,6 +375,16 @@ class NavigationSyncService {
         '🔒 NavigationSync: Logged out user trying to access authenticated route. Clearing state.',
       );
       await this.clearState();
+      return null;
+    }
+
+    // Don't restore modal flows - reset to Main screen instead
+    // Modal flows are temporary screens that shouldn't persist across app restarts
+    if (currentRoute && MODAL_FLOW_ROUTES.has(currentRoute as keyof RootStackParamList)) {
+      console.log(
+        `🚫 NavigationSync: Modal flow "${currentRoute}" detected. Resetting to Main screen.`,
+      );
+      // Return null to let the app start fresh with default navigation
       return null;
     }
 

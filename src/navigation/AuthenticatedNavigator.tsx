@@ -9,6 +9,7 @@ import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
 import { OnboardingProvider } from '@/contexts/OnboardingContext';
+import { UsageLimitPaywallProvider } from '@/contexts/UsageLimitPaywallContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '@/hooks/useSmartPreloading';

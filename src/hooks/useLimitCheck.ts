@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { PermissionService } from '@/features/auth/permissions/PermissionService';
-import { useMonthlyTaskCount } from './useMonthlyTaskCount';
+import { useMonthlyTaskCount } from './useWeeklyTaskCount';
 import { formatActionLabel } from '@/utils/limitChecking';
 
 export type LimitCheckResult = {

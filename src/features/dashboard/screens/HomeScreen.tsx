@@ -580,7 +580,7 @@ const HomeScreen = () => {
 
         {/* Today's Overview Section */}
         {!isGuest && (
-          <View style={styles.section}>
+          <View style={[styles.section, { marginTop: SPACING.xl }]}>
             <Text style={styles.sectionTitle}>Today's Overview</Text>
             <TodayOverviewGrid overview={homeData?.todayOverview || null} />
             <MonthlyLimitCard
