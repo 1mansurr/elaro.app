@@ -3,10 +3,18 @@ import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '@/types/navigation';
 import { PrimaryButton } from '@/shared/components';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 
 type AppWelcomeScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -44,6 +52,7 @@ const benefits = [
 
 const AppWelcomeScreen = () => {
   const navigation = useNavigation<AppWelcomeScreenNavigationProp>();
+  const insets = useSafeAreaInsets();
 
   const handleGetStarted = async () => {
     try {
@@ -56,7 +65,7 @@ const AppWelcomeScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
@@ -140,15 +149,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.card,
     padding: SPACING.md,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.md,
     borderWidth: 1,
     borderColor: COLORS.border,
-    shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.xs,
   },
   benefitIconContainer: {
     width: 56,

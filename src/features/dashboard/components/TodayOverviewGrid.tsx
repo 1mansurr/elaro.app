@@ -2,7 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 
 interface OverviewData {
   lectures: number;
@@ -109,13 +115,9 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: '47%',
     padding: SPACING.md,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.xs,
   },
   statHeader: {
     flexDirection: 'row',
@@ -125,7 +127,7 @@ const styles = StyleSheet.create({
   },
   iconContainer: {
     padding: 6,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
   },
   statLabel: {
     fontSize: 12,

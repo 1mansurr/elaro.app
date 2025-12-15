@@ -14,6 +14,15 @@ import {
   endOfWeek,
   isSameDay,
 } from 'date-fns';
+import { useTheme } from '@/contexts/ThemeContext';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 
 interface Props {
   selectedDate: Date;
@@ -21,6 +30,7 @@ interface Props {
 }
 
 const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
+  const { theme } = useTheme();
   const weekDays = useMemo(() => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
     const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -39,13 +49,42 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
             key={day.toISOString()}
             style={[
               styles.dayContainer,
-              isSelected && styles.selectedDayContainer,
+              {
+                backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
+                borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+              },
+              isSelected && [
+                styles.selectedDayContainer,
+                {
+                  backgroundColor: COLORS.primary,
+                },
+              ],
             ]}
             onPress={() => onDateSelect(day)}>
-            <Text style={[styles.dayName, isSelected && styles.selectedText]}>
+            <Text
+              style={[
+                styles.dayName,
+                {
+                  color: isSelected
+                    ? '#FFFFFF'
+                    : theme.isDark
+                      ? '#9CA3AF'
+                      : '#6B7280',
+                },
+              ]}>
               {format(day, 'E')}
             </Text>
-            <Text style={[styles.dayNumber, isSelected && styles.selectedText]}>
+            <Text
+              style={[
+                styles.dayNumber,
+                {
+                  color: isSelected
+                    ? '#FFFFFF'
+                    : theme.isDark
+                      ? '#FFFFFF'
+                      : '#111418',
+                },
+              ]}>
               {format(day, 'd')}
             </Text>
           </TouchableOpacity>
@@ -57,43 +96,40 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 10,
+    paddingVertical: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
-    backgroundColor: '#fff',
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.background,
   },
   scrollContent: {
-    paddingHorizontal: 10,
+    paddingHorizontal: SPACING.md,
   },
   dayContainer: {
     alignItems: 'center',
     justifyContent: 'center',
     width: 60,
     height: 70,
-    borderRadius: 12,
-    marginHorizontal: 5,
+    borderRadius: BORDER_RADIUS.md,
+    marginHorizontal: SPACING.xs,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   selectedDayContainer: {
-    backgroundColor: '#2C5EFF',
-    borderRadius: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    marginHorizontal: 4,
+    borderRadius: BORDER_RADIUS.md,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    marginHorizontal: SPACING.xs,
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   dayName: {
-    fontSize: 14,
-    color: '#6c757d',
-    marginBottom: 4,
+    fontSize: FONT_SIZES.sm,
+    marginBottom: SPACING.xs,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   dayNumber: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#343a40',
-  },
-  selectedText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
   },
 });
 

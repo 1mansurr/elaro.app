@@ -29,7 +29,14 @@ import {
   useDeleteTemplate,
   TaskTemplate,
 } from '@/hooks/useTemplates';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 import { showToast } from '@/utils/showToast';
 
 type TemplatesScreenNavigationProp = StackNavigationProp<RootStackParamList>;
@@ -565,15 +572,11 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
   },
   templateCard: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     padding: SPACING.md,
     marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.xs,
   },
   templateHeader: {
     flexDirection: 'row',
@@ -617,7 +620,7 @@ const styles = StyleSheet.create({
   },
   useButton: {
     height: 40,
-    borderRadius: 10,
+    borderRadius: BORDER_RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -658,7 +661,7 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingHorizontal: SPACING.lg,
     paddingVertical: SPACING.md,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
   },
   retryButtonText: {
     color: '#FFFFFF',
@@ -672,13 +675,9 @@ const styles = StyleSheet.create({
   popoverContent: {
     position: 'absolute',
     minWidth: 120,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOWS.lg,
     paddingVertical: 4,
   },
   popoverItem: {
@@ -704,11 +703,12 @@ const styles = StyleSheet.create({
     padding: SPACING.lg,
   },
   modalContent: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     padding: SPACING.lg,
     width: '100%',
     maxWidth: 400,
+    ...SHADOWS.xl,
   },
   modalTitle: {
     fontSize: FONT_SIZES.lg,
@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     paddingVertical: SPACING.md,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     alignItems: 'center',
   },
   cancelButton: {

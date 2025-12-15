@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -9,24 +9,104 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Platform,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/shared/components/Button';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PrimaryButton, SecondaryButton } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
 import { showToast } from '@/utils/showToast';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
+
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
 
 const DeleteAccountScreen = () => {
   const navigation = useNavigation();
   const { user, signOut } = useAuth();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   const [confirmationText, setConfirmationText] = useState('');
   const [reason, setReason] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasAcknowledged, setHasAcknowledged] = useState(false);
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
+
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (translationX < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(translationX) / screenWidth);
+      edgeSwipeTranslateX.setValue(translationX);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
+      // Animate out and go back
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        // Reset
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      // Snap back
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
 
   const isConfirmationValid =
     confirmationText.trim().toUpperCase() === 'DELETE';
@@ -88,194 +168,348 @@ const DeleteAccountScreen = () => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {/* Warning Header */}
-      <View style={styles.warningHeader}>
-        <Ionicons name="warning" size={64} color="#FF3B30" />
-        <Text style={styles.warningTitle}>Delete Account</Text>
-        <Text style={styles.warningSubtitle}>
-          This action will permanently delete your account and all associated
-          data
-        </Text>
-      </View>
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View
+            style={[
+              styles.header,
+              {
+                backgroundColor: bgColor,
+                borderBottomColor: borderColor,
+                paddingTop: SPACING.md,
+              },
+            ]}>
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={styles.backButton}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, { color: textColor }]}>
+              Delete Account
+            </Text>
+            <View style={styles.headerSpacer} />
+          </View>
 
-      {/* What will be deleted */}
-      <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>What will be deleted:</Text>
-        <View style={styles.infoList}>
-          <View style={styles.infoItem}>
-            <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>
-              All your courses and academic data
+          {/* Warning Header */}
+          <View
+            style={[
+              styles.warningHeader,
+              {
+                backgroundColor: theme.isDark
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : '#FFF5F5',
+              },
+            ]}>
+            <Ionicons name="warning" size={64} color="#EF4444" />
+            <Text style={[styles.warningTitle, { color: '#EF4444' }]}>
+              Delete Account
+            </Text>
+            <Text
+              style={[
+                styles.warningSubtitle,
+                { color: textSecondaryColor },
+              ]}>
+              This action will permanently delete your account and all
+              associated data
             </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>
-              All assignments, lectures, and study sessions
+
+          {/* What will be deleted */}
+          <View
+            style={[
+              styles.infoSection,
+              {
+                backgroundColor: surfaceColor,
+                borderColor: borderColor,
+              },
+            ]}>
+            <Text style={[styles.infoTitle, { color: textColor }]}>
+              What will be deleted:
+            </Text>
+            <View style={styles.infoList}>
+              <View style={styles.infoItem}>
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+                <Text style={[styles.infoItemText, { color: textColor }]}>
+                  All your courses and academic data
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+                <Text style={[styles.infoItemText, { color: textColor }]}>
+                  All assignments, lectures, and study sessions
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+                <Text style={[styles.infoItemText, { color: textColor }]}>
+                  Your profile and account settings
+                </Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="close-circle" size={20} color="#EF4444" />
+                <Text style={[styles.infoItemText, { color: textColor }]}>
+                  All reminders and notifications
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Grace period info */}
+          <View
+            style={[
+              styles.gracePeriodInfo,
+              {
+                backgroundColor: theme.isDark
+                  ? 'rgba(59, 130, 246, 0.1)'
+                  : '#F0F5FF',
+              },
+            ]}>
+            <Ionicons name="time-outline" size={24} color={COLORS.primary} />
+            <View style={styles.gracePeriodText}>
+              <Text
+                style={[
+                  styles.gracePeriodTitle,
+                  { color: theme.isDark ? '#93C5FD' : COLORS.primary },
+                ]}>
+                7-Day Grace Period
+              </Text>
+              <Text
+                style={[
+                  styles.gracePeriodDescription,
+                  { color: textSecondaryColor },
+                ]}>
+                Your account will be scheduled for deletion but not immediately
+                removed. You have 7 days to log back in and cancel the deletion
+                if you change your mind.
+              </Text>
+            </View>
+          </View>
+
+          {/* Reason (Optional) */}
+          <View style={styles.formSection}>
+            <Text style={[styles.label, { color: textColor }]}>
+              Why are you leaving? (Optional)
+            </Text>
+            <TextInput
+              style={[
+                styles.textArea,
+                {
+                  backgroundColor: surfaceColor,
+                  borderColor: borderColor,
+                  color: textColor,
+                },
+              ]}
+              value={reason}
+              onChangeText={setReason}
+              placeholder="Help us improve by sharing your feedback..."
+              placeholderTextColor={textSecondaryColor}
+              multiline
+              numberOfLines={4}
+              maxLength={500}
+            />
+            <Text
+              style={[styles.characterCount, { color: textSecondaryColor }]}>
+              {reason.length}/500
             </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>
-              Your profile and account settings
+
+          {/* Acknowledgment Checkbox */}
+          <TouchableOpacity
+            style={[
+              styles.checkboxContainer,
+              {
+                backgroundColor: theme.isDark
+                  ? 'rgba(239, 68, 68, 0.1)'
+                  : '#FFF5F5',
+                borderColor: borderColor,
+              },
+            ]}
+            onPress={() => setHasAcknowledged(!hasAcknowledged)}>
+            <View
+              style={[
+                styles.checkbox,
+                {
+                  borderColor: '#EF4444',
+                  backgroundColor: hasAcknowledged
+                    ? '#EF4444'
+                    : surfaceColor,
+                },
+              ]}>
+              {hasAcknowledged && (
+                <Ionicons name="checkmark" size={18} color="white" />
+              )}
+            </View>
+            <Text style={[styles.checkboxLabel, { color: textColor }]}>
+              I understand that this action will delete all my data and cannot
+              be undone after 7 days
+            </Text>
+          </TouchableOpacity>
+
+          {/* Confirmation Input */}
+          <View style={styles.formSection}>
+            <Text style={[styles.label, { color: textColor }]}>
+              Type <Text style={styles.deleteKeyword}>DELETE</Text> to confirm
+            </Text>
+            <TextInput
+              style={[
+                styles.confirmationInput,
+                {
+                  backgroundColor: surfaceColor,
+                  borderColor: confirmationText
+                    ? isConfirmationValid
+                      ? '#10B981'
+                      : '#EF4444'
+                    : borderColor,
+                  color: textColor,
+                },
+                isConfirmationValid && {
+                  backgroundColor: theme.isDark
+                    ? 'rgba(16, 185, 129, 0.1)'
+                    : '#F0FFF4',
+                },
+              ]}
+              value={confirmationText}
+              onChangeText={setConfirmationText}
+              placeholder="DELETE"
+              placeholderTextColor={textSecondaryColor}
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            {confirmationText && !isConfirmationValid && (
+              <Text style={styles.validationError}>
+                Please type DELETE exactly as shown
+              </Text>
+            )}
+          </View>
+
+          {/* Action Buttons */}
+          <View style={styles.buttonContainer}>
+            <SecondaryButton
+              title="Cancel"
+              onPress={() => navigation.goBack()}
+              style={styles.cancelButton}
+            />
+            <PrimaryButton
+              title={isDeleting ? 'Deleting...' : 'Delete Account'}
+              onPress={handleDeleteAccount}
+              disabled={!canDelete || isDeleting}
+              loading={isDeleting}
+              style={[
+                styles.deleteButton,
+                {
+                  backgroundColor: canDelete ? '#EF4444' : textSecondaryColor,
+                },
+              ]}
+            />
+          </View>
+
+          {/* Additional warning */}
+          <View
+            style={[
+              styles.finalWarning,
+              {
+                backgroundColor: surfaceColor,
+                borderColor: borderColor,
+              },
+            ]}>
+            <Ionicons
+              name="information-circle-outline"
+              size={20}
+              color={textSecondaryColor}
+            />
+            <Text style={[styles.finalWarningText, { color: textSecondaryColor }]}>
+              Need help? Contact our support team before deleting your account.
+              We're here to help resolve any issues.
             </Text>
           </View>
-          <View style={styles.infoItem}>
-            <Ionicons name="close-circle" size={20} color="#FF3B30" />
-            <Text style={styles.infoItemText}>
-              All reminders and notifications
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Grace period info */}
-      <View style={styles.gracePeriodInfo}>
-        <Ionicons name="time-outline" size={24} color={COLORS.primary} />
-        <View style={styles.gracePeriodText}>
-          <Text style={styles.gracePeriodTitle}>7-Day Grace Period</Text>
-          <Text style={styles.gracePeriodDescription}>
-            Your account will be scheduled for deletion but not immediately
-            removed. You have 7 days to log back in and cancel the deletion if
-            you change your mind.
-          </Text>
-        </View>
-      </View>
-
-      {/* Reason (Optional) */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>Why are you leaving? (Optional)</Text>
-        <TextInput
-          style={styles.textArea}
-          value={reason}
-          onChangeText={setReason}
-          placeholder="Help us improve by sharing your feedback..."
-          multiline
-          numberOfLines={4}
-          maxLength={500}
-        />
-        <Text style={styles.characterCount}>{reason.length}/500</Text>
-      </View>
-
-      {/* Acknowledgment Checkbox */}
-      <TouchableOpacity
-        style={styles.checkboxContainer}
-        onPress={() => setHasAcknowledged(!hasAcknowledged)}>
-        <View
-          style={[styles.checkbox, hasAcknowledged && styles.checkboxChecked]}>
-          {hasAcknowledged && (
-            <Ionicons name="checkmark" size={18} color={COLORS.background} />
-          )}
-        </View>
-        <Text style={styles.checkboxLabel}>
-          I understand that this action will delete all my data and cannot be
-          undone after 7 days
-        </Text>
-      </TouchableOpacity>
-
-      {/* Confirmation Input */}
-      <View style={styles.formSection}>
-        <Text style={styles.label}>
-          Type <Text style={styles.deleteKeyword}>DELETE</Text> to confirm
-        </Text>
-        <TextInput
-          style={[
-            styles.confirmationInput,
-            confirmationText && !isConfirmationValid
-              ? styles.confirmationInputInvalid
-              : undefined,
-            isConfirmationValid ? styles.confirmationInputValid : undefined,
-          ]}
-          value={confirmationText}
-          onChangeText={setConfirmationText}
-          placeholder="DELETE"
-          autoCapitalize="characters"
-          autoCorrect={false}
-        />
-        {confirmationText && !isConfirmationValid && (
-          <Text style={styles.validationError}>
-            Please type DELETE exactly as shown
-          </Text>
-        )}
-      </View>
-
-      {/* Action Buttons */}
-      <View style={styles.buttonContainer}>
-        <Button
-          title="Cancel"
-          onPress={() => navigation.goBack()}
-          variant="outline"
-        />
-        <Button
-          title={isDeleting ? 'Deleting...' : 'Delete Account'}
-          onPress={handleDeleteAccount}
-          disabled={!canDelete || isDeleting}
-          loading={isDeleting}
-          style={{
-            ...styles.deleteButton,
-            backgroundColor: canDelete ? '#FF3B30' : COLORS.gray,
-          }}
-        />
-      </View>
-
-      {/* Additional warning */}
-      <View style={styles.finalWarning}>
-        <Ionicons
-          name="information-circle-outline"
-          size={20}
-          color={COLORS.gray}
-        />
-        <Text style={styles.finalWarningText}>
-          Need help? Contact our support team before deleting your account.
-          We're here to help resolve any issues.
-        </Text>
-      </View>
-    </ScrollView>
+        </ScrollView>
+      </Animated.View>
+    </PanGestureHandler>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   content: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
     paddingBottom: SPACING.xxl,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerTitle: {
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
+  },
+  headerSpacer: {
+    width: 40,
   },
   warningHeader: {
     alignItems: 'center',
     paddingVertical: SPACING.xl,
-    backgroundColor: '#FFF5F5',
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     marginBottom: SPACING.xl,
+    ...SHADOWS.sm,
   },
   warningTitle: {
     fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: '#FF3B30',
+    fontWeight: FONT_WEIGHTS.bold,
     marginTop: SPACING.md,
   },
   warningSubtitle: {
     fontSize: FONT_SIZES.md,
-    color: '#8B0000',
     textAlign: 'center',
     marginTop: SPACING.sm,
     paddingHorizontal: SPACING.lg,
   },
   infoSection: {
-    backgroundColor: '#FFFAF0',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.lg,
     borderWidth: 1,
-    borderColor: '#FFE4B5',
+    ...SHADOWS.xs,
   },
   infoTitle: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.semibold,
     marginBottom: SPACING.sm,
   },
   infoList: {
@@ -288,29 +522,26 @@ const styles = StyleSheet.create({
   },
   infoItemText: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
     flex: 1,
   },
   gracePeriodInfo: {
     flexDirection: 'row',
-    backgroundColor: '#F0F5FF',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     marginBottom: SPACING.xl,
     gap: SPACING.sm,
+    ...SHADOWS.xs,
   },
   gracePeriodText: {
     flex: 1,
   },
   gracePeriodTitle: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.semibold,
     marginBottom: SPACING.xs,
   },
   gracePeriodDescription: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
     lineHeight: 20,
   },
   formSection: {
@@ -318,28 +549,24 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.medium,
     marginBottom: SPACING.sm,
   },
   deleteKeyword: {
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: '#FF3B30',
+    fontWeight: FONT_WEIGHTS.bold,
+    color: '#EF4444',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
   textArea: {
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     fontSize: FONT_SIZES.md,
-    color: COLORS.text,
     textAlignVertical: 'top',
     minHeight: 100,
   },
   characterCount: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
     textAlign: 'right',
     marginTop: SPACING.xs,
   },
@@ -348,53 +575,37 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: SPACING.lg,
     padding: SPACING.md,
-    backgroundColor: '#FFF5F5',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
-    borderColor: '#FFE4E1',
+    ...SHADOWS.xs,
   },
   checkbox: {
     width: 24,
     height: 24,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.xs,
     borderWidth: 2,
-    borderColor: '#FF3B30',
     marginRight: SPACING.sm,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
     marginTop: 2,
-  },
-  checkboxChecked: {
-    backgroundColor: '#FF3B30',
   },
   checkboxLabel: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.text,
     lineHeight: 20,
   },
   confirmationInput: {
     borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: SPACING.md,
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
+    fontWeight: FONT_WEIGHTS.bold,
     textAlign: 'center',
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
-  confirmationInputInvalid: {
-    borderColor: '#FF3B30',
-  },
-  confirmationInputValid: {
-    borderColor: '#34C759',
-    backgroundColor: '#F0FFF4',
-  },
   validationError: {
     fontSize: FONT_SIZES.sm,
-    color: '#FF3B30',
+    color: '#EF4444',
     marginTop: SPACING.xs,
     textAlign: 'center',
   },
@@ -402,6 +613,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: SPACING.md,
     marginTop: SPACING.lg,
+  },
+  cancelButton: {
+    flex: 1,
   },
   deleteButton: {
     flex: 1,
@@ -411,14 +625,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginTop: SPACING.xl,
     padding: SPACING.md,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     gap: SPACING.sm,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   finalWarningText: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
     lineHeight: 18,
   },
 });

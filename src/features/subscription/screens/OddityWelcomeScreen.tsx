@@ -7,7 +7,14 @@ import { Ionicons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { supabase } from '@/services/supabase';
 import { PrimaryButton } from '@/shared/components';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 import { RootStackParamList } from '@/types/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -260,13 +267,9 @@ const styles = StyleSheet.create({
     width: SCREEN_WIDTH * 0.7,
     height: SCREEN_HEIGHT * 0.7,
     backgroundColor: COLORS.background,
-    borderRadius: 20,
+    borderRadius: BORDER_RADIUS.xl,
     overflow: 'hidden',
-    shadowColor: 'COLORS.black',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
+    ...SHADOWS.xl,
   },
   scrollContent: {
     padding: SPACING.lg,
@@ -303,10 +306,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: COLORS.background,
     padding: SPACING.sm,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     marginBottom: SPACING.sm,
     borderWidth: 1,
     borderColor: COLORS.border,
+    ...SHADOWS.xs,
   },
   benefitIcon: {
     width: 40,

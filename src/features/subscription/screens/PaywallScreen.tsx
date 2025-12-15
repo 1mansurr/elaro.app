@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,21 @@ import {
   TouchableOpacity,
   Modal,
   Alert,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { Image } from 'expo-image';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/contexts/ThemeContext';
 // Sentry is temporarily disabled
 let Sentry: any = null;
 try {
@@ -34,6 +44,9 @@ import {
 } from '@/constants/theme';
 import { RootStackParamList } from '@/types/navigation';
 
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
+
 type PaywallScreenRouteProp = RouteProp<RootStackParamList, 'PaywallScreen'>;
 type PaywallScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -43,11 +56,17 @@ type PaywallScreenNavigationProp = StackNavigationProp<
 export const PaywallScreen: React.FC = () => {
   const route = useRoute<PaywallScreenRouteProp>();
   const navigation = useNavigation<PaywallScreenNavigationProp>();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   // Get params with defaults for backward compatibility
   const { variant = 'general', lockedContent } = route.params || {};
   const { user } = useAuth();
   // const { offerings, purchasePackage, isLoading, error } = useSubscription();
   const { purchasePackage, isLoading, error } = useSubscription();
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   // Mock offerings for now
   const offerings = { current: null as any };
@@ -194,81 +213,159 @@ export const PaywallScreen: React.FC = () => {
     return 'Get unlimited access to all ELARO features';
   };
 
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    const tx = typeof translationX === 'number' ? translationX : 0;
+    if (tx < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(tx) / screenWidth);
+      edgeSwipeTranslateX.setValue(tx);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    const tx = typeof translationX === 'number' ? translationX : 0;
+    if (Math.abs(tx) > EDGE_SWIPE_THRESHOLD) {
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}>
-      {/* Hero Image Card */}
-      <View style={styles.heroCard}>
-        <Image
-          source={require('../../../../assets/focus.png')}
-          style={styles.heroImage}
-          contentFit="contain"
-        />
-      </View>
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.animatedContainer,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        <ScrollView
+          style={[styles.container, { backgroundColor: bgColor }]}
+          contentContainerStyle={styles.contentContainer}>
+          {/* Hero Image Card */}
+          <View style={[styles.heroCard, { backgroundColor: surfaceColor }]}>
+            <Image
+              source={require('../../../../assets/focus.png')}
+              style={styles.heroImage}
+              contentFit="contain"
+            />
+          </View>
 
-      {/* Benefits Card */}
-      <View style={styles.benefitsCard}>
-        <Text style={styles.benefitsTitle}>
-          What you&apos;ll get with Oddity:
-        </Text>
+          {/* Benefits Card */}
+          <View style={[styles.benefitsCard, { backgroundColor: surfaceColor }]}>
+            <Text style={[styles.benefitsTitle, { color: theme.text }]}>
+              What you&apos;ll get with Oddity:
+            </Text>
 
-        <View style={styles.benefitsGrid}>
-          {benefits.map((benefit, index) => (
-            <View key={index} style={styles.benefitItem}>
-              <View
-                style={[
-                  styles.benefitIcon,
-                  { backgroundColor: benefit.color + '20' },
-                ]}>
-                <Ionicons
-                  name={benefit.icon as any}
-                  size={24}
-                  color={benefit.color}
-                />
-              </View>
-              <View style={styles.benefitContent}>
-                <Text style={styles.benefitTitle}>{benefit.title}</Text>
-                <Text style={styles.benefitDescription}>
-                  {benefit.description}
-                </Text>
-              </View>
+            <View style={styles.benefitsGrid}>
+              {benefits.map((benefit, index) => (
+                <View key={index} style={styles.benefitItem}>
+                  <View
+                    style={[
+                      styles.benefitIcon,
+                      {
+                        backgroundColor:
+                          benefit.color + (isDark ? '30' : '20'),
+                      },
+                    ]}>
+                    <Ionicons
+                      name={benefit.icon as any}
+                      size={24}
+                      color={benefit.color}
+                    />
+                  </View>
+                  <View style={styles.benefitContent}>
+                    <Text style={[styles.benefitTitle, { color: theme.text }]}>
+                      {benefit.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.benefitDescription,
+                        { color: theme.textSecondary },
+                      ]}>
+                      {benefit.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
-      </View>
+          </View>
 
-      {/* CTA Card */}
-      <View style={styles.ctaCard}>
-        <PrimaryButton
-          title="Become an Oddity for $1.99/month"
-          onPress={handlePurchase}
-          loading={isLoading}
-          style={styles.purchaseButton}
-        />
+          {/* CTA Card */}
+          <View style={[styles.ctaCard, { backgroundColor: surfaceColor }]}>
+            <PrimaryButton
+              title="Become an Oddity for $1.99/month"
+              onPress={handlePurchase}
+              loading={isLoading}
+              style={styles.purchaseButton}
+            />
 
-        <Text style={styles.ctaSubtext}>
-          Cancel anytime • No commitment required
-        </Text>
-      </View>
-    </ScrollView>
+            <Text style={[styles.ctaSubtext, { color: theme.textSecondary }]}>
+              Cancel anytime • No commitment required
+            </Text>
+          </View>
+        </ScrollView>
+      </Animated.View>
+    </PanGestureHandler>
   );
 };
 
 const styles = StyleSheet.create({
+  animatedContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
   },
   contentContainer: {
-    padding: SPACING.lg,
+    padding: SPACING.md,
     paddingBottom: SPACING.xxl,
   },
   heroCard: {
-    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     alignItems: 'center',
     ...SHADOWS.md,
   },
@@ -277,16 +374,14 @@ const styles = StyleSheet.create({
     height: 200,
   },
   benefitsCard: {
-    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
-    marginBottom: SPACING.lg,
+    marginBottom: SPACING.md,
     ...SHADOWS.md,
   },
   benefitsTitle: {
     fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.bold,
     marginBottom: SPACING.lg,
     textAlign: 'center',
   },
@@ -314,17 +409,14 @@ const styles = StyleSheet.create({
   },
   benefitTitle: {
     fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.textPrimary,
+    fontWeight: FONT_WEIGHTS.semibold,
     marginBottom: SPACING.xs,
   },
   benefitDescription: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
     lineHeight: 18,
   },
   ctaCard: {
-    backgroundColor: COLORS.white,
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     alignItems: 'center',
@@ -336,7 +428,6 @@ const styles = StyleSheet.create({
   },
   ctaSubtext: {
     fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
     textAlign: 'center',
   },
 });

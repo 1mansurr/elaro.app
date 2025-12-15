@@ -15,7 +15,7 @@ serve(async req => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: Deno.env.get('ALERT_EMAIL_FROM') || 'alerts@elaro.app',
+          from: Deno.env.get('ALERT_EMAIL_FROM') || 'alerts@myelaro.com',
           to,
           subject,
           html,

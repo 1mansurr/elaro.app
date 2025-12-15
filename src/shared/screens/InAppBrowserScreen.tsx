@@ -12,7 +12,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RouteProp } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTheme } from '@/contexts/ThemeContext';
 import { RootStackParamList } from '@/types/navigation';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 
 type InAppBrowserScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -26,7 +35,16 @@ type InAppBrowserScreenRouteProp = RouteProp<
 const InAppBrowserScreen = () => {
   const navigation = useNavigation<InAppBrowserScreenNavigationProp>();
   const route = useRoute<InAppBrowserScreenRouteProp>();
+  const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const { url, title } = route.params;
+
+  // Light mode default colors
+  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
@@ -35,16 +53,28 @@ const InAppBrowserScreen = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: bgColor }]}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: surfaceColor,
+            borderBottomColor: borderColor,
+            paddingTop: insets.top + SPACING.sm,
+          },
+        ]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={styles.closeButton}>
-          <Ionicons name="close" size={28} color="#007AFF" />
+          style={styles.closeButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <Ionicons name="close" size={24} color={textColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text
+          style={[styles.headerTitle, { color: textColor }]}
+          numberOfLines={1}>
           {title || 'Browser'}
         </Text>
+        <View style={styles.headerSpacer} />
       </View>
       <WebView
         source={{ uri: url }}
@@ -52,35 +82,37 @@ const InAppBrowserScreen = () => {
         renderLoading={renderLoading}
         style={styles.webView}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8F8',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    backgroundColor: 'white',
   },
   closeButton: {
-    position: 'absolute',
-    left: 16,
-    top: 12,
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerSpacer: {
+    width: 40,
   },
   headerTitle: {
-    fontSize: 17,
-    fontWeight: '600',
-    maxWidth: '80%', // Ensure title doesn't overlap with button
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold,
+    flex: 1,
     textAlign: 'center',
+    paddingHorizontal: SPACING.md,
   },
   webView: {
     flex: 1,

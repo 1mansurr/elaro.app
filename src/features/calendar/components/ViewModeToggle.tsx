@@ -1,7 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+  COLORS,
+} from '@/constants/theme';
 
 type ViewMode = 'month' | 'week' | 'agenda';
 
@@ -68,15 +75,16 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     height: 40,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     padding: 4,
     gap: 4,
+    ...SHADOWS.xs,
   },
   button: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
   },
   buttonText: {
     fontSize: FONT_SIZES.sm,

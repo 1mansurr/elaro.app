@@ -1,15 +1,33 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SkeletonLoader } from '@/shared/components/SkeletonLoader';
-import { SPACING } from '@/constants/theme';
+import { useTheme } from '@/contexts/ThemeContext';
+import {
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+  COLORS,
+} from '@/constants/theme';
 
 /**
  * Skeleton loader for the NextTaskCard component.
  * Mimics the layout of a real task card with shimmer animations.
  */
 export const TaskCardSkeleton: React.FC = () => {
+  const { theme } = useTheme();
+  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
+
   return (
-    <View style={styles.card}>
+    <View
+      style={[
+        styles.card,
+        {
+          backgroundColor: surfaceColor,
+          borderColor: borderColor,
+        },
+      ]}>
       {/* Header */}
       <SkeletonLoader
         width={120}
@@ -56,29 +74,25 @@ export const TaskCardSkeleton: React.FC = () => {
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    borderRadius: 24,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    borderRadius: BORDER_RADIUS.xl,
+    padding: SPACING.lg,
+    marginBottom: SPACING.lg,
+    borderWidth: 1,
+    ...SHADOWS.sm,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   taskType: {
-    marginBottom: 8,
+    marginBottom: SPACING.sm,
   },
   taskName: {
-    marginBottom: 16,
+    marginBottom: SPACING.md,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e9ecef',
-    marginVertical: 16,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
   },
   footer: {
     flexDirection: 'row',

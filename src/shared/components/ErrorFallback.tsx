@@ -8,7 +8,14 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  SPACING,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 import {
   mapErrorCodeToMessage,
   getErrorTitle,
@@ -124,15 +131,15 @@ const styles = StyleSheet.create({
     maxWidth: 400,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
     marginTop: SPACING.lg,
     marginBottom: SPACING.md,
     textAlign: 'center',
   },
   message: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.xl,
@@ -142,37 +149,39 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.md,
     paddingHorizontal: SPACING.xl,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.md,
     minWidth: 200,
     alignItems: 'center',
+    ...SHADOWS.sm,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
     color: COLORS.white,
-    fontWeight: 'bold',
-    fontSize: 16,
+    fontWeight: FONT_WEIGHTS.bold,
+    fontSize: FONT_SIZES.md,
   },
   // Compact styles
   compactContainer: {
     padding: SPACING.md,
     alignItems: 'center',
     backgroundColor: COLORS.background,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
     borderColor: COLORS.border,
+    ...SHADOWS.xs,
   },
   compactTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold,
     color: COLORS.text,
     marginTop: SPACING.sm,
     marginBottom: SPACING.xs,
     textAlign: 'center',
   },
   compactMessage: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
     color: COLORS.textSecondary,
     textAlign: 'center',
     marginBottom: SPACING.sm,
@@ -181,12 +190,13 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
     paddingVertical: SPACING.xs,
     paddingHorizontal: SPACING.md,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.sm,
     marginTop: SPACING.xs,
+    ...SHADOWS.xs,
   },
   compactButtonText: {
     color: COLORS.white,
-    fontWeight: '600',
-    fontSize: 14,
+    fontWeight: FONT_WEIGHTS.semibold,
+    fontSize: FONT_SIZES.sm,
   },
 });

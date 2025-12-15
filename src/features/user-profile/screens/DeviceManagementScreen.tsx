@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,14 +8,34 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
+  Animated,
+  Platform,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Platform } from 'react-native';
 import { formatDate } from '@/i18n';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
+
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
 
 interface Device {
   id: string;
@@ -29,9 +49,14 @@ export function DeviceManagementScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadDevices();
@@ -157,7 +182,61 @@ export function DeviceManagementScreen() {
     return 'hardware-chip-outline';
   };
 
-  const formatDate = (dateString: string) => {
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (translationX < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(translationX) / screenWidth);
+      edgeSwipeTranslateX.setValue(translationX);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
+      // Animate out and go back
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        // Reset
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      // Snap back
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+
+  const formatDateRelative = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -173,36 +252,49 @@ export function DeviceManagementScreen() {
   };
 
   const renderDevice = ({ item }: { item: Device }) => (
-    <View style={[styles.deviceCard, { backgroundColor: theme.card }]}>
+    <View
+      style={[
+        styles.deviceCard,
+        {
+          backgroundColor: surfaceColor,
+          borderColor: borderColor,
+        },
+      ]}>
       <View style={styles.deviceInfo}>
         <View
           style={[
             styles.deviceIconContainer,
-            { backgroundColor: theme.primary + '20' },
+            {
+              backgroundColor:
+                COLORS.primary + (theme.isDark ? '30' : '20'),
+            },
           ]}>
           <Ionicons
             name={getDeviceIcon(item.platform) as any}
             size={24}
-            color={theme.primary}
+            color={COLORS.primary}
           />
         </View>
         <View style={styles.deviceDetails}>
           <View style={styles.deviceHeader}>
-            <Text style={[styles.deviceName, { color: theme.text }]}>
+            <Text style={[styles.deviceName, { color: textColor }]}>
               {item.platform || 'Unknown Device'}
             </Text>
             {item.is_current && (
               <View
                 style={[
                   styles.currentBadge,
-                  { backgroundColor: '#10B981' + '20' },
+                  {
+                    backgroundColor:
+                      '#10B981' + (theme.isDark ? '30' : '20'),
+                  },
                 ]}>
                 <Text style={styles.currentText}>Current</Text>
               </View>
             )}
           </View>
-          <Text style={[styles.deviceTime, { color: theme.textSecondary }]}>
-            Last active {formatDate(item.updated_at)}
+          <Text style={[styles.deviceTime, { color: textSecondaryColor }]}>
+            Last active {formatDateRelative(item.updated_at)}
           </Text>
         </View>
       </View>
@@ -223,35 +315,61 @@ export function DeviceManagementScreen() {
         style={[
           styles.container,
           styles.centered,
-          { backgroundColor: theme.background },
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+          },
         ]}>
-        <ActivityIndicator size="large" color={theme.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Device Management
-        </Text>
-        <View style={styles.backButton} />
-      </View>
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        {/* Header */}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: bgColor,
+              borderBottomColor: borderColor,
+              paddingTop: SPACING.md,
+            },
+          ]}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            Device Management
+          </Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      {/* Device Count */}
-      <View style={styles.countContainer}>
-        <Text style={[styles.countText, { color: theme.textSecondary }]}>
-          {devices.length} {devices.length === 1 ? 'device' : 'devices'} signed
-          in
-        </Text>
-      </View>
+        {/* Device Count */}
+        <View style={styles.countContainer}>
+          <Text style={[styles.countText, { color: textSecondaryColor }]}>
+            {devices.length} {devices.length === 1 ? 'device' : 'devices'} signed
+            in
+          </Text>
+        </View>
 
       {/* Device List */}
       <FlatList
@@ -277,27 +395,36 @@ export function DeviceManagementScreen() {
             <Ionicons
               name="phone-portrait-outline"
               size={48}
-              color={theme.textSecondary}
+              color={textSecondaryColor}
             />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
               No devices found
             </Text>
           </View>
         }
       />
 
-      {/* Remove All Button */}
-      {devices.length > 1 && (
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.removeAllButton, { borderColor: '#EF4444' }]}
-            onPress={revokeAllDevices}>
-            <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-            <Text style={styles.removeAllText}>Sign Out All Other Devices</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+        {/* Remove All Button */}
+        {devices.length > 1 && (
+          <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
+            <TouchableOpacity
+              style={[
+                styles.removeAllButton,
+                {
+                  borderColor: '#EF4444',
+                  backgroundColor: surfaceColor,
+                },
+              ]}
+              onPress={revokeAllDevices}>
+              <Ionicons name="log-out-outline" size={20} color="#EF4444" />
+              <Text style={styles.removeAllText}>
+                Sign Out All Other Devices
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 
@@ -313,9 +440,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
@@ -323,28 +450,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerSpacer: {
+    width: 40,
+  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   countContainer: {
-    paddingHorizontal: 24,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.lg,
+    paddingBottom: SPACING.md,
   },
   countText: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
   },
   listContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: SPACING.md,
     paddingBottom: 100,
   },
   deviceCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   deviceInfo: {
     flexDirection: 'row',
@@ -357,7 +492,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   deviceDetails: {
     flex: 1,
@@ -368,55 +503,55 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   deviceName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginRight: 8,
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
+    marginRight: SPACING.sm,
   },
   currentBadge: {
-    paddingHorizontal: 8,
+    paddingHorizontal: SPACING.xs,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   currentText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: '#10B981',
   },
   deviceTime: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
   },
   revokeButton: {
-    padding: 8,
+    padding: SPACING.sm,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
+    paddingVertical: SPACING.xxl,
   },
   emptyText: {
-    fontSize: 16,
-    marginTop: 12,
+    fontSize: FONT_SIZES.md,
+    marginTop: SPACING.md,
   },
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 24,
-    paddingBottom: Platform.OS === 'ios' ? 40 : 24,
+    padding: SPACING.lg,
   },
   removeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    borderRadius: 12,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
+    ...SHADOWS.sm,
   },
   removeAllText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
     color: '#EF4444',
-    marginLeft: 8,
+    marginLeft: SPACING.sm,
   },
 });

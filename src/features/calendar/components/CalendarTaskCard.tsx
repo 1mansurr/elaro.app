@@ -3,7 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 import { format } from 'date-fns';
 
 interface CalendarTaskCardProps {
@@ -193,15 +199,11 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     borderLeftWidth: 6,
     padding: SPACING.md,
     marginBottom: SPACING.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.xs,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.sm,
   },
   categoryText: {
     fontSize: 10,
@@ -262,7 +264,7 @@ const styles = StyleSheet.create({
     backdropFilter: 'blur(2px)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
   },
   lockedContent: {
     alignItems: 'center',
@@ -275,11 +277,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    ...SHADOWS.sm,
   },
   lockedText: {
     fontSize: 12,

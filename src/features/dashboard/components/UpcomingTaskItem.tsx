@@ -3,7 +3,13 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 import { format, isToday, isTomorrow, isSameDay, addDays } from 'date-fns';
 
 interface UpcomingTaskItemProps {
@@ -127,19 +133,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: SPACING.md,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: SPACING.md,
+    ...SHADOWS.xs,
   },
   iconContainer: {
     width: 48,
     height: 48,
-    borderRadius: 12,
+    borderRadius: BORDER_RADIUS.md,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.md,

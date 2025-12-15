@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,17 +7,40 @@ import {
   ScrollView,
   RefreshControl,
   Alert,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationSettings } from '../components/SimpleNotificationSettings';
 import { ScheduledNotification } from '@/services/notifications/interfaces';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
+
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
 
 export const NotificationManagementScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { theme } = useTheme();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>(
     'settings',
   );
@@ -27,6 +50,10 @@ export const NotificationManagementScreen: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (activeTab === 'scheduled') {
@@ -94,6 +121,60 @@ export const NotificationManagementScreen: React.FC = () => {
     }
   };
 
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (translationX < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(translationX) / screenWidth);
+      edgeSwipeTranslateX.setValue(translationX);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
+      // Animate out and go back
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        // Reset
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      // Snap back
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'settings':
@@ -116,59 +197,90 @@ export const NotificationManagementScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Notification Management
-        </Text>
-        <TouchableOpacity
-          style={[styles.testButton, { backgroundColor: theme.accent }]}
-          onPress={handleTestNotification}>
-          <Ionicons name="send-outline" size={16} color="white" />
-          <Text style={styles.testButtonText}>Test</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Tabs */}
-      <View style={styles.tabContainer}>
-        {[
-          { key: 'settings', label: 'Settings', icon: 'settings-outline' },
-          { key: 'scheduled', label: 'Scheduled', icon: 'list-outline' },
-        ].map(tab => (
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        {/* Header */}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: bgColor,
+              borderBottomColor: borderColor,
+              paddingTop: SPACING.md,
+            },
+          ]}>
           <TouchableOpacity
-            key={tab.key}
-            style={[
-              styles.tab,
-              {
-                backgroundColor:
-                  activeTab === tab.key ? theme.accent : theme.card,
-                borderColor: theme.border,
-              },
-            ]}
-            onPress={() => {
-              setActiveTab(tab.key as any);
-              if (tab.key === 'settings') setShowSettings(true);
-            }}>
-            <Ionicons
-              name={tab.icon as any}
-              size={16}
-              color={activeTab === tab.key ? 'white' : theme.text}
-            />
-            <Text
-              style={[
-                styles.tabText,
-                { color: activeTab === tab.key ? 'white' : theme.text },
-              ]}>
-              {tab.label}
-            </Text>
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
           </TouchableOpacity>
-        ))}
-      </View>
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            Notifications
+          </Text>
+          <TouchableOpacity
+            style={[styles.testButton, { backgroundColor: COLORS.primary }]}
+            onPress={handleTestNotification}>
+            <Ionicons name="send-outline" size={16} color="white" />
+            <Text style={styles.testButtonText}>Test</Text>
+          </TouchableOpacity>
+        </View>
 
-      {/* Content */}
-      <View style={styles.content}>{renderTabContent()}</View>
-    </View>
+        {/* Tabs */}
+        <View style={styles.tabContainer}>
+          {[
+            { key: 'settings', label: 'Settings', icon: 'settings-outline' },
+            { key: 'scheduled', label: 'Scheduled', icon: 'list-outline' },
+          ].map(tab => (
+            <TouchableOpacity
+              key={tab.key}
+              style={[
+                styles.tab,
+                {
+                  backgroundColor:
+                    activeTab === tab.key ? COLORS.primary : surfaceColor,
+                  borderColor: borderColor,
+                },
+              ]}
+              onPress={() => {
+                setActiveTab(tab.key as any);
+                if (tab.key === 'settings') setShowSettings(true);
+              }}>
+              <Ionicons
+                name={tab.icon as any}
+                size={16}
+                color={activeTab === tab.key ? 'white' : textColor}
+              />
+              <Text
+                style={[
+                  styles.tabText,
+                  {
+                    color: activeTab === tab.key ? 'white' : textColor,
+                  },
+                ]}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Content */}
+        <View style={styles.content}>{renderTabContent()}</View>
+      </Animated.View>
+    </PanGestureHandler>
   );
 };
 
@@ -247,7 +359,12 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
   onCancel,
 }) => {
   const { theme } = useTheme();
-  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  
+  // Light mode default colors
+  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
 
   const handleCancel = () => {
     Alert.alert(
@@ -317,7 +434,10 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
     <View
       style={[
         styles.notificationItem,
-        { backgroundColor: theme.card, borderColor: theme.border },
+        {
+          backgroundColor: surfaceColor,
+          borderColor: borderColor,
+        },
       ]}>
       <View style={styles.notificationItemLeft}>
         <View
@@ -332,20 +452,20 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
           />
         </View>
         <View style={styles.notificationContent}>
-          <Text style={[styles.notificationTitle, { color: theme.text }]}>
+          <Text style={[styles.notificationTitle, { color: textColor }]}>
             {notification.title}
           </Text>
           <Text
-            style={[styles.notificationBody, { color: theme.textSecondary }]}>
+            style={[styles.notificationBody, { color: textSecondaryColor }]}>
             {notification.body}
           </Text>
-          <Text style={[styles.notificationTime, { color: theme.accent }]}>
+          <Text style={[styles.notificationTime, { color: COLORS.primary }]}>
             {formatTime(notification.scheduledFor)}
           </Text>
         </View>
       </View>
       <TouchableOpacity
-        style={[styles.cancelButton, { backgroundColor: '#F44336' }]}
+        style={[styles.cancelButton, { backgroundColor: '#EF4444' }]}
         onPress={handleCancel}>
         <Ionicons name="close" size={16} color="white" />
       </TouchableOpacity>
@@ -359,49 +479,60 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    justifyContent: 'space-between',
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   testButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.xl,
     gap: 4,
   },
   testButtonText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   tabContainer: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    gap: SPACING.sm,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: BORDER_RADIUS.xl,
     borderWidth: 1,
-    gap: 4,
+    gap: 6,
+    minHeight: 36,
+    maxHeight: 36,
   },
   tabText: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   content: {
     flex: 1,
@@ -412,37 +543,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    padding: SPACING.xl,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold,
+    marginTop: SPACING.md,
+    marginBottom: SPACING.sm,
   },
   emptyMessage: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
     textAlign: 'center',
     lineHeight: 20,
   },
   notificationsList: {
     flex: 1,
-    padding: 16,
+    padding: SPACING.md,
   },
   notificationItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 12,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
     borderWidth: 1,
+    ...SHADOWS.xs,
   },
   notificationItemLeft: {
     flexDirection: 'row',
@@ -455,23 +587,23 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   notificationContent: {
     flex: 1,
   },
   notificationTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
     marginBottom: 4,
   },
   notificationBody: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
     marginBottom: 4,
   },
   notificationTime: {
-    fontSize: 12,
-    fontWeight: '500',
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.medium,
   },
   cancelButton: {
     width: 32,
@@ -479,6 +611,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 12,
+    marginLeft: SPACING.md,
   },
 });

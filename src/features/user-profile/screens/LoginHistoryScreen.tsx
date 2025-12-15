@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,13 +7,33 @@ import {
   ActivityIndicator,
   RefreshControl,
   TouchableOpacity,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/services/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { formatDate } from '@/i18n';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
+
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
 
 interface LoginRecord {
   id: string;
@@ -32,9 +52,14 @@ export function LoginHistoryScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [history, setHistory] = useState<LoginRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     loadLoginHistory();
@@ -65,7 +90,61 @@ export function LoginHistoryScreen() {
     loadLoginHistory();
   };
 
-  const formatDate = (dateString: string) => {
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (translationX < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(translationX) / screenWidth);
+      edgeSwipeTranslateX.setValue(translationX);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
+      // Animate out and go back
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        // Reset
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      // Snap back
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+
+  const formatDateRelative = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -115,7 +194,10 @@ export function LoginHistoryScreen() {
     <View
       style={[
         styles.recordCard,
-        { backgroundColor: theme.card },
+        {
+          backgroundColor: surfaceColor,
+          borderColor: !item.success ? '#EF4444' + '40' : borderColor,
+        },
         !item.success && styles.failedCard,
       ]}>
       <View style={styles.recordHeader}>
@@ -124,8 +206,8 @@ export function LoginHistoryScreen() {
             styles.statusIcon,
             {
               backgroundColor: item.success
-                ? '#10B981' + '20'
-                : '#EF4444' + '20',
+                ? '#10B981' + (theme.isDark ? '30' : '20')
+                : '#EF4444' + (theme.isDark ? '30' : '20'),
             },
           ]}>
           <Ionicons
@@ -135,11 +217,11 @@ export function LoginHistoryScreen() {
           />
         </View>
         <View style={styles.recordInfo}>
-          <Text style={[styles.recordTitle, { color: theme.text }]}>
+          <Text style={[styles.recordTitle, { color: textColor }]}>
             {item.success ? 'Successful Login' : 'Failed Login Attempt'}
           </Text>
-          <Text style={[styles.recordTime, { color: theme.textSecondary }]}>
-            {formatDate(item.created_at)}
+          <Text style={[styles.recordTime, { color: textSecondaryColor }]}>
+            {formatDateRelative(item.created_at)}
           </Text>
         </View>
       </View>
@@ -150,9 +232,9 @@ export function LoginHistoryScreen() {
           <Ionicons
             name={getMethodIcon(item.method) as any}
             size={16}
-            color={theme.textSecondary}
+            color={textSecondaryColor}
           />
-          <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+          <Text style={[styles.detailText, { color: textSecondaryColor }]}>
             {item.method || 'Email'}
           </Text>
         </View>
@@ -163,9 +245,9 @@ export function LoginHistoryScreen() {
             <Ionicons
               name={getDeviceIcon(item.device_info.platform) as any}
               size={16}
-              color={theme.textSecondary}
+              color={textSecondaryColor}
             />
-            <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+            <Text style={[styles.detailText, { color: textSecondaryColor }]}>
               {item.device_info.platform || 'Unknown Device'}
               {item.device_info.version ? ` ${item.device_info.version}` : ''}
             </Text>
@@ -178,9 +260,9 @@ export function LoginHistoryScreen() {
             <Ionicons
               name="globe-outline"
               size={16}
-              color={theme.textSecondary}
+              color={textSecondaryColor}
             />
-            <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+            <Text style={[styles.detailText, { color: textSecondaryColor }]}>
               {item.ip_address}
             </Text>
           </View>
@@ -192,9 +274,9 @@ export function LoginHistoryScreen() {
             <Ionicons
               name="location-outline"
               size={16}
-              color={theme.textSecondary}
+              color={textSecondaryColor}
             />
-            <Text style={[styles.detailText, { color: theme.textSecondary }]}>
+            <Text style={[styles.detailText, { color: textSecondaryColor }]}>
               {item.location}
             </Text>
           </View>
@@ -209,40 +291,77 @@ export function LoginHistoryScreen() {
         style={[
           styles.container,
           styles.centered,
-          { backgroundColor: theme.background },
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+          },
         ]}>
-        <ActivityIndicator size="large" color={theme.primary} />
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.background }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Login History
-        </Text>
-        <View style={styles.backButton} />
-      </View>
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.container,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        {/* Header */}
+        <View
+          style={[
+            styles.header,
+            {
+              backgroundColor: bgColor,
+              borderBottomColor: borderColor,
+              paddingTop: SPACING.md,
+            },
+          ]}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.backButton}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: textColor }]}>
+            Login History
+          </Text>
+          <View style={styles.headerSpacer} />
+        </View>
 
-      {/* Info Banner */}
-      <View
-        style={[styles.infoBanner, { backgroundColor: theme.primary + '20' }]}>
-        <Ionicons
-          name="shield-checkmark-outline"
-          size={20}
-          color={theme.primary}
-        />
-        <Text style={[styles.infoText, { color: theme.text }]}>
-          Monitor your account activity for suspicious logins
-        </Text>
-      </View>
+        {/* Info Banner */}
+        <View
+          style={[
+            styles.infoBanner,
+            {
+              backgroundColor: theme.isDark
+                ? 'rgba(59, 130, 246, 0.1)'
+                : '#F0F5FF',
+            },
+          ]}>
+          <Ionicons
+            name="shield-checkmark-outline"
+            size={20}
+            color={COLORS.primary}
+          />
+          <Text
+            style={[
+              styles.infoText,
+              { color: theme.isDark ? '#93C5FD' : COLORS.primary },
+            ]}>
+            Monitor your account activity for suspicious logins
+          </Text>
+        </View>
 
       {/* History List */}
       <FlatList
@@ -254,7 +373,7 @@ export function LoginHistoryScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={handleRefresh}
-            tintColor={theme.primary}
+            tintColor={COLORS.primary}
           />
         }
         // Performance optimizations
@@ -268,15 +387,16 @@ export function LoginHistoryScreen() {
             <Ionicons
               name="time-outline"
               size={48}
-              color={theme.textSecondary}
+              color={textSecondaryColor}
             />
-            <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
               No login history found
             </Text>
           </View>
         }
       />
-    </View>
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 
@@ -292,9 +412,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
@@ -302,40 +422,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerSpacer: {
+    width: 40,
+  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   infoBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    marginHorizontal: 24,
-    marginBottom: 16,
-    borderRadius: 12,
+    padding: SPACING.md,
+    marginHorizontal: SPACING.md,
+    marginBottom: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.sm,
+    ...SHADOWS.xs,
   },
   infoText: {
     flex: 1,
-    fontSize: 14,
-    marginLeft: 12,
+    fontSize: FONT_SIZES.sm,
   },
   listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.xl,
   },
   recordCard: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: SPACING.md,
+    borderRadius: BORDER_RADIUS.md,
+    marginBottom: SPACING.md,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   failedCard: {
     borderWidth: 1,
-    borderColor: '#EF4444' + '40',
   },
   recordHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   statusIcon: {
     width: 40,
@@ -343,18 +471,18 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginRight: SPACING.md,
   },
   recordInfo: {
     flex: 1,
   },
   recordTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
     marginBottom: 2,
   },
   recordTime: {
-    fontSize: 14,
+    fontSize: FONT_SIZES.sm,
   },
   recordDetails: {
     paddingLeft: 52,
@@ -365,16 +493,16 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   detailText: {
-    fontSize: 14,
-    marginLeft: 8,
+    fontSize: FONT_SIZES.sm,
+    marginLeft: SPACING.sm,
   },
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 48,
+    paddingVertical: SPACING.xxl,
   },
   emptyText: {
-    fontSize: 16,
-    marginTop: 12,
+    fontSize: FONT_SIZES.md,
+    marginTop: SPACING.md,
   },
 });

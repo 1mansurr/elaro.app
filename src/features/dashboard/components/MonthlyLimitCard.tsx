@@ -1,8 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { COLORS } from '@/constants/theme';
+import {
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+  COLORS,
+} from '@/constants/theme';
 
 interface MonthlyLimitCardProps {
   monthlyTaskCount: number;
@@ -84,13 +90,9 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     padding: SPACING.md,
-    borderRadius: 16,
+    borderRadius: BORDER_RADIUS.lg,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    ...SHADOWS.xs,
   },
   header: {
     flexDirection: 'row',
@@ -118,7 +120,7 @@ const styles = StyleSheet.create({
   percentageBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.sm,
   },
   percentageText: {
     fontSize: 12,
@@ -127,11 +129,11 @@ const styles = StyleSheet.create({
   progressBarContainer: {
     width: '100%',
     height: 8,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
 });

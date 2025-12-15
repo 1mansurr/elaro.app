@@ -233,19 +233,20 @@ const EventItem: React.FC<Props> = ({
   );
 };
 
+import {
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     paddingHorizontal: 10,
     paddingVertical: 8,
     borderLeftWidth: 4,
     borderLeftColor: 'rgba(255, 255, 255, 0.5)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    ...SHADOWS.sm,
   },
   lockedContainer: {
     opacity: 0.6,
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
     top: 4,
     right: 4,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 10,
+    borderRadius: BORDER_RADIUS.md,
     padding: 3,
   },
   content: {
@@ -286,7 +287,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
     paddingHorizontal: 4,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   exampleBadgeText: {
     color: '#fff',
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.2)',
     paddingHorizontal: 5,
     paddingVertical: 2,
-    borderRadius: 4,
+    borderRadius: BORDER_RADIUS.xs,
   },
   durationText: {
     color: '#fff',
@@ -376,7 +377,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.25)',
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.sm,
     marginTop: 6,
     gap: 4,
   },

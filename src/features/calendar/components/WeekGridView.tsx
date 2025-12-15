@@ -10,7 +10,13 @@ import {
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 
 const HOUR_HEIGHT = 60;
 const DAY_WIDTH = 120;
@@ -376,7 +382,7 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     position: 'absolute',
-    borderRadius: 6,
+    borderRadius: BORDER_RADIUS.sm,
     padding: 6,
     borderLeftWidth: 3,
     borderLeftColor: 'rgba(255, 255, 255, 0.6)',
@@ -394,7 +400,7 @@ const styles = StyleSheet.create({
     top: 2,
     right: 2,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     padding: 2,
   },
   exampleBadge: {
@@ -404,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.4)',
     paddingHorizontal: 3,
     paddingVertical: 1,
-    borderRadius: 3,
+    borderRadius: BORDER_RADIUS.xs,
   },
   exampleBadgeText: {
     color: '#fff',

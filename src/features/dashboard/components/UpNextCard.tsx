@@ -3,7 +3,14 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  BORDER_RADIUS,
+  SHADOWS,
+} from '@/constants/theme';
 import { format, differenceInMinutes } from 'date-fns';
 
 interface UpNextCardProps {
@@ -163,13 +170,9 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 24,
+    borderRadius: BORDER_RADIUS.xl,
     borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 20,
-    elevation: 2,
+    ...SHADOWS.sm,
     overflow: 'hidden',
   },
   content: {
@@ -186,7 +189,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: BORDER_RADIUS.sm,
     gap: 4,
   },
   categoryText: {
@@ -203,6 +206,7 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     borderWidth: 2,
     gap: 2,
+    ...SHADOWS.xs,
   },
   timerText: {
     fontSize: 10,

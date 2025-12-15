@@ -16,12 +16,15 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
-import { Input, Button } from '@/shared/components';
+import { Input, PrimaryButton } from '@/shared/components';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   SPACING,
   FONT_SIZES,
   FONT_WEIGHTS,
   BORDER_RADIUS,
+  SHADOWS,
+  COLORS,
 } from '@/constants/theme';
 import { RootStackParamList } from '@/types';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
@@ -55,6 +58,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, signUp } = useAuth();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Import Zod schemas (will work after npm install zod)
   // import { emailSchema, passwordSchema, signUpSchema, signInSchema } from '../../../shared/validation/schemas';
@@ -287,7 +291,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   return (
-    <View style={styles.container} testID="auth-screen">
+    <View
+      style={[styles.container, { paddingTop: insets.top }]}
+      testID="auth-screen">
       <View style={styles.gradient} testID="auth-container">
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -529,7 +535,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </TouchableOpacity>
             )}
 
-            <Button
+            <PrimaryButton
               title={mode === 'signup' ? 'Create Account' : 'Sign In'}
               onPress={handleAuth}
               loading={loading}
@@ -615,11 +621,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 8,
+    ...SHADOWS.xl,
   },
   termsContainer: {
     flexDirection: 'row',
@@ -697,6 +699,7 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
     backgroundColor: '#F8F9FA',
     borderRadius: BORDER_RADIUS.md,
+    ...SHADOWS.xs,
   },
   passwordRequirementsTitle: {
     fontSize: FONT_SIZES.sm,

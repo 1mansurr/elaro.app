@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,34 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Dimensions,
+  Animated,
 } from 'react-native';
+import {
+  PanGestureHandler,
+  State,
+  GestureHandlerGestureEvent,
+  GestureHandlerStateChangeEvent,
+} from 'react-native-gesture-handler';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '@/services/supabase';
 import { useTheme } from '@/contexts/ThemeContext';
+import { PrimaryButton } from '@/shared/components';
+import {
+  COLORS,
+  FONT_SIZES,
+  FONT_WEIGHTS,
+  SPACING,
+  SHADOWS,
+  BORDER_RADIUS,
+} from '@/constants/theme';
 import { RootStackParamList } from '@/types';
+
+const { width: screenWidth } = Dimensions.get('window');
+const EDGE_SWIPE_THRESHOLD = 50;
 
 type ResetPasswordScreenNavProp = StackNavigationProp<
   RootStackParamList,
@@ -27,11 +48,16 @@ export function ResetPasswordScreen() {
   const navigation = useNavigation<ResetPasswordScreenNavProp>();
   const route = useRoute();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Edge swipe gesture handlers
+  const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
+  const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   // Check if we have a valid session for password reset
   useEffect(() => {
@@ -85,6 +111,63 @@ export function ResetPasswordScreen() {
     };
   }, [navigation]);
 
+  const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
+    const { translationX } = event.nativeEvent;
+    const tx = typeof translationX === 'number' ? translationX : 0;
+    if (tx < -EDGE_SWIPE_THRESHOLD) {
+      const progress = Math.min(1, Math.abs(tx) / screenWidth);
+      edgeSwipeTranslateX.setValue(tx);
+      edgeSwipeOpacity.setValue(1 - progress * 0.5);
+    }
+  };
+
+  const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
+    const { translationX } = event.nativeEvent;
+    const tx = typeof translationX === 'number' ? translationX : 0;
+    if (Math.abs(tx) > EDGE_SWIPE_THRESHOLD) {
+      // Animate out and go back
+      Animated.parallel([
+        Animated.timing(edgeSwipeTranslateX, {
+          toValue: -screenWidth,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(edgeSwipeOpacity, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        navigation.goBack();
+        // Reset
+        edgeSwipeTranslateX.setValue(0);
+        edgeSwipeOpacity.setValue(1);
+      });
+    } else {
+      // Snap back
+      Animated.parallel([
+        Animated.spring(edgeSwipeTranslateX, {
+          toValue: 0,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+        Animated.spring(edgeSwipeOpacity, {
+          toValue: 1,
+          useNativeDriver: true,
+          friction: 7,
+        }),
+      ]).start();
+    }
+  };
+
+  // Light mode default colors
+  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
+
   const validatePassword = (): boolean => {
     if (!password || password.length < 8) {
       Alert.alert(
@@ -135,142 +218,181 @@ export function ResetPasswordScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: theme.background }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.text} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: theme.text }]}>
-            Reset Password
-          </Text>
-          <View style={styles.backButton} />
-        </View>
-
-        {/* Content */}
-        <View style={styles.content}>
-          {/* Icon */}
-          <View
-            style={[
-              styles.iconContainer,
-              { backgroundColor: theme.primary + '20' },
-            ]}>
-            <Ionicons
-              name="lock-closed-outline"
-              size={48}
-              color={theme.primary}
-            />
-          </View>
-
-          {/* Instructions */}
-          <Text style={[styles.title, { color: theme.text }]}>
-            Create New Password
-          </Text>
-          <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-            Enter your new password below. Make sure it's at least 8 characters
-            long.
-          </Text>
-
-          {/* Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              New Password
-            </Text>
+    <PanGestureHandler
+      onGestureEvent={handleEdgeSwipe}
+      onHandlerStateChange={handleEdgeSwipeEnd}
+      activeOffsetX={-10}
+      failOffsetY={[-10, 10]}>
+      <Animated.View
+        style={[
+          styles.animatedContainer,
+          {
+            backgroundColor: bgColor,
+            paddingTop: insets.top,
+            transform: [{ translateX: edgeSwipeTranslateX }],
+            opacity: edgeSwipeOpacity,
+          },
+        ]}>
+        <KeyboardAvoidingView
+          style={[styles.container, { backgroundColor: bgColor }]}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled">
+            {/* Header */}
             <View
-              style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
-              <TextInput
-                style={[styles.input, { color: theme.text }]}
-                placeholder="Enter new password"
-                placeholderTextColor={theme.textSecondary}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
+              style={[
+                styles.header,
+                {
+                  backgroundColor: bgColor,
+                  borderBottomColor: borderColor,
+                  paddingTop: SPACING.md,
+                },
+              ]}>
               <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.eyeIcon}>
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="arrow-back" size={20} color={textColor} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: textColor }]}>
+                Reset Password
+              </Text>
+              <View style={styles.headerSpacer} />
+            </View>
+
+            {/* Content */}
+            <View style={styles.content}>
+              {/* Icon */}
+              <View
+                style={[
+                  styles.iconContainer,
+                  {
+                    backgroundColor:
+                      COLORS.primary + (isDark ? '30' : '20'),
+                  },
+                ]}>
                 <Ionicons
-                  name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={theme.textSecondary}
+                  name="lock-closed-outline"
+                  size={48}
+                  color={COLORS.primary}
                 />
+              </View>
+
+              {/* Instructions */}
+              <Text style={[styles.title, { color: textColor }]}>
+                Create New Password
+              </Text>
+              <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
+                Enter your new password below. Make sure it's at least 8
+                characters long.
+              </Text>
+
+              {/* Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: textColor }]}>
+                  New Password
+                </Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor: borderColor,
+                    },
+                  ]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    placeholder="Enter new password"
+                    placeholderTextColor={textSecondaryColor}
+                    value={password}
+                    onChangeText={setPassword}
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.eyeIcon}>
+                    <Ionicons
+                      name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Confirm Password Input */}
+              <View style={styles.inputContainer}>
+                <Text style={[styles.label, { color: textColor }]}>
+                  Confirm Password
+                </Text>
+                <View
+                  style={[
+                    styles.inputWrapper,
+                    {
+                      backgroundColor: surfaceColor,
+                      borderColor: borderColor,
+                    },
+                  ]}>
+                  <TextInput
+                    style={[styles.input, { color: textColor }]}
+                    placeholder="Confirm new password"
+                    placeholderTextColor={textSecondaryColor}
+                    value={confirmPassword}
+                    onChangeText={setConfirmPassword}
+                    secureTextEntry={!showConfirmPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    editable={!loading}
+                  />
+                  <TouchableOpacity
+                    onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                    style={styles.eyeIcon}>
+                    <Ionicons
+                      name={
+                        showConfirmPassword ? 'eye-off-outline' : 'eye-outline'
+                      }
+                      size={20}
+                      color={textSecondaryColor}
+                    />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {/* Reset Button */}
+              <PrimaryButton
+                title="Update Password"
+                onPress={handleResetPassword}
+                loading={loading}
+                disabled={loading}
+                style={styles.button}
+              />
+
+              {/* Back to Sign In */}
+              <TouchableOpacity
+                style={styles.linkButton}
+                onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
+                disabled={loading}>
+                <Text style={[styles.linkText, { color: COLORS.primary }]}>
+                  Back to Sign In
+                </Text>
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Confirm Password Input */}
-          <View style={styles.inputContainer}>
-            <Text style={[styles.label, { color: theme.text }]}>
-              Confirm Password
-            </Text>
-            <View
-              style={[styles.inputWrapper, { backgroundColor: theme.card }]}>
-              <TextInput
-                style={[styles.input, { color: theme.text }]}
-                placeholder="Confirm new password"
-                placeholderTextColor={theme.textSecondary}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!loading}
-              />
-              <TouchableOpacity
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                style={styles.eyeIcon}>
-                <Ionicons
-                  name={showConfirmPassword ? 'eye-off-outline' : 'eye-outline'}
-                  size={20}
-                  color={theme.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Reset Button */}
-          <TouchableOpacity
-            style={[
-              styles.button,
-              { backgroundColor: theme.primary },
-              loading && styles.buttonDisabled,
-            ]}
-            onPress={handleResetPassword}
-            disabled={loading}>
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Update Password</Text>
-            )}
-          </TouchableOpacity>
-
-          {/* Back to Sign In */}
-          <TouchableOpacity
-            style={styles.linkButton}
-            onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
-            disabled={loading}>
-            <Text style={[styles.linkText, { color: theme.primary }]}>
-              Back to Sign In
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 
 const styles = StyleSheet.create({
+  animatedContainer: {
+    flex: 1,
+  },
   container: {
     flex: 1,
   },
@@ -281,9 +403,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingTop: 60,
-    paddingBottom: 16,
+    paddingHorizontal: SPACING.md,
+    paddingBottom: SPACING.md,
+    borderBottomWidth: 1,
   },
   backButton: {
     width: 40,
@@ -291,14 +413,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerSpacer: {
+    width: 40,
+  },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.xl,
+    fontWeight: FONT_WEIGHTS.bold,
+    flex: 1,
+    textAlign: 'center',
+    paddingRight: 40,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.xl,
   },
   iconContainer: {
     width: 80,
@@ -307,63 +435,54 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
+    ...SHADOWS.sm,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: FONT_SIZES.xxl,
+    fontWeight: FONT_WEIGHTS.bold,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 32,
+    marginBottom: SPACING.xl,
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
   },
   label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 8,
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.semibold,
+    marginBottom: SPACING.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderRadius: 12,
-    paddingHorizontal: 16,
+    borderRadius: BORDER_RADIUS.md,
+    paddingHorizontal: SPACING.md,
     height: 56,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   input: {
     flex: 1,
-    fontSize: 16,
+    fontSize: FONT_SIZES.md,
   },
   eyeIcon: {
     padding: 4,
   },
   button: {
-    height: 56,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 16,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    marginBottom: SPACING.md,
   },
   linkButton: {
-    paddingVertical: 16,
+    paddingVertical: SPACING.md,
     alignItems: 'center',
   },
   linkText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.semibold,
   },
 });

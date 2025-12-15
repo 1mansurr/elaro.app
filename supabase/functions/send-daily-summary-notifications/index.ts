@@ -156,7 +156,7 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
           ${studySessionCount > 0 ? `<li><strong>${studySessionCount}</strong> study session${studySessionCount > 1 ? 's' : ''} planned</li>` : ''}
         </ul>
         <p>Stay on track and have a productive day! 🎓</p>
-        <p><a href="https://elaro.app/dashboard">View Dashboard</a></p>
+        <p><a href="https://myelaro.com/dashboard">View Dashboard</a></p>
       `;
 
       const result = await sendUnifiedNotification(supabaseAdminClient, {

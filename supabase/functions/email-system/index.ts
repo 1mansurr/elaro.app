@@ -6,8 +6,6 @@
  *
  * Routes:
  * - POST /email-system/send-welcome - Send welcome email
- * - POST /email-system/send-daily-summary - Send daily summary email
- * - POST /email-system/send-evening-capture - Send evening capture email
  * - POST /email-system/send-custom - Send custom email
  * - GET /email-system/templates - Get email templates
  * - POST /email-system/schedule - Schedule email
@@ -34,18 +32,6 @@ const WelcomeEmailSchema = z.object({
   userEmail: z.string().email(),
   userFirstName: z.string().min(1),
   userId: z.string().uuid(),
-});
-
-const DailySummarySchema = z.object({
-  userEmail: z.string().email(),
-  userFirstName: z.string().min(1),
-  summaryData: z.record(z.any()),
-});
-
-const EveningCaptureSchema = z.object({
-  userEmail: z.string().email(),
-  userFirstName: z.string().min(1),
-  captureData: z.record(z.any()),
 });
 
 const CustomEmailSchema = z.object({
@@ -101,7 +87,7 @@ class EmailService {
               
               <p>Ready to get started? Click the button below to begin your academic journey!</p>
               
-              <a href="https://elaro.app/dashboard" class="button">Get Started</a>
+              <a href="https://myelaro.com/dashboard" class="button">Get Started</a>
               
               <p>If you have any questions, feel free to reach out to our support team.</p>
               
@@ -117,7 +103,7 @@ class EmailService {
     `;
 
     const { data: emailData, error } = await resend.emails.send({
-      from: 'ELARO <noreply@elaro.app>',
+      from: 'ELARO <noreply@myelaro.com>',
       to: [userEmail],
       subject: 'Welcome to ELARO! 🎓',
       html: emailContent,
@@ -135,186 +121,6 @@ class EmailService {
       success: true,
       message_id: emailData.id,
       message: 'Welcome email sent successfully',
-    };
-  }
-
-  async sendDailySummary(data: any) {
-    const { userEmail, userFirstName, summaryData } =
-      DailySummarySchema.parse(data);
-
-    const {
-      upcomingAssignments = 0,
-      completedSessions = 0,
-      streakDays = 0,
-    } = summaryData;
-
-    const emailContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Your Daily ELARO Summary</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .stats { display: flex; justify-content: space-around; margin: 20px 0; }
-            .stat { text-align: center; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-            .stat-number { font-size: 2em; font-weight: bold; color: #667eea; }
-            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Your Daily ELARO Summary 📊</h1>
-              <p>Here's how you're doing today</p>
-            </div>
-            <div class="content">
-              <h2>Good morning, ${userFirstName}!</h2>
-              <p>Here's your daily academic summary:</p>
-              
-              <div class="stats">
-                <div class="stat">
-                  <div class="stat-number">${upcomingAssignments}</div>
-                  <div>Upcoming Assignments</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-number">${completedSessions}</div>
-                  <div>Study Sessions Today</div>
-                </div>
-                <div class="stat">
-                  <div class="stat-number">${streakDays}</div>
-                  <div>Day Streak</div>
-                </div>
-              </div>
-              
-              <p>Keep up the great work! Your dedication to learning is inspiring.</p>
-              
-              <a href="https://elaro.app/dashboard" class="button">View Dashboard</a>
-              
-              <p>Have a productive day!</p>
-              <p>Best regards,<br>The ELARO Team</p>
-            </div>
-            <div class="footer">
-              <p>© 2024 ELARO. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const { data: emailData, error } = await resend.emails.send({
-      from: 'ELARO <noreply@elaro.app>',
-      to: [userEmail],
-      subject: 'Your Daily ELARO Summary 📊',
-      html: emailContent,
-    });
-
-    if (error) {
-      throw new AppError(
-        `Failed to send daily summary: ${error.message}`,
-        500,
-        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
-      );
-    }
-
-    return {
-      success: true,
-      message_id: emailData.id,
-      message: 'Daily summary sent successfully',
-    };
-  }
-
-  async sendEveningCapture(data: any) {
-    const { userEmail, userFirstName, captureData } =
-      EveningCaptureSchema.parse(data);
-
-    const {
-      todaySessions = 0,
-      tomorrowTasks = 0,
-      reflection = '',
-    } = captureData;
-
-    const emailContent = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <title>Evening Reflection - ELARO</title>
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-            .reflection-box { background: white; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #667eea; }
-            .button { display: inline-block; background: #667eea; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Evening Reflection 🌙</h1>
-              <p>How did your day go?</p>
-            </div>
-            <div class="content">
-              <h2>Good evening, ${userFirstName}!</h2>
-              <p>Time to reflect on your academic day:</p>
-              
-              <div class="reflection-box">
-                <h3>Today's Progress</h3>
-                <p>You completed <strong>${todaySessions}</strong> study sessions today.</p>
-                <p>You have <strong>${tomorrowTasks}</strong> tasks scheduled for tomorrow.</p>
-              </div>
-              
-              ${
-                reflection
-                  ? `
-                <div class="reflection-box">
-                  <h3>Your Reflection</h3>
-                  <p>"${reflection}"</p>
-                </div>
-              `
-                  : ''
-              }
-              
-              <p>Take a moment to reflect on what you learned today and what you want to focus on tomorrow.</p>
-              
-              <a href="https://elaro.app/reflection" class="button">Add Reflection</a>
-              
-              <p>Great job today! Rest well and prepare for tomorrow's challenges.</p>
-              <p>Best regards,<br>The ELARO Team</p>
-            </div>
-            <div class="footer">
-              <p>© 2024 ELARO. All rights reserved.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const { data: emailData, error } = await resend.emails.send({
-      from: 'ELARO <noreply@elaro.app>',
-      to: [userEmail],
-      subject: 'Evening Reflection - ELARO 🌙',
-      html: emailContent,
-    });
-
-    if (error) {
-      throw new AppError(
-        `Failed to send evening capture: ${error.message}`,
-        500,
-        ERROR_CODES.EXTERNAL_SERVICE_ERROR,
-      );
-    }
-
-    return {
-      success: true,
-      message_id: emailData.id,
-      message: 'Evening capture sent successfully',
     };
   }
 
@@ -352,7 +158,7 @@ class EmailService {
     });
 
     const { data: emailData, error } = await resend.emails.send({
-      from: 'ELARO <noreply@elaro.app>',
+      from: 'ELARO <noreply@myelaro.com>',
       to: [to],
       subject,
       html: htmlContent,
@@ -417,18 +223,6 @@ async function handleSendWelcomeEmail(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const service = new EmailService(supabaseClient, user);
   return await service.sendWelcomeEmail(body);
-}
-
-async function handleSendDailySummary(req: AuthenticatedRequest) {
-  const { user, supabaseClient, body } = req;
-  const service = new EmailService(supabaseClient, user);
-  return await service.sendDailySummary(body);
-}
-
-async function handleSendEveningCapture(req: AuthenticatedRequest) {
-  const { user, supabaseClient, body } = req;
-  const service = new EmailService(supabaseClient, user);
-  return await service.sendEveningCapture(body);
 }
 
 async function handleSendCustomEmail(req: AuthenticatedRequest) {
@@ -501,18 +295,6 @@ function getHandler(action: string | null) {
       handleSendWelcomeEmail,
       'email-send-welcome',
       WelcomeEmailSchema,
-      true,
-    ),
-    'send-daily-summary': wrapOldHandler(
-      handleSendDailySummary,
-      'email-send-daily-summary',
-      DailySummarySchema,
-      true,
-    ),
-    'send-evening-capture': wrapOldHandler(
-      handleSendEveningCapture,
-      'email-send-evening-capture',
-      EveningCaptureSchema,
       true,
     ),
     'send-custom': wrapOldHandler(
