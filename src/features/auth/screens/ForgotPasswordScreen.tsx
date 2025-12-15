@@ -142,7 +142,8 @@ export function ForgotPasswordScreen() {
   };
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
@@ -174,192 +175,193 @@ export function ForgotPasswordScreen() {
           style={[styles.container, { backgroundColor: bgColor }]}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled">
-          {/* Header */}
-          <View
-            style={[
-              styles.header,
-              {
-                backgroundColor: bgColor,
-                borderBottomColor: borderColor,
-                paddingTop: SPACING.md,
-              },
-            ]}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="arrow-back" size={20} color={textColor} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Reset Password
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled">
+            {/* Header */}
+            <View
+              style={[
+                styles.header,
+                {
+                  backgroundColor: bgColor,
+                  borderBottomColor: borderColor,
+                  paddingTop: SPACING.md,
+                },
+              ]}>
+              <TouchableOpacity
+                onPress={() => navigation.goBack()}
+                style={styles.backButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <Ionicons name="arrow-back" size={20} color={textColor} />
+              </TouchableOpacity>
+              <Text style={[styles.headerTitle, { color: textColor }]}>
+                Reset Password
+              </Text>
+              <View style={styles.headerSpacer} />
+            </View>
 
-          {/* Content */}
-          <View style={styles.content}>
-            {!sent ? (
-              <>
-                {/* Icon */}
-              <View
-                style={[
-                  styles.iconContainer,
-                  {
-                    backgroundColor:
-                        COLORS.primary + (isDark ? '30' : '20'),
-                  },
-                ]}>
-                  <Ionicons
-                    name="lock-closed-outline"
-                    size={48}
-                    color={COLORS.primary}
-                  />
-                </View>
-
-                {/* Instructions */}
-                <Text style={[styles.title, { color: textColor }]}>
-                  Forgot Your Password?
-                </Text>
-                <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-                  Enter your email address and we'll send you instructions to
-                  reset your password.
-                </Text>
-
-                {/* Email Input */}
-                <View style={styles.inputContainer}>
-                  <Text style={[styles.label, { color: textColor }]}>
-                    Email Address
-                  </Text>
+            {/* Content */}
+            <View style={styles.content}>
+              {!sent ? (
+                <>
+                  {/* Icon */}
                   <View
                     style={[
-                      styles.inputWrapper,
+                      styles.iconContainer,
+                      {
+                        backgroundColor:
+                          COLORS.primary + (isDark ? '30' : '20'),
+                      },
+                    ]}>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={48}
+                      color={COLORS.primary}
+                    />
+                  </View>
+
+                  {/* Instructions */}
+                  <Text style={[styles.title, { color: textColor }]}>
+                    Forgot Your Password?
+                  </Text>
+                  <Text
+                    style={[styles.subtitle, { color: textSecondaryColor }]}>
+                    Enter your email address and we'll send you instructions to
+                    reset your password.
+                  </Text>
+
+                  {/* Email Input */}
+                  <View style={styles.inputContainer}>
+                    <Text style={[styles.label, { color: textColor }]}>
+                      Email Address
+                    </Text>
+                    <View
+                      style={[
+                        styles.inputWrapper,
+                        {
+                          backgroundColor: surfaceColor,
+                          borderColor: borderColor,
+                        },
+                      ]}>
+                      <Ionicons
+                        name="mail-outline"
+                        size={20}
+                        color={textSecondaryColor}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={[styles.input, { color: textColor }]}
+                        placeholder="your.email@example.com"
+                        placeholderTextColor={textSecondaryColor}
+                        value={email}
+                        onChangeText={setEmail}
+                        keyboardType="email-address"
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        editable={!loading}
+                      />
+                    </View>
+                  </View>
+
+                  {/* Send Button */}
+                  <PrimaryButton
+                    title="Send Reset Link"
+                    onPress={handleResetPassword}
+                    loading={loading}
+                    disabled={loading}
+                    style={styles.button}
+                  />
+
+                  {/* Back to Sign In */}
+                  <TouchableOpacity
+                    style={styles.linkButton}
+                    onPress={() => navigation.goBack()}
+                    disabled={loading}>
+                    <Text style={[styles.linkText, { color: COLORS.primary }]}>
+                      Back to Sign In
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  {/* Success Icon */}
+                  <View
+                    style={[
+                      styles.iconContainer,
+                      {
+                        backgroundColor: '#10B981' + (isDark ? '30' : '20'),
+                      },
+                    ]}>
+                    <Ionicons
+                      name="checkmark-circle-outline"
+                      size={48}
+                      color="#10B981"
+                    />
+                  </View>
+
+                  {/* Success Message */}
+                  <Text style={[styles.title, { color: textColor }]}>
+                    Email Sent!
+                  </Text>
+                  <Text
+                    style={[styles.subtitle, { color: textSecondaryColor }]}>
+                    We've sent a password reset link to:
+                  </Text>
+                  <Text style={[styles.emailText, { color: COLORS.primary }]}>
+                    {email}
+                  </Text>
+                  <Text
+                    style={[
+                      styles.subtitle,
+                      { color: textSecondaryColor, marginTop: 16 },
+                    ]}>
+                    Please check your email and follow the instructions to reset
+                    your password.
+                  </Text>
+
+                  {/* Resend Button */}
+                  <PrimaryButton
+                    title="Resend Email"
+                    onPress={resendEmail}
+                    style={styles.button}
+                  />
+
+                  {/* Back to Sign In */}
+                  <TouchableOpacity
+                    style={styles.linkButton}
+                    onPress={() => navigation.goBack()}>
+                    <Text style={[styles.linkText, { color: COLORS.primary }]}>
+                      Back to Sign In
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Troubleshooting */}
+                  <View
+                    style={[
+                      styles.infoBox,
                       {
                         backgroundColor: surfaceColor,
                         borderColor: borderColor,
                       },
                     ]}>
                     <Ionicons
-                      name="mail-outline"
+                      name="information-circle-outline"
                       size={20}
-                      color={textSecondaryColor}
-                      style={styles.inputIcon}
+                      color={COLORS.primary}
                     />
-                    <TextInput
-                      style={[styles.input, { color: textColor }]}
-                      placeholder="your.email@example.com"
-                      placeholderTextColor={textSecondaryColor}
-                      value={email}
-                      onChangeText={setEmail}
-                      keyboardType="email-address"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      editable={!loading}
-                    />
+                    <Text
+                      style={[styles.infoText, { color: textSecondaryColor }]}>
+                      Didn't receive the email? Check your spam folder or try
+                      resending.
+                    </Text>
                   </View>
-                </View>
-
-                {/* Send Button */}
-                <PrimaryButton
-                  title="Send Reset Link"
-                  onPress={handleResetPassword}
-                  loading={loading}
-                  disabled={loading}
-                  style={styles.button}
-                />
-
-                {/* Back to Sign In */}
-                <TouchableOpacity
-                  style={styles.linkButton}
-                  onPress={() => navigation.goBack()}
-                  disabled={loading}>
-                  <Text style={[styles.linkText, { color: COLORS.primary }]}>
-                    Back to Sign In
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                {/* Success Icon */}
-                <View
-                  style={[
-                    styles.iconContainer,
-                    {
-                      backgroundColor:
-                        '#10B981' + (isDark ? '30' : '20'),
-                    },
-                  ]}>
-                  <Ionicons
-                    name="checkmark-circle-outline"
-                    size={48}
-                    color="#10B981"
-                  />
-                </View>
-
-                {/* Success Message */}
-                <Text style={[styles.title, { color: textColor }]}>
-                  Email Sent!
-                </Text>
-                <Text style={[styles.subtitle, { color: textSecondaryColor }]}>
-                  We've sent a password reset link to:
-                </Text>
-                <Text style={[styles.emailText, { color: COLORS.primary }]}>
-                  {email}
-                </Text>
-                <Text
-                  style={[
-                    styles.subtitle,
-                    { color: textSecondaryColor, marginTop: 16 },
-                  ]}>
-                  Please check your email and follow the instructions to reset
-                  your password.
-                </Text>
-
-                {/* Resend Button */}
-                <PrimaryButton
-                  title="Resend Email"
-                  onPress={resendEmail}
-                  style={styles.button}
-                />
-
-                {/* Back to Sign In */}
-                <TouchableOpacity
-                  style={styles.linkButton}
-                  onPress={() => navigation.goBack()}>
-                  <Text style={[styles.linkText, { color: COLORS.primary }]}>
-                    Back to Sign In
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Troubleshooting */}
-                <View
-                  style={[
-                    styles.infoBox,
-                    {
-                      backgroundColor: surfaceColor,
-                      borderColor: borderColor,
-                    },
-                  ]}>
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={20}
-                    color={COLORS.primary}
-                  />
-                  <Text
-                    style={[styles.infoText, { color: textSecondaryColor }]}>
-                    Didn't receive the email? Check your spam folder or try
-                    resending.
-                  </Text>
-                </View>
-              </>
-            )}
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </Animated.View>
-  </PanGestureHandler>
+                </>
+              )}
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </Animated.View>
+    </PanGestureHandler>
   );
 }
 

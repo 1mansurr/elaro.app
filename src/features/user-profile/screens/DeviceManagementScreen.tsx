@@ -265,8 +265,7 @@ export function DeviceManagementScreen() {
           style={[
             styles.deviceIconContainer,
             {
-              backgroundColor:
-                COLORS.primary + (theme.isDark ? '30' : '20'),
+              backgroundColor: COLORS.primary + (theme.isDark ? '30' : '20'),
             },
           ]}>
           <Ionicons
@@ -285,8 +284,7 @@ export function DeviceManagementScreen() {
                 style={[
                   styles.currentBadge,
                   {
-                    backgroundColor:
-                      '#10B981' + (theme.isDark ? '30' : '20'),
+                    backgroundColor: '#10B981' + (theme.isDark ? '30' : '20'),
                   },
                 ]}>
                 <Text style={styles.currentText}>Current</Text>
@@ -366,47 +364,51 @@ export function DeviceManagementScreen() {
         {/* Device Count */}
         <View style={styles.countContainer}>
           <Text style={[styles.countText, { color: textSecondaryColor }]}>
-            {devices.length} {devices.length === 1 ? 'device' : 'devices'} signed
-            in
+            {devices.length} {devices.length === 1 ? 'device' : 'devices'}{' '}
+            signed in
           </Text>
         </View>
 
-      {/* Device List */}
-      <FlatList
-        data={devices}
-        renderItem={renderDevice}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={theme.primary}
-          />
-        }
-        // Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={10}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="phone-portrait-outline"
-              size={48}
-              color={textSecondaryColor}
+        {/* Device List */}
+        <FlatList
+          data={devices}
+          renderItem={renderDevice}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={theme.primary}
             />
-            <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
-              No devices found
-            </Text>
-          </View>
-        }
-      />
+          }
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="phone-portrait-outline"
+                size={48}
+                color={textSecondaryColor}
+              />
+              <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
+                No devices found
+              </Text>
+            </View>
+          }
+        />
 
         {/* Remove All Button */}
         {devices.length > 1 && (
-          <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
+          <View
+            style={[
+              styles.footer,
+              { paddingBottom: insets.bottom + SPACING.lg },
+            ]}>
             <TouchableOpacity
               style={[
                 styles.removeAllButton,

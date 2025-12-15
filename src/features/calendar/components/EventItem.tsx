@@ -233,10 +233,7 @@ const EventItem: React.FC<Props> = ({
   );
 };
 
-import {
-  BORDER_RADIUS,
-  SHADOWS,
-} from '@/constants/theme';
+import { BORDER_RADIUS, SHADOWS } from '@/constants/theme';
 
 const styles = StyleSheet.create({
   container: {

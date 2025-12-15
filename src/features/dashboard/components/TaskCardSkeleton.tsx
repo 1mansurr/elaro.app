@@ -2,12 +2,7 @@ import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { SkeletonLoader } from '@/shared/components/SkeletonLoader';
 import { useTheme } from '@/contexts/ThemeContext';
-import {
-  SPACING,
-  BORDER_RADIUS,
-  SHADOWS,
-  COLORS,
-} from '@/constants/theme';
+import { SPACING, BORDER_RADIUS, SHADOWS, COLORS } from '@/constants/theme';
 
 /**
  * Skeleton loader for the NextTaskCard component.
@@ -15,7 +10,8 @@ import {
  */
 export const TaskCardSkeleton: React.FC = () => {
   const { theme } = useTheme();
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
 

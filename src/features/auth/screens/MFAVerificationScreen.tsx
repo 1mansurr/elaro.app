@@ -156,7 +156,8 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({
   };
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
@@ -235,7 +236,10 @@ const MFAVerificationScreen: React.FC<MFAVerificationScreenProps> = ({
                 );
               }}>
               <Text
-                style={[styles.troubleshootButtonText, { color: COLORS.primary }]}>
+                style={[
+                  styles.troubleshootButtonText,
+                  { color: COLORS.primary },
+                ]}>
                 Having trouble?
               </Text>
             </TouchableOpacity>

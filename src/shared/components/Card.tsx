@@ -19,7 +19,8 @@ interface Props {
 
 const Card: React.FC<Props> = ({ title, children, style }) => {
   const { theme } = useTheme();
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
   const borderColor = isDark ? '#374151' : '#E5E7EB';

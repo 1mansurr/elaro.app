@@ -172,7 +172,6 @@ const DraftsScreen = () => {
     }
   };
 
-
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
     const { translationX } = event.nativeEvent;
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
@@ -229,11 +228,7 @@ const DraftsScreen = () => {
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
-      <Ionicons
-        name="document-outline"
-        size={64}
-        color={textSecondaryColor}
-      />
+      <Ionicons name="document-outline" size={64} color={textSecondaryColor} />
       <Text style={[styles.emptyTitle, { color: textColor }]}>No Drafts</Text>
       <Text style={[styles.emptyMessage, { color: textSecondaryColor }]}>
         Drafts are automatically saved when you start creating a task. They'll
@@ -358,10 +353,7 @@ const DraftsScreen = () => {
                       {item.title || 'Untitled'}
                     </Text>
                     <Text
-                      style={[
-                        styles.draftType,
-                        { color: textSecondaryColor },
-                      ]}>
+                      style={[styles.draftType, { color: textSecondaryColor }]}>
                       {typeInfo.label}
                     </Text>
                     {item.course && (

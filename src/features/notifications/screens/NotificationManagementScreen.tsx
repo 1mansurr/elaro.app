@@ -359,7 +359,7 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
   onCancel,
 }) => {
   const { theme } = useTheme();
-  
+
   // Light mode default colors
   const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
   const textColor = theme.isDark ? '#FFFFFF' : '#111418';

@@ -224,10 +224,7 @@ const DeleteAccountScreen = () => {
               Delete Account
             </Text>
             <Text
-              style={[
-                styles.warningSubtitle,
-                { color: textSecondaryColor },
-              ]}>
+              style={[styles.warningSubtitle, { color: textSecondaryColor }]}>
               This action will permanently delete your account and all
               associated data
             </Text>
@@ -349,9 +346,7 @@ const DeleteAccountScreen = () => {
                 styles.checkbox,
                 {
                   borderColor: '#EF4444',
-                  backgroundColor: hasAcknowledged
-                    ? '#EF4444'
-                    : surfaceColor,
+                  backgroundColor: hasAcknowledged ? '#EF4444' : surfaceColor,
                 },
               ]}>
               {hasAcknowledged && (
@@ -436,7 +431,8 @@ const DeleteAccountScreen = () => {
               size={20}
               color={textSecondaryColor}
             />
-            <Text style={[styles.finalWarningText, { color: textSecondaryColor }]}>
+            <Text
+              style={[styles.finalWarningText, { color: textSecondaryColor }]}>
               Need help? Contact our support team before deleting your account.
               We're here to help resolve any issues.
             </Text>

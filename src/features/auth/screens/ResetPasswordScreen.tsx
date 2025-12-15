@@ -161,7 +161,8 @@ export function ResetPasswordScreen() {
   };
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
@@ -269,8 +270,7 @@ export function ResetPasswordScreen() {
                 style={[
                   styles.iconContainer,
                   {
-                    backgroundColor:
-                      COLORS.primary + (isDark ? '30' : '20'),
+                    backgroundColor: COLORS.primary + (isDark ? '30' : '20'),
                   },
                 ]}>
                 <Ionicons

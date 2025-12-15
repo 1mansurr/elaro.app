@@ -51,7 +51,9 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
               styles.dayContainer,
               {
                 backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+                borderColor: theme.isDark
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : '#E5E7EB',
               },
               isSelected && [
                 styles.selectedDayContainer,

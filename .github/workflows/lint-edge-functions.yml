@@ -21,17 +21,43 @@ jobs:
       - name: Setup Deno
         uses: denoland/setup-deno@v1
         with:
-          deno-version: v1.40.0
+          deno-version: v1.43.0
 
       - name: Lint Edge Functions
         run: |
           cd supabase/functions
-          deno lint --config ../deno.json
+          deno lint --config deno.json
 
       - name: Check TypeScript
         run: |
           cd supabase/functions
-          deno check **/*.ts
+          # Check each function's main entry point (index.ts)
+          # This ensures we check the complete module graph for each function
+          ERROR_COUNT=0
+          for dir in */; do
+            if [ -f "${dir}index.ts" ]; then
+              echo "🔍 Checking ${dir}index.ts..."
+              if ! deno check --config deno.json "${dir}index.ts"; then
+                echo "❌ TypeScript errors found in ${dir}index.ts"
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+              fi
+            fi
+          done
+          # Check root-level TypeScript files if any
+          for file in *.ts; do
+            if [ -f "$file" ] && [ "$file" != "deno.lock" ]; then
+              echo "🔍 Checking $file..."
+              if ! deno check --config deno.json "$file"; then
+                echo "❌ TypeScript errors found in $file"
+                ERROR_COUNT=$((ERROR_COUNT + 1))
+              fi
+            fi
+          done
+          if [ $ERROR_COUNT -gt 0 ]; then
+            echo "❌ Found TypeScript errors in $ERROR_COUNT file(s)"
+            exit 1
+          fi
+          echo "✅ All TypeScript checks passed"
 
       - name: Format Check
         run: |

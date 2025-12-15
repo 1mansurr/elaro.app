@@ -40,7 +40,8 @@ const StudyResultScreen: React.FC = () => {
   const { sessionId } = route.params;
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
@@ -108,7 +109,8 @@ const StudyResultScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
+      <View
+        style={[styles.footer, { paddingBottom: insets.bottom + SPACING.lg }]}>
         <PrimaryButton
           title="Done"
           onPress={handleDone}

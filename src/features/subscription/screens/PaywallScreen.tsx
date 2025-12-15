@@ -260,7 +260,8 @@ export const PaywallScreen: React.FC = () => {
   };
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
 
@@ -293,7 +294,8 @@ export const PaywallScreen: React.FC = () => {
           </View>
 
           {/* Benefits Card */}
-          <View style={[styles.benefitsCard, { backgroundColor: surfaceColor }]}>
+          <View
+            style={[styles.benefitsCard, { backgroundColor: surfaceColor }]}>
             <Text style={[styles.benefitsTitle, { color: theme.text }]}>
               What you&apos;ll get with Oddity:
             </Text>
@@ -305,8 +307,7 @@ export const PaywallScreen: React.FC = () => {
                     style={[
                       styles.benefitIcon,
                       {
-                        backgroundColor:
-                          benefit.color + (isDark ? '30' : '20'),
+                        backgroundColor: benefit.color + (isDark ? '30' : '20'),
                       },
                     ]}>
                     <Ionicons

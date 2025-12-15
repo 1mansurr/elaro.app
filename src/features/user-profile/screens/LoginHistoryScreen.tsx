@@ -363,38 +363,38 @@ export function LoginHistoryScreen() {
           </Text>
         </View>
 
-      {/* History List */}
-      <FlatList
-        data={history}
-        renderItem={renderLoginRecord}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={handleRefresh}
-            tintColor={COLORS.primary}
-          />
-        }
-        // Performance optimizations
-        removeClippedSubviews={true}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        updateCellsBatchingPeriod={50}
-        initialNumToRender={10}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Ionicons
-              name="time-outline"
-              size={48}
-              color={textSecondaryColor}
+        {/* History List */}
+        <FlatList
+          data={history}
+          renderItem={renderLoginRecord}
+          keyExtractor={item => item.id}
+          contentContainerStyle={styles.listContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              tintColor={COLORS.primary}
             />
-            <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
-              No login history found
-            </Text>
-          </View>
-        }
-      />
+          }
+          // Performance optimizations
+          removeClippedSubviews={true}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          updateCellsBatchingPeriod={50}
+          initialNumToRender={10}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Ionicons
+                name="time-outline"
+                size={48}
+                color={textSecondaryColor}
+              />
+              <Text style={[styles.emptyText, { color: textSecondaryColor }]}>
+                No login history found
+              </Text>
+            </View>
+          }
+        />
       </Animated.View>
     </PanGestureHandler>
   );

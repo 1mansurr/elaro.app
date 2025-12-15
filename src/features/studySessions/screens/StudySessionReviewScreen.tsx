@@ -52,7 +52,8 @@ const StudySessionReviewScreen: React.FC = () => {
   const { sessionId } = route.params;
 
   // Light mode default colors
-  const isDark = theme.background === '#101922' || theme.background === '#0A0F14';
+  const isDark =
+    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
@@ -217,7 +218,8 @@ const StudySessionReviewScreen: React.FC = () => {
             {studySession.topic || 'Untitled Study Session'}
           </Text>
           {studySession.description && (
-            <Text style={[styles.infoDescription, { color: textSecondaryColor }]}>
+            <Text
+              style={[styles.infoDescription, { color: textSecondaryColor }]}>
               {studySession.description}
             </Text>
           )}
