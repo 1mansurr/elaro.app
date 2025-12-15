@@ -36,30 +36,50 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Early return if RevenueCat not available
-  if (!RevenueCat.isAvailable) {
-    return {
-      customerInfo: null,
-      isLoading: false,
-      error: 'RevenueCat not available',
-      hasActiveSubscription: false,
-      subscriptionTier: 'free',
-      subscriptionExpiration: null,
-      isInGracePeriod: false,
-      gracePeriodExpiration: null,
-      purchasePackage: async () => {
-        throw new Error('RevenueCat not available');
-      },
-      restorePurchases: async () => {
-        throw new Error('RevenueCat not available');
-      },
-      refreshCustomerInfo: async () => {},
-      clearError: () => {},
-    };
-  }
+  // Update user subscription in backend
+  const updateUserSubscription = useCallback(
+    async (customerInfo: CustomerInfo) => {
+      if (!user) return;
+
+      try {
+        // Get fresh access token to ensure it's valid
+        const { getFreshAccessToken } = await import(
+          '@/utils/getFreshAccessToken'
+        );
+        const accessToken = await getFreshAccessToken();
+
+        const { error } = await supabase.functions.invoke(
+          'update-revenuecat-subscription',
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: {
+              customerInfo,
+              userId: user.id,
+            },
+          },
+        );
+
+        if (error) {
+          console.error('Failed to update user subscription:', error);
+          throw new Error('Failed to sync subscription with server');
+        }
+      } catch (err) {
+        console.error('Error updating user subscription:', err);
+        throw err;
+      }
+    },
+    [user],
+  );
 
   // Load customer information (deferred - only when explicitly called)
   const loadCustomerInfo = useCallback(async () => {
+    if (!RevenueCat.isAvailable) {
+      setError('RevenueCat not available');
+      return;
+    }
+
     // Add timeout in dev mode to prevent hanging
     const timeout = __DEV__ ? 2000 : 5000;
     try {
@@ -89,6 +109,10 @@ export const useSubscription = (): UseSubscriptionReturn => {
   // Purchase a subscription
   const purchasePackage = useCallback(
     async (packageToPurchase: PurchasesPackage): Promise<CustomerInfo> => {
+      if (!RevenueCat.isAvailable) {
+        throw new Error('RevenueCat not available');
+      }
+
       setIsLoading(true);
       setError(null);
 
@@ -109,11 +133,15 @@ export const useSubscription = (): UseSubscriptionReturn => {
         setIsLoading(false);
       }
     },
-    [],
+    [updateUserSubscription],
   );
 
   // Restore purchases
   const restorePurchases = useCallback(async (): Promise<CustomerInfo> => {
+    if (!RevenueCat.isAvailable) {
+      throw new Error('RevenueCat not available');
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -133,67 +161,16 @@ export const useSubscription = (): UseSubscriptionReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
-
-  // Update user subscription in backend
-  const updateUserSubscription = async (customerInfo: CustomerInfo) => {
-    if (!user) return;
-
-    try {
-      // Get fresh access token to ensure it's valid
-      const { getFreshAccessToken } = await import(
-        '@/utils/getFreshAccessToken'
-      );
-      const accessToken = await getFreshAccessToken();
-
-      const { error } = await supabase.functions.invoke(
-        'update-revenuecat-subscription',
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: {
-            customerInfo,
-            userId: user.id,
-          },
-        },
-      );
-
-      if (error) {
-        console.error('Failed to update user subscription:', error);
-        throw new Error('Failed to sync subscription with server');
-      }
-    } catch (err) {
-      console.error('Error updating user subscription:', err);
-      throw err;
-    }
-  };
+  }, [updateUserSubscription]);
 
   // Clear error state
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Computed values
-  const hasActiveSubscription = customerInfo
-    ? revenueCatService.hasActiveSubscription(customerInfo)
-    : false;
-  const subscriptionTier = customerInfo
-    ? revenueCatService.getSubscriptionTier(customerInfo)
-    : 'free';
-  const subscriptionExpiration = customerInfo
-    ? revenueCatService.getSubscriptionExpiration(customerInfo)
-    : null;
-  const isInGracePeriod = customerInfo
-    ? revenueCatService.isInGracePeriod(customerInfo)
-    : false;
-  const gracePeriodExpiration = customerInfo
-    ? revenueCatService.getGracePeriodExpiration(customerInfo)
-    : null;
-
   // Set RevenueCat user ID when user changes
   useEffect(() => {
-    if (user?.id) {
+    if (RevenueCat.isAvailable && user?.id) {
       revenueCatService.setUserId(user.id).catch(err => {
         console.error('Failed to set RevenueCat user ID:', err);
       });
@@ -212,6 +189,46 @@ export const useSubscription = (): UseSubscriptionReturn => {
       setCustomerInfo(null);
     }
   }, [user]);
+
+  // Computed values
+  const hasActiveSubscription =
+    RevenueCat.isAvailable && customerInfo
+      ? revenueCatService.hasActiveSubscription(customerInfo)
+      : false;
+  const subscriptionTier =
+    RevenueCat.isAvailable && customerInfo
+      ? revenueCatService.getSubscriptionTier(customerInfo)
+      : 'free';
+  const subscriptionExpiration =
+    RevenueCat.isAvailable && customerInfo
+      ? revenueCatService.getSubscriptionExpiration(customerInfo)
+      : null;
+  const isInGracePeriod =
+    RevenueCat.isAvailable && customerInfo
+      ? revenueCatService.isInGracePeriod(customerInfo)
+      : false;
+  const gracePeriodExpiration =
+    RevenueCat.isAvailable && customerInfo
+      ? revenueCatService.getGracePeriodExpiration(customerInfo)
+      : null;
+
+  // Return early values if RevenueCat not available
+  if (!RevenueCat.isAvailable) {
+    return {
+      customerInfo: null,
+      isLoading: false,
+      error: 'RevenueCat not available',
+      hasActiveSubscription: false,
+      subscriptionTier: 'free',
+      subscriptionExpiration: null,
+      isInGracePeriod: false,
+      gracePeriodExpiration: null,
+      purchasePackage,
+      restorePurchases,
+      refreshCustomerInfo: loadCustomerInfo,
+      clearError,
+    };
+  }
 
   return {
     customerInfo,

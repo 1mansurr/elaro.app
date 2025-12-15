@@ -125,6 +125,7 @@ export const DeletedItemCard = memo<DeletedItemCardProps>(
     );
   },
 );
+DeletedItemCard.displayName = 'DeletedItemCard';
 
 const styles = StyleSheet.create({
   itemContainer: {

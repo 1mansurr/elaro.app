@@ -380,7 +380,10 @@ class NavigationSyncService {
 
     // Don't restore modal flows - reset to Main screen instead
     // Modal flows are temporary screens that shouldn't persist across app restarts
-    if (currentRoute && MODAL_FLOW_ROUTES.has(currentRoute as keyof RootStackParamList)) {
+    if (
+      currentRoute &&
+      MODAL_FLOW_ROUTES.has(currentRoute as keyof RootStackParamList)
+    ) {
       console.log(
         `🚫 NavigationSync: Modal flow "${currentRoute}" detected. Resetting to Main screen.`,
       );

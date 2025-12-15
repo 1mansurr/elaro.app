@@ -60,6 +60,7 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
     );
   },
 );
+CourseItem.displayName = 'CourseItem';
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
