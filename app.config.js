@@ -97,7 +97,7 @@ module.exports = ({ config }) => {
     scheme: 'elaro',
     version: packageJson.version,
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/wordmark.png',
     userInterfaceStyle: 'light',
     splash: {
       backgroundColor: '#2C5EFF', // App primary blue - matches brand color
@@ -155,8 +155,8 @@ module.exports = ({ config }) => {
       ),
       // googleServicesFile: './google-services.json', // Commented out - file not found
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#4A90E2',
+        foregroundImage: './assets/wordmark.png',
+        backgroundColor: '#2C5EFF', // App primary blue
       },
       // Android-specific configurations
       permissions: [

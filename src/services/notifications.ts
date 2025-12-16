@@ -55,19 +55,14 @@ function getTableName(taskType: string): string {
 async function savePushTokenToSupabase(userId: string, token: string) {
   const platform = Platform.OS;
   const updated_at = new Date().toISOString();
-  const { error } = await supabase.from('user_devices').upsert(
-    [
-      {
-        user_id: userId,
+  const { versionedApiClient } = await import('@/services/VersionedApiClient');
+  const response = await versionedApiClient.registerDevice({
         push_token: token,
         platform,
         updated_at,
-      },
-    ],
-    { onConflict: 'user_id,platform' },
-  );
-  if (error) {
-    console.error('❌ Error saving push token to Supabase:', error);
+  });
+  if (response.error) {
+    console.error('❌ Error saving push token to Supabase:', response.error);
   }
 }
 

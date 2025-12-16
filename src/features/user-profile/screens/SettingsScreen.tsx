@@ -611,7 +611,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 200, // Extra padding so bottom buttons sit above nav bar
     gap: 24,
   },
   categoryCard: {

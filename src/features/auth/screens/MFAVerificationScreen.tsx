@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
   },
   troubleshootButtonText: {
     fontSize: FONT_SIZES.md,
-    textDecorationLine: 'underline',
   },
 });
 

@@ -5,6 +5,10 @@
  * - Supabase auth session
  * - Global AuthContext state
  * - Secure local storage (for sensitive tokens)
+ *
+ * NOTE: This service uses minimal direct Supabase auth calls (getSession, onAuthStateChange)
+ * which are acceptable for low-level session management. These cannot be easily abstracted
+ * as they are core Supabase auth features needed for session synchronization.
  */
 
 import * as SecureStore from 'expo-secure-store';

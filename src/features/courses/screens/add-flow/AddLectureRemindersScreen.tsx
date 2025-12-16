@@ -23,6 +23,7 @@ import {
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ReminderOptions = [
   { label: '10 minutes before', value: 10 },
@@ -152,7 +153,26 @@ const AddLectureRemindersScreen = () => {
       await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
 
       resetCourseData();
-      navigation.getParent()?.goBack();
+
+      // Check if user came from AddCourseFirstScreen and should see PostOnboardingWelcomeScreen
+      const hasSeenAddCourseFirst = await AsyncStorage.getItem(
+        'hasSeenAddCourseFirstScreen',
+      );
+      const hasSeenPostOnboardingWelcome = await AsyncStorage.getItem(
+        'hasSeenPostOnboardingWelcome',
+      );
+
+      // If user came from AddCourseFirstScreen (has seen it) but hasn't seen PostOnboardingWelcome
+      if (
+        hasSeenAddCourseFirst === 'true' &&
+        hasSeenPostOnboardingWelcome !== 'true'
+      ) {
+        // Navigate to PostOnboardingWelcomeScreen
+        navigation.getParent()?.navigate('PostOnboardingWelcome' as any);
+      } else {
+        // Otherwise go back normally
+        navigation.getParent()?.goBack();
+      }
     } catch (err) {
       const errorTitle = getErrorTitle(err);
       const errorMessage = mapErrorCodeToMessage(err);

@@ -23,6 +23,8 @@ export type RootStackParamList = {
   };
   Main: undefined;
   OnboardingFlow: undefined;
+  PostOnboardingWelcome: undefined;
+  AddCourseFirst: undefined;
 
   // Core app screens
   Courses: undefined;

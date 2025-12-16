@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course, Assignment, Lecture, StudySession } from '@/types';
 
 export const useDeletedItems = () => {
@@ -11,38 +11,13 @@ export const useDeletedItems = () => {
   const fetchAllDeletedItems = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [courses, assignments, lectures, studySessions] = await Promise.all(
-        [
-          supabase.from('courses').select('*').not('deleted_at', 'is', null),
-          supabase
-            .from('assignments')
-            .select('*')
-            .not('deleted_at', 'is', null),
-          supabase.from('lectures').select('*').not('deleted_at', 'is', null),
-          supabase
-            .from('study_sessions')
-            .select('*')
-            .not('deleted_at', 'is', null),
-        ],
-      );
+      const response = await versionedApiClient.getDeletedItems();
 
-      const allItems = [
-        ...(courses.data || []).map(item => ({ ...item, type: 'course' })),
-        ...(assignments.data || []).map(item => ({
-          ...item,
-          type: 'assignment',
-        })),
-        ...(lectures.data || []).map(item => ({ ...item, type: 'lecture' })),
-        ...(studySessions.data || []).map(item => ({
-          ...item,
-          type: 'study_session',
-        })),
-      ].sort(
-        (a, b) =>
-          new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime(),
-      );
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to fetch deleted items');
+      }
 
-      setItems(allItems);
+      setItems(response.data || []);
     } catch (error) {
       console.error('Error fetching deleted items:', error);
     } finally {

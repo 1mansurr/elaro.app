@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import {
   INotificationPreferenceService,
   NotificationPreferences,
@@ -29,24 +29,20 @@ export class NotificationPreferenceService
    */
   async getUserPreferences(userId: string): Promise<NotificationPreferences> {
     try {
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      const response = await versionedApiClient.getNotificationPreferences();
 
-      if (error && error.code !== 'PGRST116') {
-        // Not found error
-        throw error;
+      if (response.error) {
+        console.error('Error getting user preferences:', response.error);
+        return this.getDefaultPreferences();
       }
 
-      if (!data) {
+      if (!response.data) {
         // Return default preferences for new users
         return this.getDefaultPreferences();
       }
 
       // Convert database format to our interface
-      return this.convertFromDatabase(data);
+      return this.convertFromDatabase(response.data);
     } catch (error) {
       console.error('Error getting user preferences:', error);
       return this.getDefaultPreferences();
@@ -72,19 +68,14 @@ export class NotificationPreferenceService
       // Convert to database format
       const dbPreferences = this.convertToDatabase(preferences);
 
-      const { error } = await supabase.from('notification_preferences').upsert(
-        {
-          user_id: userId,
-          ...dbPreferences,
-          updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id',
-        },
+      const response = await versionedApiClient.updateNotificationPreferences(
+        dbPreferences,
       );
 
-      if (error) {
-        throw error;
+      if (response.error) {
+        throw new Error(
+          response.message || response.error || 'Failed to update preferences',
+        );
       }
 
       console.log('Notification preferences updated successfully');

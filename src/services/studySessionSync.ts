@@ -14,7 +14,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { syncManager } from '@/services/syncManager';
 import { SRSPerformance } from '@/types/entities';
 
@@ -240,20 +240,18 @@ class StudySessionSyncService {
         this.activeSession?.userId || '',
       );
 
-      // Update session in Supabase
+      // Update session using API layer
       try {
-        const { error } = await supabase
-          .from('study_sessions')
-          .update({
+        const response = await versionedApiClient.updateStudySession(sessionId, {
             duration_minutes: finalData.timeSpentMinutes,
             notes: finalData.notes || null,
             difficulty_rating: finalData.difficultyRating || null,
             confidence_level: finalData.confidenceLevel || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', sessionId);
+        });
 
-        if (error) throw error;
+        if (response.error) {
+          throw new Error(response.message || response.error || 'Failed to update study session');
+        }
 
         console.log('✅ StudySessionSync: Session completed and synced', {
           sessionId,

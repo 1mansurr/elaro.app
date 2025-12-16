@@ -990,7 +990,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: COLORS.primary,
     fontWeight: FONT_WEIGHTS.semibold,
-    textDecorationLine: 'underline',
   },
 });
 

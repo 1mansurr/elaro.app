@@ -2,6 +2,13 @@ import { supabase } from '@/services/supabase';
 import { dbUtils } from '@/services/supabase';
 import { Session, User, Factor } from '@supabase/supabase-js';
 
+// NOTE: This appears to be a duplicate/legacy authService.
+// The main authService is in src/services/authService.ts and has been migrated.
+// This file should be reviewed and either:
+//   1. Removed if unused
+//   2. Migrated to use versionedApiClient for non-MFA operations
+//   3. MFA operations can remain as direct Supabase calls (acceptable)
+
 // AppError class for consistent error handling
 class AppError extends Error {
   constructor(

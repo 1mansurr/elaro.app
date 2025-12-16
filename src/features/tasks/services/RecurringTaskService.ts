@@ -1,5 +1,13 @@
 import { supabase } from '@/services/supabase';
 
+// NOTE: This service uses direct Supabase queries and needs API endpoints created.
+// TODO: Create API endpoints in api-v2 for recurring task operations:
+//   - POST /api-v2/recurring-tasks/patterns (create pattern)
+//   - GET /api-v2/recurring-tasks/patterns (list patterns)
+//   - POST /api-v2/recurring-tasks (create recurring task)
+//   - GET /api-v2/recurring-tasks (list recurring tasks)
+//   - POST /api-v2/recurring-tasks/generate (generate tasks)
+
 export interface RecurringPattern {
   id: string;
   name: string;

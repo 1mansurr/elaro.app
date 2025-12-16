@@ -74,9 +74,9 @@ export const TodayOverviewGrid: React.FC<TodayOverviewGridProps> = ({
       iconColor: '#166534',
     },
     {
-      label: 'Study',
+      label: 'Study Sessions',
       count: overview?.studySessions || 0,
-      icon: 'timer-outline' as const,
+      icon: 'book-outline' as const,
       bgColor: '#E7F1FF',
       iconColor: '#137FEC',
     },
@@ -90,7 +90,7 @@ export const TodayOverviewGrid: React.FC<TodayOverviewGridProps> = ({
     {
       label: 'Reviews',
       count: overview?.reviews || 0,
-      icon: 'rate-review-outline' as const,
+      icon: 'clipboard-outline' as const,
       bgColor: '#E7F1FF',
       iconColor: '#137FEC',
     },

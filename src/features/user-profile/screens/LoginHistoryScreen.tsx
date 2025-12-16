@@ -19,7 +19,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { formatDate } from '@/i18n';
@@ -69,14 +69,13 @@ export function LoginHistoryScreen() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase.rpc('get_recent_login_activity', {
-        p_user_id: user.id,
-        p_limit: 50,
-      });
+      const response = await versionedApiClient.getLoginHistory(50);
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to load login history');
+      }
 
-      setHistory(data || []);
+      setHistory(response.data || []);
     } catch (error: any) {
       console.error('Error loading login history:', error);
     } finally {

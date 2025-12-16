@@ -187,6 +187,5 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.medium as any,
-    textDecorationLine: 'underline',
   },
 });

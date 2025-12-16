@@ -24,7 +24,7 @@ module.exports = {
     extend: {
       colors: {
         // Matches our theme system
-        primary: '#007AFF',
+        primary: '#2C5EFF',
         success: '#4CAF50',
         error: '#FF3B30',
         // ... all theme colors

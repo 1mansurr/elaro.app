@@ -66,7 +66,7 @@ describe('useTaskMutations', () => {
 
     it('should create a mutation function', () => {
       const { result } = renderHook(() => useCompleteTask(), { wrapper });
-      
+
       expect(result.current.mutate).toBeDefined();
       expect(result.current.mutateAsync).toBeDefined();
     });
@@ -118,7 +118,7 @@ describe('useTaskMutations', () => {
             resourceId: 'task-1',
           }),
           'test-user-id',
-          expect.objectContaining({ syncImmediately: false })
+          expect.objectContaining({ syncImmediately: false }),
         );
       });
     });
@@ -138,7 +138,7 @@ describe('useTaskMutations', () => {
           taskId: 'task-1',
           taskType: 'assignment',
           taskTitle: 'Test Task',
-        })
+        }),
       ).rejects.toBeDefined();
     });
   });
@@ -150,7 +150,7 @@ describe('useTaskMutations', () => {
 
     it('should create a mutation function', () => {
       const { result } = renderHook(() => useDeleteTask(), { wrapper });
-      
+
       expect(result.current.mutate).toBeDefined();
       expect(result.current.mutateAsync).toBeDefined();
     });
@@ -194,4 +194,3 @@ describe('useTaskMutations', () => {
     });
   });
 });
-

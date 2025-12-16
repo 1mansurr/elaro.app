@@ -1,7 +1,6 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course } from '@/types';
 import { handleApiError } from '@/services/api/errors';
-import { mapDbCourseToAppCourse } from '@/services/api/mappers';
 
 export type CourseSortOption =
   | 'name-asc'
@@ -26,6 +25,16 @@ export interface CoursesPage {
 export const coursesApi = {
   async getAll(options?: CourseQueryOptions): Promise<CoursesPage> {
     try {
+      // Use API layer to get courses
+      const response = await versionedApiClient.getCourses();
+
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to fetch courses');
+      }
+
+      let courses = (response.data || []) as Course[];
+
+      // Apply client-side filtering and sorting (can be moved to API later)
       const {
         searchQuery,
         sortOption = 'name-asc',
@@ -34,52 +43,44 @@ export const coursesApi = {
         pageSize = 20,
       } = options || {};
 
-      let query = supabase.from('courses').select('*', { count: 'exact' });
-
-      // Apply search filter if searchQuery is provided
+      // Apply search filter
       if (searchQuery && searchQuery.trim() !== '') {
-        query = query.ilike('course_name', `%${searchQuery.trim()}%`);
+        const searchLower = searchQuery.trim().toLowerCase();
+        courses = courses.filter(course =>
+          course.courseName?.toLowerCase().includes(searchLower) ||
+          course.courseCode?.toLowerCase().includes(searchLower)
+        );
       }
 
-      // Apply archived filter (courses with deleted_at are considered archived)
+      // Apply archived filter
       if (!showArchived) {
-        query = query.is('deleted_at', null);
+        courses = courses.filter(course => !course.deletedAt);
       }
 
       // Apply sorting
       switch (sortOption) {
         case 'name-asc':
-          query = query.order('course_name', { ascending: true });
+          courses.sort((a, b) => (a.courseName || '').localeCompare(b.courseName || ''));
           break;
         case 'name-desc':
-          query = query.order('course_name', { ascending: false });
+          courses.sort((a, b) => (b.courseName || '').localeCompare(a.courseName || ''));
           break;
         case 'date-newest':
-          query = query.order('created_at', { ascending: false });
+          courses.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
           break;
         case 'date-oldest':
-          query = query.order('created_at', { ascending: true });
+          courses.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
           break;
-        default:
-          query = query.order('course_name', { ascending: true });
       }
 
       // Apply pagination
-      const from = pageParam;
-      const to = pageParam + pageSize - 1;
-      query = query.range(from, to);
-
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      // Map the data before returning it
-      const mappedData = (data || []).map(mapDbCourseToAppCourse);
-      const hasMore = count ? pageParam + pageSize < count : false;
+      const totalCount = courses.length;
+      const paginatedCourses = courses.slice(pageParam, pageParam + pageSize);
+      const hasMore = pageParam + pageSize < totalCount;
       const nextOffset = hasMore ? pageParam + pageSize : undefined;
 
       return {
-        courses: mappedData,
+        courses: paginatedCourses,
         nextOffset,
         hasMore,
       };

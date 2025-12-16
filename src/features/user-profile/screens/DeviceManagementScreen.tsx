@@ -21,7 +21,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { formatDate } from '@/i18n';
@@ -66,25 +66,23 @@ export function DeviceManagementScreen() {
     if (!user) return;
 
     try {
-      const { data, error } = await supabase
-        .from('user_devices')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('updated_at', { ascending: false });
+      const response = await versionedApiClient.getUserDevices();
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to load devices');
+      }
 
       // Mark current device (simplified - in production, match by push token)
       const devicesWithCurrent =
-        data?.map((device, index) => ({
+        (response.data || []).map((device, index) => ({
           ...device,
           is_current: index === 0, // First device (most recent) is assumed current
-        })) || [];
+        }));
 
       setDevices(devicesWithCurrent);
     } catch (error: any) {
       console.error('Error loading devices:', error);
-      Alert.alert('Error', 'Failed to load devices');
+      Alert.alert('Error', error.message || 'Failed to load devices');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -116,18 +114,17 @@ export function DeviceManagementScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              const { error } = await supabase
-                .from('user_devices')
-                .delete()
-                .eq('id', deviceId);
+              const response = await versionedApiClient.deleteDevice(deviceId);
 
-              if (error) throw error;
+              if (response.error) {
+                throw new Error(response.message || response.error || 'Failed to remove device');
+              }
 
               Alert.alert('Success', 'Device removed successfully');
               loadDevices();
             } catch (error: any) {
               console.error('Error revoking device:', error);
-              Alert.alert('Error', 'Failed to remove device');
+              Alert.alert('Error', error.message || 'Failed to remove device');
             }
           },
         },
@@ -147,20 +144,31 @@ export function DeviceManagementScreen() {
           onPress: async () => {
             try {
               const currentDevice = devices.find(d => d.is_current);
+              const devicesToRemove = devices.filter(
+                d => !d.is_current && d.id !== currentDevice?.id,
+              );
 
-              const { error } = await supabase
-                .from('user_devices')
-                .delete()
-                .eq('user_id', user?.id)
-                .neq('id', currentDevice?.id || '');
+              // Delete devices one by one using API
+              const deletePromises = devicesToRemove.map(device =>
+                versionedApiClient.deleteDevice(device.id),
+              );
 
-              if (error) throw error;
+              const results = await Promise.allSettled(deletePromises);
+              const failed = results.filter(r => r.status === 'rejected').length;
 
+              if (failed > 0) {
+                Alert.alert(
+                  'Partial Success',
+                  `Removed ${devicesToRemove.length - failed} of ${devicesToRemove.length} devices`,
+                );
+              } else {
               Alert.alert('Success', 'All other devices have been signed out');
+              }
+
               loadDevices();
             } catch (error: any) {
               console.error('Error revoking all devices:', error);
-              Alert.alert('Error', 'Failed to remove devices');
+              Alert.alert('Error', error.message || 'Failed to remove devices');
             }
           },
         },

@@ -289,6 +289,42 @@ export class VersionedApiClient {
     return apiVersioningService.put<User>('api-v2/users/update', updates);
   }
 
+  // New user endpoints for Phase 4 migration
+
+  async getUserDevices(): Promise<ApiResponse<any[]>> {
+    return apiVersioningService.get<any[]>('users/devices');
+  }
+
+  async registerDevice(deviceData: {
+    push_token: string;
+    platform: string;
+    updated_at?: string;
+  }): Promise<ApiResponse<any>> {
+    return apiVersioningService.post<any>('users/devices', deviceData);
+  }
+
+  async deleteDevice(deviceId: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiVersioningService.delete<{ success: boolean; message: string }>(`users/devices/${deviceId}`);
+  }
+
+  async getLoginHistory(limit?: number): Promise<ApiResponse<any[]>> {
+    const params: Record<string, string> = {};
+    if (limit) params.limit = String(limit);
+    return apiVersioningService.get<any[]>(
+      `users/login-history${Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''}`,
+    );
+  }
+
+  async getSubscription(): Promise<ApiResponse<{
+    tier: string;
+    status: string;
+    expiresAt: string | null;
+    accountStatus: string;
+    hasActiveSubscription: boolean;
+  }>> {
+    return apiVersioningService.get('users/subscription');
+  }
+
   // ============================================================================
   // NOTIFICATION OPERATIONS
   // ============================================================================
@@ -328,6 +364,85 @@ export class VersionedApiClient {
     });
   }
 
+  // New notification endpoints for Phase 2 migration
+
+  async getNotificationPreferences(): Promise<
+    ApiResponse<Record<string, any>>
+  > {
+    return apiVersioningService.get('notification-system/preferences');
+  }
+
+  async updateNotificationPreferences(
+    preferences: Record<string, any>,
+  ): Promise<ApiResponse<Record<string, any>>> {
+    return apiVersioningService.put(
+      'notification-system/preferences',
+      preferences,
+    );
+  }
+
+  async getNotificationHistory(options?: {
+    limit?: number;
+    offset?: number;
+    filter?: string;
+    includeRead?: boolean;
+  }): Promise<ApiResponse<any[]>> {
+    const params: Record<string, string> = {};
+    if (options?.limit) params.limit = String(options.limit);
+    if (options?.offset) params.offset = String(options.offset);
+    if (options?.filter) params.filter = options.filter;
+    if (options?.includeRead !== undefined)
+      params.includeRead = String(options.includeRead);
+
+    return apiVersioningService.get(
+      `notification-system/history${Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''}`,
+    );
+  }
+
+  async getUnreadNotificationCount(): Promise<ApiResponse<{ count: number }>> {
+    return apiVersioningService.get('notification-system/unread-count');
+  }
+
+  async markNotificationAsRead(
+    notificationId: string,
+  ): Promise<ApiResponse<any>> {
+    return apiVersioningService.post('notification-system/mark-read', {
+      notification_id: notificationId,
+    });
+  }
+
+  async getNotificationQueue(options?: {
+    limit?: number;
+    offset?: number;
+    status?: string;
+  }): Promise<ApiResponse<any[]>> {
+    const params: Record<string, string> = {};
+    if (options?.limit) params.limit = String(options.limit);
+    if (options?.offset) params.offset = String(options.offset);
+    if (options?.status) params.status = options.status;
+
+    return apiVersioningService.get(
+      `notification-system/queue${Object.keys(params).length > 0 ? '?' + new URLSearchParams(params).toString() : ''}`,
+    );
+  }
+
+  async addToNotificationQueue(queueData: {
+    notification_type: string;
+    title: string;
+    body: string;
+    data?: Record<string, any>;
+    scheduled_for: string;
+    priority?: number;
+  }): Promise<ApiResponse<any>> {
+    return apiVersioningService.post('notification-system/queue', queueData);
+  }
+
+  async removeFromNotificationQueue(
+    queueId: string,
+  ): Promise<ApiResponse<{ success: boolean }>> {
+    return apiVersioningService.delete(`notification-system/queue/${queueId}`);
+  }
+
   // ============================================================================
   // ANALYTICS OPERATIONS
   // ============================================================================
@@ -355,6 +470,41 @@ export class VersionedApiClient {
   }
 
   // ============================================================================
+  // QUERY OPERATIONS
+  // ============================================================================
+
+  async getDeletedItems(): Promise<
+    ApiResponse<
+      Array<
+        (Course | Assignment | Lecture | StudySession) & {
+          type: 'course' | 'assignment' | 'lecture' | 'study_session';
+        }
+      >
+    >
+  > {
+    return apiVersioningService.get<
+      Array<
+        (Course | Assignment | Lecture | StudySession) & {
+          type: 'course' | 'assignment' | 'lecture' | 'study_session';
+        }
+      >
+    >('api-v2/queries/deleted-items');
+  }
+
+  async getCount(
+    table: string,
+    filters?: Record<string, unknown>,
+  ): Promise<ApiResponse<{ count: number }>> {
+    const queryParams = new URLSearchParams({ table });
+    if (filters) {
+      queryParams.append('filters', JSON.stringify(filters));
+    }
+    return apiVersioningService.get<{ count: number }>(
+      `api-v2/queries/count?${queryParams.toString()}`,
+    );
+  }
+
+  // ============================================================================
   // BATCH OPERATIONS
   // ============================================================================
 
@@ -370,6 +520,117 @@ export class VersionedApiClient {
     ApiResponse<{ processed: number; successful: number; failed: number }>
   > {
     return apiVersioningService.post('batch-operations', { operations });
+  }
+
+  // ============================================================================
+  // AUTHENTICATION OPERATIONS
+  // ============================================================================
+
+  async signUp(credentials: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName?: string;
+    name?: string;
+  }): Promise<ApiResponse<{ user: any; session: any }>> {
+    return apiVersioningService.post<{ user: any; session: any }>(
+      'auth/signup',
+      {
+        email: credentials.email,
+        password: credentials.password,
+        firstName: credentials.firstName,
+        lastName: credentials.lastName,
+        name: credentials.name,
+      },
+      false, // Auth endpoints don't require authentication
+    );
+  }
+
+  async signIn(credentials: {
+    email: string;
+    password: string;
+  }): Promise<ApiResponse<{ user: any; session: any }>> {
+    return apiVersioningService.post<{ user: any; session: any }>(
+      'auth/signin',
+      {
+        email: credentials.email,
+        password: credentials.password,
+      },
+      false, // Auth endpoints don't require authentication
+    );
+  }
+
+  async signOut(): Promise<ApiResponse<{ success: boolean }>> {
+    return apiVersioningService.post<{ success: boolean }>(
+      'auth/signout',
+      {},
+      true, // Signout requires authentication
+    );
+  }
+
+  async getSession(): Promise<ApiResponse<{ session: any; user: any | null }>> {
+    return apiVersioningService.get<{ session: any; user: any | null }>(
+      'auth/session',
+      undefined,
+      true, // Get session requires authentication (but returns null if invalid)
+    );
+  }
+
+  async getUser(): Promise<ApiResponse<{ user: any }>> {
+    // Use session endpoint to get user
+    const sessionResponse = await this.getSession();
+    if (sessionResponse.data?.user) {
+      return {
+        ...sessionResponse,
+        data: { user: sessionResponse.data.user },
+      };
+    }
+    return {
+      ...sessionResponse,
+      data: { user: null },
+      error: 'User not authenticated',
+    };
+  }
+
+  async resetPassword(data: {
+    email: string;
+    redirectTo?: string;
+  }): Promise<ApiResponse<{ message: string }>> {
+    return apiVersioningService.post<{ message: string }>(
+      'auth/reset-password',
+      {
+        email: data.email,
+        redirectTo: data.redirectTo,
+      },
+      false, // Password reset doesn't require authentication
+    );
+  }
+
+  async verifyEmail(data: {
+    token: string;
+    type?: 'signup' | 'email_change';
+  }): Promise<ApiResponse<{ user: any; session: any }>> {
+    return apiVersioningService.post<{ user: any; session: any }>(
+      'auth/verify-email',
+      {
+        token: data.token,
+        type: data.type,
+      },
+      false, // Email verification doesn't require authentication
+    );
+  }
+
+  async updateProfile(updates: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    password?: string;
+  }): Promise<ApiResponse<{ user: any }>> {
+    return apiVersioningService.post<{ user: any }>(
+      'auth/update-profile',
+      updates,
+      true, // Update profile requires authentication
+    );
   }
 
   // ============================================================================

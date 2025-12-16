@@ -27,7 +27,10 @@ describe('useBatchAction', () => {
 
   beforeEach(() => {
     queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
 
     mockUseNetwork.mockReturnValue({
@@ -92,15 +95,18 @@ describe('useBatchAction', () => {
     });
 
     await waitFor(() => {
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('batch-action', {
-        body: expect.objectContaining({
-          action: 'DELETE_PERMANENTLY',
-          items: expect.arrayContaining([
-            { id: 'item-1', type: 'assignment' },
-            { id: 'item-2', type: 'assignment' },
-          ]),
-        }),
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'batch-action',
+        {
+          body: expect.objectContaining({
+            action: 'DELETE_PERMANENTLY',
+            items: expect.arrayContaining([
+              { id: 'item-1', type: 'assignment' },
+              { id: 'item-2', type: 'assignment' },
+            ]),
+          }),
+        },
+      );
     });
   });
 
@@ -152,11 +158,14 @@ describe('useBatchAction', () => {
     });
 
     await waitFor(() => {
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('batch-action', {
-        body: expect.objectContaining({
-          action: 'RESTORE',
-        }),
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'batch-action',
+        {
+          body: expect.objectContaining({
+            action: 'RESTORE',
+          }),
+        },
+      );
     });
   });
 
@@ -167,7 +176,10 @@ describe('useBatchAction', () => {
         total: 1,
         succeeded: 1,
         failed: 0,
-        details: { success: [{ id: 'item-1', type: 'assignment' }], failed: [] },
+        details: {
+          success: [{ id: 'item-1', type: 'assignment' }],
+          failed: [],
+        },
       },
     };
 
@@ -186,8 +198,12 @@ describe('useBatchAction', () => {
     });
 
     await waitFor(() => {
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['deletedItems'] });
-      expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['assignments'] });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: ['deletedItems'],
+      });
+      expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        queryKey: ['assignments'],
+      });
     });
   });
 
@@ -204,8 +220,7 @@ describe('useBatchAction', () => {
       result.current.mutateAsync({
         action: 'DELETE_PERMANENTLY',
         items: [{ id: 'item-1', type: 'assignment' }],
-      })
+      }),
     ).rejects.toThrow();
   });
 });
-

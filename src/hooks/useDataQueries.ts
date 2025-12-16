@@ -201,7 +201,7 @@ export const useHomeScreenData = (enabled: boolean = true) => {
 };
 
 // Enhanced calendar data hook with persistent caching
-export const useCalendarData = (date: Date) => {
+export const useCalendarData = (date: Date, options?: { enabled?: boolean }) => {
   const dateKey = date.toISOString().split('T')[0];
   const cacheKey = `calendarData:${dateKey}`;
   // Initialize with empty object for instant UI rendering
@@ -268,14 +268,18 @@ export const useCalendarData = (date: Date) => {
         throw error;
       }
     },
-    enabled: !!date,
+    enabled: options?.enabled !== undefined ? options.enabled : !!date,
     placeholderData, // Show cached data immediately while fetching fresh data
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });
 };
 
 // Enhanced calendar month data hook with persistent caching
-export const useCalendarMonthData = (year: number, month: number) => {
+export const useCalendarMonthData = (
+  year: number,
+  month: number,
+  options?: { enabled?: boolean },
+) => {
   const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
   const cacheKey = `calendarMonthData:${monthKey}`;
   // Initialize with empty object for instant UI rendering
@@ -342,7 +346,10 @@ export const useCalendarMonthData = (year: number, month: number) => {
         throw error;
       }
     },
-    enabled: year !== undefined && month !== undefined,
+    enabled:
+      options?.enabled !== undefined
+        ? options.enabled
+        : year !== undefined && month !== undefined,
     placeholderData, // Show cached data immediately while fetching fresh data
     staleTime: 1000 * 60 * 5, // Consider data fresh for 5 minutes
   });

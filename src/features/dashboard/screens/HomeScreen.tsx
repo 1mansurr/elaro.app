@@ -583,24 +583,30 @@ const HomeScreen = () => {
           <View style={[styles.section, { marginTop: SPACING.xl }]}>
             <Text style={styles.sectionTitle}>Today's Overview</Text>
             <TodayOverviewGrid overview={homeData?.todayOverview || null} />
-            <MonthlyLimitCard
-              monthlyTaskCount={monthlyTaskCount}
-              limit={subscriptionLimit}
-            />
+            <View style={{ marginTop: SPACING.lg }}>
+              <MonthlyLimitCard
+                monthlyTaskCount={monthlyTaskCount}
+                limit={subscriptionLimit}
+              />
+            </View>
           </View>
         )}
 
         {/* Upcoming Section */}
-        {!isGuest && upcomingTasks.length > 0 && (
-          <View style={styles.section}>
+        {!isGuest && (
+          <View style={[styles.section, { marginTop: SPACING.xl }]}>
             <Text style={styles.sectionTitle}>Upcoming</Text>
-            {upcomingTasks.map(task => (
-              <UpcomingTaskItem
-                key={`${task.type}-${task.id}`}
-                task={task}
-                onPress={() => handleUpcomingTaskPress(task)}
-              />
-            ))}
+            {upcomingTasks.length > 0 ? (
+              upcomingTasks.map(task => (
+                <UpcomingTaskItem
+                  key={`${task.type}-${task.id}`}
+                  task={task}
+                  onPress={() => handleUpcomingTaskPress(task)}
+                />
+              ))
+            ) : (
+              <Text style={styles.emptyText}>No upcoming tasks</Text>
+            )}
           </View>
         )}
       </ScrollView>
@@ -724,7 +730,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: SPACING.md,
-    paddingBottom: 120,
+    paddingBottom: 200,
   },
   section: {
     marginBottom: SPACING.xl,
@@ -735,6 +741,13 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
     marginBottom: SPACING.md,
     paddingHorizontal: SPACING.xs,
+  },
+  emptyText: {
+    fontSize: FONT_SIZES.md,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    marginTop: SPACING.md,
+    paddingVertical: SPACING.lg,
   },
   title: {
     fontSize: FONT_SIZES.xxl,

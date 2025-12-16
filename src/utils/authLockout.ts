@@ -26,6 +26,14 @@ export async function checkAccountLockout(
       .single();
 
     if (error) {
+      // If permission denied (RLS issue), assume account is not locked
+      // This allows login to proceed without blocking users
+      if (error.code === '42501') {
+        console.warn(
+          'Permission denied for lockout check, proceeding with login',
+        );
+        return { isLocked: false };
+      }
       console.error('Error checking account lockout:', error);
       return { isLocked: false };
     }

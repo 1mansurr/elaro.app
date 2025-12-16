@@ -4,8 +4,8 @@ import { createResponse, errorResponse } from '../_shared/response.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import {
   SendNotificationSchema,
@@ -32,7 +32,57 @@ serve(async req => {
 
   try {
     const url = new URL(req.url);
-    const action = url.pathname.split('/').pop();
+    const pathParts = url.pathname.split('/').filter(Boolean);
+    const action = pathParts[pathParts.length - 1]; // Last part of path
+    const method = req.method;
+
+    // Extract URL params for handlers that need them
+    const urlParams: Record<string, string> = {};
+    url.searchParams.forEach((value, key) => {
+      urlParams[key] = value;
+    });
+
+    // Handle RESTful routes (GET /queue/:id, DELETE /queue/:id)
+    if (action === 'queue' && method === 'GET') {
+      // GET /queue - list queue items
+      const handler = getHandler('queue');
+      if (handler) {
+        // Inject URL params into request body for handler
+        const body = await req.json().catch(() => ({}));
+        const modifiedReq = new Request(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify({ ...body, method: 'GET', urlParams }),
+        });
+        return await handler(modifiedReq);
+      }
+    } else if (action === 'queue' && method === 'POST') {
+      // POST /queue - add to queue
+      const handler = getHandler('queue');
+      if (handler) {
+        const body = await req.json().catch(() => ({}));
+        const modifiedReq = new Request(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify({ ...body, method: 'POST', urlParams }),
+        });
+        return await handler(modifiedReq);
+      }
+    } else if (pathParts.length > 2 && pathParts[pathParts.length - 2] === 'queue' && method === 'DELETE') {
+      // DELETE /queue/:id - remove from queue
+      const queueId = pathParts[pathParts.length - 1];
+      const handler = getHandler('queue');
+      if (handler) {
+        // Modify request to include queue_id in body
+        const body = await req.json().catch(() => ({}));
+        const modifiedReq = new Request(req.url, {
+          method: req.method,
+          headers: req.headers,
+          body: JSON.stringify({ ...body, queue_id: queueId, method: 'DELETE', urlParams }),
+        });
+        return await handler(modifiedReq);
+      }
+    }
 
     // Route to appropriate handler
     const handler = getHandler(action);
@@ -44,6 +94,28 @@ serve(async req => {
           ERROR_CODES.DB_NOT_FOUND,
         ),
       );
+    }
+
+    // For GET requests to preferences/history/unread-count, inject method and URL params
+    if ((action === 'preferences' || action === 'history' || action === 'unread-count' || action === 'queue') && method === 'GET') {
+      const body = await req.json().catch(() => ({}));
+      const modifiedReq = new Request(req.url, {
+        method: req.method,
+        headers: req.headers,
+        body: JSON.stringify({ ...body, method: 'GET', urlParams }),
+      });
+      return await handler(modifiedReq);
+    }
+
+    // For PUT requests to preferences, inject method
+    if (action === 'preferences' && method === 'PUT') {
+      const body = await req.json().catch(() => ({}));
+      const modifiedReq = new Request(req.url, {
+        method: req.method,
+        headers: req.headers,
+        body: JSON.stringify({ ...body, method: 'PUT', urlParams }),
+      });
+      return await handler(modifiedReq);
     }
 
     // Handler is already wrapped with createAuthenticatedHandler, just call it
@@ -121,6 +193,37 @@ function getHandler(action: string | null) {
       'notification-reminder',
       undefined,
       false,
+    ),
+    // New endpoints for Phase 2 migration
+    preferences: wrapOldHandler(
+      handlePreferences,
+      'notification-preferences',
+      undefined,
+      true,
+    ),
+    history: wrapOldHandler(
+      handleHistory,
+      'notification-history',
+      undefined,
+      true,
+    ),
+    'unread-count': wrapOldHandler(
+      handleUnreadCount,
+      'notification-unread-count',
+      undefined,
+      true,
+    ),
+    'mark-read': wrapOldHandler(
+      handleMarkRead,
+      'notification-mark-read',
+      undefined,
+      true,
+    ),
+    queue: wrapOldHandler(
+      handleQueue,
+      'notification-queue',
+      undefined,
+      true,
     ),
   };
 
@@ -324,7 +427,12 @@ async function handleProcessNotifications({
   if (error) handleDbError(error);
 
   // Process each reminder
-  const results = [];
+  const results: Array<{
+    success: boolean;
+    reminder_id: string;
+    reason?: string;
+    error?: string;
+  }> = [];
   for (const reminder of reminders || []) {
     try {
       // Check preferences before sending
@@ -713,4 +821,285 @@ async function handleReminderNotification({
   }
 
   return { sent: result.pushSent || result.emailSent };
+}
+
+// ============================================================================
+// NEW ENDPOINTS FOR PHASE 2 MIGRATION
+// ============================================================================
+
+/**
+ * GET /preferences - Get user notification preferences
+ * PUT /preferences - Update user notification preferences
+ */
+async function handlePreferences({
+  user,
+  supabaseClient,
+  body,
+}: AuthenticatedRequest) {
+  const method = (body as any)?.method || 'GET';
+  const preferences = body as Record<string, any>;
+
+  if (method === 'GET' || method === 'get') {
+    // Get preferences
+    const { data, error } = await supabaseClient
+      .from('notification_preferences')
+      .select('*')
+      .eq('user_id', user.id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') {
+      // Not found is OK, return defaults
+      handleDbError(error);
+    }
+
+    if (!data) {
+      // Return default preferences
+      return {
+        master_toggle: true,
+        quiet_hours_enabled: false,
+        quiet_hours_start: null,
+        quiet_hours_end: null,
+        do_not_disturb: false,
+        assignment_notifications: true,
+        lecture_notifications: true,
+        study_session_notifications: true,
+        reminder_notifications: true,
+        daily_summary_enabled: true,
+        evening_capture_enabled: true,
+        email_notifications: false,
+        push_notifications: true,
+      };
+    }
+
+    return data;
+  } else {
+    // Update preferences
+    delete preferences.method; // Remove method if present
+
+    const { data, error } = await supabaseClient
+      .from('notification_preferences')
+      .upsert(
+        {
+          user_id: user.id,
+          ...preferences,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: 'user_id',
+        },
+      )
+      .select()
+      .single();
+
+    if (error) handleDbError(error);
+    return data;
+  }
+}
+
+/**
+ * GET /history - Get notification history
+ */
+async function handleHistory({
+  user,
+  supabaseClient,
+  body,
+}: AuthenticatedRequest) {
+  const urlParams = (body as any)?.urlParams || {};
+  const limit = parseInt(urlParams.limit || '50');
+  const offset = parseInt(urlParams.offset || '0');
+  const filter = urlParams.filter || 'all';
+  const includeRead = urlParams.includeRead !== 'false';
+
+  let query = supabaseClient
+    .from('notification_deliveries')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('sent_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  // Apply read filter
+  if (!includeRead) {
+    query = query.is('opened_at', null);
+  }
+
+  // Apply type filter
+  if (filter !== 'all') {
+    const typeMap: Record<string, string> = {
+      assignments: 'assignment',
+      lectures: 'lecture',
+      study_sessions: 'study_session',
+      analytics: 'analytics',
+      summaries: 'summary',
+    };
+    const notificationType = typeMap[filter] || filter;
+    query = query.eq('notification_type', notificationType);
+  }
+
+  const { data, error } = await query;
+
+  if (error) handleDbError(error);
+  return data || [];
+}
+
+/**
+ * GET /unread-count - Get unread notification count
+ */
+async function handleUnreadCount({
+  user,
+  supabaseClient,
+}: AuthenticatedRequest) {
+  const { count, error } = await supabaseClient
+    .from('notification_deliveries')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .is('opened_at', null);
+
+  if (error) handleDbError(error);
+  return { count: count || 0 };
+}
+
+/**
+ * POST /mark-read - Mark notification as read
+ */
+async function handleMarkRead({
+  user,
+  supabaseClient,
+  body,
+}: AuthenticatedRequest) {
+  const { notification_id } = body as { notification_id: string };
+
+  if (!notification_id) {
+    throw new AppError('notification_id is required', 400, 'VALIDATION_ERROR');
+  }
+
+  // Verify ownership
+  const { data: notification, error: checkError } = await supabaseClient
+    .from('notification_deliveries')
+    .select('user_id')
+    .eq('id', notification_id)
+    .single();
+
+  if (checkError) handleDbError(checkError);
+  if (notification.user_id !== user.id) {
+    throw new AppError(
+      'You can only mark your own notifications as read',
+      403,
+      ERROR_CODES.FORBIDDEN,
+    );
+  }
+
+  const { data, error } = await supabaseClient
+    .from('notification_deliveries')
+    .update({ opened_at: new Date().toISOString() })
+    .eq('id', notification_id)
+    .select()
+    .single();
+
+  if (error) handleDbError(error);
+  return data;
+}
+
+/**
+ * GET /queue - Get notification queue
+ * POST /queue - Add to notification queue
+ * DELETE /queue/:id - Remove from notification queue
+ */
+async function handleQueue({
+  user,
+  supabaseClient,
+  body,
+}: AuthenticatedRequest) {
+  const method = (body as any)?.method || 'GET';
+  const urlParams = (body as any)?.urlParams || {};
+
+  if (method === 'GET' || method === 'get') {
+    // Get queue items
+    const limit = parseInt(urlParams.limit || '50');
+    const offset = parseInt(urlParams.offset || '0');
+    const status = urlParams.status || 'pending';
+
+    let query = supabaseClient
+      .from('notification_queue')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('scheduled_for', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+
+    if (error) handleDbError(error);
+    return data || [];
+  } else if (method === 'POST' || method === 'post') {
+    // Add to queue
+    const {
+      notification_type,
+      title,
+      body: notificationBody,
+      data: notificationData,
+      scheduled_for,
+      priority,
+    } = body as {
+      notification_type: string;
+      title: string;
+      body: string;
+      data?: Record<string, any>;
+      scheduled_for: string;
+      priority?: number;
+    };
+
+    const { data, error } = await supabaseClient
+      .from('notification_queue')
+      .insert({
+        user_id: user.id,
+        notification_type,
+        title,
+        body: notificationBody,
+        data: notificationData,
+        scheduled_for,
+        priority: priority || 0,
+        status: 'pending',
+      })
+      .select()
+      .single();
+
+    if (error) handleDbError(error);
+    return data;
+  } else if (method === 'DELETE' || method === 'delete') {
+    // Remove from queue
+    const queueId = (body as any)?.queue_id;
+
+    if (!queueId) {
+      throw new AppError('queue_id is required', 400, 'VALIDATION_ERROR');
+    }
+
+    // Verify ownership
+    const { data: queueItem, error: checkError } = await supabaseClient
+      .from('notification_queue')
+      .select('user_id')
+      .eq('id', queueId)
+      .single();
+
+    if (checkError) handleDbError(checkError);
+    if (queueItem.user_id !== user.id) {
+      throw new AppError(
+        'You can only delete your own queue items',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+
+    const { error } = await supabaseClient
+      .from('notification_queue')
+      .delete()
+      .eq('id', queueId);
+
+    if (error) handleDbError(error);
+    return { success: true };
+  }
+
+  throw new AppError('Invalid method', 405, 'METHOD_NOT_ALLOWED');
 }

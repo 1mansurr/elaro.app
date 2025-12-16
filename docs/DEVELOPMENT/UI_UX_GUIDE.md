@@ -13,8 +13,8 @@ All design tokens are consolidated in `src/constants/theme.ts`:
 ```typescript
 // Colors
 export const COLORS = {
-  primary: '#007AFF',
-  secondary: '#5856D6',
+  primary: '#2C5EFF',
+  secondary: '#FF6B6B',
   // ... comprehensive color palette
 };
 
@@ -99,16 +99,15 @@ import {
 
 // Dialog with blur backdrop
 <DialogModal
-  visible={visible}
+  isVisible={isVisible}
   onClose={handleClose}
-  title="Confirm Action"
 >
   <Text>Are you sure?</Text>
 </DialogModal>
 
 // Bottom sheet
 <SheetModal
-  visible={visible}
+  isVisible={isVisible}
   onClose={handleClose}
 >
   <Text>Sheet content</Text>
@@ -369,10 +368,10 @@ export const ANIMATIONS = {
 
    ```typescript
    // Old - Custom modal
-   <CustomModal visible={visible} />
+   <CustomModal isVisible={isVisible} />
 
    // New - Standard variant
-   <DialogModal visible={visible} onClose={handleClose} />
+   <DialogModal isVisible={isVisible} onClose={handleClose} />
    ```
 
 ## Performance Optimization

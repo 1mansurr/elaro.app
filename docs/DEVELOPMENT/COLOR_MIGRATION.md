@@ -26,7 +26,7 @@ npm run migrate-colors:stats
 
 ## Mapped Colors (examples)
 
-- `#007AFF` → `COLORS.primary`
+- `#2C5EFF` → `COLORS.primary`
 - `#FFFFFF` → `COLORS.white`
 - `#333333` → `COLORS.textPrimary`
 - `#666666` → `COLORS.textSecondary`

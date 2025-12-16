@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { PermissionService } from '@/features/auth/permissions/PermissionService';
 
 interface SRSReminderLimitResult {
@@ -47,19 +47,18 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
       const oneMonthAgo = new Date();
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
-      // Count study sessions with SRS created this month
-      const { count, error: countError } = await supabase
-        .from('study_sessions')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('has_spaced_repetition', true)
-        .gte('created_at', oneMonthAgo.toISOString());
+      // Count study sessions with SRS created this month using API
+      const { versionedApiClient } = await import('@/services/VersionedApiClient');
+      const countResponse = await versionedApiClient.getCount('study_sessions', {
+        has_spaced_repetition: true,
+        created_at: { operator: 'gte', value: oneMonthAgo.toISOString() },
+      });
 
-      if (countError) {
-        throw countError;
+      if (countResponse.error) {
+        throw new Error(countResponse.message || countResponse.error || 'Failed to count SRS reminders');
       }
 
-      setCurrentReminders(count || 0);
+      setCurrentReminders(countResponse.data?.count || 0);
     } catch (err) {
       console.error('Error fetching SRS reminder count:', err);
       setError(

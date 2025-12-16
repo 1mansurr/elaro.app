@@ -1,8 +1,5 @@
 import { User } from '@/types';
-import {
-  supabase,
-  authService as supabaseAuthService,
-} from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { cache } from '@/utils/cache';
 
 export class UserProfileService {
@@ -33,18 +30,20 @@ export class UserProfileService {
         return cachedProfile;
       }
 
-      // No cache - fetch from server
+      // No cache - fetch from server using API layer
       console.log('🌐 Fetching user profile from server');
-      const userProfile = await supabaseAuthService.getUserProfile(userId);
+      const response = await versionedApiClient.getUserProfile();
 
-      if (!userProfile) {
+      if (response.error || !response.data) {
         return null;
       }
+
+      const userProfile = response.data as User;
 
       // Cache the profile (24 hours) for future use
       await cache.setLong(cacheKey, userProfile);
 
-      return userProfile as User;
+      return userProfile;
     } catch (error) {
       console.error('❌ Error fetching user profile:', error);
       return null;
@@ -60,7 +59,12 @@ export class UserProfileService {
     cacheKey: string,
   ): Promise<void> {
     try {
-      const freshProfile = await supabaseAuthService.getUserProfile(userId);
+      const response = await versionedApiClient.getUserProfile();
+      if (response.error || !response.data) {
+        return;
+      }
+
+      const freshProfile = response.data as User;
       if (
         freshProfile &&
         JSON.stringify(freshProfile) !== JSON.stringify(cachedProfile)
@@ -80,14 +84,15 @@ export class UserProfileService {
   async refreshUserProfile(userId: string): Promise<User | null> {
     try {
       const cacheKey = `user_profile:${userId}`;
-      const userProfile = await supabaseAuthService.getUserProfile(userId);
+      const response = await versionedApiClient.getUserProfile();
 
-      if (userProfile) {
-        await cache.setLong(cacheKey, userProfile);
-        return userProfile as User;
+      if (response.error || !response.data) {
+        return null;
       }
 
-      return null;
+      const userProfile = response.data as User;
+      await cache.setLong(cacheKey, userProfile);
+      return userProfile;
     } catch (error) {
       console.error('❌ Error refreshing user profile:', error);
       return null;

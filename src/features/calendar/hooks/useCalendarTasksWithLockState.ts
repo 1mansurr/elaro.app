@@ -36,26 +36,41 @@ export const useCalendarTasksWithLockState = (
     }
 
     const allTasks = Object.values(calendarData).flat();
-
     const limits: Record<string, number> = {
       assignment: 15,
       lecture: 15,
       study_session: 15,
     };
 
-    return allTasks.map(task => {
-      const taskType = task.type as keyof typeof limits;
-      const limit = limits[taskType] || 15;
-
-      // Check if task is within limit based on creation order
-      const tasksOfSameType = allTasks
-        .filter(t => t.type === task.type)
+    // Pre-compute sorted tasks by type once (O(n log n) instead of O(n²))
+    const tasksByType = new Map<string, typeof allTasks>();
+    const taskTypeSet = new Set(allTasks.map(t => t.type));
+    
+    // Sort tasks by type once
+    taskTypeSet.forEach(type => {
+      const tasksOfType = allTasks
+        .filter(t => t.type === type)
         .sort(
           (a, b) =>
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
         );
+      tasksByType.set(type, tasksOfType);
+    });
 
-      const taskIndex = tasksOfSameType.findIndex(t => t.id === task.id);
+    // Create a map for O(1) lookup of task index
+    const taskIndexMap = new Map<string, number>();
+    tasksByType.forEach((tasks, type) => {
+      const limit = limits[type] || 15;
+      tasks.forEach((task, index) => {
+        taskIndexMap.set(task.id, index);
+      });
+    });
+
+    // Now map tasks with lock state (O(n) instead of O(n²))
+    return allTasks.map(task => {
+      const taskType = task.type as keyof typeof limits;
+      const limit = limits[taskType] || 15;
+      const taskIndex = taskIndexMap.get(task.id) ?? -1;
       const isLocked = taskIndex >= limit;
 
       return {

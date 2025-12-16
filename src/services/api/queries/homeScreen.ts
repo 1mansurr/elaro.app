@@ -1,24 +1,17 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { HomeScreenData } from '@/types';
 import { handleApiError } from '../errors';
-import { getFreshAccessToken } from '@/utils/getFreshAccessToken';
 
 export const homeScreenApi = {
   async getData(): Promise<HomeScreenData | null> {
     try {
-      // Get fresh access token to ensure it's valid and not expired
-      const accessToken = await getFreshAccessToken();
+      const response = await versionedApiClient.getHomeData();
 
-      const { data, error } = await supabase.functions.invoke(
-        'get-home-screen-data',
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        },
-      );
-      if (error) throw error;
-      return data;
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to get home screen data');
+      }
+
+      return response.data as HomeScreenData | null;
     } catch (error) {
       throw handleApiError(error);
     }

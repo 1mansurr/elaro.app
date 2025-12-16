@@ -135,17 +135,30 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   };
 
   const handleAuth = async () => {
+    // Dismiss keyboard when button is pressed
+    Keyboard.dismiss();
+    
+    console.log('🔵 [AuthScreen] handleAuth called', { 
+      mode, 
+      email: email ? 'provided' : 'missing', 
+      password: password ? 'provided' : 'missing',
+      emailError,
+      loading 
+    });
+    
     setLoading(true);
 
     try {
       // Use Zod validation if available
       let useZod = false;
       try {
+        console.log('🔍 [AuthScreen] Attempting to load Zod schemas...');
         const {
           signUpSchema,
           signInSchema,
         } = require('../../../shared/validation/schemas');
         useZod = true;
+        console.log('✅ [AuthScreen] Zod schemas loaded successfully');
 
         if (mode === 'signup') {
           const validationResult = signUpSchema.safeParse({
@@ -159,6 +172,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           if (!validationResult.success) {
             const errors = validationResult.error.flatten().fieldErrors;
             const firstError = Object.values(errors)[0]?.[0];
+            console.log('❌ [AuthScreen] Signup validation failed:', errors);
             Alert.alert(
               'Validation Error',
               firstError || 'Please check your input',
@@ -166,13 +180,21 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             setLoading(false);
             return;
           }
+          console.log('✅ [AuthScreen] Signup validation passed');
         } else {
           // Sign in
+          console.log('🔍 [AuthScreen] Running signin validation...');
           const validationResult = signInSchema.safeParse({ email, password });
+          console.log('🔍 [AuthScreen] Signin validation result:', { 
+            success: validationResult.success,
+            hasEmail: !!email,
+            hasPassword: !!password
+          });
 
           if (!validationResult.success) {
             const errors = validationResult.error.flatten().fieldErrors;
             const firstError = Object.values(errors)[0]?.[0];
+            console.log('❌ [AuthScreen] Signin validation failed:', errors);
             Alert.alert(
               'Validation Error',
               firstError || 'Please check your input',
@@ -180,11 +202,14 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             setLoading(false);
             return;
           }
+          console.log('✅ [AuthScreen] Signin validation passed');
         }
-      } catch {
+      } catch (error) {
         // Zod not available, use fallback validation
+        console.log('⚠️ [AuthScreen] Zod not available, using fallback validation:', error);
         useZod = false;
         if (emailError) {
+          console.log('❌ [AuthScreen] Email error detected:', emailError);
           Alert.alert(
             'Invalid Email',
             'Please correct the email address before proceeding.',
@@ -193,6 +218,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           return;
         }
         if (!email || !password) {
+          console.log('❌ [AuthScreen] Missing fields:', { email: !!email, password: !!password });
           Alert.alert('Missing Fields', 'Please fill in all required fields.');
           setLoading(false);
           return;
@@ -220,9 +246,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             return;
           }
         }
+        console.log('✅ [AuthScreen] Fallback validation passed');
       }
 
       // Proceed with authentication
+      console.log('🚀 [AuthScreen] Proceeding with authentication...', { mode });
       const { error } =
         mode === 'signup'
           ? await signUp({
@@ -232,6 +260,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               lastName: lastName.trim(),
             })
           : await signIn({ email, password });
+      
+      console.log('📋 [AuthScreen] Auth result:', error ? `Error: ${error.message}` : 'Success');
 
       if (error) {
         // Enhanced error handling for password-related errors
@@ -260,6 +290,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         }
 
         Alert.alert(errorTitle, errorMessage);
+        setLoading(false); // Stop loading on error so button returns to normal
+        return; // Return early to prevent navigation
       } else {
         if (mode === 'signup') {
           Alert.alert(
@@ -267,6 +299,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             'We sent a confirmation link to your email. Verifying your email helps keep your account secure, but you can continue using the app right away.',
           );
         }
+
+        // Wait a moment for session to be set in AuthContext before calling callbacks
+        // This ensures AppNavigator has time to detect the session change
+        await new Promise(resolve => setTimeout(resolve, 300));
 
         // Call onAuthSuccess callback
         onAuthSuccess?.();
@@ -276,16 +312,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         // AuthenticatedNavigator will then show OnboardingNavigator if onboarding_completed is false
         setTimeout(
           () => {
-            navigation.goBack();
+            // Only go back if there's a screen to go back to
+            // This prevents "GO_BACK action not handled" errors when navigator has already switched
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            }
           },
           mode === 'signup' ? 1500 : 500,
         ); // Wait 1.5s for signup (to allow sign-in), 500ms for signin
       }
     } catch (err) {
+      console.error('❌ [AuthScreen] handleAuth error caught:', err);
       const errorTitle = getErrorTitle(err);
       const errorMessage = mapErrorCodeToMessage(err);
+      console.log('📢 [AuthScreen] Showing error alert:', { errorTitle, errorMessage });
       Alert.alert(errorTitle, errorMessage);
     } finally {
+      console.log('🏁 [AuthScreen] handleAuth finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -649,7 +692,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     color: '#2C5EFF',
-    textDecorationLine: 'underline',
   },
   authButton: {
     marginTop: SPACING.sm,
@@ -679,7 +721,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     color: '#2C5EFF',
     fontWeight: FONT_WEIGHTS.medium as any,
-    textDecorationLine: 'underline',
   },
   strengthContainer: {
     height: 5,

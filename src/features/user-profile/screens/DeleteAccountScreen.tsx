@@ -452,7 +452,7 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: 200, // Extra padding so delete button sits above nav bar
   },
   header: {
     flexDirection: 'row',

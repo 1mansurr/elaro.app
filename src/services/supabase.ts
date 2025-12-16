@@ -73,165 +73,85 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 });
 
 // Authentication Services
+// Note: This authService is being migrated to use API layer
+// Import the migrated version from authService.ts instead
+import { authService as migratedAuthService } from '@/services/authService';
+
 export const authService = {
   async signUp(email: string, password: string, name?: string) {
-    const data = await executeSupabaseQuery(
-      async () => {
-        const result = await supabase.auth.signUp({
+    // Use migrated auth service
+    const result = await migratedAuthService.signUp({
           email,
           password,
-          options: {
-            data: { name },
-          },
-        });
-        return { data: result.data, error: result.error };
-      },
-      {
-        operationName: 'auth_signUp',
-        retryOnFailure: true,
-        maxRetries: 2, // Lower retries for auth operations
-      },
-    );
+      firstName: name || '',
+      lastName: '',
+    });
 
-    // Create user profile
-    if (data.user) {
-      await this.createUserProfile(data.user.id, email, name);
-    }
+    // Note: User profile is automatically created by database trigger
+    // No need to manually create it
 
-    return data;
+    return result;
   },
 
   async signIn(email: string, password: string) {
-    return await executeSupabaseQuery(
-      async () => {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        return { data, error };
-      },
-      {
-        operationName: 'auth_signIn',
-        retryOnFailure: true,
-        maxRetries: 2,
-      },
-    );
+    // Use migrated auth service
+    return await migratedAuthService.login({ email, password });
   },
 
   async signOut() {
-    await executeSupabaseQuery(
-      async () => {
-        const { error } = await supabase.auth.signOut();
-        return { data: null, error };
-      },
-      {
-        operationName: 'auth_signOut',
-        retryOnFailure: false, // Sign out should not retry
-        maxRetries: 1,
-      },
-    );
+    // Use migrated auth service
+    return await migratedAuthService.signOut();
   },
 
   async getCurrentUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
+    // Use migrated auth service
+    return await migratedAuthService.getCurrentUser();
   },
 
-  async createUserProfile(userId: string, email: string, name?: string) {
-    await executeSupabaseMutation(
-      async () => {
-        const { error } = await supabase.from('users').insert({
-          id: userId,
-          email,
-          name,
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        });
-        return { data: null, error };
-      },
-      {
-        operationName: 'createUserProfile',
-        retryOnFailure: false, // No retry for mutations (idempotency concerns)
-      },
-    );
-  },
+  // Note: createUserProfile removed - handled by database trigger automatically
+  // If needed, user profile is created automatically when auth user is created
 
   async getUserProfile(userId: string): Promise<User | null> {
-    const data = await executeSupabaseQueryNullable(
-      async () => {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', userId)
-          .single();
-        return { data, error };
-      },
-      {
-        operationName: 'getUserProfile',
-        retryOnFailure: true,
-      },
-    );
+    // Use API layer instead of direct Supabase
+    const { versionedApiClient } = await import('./VersionedApiClient');
+    const response = await versionedApiClient.getUserProfile();
 
-    if (!data) return null;
-
-    // Type guard for Supabase user data row
-    interface SupabaseUserRow {
-      id: string;
-      email?: string;
-      name?: string;
-      first_name?: string;
-      last_name?: string;
-      university?: string;
-      program?: string;
-      role?: string;
-      onboarding_completed?: boolean;
-      subscription_tier?: string | null;
-      subscription_status?: string | null;
-      subscription_expires_at?: string | null;
-      account_status?: string;
-      deleted_at?: string | null;
-      deletion_scheduled_at?: string | null;
-      suspension_end_date?: string | null;
-      created_at: string;
-      updated_at: string;
+    if (response.error || !response.data) {
+      return null;
     }
 
-    const row = data as SupabaseUserRow;
-
+    // Map API response to User type
+    const data = response.data as any;
     const userProfile: User = {
-      id: row.id,
-      email: row.email ?? '',
-      name: row.name,
-      first_name: row.first_name,
-      last_name: row.last_name,
-      university: row.university,
-      program: row.program,
-      role: (row.role as 'user' | 'admin') ?? 'user', // Default to 'user' role
-      onboarding_completed: row.onboarding_completed ?? false,
-      subscription_tier:
-        (row.subscription_tier as 'free' | 'oddity' | null) ?? null,
-      subscription_status:
-        (row.subscription_status as
-          | 'trialing'
-          | 'active'
-          | 'past_due'
-          | 'canceled'
-          | null) ?? null,
-      subscription_expires_at: row.subscription_expires_at ?? null,
-      account_status:
-        (row.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
-      deleted_at: row.deleted_at ?? null,
-      deletion_scheduled_at: row.deletion_scheduled_at ?? null,
-      suspension_end_date: row.suspension_end_date ?? null,
-      created_at: row.created_at,
-      updated_at: row.updated_at,
+      id: data.id,
+      email: data.email ?? '',
+      name: data.name,
+      first_name: data.first_name,
+      last_name: data.last_name,
+      university: data.university,
+      program: data.program,
+      role: (data.role as 'user' | 'admin') ?? 'user',
+      onboarding_completed: data.onboarding_completed ?? false,
+      subscription_tier: (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
+      subscription_status: (data.subscription_status as
+        | 'trialing'
+        | 'active'
+        | 'past_due'
+        | 'canceled'
+        | null) ?? null,
+      subscription_expires_at: data.subscription_expires_at ?? null,
+      account_status: (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+      deleted_at: data.deleted_at ?? null,
+      deletion_scheduled_at: data.deletion_scheduled_at ?? null,
+      suspension_end_date: data.suspension_end_date ?? null,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
       user_metadata: {
-        first_name: row.first_name,
-        last_name: row.last_name,
-        name: row.name,
-        university: row.university,
-        program: row.program,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        name: data.name,
+        university: data.university,
+        program: data.program,
       },
     };
 
@@ -239,19 +159,13 @@ export const authService = {
   },
 
   async updateUserProfile(userId: string, updates: Partial<User>) {
-    await executeSupabaseMutation(
-      async () => {
-        const { error } = await supabase
-          .from('users')
-          .update(updates)
-          .eq('id', userId);
-        return { data: null, error };
-      },
-      {
-        operationName: 'updateUserProfile',
-        retryOnFailure: false, // No retry for mutations
-      },
-    );
+    // Use API layer instead of direct Supabase
+    const { versionedApiClient } = await import('./VersionedApiClient');
+    const response = await versionedApiClient.updateUserProfile(updates);
+
+    if (response.error) {
+      throw new Error(response.message || response.error || 'Failed to update user profile');
+    }
   },
 };
 
@@ -285,18 +199,16 @@ export const subscriptionService = {
 // Utility Functions
 export const dbUtils = {
   async deleteUserAccount(userId: string) {
-    // Delete in order to respect foreign key constraints
-    await supabase
-      .from('spaced_repetition_reminders')
-      .delete()
-      .eq('user_id', userId);
-    await supabase.from('user_events').delete().eq('user_id', userId);
-    await supabase.from('study_sessions').delete().eq('user_id', userId);
-    await supabase.from('streaks').delete().eq('user_id', userId);
-    await supabase.from('users').delete().eq('id', userId);
-
-    // Delete auth user
-    await supabase.auth.admin.deleteUser(userId);
+    // Note: Account deletion should use the soft-delete-account endpoint
+    // This method is kept for backward compatibility but should be migrated
+    // Use: versionedApiClient.softDeleteAccount() or users Edge Function
+    console.warn('deleteUserAccount: This method should use API layer. Use soft-delete-account endpoint instead.');
+    
+    // For now, use batch operations API if available
+    const { versionedApiClient } = await import('./VersionedApiClient');
+    // Note: Admin operations like deleteUser require admin-system Edge Function
+    // This should be handled server-side, not from client
+    throw new Error('Account deletion must be done through admin-system Edge Function, not from client');
   },
 
   async getUserStats(userId: string) {

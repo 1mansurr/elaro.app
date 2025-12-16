@@ -23,7 +23,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useTheme } from '@/contexts/ThemeContext';
 import { PrimaryButton } from '@/shared/components';
 import {
@@ -61,54 +61,37 @@ export function ResetPasswordScreen() {
 
   // Check if we have a valid session for password reset
   useEffect(() => {
-    // Supabase automatically handles the token from the deep link
-    // Listen for auth state changes to detect when session is set up
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        // User has clicked the password reset link
-        // Session should now be available
-        console.log('Password recovery event detected');
-      } else if (event === 'SIGNED_IN' && session) {
-        // User session is now available
-        console.log('Session available for password reset');
-      }
-    });
-
-    // Also check current session
+    // Check current session using API layer
     const checkSession = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      // Don't show error immediately - Supabase might still be processing the token
-      // Give it a moment to set up the session
-      setTimeout(async () => {
-        const {
-          data: { session: delayedSession },
-        } = await supabase.auth.getSession();
-        if (!delayedSession) {
-          // If still no session after delay, the link might be invalid or expired
-          Alert.alert(
-            'Invalid Link',
-            'This password reset link is invalid or has expired. Please request a new one.',
-            [
-              {
-                text: 'OK',
-                onPress: () => navigation.navigate('Auth', { mode: 'signin' }),
-              },
-            ],
-          );
+      try {
+        const response = await versionedApiClient.getSession();
+        
+        if (response.error || !response.data?.session) {
+          // Don't show error immediately - Supabase might still be processing the token
+          // Give it a moment to set up the session
+          setTimeout(async () => {
+            const delayedResponse = await versionedApiClient.getSession();
+            if (delayedResponse.error || !delayedResponse.data?.session) {
+              // If still no session after delay, the link might be invalid or expired
+              Alert.alert(
+                'Invalid Link',
+                'This password reset link is invalid or has expired. Please request a new one.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.navigate('Auth', { mode: 'signin' }),
+                  },
+                ],
+              );
+            }
+          }, 2000); // Wait 2 seconds for Supabase to process the token
         }
-      }, 2000); // Wait 2 seconds for Supabase to process the token
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
     };
 
     checkSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [navigation]);
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
@@ -190,11 +173,9 @@ export function ResetPasswordScreen() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) throw error;
+      // Use authService instead of direct Supabase
+      const { authService } = await import('@/services/authService');
+      await authService.updatePassword(password);
 
       Alert.alert(
         'Password Updated',

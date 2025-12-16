@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Assignment, Lecture, StudySession } from '@/types';
 
@@ -24,35 +24,27 @@ export const useTaskDetail = (
         return null;
       }
 
-      // Map task type to table name
-      const tableName =
-        taskType === 'study_session' ? 'study_sessions' : `${taskType}s`;
-
-      // Fetch task with course data
-      const { data, error } = await supabase
-        .from(tableName)
-        .select(
-          `
-          *,
-          courses (
-            id,
-            course_name,
-            course_code
-          )
-        `,
-        )
-        .eq('id', taskId)
-        .eq('user_id', user.id)
-        .is('deleted_at', null)
-        .single();
-
-      if (error) {
-        throw error;
+      // Fetch task using API layer
+      let response;
+      if (taskType === 'assignment') {
+        response = await versionedApiClient.getAssignment(taskId);
+      } else if (taskType === 'lecture') {
+        response = await versionedApiClient.getLecture(taskId);
+      } else if (taskType === 'study_session') {
+        response = await versionedApiClient.getStudySession(taskId);
+      } else {
+        throw new Error(`Unknown task type: ${taskType}`);
       }
 
-      if (!data) {
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to fetch task');
+      }
+
+      if (!response.data) {
         return null;
       }
+
+      const data = response.data as any;
 
       // Map to app types (handle snake_case to camelCase conversion)
       if (taskType === 'assignment') {

@@ -1,6 +1,7 @@
 import { supabase } from '@/services/supabase';
 import { dbUtils } from '@/services/supabase';
 import { Session, User, Factor } from '@supabase/supabase-js';
+import { versionedApiClient } from './VersionedApiClient';
 
 // AppError class for consistent error handling
 class AppError extends Error {
@@ -44,44 +45,106 @@ export const authService = {
     firstName,
     lastName,
   }: SignUpCredentials) => {
-    const { data, error } = await supabase.auth.signUp({
+    const response = await versionedApiClient.signUp({
       email,
       password,
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-        },
-      },
+      firstName,
+      lastName,
     });
-    if (error) throw error;
-    return data;
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to sign up',
+        response.code === 'VALIDATION_ERROR' ? 400 : 500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Store session in Supabase client if session is returned
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token,
+      });
+    }
+
+    return {
+      user: response.data?.user || null,
+      session: response.data?.session || null,
+    };
   },
 
   // Method to log in a user
   login: async ({ email, password }: LoginCredentials) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const response = await versionedApiClient.signIn({
       email,
       password,
     });
-    if (error) throw error;
-    return data;
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Invalid email or password',
+        response.code === 'VALIDATION_ERROR' ? 400 : 401,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Store session in Supabase client
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token,
+      });
+    }
+
+    return {
+      user: response.data?.user || null,
+      session: response.data?.session || null,
+    };
   },
 
   // Method to log out a user
   signOut: async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    const response = await versionedApiClient.signOut();
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to sign out',
+        500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Also sign out from Supabase client to clear local session
+    await supabase.auth.signOut();
   },
 
   // Method to get the current session
   getSession: async () => {
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return data.session;
+    const response = await versionedApiClient.getSession();
+
+    if (response.error && response.error !== 'User not authenticated') {
+      throw new AppError(
+        response.message || response.error || 'Failed to get session',
+        500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Update Supabase client session if we got a valid session
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token,
+      });
+    }
+
+    return response.data?.session || null;
   },
 
   // Method to subscribe to auth state changes
+  // Note: This still uses direct Supabase since it's a real-time subscription
+  // We can implement polling or WebSocket later if needed
   onAuthChange: (
     callback: (event: string, session: Session | null) => void,
   ) => {
@@ -93,15 +156,97 @@ export const authService = {
 
   // Method to get current user
   getCurrentUser: async () => {
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser();
-    if (error) throw error;
-    return user;
+    const response = await versionedApiClient.getUser();
+
+    if (response.error && response.error !== 'User not authenticated') {
+      throw new AppError(
+        response.message || response.error || 'Failed to get user',
+        500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    return response.data?.user || null;
+  },
+
+  // Method to reset password (send reset email)
+  resetPassword: async (email: string, redirectTo?: string) => {
+    const response = await versionedApiClient.resetPassword({
+      email,
+      redirectTo,
+    });
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to send reset email',
+        response.code === 'VALIDATION_ERROR' ? 400 : 500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    return response.data;
+  },
+
+  // Method to update user profile
+  updateProfile: async (updates: {
+    first_name?: string;
+    last_name?: string;
+    name?: string;
+    password?: string;
+  }) => {
+    const response = await versionedApiClient.updateProfile(updates);
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to update profile',
+        response.code === 'VALIDATION_ERROR' ? 400 : 500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Refresh local user data
+    if (response.data?.user) {
+      // The session will be updated automatically by Supabase client
+      await supabase.auth.refreshSession();
+    }
+
+    return response.data?.user || null;
+  },
+
+  // Method to update password (convenience method)
+  updatePassword: async (password: string) => {
+    return this.updateProfile({ password });
+  },
+
+  // Method to verify email
+  verifyEmail: async (token: string, type?: 'signup' | 'email_change') => {
+    const response = await versionedApiClient.verifyEmail({ token, type });
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to verify email',
+        response.code === 'VALIDATION_ERROR' ? 400 : 500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Store session if returned
+    if (response.data?.session) {
+      await supabase.auth.setSession({
+        access_token: response.data.session.access_token,
+        refresh_token: response.data.session.refresh_token,
+      });
+    }
+
+    return {
+      user: response.data?.user || null,
+      session: response.data?.session || null,
+    };
   },
 
   // Method to log out a user from all sessions (global signout)
+  // Note: This still uses direct Supabase as it's a special operation
+  // Can be migrated to Edge Function later if needed
   signOutFromAllDevices: async () => {
     const { error } = await supabase.auth.signOut({ scope: 'global' });
     if (error) throw new AppError(error.message, 500, 'GLOBAL_SIGNOUT_ERROR');

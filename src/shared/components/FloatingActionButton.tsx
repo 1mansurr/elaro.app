@@ -27,6 +27,7 @@ interface FloatingActionButtonProps {
   onDoubleTap?: () => void;
   draftCount?: number;
   onDraftBadgePress?: () => void;
+  isOpen?: boolean; // Allow external control of FAB state
 }
 
 const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
@@ -35,6 +36,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   onDoubleTap,
   draftCount = 0,
   onDraftBadgePress,
+  isOpen: externalIsOpen,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
@@ -89,6 +91,29 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       }, DOUBLE_TAP_DELAY);
     }
   };
+
+  // Sync external isOpen prop with internal state
+  useEffect(() => {
+    if (externalIsOpen !== undefined && externalIsOpen !== isOpen) {
+      const toValue = externalIsOpen ? 1 : 0;
+
+      // Stop any ongoing animation before starting a new one
+      if (animationRef.current) {
+        animationRef.current.stop();
+      }
+
+      const newAnimation = Animated.spring(animation, {
+        toValue,
+        friction: 6,
+        useNativeDriver: false,
+      });
+
+      animationRef.current = newAnimation;
+      newAnimation.start();
+      setIsOpen(externalIsOpen);
+      // Note: don't call onStateChange here; parent already controls state
+    }
+  }, [externalIsOpen, isOpen]);
 
   // Cleanup animation on unmount
   useEffect(() => {
@@ -183,7 +208,8 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    bottom: 30,
+    // Positioned above the bottom capsule nav bar
+    bottom: 150,
     right: 30,
     alignItems: 'flex-end',
     zIndex: 10, // Higher than backdrop

@@ -4,7 +4,7 @@
     "slug": "elaro",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/wordmark.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -33,8 +33,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#4A90E2"
+        "foregroundImage": "./assets/wordmark.png",
+        "backgroundColor": "#2C5EFF"
       },
       "package": "com.elaro.app",
       "versionCode": 1,

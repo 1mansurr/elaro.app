@@ -447,19 +447,22 @@ export class NotificationSchedulingService
     notification: Notification,
   ): Promise<void> {
     try {
-      const { error } = await supabase.from('notification_queue').insert({
-        user_id: notification.userId,
+      // Use API layer for queue operations
+      const { versionedApiClient } = await import('@/services/VersionedApiClient');
+      
+      const response = await versionedApiClient.addToNotificationQueue({
         notification_type: notification.type,
         title: notification.title,
         body: notification.body,
         data: notification.data,
+        scheduled_for: notification.scheduledFor?.toISOString() || new Date().toISOString(),
         priority: this.getPriorityNumber(notification.priority),
-        scheduled_for: notification.scheduledFor?.toISOString(),
-        status: 'pending',
       });
 
-      if (error) {
-        throw error;
+      if (response.error) {
+        throw new Error(
+          response.message || response.error || 'Failed to schedule notification',
+        );
       }
     } catch (error) {
       console.error('Error scheduling notification:', error);

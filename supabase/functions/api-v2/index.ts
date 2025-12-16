@@ -64,8 +64,8 @@ serve(async req => {
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
     const version = pathParts[1]; // api-v2
-    const resource = pathParts[2]; // courses, assignments, etc.
-    const action = pathParts[3]; // create, update, delete, etc.
+    const resource = pathParts[2]; // courses, assignments, queries, etc.
+    const action = pathParts[3]; // create, update, delete, deleted-items, count, etc.
 
     // Validate API version
     const versionValidation = validateApiVersion(req);
@@ -325,6 +325,20 @@ function getHandler(resource: string, action: string) {
       export: wrapOldHandler(
         handleExportData,
         'api-v2-analytics-export',
+        undefined,
+        false,
+      ),
+    },
+    queries: {
+      'deleted-items': wrapOldHandler(
+        handleGetDeletedItems,
+        'api-v2-queries-deleted-items',
+        undefined,
+        false,
+      ),
+      count: wrapOldHandler(
+        handleGetCount,
+        'api-v2-queries-count',
         undefined,
         false,
       ),
@@ -592,7 +606,16 @@ async function handleGetAssignment(req: AuthenticatedRequest) {
 
   const { data, error } = await supabaseClient
     .from('assignments')
-    .select('*')
+    .select(
+      `
+      *,
+      courses (
+        id,
+        course_name,
+        course_code
+      )
+    `,
+    )
     .eq('id', assignmentId)
     .eq('user_id', user.id) // Ensure ownership
     .is('deleted_at', null)
@@ -719,7 +742,16 @@ async function handleGetLecture(req: AuthenticatedRequest) {
 
   const { data, error } = await supabaseClient
     .from('lectures')
-    .select('*')
+    .select(
+      `
+      *,
+      courses (
+        id,
+        course_name,
+        course_code
+      )
+    `,
+    )
     .eq('id', lectureId)
     .eq('user_id', user.id) // Ensure ownership
     .is('deleted_at', null)
@@ -846,7 +878,16 @@ async function handleGetStudySession(req: AuthenticatedRequest) {
 
   const { data, error } = await supabaseClient
     .from('study_sessions')
-    .select('*')
+    .select(
+      `
+      *,
+      courses (
+        id,
+        course_name,
+        course_code
+      )
+    `,
+    )
     .eq('id', sessionId)
     .eq('user_id', user.id) // Ensure ownership
     .is('deleted_at', null)
@@ -1194,6 +1235,118 @@ async function handleExportData({
     lectures: lecturesRes.data,
     studySessions: studySessionsRes.data,
   };
+}
+
+// Query handlers
+async function handleGetDeletedItems({
+  user,
+  supabaseClient,
+}: AuthenticatedRequest) {
+  const [courses, assignments, lectures, studySessions] = await Promise.all([
+    supabaseClient
+      .from('courses')
+      .select('*')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null),
+    supabaseClient
+      .from('assignments')
+      .select('*')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null),
+    supabaseClient
+      .from('lectures')
+      .select('*')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null),
+    supabaseClient
+      .from('study_sessions')
+      .select('*')
+      .eq('user_id', user.id)
+      .not('deleted_at', 'is', null),
+  ]);
+
+  if (courses.error) handleDbError(courses.error);
+  if (assignments.error) handleDbError(assignments.error);
+  if (lectures.error) handleDbError(lectures.error);
+  if (studySessions.error) handleDbError(studySessions.error);
+
+  const allItems = [
+    ...(courses.data || []).map(item => ({ ...item, type: 'course' })),
+    ...(assignments.data || []).map(item => ({ ...item, type: 'assignment' })),
+    ...(lectures.data || []).map(item => ({ ...item, type: 'lecture' })),
+    ...(studySessions.data || []).map(item => ({
+      ...item,
+      type: 'study_session',
+    })),
+  ].sort(
+    (a, b) =>
+      new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime(),
+  );
+
+  return allItems;
+}
+
+async function handleGetCount({
+  user,
+  supabaseClient,
+  url,
+}: AuthenticatedRequest) {
+  const urlObj = new URL(url);
+  const table = urlObj.searchParams.get('table');
+  const filters = urlObj.searchParams.get('filters'); // JSON string of filters
+
+  if (!table) {
+    throw new AppError(
+      'Table parameter is required',
+      400,
+      ERROR_CODES.MISSING_REQUIRED_FIELD,
+    );
+  }
+
+  let query = supabaseClient
+    .from(table)
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  // Apply filters if provided
+  if (filters) {
+    try {
+      const filterObj = JSON.parse(filters);
+      Object.entries(filterObj).forEach(([key, value]) => {
+        if (value !== null && value !== undefined) {
+          if (Array.isArray(value)) {
+            query = query.in(key, value);
+          } else if (typeof value === 'object' && 'operator' in value) {
+            // Support operators like { operator: 'gte', value: '2024-01-01' }
+            const { operator, value: filterValue } = value as {
+              operator: string;
+              value: any;
+            };
+            if (operator === 'gte') {
+              query = query.gte(key, filterValue);
+            } else if (operator === 'lte') {
+              query = query.lte(key, filterValue);
+            } else if (operator === 'eq') {
+              query = query.eq(key, filterValue);
+            }
+          } else {
+            query = query.eq(key, value);
+          }
+        }
+      });
+    } catch (e) {
+      throw new AppError(
+        'Invalid filters parameter',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
+    }
+  }
+
+  const { count, error } = await query;
+
+  if (error) handleDbError(error);
+  return { count: count || 0 };
 }
 
 // Admin handlers removed from api-v2 - use admin-system instead

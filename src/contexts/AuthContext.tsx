@@ -218,20 +218,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         return userProfile as User;
       } catch (error) {
         console.error('AuthContext: Error fetching user profile:', error);
-        // If user profile doesn't exist, create it
+        // If user profile doesn't exist, wait a moment for database trigger to create it
+        // User profile is automatically created by database trigger when auth user is created
         try {
-          const session = await authService.getSession();
-          if (session?.user) {
-            await supabaseAuthService.createUserProfile(
-              session.user.id,
-              session.user.email || '',
-            );
-            const newProfile = await supabaseAuthService.getUserProfile(userId);
-            return newProfile as User;
-          }
+          // Wait a bit for trigger to complete
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          const newProfile = await supabaseAuthService.getUserProfile(userId);
+          return newProfile as User;
         } catch (createError) {
           console.error(
-            'AuthContext: Error creating user profile:',
+            'AuthContext: Error fetching user profile after creation:',
             createError,
           );
         }
@@ -781,6 +777,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       } catch (mfaError) {
         // MFA might not be enabled or timed out - continue without MFA
         console.log('MFA check failed or timed out:', mfaError);
+      }
+
+      // Explicitly fetch and set session to ensure AppNavigator detects the change
+      // This ensures immediate UI update after successful login
+      try {
+        const currentSession = await authService.getSession();
+        if (currentSession) {
+          console.log('✅ [AuthContext] Explicitly setting session after signIn');
+          await authSyncService.saveAuthState(currentSession);
+          setSession(currentSession);
+          if (currentSession.user) {
+            const userProfile = await fetchUserProfile(currentSession.user.id);
+            setUser(userProfile);
+          }
+        }
+      } catch (sessionError) {
+        console.warn('⚠️ Failed to fetch session after signIn:', sessionError);
+        // Don't fail the login - the auth state change listener will handle it
       }
 
       return { error: null };

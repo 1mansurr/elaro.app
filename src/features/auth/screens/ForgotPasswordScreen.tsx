@@ -68,11 +68,9 @@ export function ForgotPasswordScreen() {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: 'elaro://reset-password',
-      });
-
-      if (error) throw error;
+      // Use authService instead of direct Supabase
+      const { authService } = await import('@/services/authService');
+      await authService.resetPassword(email, 'elaro://reset-password');
 
       setSent(true);
       Alert.alert(

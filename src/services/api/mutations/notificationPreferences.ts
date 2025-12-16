@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { handleApiError } from '../errors';
 import { NotificationPreferences } from '@/types';
 
@@ -7,25 +7,13 @@ export const notificationPreferencesApiMutations = {
     preferences: Partial<NotificationPreferences>,
   ): Promise<NotificationPreferences> {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+      const response = await versionedApiClient.updateNotificationPreferences(preferences);
 
-      const updates = {
-        ...preferences,
-        updated_at: new Date().toISOString(),
-      };
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to update notification preferences');
+      }
 
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .update(updates)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
+      return response.data as NotificationPreferences;
     } catch (error) {
       throw handleApiError(error);
     }

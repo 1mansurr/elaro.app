@@ -8,6 +8,10 @@ import { cache } from '@/utils/cache';
 import { errorTracking } from '@/services/errorTracking';
 import { supabase } from '@/services/supabase';
 
+// NOTE: This service uses RPC functions for cache metrics tracking.
+// These are acceptable as direct calls for monitoring/analytics operations.
+// Can be migrated to API endpoints in the future if needed.
+
 const HIT_RATE_THRESHOLD = 80; // Alert if hit rate < 80%
 const MONITORING_WINDOW_MS = 30 * 60 * 1000; // 30 minutes
 const CHECK_INTERVAL_MS = 5 * 60 * 1000; // Check every 5 minutes

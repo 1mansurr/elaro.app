@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 
 export interface QueuedNotification {
   user_id: string;
@@ -66,48 +66,8 @@ export async function queueNotification(
       1440, // Daily bucket
     );
 
-    // Check if notification already exists in queue
-    const { data: existing } = await supabase
-      .from('notification_queue')
-      .select('id')
-      .eq('deduplication_key', dedupKey)
-      .in('status', ['pending', 'processing', 'sent'])
-      .single();
-
-    if (existing) {
-      console.log('Notification already queued (deduplication)', { dedupKey });
-      return { success: true, isDuplicate: true };
-    }
-
-    // Also check notification_deliveries for recent sends (within last hour)
-    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data: recentDelivery } = await supabase
-      .from('notification_deliveries')
-      .select('id')
-      .eq('user_id', notification.user_id)
-      .eq('notification_type', notification.notification_type)
-      .gte('sent_at', oneHourAgo)
-      .limit(1)
-      .single();
-
-    // Check if metadata matches (same itemId if present)
-    if (recentDelivery && itemId) {
-      const { data: deliveryDetails } = await supabase
-        .from('notification_deliveries')
-        .select('metadata')
-        .eq('id', recentDelivery.id)
-        .single();
-
-      // If same itemId, treat as duplicate
-      if (deliveryDetails?.metadata?.itemId === itemId) {
-        console.log('Notification sent recently (deduplication)', { dedupKey });
-        return { success: true, isDuplicate: true };
-      }
-    }
-
-    // Insert new notification with deduplication key
-    const { error } = await supabase.from('notification_queue').insert({
-      user_id: notification.user_id,
+    // Use notification-system API to add to queue
+    const response = await versionedApiClient.addToNotificationQueue({
       notification_type: notification.notification_type,
       title: notification.title,
       body: notification.body,
@@ -115,20 +75,17 @@ export async function queueNotification(
       priority: notification.priority || 5,
       scheduled_for: (notification.scheduled_for || new Date()).toISOString(),
       max_retries: notification.max_retries || 3,
-      status: 'pending',
       deduplication_key: dedupKey,
     });
 
-    if (error) {
-      // If it's a duplicate key error, it means another process inserted it
-      if (error.code === '23505') {
-        console.log('Notification already queued (unique constraint)', {
-          dedupKey,
-        });
+    if (response.error) {
+      // If it's a duplicate, the API should handle it
+      if (response.message?.includes('duplicate') || response.message?.includes('already')) {
+        console.log('Notification already queued (deduplication)', { dedupKey });
         return { success: true, isDuplicate: true };
       }
-      console.error('Error queueing notification:', error);
-      return { success: false, error: error.message };
+      console.error('Error queueing notification:', response.error);
+      return { success: false, error: response.message || response.error || 'Failed to queue notification' };
     }
 
     console.log('Notification queued successfully');
@@ -199,45 +156,33 @@ export async function queueNotificationBatch(
       return { success: true, queued: 0, failed: 0, duplicates };
     }
 
-    // Check for existing notifications in database
-    const { data: existingNotifications } = await supabase
-      .from('notification_queue')
-      .select('deduplication_key')
-      .in('deduplication_key', Array.from(dedupKeys))
-      .in('status', ['pending', 'processing', 'sent']);
+    // Queue notifications one by one using API (batch support can be added later)
+    let queuedCount = 0;
+    let failedCount = 0;
 
-    const existingKeys = new Set(
-      existingNotifications?.map(n => n.deduplication_key) || [],
-    );
+    for (const notif of notificationsToInsert) {
+      const response = await versionedApiClient.addToNotificationQueue({
+        notification_type: notif.notification_type,
+        title: notif.title,
+        body: notif.body,
+        data: notif.data || {},
+        priority: notif.priority || 5,
+        scheduled_for: notif.scheduled_for || new Date().toISOString(),
+        max_retries: notif.max_retries || 3,
+        deduplication_key: notif.deduplication_key,
+      });
 
-    // Filter out notifications that already exist
-    const uniqueNotifications = notificationsToInsert.filter(
-      notif => !existingKeys.has(notif.deduplication_key),
-    );
-
-    duplicates += notificationsToInsert.length - uniqueNotifications.length;
-
-    if (uniqueNotifications.length === 0) {
-      return { success: true, queued: 0, failed: 0, duplicates };
+      if (response.error) {
+        // If duplicate, count as duplicate not failed
+        if (response.message?.includes('duplicate') || response.message?.includes('already')) {
+          duplicates++;
+        } else {
+          failedCount++;
+        }
+      } else {
+        queuedCount++;
+      }
     }
-
-    const { data, error } = await supabase
-      .from('notification_queue')
-      .insert(uniqueNotifications)
-      .select();
-
-    if (error) {
-      console.error('Error queueing notifications:', error);
-      return {
-        success: false,
-        queued: 0,
-        failed: uniqueNotifications.length,
-        duplicates,
-      };
-    }
-
-    const queuedCount = data?.length || 0;
-    const failedCount = uniqueNotifications.length - queuedCount;
 
     return {
       success: true,
@@ -263,12 +208,11 @@ export async function cancelQueuedNotification(
   notificationId: string,
 ): Promise<{ success: boolean }> {
   try {
-    const { error } = await supabase
-      .from('notification_queue')
-      .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-      .eq('id', notificationId);
+    const response = await versionedApiClient.removeFromNotificationQueue(notificationId);
 
-    if (error) throw error;
+    if (response.error) {
+      throw new Error(response.message || response.error || 'Failed to cancel notification');
+    }
 
     return { success: true };
   } catch (error) {
@@ -284,16 +228,13 @@ export async function getUserQueuedNotifications(
   userId: string,
 ): Promise<QueuedNotification[]> {
   try {
-    const { data, error } = await supabase
-      .from('notification_queue')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('status', 'pending')
-      .order('scheduled_for', { ascending: true });
+    const response = await versionedApiClient.getNotificationQueue();
 
-    if (error) throw error;
+    if (response.error) {
+      throw new Error(response.message || response.error || 'Failed to get queued notifications');
+    }
 
-    return data || [];
+    return (response.data || []) as QueuedNotification[];
   } catch (error) {
     console.error('Error getting queued notifications:', error);
     return [];
@@ -317,6 +258,10 @@ export async function getNotificationAnalytics(userId: string): Promise<{
   by_type: Record<string, NotificationTypeStats>;
 } | null> {
   try {
+    // Note: This RPC call is not yet migrated to API layer
+    // For now, we'll keep using direct Supabase for analytics
+    // This can be migrated when an analytics endpoint is added
+    const { supabase } = await import('@/services/supabase');
     const { data, error } = await supabase.rpc('get_notification_engagement', {
       p_user_id: userId,
     });

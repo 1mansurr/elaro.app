@@ -1,7 +1,11 @@
 import React from 'react';
 import { renderHook } from '@testing-library/react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useCourses, useAssignments, useHomeScreenData } from '@/hooks/useDataQueries';
+import {
+  useCourses,
+  useAssignments,
+  useHomeScreenData,
+} from '@/hooks/useDataQueries';
 import { api } from '@/services/api';
 
 jest.mock('@/services/api');
@@ -60,7 +64,7 @@ describe('useDataQueries', () => {
     it('should use correct query key', () => {
       const { result } = renderHook(
         () => useCourses({ searchQuery: 'test', sortOption: 'name-desc' }),
-        { wrapper }
+        { wrapper },
       );
 
       expect(result.current).toBeDefined();
@@ -79,7 +83,7 @@ describe('useDataQueries', () => {
     it('should use correct query options', () => {
       const { result } = renderHook(
         () => useAssignments({ sortBy: 'title', sortAscending: false }),
-        { wrapper }
+        { wrapper },
       );
 
       expect(result.current).toBeDefined();
@@ -96,11 +100,12 @@ describe('useDataQueries', () => {
     });
 
     it('should not fetch when disabled', () => {
-      const { result } = renderHook(() => useHomeScreenData(false), { wrapper });
+      const { result } = renderHook(() => useHomeScreenData(false), {
+        wrapper,
+      });
 
       expect(result.current).toBeDefined();
       // When disabled, should not make API call
     });
   });
 });
-

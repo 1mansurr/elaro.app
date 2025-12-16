@@ -428,7 +428,6 @@ const styles = StyleSheet.create({
   linkText: {
     fontSize: FONT_SIZES.sm,
     fontWeight: FONT_WEIGHTS.medium,
-    textDecorationLine: 'underline',
     flex: 1,
   },
   templateSection: {

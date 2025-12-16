@@ -1,4 +1,4 @@
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppError } from '@/utils/AppError';
 
@@ -102,41 +102,38 @@ export class NotificationHistoryService {
         return this.filterNotifications(cachedData.notifications, filter);
       }
 
-      // Build query
-      let query = supabase
-        .from('notification_deliveries')
-        .select('*')
-        .eq('user_id', userId)
-        .order('sent_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+      // Use API layer
+      const response = await versionedApiClient.getNotificationHistory({
+        limit,
+        offset,
+        filter: filter?.type || 'all',
+        includeRead,
+      });
 
-      // Apply read filter
-      if (!includeRead) {
-        query = query.is('opened_at', null);
-      }
+      if (response.error) {
+        // Try to return cached data if available
+        const cachedData = await this.getCachedHistory(userId);
+        if (cachedData) {
+          return this.filterNotifications(
+            cachedData.notifications,
+            options.filter,
+          );
+        }
 
-      const { data, error } = await supabase
-        .from('notification_deliveries')
-        .select('*')
-        .eq('user_id', userId)
-        .order('sent_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
-      if (error) {
         throw new AppError(
-          `Failed to get notification history: ${error.message}`,
+          response.message || response.error || 'Failed to get notification history',
           500,
           'NOTIFICATION_HISTORY_ERROR',
           { userId, options },
         );
       }
 
-      const notifications = data || [];
+      const notifications = (response.data || []) as NotificationHistoryItem[];
 
       // Cache the results
       await this.cacheHistory(userId, notifications);
 
-      // Apply filters
+      // Apply filters (API already filters by type, but we keep this for client-side filtering)
       return this.filterNotifications(notifications, filter);
     } catch (error) {
       // Try to return cached data if available
@@ -162,22 +159,18 @@ export class NotificationHistoryService {
    */
   async getUnreadCount(userId: string): Promise<number> {
     try {
-      const { data, error } = await supabase
-        .from('notification_deliveries')
-        .select('id')
-        .eq('user_id', userId)
-        .is('opened_at', null);
+      const response = await versionedApiClient.getUnreadNotificationCount();
 
-      if (error) {
+      if (response.error) {
         throw new AppError(
-          `Failed to get unread count: ${error.message}`,
+          response.message || response.error || 'Failed to get unread count',
           500,
           'UNREAD_COUNT_ERROR',
           { userId },
         );
       }
 
-      return data?.length || 0;
+      return response.data?.count || 0;
     } catch (error) {
       throw new AppError(
         `Error getting unread count: ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -193,15 +186,13 @@ export class NotificationHistoryService {
    */
   async markAsRead(notificationId: string, userId: string): Promise<void> {
     try {
-      const { error } = await supabase
-        .from('notification_deliveries')
-        .update({ opened_at: new Date().toISOString() })
-        .eq('id', notificationId)
-        .eq('user_id', userId);
+      const response = await versionedApiClient.markNotificationAsRead(
+        notificationId,
+      );
 
-      if (error) {
+      if (response.error) {
         throw new AppError(
-          `Failed to mark notification as read: ${error.message}`,
+          response.message || response.error || 'Failed to mark notification as read',
           500,
           'MARK_READ_ERROR',
           { notificationId, userId },

@@ -1,9 +1,10 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useState, useEffect } from 'react';
 import {
   createStackNavigator,
   StackNavigationOptions,
 } from '@react-navigation/stack';
 import { View, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,6 +14,7 @@ import { UsageLimitPaywallProvider } from '@/contexts/UsageLimitPaywallContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '@/hooks/useSmartPreloading';
+import { supabase } from '@/services/supabase';
 import {
   SCREEN_CONFIGS,
   TRANSITIONS,
@@ -113,6 +115,26 @@ const OddityWelcomeScreen = lazy(
 // Lazy-loaded navigators
 const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
 const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
+
+// Lazy-loaded post-onboarding welcome screen
+const PostOnboardingWelcomeScreen = lazy(
+  () =>
+    import('@/features/onboarding/screens/PostOnboardingWelcomeScreen').then(
+      module => ({
+        default: module.PostOnboardingWelcomeScreen,
+      }),
+    ),
+);
+
+// Lazy-loaded add course first screen
+const AddCourseFirstScreen = lazy(
+  () =>
+    import('@/features/onboarding/screens/AddCourseFirstScreen').then(
+      module => ({
+        default: module.AddCourseFirstScreen,
+      }),
+    ),
+);
 
 // Lazy-loaded single screens for simplified flows
 const AddAssignmentScreen = lazy(
@@ -363,6 +385,18 @@ const mainScreens = {
     },
   },
   OnboardingFlow: { component: OnboardingFlow },
+  PostOnboardingWelcome: {
+    component: PostOnboardingWelcomeScreen,
+    options: {
+      headerShown: false,
+    },
+  },
+  AddCourseFirst: {
+    component: AddCourseFirstScreen,
+    options: {
+      headerShown: false,
+    },
+  },
   AnalyticsAdmin: {
     component: AnalyticsAdminScreen,
     options: {
@@ -386,11 +420,65 @@ const mainScreens = {
   },
 };
 
+const POST_ONBOARDING_WELCOME_KEY = 'hasSeenPostOnboardingWelcome';
+const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
+
 export const AuthenticatedNavigator: React.FC = () => {
   const { user } = useAuth();
+  const [hasSeenPostOnboardingWelcome, setHasSeenPostOnboardingWelcome] =
+    useState<boolean | null>(null);
+  const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] =
+    useState<boolean | null>(null);
+  const [courseCount, setCourseCount] = useState<number | null>(null);
+  const [isCheckingWelcome, setIsCheckingWelcome] = useState(true);
 
   // Enable smart preloading for better performance
   useSmartPreloading();
+
+  // Check course count and welcome screen status
+  useEffect(() => {
+    const checkWelcomeScreens = async () => {
+      if (!user || !user.onboarding_completed) {
+        setIsCheckingWelcome(false);
+        return;
+      }
+
+      try {
+        // Check AsyncStorage for both screens
+        const [hasSeenWelcome, hasSeenAddCourse] = await Promise.all([
+          AsyncStorage.getItem(POST_ONBOARDING_WELCOME_KEY),
+          AsyncStorage.getItem(ADD_COURSE_FIRST_KEY),
+        ]);
+
+        setHasSeenPostOnboardingWelcome(hasSeenWelcome === 'true');
+        setHasSeenAddCourseFirst(hasSeenAddCourse === 'true');
+
+        // Check course count
+        const { count, error } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('deleted_at', null);
+
+        if (error) {
+          console.error('Error checking course count:', error);
+          setCourseCount(0); // Default to 0 on error
+        } else {
+          setCourseCount(count || 0);
+        }
+      } catch (error) {
+        console.error('Error checking welcome screen status:', error);
+        // Default to NOT showing screens on error (assume already seen)
+        setHasSeenPostOnboardingWelcome(true);
+        setHasSeenAddCourseFirst(true);
+        setCourseCount(0);
+      } finally {
+        setIsCheckingWelcome(false);
+      }
+    };
+
+    checkWelcomeScreens();
+  }, [user]);
 
   // Show onboarding if user hasn't completed it
   if (user && !user.onboarding_completed) {
@@ -403,11 +491,29 @@ export const AuthenticatedNavigator: React.FC = () => {
     );
   }
 
+  // Show loading while checking welcome screen status
+  if (isCheckingWelcome || courseCount === null) {
+    return <LoadingFallback />;
+  }
+
+  // Determine initial route based on course count and welcome screen status
+  let initialRouteName: keyof RootStackParamList = 'Main';
+
+  if (courseCount === 0 && hasSeenAddCourseFirst === false) {
+    // No courses and hasn't seen AddCourseFirst screen
+    initialRouteName = 'AddCourseFirst';
+  } else if (courseCount > 0 && hasSeenPostOnboardingWelcome === false) {
+    // Has courses but hasn't seen PostOnboardingWelcome screen
+    initialRouteName = 'PostOnboardingWelcome';
+  }
+
   // Show main app if onboarding is completed
   return (
     <UsageLimitPaywallProvider>
       <Suspense fallback={<LoadingFallback />}>
-        <Stack.Navigator screenOptions={sharedScreenOptions}>
+        <Stack.Navigator
+          screenOptions={sharedScreenOptions}
+          initialRouteName={initialRouteName}>
           {/* Launch screen removed - AppNavigator handles initial routing */}
           {/* Main app screens */}
           {renderScreens(mainScreens)}

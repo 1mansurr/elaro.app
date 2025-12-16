@@ -34,8 +34,8 @@ All design tokens are consolidated in `src/constants/theme.ts`:
 ```typescript
 // Colors
 export const COLORS = {
-  primary: '#007AFF',
-  secondary: '#5856D6',
+  primary: '#2C5EFF',
+  secondary: '#FF6B6B',
   // ... comprehensive color palette
 };
 

@@ -301,13 +301,118 @@ class UserService {
 
     return streak;
   }
+
+  async getUserDevices(userId: string) {
+    const { data: devices, error } = await this.supabaseClient
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+
+    if (error) throw new AppError(error.message, 500, 'DEVICES_FETCH_ERROR');
+    return devices || [];
+  }
+
+  async registerDevice(userId: string, deviceData: { push_token: string; platform: string; updated_at?: string }) {
+    const { data: device, error } = await this.supabaseClient
+      .from('user_devices')
+      .upsert(
+        {
+          user_id: userId,
+          push_token: deviceData.push_token,
+          platform: deviceData.platform,
+          updated_at: deviceData.updated_at || new Date().toISOString(),
+        },
+        { onConflict: 'user_id,platform' },
+      )
+      .select()
+      .single();
+
+    if (error) throw new AppError(error.message, 500, 'DEVICE_REGISTER_ERROR');
+    return device;
+  }
+
+  async deleteDevice(userId: string, deviceId: string) {
+    // Verify ownership
+    const { data: device, error: checkError } = await this.supabaseClient
+      .from('user_devices')
+      .select('user_id')
+      .eq('id', deviceId)
+      .single();
+
+    if (checkError) throw new AppError(checkError.message, 404, 'DEVICE_NOT_FOUND');
+    if (device.user_id !== userId) {
+      throw new AppError('You can only delete your own devices', 403, ERROR_CODES.FORBIDDEN);
+    }
+
+    const { error } = await this.supabaseClient
+      .from('user_devices')
+      .delete()
+      .eq('id', deviceId);
+
+    if (error) throw new AppError(error.message, 500, 'DEVICE_DELETE_ERROR');
+    return { success: true, message: 'Device removed successfully' };
+  }
+
+  async getLoginHistory(userId: string, limit: number = 50) {
+    // Use RPC function if available, otherwise query directly
+    try {
+      const { data, error } = await this.supabaseClient.rpc(
+        'get_recent_login_activity',
+        {
+          p_user_id: userId,
+          p_limit: limit,
+        },
+      );
+
+      if (error) {
+        // Fallback to direct query if RPC doesn't exist
+        const { data: fallbackData, error: fallbackError } = await this.supabaseClient
+          .from('user_sessions')
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+
+        if (fallbackError) throw new AppError(fallbackError.message, 500, 'LOGIN_HISTORY_ERROR');
+        return fallbackData || [];
+      }
+
+      return data || [];
+    } catch (error: any) {
+      throw new AppError(
+        error.message || 'Failed to get login history',
+        500,
+        'LOGIN_HISTORY_ERROR',
+      );
+    }
+  }
+
+  async getSubscription(userId: string) {
+    const { data: user, error } = await this.supabaseClient
+      .from('users')
+      .select('subscription_tier, subscription_status, subscription_expires_at, account_status')
+      .eq('id', userId)
+      .single();
+
+    if (error) throw new AppError(error.message, 500, 'SUBSCRIPTION_FETCH_ERROR');
+
+    return {
+      tier: user.subscription_tier || 'free',
+      status: user.subscription_status || 'inactive',
+      expiresAt: user.subscription_expires_at || null,
+      accountStatus: user.account_status || 'active',
+      hasActiveSubscription: user.subscription_status === 'active' && 
+        (!user.subscription_expires_at || new Date(user.subscription_expires_at) > new Date()),
+    };
+  }
 }
 
 // Main handler function
-async function handleUsersRequest({ user, supabaseClient, body, url }: any) {
+async function handleUsersRequest({ user, supabaseClient, body, url, method: requestMethod }: any) {
   const userService = new UserService(supabaseClient);
   const path = new URL(url).pathname;
-  const method = new URL(url).searchParams.get('method') || 'GET';
+  const method = requestMethod || new URL(url).searchParams.get('method') || 'GET';
 
   // Initialize event-driven architecture
   initializeEventDrivenArchitecture(supabaseClient);
@@ -338,6 +443,40 @@ async function handleUsersRequest({ user, supabaseClient, body, url }: any) {
 
   if (method === 'GET' && path.endsWith('/analytics')) {
     return await userService.getUserAnalytics(user.id);
+  }
+
+  // New endpoints for Phase 4 migration
+  if (method === 'GET' && path.includes('/devices') && !path.match(/\/devices\/[^/]+$/)) {
+    // GET /devices (list devices)
+    return await userService.getUserDevices(user.id);
+  }
+
+  if (method === 'POST' && path.includes('/devices') && !path.match(/\/devices\/[^/]+$/)) {
+    // POST /devices (register device)
+    return await userService.registerDevice(user.id, body);
+  }
+
+  if (method === 'DELETE' && path.includes('/devices')) {
+    // Extract device ID from path
+    const pathParts = path.split('/').filter(Boolean);
+    const deviceIndex = pathParts.indexOf('devices');
+    if (deviceIndex === -1 || deviceIndex === pathParts.length - 1) {
+      throw new AppError('Device ID is required', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+    const deviceId = pathParts[deviceIndex + 1];
+    if (!deviceId) {
+      throw new AppError('Device ID is required', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+    return await userService.deleteDevice(user.id, deviceId);
+  }
+
+  if (method === 'GET' && path.endsWith('/login-history')) {
+    const limit = parseInt(new URL(url).searchParams.get('limit') || '50');
+    return await userService.getLoginHistory(user.id, limit);
+  }
+
+  if (method === 'GET' && path.endsWith('/subscription')) {
+    return await userService.getSubscription(user.id);
   }
 
   throw new AppError('Invalid route or method', 404, ERROR_CODES.NOT_FOUND);

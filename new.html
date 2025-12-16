@@ -2,37 +2,52 @@
 <html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ELARO Welcome Screen</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<title>Onboarding - Add Course First</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              "primary": "#1281e2",
-              "background-light": "#f6f7f8",
-              "background-dark": "#101a22",
-              "card-light": "#ffffff",
-              "card-dark": "#1a2632",
-              "text-main": "#111518",
-              "text-secondary": "#617789",
-              // Accent colors for the playful vibe
-              "accent-purple": "#8b5cf6",
-              "accent-green": "#22c55e",
-              "accent-orange": "#f97316",
-              "accent-blue": "#3b82f6",
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#0055FF","primary-dark": "#0044CC",
+                        "text-main": "#0f172a",
+                        "text-secondary": "#64748b",
+                        "background-light": "#FFFFFF",
+                        "background-dark": "#101a22",
+                    },
+                    fontFamily: {
+                        "sans": ["Inter", "sans-serif"],
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem", 
+                        "lg": "0.5rem", 
+                        "xl": "1rem", 
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                },
             },
-            fontFamily: {
-              "display": ["Plus Jakarta Sans", "sans-serif"]
-            },
-            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "2xl": "1rem", "full": "9999px"},
-          },
-        },
-      }
+        }
     </script>
+<style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
 <style>
     body {
       min-height: max(884px, 100dvh);
@@ -44,75 +59,52 @@
     }
   </style>
   </head>
-<body class="bg-background-light dark:bg-background-dark font-display antialiased">
-<div class="relative flex h-full min-h-screen w-full max-w-md mx-auto flex-col bg-background-light dark:bg-background-dark overflow-x-hidden shadow-2xl">
-<div class="flex items-center px-6 pt-8 pb-4 justify-center">
-<div class="flex items-center gap-2">
-<span class="material-symbols-outlined text-primary text-3xl">
-                school
-            </span>
-<h2 class="text-text-main dark:text-white text-xl font-extrabold tracking-tight">ELARO</h2>
-</div>
-</div>
-<div class="flex flex-col items-center px-6 pt-4 pb-2 text-center z-10">
-<h1 class="text-text-main dark:text-white text-[32px] font-extrabold leading-tight tracking-tight mb-3">
-            Welcome to ELARO
-        </h1>
-<p class="text-text-secondary dark:text-gray-400 text-base font-medium leading-relaxed max-w-[280px]">
-            Your academic co-pilot for smarter study and success!
-        </p>
-</div>
-<div class="px-6 py-6 w-full flex justify-center">
-<div class="w-full h-48 md:h-56 rounded-2xl bg-cover bg-center shadow-sm relative overflow-hidden group" data-alt="Vibrant college illustration showing students studying on campus with books and laptops, playful and modern style" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBqdYNi5gQlY5O24MF0m4wcC_whc9WELC_Ml1ojZlqGVFmmRaNLE2r8ifbaDuWPe2BJLepPo9xb_wKir7J8obDRB-ux31k9Usi1se-U4A797eyVWqIVIpuvu5i4VqKvCuD0jKQhADT-nYXf0-NJ4Pn3J1FBpxO1rsf7t85xFevzST8zDGzZOZfoLBOOeU-mdtup1XoMf9pC8hwXsmaPXqgk05XM2LQnWlJz-7L_wXaNLL2O_QxEE1NE3gbJ6U_LOP49JK20enzzH-s');">
-<div class="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent"></div>
-</div>
-</div>
-<div class="flex-1 px-4 pb-24">
-<div class="grid grid-cols-2 gap-3">
-<div class="flex flex-col gap-3 rounded-2xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-[1.02]">
-<div class="flex items-center justify-center size-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-accent-blue">
-<span class="material-symbols-outlined">timer</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-text-main dark:text-white text-sm font-bold leading-tight">Study Sessions</h3>
-<p class="text-text-secondary dark:text-gray-400 text-xs font-medium leading-normal">Plan focused blocks</p>
-</div>
-</div>
-<div class="flex flex-col gap-3 rounded-2xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-[1.02]">
-<div class="flex items-center justify-center size-10 rounded-full bg-purple-100 dark:bg-purple-900/30 text-accent-purple">
-<span class="material-symbols-outlined">history_edu</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-text-main dark:text-white text-sm font-bold leading-tight">Revisions</h3>
-<p class="text-text-secondary dark:text-gray-400 text-xs font-medium leading-normal">Never forget topics</p>
-</div>
-</div>
-<div class="flex flex-col gap-3 rounded-2xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-[1.02]">
-<div class="flex items-center justify-center size-10 rounded-full bg-green-100 dark:bg-green-900/30 text-accent-green">
-<span class="material-symbols-outlined">notifications_active</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-text-main dark:text-white text-sm font-bold leading-tight">Lecture Alerts</h3>
-<p class="text-text-secondary dark:text-gray-400 text-xs font-medium leading-normal">Be on time, always</p>
-</div>
-</div>
-<div class="flex flex-col gap-3 rounded-2xl bg-card-light dark:bg-card-dark p-4 shadow-sm border border-gray-100 dark:border-gray-800 transition-transform hover:scale-[1.02]">
-<div class="flex items-center justify-center size-10 rounded-full bg-orange-100 dark:bg-orange-900/30 text-accent-orange">
-<span class="material-symbols-outlined">assignment_turned_in</span>
-</div>
-<div class="flex flex-col gap-1">
-<h3 class="text-text-main dark:text-white text-sm font-bold leading-tight">Assignments</h3>
-<p class="text-text-secondary dark:text-gray-400 text-xs font-medium leading-normal">Track deadlines</p>
-</div>
-</div>
-</div>
-</div>
-<div class="fixed bottom-0 left-0 right-0 w-full max-w-md mx-auto p-4 bg-background-light/95 dark:bg-background-dark/95 backdrop-blur-sm border-t border-gray-100 dark:border-gray-800 z-50">
-<button class="w-full h-12 bg-primary hover:bg-blue-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 transition-colors shadow-lg shadow-blue-500/20 active:scale-[0.98]">
-<span>Get Started</span>
-<span class="material-symbols-outlined text-sm font-bold">arrow_forward</span>
+<body class="bg-background-light dark:bg-background-dark font-sans text-text-main dark:text-white transition-colors duration-200">
+<div class="relative flex h-full min-h-screen w-full flex-col group/design-root overflow-x-hidden">
+<div class="flex items-center px-6 justify-between pt-14 md:pt-6 safe-area-top relative w-full">
+<div class="text-primary font-bold text-xl tracking-tight hidden md:block">ELARO</div>
+<div class="flex-1"></div>
+<button class="absolute right-6 top-14 md:top-6 md:right-8 flex items-center justify-end group transition-opacity hover:opacity-70 z-10">
+<span class="text-text-secondary dark:text-gray-400 text-[15px] font-medium tracking-wide">Skip</span>
 </button>
 </div>
+<div class="flex flex-col flex-1 px-8 pb-8 pt-4">
+<div class="flex-1 flex flex-col justify-end items-center pb-12"> 
+<div class="w-full max-w-[340px] mb-12"> 
+<div class="w-full aspect-square relative flex items-center justify-center">
+<div class="w-full h-full bg-center bg-contain bg-no-repeat" data-alt="Line-art style illustration of a boy with glasses, pen, and checklist with blue accents" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAo6HQGcJVHnrmEVzP9ji_cYv9269ef50ud4kG5CQkTzyNWQhUqBDqY5-0aHmbzP6PUn0dRINSs2W6j6ftjOFaiXiBKpoMyXI3FcwJLGaDJdd9RXPQcyryrorelTJni7IkOgr4zjDVoBMOEH1dp6B_OrorynZRYbv2U1JRYZrvJh00YsSMAVi6EYqG-_eVNZBk48MzXu6QhiG8SzoAAIciXwlR_iRyqY1uAfmrKmBKyka6_wSgYEuQWnjxM1LL07ktQsM7922b_kfY");'>
 </div>
-
+</div>
+</div>
+<div class="w-full max-w-sm text-center space-y-6"> 
+<h1 class="text-text-main dark:text-white tracking-tight text-[28px] font-extrabold leading-tight">
+                    Let's get you <span class="text-primary">organized</span>
+</h1>
+<p class="text-text-secondary dark:text-gray-400 text-[16px] font-normal leading-relaxed px-4 mx-auto max-w-[300px]">
+                    Add a course to start tracking assignments, study sessions, and lectures.
+                </p>
+<div class="flex gap-2.5 justify-center pt-4">
+<div class="w-2 h-2 rounded-full bg-primary ring-2 ring-primary ring-offset-1 dark:ring-offset-background-dark"></div>
+<div class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+<div class="w-2 h-2 rounded-full bg-gray-200 dark:bg-gray-700"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="w-full px-6 py-6 mb-2 safe-area-bottom mt-auto">
+<div class="flex justify-center w-full">
+<button class="flex w-full cursor-pointer items-center justify-center rounded-full h-[56px] px-6 bg-primary hover:bg-primary-dark transition-all active:scale-[0.98] shadow-lg shadow-blue-500/25 text-white text-[17px] font-bold leading-normal tracking-wide">
+<span class="truncate">Add Course</span>
+</button>
+</div>
+<div class="h-1.5 w-32 bg-gray-100 dark:bg-white/10 rounded-full mx-auto mt-6"></div>
+</div>
+</div>
+<style>.safe-area-top {
+            padding-top: env(safe-area-inset-top, 24px);
+        }
+        .safe-area-bottom {
+            padding-bottom: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
 </body></html>

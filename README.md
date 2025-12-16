@@ -16,9 +16,9 @@ A modern, intelligent study planning app designed to help students build better 
 ### Phase 1: Design System Consolidation ✅
 
 - **Unified Theme System**: Consolidated all design tokens into `src/constants/theme.ts`
-- **Eliminated Redundancy**: Removed duplicate design system files (`designSystem.ts`, `components.ts`, `text.ts`)
-- **Centralized Tokens**: Single source of truth for colors, spacing, typography, and component patterns
-- **Legacy Compatibility**: Maintained backward compatibility with existing components
+- **Primary Design System**: `theme.ts` is the primary source of truth for colors, spacing, typography, and component patterns
+- **Legacy Files**: `designSystem.ts` is still used in some components (LayoutComponents, TaskCreationFlow) for backward compatibility. `components.ts` and `text.ts` exist but are not actively imported and can be considered deprecated.
+- **Migration Status**: New components should use `theme.ts` exclusively. Legacy components using `designSystem.ts` should be migrated over time.
 
 ### Phase 2: Button System Consolidation ✅
 

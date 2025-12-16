@@ -120,18 +120,41 @@ export class ApiVersioningService {
 
   /**
    * Make a versioned API request
+   * @param endpoint - API endpoint path (e.g., 'auth/signin' or 'api-v2/courses/list')
+   * @param options - Fetch options including method, body, headers
+   * @param requireAuth - Whether to include auth token (default: true for most endpoints, false for auth endpoints)
    */
   async request<T = any>(
     endpoint: string,
     options: RequestInit = {},
+    requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
     const url = `${this.baseUrl}/functions/v1/${endpoint}`;
 
-    const headers = {
+    // Get auth token from Supabase client if required
+    let authToken: string | null = null;
+    if (requireAuth) {
+      try {
+        // Dynamically import supabase to avoid circular dependencies
+        const { supabase } = await import('@/services/supabase');
+        const { data: { session } } = await supabase.auth.getSession();
+        authToken = session?.access_token || null;
+      } catch (error) {
+        // If getting session fails, continue without token (will fail auth check on server)
+        console.warn('Failed to get auth token:', error);
+      }
+    }
+
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-API-Version': this.currentVersion,
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
+
+    // Add auth token if required and available
+    if (requireAuth && authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
 
     try {
       const response = await fetch(url, {
@@ -154,6 +177,31 @@ export class ApiVersioningService {
         });
       }
 
+      // Handle both standard response format and legacy format
+      if (data.success !== undefined) {
+        // Standard format: { success: true, data: {...}, error: {...} }
+        if (data.success && data.data) {
+          return {
+            data: data.data,
+            ...data,
+            deprecationWarning: isDeprecated,
+            sunsetDate: sunsetDate || undefined,
+            migrationGuide: migrationGuide || undefined,
+          };
+        } else if (!data.success && data.error) {
+          return {
+            error: data.error.message || data.error,
+            code: data.error.code,
+            message: data.error.message,
+            ...data,
+            deprecationWarning: isDeprecated,
+            sunsetDate: sunsetDate || undefined,
+            migrationGuide: migrationGuide || undefined,
+          };
+        }
+      }
+
+      // Legacy format: { data: {...}, error: {...} }
       return {
         ...data,
         deprecationWarning: isDeprecated,
@@ -175,6 +223,7 @@ export class ApiVersioningService {
   async get<T = unknown>(
     endpoint: string,
     params?: Record<string, string | number | boolean>,
+    requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
     const url = new URL(`${this.baseUrl}/functions/v1/${endpoint}`);
 
@@ -186,7 +235,7 @@ export class ApiVersioningService {
 
     return this.request<T>(endpoint, {
       method: 'GET',
-    });
+    }, requireAuth);
   }
 
   /**
@@ -195,11 +244,12 @@ export class ApiVersioningService {
   async post<T = unknown>(
     endpoint: string,
     data?: Record<string, unknown>,
+    requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'POST',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, requireAuth);
   }
 
   /**
@@ -208,20 +258,21 @@ export class ApiVersioningService {
   async put<T = unknown>(
     endpoint: string,
     data?: Record<string, unknown>,
+    requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'PUT',
       body: data ? JSON.stringify(data) : undefined,
-    });
+    }, requireAuth);
   }
 
   /**
    * Make a DELETE request with versioning
    */
-  async delete<T = any>(endpoint: string): Promise<ApiResponse<T>> {
+  async delete<T = any>(endpoint: string, requireAuth: boolean = true): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, {
       method: 'DELETE',
-    });
+    }, requireAuth);
   }
 
   /**

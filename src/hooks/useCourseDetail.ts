@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course } from '@/types';
 
 /**
@@ -11,15 +11,17 @@ export const useCourseDetail = (courseId: string) => {
   return useQuery<Course, Error>({
     queryKey: ['courseDetail', courseId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('id', courseId)
-        .is('deleted_at', null) // Only fetch active courses
-        .single();
+      const response = await versionedApiClient.getCourse(courseId);
 
-      if (error) throw error;
-      return data;
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to fetch course');
+      }
+
+      if (!response.data) {
+        throw new Error('Course not found');
+      }
+
+      return response.data;
     },
     enabled: !!courseId, // Only run query if courseId is provided
     staleTime: 1000 * 60 * 5, // 5 minutes

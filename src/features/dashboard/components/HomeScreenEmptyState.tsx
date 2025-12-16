@@ -17,7 +17,7 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
 
   return (
     <View
-      style={[styles.container, { paddingTop: insets.top + SPACING.xxl * 2 }]}>
+      style={[styles.container, { paddingTop: insets.top + SPACING.lg }]}>
       {/* Dismiss button */}
       {onDismiss && (
         <TouchableOpacity
@@ -50,20 +50,6 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
         Tap the + button below to add your first lecture, assignment, or study
         session.
       </Text>
-
-      {/* Removed CTA Button - FAB will be used instead */}
-
-      {/* Additional tip */}
-      <View style={styles.tipContainer}>
-        <Ionicons
-          name="information-circle-outline"
-          size={20}
-          color={COLORS.textSecondary}
-        />
-        <Text style={styles.tipText}>
-          Tip: You can also swipe right on tasks to mark them complete!
-        </Text>
-      </View>
     </View>
   );
 };
@@ -145,20 +131,5 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: SPACING.xl,
     paddingHorizontal: SPACING.md,
-  },
-  tipContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F8F9FA',
-    padding: SPACING.md,
-    borderRadius: 12,
-    marginTop: SPACING.lg,
-    gap: SPACING.xs,
-  },
-  tipText: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary, // Changed from COLORS.gray for better contrast
-    flex: 1,
-    lineHeight: 18,
   },
 });

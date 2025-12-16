@@ -107,18 +107,15 @@ const notificationService = {
       const platform = Platform.OS;
       const updated_at = new Date().toISOString();
 
-      const { error } = await supabase.from('user_devices').upsert(
-        {
-          user_id: userId,
+      const { versionedApiClient } = await import('@/services/VersionedApiClient');
+      const response = await versionedApiClient.registerDevice({
           push_token: token,
           platform,
           updated_at,
-        },
-        { onConflict: 'user_id,platform' },
-      );
+      });
 
-      if (error) {
-        throw error;
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to save push token');
       }
 
       console.log('Push token saved successfully to user_devices table.');

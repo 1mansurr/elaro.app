@@ -32,7 +32,7 @@ type AppWelcomeScreenNavigationProp = StackNavigationProp<
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 // Hero image from local assets
-const HERO_IMAGE = require('@/assets/welhero.png');
+const HERO_IMAGE = require('../../../../assets/welhero.png');
 
 const features = [
   {
@@ -84,16 +84,6 @@ const AppWelcomeScreen = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* ELARO Logo Header */}
-        <View style={styles.logoHeader}>
-          <View style={styles.logoContainer}>
-            <Ionicons name="school" size={32} color={COLORS.primary} />
-            <Text style={[styles.logoText, { marginLeft: SPACING.xs }]}>
-              ELARO
-            </Text>
-          </View>
-        </View>
-
         {/* Welcome Title Section */}
         <View style={styles.welcomeSection}>
           <Text style={styles.welcomeTitle}>Welcome to ELARO</Text>
@@ -173,23 +163,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingBottom: 100, // Space for fixed button
   },
-  logoHeader: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.xl,
-    paddingBottom: SPACING.md,
-  },
-  logoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.extrabold as any,
-    color: '#111518', // text-main
-    letterSpacing: -0.5,
-  },
   welcomeSection: {
     alignItems: 'center',
     paddingHorizontal: SPACING.lg,
@@ -261,6 +234,8 @@ const styles = StyleSheet.create({
   },
   featureContent: {
     marginTop: SPACING.md,
+    alignItems: 'flex-start',
+    paddingLeft: SPACING.xs, // Push text slightly to the right
   },
   featureTitle: {
     fontSize: FONT_SIZES.sm,

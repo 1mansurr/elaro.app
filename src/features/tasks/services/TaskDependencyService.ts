@@ -1,5 +1,12 @@
 import { supabase } from '@/services/supabase';
 
+// NOTE: This service uses direct Supabase queries and needs API endpoints created.
+// TODO: Create API endpoints in api-v2 for task dependency operations:
+//   - POST /api-v2/task-dependencies (create dependency)
+//   - GET /api-v2/task-dependencies/:taskId (get dependencies)
+//   - DELETE /api-v2/task-dependencies/:id (remove dependency)
+//   - POST /api-v2/task-dependencies/validate (validate dependencies)
+
 export interface TaskDependency {
   id: string;
   taskId: string;

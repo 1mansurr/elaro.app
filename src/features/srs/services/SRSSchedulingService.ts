@@ -1,6 +1,12 @@
 import { supabase } from '@/services/supabase';
 import { User } from '@/types';
 
+// NOTE: This service uses direct Supabase queries for SRS configuration.
+// TODO: Create API endpoints in api-v2 or extend srs-system for:
+//   - GET /api-v2/srs/configuration (get SRS config)
+//   - POST /api-v2/srs/schedule (schedule SRS reminders)
+//   - GET /api-v2/srs/preferences (get SRS preferences)
+
 export interface SRSUserPreferences {
   preferredStudyTimes: TimeSlot[];
   difficultyAdjustment: 'conservative' | 'moderate' | 'aggressive';

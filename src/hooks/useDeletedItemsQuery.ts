@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course, Assignment, Lecture, StudySession } from '@/types';
 
 export type DeletedItem = (Course | Assignment | Lecture | StudySession) & {
@@ -14,44 +14,13 @@ export const useDeletedItemsQuery = () => {
   return useQuery<DeletedItem[], Error>({
     queryKey: ['deletedItems'],
     queryFn: async () => {
-      const [courses, assignments, lectures, studySessions] = await Promise.all(
-        [
-          supabase.from('courses').select('*').not('deleted_at', 'is', null),
-          supabase
-            .from('assignments')
-            .select('*')
-            .not('deleted_at', 'is', null),
-          supabase.from('lectures').select('*').not('deleted_at', 'is', null),
-          supabase
-            .from('study_sessions')
-            .select('*')
-            .not('deleted_at', 'is', null),
-        ],
-      );
+      const response = await versionedApiClient.getDeletedItems();
 
-      const allItems: DeletedItem[] = [
-        ...(courses.data || []).map(item => ({
-          ...item,
-          type: 'course' as const,
-        })),
-        ...(assignments.data || []).map(item => ({
-          ...item,
-          type: 'assignment' as const,
-        })),
-        ...(lectures.data || []).map(item => ({
-          ...item,
-          type: 'lecture' as const,
-        })),
-        ...(studySessions.data || []).map(item => ({
-          ...item,
-          type: 'study_session' as const,
-        })),
-      ].sort(
-        (a, b) =>
-          new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime(),
-      );
+      if (response.error) {
+        throw new Error(response.message || response.error || 'Failed to fetch deleted items');
+      }
 
-      return allItems;
+      return (response.data || []) as DeletedItem[];
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
   });

@@ -1,5 +1,13 @@
 import { supabase } from '@/services/supabase';
 
+// NOTE: This service uses direct Supabase queries and needs API endpoints created.
+// TODO: Create API endpoints in api-v2 for advanced template operations:
+//   - POST /api-v2/templates (create template)
+//   - GET /api-v2/templates (list templates)
+//   - PUT /api-v2/templates/:id (update template)
+//   - DELETE /api-v2/templates/:id (delete template)
+//   - POST /api-v2/templates/:id/use (create task from template)
+
 export interface TemplateField {
   name: string;
   type: 'text' | 'date' | 'time' | 'select' | 'number' | 'textarea' | 'boolean';

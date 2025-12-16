@@ -2,6 +2,10 @@ import { supabase } from '@/services/supabase';
 import { snoozeReminder, cancelReminder } from './reminderUtils';
 import * as Notifications from 'expo-notifications';
 
+// NOTE: This file contains analytics tracking operations that use direct Supabase.
+// These could be migrated to API endpoints in the future, but are acceptable
+// as direct calls for performance reasons (analytics operations).
+
 /**
  * Handle notification action responses (button taps)
  */

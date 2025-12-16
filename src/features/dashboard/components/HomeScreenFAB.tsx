@@ -149,6 +149,7 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
         onDoubleTap={handleQuickAdd}
         draftCount={draftCount}
         onDraftBadgePress={() => navigation.navigate('Drafts')}
+        isOpen={isFabOpen}
       />
     </>
   );
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex: 5,
+    zIndex: 15, // Ensure backdrop sits above FAB (which uses zIndex 10)
   },
 });
 

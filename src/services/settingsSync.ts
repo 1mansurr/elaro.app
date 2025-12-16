@@ -15,7 +15,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '@/services/supabase';
+import { versionedApiClient } from '@/services/VersionedApiClient';
 import { cache } from '@/utils/cache';
 import { User } from '@/types';
 import { SettingsCache, PendingChange } from '@/types/settings';
@@ -86,24 +86,23 @@ class SettingsSyncService {
    */
   async loadFromServer(userId: string): Promise<SettingsCache | null> {
     try {
-      // Load profile
-      const { data: profile, error: profileError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', userId)
-        .single();
+      // Load profile using API layer
+      const profileResponse = await versionedApiClient.getUserProfile();
+      if (profileResponse.error) {
+        throw new Error(profileResponse.message || profileResponse.error || 'Failed to load profile');
+      }
 
-      if (profileError) throw profileError;
+      const profile = profileResponse.data as Partial<User> | null;
+      if (!profile) {
+        throw new Error('Profile not found');
+      }
 
-      // Load notification preferences
-      const { data: notificationPrefs } = await supabase
-        .from('notification_preferences')
-        .select('*')
-        .eq('user_id', userId)
-        .single();
+      // Load notification preferences using API layer
+      const prefsResponse = await versionedApiClient.getNotificationPreferences();
+      const notificationPrefs = prefsResponse.error ? null : (prefsResponse.data || null);
 
       // SRS preferences are in users.srs_preferences (JSONB)
-      const srsPreferences = profile.srs_preferences || {};
+      const srsPreferences = (profile as any).srs_preferences || {};
 
       const settings: SettingsCache = {
         userId,
@@ -219,68 +218,53 @@ class SettingsSyncService {
       for (const [type, changes] of Object.entries(changesByType)) {
         try {
           if (type === 'profile') {
-            // Batch profile updates
+            // Batch profile updates using API layer
             const updates: Record<string, unknown> = {};
             for (const change of changes) {
               updates[change.field] = change.value;
             }
-            updates.updated_at = new Date().toISOString();
 
-            const { error } = await supabase
-              .from('users')
-              .update(updates)
-              .eq('id', userId);
-
-            if (error) throw error;
+            const response = await versionedApiClient.updateUserProfile(updates);
+            if (response.error) {
+              throw new Error(response.message || response.error || 'Failed to update profile');
+            }
             synced += changes.length;
           } else if (type === 'notification_preferences') {
-            // Batch notification preference updates
+            // Batch notification preference updates using API layer
             const updates: Record<string, unknown> = {};
             for (const change of changes) {
               updates[change.field] = change.value;
             }
-            updates.updated_at = new Date().toISOString();
 
-            const { error } = await supabase
-              .from('notification_preferences')
-              .upsert(
-                {
-                  user_id: userId,
-                  ...updates,
-                },
-                {
-                  onConflict: 'user_id',
-                },
-              );
-
-            if (error) throw error;
+            const response = await versionedApiClient.updateNotificationPreferences(updates);
+            if (response.error) {
+              throw new Error(response.message || response.error || 'Failed to update notification preferences');
+            }
             synced += changes.length;
           } else if (type === 'srs_preferences') {
             // SRS preferences are in users.srs_preferences (JSONB)
+            // Get current profile to merge SRS preferences
+            const profileResponse = await versionedApiClient.getUserProfile();
+            if (profileResponse.error) {
+              throw new Error(profileResponse.message || profileResponse.error || 'Failed to load profile');
+            }
+
+            const currentProfile = profileResponse.data as any;
+            const currentSrs = currentProfile?.srs_preferences || {};
+            
             const srsUpdates: Record<string, unknown> = {};
             for (const change of changes) {
               srsUpdates[change.field] = change.value;
             }
-
-            // Get current SRS preferences
-            const { data: currentUser } = await supabase
-              .from('users')
-              .select('srs_preferences')
-              .eq('id', userId)
-              .single();
-
-            const currentSrs = currentUser?.srs_preferences || {};
             const mergedSrs = { ...currentSrs, ...srsUpdates };
 
-            const { error } = await supabase
-              .from('users')
-              .update({
+            // Update profile with merged SRS preferences
+            const response = await versionedApiClient.updateUserProfile({
                 srs_preferences: mergedSrs,
-                updated_at: new Date().toISOString(),
-              })
-              .eq('id', userId);
-
-            if (error) throw error;
+            });
+            if (response.error) {
+              throw new Error(response.message || response.error || 'Failed to update SRS preferences');
+            }
             synced += changes.length;
           }
         } catch (error) {
