@@ -104,7 +104,13 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
               <Ionicons
                 name={iconName}
                 size={isFocused ? 24 : 28}
-                color={isFocused ? (theme.isDark ? '#FFFFFF' : COLORS.primary) : iconColor}
+                color={
+                  isFocused
+                    ? theme.isDark
+                      ? '#FFFFFF'
+                      : COLORS.primary
+                    : iconColor
+                }
               />
               {isFocused && (
                 <Text
@@ -162,4 +168,3 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 });
-

@@ -65,7 +65,7 @@ export function ResetPasswordScreen() {
     const checkSession = async () => {
       try {
         const response = await versionedApiClient.getSession();
-        
+
         if (response.error || !response.data?.session) {
           // Don't show error immediately - Supabase might still be processing the token
           // Give it a moment to set up the session
@@ -79,7 +79,8 @@ export function ResetPasswordScreen() {
                 [
                   {
                     text: 'OK',
-                    onPress: () => navigation.navigate('Auth', { mode: 'signin' }),
+                    onPress: () =>
+                      navigation.navigate('Auth', { mode: 'signin' }),
                   },
                 ],
               );

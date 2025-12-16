@@ -12,6 +12,7 @@
 This document outlines the plan to complete the final 5% of the API layer migration, moving from 95% to 100% abstraction.
 
 **Remaining Work:**
+
 - ~19 files with direct Supabase usage
 - Mostly feature-specific services and utilities
 - Estimated: 8-12 days of work
@@ -21,6 +22,7 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ## Phase 8: High-Priority Fixes (IN PROGRESS)
 
 ### ✅ 8.1: Fix Already-Migrated Files
+
 **Status:** COMPLETE
 
 - ✅ `src/features/auth/screens/ResetPasswordScreen.tsx` - Migrated to use `versionedApiClient.getSession()`
@@ -28,6 +30,7 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 - ✅ `src/utils/notificationActions.ts` - Added migration note (analytics operations acceptable)
 
 ### ✅ 8.2: Migrate Legacy Service Methods
+
 **Status:** COMPLETE
 
 - ✅ `src/services/supabase.ts`:
@@ -38,11 +41,13 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 - ✅ `src/contexts/AuthContext.tsx` - Updated to wait for trigger instead of calling createUserProfile
 
 ### ✅ 8.3: Migrate Query Services
+
 **Status:** COMPLETE
 
 - ✅ `src/features/courses/services/queries.ts` - Migrated `coursesApi.getAll()` to use `versionedApiClient.getCourses()` with client-side filtering
 
 ### ⚠️ 8.4: Review Duplicate Services
+
 **Status:** DOCUMENTED
 
 - ⚠️ `src/features/auth/services/authService.ts` - Marked as duplicate/legacy, needs review
@@ -52,12 +57,15 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ## Phase 9: Feature-Specific Services (TODO)
 
 ### 9.1: Task Services
+
 **Files:**
+
 - `src/features/tasks/services/RecurringTaskService.ts`
 - `src/features/tasks/services/TaskDependencyService.ts`
 - `src/features/tasks/services/AdvancedTemplateService.ts`
 
 **Required API Endpoints:**
+
 1. **Recurring Tasks API** (`/api-v2/recurring-tasks/*`):
    - `POST /api-v2/recurring-tasks/patterns` - Create recurring pattern
    - `GET /api-v2/recurring-tasks/patterns` - List patterns
@@ -88,10 +96,13 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ---
 
 ### 9.2: SRS Services
+
 **Files:**
+
 - `src/features/srs/services/SRSSchedulingService.ts`
 
 **Required API Endpoints:**
+
 1. **SRS Configuration API** (`/api-v2/srs/*`):
    - `GET /api-v2/srs/configuration` - Get SRS configuration
    - `PUT /api-v2/srs/configuration` - Update SRS configuration
@@ -107,9 +118,11 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ## Phase 10: Utility Migrations (TODO)
 
 ### 10.1: Auth Lockout Utility
+
 **File:** `src/utils/authLockout.ts`
 
 **Required API Endpoints:**
+
 1. **Auth Lockout API** (`/auth/*`):
    - `GET /auth/check-lockout?email=...` - Check if account is locked
    - `POST /auth/record-failed-attempt` - Record failed login attempt
@@ -121,9 +134,11 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ---
 
 ### 10.2: Notification Analytics RPC
+
 **File:** `src/utils/notificationQueue.ts` (getNotificationAnalytics function)
 
 **Required API Endpoint:**
+
 1. **Notification Analytics API**:
    - `GET /notification-system/analytics` - Get notification engagement analytics
 
@@ -132,9 +147,11 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ---
 
 ### 10.3: Cache Monitoring
+
 **File:** `src/services/cacheMonitoring.ts`
 
 **Status:** Acceptable as-is (monitoring utility using RPC)
+
 - Uses RPC functions for cache metrics
 - Can be migrated later if needed
 
@@ -143,11 +160,13 @@ This document outlines the plan to complete the final 5% of the API layer migrat
 ## Phase 11: Final Cleanup (TODO)
 
 ### 11.1: Remove Legacy Code
+
 - [ ] Remove duplicate `src/features/auth/services/authService.ts` if unused
 - [ ] Clean up unused imports
 - [ ] Remove deprecated methods
 
 ### 11.2: Documentation Updates
+
 - [ ] Update `API_LAYER_MIGRATION_COMPLETE.md` to reflect 100% completion
 - [ ] Update `API_REFERENCE.md` with new endpoints
 - [ ] Delete this plan document
@@ -195,18 +214,22 @@ These files should remain with direct Supabase usage:
 ## Migration Priority
 
 ### High Priority (Must Complete)
+
 1. ✅ Phase 8.1-8.3 (High-priority fixes) - **COMPLETE**
 2. ⚠️ Phase 8.4 (Review duplicates) - **IN PROGRESS**
 
 ### Medium Priority (Should Complete)
+
 3. Phase 9.1 (Task services) - **TODO**
 4. Phase 9.2 (SRS services) - **TODO**
 
 ### Low Priority (Can Complete Later)
+
 5. Phase 10.1 (Auth lockout) - **TODO**
 6. Phase 10.2 (Notification analytics) - **TODO**
 
 ### Optional
+
 7. Phase 11 (Final cleanup) - **TODO**
 
 ---
@@ -214,12 +237,14 @@ These files should remain with direct Supabase usage:
 ## Success Criteria
 
 ### Code Metrics
+
 - [ ] 0 direct `supabase.from()` calls (except acceptable exceptions)
 - [ ] 0 direct `supabase.auth.*` calls (except acceptable exceptions)
 - [ ] 100% data operations through API layer (except acceptable exceptions)
 - [ ] All Edge Functions tested
 
 ### Documentation
+
 - [ ] All API endpoints documented
 - [ ] Migration completion report updated
 - [ ] API reference updated
@@ -248,4 +273,3 @@ These files should remain with direct Supabase usage:
 ---
 
 **Last Updated:** 2025-01-31
-

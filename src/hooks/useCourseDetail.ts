@@ -14,7 +14,9 @@ export const useCourseDetail = (courseId: string) => {
       const response = await versionedApiClient.getCourse(courseId);
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to fetch course');
+        throw new Error(
+          response.message || response.error || 'Failed to fetch course',
+        );
       }
 
       if (!response.data) {

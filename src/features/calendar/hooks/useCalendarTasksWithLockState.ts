@@ -45,7 +45,7 @@ export const useCalendarTasksWithLockState = (
     // Pre-compute sorted tasks by type once (O(n log n) instead of O(n²))
     const tasksByType = new Map<string, typeof allTasks>();
     const taskTypeSet = new Set(allTasks.map(t => t.type));
-    
+
     // Sort tasks by type once
     taskTypeSet.forEach(type => {
       const tasksOfType = allTasks

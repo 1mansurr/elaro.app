@@ -37,7 +37,9 @@ export const useTaskDetail = (
       }
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to fetch task');
+        throw new Error(
+          response.message || response.error || 'Failed to fetch task',
+        );
       }
 
       if (!response.data) {

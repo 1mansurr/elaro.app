@@ -18,7 +18,9 @@ const fetchTotalItemCount = async (itemType: ItemType) => {
   });
 
   if (response.error) {
-    throw new Error(response.message || response.error || 'Failed to fetch item count');
+    throw new Error(
+      response.message || response.error || 'Failed to fetch item count',
+    );
   }
 
   return response.data?.count || 0;

@@ -68,9 +68,8 @@ export class NotificationPreferenceService
       // Convert to database format
       const dbPreferences = this.convertToDatabase(preferences);
 
-      const response = await versionedApiClient.updateNotificationPreferences(
-        dbPreferences,
-      );
+      const response =
+        await versionedApiClient.updateNotificationPreferences(dbPreferences);
 
       if (response.error) {
         throw new Error(

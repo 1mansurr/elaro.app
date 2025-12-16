@@ -69,15 +69,16 @@ export function DeviceManagementScreen() {
       const response = await versionedApiClient.getUserDevices();
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to load devices');
+        throw new Error(
+          response.message || response.error || 'Failed to load devices',
+        );
       }
 
       // Mark current device (simplified - in production, match by push token)
-      const devicesWithCurrent =
-        (response.data || []).map((device, index) => ({
-          ...device,
-          is_current: index === 0, // First device (most recent) is assumed current
-        }));
+      const devicesWithCurrent = (response.data || []).map((device, index) => ({
+        ...device,
+        is_current: index === 0, // First device (most recent) is assumed current
+      }));
 
       setDevices(devicesWithCurrent);
     } catch (error: any) {
@@ -117,7 +118,11 @@ export function DeviceManagementScreen() {
               const response = await versionedApiClient.deleteDevice(deviceId);
 
               if (response.error) {
-                throw new Error(response.message || response.error || 'Failed to remove device');
+                throw new Error(
+                  response.message ||
+                    response.error ||
+                    'Failed to remove device',
+                );
               }
 
               Alert.alert('Success', 'Device removed successfully');
@@ -154,7 +159,9 @@ export function DeviceManagementScreen() {
               );
 
               const results = await Promise.allSettled(deletePromises);
-              const failed = results.filter(r => r.status === 'rejected').length;
+              const failed = results.filter(
+                r => r.status === 'rejected',
+              ).length;
 
               if (failed > 0) {
                 Alert.alert(
@@ -162,7 +169,10 @@ export function DeviceManagementScreen() {
                   `Removed ${devicesToRemove.length - failed} of ${devicesToRemove.length} devices`,
                 );
               } else {
-              Alert.alert('Success', 'All other devices have been signed out');
+                Alert.alert(
+                  'Success',
+                  'All other devices have been signed out',
+                );
               }
 
               loadDevices();

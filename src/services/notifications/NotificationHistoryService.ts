@@ -121,7 +121,9 @@ export class NotificationHistoryService {
         }
 
         throw new AppError(
-          response.message || response.error || 'Failed to get notification history',
+          response.message ||
+            response.error ||
+            'Failed to get notification history',
           500,
           'NOTIFICATION_HISTORY_ERROR',
           { userId, options },
@@ -186,13 +188,14 @@ export class NotificationHistoryService {
    */
   async markAsRead(notificationId: string, userId: string): Promise<void> {
     try {
-      const response = await versionedApiClient.markNotificationAsRead(
-        notificationId,
-      );
+      const response =
+        await versionedApiClient.markNotificationAsRead(notificationId);
 
       if (response.error) {
         throw new AppError(
-          response.message || response.error || 'Failed to mark notification as read',
+          response.message ||
+            response.error ||
+            'Failed to mark notification as read',
           500,
           'MARK_READ_ERROR',
           { notificationId, userId },

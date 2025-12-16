@@ -8,7 +8,11 @@ export const homeScreenApi = {
       const response = await versionedApiClient.getHomeData();
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to get home screen data');
+        throw new Error(
+          response.message ||
+            response.error ||
+            'Failed to get home screen data',
+        );
       }
 
       return response.data as HomeScreenData | null;

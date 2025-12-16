@@ -74,15 +74,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Authentication Services
 // Note: This authService is being migrated to use API layer
-// Import the migrated version from authService.ts instead
-import { authService as migratedAuthService } from '@/services/authService';
+// Using dynamic imports to break circular dependency with authService.ts
+// (authService.ts imports supabase, so we can't import authService at module level)
 
 export const authService = {
   async signUp(email: string, password: string, name?: string) {
+    // Dynamic import to break circular dependency
+    const { authService: migratedAuthService } = await import('@/services/authService');
     // Use migrated auth service
     const result = await migratedAuthService.signUp({
-          email,
-          password,
+      email,
+      password,
       firstName: name || '',
       lastName: '',
     });
@@ -94,16 +96,22 @@ export const authService = {
   },
 
   async signIn(email: string, password: string) {
+    // Dynamic import to break circular dependency
+    const { authService: migratedAuthService } = await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.login({ email, password });
   },
 
   async signOut() {
+    // Dynamic import to break circular dependency
+    const { authService: migratedAuthService } = await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.signOut();
   },
 
   async getCurrentUser() {
+    // Dynamic import to break circular dependency
+    const { authService: migratedAuthService } = await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.getCurrentUser();
   },
@@ -132,15 +140,18 @@ export const authService = {
       program: data.program,
       role: (data.role as 'user' | 'admin') ?? 'user',
       onboarding_completed: data.onboarding_completed ?? false,
-      subscription_tier: (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
-      subscription_status: (data.subscription_status as
-        | 'trialing'
-        | 'active'
-        | 'past_due'
-        | 'canceled'
-        | null) ?? null,
+      subscription_tier:
+        (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
+      subscription_status:
+        (data.subscription_status as
+          | 'trialing'
+          | 'active'
+          | 'past_due'
+          | 'canceled'
+          | null) ?? null,
       subscription_expires_at: data.subscription_expires_at ?? null,
-      account_status: (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+      account_status:
+        (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
       deleted_at: data.deleted_at ?? null,
       deletion_scheduled_at: data.deletion_scheduled_at ?? null,
       suspension_end_date: data.suspension_end_date ?? null,
@@ -164,7 +175,9 @@ export const authService = {
     const response = await versionedApiClient.updateUserProfile(updates);
 
     if (response.error) {
-      throw new Error(response.message || response.error || 'Failed to update user profile');
+      throw new Error(
+        response.message || response.error || 'Failed to update user profile',
+      );
     }
   },
 };
@@ -202,13 +215,17 @@ export const dbUtils = {
     // Note: Account deletion should use the soft-delete-account endpoint
     // This method is kept for backward compatibility but should be migrated
     // Use: versionedApiClient.softDeleteAccount() or users Edge Function
-    console.warn('deleteUserAccount: This method should use API layer. Use soft-delete-account endpoint instead.');
-    
+    console.warn(
+      'deleteUserAccount: This method should use API layer. Use soft-delete-account endpoint instead.',
+    );
+
     // For now, use batch operations API if available
     const { versionedApiClient } = await import('./VersionedApiClient');
     // Note: Admin operations like deleteUser require admin-system Edge Function
     // This should be handled server-side, not from client
-    throw new Error('Account deletion must be done through admin-system Edge Function, not from client');
+    throw new Error(
+      'Account deletion must be done through admin-system Edge Function, not from client',
+    );
   },
 
   async getUserStats(userId: string) {

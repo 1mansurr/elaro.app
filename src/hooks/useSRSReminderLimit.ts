@@ -48,14 +48,23 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
       // Count study sessions with SRS created this month using API
-      const { versionedApiClient } = await import('@/services/VersionedApiClient');
-      const countResponse = await versionedApiClient.getCount('study_sessions', {
-        has_spaced_repetition: true,
-        created_at: { operator: 'gte', value: oneMonthAgo.toISOString() },
-      });
+      const { versionedApiClient } = await import(
+        '@/services/VersionedApiClient'
+      );
+      const countResponse = await versionedApiClient.getCount(
+        'study_sessions',
+        {
+          has_spaced_repetition: true,
+          created_at: { operator: 'gte', value: oneMonthAgo.toISOString() },
+        },
+      );
 
       if (countResponse.error) {
-        throw new Error(countResponse.message || countResponse.error || 'Failed to count SRS reminders');
+        throw new Error(
+          countResponse.message ||
+            countResponse.error ||
+            'Failed to count SRS reminders',
+        );
       }
 
       setCurrentReminders(countResponse.data?.count || 0);

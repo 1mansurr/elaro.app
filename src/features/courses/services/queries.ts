@@ -29,7 +29,9 @@ export const coursesApi = {
       const response = await versionedApiClient.getCourses();
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to fetch courses');
+        throw new Error(
+          response.message || response.error || 'Failed to fetch courses',
+        );
       }
 
       let courses = (response.data || []) as Course[];
@@ -46,9 +48,10 @@ export const coursesApi = {
       // Apply search filter
       if (searchQuery && searchQuery.trim() !== '') {
         const searchLower = searchQuery.trim().toLowerCase();
-        courses = courses.filter(course =>
-          course.courseName?.toLowerCase().includes(searchLower) ||
-          course.courseCode?.toLowerCase().includes(searchLower)
+        courses = courses.filter(
+          course =>
+            course.courseName?.toLowerCase().includes(searchLower) ||
+            course.courseCode?.toLowerCase().includes(searchLower),
         );
       }
 
@@ -60,16 +63,26 @@ export const coursesApi = {
       // Apply sorting
       switch (sortOption) {
         case 'name-asc':
-          courses.sort((a, b) => (a.courseName || '').localeCompare(b.courseName || ''));
+          courses.sort((a, b) =>
+            (a.courseName || '').localeCompare(b.courseName || ''),
+          );
           break;
         case 'name-desc':
-          courses.sort((a, b) => (b.courseName || '').localeCompare(a.courseName || ''));
+          courses.sort((a, b) =>
+            (b.courseName || '').localeCompare(a.courseName || ''),
+          );
           break;
         case 'date-newest':
-          courses.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+          courses.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          );
           break;
         case 'date-oldest':
-          courses.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+          courses.sort(
+            (a, b) =>
+              new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+          );
           break;
       }
 

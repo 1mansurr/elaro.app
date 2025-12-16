@@ -137,7 +137,9 @@ export class ApiVersioningService {
       try {
         // Dynamically import supabase to avoid circular dependencies
         const { supabase } = await import('@/services/supabase');
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         authToken = session?.access_token || null;
       } catch (error) {
         // If getting session fails, continue without token (will fail auth check on server)
@@ -233,9 +235,13 @@ export class ApiVersioningService {
       });
     }
 
-    return this.request<T>(endpoint, {
-      method: 'GET',
-    }, requireAuth);
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'GET',
+      },
+      requireAuth,
+    );
   }
 
   /**
@@ -246,10 +252,14 @@ export class ApiVersioningService {
     data?: Record<string, unknown>,
     requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    }, requireAuth);
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'POST',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      requireAuth,
+    );
   }
 
   /**
@@ -260,19 +270,30 @@ export class ApiVersioningService {
     data?: Record<string, unknown>,
     requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'PUT',
-      body: data ? JSON.stringify(data) : undefined,
-    }, requireAuth);
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'PUT',
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      requireAuth,
+    );
   }
 
   /**
    * Make a DELETE request with versioning
    */
-  async delete<T = any>(endpoint: string, requireAuth: boolean = true): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'DELETE',
-    }, requireAuth);
+  async delete<T = any>(
+    endpoint: string,
+    requireAuth: boolean = true,
+  ): Promise<ApiResponse<T>> {
+    return this.request<T>(
+      endpoint,
+      {
+        method: 'DELETE',
+      },
+      requireAuth,
+    );
   }
 
   /**

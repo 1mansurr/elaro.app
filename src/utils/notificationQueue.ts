@@ -80,12 +80,21 @@ export async function queueNotification(
 
     if (response.error) {
       // If it's a duplicate, the API should handle it
-      if (response.message?.includes('duplicate') || response.message?.includes('already')) {
-        console.log('Notification already queued (deduplication)', { dedupKey });
+      if (
+        response.message?.includes('duplicate') ||
+        response.message?.includes('already')
+      ) {
+        console.log('Notification already queued (deduplication)', {
+          dedupKey,
+        });
         return { success: true, isDuplicate: true };
       }
       console.error('Error queueing notification:', response.error);
-      return { success: false, error: response.message || response.error || 'Failed to queue notification' };
+      return {
+        success: false,
+        error:
+          response.message || response.error || 'Failed to queue notification',
+      };
     }
 
     console.log('Notification queued successfully');
@@ -174,7 +183,10 @@ export async function queueNotificationBatch(
 
       if (response.error) {
         // If duplicate, count as duplicate not failed
-        if (response.message?.includes('duplicate') || response.message?.includes('already')) {
+        if (
+          response.message?.includes('duplicate') ||
+          response.message?.includes('already')
+        ) {
           duplicates++;
         } else {
           failedCount++;
@@ -208,10 +220,13 @@ export async function cancelQueuedNotification(
   notificationId: string,
 ): Promise<{ success: boolean }> {
   try {
-    const response = await versionedApiClient.removeFromNotificationQueue(notificationId);
+    const response =
+      await versionedApiClient.removeFromNotificationQueue(notificationId);
 
     if (response.error) {
-      throw new Error(response.message || response.error || 'Failed to cancel notification');
+      throw new Error(
+        response.message || response.error || 'Failed to cancel notification',
+      );
     }
 
     return { success: true };
@@ -231,7 +246,11 @@ export async function getUserQueuedNotifications(
     const response = await versionedApiClient.getNotificationQueue();
 
     if (response.error) {
-      throw new Error(response.message || response.error || 'Failed to get queued notifications');
+      throw new Error(
+        response.message ||
+          response.error ||
+          'Failed to get queued notifications',
+      );
     }
 
     return (response.data || []) as QueuedNotification[];

@@ -57,9 +57,9 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   const updated_at = new Date().toISOString();
   const { versionedApiClient } = await import('@/services/VersionedApiClient');
   const response = await versionedApiClient.registerDevice({
-        push_token: token,
-        platform,
-        updated_at,
+    push_token: token,
+    platform,
+    updated_at,
   });
   if (response.error) {
     console.error('❌ Error saving push token to Supabase:', response.error);

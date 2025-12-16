@@ -137,15 +137,15 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
   const handleAuth = async () => {
     // Dismiss keyboard when button is pressed
     Keyboard.dismiss();
-    
-    console.log('🔵 [AuthScreen] handleAuth called', { 
-      mode, 
-      email: email ? 'provided' : 'missing', 
+
+    console.log('🔵 [AuthScreen] handleAuth called', {
+      mode,
+      email: email ? 'provided' : 'missing',
       password: password ? 'provided' : 'missing',
       emailError,
-      loading 
+      loading,
     });
-    
+
     setLoading(true);
 
     try {
@@ -185,10 +185,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           // Sign in
           console.log('🔍 [AuthScreen] Running signin validation...');
           const validationResult = signInSchema.safeParse({ email, password });
-          console.log('🔍 [AuthScreen] Signin validation result:', { 
+          console.log('🔍 [AuthScreen] Signin validation result:', {
             success: validationResult.success,
             hasEmail: !!email,
-            hasPassword: !!password
+            hasPassword: !!password,
           });
 
           if (!validationResult.success) {
@@ -206,7 +206,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         }
       } catch (error) {
         // Zod not available, use fallback validation
-        console.log('⚠️ [AuthScreen] Zod not available, using fallback validation:', error);
+        console.log(
+          '⚠️ [AuthScreen] Zod not available, using fallback validation:',
+          error,
+        );
         useZod = false;
         if (emailError) {
           console.log('❌ [AuthScreen] Email error detected:', emailError);
@@ -218,7 +221,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           return;
         }
         if (!email || !password) {
-          console.log('❌ [AuthScreen] Missing fields:', { email: !!email, password: !!password });
+          console.log('❌ [AuthScreen] Missing fields:', {
+            email: !!email,
+            password: !!password,
+          });
           Alert.alert('Missing Fields', 'Please fill in all required fields.');
           setLoading(false);
           return;
@@ -250,7 +256,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       }
 
       // Proceed with authentication
-      console.log('🚀 [AuthScreen] Proceeding with authentication...', { mode });
+      console.log('🚀 [AuthScreen] Proceeding with authentication...', {
+        mode,
+      });
       const { error } =
         mode === 'signup'
           ? await signUp({
@@ -260,8 +268,11 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               lastName: lastName.trim(),
             })
           : await signIn({ email, password });
-      
-      console.log('📋 [AuthScreen] Auth result:', error ? `Error: ${error.message}` : 'Success');
+
+      console.log(
+        '📋 [AuthScreen] Auth result:',
+        error ? `Error: ${error.message}` : 'Success',
+      );
 
       if (error) {
         // Enhanced error handling for password-related errors
@@ -300,35 +311,31 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           );
         }
 
-        // Wait a moment for session to be set in AuthContext before calling callbacks
-        // This ensures AppNavigator has time to detect the session change
-        await new Promise(resolve => setTimeout(resolve, 300));
+        // Wait for session to be set in AuthContext and propagate to AppNavigator
+        // Increased wait time to ensure AppNavigator has time to detect session change
+        await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Call onAuthSuccess callback
+        // Call onAuthSuccess callback if provided
         onAuthSuccess?.();
 
-        // For signup, wait longer for sign-in to complete and session to be created
-        // AppNavigator will automatically switch to AuthenticatedNavigator when session is available
-        // AuthenticatedNavigator will then show OnboardingNavigator if onboarding_completed is false
-        setTimeout(
-          () => {
-            // Only go back if there's a screen to go back to
-            // This prevents "GO_BACK action not handled" errors when navigator has already switched
-            if (navigation.canGoBack()) {
-              navigation.goBack();
-            }
-          },
-          mode === 'signup' ? 1500 : 500,
-        ); // Wait 1.5s for signup (to allow sign-in), 500ms for signin
+        // Don't try to navigate back - let AppNavigator handle the switch automatically
+        // The AppNavigator will detect the session change and switch to AuthenticatedNavigator
+        // This is more reliable than trying to navigate back, especially when Auth is the initial route
+        console.log('✅ [AuthScreen] Auth successful, waiting for AppNavigator to switch...');
       }
     } catch (err) {
       console.error('❌ [AuthScreen] handleAuth error caught:', err);
       const errorTitle = getErrorTitle(err);
       const errorMessage = mapErrorCodeToMessage(err);
-      console.log('📢 [AuthScreen] Showing error alert:', { errorTitle, errorMessage });
+      console.log('📢 [AuthScreen] Showing error alert:', {
+        errorTitle,
+        errorMessage,
+      });
       Alert.alert(errorTitle, errorMessage);
     } finally {
-      console.log('🏁 [AuthScreen] handleAuth finally block - setting loading to false');
+      console.log(
+        '🏁 [AuthScreen] handleAuth finally block - setting loading to false',
+      );
       setLoading(false);
     }
   };

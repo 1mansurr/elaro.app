@@ -7,10 +7,15 @@ export const notificationPreferencesApiMutations = {
     preferences: Partial<NotificationPreferences>,
   ): Promise<NotificationPreferences> {
     try {
-      const response = await versionedApiClient.updateNotificationPreferences(preferences);
+      const response =
+        await versionedApiClient.updateNotificationPreferences(preferences);
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to update notification preferences');
+        throw new Error(
+          response.message ||
+            response.error ||
+            'Failed to update notification preferences',
+        );
       }
 
       return response.data as NotificationPreferences;

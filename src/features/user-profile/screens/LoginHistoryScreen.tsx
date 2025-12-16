@@ -72,7 +72,9 @@ export function LoginHistoryScreen() {
       const response = await versionedApiClient.getLoginHistory(50);
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to load login history');
+        throw new Error(
+          response.message || response.error || 'Failed to load login history',
+        );
       }
 
       setHistory(response.data || []);

@@ -48,11 +48,13 @@ All API responses follow this format:
 ## Authentication Endpoints
 
 ### Sign Up
+
 **POST** `/auth/signup`
 
 Create a new user account.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -64,6 +66,7 @@ Create a new user account.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -76,11 +79,13 @@ Create a new user account.
 ---
 
 ### Sign In
+
 **POST** `/auth/signin`
 
 Authenticate an existing user.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -89,6 +94,7 @@ Authenticate an existing user.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -101,11 +107,13 @@ Authenticate an existing user.
 ---
 
 ### Sign Out
+
 **POST** `/auth/signout`
 
 Sign out the current user.
 
 **Response:**
+
 ```json
 {
   "data": { "success": true }
@@ -115,11 +123,13 @@ Sign out the current user.
 ---
 
 ### Get Session
+
 **GET** `/auth/session`
 
 Get the current user session.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -132,11 +142,13 @@ Get the current user session.
 ---
 
 ### Get User
+
 **GET** `/auth/user`
 
 Get the current authenticated user.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -150,11 +162,13 @@ Get the current authenticated user.
 ---
 
 ### Reset Password
+
 **POST** `/auth/reset-password`
 
 Initiate a password reset flow.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com"
@@ -162,6 +176,7 @@ Initiate a password reset flow.
 ```
 
 **Response:**
+
 ```json
 {
   "data": { "success": true, "message": "Password reset email sent" }
@@ -171,11 +186,13 @@ Initiate a password reset flow.
 ---
 
 ### Verify Email
+
 **POST** `/auth/verify-email`
 
 Verify a user's email address.
 
 **Request Body:**
+
 ```json
 {
   "token": "verification_token",
@@ -184,6 +201,7 @@ Verify a user's email address.
 ```
 
 **Response:**
+
 ```json
 {
   "data": { "success": true }
@@ -193,20 +211,23 @@ Verify a user's email address.
 ---
 
 ### Update Profile
+
 **PUT** `/auth/update-profile`
 
 Update user profile or password.
 
 **Request Body:**
+
 ```json
 {
   "firstName": "John",
   "lastName": "Doe",
-  "password": "newpassword"  // Optional
+  "password": "newpassword" // Optional
 }
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -222,11 +243,13 @@ Update user profile or password.
 ## Course Operations
 
 ### List Courses
+
 **GET** `/api-v2/courses/list`
 
 Get all courses for the current user.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -243,11 +266,13 @@ Get all courses for the current user.
 ---
 
 ### Get Course
+
 **GET** `/api-v2/courses/get/:id`
 
 Get a specific course by ID.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -261,11 +286,13 @@ Get a specific course by ID.
 ---
 
 ### Create Course
+
 **POST** `/api-v2/courses/create`
 
 Create a new course.
 
 **Request Body:**
+
 ```json
 {
   "course_name": "Mathematics 101",
@@ -275,6 +302,7 @@ Create a new course.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -288,11 +316,13 @@ Create a new course.
 ---
 
 ### Update Course
+
 **PUT** `/api-v2/courses/update/:id`
 
 Update an existing course.
 
 **Request Body:**
+
 ```json
 {
   "course_name": "Advanced Mathematics 101",
@@ -301,6 +331,7 @@ Update an existing course.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -314,11 +345,13 @@ Update an existing course.
 ---
 
 ### Delete Course
+
 **DELETE** `/api-v2/courses/delete/:id`
 
 Soft delete a course.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -332,11 +365,13 @@ Soft delete a course.
 ---
 
 ### Restore Course
+
 **POST** `/api-v2/courses/restore/:id`
 
 Restore a soft-deleted course.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -397,11 +432,13 @@ All study session operations follow the same pattern as courses:
 ## User Operations
 
 ### Get User Profile
+
 **GET** `/api-v2/users/profile`
 
 Get the current user's profile.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -417,11 +454,13 @@ Get the current user's profile.
 ---
 
 ### Update User Profile
+
 **PUT** `/api-v2/users/update`
 
 Update the current user's profile.
 
 **Request Body:**
+
 ```json
 {
   "first_name": "John",
@@ -431,6 +470,7 @@ Update the current user's profile.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -444,11 +484,13 @@ Update the current user's profile.
 ---
 
 ### Get User Devices
+
 **GET** `/users/devices`
 
 Get all devices registered for the current user.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -465,11 +507,13 @@ Get all devices registered for the current user.
 ---
 
 ### Register Device
+
 **POST** `/users/devices`
 
 Register a new device for push notifications.
 
 **Request Body:**
+
 ```json
 {
   "push_token": "device_token",
@@ -479,6 +523,7 @@ Register a new device for push notifications.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -493,11 +538,13 @@ Register a new device for push notifications.
 ---
 
 ### Delete Device
+
 **DELETE** `/users/devices/:id`
 
 Remove a device.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -510,14 +557,17 @@ Remove a device.
 ---
 
 ### Get Login History
+
 **GET** `/users/login-history?limit=50`
 
 Get login history for the current user.
 
 **Query Parameters:**
+
 - `limit` (optional): Number of records to return (default: 50)
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -536,11 +586,13 @@ Get login history for the current user.
 ---
 
 ### Get Subscription
+
 **GET** `/users/subscription`
 
 Get subscription information for the current user.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -558,11 +610,13 @@ Get subscription information for the current user.
 ## Notification Operations
 
 ### Get Notification Preferences
+
 **GET** `/notification-system/preferences`
 
 Get notification preferences for the current user.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -577,11 +631,13 @@ Get notification preferences for the current user.
 ---
 
 ### Update Notification Preferences
+
 **PUT** `/notification-system/preferences`
 
 Update notification preferences.
 
 **Request Body:**
+
 ```json
 {
   "email_notifications": true,
@@ -591,6 +647,7 @@ Update notification preferences.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -604,17 +661,20 @@ Update notification preferences.
 ---
 
 ### Get Notification History
+
 **GET** `/notification-system/history?limit=20&offset=0&includeRead=false`
 
 Get notification history.
 
 **Query Parameters:**
+
 - `limit` (optional): Number of records (default: 20)
 - `offset` (optional): Pagination offset (default: 0)
 - `filter` (optional): Filter by type
 - `includeRead` (optional): Include read notifications (default: false)
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -633,11 +693,13 @@ Get notification history.
 ---
 
 ### Get Unread Count
+
 **GET** `/notification-system/unread-count`
 
 Get the count of unread notifications.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -649,11 +711,13 @@ Get the count of unread notifications.
 ---
 
 ### Mark Notification as Read
+
 **POST** `/notification-system/mark-read`
 
 Mark a notification as read.
 
 **Request Body:**
+
 ```json
 {
   "notification_id": "uuid"
@@ -661,6 +725,7 @@ Mark a notification as read.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -672,11 +737,13 @@ Mark a notification as read.
 ---
 
 ### Get Notification Queue
+
 **GET** `/notification-system/queue`
 
 Get queued notifications for the current user.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -695,11 +762,13 @@ Get queued notifications for the current user.
 ---
 
 ### Add to Notification Queue
+
 **POST** `/notification-system/queue`
 
 Add a notification to the queue.
 
 **Request Body:**
+
 ```json
 {
   "notification_type": "reminder",
@@ -714,6 +783,7 @@ Add a notification to the queue.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -727,11 +797,13 @@ Add a notification to the queue.
 ---
 
 ### Remove from Notification Queue
+
 **DELETE** `/notification-system/queue/:id`
 
 Remove a notification from the queue.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -743,11 +815,13 @@ Remove a notification from the queue.
 ---
 
 ### Send Notification
+
 **POST** `/notification-system/send`
 
 Send a notification immediately.
 
 **Request Body:**
+
 ```json
 {
   "user_id": "uuid",
@@ -759,6 +833,7 @@ Send a notification immediately.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -771,11 +846,13 @@ Send a notification immediately.
 ---
 
 ### Schedule Notification
+
 **POST** `/notification-system/schedule`
 
 Schedule a notification for later.
 
 **Request Body:**
+
 ```json
 {
   "user_id": "uuid",
@@ -788,6 +865,7 @@ Schedule a notification for later.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -800,11 +878,13 @@ Schedule a notification for later.
 ---
 
 ### Cancel Notification
+
 **POST** `/notification-system/cancel`
 
 Cancel a scheduled notification.
 
 **Request Body:**
+
 ```json
 {
   "reminder_id": "uuid"
@@ -812,6 +892,7 @@ Cancel a scheduled notification.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -825,11 +906,13 @@ Cancel a scheduled notification.
 ## Analytics Operations
 
 ### Get Home Data
+
 **GET** `/api-v2/analytics/home`
 
 Get home screen analytics data.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -843,14 +926,17 @@ Get home screen analytics data.
 ---
 
 ### Get Calendar Data
+
 **GET** `/api-v2/analytics/calendar?week_start=2025-01-27`
 
 Get calendar data for a specific week.
 
 **Query Parameters:**
+
 - `week_start` (required): Start date of the week (YYYY-MM-DD)
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -866,11 +952,13 @@ Get calendar data for a specific week.
 ---
 
 ### Get Streak Info
+
 **GET** `/api-v2/analytics/streak`
 
 Get user streak information.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -883,11 +971,13 @@ Get user streak information.
 ---
 
 ### Export Data
+
 **GET** `/api-v2/analytics/export`
 
 Export all user data.
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -904,11 +994,13 @@ Export all user data.
 ## Query Operations
 
 ### Get Deleted Items
+
 **GET** `/api-v2/queries/deleted-items`
 
 Get all soft-deleted items across all tables.
 
 **Response:**
+
 ```json
 {
   "data": [
@@ -925,15 +1017,18 @@ Get all soft-deleted items across all tables.
 ---
 
 ### Get Count
+
 **GET** `/api-v2/queries/count?table=study_sessions&filters={"has_spaced_repetition":true}`
 
 Get count of items with optional filters.
 
 **Query Parameters:**
+
 - `table` (required): Table name
 - `filters` (optional): JSON string of filters
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -947,11 +1042,13 @@ Get count of items with optional filters.
 ## Batch Operations
 
 ### Execute Batch Operations
+
 **POST** `/batch-operations`
 
 Execute multiple operations in a single request.
 
 **Request Body:**
+
 ```json
 {
   "operations": [
@@ -976,6 +1073,7 @@ Execute multiple operations in a single request.
 ```
 
 **Response:**
+
 ```json
 {
   "data": {
@@ -993,6 +1091,7 @@ Execute multiple operations in a single request.
 All endpoints are rate-limited to prevent abuse. Rate limits are enforced per user and per endpoint.
 
 **Rate Limit Headers:**
+
 - `X-RateLimit-Limit`: Maximum requests allowed
 - `X-RateLimit-Remaining`: Remaining requests
 - `X-RateLimit-Reset`: Time when limit resets
@@ -1012,6 +1111,7 @@ All errors follow this format:
 ```
 
 **Common HTTP Status Codes:**
+
 - `200` - Success
 - `400` - Bad Request (validation error)
 - `401` - Unauthorized (authentication required)
@@ -1024,6 +1124,7 @@ All errors follow this format:
 ## Versioning
 
 The API uses versioning through the path:
+
 - `/api-v2/*` - Version 2 API (current)
 - `/auth/*` - Authentication API (version-independent)
 
@@ -1032,4 +1133,3 @@ Future versions will be added as `/api-v3/*`, etc.
 ---
 
 **Last Updated:** 2025-01-31
-

@@ -107,15 +107,19 @@ const notificationService = {
       const platform = Platform.OS;
       const updated_at = new Date().toISOString();
 
-      const { versionedApiClient } = await import('@/services/VersionedApiClient');
+      const { versionedApiClient } = await import(
+        '@/services/VersionedApiClient'
+      );
       const response = await versionedApiClient.registerDevice({
-          push_token: token,
-          platform,
-          updated_at,
+        push_token: token,
+        platform,
+        updated_at,
       });
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to save push token');
+        throw new Error(
+          response.message || response.error || 'Failed to save push token',
+        );
       }
 
       console.log('Push token saved successfully to user_devices table.');

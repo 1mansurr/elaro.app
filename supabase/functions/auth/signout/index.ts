@@ -17,7 +17,7 @@ serve(async (req: Request) => {
     // Get auth token from header
     const authHeader =
       req.headers.get('authorization') || req.headers.get('Authorization');
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new AppError('Authorization header required', 401, 'UNAUTHORIZED');
     }
@@ -27,7 +27,7 @@ serve(async (req: Request) => {
     // Create Supabase client with user's token
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    
+
     const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: {
         headers: {
@@ -37,7 +37,9 @@ serve(async (req: Request) => {
     });
 
     // Get user info before signing out
-    const { data: { user } } = await supabaseClient.auth.getUser();
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
     const userId = user?.id;
 
     // Sign out
@@ -87,4 +89,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

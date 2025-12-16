@@ -1,10 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import {
@@ -68,7 +65,11 @@ serve(async req => {
         });
         return await handler(modifiedReq);
       }
-    } else if (pathParts.length > 2 && pathParts[pathParts.length - 2] === 'queue' && method === 'DELETE') {
+    } else if (
+      pathParts.length > 2 &&
+      pathParts[pathParts.length - 2] === 'queue' &&
+      method === 'DELETE'
+    ) {
       // DELETE /queue/:id - remove from queue
       const queueId = pathParts[pathParts.length - 1];
       const handler = getHandler('queue');
@@ -78,7 +79,12 @@ serve(async req => {
         const modifiedReq = new Request(req.url, {
           method: req.method,
           headers: req.headers,
-          body: JSON.stringify({ ...body, queue_id: queueId, method: 'DELETE', urlParams }),
+          body: JSON.stringify({
+            ...body,
+            queue_id: queueId,
+            method: 'DELETE',
+            urlParams,
+          }),
         });
         return await handler(modifiedReq);
       }
@@ -97,7 +103,13 @@ serve(async req => {
     }
 
     // For GET requests to preferences/history/unread-count, inject method and URL params
-    if ((action === 'preferences' || action === 'history' || action === 'unread-count' || action === 'queue') && method === 'GET') {
+    if (
+      (action === 'preferences' ||
+        action === 'history' ||
+        action === 'unread-count' ||
+        action === 'queue') &&
+      method === 'GET'
+    ) {
       const body = await req.json().catch(() => ({}));
       const modifiedReq = new Request(req.url, {
         method: req.method,
@@ -219,12 +231,7 @@ function getHandler(action: string | null) {
       undefined,
       true,
     ),
-    queue: wrapOldHandler(
-      handleQueue,
-      'notification-queue',
-      undefined,
-      true,
-    ),
+    queue: wrapOldHandler(handleQueue, 'notification-queue', undefined, true),
   };
 
   return action ? handlers[action] : undefined;

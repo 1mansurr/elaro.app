@@ -17,8 +17,54 @@ export type AppNavigationProp = StackNavigationProp<RootStackParamList>;
 
 // Type-safe navigation hook
 export const useAppNavigation = () => {
-  const navigation = useNavigation<AppNavigationProp>();
-  return navigation;
+  try {
+    const navigation = useNavigation<AppNavigationProp>();
+    
+    // Verify navigation is actually ready
+    if (!navigation || typeof navigation.navigate !== 'function') {
+      if (__DEV__) {
+        console.warn('Navigation object exists but is not ready');
+      }
+      // Return a no-op navigation object to prevent crashes
+      return {
+        navigate: () => {
+          if (__DEV__) {
+            console.warn('Navigation not ready - navigate called');
+          }
+        },
+        goBack: () => {},
+        canGoBack: () => false,
+        getState: () => null,
+        replace: () => {},
+        push: () => {},
+        reset: () => {},
+      } as any;
+    }
+    
+    return navigation;
+  } catch (error) {
+    // If navigation isn't ready, return a safe no-op object instead of throwing
+    if (error instanceof Error && error.message.includes("hasn't been initialized")) {
+      if (__DEV__) {
+        console.warn('Navigation not initialized - returning safe no-op');
+      }
+      // Return a safe no-op navigation object to prevent crashes
+      return {
+        navigate: () => {
+          if (__DEV__) {
+            console.warn('Navigation not initialized - navigate called');
+          }
+        },
+        goBack: () => {},
+        canGoBack: () => false,
+        getState: () => null,
+        replace: () => {},
+        push: () => {},
+        reset: () => {},
+      } as any;
+    }
+    throw error;
+  }
 };
 
 // Type-safe navigation actions

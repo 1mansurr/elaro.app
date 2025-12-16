@@ -89,7 +89,11 @@ class SettingsSyncService {
       // Load profile using API layer
       const profileResponse = await versionedApiClient.getUserProfile();
       if (profileResponse.error) {
-        throw new Error(profileResponse.message || profileResponse.error || 'Failed to load profile');
+        throw new Error(
+          profileResponse.message ||
+            profileResponse.error ||
+            'Failed to load profile',
+        );
       }
 
       const profile = profileResponse.data as Partial<User> | null;
@@ -98,8 +102,11 @@ class SettingsSyncService {
       }
 
       // Load notification preferences using API layer
-      const prefsResponse = await versionedApiClient.getNotificationPreferences();
-      const notificationPrefs = prefsResponse.error ? null : (prefsResponse.data || null);
+      const prefsResponse =
+        await versionedApiClient.getNotificationPreferences();
+      const notificationPrefs = prefsResponse.error
+        ? null
+        : prefsResponse.data || null;
 
       // SRS preferences are in users.srs_preferences (JSONB)
       const srsPreferences = (profile as any).srs_preferences || {};
@@ -224,9 +231,14 @@ class SettingsSyncService {
               updates[change.field] = change.value;
             }
 
-            const response = await versionedApiClient.updateUserProfile(updates);
+            const response =
+              await versionedApiClient.updateUserProfile(updates);
             if (response.error) {
-              throw new Error(response.message || response.error || 'Failed to update profile');
+              throw new Error(
+                response.message ||
+                  response.error ||
+                  'Failed to update profile',
+              );
             }
             synced += changes.length;
           } else if (type === 'notification_preferences') {
@@ -236,9 +248,14 @@ class SettingsSyncService {
               updates[change.field] = change.value;
             }
 
-            const response = await versionedApiClient.updateNotificationPreferences(updates);
+            const response =
+              await versionedApiClient.updateNotificationPreferences(updates);
             if (response.error) {
-              throw new Error(response.message || response.error || 'Failed to update notification preferences');
+              throw new Error(
+                response.message ||
+                  response.error ||
+                  'Failed to update notification preferences',
+              );
             }
             synced += changes.length;
           } else if (type === 'srs_preferences') {
@@ -246,12 +263,16 @@ class SettingsSyncService {
             // Get current profile to merge SRS preferences
             const profileResponse = await versionedApiClient.getUserProfile();
             if (profileResponse.error) {
-              throw new Error(profileResponse.message || profileResponse.error || 'Failed to load profile');
+              throw new Error(
+                profileResponse.message ||
+                  profileResponse.error ||
+                  'Failed to load profile',
+              );
             }
 
             const currentProfile = profileResponse.data as any;
             const currentSrs = currentProfile?.srs_preferences || {};
-            
+
             const srsUpdates: Record<string, unknown> = {};
             for (const change of changes) {
               srsUpdates[change.field] = change.value;
@@ -260,10 +281,14 @@ class SettingsSyncService {
 
             // Update profile with merged SRS preferences
             const response = await versionedApiClient.updateUserProfile({
-                srs_preferences: mergedSrs,
+              srs_preferences: mergedSrs,
             });
             if (response.error) {
-              throw new Error(response.message || response.error || 'Failed to update SRS preferences');
+              throw new Error(
+                response.message ||
+                  response.error ||
+                  'Failed to update SRS preferences',
+              );
             }
             synced += changes.length;
           }

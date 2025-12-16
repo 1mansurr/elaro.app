@@ -33,6 +33,19 @@ export const useNavigationPerformance = (
     enableBackgroundOptimization = true,
   } = options;
 
+  // Helper function to safely get navigation state
+  const getNavigationState = useCallback(() => {
+    try {
+      if (!navigation || typeof navigation.getState !== 'function') {
+        return null;
+      }
+      return navigation.getState();
+    } catch (error) {
+      // Navigation not ready yet - this is expected during initialization
+      return null;
+    }
+  }, [navigation]);
+
   // Preload screens for better performance
   const preloadScreen = useCallback(
     (screenName: string) => {
@@ -43,20 +56,29 @@ export const useNavigationPerformance = (
       // Use InteractionManager to preload during idle time
       InteractionManager.runAfterInteractions(() => {
         try {
+          const state = getNavigationState();
+          if (!state || !state.routes || state.routes.length === 0) {
+            // Navigation not ready yet, skip preloading
+            return;
+          }
+
           // Preload the screen by navigating to it and immediately going back
           // This is a common pattern for React Navigation preloading
           const currentRoute =
-            navigation.getState()?.routes[navigation.getState()?.index || 0];
+            state.routes[state.index || 0];
           if (currentRoute?.name !== screenName) {
             preloadedScreens.current.add(screenName);
             console.log(`📱 Preloaded screen: ${screenName}`);
           }
         } catch (error) {
-          console.warn(`Failed to preload screen ${screenName}:`, error);
+          // Silently fail if navigation isn't ready - this is expected during initialization
+          if (__DEV__) {
+            console.warn(`Failed to preload screen ${screenName}:`, error);
+          }
         }
       });
     },
-    [navigation],
+    [getNavigationState],
   );
 
   // Preload all specified screens
@@ -132,20 +154,32 @@ export const useNavigationPerformance = (
 
   // Performance monitoring
   const logPerformanceMetrics = useCallback(() => {
-    const state = navigation.getState();
-    const currentRoute = state?.routes[state?.index];
+    try {
+      const state = getNavigationState();
+      if (!state || !state.routes) {
+        console.warn('Navigation not ready for performance metrics');
+        return;
+      }
 
-    console.log('📊 Navigation Performance Metrics:', {
-      currentRoute: currentRoute?.name,
-      totalRoutes: state?.routes.length,
-      preloadedScreens: Array.from(preloadedScreens.current),
-      isAppActive: isAppActive.current,
-      memoryOptimization: enableMemoryOptimization,
-      interactionBatching: enableInteractionBatching,
-      backgroundOptimization: enableBackgroundOptimization,
-    });
+      const currentRoute = state.routes[state.index];
+
+      console.log('📊 Navigation Performance Metrics:', {
+        currentRoute: currentRoute?.name,
+        totalRoutes: state.routes.length,
+        preloadedScreens: Array.from(preloadedScreens.current),
+        isAppActive: isAppActive.current,
+        memoryOptimization: enableMemoryOptimization,
+        interactionBatching: enableInteractionBatching,
+        backgroundOptimization: enableBackgroundOptimization,
+      });
+    } catch (error) {
+      // Silently fail if navigation isn't ready
+      if (__DEV__) {
+        console.warn('Failed to log performance metrics:', error);
+      }
+    }
   }, [
-    navigation,
+    getNavigationState,
     enableMemoryOptimization,
     enableInteractionBatching,
     enableBackgroundOptimization,
@@ -164,7 +198,15 @@ export const useNavigationPerformance = (
  * Hook for optimizing screen transitions
  */
 export const useScreenTransitionOptimization = () => {
-  const navigation = useNavigation();
+  let navigation: ReturnType<typeof useNavigation> | null = null;
+  try {
+    navigation = useNavigation();
+  } catch (error) {
+    // Navigation not ready yet - this is expected during initialization
+    if (__DEV__) {
+      console.warn('Navigation not initialized for screen transition optimization:', error);
+    }
+  }
   const transitionStartTime = useRef<number>(0);
 
   const startTransition = useCallback(() => {

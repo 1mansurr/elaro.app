@@ -117,23 +117,19 @@ const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
 const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
 
 // Lazy-loaded post-onboarding welcome screen
-const PostOnboardingWelcomeScreen = lazy(
-  () =>
-    import('@/features/onboarding/screens/PostOnboardingWelcomeScreen').then(
-      module => ({
-        default: module.PostOnboardingWelcomeScreen,
-      }),
-    ),
+const PostOnboardingWelcomeScreen = lazy(() =>
+  import('@/features/onboarding/screens/PostOnboardingWelcomeScreen').then(
+    module => ({
+      default: module.PostOnboardingWelcomeScreen,
+    }),
+  ),
 );
 
 // Lazy-loaded add course first screen
-const AddCourseFirstScreen = lazy(
-  () =>
-    import('@/features/onboarding/screens/AddCourseFirstScreen').then(
-      module => ({
-        default: module.AddCourseFirstScreen,
-      }),
-    ),
+const AddCourseFirstScreen = lazy(() =>
+  import('@/features/onboarding/screens/AddCourseFirstScreen').then(module => ({
+    default: module.AddCourseFirstScreen,
+  })),
 );
 
 // Lazy-loaded single screens for simplified flows
@@ -427,8 +423,9 @@ export const AuthenticatedNavigator: React.FC = () => {
   const { user } = useAuth();
   const [hasSeenPostOnboardingWelcome, setHasSeenPostOnboardingWelcome] =
     useState<boolean | null>(null);
-  const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] =
-    useState<boolean | null>(null);
+  const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] = useState<
+    boolean | null
+  >(null);
   const [courseCount, setCourseCount] = useState<number | null>(null);
   const [isCheckingWelcome, setIsCheckingWelcome] = useState(true);
 

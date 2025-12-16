@@ -303,8 +303,12 @@ export class VersionedApiClient {
     return apiVersioningService.post<any>('users/devices', deviceData);
   }
 
-  async deleteDevice(deviceId: string): Promise<ApiResponse<{ success: boolean; message: string }>> {
-    return apiVersioningService.delete<{ success: boolean; message: string }>(`users/devices/${deviceId}`);
+  async deleteDevice(
+    deviceId: string,
+  ): Promise<ApiResponse<{ success: boolean; message: string }>> {
+    return apiVersioningService.delete<{ success: boolean; message: string }>(
+      `users/devices/${deviceId}`,
+    );
   }
 
   async getLoginHistory(limit?: number): Promise<ApiResponse<any[]>> {
@@ -315,13 +319,15 @@ export class VersionedApiClient {
     );
   }
 
-  async getSubscription(): Promise<ApiResponse<{
-    tier: string;
-    status: string;
-    expiresAt: string | null;
-    accountStatus: string;
-    hasActiveSubscription: boolean;
-  }>> {
+  async getSubscription(): Promise<
+    ApiResponse<{
+      tier: string;
+      status: string;
+      expiresAt: string | null;
+      accountStatus: string;
+      hasActiveSubscription: boolean;
+    }>
+  > {
     return apiVersioningService.get('users/subscription');
   }
 

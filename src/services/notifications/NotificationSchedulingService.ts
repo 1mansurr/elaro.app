@@ -448,20 +448,25 @@ export class NotificationSchedulingService
   ): Promise<void> {
     try {
       // Use API layer for queue operations
-      const { versionedApiClient } = await import('@/services/VersionedApiClient');
-      
+      const { versionedApiClient } = await import(
+        '@/services/VersionedApiClient'
+      );
+
       const response = await versionedApiClient.addToNotificationQueue({
         notification_type: notification.type,
         title: notification.title,
         body: notification.body,
         data: notification.data,
-        scheduled_for: notification.scheduledFor?.toISOString() || new Date().toISOString(),
+        scheduled_for:
+          notification.scheduledFor?.toISOString() || new Date().toISOString(),
         priority: this.getPriorityNumber(notification.priority),
       });
 
       if (response.error) {
         throw new Error(
-          response.message || response.error || 'Failed to schedule notification',
+          response.message ||
+            response.error ||
+            'Failed to schedule notification',
         );
       }
     } catch (error) {

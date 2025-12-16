@@ -9,10 +9,17 @@ export const notificationPreferencesApi = {
 
       if (response.error) {
         // Not found is OK, return null
-        if (response.code === 'PGRST116' || response.message?.includes('not found')) {
+        if (
+          response.code === 'PGRST116' ||
+          response.message?.includes('not found')
+        ) {
           return null;
         }
-        throw new Error(response.message || response.error || 'Failed to get notification preferences');
+        throw new Error(
+          response.message ||
+            response.error ||
+            'Failed to get notification preferences',
+        );
       }
 
       return response.data as NotificationPreferences | null;

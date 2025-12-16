@@ -31,6 +31,16 @@ export const AppNavigator: React.FC = () => {
     return <LoadingFallback />;
   }
 
+  // Debug logging to verify session state
+  if (__DEV__) {
+    console.log('🔍 [AppNavigator] Session state:', {
+      hasSession: !!session,
+      sessionId: session?.access_token
+        ? session.access_token.substring(0, 10) + '...'
+        : 'none',
+    });
+  }
+
   // Return appropriate navigator based on authentication state
   return session ? <AuthenticatedNavigator /> : <AuthNavigator />;
 };

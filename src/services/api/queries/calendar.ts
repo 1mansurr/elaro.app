@@ -18,7 +18,9 @@ export const calendarApi = {
       const response = await versionedApiClient.getCalendarData(weekStartStr);
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to get calendar data');
+        throw new Error(
+          response.message || response.error || 'Failed to get calendar data',
+        );
       }
 
       return (response.data as CalendarData) || {};
@@ -43,7 +45,9 @@ export const calendarApi = {
       const response = await versionedApiClient.getCalendarData(weekStartStr);
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to get calendar data');
+        throw new Error(
+          response.message || response.error || 'Failed to get calendar data',
+        );
       }
 
       return (response.data as CalendarData) || {};

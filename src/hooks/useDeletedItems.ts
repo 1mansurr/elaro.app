@@ -14,7 +14,9 @@ export const useDeletedItems = () => {
       const response = await versionedApiClient.getDeletedItems();
 
       if (response.error) {
-        throw new Error(response.message || response.error || 'Failed to fetch deleted items');
+        throw new Error(
+          response.message || response.error || 'Failed to fetch deleted items',
+        );
       }
 
       setItems(response.data || []);

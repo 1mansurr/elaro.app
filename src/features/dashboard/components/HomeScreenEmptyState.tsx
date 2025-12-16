@@ -16,8 +16,7 @@ export const HomeScreenEmptyState: React.FC<HomeScreenEmptyStateProps> = ({
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={[styles.container, { paddingTop: insets.top + SPACING.lg }]}>
+    <View style={[styles.container, { paddingTop: insets.top + SPACING.lg }]}>
       {/* Dismiss button */}
       {onDismiss && (
         <TouchableOpacity

@@ -242,15 +242,22 @@ class StudySessionSyncService {
 
       // Update session using API layer
       try {
-        const response = await versionedApiClient.updateStudySession(sessionId, {
+        const response = await versionedApiClient.updateStudySession(
+          sessionId,
+          {
             duration_minutes: finalData.timeSpentMinutes,
             notes: finalData.notes || null,
             difficulty_rating: finalData.difficultyRating || null,
             confidence_level: finalData.confidenceLevel || null,
-        });
+          },
+        );
 
         if (response.error) {
-          throw new Error(response.message || response.error || 'Failed to update study session');
+          throw new Error(
+            response.message ||
+              response.error ||
+              'Failed to update study session',
+          );
         }
 
         console.log('✅ StudySessionSync: Session completed and synced', {

@@ -365,61 +365,83 @@ const NavigationStateValidator: React.FC<{
         return;
       }
 
-      // If we have a pre-loaded initial state, validate it
-      if (initialNavigationState) {
-        try {
-          const isAuthenticated = !!session;
+      // Add timeout to prevent hanging
+      const validationTimeout = setTimeout(() => {
+        console.warn('⚠️ Navigation state validation timeout - using default');
+        onStateValidated(null);
+      }, 3000); // 3 second timeout
 
-          // Extract route name from initialNavigationState to check if it's authenticated
-          const getRouteName = (state: NavigationState): string | null => {
-            if (!state || !state.routes || state.routes.length === 0) {
-              return null;
-            }
-            const currentRoute = state.routes[state.index || 0];
-            if (!currentRoute) {
-              return null;
-            }
-            // If this route has nested state, get the nested route name
-            if (currentRoute.state && 'routes' in currentRoute.state) {
-              return getRouteName(currentRoute.state as NavigationState);
-            }
-            return currentRoute.name || null;
-          };
+      try {
+        // If we have a pre-loaded initial state, validate it
+        if (initialNavigationState) {
+          try {
+            const isAuthenticated = !!session;
 
-          const currentRoute = getRouteName(initialNavigationState);
-          const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
+            // Extract route name from initialNavigationState to check if it's authenticated
+            const getRouteName = (state: NavigationState): string | null => {
+              if (!state || !state.routes || state.routes.length === 0) {
+                return null;
+              }
+              const currentRoute = state.routes[state.index || 0];
+              if (!currentRoute) {
+                return null;
+              }
+              // If this route has nested state, get the nested route name
+              if (currentRoute.state && 'routes' in currentRoute.state) {
+                return getRouteName(currentRoute.state as NavigationState);
+              }
+              return currentRoute.name || null;
+            };
 
-          // If user is not authenticated but saved state contains authenticated route, clear it immediately
-          if (
-            !isAuthenticated &&
-            currentRoute &&
-            authenticatedRoutes.includes(currentRoute)
-          ) {
-            console.log(
-              '🔒 NavigationSync: Auth failed, clearing authenticated navigation state',
+            const currentRoute = getRouteName(initialNavigationState);
+            const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
+
+            // If user is not authenticated but saved state contains authenticated route, clear it immediately
+            if (
+              !isAuthenticated &&
+              currentRoute &&
+              authenticatedRoutes.includes(currentRoute)
+            ) {
+              console.log(
+                '🔒 NavigationSync: Auth failed, clearing authenticated navigation state',
+              );
+              await navigationSyncService.clearState();
+              clearTimeout(validationTimeout);
+              onStateValidated(null);
+              return;
+            }
+
+            // Add timeout to getSafeInitialState call
+            const safeState = await Promise.race([
+              navigationSyncService.getSafeInitialState(
+                isAuthenticated,
+                authLoading,
+                user?.id,
+              ),
+              new Promise<NavigationState | null>((resolve) => {
+                setTimeout(() => resolve(null), 2000); // 2 second timeout
+              }),
+            ]);
+
+            clearTimeout(validationTimeout);
+            onStateValidated(safeState);
+          } catch (error) {
+            clearTimeout(validationTimeout);
+            console.error(
+              '❌ NavigationSync: Error validating initial state:',
+              error,
             );
-            await navigationSyncService.clearState();
+            // Clear state on error to prevent navigation errors
+            await navigationSyncService.clearState().catch(() => {});
             onStateValidated(null);
-            return;
           }
-
-          const safeState = await navigationSyncService.getSafeInitialState(
-            isAuthenticated,
-            authLoading,
-            user?.id,
-          );
-          onStateValidated(safeState);
-        } catch (error) {
-          console.error(
-            '❌ NavigationSync: Error validating initial state:',
-            error,
-          );
-          // Clear state on error to prevent navigation errors
-          await navigationSyncService.clearState().catch(() => {});
+        } else {
+          // No initial state to validate
+          clearTimeout(validationTimeout);
           onStateValidated(null);
         }
-      } else {
-        // No initial state to validate
+      } catch (error) {
+        clearTimeout(validationTimeout);
         onStateValidated(null);
       }
     };
@@ -660,18 +682,19 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                 try {
                   initSuccess = await Promise.race([initPromise, initTimeout]);
                 } catch (raceError) {
-                  // Timeout occurred - silently continue
-                  if (
-                    __DEV__ &&
-                    raceError instanceof Error &&
-                    !raceError.message.includes('timeout')
-                  ) {
+                  // Timeout or error occurred - silently continue (non-blocking)
+                  // Don't show error to user - app can function without RevenueCat
+                  if (__DEV__) {
+                    const errorMsg =
+                      raceError instanceof Error
+                        ? raceError.message
+                        : 'Unknown error';
                     console.warn(
-                      '⚠️ RevenueCat init error:',
-                      raceError.message,
+                      '⚠️ RevenueCat initialization failed (non-blocking):',
+                      errorMsg,
                     );
                   }
-                  return; // Exit early on error
+                  return; // Exit early on error - app continues without RevenueCat
                 }
 
                 if (initSuccess) {
@@ -717,13 +740,17 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                   );
                 }
               } catch (initError) {
-                // Timeout or initialization error - silently continue
-                if (
-                  __DEV__ &&
-                  initError instanceof Error &&
-                  !initError.message.includes('timeout')
-                ) {
-                  console.warn('⚠️ RevenueCat init error:', initError.message);
+                // Timeout or initialization error - silently continue (non-blocking)
+                // Don't show error to user - app can function without RevenueCat
+                if (__DEV__) {
+                  const errorMsg =
+                    initError instanceof Error
+                      ? initError.message
+                      : 'Unknown error';
+                  console.warn(
+                    '⚠️ RevenueCat initialization failed (non-blocking):',
+                    errorMsg,
+                  );
                 }
               }
             } else if (__DEV__) {
@@ -745,25 +772,28 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           }
         })();
 
-        // Sync Manager - make non-blocking
-        const syncManagerInit = (async () => {
-          try {
-            if (__DEV__) {
-              console.log('🔄 Initializing Sync Manager...');
-            }
-            await syncManager.start();
+        // Sync Manager - make truly non-blocking with timeout
+        // Don't block app startup - sync manager can initialize in background
+        const syncManagerInit = Promise.race([
+          syncManager.start().then(() => {
             if (__DEV__) {
               console.log('✅ Sync Manager initialized');
             }
-          } catch (error) {
-            if (__DEV__) {
-              console.warn(
-                '⚠️ Sync Manager init failed (non-blocking):',
-                error,
-              );
-            }
+          }),
+          new Promise<void>((resolve) => {
+            setTimeout(() => {
+              if (__DEV__) {
+                console.warn('⚠️ SyncManager init timeout - continuing without it');
+              }
+              resolve();
+            }, 2000), // 2 second timeout - don't block app startup
+          }),
+        ]).catch(error => {
+          if (__DEV__) {
+            console.warn('⚠️ Sync Manager init failed (non-blocking):', error);
           }
-        })();
+          // Continue anyway - sync manager can start later
+        });
 
         // Initialize circuit breaker monitoring (non-blocking)
         import('./src/utils/circuitBreakerMonitor')
@@ -782,9 +812,9 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
           },
         );
 
-        // Only wait for minimum splash time and sync manager (critical for offline support)
-        // Don't wait for RevenueCat - it can initialize in background
-        await Promise.all([minSplashTime, syncManagerInit]);
+        // Only wait for minimum splash time - don't wait for sync manager
+        // Sync manager will initialize in background and won't block app startup
+        await minSplashTime;
       } catch (e) {
         console.error('❌ App initialization error:', e);
         errorTracking.captureError(e as Error, {

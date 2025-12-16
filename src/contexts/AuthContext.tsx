@@ -779,22 +779,87 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log('MFA check failed or timed out:', mfaError);
       }
 
-      // Explicitly fetch and set session to ensure AppNavigator detects the change
-      // This ensures immediate UI update after successful login
-      try {
-        const currentSession = await authService.getSession();
-        if (currentSession) {
-          console.log('✅ [AuthContext] Explicitly setting session after signIn');
-          await authSyncService.saveAuthState(currentSession);
-          setSession(currentSession);
-          if (currentSession.user) {
-            const userProfile = await fetchUserProfile(currentSession.user.id);
-            setUser(userProfile);
-          }
+      // Set session from login result FIRST (most reliable source)
+      // This ensures AppNavigator immediately detects the session change
+      if (result?.session) {
+        console.log('✅ [AuthContext] Setting session from login result');
+        setSession(result.session);
+        
+        // Save auth state (non-blocking)
+        authSyncService.saveAuthState(result.session).catch(err => {
+          console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+        });
+        
+        // Fetch user profile (non-blocking)
+        if (result.user) {
+          fetchUserProfile(result.user.id)
+            .then(userProfile => {
+              if (userProfile) {
+                setUser(userProfile);
+              }
+            })
+            .catch(err => {
+              console.warn('⚠️ Failed to fetch user profile (non-blocking):', err);
+            });
         }
-      } catch (sessionError) {
-        console.warn('⚠️ Failed to fetch session after signIn:', sessionError);
-        // Don't fail the login - the auth state change listener will handle it
+        
+        // Optionally refresh session from Supabase client to ensure sync (non-blocking)
+        // This is done in background and won't block the UI update
+        const sessionTimeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Session refresh timeout')), 3000);
+        });
+        
+        Promise.race([authService.getSession(), sessionTimeoutPromise])
+          .then(refreshedSession => {
+            if (refreshedSession) {
+              console.log('✅ [AuthContext] Session refreshed from Supabase client');
+              setSession(refreshedSession);
+              // Update auth state with refreshed session
+              authSyncService.saveAuthState(refreshedSession).catch(() => {});
+            }
+          })
+          .catch(err => {
+            // Ignore - we already have the session from login result
+            console.log('ℹ️ Session refresh skipped (using login result):', err instanceof Error ? err.message : 'timeout');
+          });
+      } else {
+        // No session in login result - try to get it from Supabase client
+        console.warn('⚠️ No session in login result, attempting to fetch from Supabase client');
+        const sessionTimeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Session fetch timeout')), 5000);
+        });
+        
+        try {
+          const sessionPromise = authService.getSession();
+          const currentSession = await Promise.race([sessionPromise, sessionTimeoutPromise]);
+          
+          if (currentSession) {
+            console.log('✅ [AuthContext] Setting session from Supabase client');
+            setSession(currentSession);
+            
+            // Save auth state (non-blocking)
+            authSyncService.saveAuthState(currentSession).catch(err => {
+              console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+            });
+            
+            // Fetch user profile (non-blocking)
+            if (currentSession.user) {
+              fetchUserProfile(currentSession.user.id)
+                .then(userProfile => {
+                  if (userProfile) setUser(userProfile);
+                })
+                .catch(err => {
+                  console.warn('⚠️ Failed to fetch user profile (non-blocking):', err);
+                });
+            }
+          } else {
+            console.error('❌ [AuthContext] No session available after login - this should not happen');
+          }
+        } catch (sessionError) {
+          console.error('❌ [AuthContext] Failed to get session after login:', sessionError);
+          // This is a critical error - login succeeded but we can't get the session
+          // The auth state change listener should handle this, but log it
+        }
       }
 
       return { error: null };

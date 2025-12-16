@@ -201,7 +201,10 @@ export const useHomeScreenData = (enabled: boolean = true) => {
 };
 
 // Enhanced calendar data hook with persistent caching
-export const useCalendarData = (date: Date, options?: { enabled?: boolean }) => {
+export const useCalendarData = (
+  date: Date,
+  options?: { enabled?: boolean },
+) => {
   const dateKey = date.toISOString().split('T')[0];
   const cacheKey = `calendarData:${dateKey}`;
   // Initialize with empty object for instant UI rendering

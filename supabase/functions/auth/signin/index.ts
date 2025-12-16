@@ -6,7 +6,10 @@ import { SignInSchema } from '../../_shared/schemas/auth.ts';
 import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
-import { checkRateLimit, extractIPAddress } from '../../_shared/rate-limiter.ts';
+import {
+  checkRateLimit,
+  extractIPAddress,
+} from '../../_shared/rate-limiter.ts';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -91,4 +94,3 @@ serve(async (req: Request) => {
     );
   }
 });
-

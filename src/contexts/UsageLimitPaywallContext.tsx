@@ -84,12 +84,23 @@ export const UsageLimitPaywallProvider: React.FC<{
   const handleSuccessModalClose = useCallback(() => {
     setShowSuccessModal(false);
 
-    // Retry the pending action
+    // Retry the pending action - only if navigation is ready
     if (pendingAction) {
-      const { route, params } = pendingAction;
-      navigation.navigate(route as any, params);
-      // Clear pending action after navigation
-      setPendingAction(null);
+      try {
+        // Check if navigation is available and ready
+        if (navigation && typeof navigation.navigate === 'function') {
+          const { route, params } = pendingAction;
+          navigation.navigate(route as any, params);
+          // Clear pending action after navigation
+          setPendingAction(null);
+        } else {
+          // Navigation not ready yet, keep pending action for later
+          console.warn('Navigation not ready, keeping pending action');
+        }
+      } catch (error) {
+        // Navigation error - keep pending action for retry
+        console.warn('Navigation error in handleSuccessModalClose:', error);
+      }
     }
   }, [pendingAction, navigation]);
 
