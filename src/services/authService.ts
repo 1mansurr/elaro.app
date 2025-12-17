@@ -192,10 +192,86 @@ export const authService = {
         // Re-throw to let the caller handle it
         throw error;
       }
-    } else if (__DEV__) {
+    } else {
+      // FALLBACK: API returned no session, try direct Supabase auth
       console.warn(
-        '⚠️ [authService] No session in API response, but login succeeded',
+        '⚠️ [authService] No session in API response, attempting fallback to direct Supabase auth',
       );
+
+      try {
+        // Fallback: Use Supabase directly
+        const { data: directAuthData, error: directAuthError } =
+          await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+        if (directAuthError) {
+          console.error(
+            '❌ [authService] Fallback Supabase auth failed:',
+            directAuthError,
+          );
+          // Check if email confirmation is needed
+          if (directAuthError.message?.includes('email') || 
+              directAuthError.message?.includes('confirm')) {
+            throw new AppError(
+              'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
+              403,
+              'EMAIL_NOT_CONFIRMED',
+            );
+          }
+          throw new AppError(
+            directAuthError.message || 'Authentication failed',
+            401,
+            'AUTH_ERROR',
+          );
+        }
+
+        if (!directAuthData.session) {
+          console.error('❌ [authService] Fallback auth succeeded but no session returned', {
+            hasUser: !!directAuthData.user,
+            userId: directAuthData.user?.id,
+            emailConfirmed: !!directAuthData.user?.email_confirmed_at,
+          });
+
+          // Check if email confirmation is required
+          if (directAuthData.user && !directAuthData.user.email_confirmed_at) {
+            throw new AppError(
+              'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
+              403,
+              'EMAIL_NOT_CONFIRMED',
+            );
+          }
+
+          throw new AppError(
+            'Login succeeded but no session was created. Please try again.',
+            500,
+            'NO_SESSION_ERROR',
+          );
+        }
+
+        console.log('✅ [authService] Fallback: Session created via direct Supabase auth');
+
+        // Return the session from direct auth
+        return {
+          user: directAuthData.user,
+          session: directAuthData.session,
+        };
+      } catch (fallbackError) {
+        // If fallback also fails, check if we have user from API response
+        if (response.data?.user) {
+          console.warn(
+            '⚠️ [authService] Fallback failed but API returned user, returning partial result',
+          );
+          // Return what we have from API
+          return {
+            user: response.data.user,
+            session: null,
+          };
+        }
+        // Re-throw the fallback error
+        throw fallbackError;
+      }
     }
 
     return {

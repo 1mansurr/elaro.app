@@ -680,7 +680,8 @@ const AppWithErrorBoundary: React.FC<{
     setIsStateValidated(true);
   }, []);
 
-  // Add fallback timeout - show app after 6 seconds even if validation hasn't completed
+  // Add fallback timeout - show app after 4 seconds even if validation hasn't completed
+  // Reduced from 6s to prevent white screen hanging
   useEffect(() => {
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
@@ -690,7 +691,7 @@ const AppWithErrorBoundary: React.FC<{
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
-    }, 6000); // 6 second fallback
+    }, 4000); // 4 second fallback (reduced to prevent white screen)
 
     return () => clearTimeout(fallbackTimeout);
   }, [isStateValidated]);

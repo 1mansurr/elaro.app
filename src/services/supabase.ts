@@ -128,53 +128,153 @@ export const authService = {
   // If needed, user profile is created automatically when auth user is created
 
   async getUserProfile(userId: string): Promise<User | null> {
-    // Use API layer instead of direct Supabase
-    const { versionedApiClient } = await import('./VersionedApiClient');
-    const response = await versionedApiClient.getUserProfile();
+    // Try API layer first with timeout
+    try {
+      const { versionedApiClient } = await import('./VersionedApiClient');
+      
+      // Add timeout to API call (5 seconds)
+      const apiPromise = versionedApiClient.getUserProfile();
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('API timeout')), 5000);
+      });
 
-    if (response.error || !response.data) {
-      return null;
-    }
+      const response = await Promise.race([apiPromise, timeoutPromise]);
 
-    // Map API response to User type
-    const data = response.data as any;
-    const userProfile: User = {
-      id: data.id,
-      email: data.email ?? '',
-      name: data.name,
-      first_name: data.first_name,
-      last_name: data.last_name,
-      university: data.university,
-      program: data.program,
-      role: (data.role as 'user' | 'admin') ?? 'user',
-      onboarding_completed: data.onboarding_completed ?? false,
-      subscription_tier:
-        (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
-      subscription_status:
-        (data.subscription_status as
-          | 'trialing'
-          | 'active'
-          | 'past_due'
-          | 'canceled'
-          | null) ?? null,
-      subscription_expires_at: data.subscription_expires_at ?? null,
-      account_status:
-        (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
-      deleted_at: data.deleted_at ?? null,
-      deletion_scheduled_at: data.deletion_scheduled_at ?? null,
-      suspension_end_date: data.suspension_end_date ?? null,
-      created_at: data.created_at,
-      updated_at: data.updated_at,
-      user_metadata: {
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'No data in API response');
+      }
+
+      // Map API response to User type
+      const data = response.data as any;
+      const userProfile: User = {
+        id: data.id,
+        email: data.email ?? '',
+        name: data.name,
         first_name: data.first_name,
         last_name: data.last_name,
-        name: data.name,
         university: data.university,
         program: data.program,
-      },
-    };
+        role: (data.role as 'user' | 'admin') ?? 'user',
+        onboarding_completed: data.onboarding_completed ?? false,
+        subscription_tier:
+          (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
+        subscription_status:
+          (data.subscription_status as
+            | 'trialing'
+            | 'active'
+            | 'past_due'
+            | 'canceled'
+            | null) ?? null,
+        subscription_expires_at: data.subscription_expires_at ?? null,
+        account_status:
+          (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+        deleted_at: data.deleted_at ?? null,
+        deletion_scheduled_at: data.deletion_scheduled_at ?? null,
+        suspension_end_date: data.suspension_end_date ?? null,
+        created_at: data.created_at,
+        updated_at: data.updated_at,
+        user_metadata: {
+          first_name: data.first_name,
+          last_name: data.last_name,
+          name: data.name,
+          university: data.university,
+          program: data.program,
+        },
+      };
 
-    return userProfile;
+      return userProfile;
+    } catch (apiError) {
+      // FALLBACK: API failed or timed out, use direct Supabase query
+      console.warn(
+        '⚠️ [supabaseAuthService] API getUserProfile failed, using direct Supabase fallback:',
+        apiError instanceof Error ? apiError.message : String(apiError),
+      );
+
+      try {
+        // Direct Supabase query as fallback
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', userId)
+          .single();
+
+        if (error) {
+          console.error('❌ [supabaseAuthService] Direct Supabase query failed:', error);
+          
+          // Check if it's an RLS policy error or permission issue
+          if (
+            error.code === 'PGRST301' ||
+            error.message?.includes('permission') ||
+            error.message?.includes('policy') ||
+            error.message?.includes('RLS') ||
+            error.code === '42501'
+          ) {
+            console.warn(
+              '⚠️ [supabaseAuthService] RLS policy may be blocking direct query - user profile may not exist yet or RLS is restricting access',
+            );
+          }
+          
+          // Check if user doesn't exist (common after signup before trigger runs)
+          if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
+            console.warn(
+              '⚠️ [supabaseAuthService] User profile not found in database - may need to wait for database trigger',
+            );
+          }
+          
+          return null;
+        }
+
+        if (!data) {
+          return null;
+        }
+
+        // Map database response to User type
+        const userProfile: User = {
+          id: data.id,
+          email: data.email ?? '',
+          name: data.name,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          university: data.university,
+          program: data.program,
+          role: (data.role as 'user' | 'admin') ?? 'user',
+          onboarding_completed: data.onboarding_completed ?? false,
+          subscription_tier:
+            (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
+          subscription_status:
+            (data.subscription_status as
+              | 'trialing'
+              | 'active'
+              | 'past_due'
+              | 'canceled'
+              | null) ?? null,
+          subscription_expires_at: data.subscription_expires_at ?? null,
+          account_status:
+            (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+          deleted_at: data.deleted_at ?? null,
+          deletion_scheduled_at: data.deletion_scheduled_at ?? null,
+          suspension_end_date: data.suspension_end_date ?? null,
+          created_at: data.created_at,
+          updated_at: data.updated_at,
+          user_metadata: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+            name: data.name,
+            university: data.university,
+            program: data.program,
+          },
+        };
+
+        console.log('✅ [supabaseAuthService] Fallback: User profile fetched via direct Supabase');
+        return userProfile;
+      } catch (fallbackError) {
+        console.error(
+          '❌ [supabaseAuthService] Both API and fallback failed:',
+          fallbackError,
+        );
+        return null;
+      }
+    }
   },
 
   async updateUserProfile(userId: string, updates: Partial<User>) {

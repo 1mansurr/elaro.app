@@ -8,6 +8,8 @@ import {
   ScrollView,
   Switch,
   Platform,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -39,13 +41,15 @@ const AddLectureDateTimeScreen = () => {
   const [endTime, setEndTime] = useState(
     courseData.endTime || new Date(new Date().getTime() + 60 * 60 * 1000),
   );
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState<'start' | 'end' | null>(
     null,
   );
-  const [hasPickedDate, setHasPickedDate] = useState(false);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null); // 0 = Sunday, 1 = Monday, etc.
+  const [hasPickedDay, setHasPickedDay] = useState(false);
   const [hasPickedStartTime, setHasPickedStartTime] = useState(false);
   const [hasPickedEndTime, setHasPickedEndTime] = useState(false);
+  const [showDayPicker, setShowDayPicker] = useState(false);
+  const [venue, setVenue] = useState(courseData.venue || '');
   const [hasInteractedWithRecurrence, setHasInteractedWithRecurrence] =
     useState(false);
   // Auto-enable recurrence toggle on mount
@@ -54,28 +58,20 @@ const AddLectureDateTimeScreen = () => {
     null,
   );
 
-  const formatDate = (date: Date) => {
-    return i18nFormatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
-  };
+  // Day names for selector
+  const dayNames = [
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+  ];
+  const shortDayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   const formatTime = (date: Date) => {
     return i18nFormatDate(date, { timeStyle: 'short' });
-  };
-
-  const onDateChange = (event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
-    }
-    if (event.type === 'set' && selectedDate) {
-      setStartTime(selectedDate);
-      setEndTime(new Date(selectedDate.getTime() + 60 * 60 * 1000));
-      setHasPickedDate(true);
-      if (Platform.OS === 'ios') {
-        setShowDatePicker(false);
-      }
-    } else if (event.type === 'dismissed') {
-      setShowDatePicker(false);
-    }
   };
 
   const onTimeChange = (
@@ -127,13 +123,31 @@ const AddLectureDateTimeScreen = () => {
       Alert.alert('Invalid Time', 'End time must be after the start time.');
       return;
     }
+    if (selectedDay === null) {
+      Alert.alert('Day Required', 'Please select a day of the week.');
+      return;
+    }
+
+    // Set the startTime to the selected day of the week
+    const now = new Date();
+    const currentDay = now.getDay();
+    const daysToAdd = (selectedDay - currentDay + 7) % 7;
+    const nextDate = new Date(now);
+    nextDate.setDate(now.getDate() + (daysToAdd === 0 ? 7 : daysToAdd)); // If today, use next week
+    nextDate.setHours(startTime.getHours(), startTime.getMinutes(), 0, 0);
+
+    const finalEndTime = new Date(
+      nextDate.getTime() + (endTime.getTime() - startTime.getTime()),
+    );
+
     updateCourseData({
-      startTime,
-      endTime,
+      startTime: nextDate,
+      endTime: finalEndTime,
+      venue: venue.trim(),
       recurrence: repeats && recurrence ? recurrence : 'none',
     });
-    // Navigate to venue screen
-    navigation.navigate('AddLectureVenue');
+    // Navigate directly to reminders screen (skip venue screen)
+    navigation.navigate('AddLectureReminders');
   };
 
   const handleBack = () => {
@@ -146,7 +160,7 @@ const AddLectureDateTimeScreen = () => {
   };
 
   const isButtonEnabled =
-    hasPickedDate &&
+    hasPickedDay &&
     hasPickedStartTime &&
     hasPickedEndTime &&
     hasInteractedWithRecurrence &&
@@ -156,20 +170,6 @@ const AddLectureDateTimeScreen = () => {
     'weekly',
     'bi-weekly',
   ];
-
-  const getDateDisplay = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (startTime.toDateString() === today.toDateString()) {
-      return 'Today';
-    } else if (startTime.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow';
-    } else {
-      return formatDate(startTime).split(',')[0];
-    }
-  };
 
   const getDuration = () => {
     const diff = endTime.getTime() - startTime.getTime();
@@ -203,19 +203,19 @@ const AddLectureDateTimeScreen = () => {
       </View>
 
       {/* Progress Indicator */}
-      <ProgressIndicator currentStep={2} totalSteps={4} />
+      <ProgressIndicator currentStep={2} totalSteps={3} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}>
         <Text style={[styles.title, { color: theme.text }]}>
-          When is the lecture?
+          Setting of Lecture
         </Text>
         <Text style={[styles.subtitle, { color: '#64748b' }]}>
-          Set the date, time, and recurrence for your lecture.
+          Set the day, time, venue, and recurrence for your lecture.
         </Text>
 
-        {/* Date Card */}
+        {/* Day Card */}
         <View
           style={[
             styles.card,
@@ -226,7 +226,7 @@ const AddLectureDateTimeScreen = () => {
           ]}>
           <TouchableOpacity
             style={styles.cardRow}
-            onPress={() => setShowDatePicker(true)}
+            onPress={() => setShowDayPicker(true)}
             activeOpacity={0.7}>
             <View style={styles.cardRowLeft}>
               <View
@@ -234,11 +234,13 @@ const AddLectureDateTimeScreen = () => {
                 <Ionicons name="calendar-outline" size={20} color="#dc2626" />
               </View>
               <Text style={[styles.cardLabel, { color: theme.text }]}>
-                Date
+                Day
               </Text>
             </View>
             <View style={styles.cardRowRight}>
-              <Text style={styles.dateBadge}>{getDateDisplay()}</Text>
+              <Text style={styles.dayBadge}>
+                {selectedDay !== null ? dayNames[selectedDay] : 'Select Day'}
+              </Text>
               <Ionicons name="chevron-forward" size={16} color="#9ca3af" />
             </View>
           </TouchableOpacity>
@@ -360,6 +362,44 @@ const AddLectureDateTimeScreen = () => {
             </View>
           )}
         </View>
+
+        {/* Venue Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
+          ]}>
+          <View style={styles.venueSection}>
+            <View style={styles.venueSectionHeader}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+                <Ionicons name="location-outline" size={20} color="#16a34a" />
+              </View>
+              <Text style={[styles.cardLabel, { color: theme.text }]}>
+                Venue
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.venueInput,
+                {
+                  backgroundColor: theme.surface || '#FFFFFF',
+                  borderColor: '#dbdfe6',
+                  color: theme.text,
+                },
+              ]}
+              value={venue}
+              onChangeText={setVenue}
+              placeholder="e.g. Room 404, Main Building"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
+          </View>
+        </View>
       </ScrollView>
 
       {/* Footer */}
@@ -379,27 +419,125 @@ const AddLectureDateTimeScreen = () => {
           onPress={handleNext}
           disabled={!isButtonEnabled}
           activeOpacity={0.8}>
-          <Text style={styles.nextButtonText}>Next Step</Text>
+          <Text style={styles.nextButtonText}>Next</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Date/Time Pickers */}
-      {showDatePicker && (
-        <DateTimePicker
-          value={startTime}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={onDateChange}
-        />
-      )}
-      {showTimePicker && (
-        <DateTimePicker
-          value={showTimePicker === 'start' ? startTime : endTime}
-          mode="time"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={(e, date) => onTimeChange(e, date, showTimePicker)}
-        />
-      )}
+      {/* Time Pickers in Modal */}
+      <Modal
+        visible={showTimePicker !== null}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowTimePicker(null);
+        }}>
+        <TouchableOpacity
+          style={styles.pickerModalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setShowTimePicker(null);
+          }}>
+          <View
+            style={[
+              styles.pickerModalContent,
+              { backgroundColor: theme.surface || '#FFFFFF' },
+            ]}
+            onStartShouldSetResponder={() => true}>
+            {showTimePicker && (
+              <DateTimePicker
+                value={showTimePicker === 'start' ? startTime : endTime}
+                mode="time"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(e, date) => onTimeChange(e, date, showTimePicker)}
+                style={styles.picker}
+              />
+            )}
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={[
+                  styles.pickerDoneButton,
+                  { borderTopColor: theme.border || '#e5e7eb' },
+                ]}
+                onPress={() => {
+                  setShowTimePicker(null);
+                }}>
+                <Text style={styles.pickerDoneButtonText}>Done</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Day Picker Modal */}
+      <Modal
+        visible={showDayPicker}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowDayPicker(false)}>
+        <TouchableOpacity
+          style={styles.pickerModalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowDayPicker(false)}>
+          <View
+            style={[
+              styles.pickerModalContent,
+              { backgroundColor: theme.surface || '#FFFFFF' },
+            ]}
+            onStartShouldSetResponder={() => true}>
+            <View style={styles.dayPickerContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.dayPickerScrollContent}>
+                {dayNames.map((dayName, index) => {
+                  const isSelected = selectedDay === index;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[
+                        styles.dayPickerItem,
+                        isSelected && styles.dayPickerItemActive,
+                        {
+                          backgroundColor: isSelected
+                            ? '#135bec20'
+                            : 'transparent',
+                          borderColor: isSelected ? '#135bec' : 'transparent',
+                        },
+                      ]}
+                      onPress={() => {
+                        setSelectedDay(index);
+                        setHasPickedDay(true);
+                        setShowDayPicker(false);
+                      }}
+                      activeOpacity={0.7}>
+                      <Text
+                        style={[
+                          styles.dayPickerItemText,
+                          {
+                            color: isSelected ? '#135bec' : theme.text,
+                            fontWeight: isSelected ? '600' : '500',
+                          },
+                        ]}>
+                        {dayName}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+            {Platform.OS === 'ios' && (
+              <TouchableOpacity
+                style={[
+                  styles.pickerDoneButton,
+                  { borderTopColor: theme.border || '#e5e7eb' },
+                ]}
+                onPress={() => setShowDayPicker(false)}>
+                <Text style={styles.pickerDoneButtonText}>Done</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };
@@ -491,14 +629,35 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
   },
-  dateBadge: {
+  daySection: {
+    padding: 16,
+  },
+  daySectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  dayGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  dayButton: {
+    flex: 1,
+    minWidth: '13%',
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayButtonActive: {
+    borderWidth: 1,
+  },
+  dayButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#135bec',
-    backgroundColor: '#135bec10',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 6,
+    fontWeight: '500',
   },
   timeSection: {
     backgroundColor: '#f8fafc',
@@ -595,6 +754,83 @@ const styles = StyleSheet.create({
   nextButtonDisabled: {
     backgroundColor: '#e5e7eb',
     opacity: 0.6,
+  },
+  pickerModalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  pickerModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 16,
+    maxHeight: '50%',
+  },
+  picker: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? 200 : undefined,
+  },
+  pickerDoneButton: {
+    padding: 16,
+    alignItems: 'center',
+    borderTopWidth: 1,
+  },
+  pickerDoneButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#135bec',
+  },
+  dayBadge: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#135bec',
+    backgroundColor: '#135bec10',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  dayPickerContainer: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  dayPickerScrollContent: {
+    paddingHorizontal: 8,
+    alignItems: 'center',
+  },
+  dayPickerItem: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginHorizontal: 4,
+    minWidth: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayPickerItemActive: {
+    borderWidth: 2,
+  },
+  dayPickerItemText: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  venueSection: {
+    padding: 16,
+  },
+  venueSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 12,
+  },
+  venueInput: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
   },
 });
 

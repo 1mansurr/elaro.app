@@ -32,6 +32,8 @@ type ScreensConfig = Partial<
 // Critical auth screens - loaded immediately
 import { AuthScreen } from '@/features/auth/screens/AuthScreen';
 import AppWelcomeScreen from '@/features/auth/screens/AppWelcomeScreen';
+import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScreen';
+import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 
 // Lazy-loaded auth screens
 const MFAEnrollmentScreen = lazy(() =>
@@ -81,6 +83,20 @@ const authScreens = {
   Auth: {
     component: AuthScreen,
     options: SCREEN_CONFIGS.Auth,
+  },
+  ForgotPassword: {
+    component: ForgotPasswordScreen,
+    options: {
+      presentation: 'modal' as const,
+      headerShown: false,
+    },
+  },
+  ResetPassword: {
+    component: ResetPasswordScreen,
+    options: {
+      presentation: 'modal' as const,
+      headerShown: false,
+    },
   },
   MFAEnrollmentScreen: {
     component: MFAEnrollmentScreen,

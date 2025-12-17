@@ -186,17 +186,16 @@ module.exports = ({ config }) => {
           },
         },
       ],
-      // Temporarily commented out for binary search test (not in dependencies 53-61)
-      // [
-      //   'expo-notifications',
-      //   {
-      //     icon: './assets/notification-icon.png',
-      //     color: '#ffffff',
-      //     sounds: [
-      //       // You can add custom sound files here if you have them
-      //     ],
-      //   },
-      // ],
+      [
+        'expo-notifications',
+        {
+          icon: './assets/notification-icon.png',
+          color: '#ffffff',
+          sounds: [
+            // You can add custom sound files here if you have them
+          ],
+        },
+      ],
       // [
       //   'expo-image-picker',
       //   {

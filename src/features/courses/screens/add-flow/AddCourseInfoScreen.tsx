@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -139,45 +140,90 @@ const AddCourseInfoScreen = () => {
 
         {/* Inputs */}
         <View style={styles.inputsContainer}>
-          <FloatingLabelInput
-            label="Course Name"
-            value={courseName}
-            onChangeText={text => {
-              setCourseName(text);
-              setHasInteractedWithName(true);
-            }}
-            onFocus={() => setHasInteractedWithName(true)}
-            autoFocus
-            autoCapitalize="words"
-            returnKeyType="next"
-            onSubmitEditing={() => {
-              // Focus next input if needed
-            }}
-          />
-          <FloatingLabelInput
-            label="Course Code"
-            optional
-            value={courseCode}
-            onChangeText={text => {
-              setCourseCode(text);
-              setHasInteractedWithCode(true);
-            }}
-            onFocus={() => setHasInteractedWithCode(true)}
-            autoCapitalize="characters"
-            returnKeyType="next"
-          />
-          <FloatingLabelInput
-            label="About"
-            optional
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            maxLength={300}
-            showCharacterCount
-            placeholderHint="Description"
-            textAlignVertical="top"
-          />
+          {/* Course Name */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Course Name
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.surface || '#FFFFFF',
+                  borderColor: '#dbdfe6',
+                  color: theme.text,
+                },
+              ]}
+              value={courseName}
+              onChangeText={text => {
+                setCourseName(text);
+                setHasInteractedWithName(true);
+              }}
+              onFocus={() => setHasInteractedWithName(true)}
+              autoFocus
+              autoCapitalize="words"
+              returnKeyType="next"
+              placeholder="Enter course name"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+
+          {/* Course Code */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              Course Code <Text style={styles.optionalText}>(Optional)</Text>
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: theme.surface || '#FFFFFF',
+                  borderColor: '#dbdfe6',
+                  color: theme.text,
+                },
+              ]}
+              value={courseCode}
+              onChangeText={text => {
+                setCourseCode(text);
+                setHasInteractedWithCode(true);
+              }}
+              onFocus={() => setHasInteractedWithCode(true)}
+              autoCapitalize="characters"
+              returnKeyType="next"
+              placeholder="e.g., CS101"
+              placeholderTextColor="#9ca3af"
+            />
+          </View>
+
+          {/* About */}
+          <View style={styles.inputGroup}>
+            <Text style={[styles.inputLabel, { color: theme.text }]}>
+              About <Text style={styles.optionalText}>(Optional)</Text>
+            </Text>
+            <TextInput
+              style={[
+                styles.inputMultiline,
+                {
+                  backgroundColor: theme.surface || '#FFFFFF',
+                  borderColor: '#dbdfe6',
+                  color: theme.text,
+                },
+              ]}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              maxLength={300}
+              placeholder="Enter course description"
+              placeholderTextColor="#9ca3af"
+              textAlignVertical="top"
+            />
+            {description.length > 0 && (
+              <Text style={styles.characterCount}>
+                {description.length}/300
+              </Text>
+            )}
+          </View>
         </View>
       </ScrollView>
 
@@ -253,6 +299,45 @@ const styles = StyleSheet.create({
   inputsContainer: {
     flex: 1,
   },
+  inputGroup: {
+    marginBottom: 24,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+    color: '#374151',
+  },
+  input: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+  },
+  optionalText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#9ca3af',
+  },
+  inputMultiline: {
+    width: '100%',
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 32,
+    fontSize: 16,
+    minHeight: 100,
+  },
+  characterCount: {
+    position: 'absolute',
+    right: 16,
+    bottom: 8,
+    fontSize: 12,
+    color: '#9ca3af',
+  },
   footer: {
     paddingHorizontal: 16,
     paddingTop: 8,
@@ -266,7 +351,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 56,
     backgroundColor: '#135bec',
-    borderRadius: 12,
+    borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
   },
