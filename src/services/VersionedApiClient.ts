@@ -582,6 +582,66 @@ export class VersionedApiClient {
     );
   }
 
+  // ============================================================================
+  // AUTH LOCKOUT OPERATIONS
+  // ============================================================================
+
+  async checkAccountLockout(email: string): Promise<ApiResponse<{
+    isLocked: boolean;
+    attemptsRemaining?: number;
+    lockedUntil?: string;
+    minutesRemaining?: number;
+  }>> {
+    return apiVersioningService.get<{
+      isLocked: boolean;
+      attemptsRemaining?: number;
+      lockedUntil?: string;
+      minutesRemaining?: number;
+    }>(`auth/lockout/check-lockout?email=${encodeURIComponent(email)}`, undefined, false);
+  }
+
+  async recordFailedAttempt(data: {
+    email: string;
+    reason?: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<ApiResponse<{
+    recorded: boolean;
+    attempts: number;
+    isLocked: boolean;
+  }>> {
+    return apiVersioningService.post<{
+      recorded: boolean;
+      attempts: number;
+      isLocked: boolean;
+    }>('auth/lockout/record-failed-attempt', data, false);
+  }
+
+  async recordSuccessfulLogin(data: {
+    userId: string;
+    method?: string;
+    deviceInfo?: {
+      platform?: string;
+      version?: string;
+      ipAddress?: string;
+      userAgent?: string;
+    };
+  }): Promise<ApiResponse<{ recorded: boolean }>> {
+    return apiVersioningService.post<{ recorded: boolean }>(
+      'auth/lockout/record-successful-login',
+      data,
+      false,
+    );
+  }
+
+  async resetFailedAttempts(userIdOrEmail: string): Promise<ApiResponse<{ reset: boolean }>> {
+    return apiVersioningService.post<{ reset: boolean }>(
+      'auth/lockout/reset-attempts',
+      { userIdOrEmail },
+      false,
+    );
+  }
+
   async getUser(): Promise<ApiResponse<{ user: any }>> {
     // Use session endpoint to get user
     const sessionResponse = await this.getSession();

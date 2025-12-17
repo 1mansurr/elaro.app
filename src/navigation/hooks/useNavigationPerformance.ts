@@ -64,8 +64,7 @@ export const useNavigationPerformance = (
 
           // Preload the screen by navigating to it and immediately going back
           // This is a common pattern for React Navigation preloading
-          const currentRoute =
-            state.routes[state.index || 0];
+          const currentRoute = state.routes[state.index || 0];
           if (currentRoute?.name !== screenName) {
             preloadedScreens.current.add(screenName);
             console.log(`📱 Preloaded screen: ${screenName}`);
@@ -204,7 +203,10 @@ export const useScreenTransitionOptimization = () => {
   } catch (error) {
     // Navigation not ready yet - this is expected during initialization
     if (__DEV__) {
-      console.warn('Navigation not initialized for screen transition optimization:', error);
+      console.warn(
+        'Navigation not initialized for screen transition optimization:',
+        error,
+      );
     }
   }
   const transitionStartTime = useRef<number>(0);

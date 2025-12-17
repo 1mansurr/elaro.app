@@ -19,7 +19,7 @@ export type AppNavigationProp = StackNavigationProp<RootStackParamList>;
 export const useAppNavigation = () => {
   try {
     const navigation = useNavigation<AppNavigationProp>();
-    
+
     // Verify navigation is actually ready
     if (!navigation || typeof navigation.navigate !== 'function') {
       if (__DEV__) {
@@ -40,11 +40,14 @@ export const useAppNavigation = () => {
         reset: () => {},
       } as any;
     }
-    
+
     return navigation;
   } catch (error) {
     // If navigation isn't ready, return a safe no-op object instead of throwing
-    if (error instanceof Error && error.message.includes("hasn't been initialized")) {
+    if (
+      error instanceof Error &&
+      error.message.includes("hasn't been initialized")
+    ) {
       if (__DEV__) {
         console.warn('Navigation not initialized - returning safe no-op');
       }

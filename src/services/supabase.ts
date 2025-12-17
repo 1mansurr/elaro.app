@@ -80,7 +80,9 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const authService = {
   async signUp(email: string, password: string, name?: string) {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import('@/services/authService');
+    const { authService: migratedAuthService } = await import(
+      '@/services/authService'
+    );
     // Use migrated auth service
     const result = await migratedAuthService.signUp({
       email,
@@ -97,21 +99,27 @@ export const authService = {
 
   async signIn(email: string, password: string) {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import('@/services/authService');
+    const { authService: migratedAuthService } = await import(
+      '@/services/authService'
+    );
     // Use migrated auth service
     return await migratedAuthService.login({ email, password });
   },
 
   async signOut() {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import('@/services/authService');
+    const { authService: migratedAuthService } = await import(
+      '@/services/authService'
+    );
     // Use migrated auth service
     return await migratedAuthService.signOut();
   },
 
   async getCurrentUser() {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import('@/services/authService');
+    const { authService: migratedAuthService } = await import(
+      '@/services/authService'
+    );
     // Use migrated auth service
     return await migratedAuthService.getCurrentUser();
   },

@@ -257,98 +257,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        // Add timeout wrapper to prevent indefinite hanging
-        const timeoutPromise = new Promise<Session | null>((_, reject) => {
-          setTimeout(
-            () => reject(new Error('Auth initialization timeout')),
-            10000,
-          ); // 10 second timeout
-        });
+        // FAST PATH: Use direct Supabase client getSession() - no API round-trip
+        // This reads from local storage immediately (no network latency)
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-        // Initialize auth sync service (loads session from Supabase and syncs to local cache)
-        const initPromise = authSyncService.initialize();
-        const initialSession = await Promise.race([
-          initPromise,
-          timeoutPromise,
-        ]);
+        if (error) {
+          console.error('❌ Error getting initial session:', error);
+          setSession(null);
+          setUser(null);
+          return;
+        }
 
-        // Set initial session immediately
-        setSession(initialSession);
+        // Set session state immediately - don't wait for anything else
+        setSession(session);
 
-        if (initialSession?.user) {
-          // Fetch user profile with timeout - don't block app if it hangs
-          const profileTimeoutPromise = new Promise<User | null>(
-            (_, reject) => {
-              setTimeout(
-                () => reject(new Error('User profile fetch timeout')),
-                8000,
-              ); // 8 second timeout
-            },
-          );
-
-          try {
-            const profilePromise = fetchUserProfile(initialSession.user.id);
-            const userProfile = await Promise.race([
-              profilePromise,
-              profileTimeoutPromise,
-            ]);
-            setUser(userProfile);
-
-            // Force a background refresh after initial load to ensure data is up-to-date
-            // This happens after the UI is already showing cached data, so it's non-blocking
-            setTimeout(async () => {
-              try {
-                const freshProfile = await supabaseAuthService.getUserProfile(
-                  initialSession.user.id,
-                );
-                if (
-                  freshProfile &&
-                  JSON.stringify(freshProfile) !== JSON.stringify(userProfile)
-                ) {
-                  console.log(
-                    '🔄 Updating user profile from server (background refresh)',
-                  );
-                  setUser(freshProfile as User);
-                  const cacheKey = `user_profile:${initialSession.user.id}`;
-                  await cache.setLong(cacheKey, freshProfile);
-                }
-              } catch (error) {
-                // Silently fail - we already have cached data
-                if (__DEV__) {
-                  console.warn('Background profile refresh failed:', error);
-                }
+        // If session exists, fetch profile asynchronously (non-blocking)
+        if (session?.user) {
+          // Don't block UI - fetch profile in background
+          fetchUserProfile(session.user.id)
+            .then(userProfile => {
+              if (userProfile) {
+                setUser(userProfile);
               }
-            }, 2000); // Wait 2 seconds after initial load
-          } catch (profileError) {
-            if (__DEV__) {
-              console.warn(
-                '⚠️ User profile fetch timed out, using cached data if available:',
-                profileError instanceof Error
-                  ? profileError.message
-                  : 'Unknown error',
-              );
-            }
-            // Continue without user profile - it can be fetched later
-            setUser(null);
-            // Try to fetch in background (non-blocking)
-            fetchUserProfile(initialSession.user.id)
-              .then(profile => {
-                if (profile) {
-                  console.log('✅ User profile fetched in background');
-                  setUser(profile);
-                }
-              })
-              .catch(err => {
-                if (__DEV__) {
-                  console.error('Background profile fetch failed:', err);
-                }
-              });
-          }
+            })
+            .catch(err => {
+              if (__DEV__) {
+                console.warn('⚠️ Profile fetch failed (non-blocking):', err);
+              }
+              // Continue without profile - can be fetched later
+            });
         } else {
           setUser(null);
         }
       } catch (error) {
-        console.error('❌ Error getting initial session:', error);
+        console.error('❌ Error initializing auth:', error);
         // Don't block app - continue with no session
         setSession(null);
         setUser(null);
@@ -359,102 +301,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.warn('⚠️ Failed to clear navigation state:', err);
         });
       } finally {
-        // Always set loading to false, even on error or timeout
+        // Always set loading to false immediately - UI should render fast
         setLoading(false);
       }
     };
 
     initializeAuth();
 
-    // Subscribe to auth sync service changes
-    const unsubscribeAuthSync = authSyncService.onAuthChange(async session => {
-      setSession(session);
-
-      if (session?.user) {
-        // Add timeout to prevent hanging on profile fetch
-        const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
-          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000);
-        });
-
-        try {
-          const profilePromise = fetchUserProfile(session.user.id);
-          const userProfile = await Promise.race([
-            profilePromise,
-            profileTimeoutPromise,
-          ]);
-          setUser(userProfile);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn(
-              '⚠️ User profile fetch timed out, using cached data if available:',
-              error instanceof Error ? error.message : 'Unknown error',
-            );
-          }
-          setUser(null);
-          // Try to fetch in background (non-blocking)
-          fetchUserProfile(session.user.id)
-            .then(profile => {
-              if (profile) {
-                console.log('✅ User profile fetched in background');
-                setUser(profile);
-              }
-            })
-            .catch(() => {});
-        }
-      } else {
-        setUser(null);
-      }
-    });
-
-    // Listen for Supabase auth changes (primary source of truth)
-    const subscription = authService.onAuthChange(async (event, session) => {
-      console.log(`🔄 Auth event: ${event}`);
-
-      // Sync to authSyncService (updates local cache)
-      if (session) {
-        await authSyncService.saveAuthState(session);
-      } else {
-        await authSyncService.clearAuthState();
-      }
-
-      setSession(session);
-      if (session?.user) {
-        // Add timeout to prevent hanging on profile fetch
-        const profileTimeoutPromise = new Promise<User | null>((_, reject) => {
-          setTimeout(() => reject(new Error('Profile fetch timeout')), 8000);
-        });
-
-        let userProfile: User | null = null; // Declare outside try block
-
-        try {
-          const profilePromise = fetchUserProfile(session.user.id);
-          userProfile = await Promise.race([
-            profilePromise,
-            profileTimeoutPromise,
-          ]);
-          setUser(userProfile);
-        } catch (error) {
-          if (__DEV__) {
-            console.warn(
-              '⚠️ User profile fetch timed out in auth change listener:',
-              error instanceof Error ? error.message : 'Unknown error',
-            );
-          }
-          setUser(null);
-          // Try to fetch in background (non-blocking)
-          fetchUserProfile(session.user.id)
-            .then(profile => {
-              if (profile) {
-                console.log('✅ User profile fetched in background');
-                setUser(profile);
-              }
-            })
-            .catch(() => {});
-          return; // Exit early to avoid processing pending tasks
+    // Set up auth state change listener (single source of truth)
+    // This handles session changes from Supabase automatically
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (__DEV__) {
+          console.log(`🔄 Auth event: ${event}`);
         }
 
-        // Complete any pending task after authentication
-        if (userProfile && session.user.id) {
+        // Update session state (single update point)
+        setSession(session);
+
+        // Sync to authSyncService for local cache (non-blocking)
+        if (session) {
+          authSyncService.saveAuthState(session).catch(err => {
+            if (__DEV__) {
+              console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+            }
+          });
+        } else {
+          authSyncService.clearAuthState().catch(() => {});
+        }
+
+        // Fetch profile if session exists (non-blocking)
+        if (session?.user) {
+          fetchUserProfile(session.user.id)
+            .then(userProfile => {
+              if (userProfile) setUser(userProfile);
+            })
+            .catch(() => {
+              // Silently fail - profile can be fetched later
+            });
+        } else {
+          setUser(null);
+        }
+      },
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  // Handle pending tasks and analytics after user profile is fetched
+  useEffect(() => {
+    if (!session?.user || !user) return;
+
+    const handleUserProfileReady = async () => {
+      // Complete any pending task after authentication
+      if (user && session.user.id) {
           try {
             // Fire-and-forget: complete pending task in background
             const { getPendingTask, clearPendingTask } = await import(
@@ -615,43 +517,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
         }
 
-        // Identify user in Mixpanel and set user properties
-        if (userProfile) {
-          mixpanelService.identify(userProfile.id);
-          mixpanelService.setUserProperties({
-            subscription_tier: userProfile.subscription_tier,
-            onboarding_completed: userProfile.onboarding_completed,
-            created_at: userProfile.created_at,
-            university: userProfile.university,
-            program: userProfile.program,
-          });
-
-          // Track login event
-          mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
-            subscription_tier: userProfile.subscription_tier,
-            onboarding_completed: userProfile.onboarding_completed,
-            login_method: 'email',
-          });
-        }
-
-        // Trial logic removed - all new users start on free plan
-
-        // Navigation is now handled in AppNavigator based on auth state changes
-      } else {
-        // Track logout event
-        mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-          logout_reason: 'manual',
+      // Identify user in Mixpanel and set user properties
+      if (user) {
+        mixpanelService.identify(user.id);
+        mixpanelService.setUserProperties({
+          subscription_tier: user.subscription_tier,
+          onboarding_completed: user.onboarding_completed,
+          created_at: user.created_at,
+          university: user.university,
+          program: user.program,
         });
-        setUser(null);
-      }
-      setLoading(false);
-    });
 
-    return () => {
-      unsubscribeAuthSync();
-      subscription.unsubscribe();
+        // Track login event
+        mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
+          subscription_tier: user.subscription_tier,
+          onboarding_completed: user.onboarding_completed,
+          login_method: 'email',
+        });
+      }
     };
-  }, []);
+
+    handleUserProfileReady();
+  }, [session?.user?.id, user?.id]);
+
+  // Track logout when user becomes null
+  useEffect(() => {
+    if (!session && user) {
+      // User just logged out
+      mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
+        logout_reason: 'manual',
+      });
+    }
+  }, [session, user]);
 
   // Check for session timeout on app load
   useEffect(() => {
@@ -733,6 +630,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       const loginPromise = authService.login(credentials);
       const result = await Promise.race([loginPromise, loginTimeoutPromise]);
 
+      // Log the result to debug why session might be missing
+      if (__DEV__) {
+        console.log('🔍 [AuthContext] Login result:', {
+          hasUser: !!result?.user,
+          hasSession: !!result?.session,
+          userId: result?.user?.id,
+          sessionAccessToken: result?.session?.access_token
+            ? result.session.access_token.substring(0, 20) + '...'
+            : 'none',
+        });
+      }
+
       // Clear any saved navigation state that might reference 'Main' before navigator switches
       // This prevents navigation errors when AppNavigator switches to AuthenticatedNavigator
       navigationSyncService.clearState().catch(() => {});
@@ -784,12 +693,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (result?.session) {
         console.log('✅ [AuthContext] Setting session from login result');
         setSession(result.session);
-        
+
         // Save auth state (non-blocking)
         authSyncService.saveAuthState(result.session).catch(err => {
           console.warn('⚠️ Failed to save auth state (non-blocking):', err);
         });
-        
+
         // Fetch user profile (non-blocking)
         if (result.user) {
           fetchUserProfile(result.user.id)
@@ -799,66 +708,122 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               }
             })
             .catch(err => {
-              console.warn('⚠️ Failed to fetch user profile (non-blocking):', err);
+              console.warn(
+                '⚠️ Failed to fetch user profile (non-blocking):',
+                err,
+              );
             });
         }
-        
-        // Optionally refresh session from Supabase client to ensure sync (non-blocking)
-        // This is done in background and won't block the UI update
-        const sessionTimeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Session refresh timeout')), 3000);
-        });
-        
-        Promise.race([authService.getSession(), sessionTimeoutPromise])
-          .then(refreshedSession => {
-            if (refreshedSession) {
-              console.log('✅ [AuthContext] Session refreshed from Supabase client');
-              setSession(refreshedSession);
-              // Update auth state with refreshed session
-              authSyncService.saveAuthState(refreshedSession).catch(() => {});
-            }
-          })
-          .catch(err => {
-            // Ignore - we already have the session from login result
-            console.log('ℹ️ Session refresh skipped (using login result):', err instanceof Error ? err.message : 'timeout');
-          });
+
+        // REMOVED: Don't call getSession() after login - it was causing duplicate setSession()
+        // The session is already set by authService.login() via setSession()
+        // Calling getSession() here would consume the refresh token again
+        // The session from login result is already valid and persisted
       } else {
         // No session in login result - try to get it from Supabase client
-        console.warn('⚠️ No session in login result, attempting to fetch from Supabase client');
+        // Wait a moment for setSession to complete (if it was called in authService.login)
+        console.warn(
+          '⚠️ No session in login result, waiting briefly then fetching from Supabase client',
+        );
+        
+        // Give setSession time to complete (if it was called)
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         const sessionTimeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error('Session fetch timeout')), 5000);
         });
-        
+
         try {
-          const sessionPromise = authService.getSession();
-          const currentSession = await Promise.race([sessionPromise, sessionTimeoutPromise]);
+          // Try getting session from Supabase client directly first (faster)
+          const { data: { session: directSession } } = await supabase.auth.getSession();
           
-          if (currentSession) {
-            console.log('✅ [AuthContext] Setting session from Supabase client');
-            setSession(currentSession);
-            
+          if (directSession) {
+            console.log(
+              '✅ [AuthContext] Setting session from Supabase client (direct)',
+            );
+            setSession(directSession);
+
             // Save auth state (non-blocking)
-            authSyncService.saveAuthState(currentSession).catch(err => {
+            authSyncService.saveAuthState(directSession).catch(err => {
               console.warn('⚠️ Failed to save auth state (non-blocking):', err);
             });
-            
+
             // Fetch user profile (non-blocking)
-            if (currentSession.user) {
-              fetchUserProfile(currentSession.user.id)
+            if (directSession.user) {
+              fetchUserProfile(directSession.user.id)
                 .then(userProfile => {
                   if (userProfile) setUser(userProfile);
                 })
                 .catch(err => {
-                  console.warn('⚠️ Failed to fetch user profile (non-blocking):', err);
+                  console.warn(
+                    '⚠️ Failed to fetch user profile (non-blocking):',
+                    err,
+                  );
                 });
             }
           } else {
-            console.error('❌ [AuthContext] No session available after login - this should not happen');
+            // Try via authService.getSession as fallback
+            const sessionPromise = authService.getSession();
+            const currentSession = await Promise.race([
+              sessionPromise,
+              sessionTimeoutPromise,
+            ]);
+
+            if (currentSession) {
+              console.log(
+                '✅ [AuthContext] Setting session from Supabase client (via API)',
+              );
+              setSession(currentSession);
+
+              // Save auth state (non-blocking)
+              authSyncService.saveAuthState(currentSession).catch(err => {
+                console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+              });
+
+              // Fetch user profile (non-blocking)
+              if (currentSession.user) {
+                fetchUserProfile(currentSession.user.id)
+                  .then(userProfile => {
+                    if (userProfile) setUser(userProfile);
+                  })
+                  .catch(err => {
+                    console.warn(
+                      '⚠️ Failed to fetch user profile (non-blocking):',
+                      err,
+                    );
+                  });
+              }
+            } else {
+              // CRITICAL: No session found after login - this is an error
+              console.error(
+                '❌ [AuthContext] No session available after login - login failed',
+                {
+                  hasUser: !!result?.user,
+                  userId: result?.user?.id,
+                },
+              );
+              return {
+                error: new Error(
+                  'Login succeeded but no session was created. Please try again.',
+                ),
+              };
+            }
           }
         } catch (sessionError) {
-          console.error('❌ [AuthContext] Failed to get session after login:', sessionError);
-          // This is a critical error - login succeeded but we can't get the session
-          // The auth state change listener should handle this, but log it
+          // CRITICAL: Failed to get session after login - return error
+          console.error(
+            '❌ [AuthContext] Failed to get session after login:',
+            sessionError,
+            {
+              hasUser: !!result?.user,
+              userId: result?.user?.id,
+            },
+          );
+          return {
+            error: new Error(
+              'Login succeeded but session could not be retrieved. Please try again.',
+            ),
+          };
         }
       }
 

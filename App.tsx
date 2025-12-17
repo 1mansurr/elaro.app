@@ -85,23 +85,33 @@ if (__DEV__) {
       }
     }
   }
-  // Disable console warnings about DevTools
-  const originalWarn = console.warn;
-  console.warn = (...args: any[]) => {
-    if (
-      typeof args[0] === 'string' &&
-      (args[0].includes('DevTools') ||
-        args[0].includes('React DevTools') ||
-        args[0].includes('Element Inspector'))
-    ) {
-      return; // Suppress DevTools warnings
+  // Helper function to check if error is Metro symbolication error
+  const isMetroSymbolicateError = (args: any[]): boolean => {
+    // Check Error objects directly first (most reliable)
+    for (const arg of args) {
+      if (arg instanceof Error) {
+        const errorName = arg.name || '';
+        const errorMessage = arg.message || '';
+        const errorStack = arg.stack || '';
+        
+        // Check if it's a SyntaxError about undefined JSON
+        if (
+          errorName === 'SyntaxError' &&
+          (errorMessage.includes('undefined') || errorMessage.includes('not valid JSON'))
+        ) {
+          // Check if stack trace contains Metro symbolication references
+          if (
+            errorStack.includes('_symbolicate') ||
+            errorStack.includes('metro/src/Server.js') ||
+            errorStack.includes('Server._processRequest') ||
+            errorStack.includes('Server._symbolicate')
+          ) {
+            return true;
+          }
+        }
+      }
     }
-    originalWarn.apply(console, args);
-  };
 
-  // Suppress Metro bundler symbolication errors (harmless noise)
-  const originalError = console.error;
-  console.error = (...args: any[]) => {
     // Convert all args to strings for comprehensive pattern matching
     const allArgsAsString = args
       .map(arg => {
@@ -119,17 +129,44 @@ if (__DEV__) {
       })
       .join(' ');
 
-    // Check if this is a Metro symbolication error - be more aggressive
-    const isMetroSymbolicateError =
-      allArgsAsString.includes('SyntaxError') &&
-      allArgsAsString.includes('undefined') &&
-      allArgsAsString.includes('not valid JSON') &&
-      (allArgsAsString.includes('_symbolicate') ||
-        allArgsAsString.includes('metro/src/Server.js') ||
-        allArgsAsString.includes('Server._processRequest') ||
-        allArgsAsString.includes('Server._symbolicate'));
+    // More aggressive pattern matching for Metro errors
+    return (
+      (allArgsAsString.includes('SyntaxError') &&
+        (allArgsAsString.includes('undefined') ||
+          allArgsAsString.includes('not valid JSON')) &&
+        (allArgsAsString.includes('_symbolicate') ||
+          allArgsAsString.includes('metro/src/Server.js') ||
+          allArgsAsString.includes('Server._processRequest') ||
+          allArgsAsString.includes('Server._symbolicate'))) ||
+      (allArgsAsString.includes('JSON.parse') &&
+        allArgsAsString.includes('undefined') &&
+        allArgsAsString.includes('metro'))
+    );
+  };
 
-    if (isMetroSymbolicateError) {
+  // Disable console warnings about DevTools and Metro errors
+  const originalWarn = console.warn;
+  console.warn = (...args: any[]) => {
+    // Suppress Metro symbolication errors in warnings too
+    if (isMetroSymbolicateError(args)) {
+      return;
+    }
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('DevTools') ||
+        args[0].includes('React DevTools') ||
+        args[0].includes('Element Inspector'))
+    ) {
+      return; // Suppress DevTools warnings
+    }
+    originalWarn.apply(console, args);
+  };
+
+  // Suppress Metro bundler symbolication errors (harmless noise)
+  const originalError = console.error;
+  console.error = (...args: any[]) => {
+    // Check if this is a Metro symbolication error
+    if (isMetroSymbolicateError(args)) {
       return; // Suppress Metro symbolication errors
     }
     originalError.apply(console, args);
@@ -360,16 +397,45 @@ const NavigationStateValidator: React.FC<{
 
   useEffect(() => {
     const validateNavigationState = async () => {
-      // Wait for auth to finish loading
+      // Add maximum timeout - don't wait more than 5 seconds total
+      const maxTimeout = setTimeout(() => {
+        console.warn('⚠️ Navigation state validation max timeout - using default');
+        onStateValidated(null);
+      }, 5000); // 5 second max timeout
+
+      // Wait for auth to finish loading, but with a timeout (max 3 seconds)
       if (authLoading) {
-        return;
+        const authWaitTimeout = setTimeout(() => {
+          console.warn('⚠️ Auth loading timeout - proceeding without waiting');
+          // Continue validation even if auth is still loading
+          // This prevents the app from hanging indefinitely
+        }, 3000); // 3 second timeout for auth loading
+
+        // Wait up to 3 seconds for auth to load
+        await new Promise<void>(resolve => {
+          const checkAuth = setInterval(() => {
+            if (!authLoading) {
+              clearInterval(checkAuth);
+              clearTimeout(authWaitTimeout);
+              resolve();
+            }
+          }, 100); // Check every 100ms
+
+          // Clear interval after timeout
+          setTimeout(() => {
+            clearInterval(checkAuth);
+            clearTimeout(authWaitTimeout);
+            resolve(); // Resolve anyway after timeout
+          }, 3000);
+        });
       }
 
       // Add timeout to prevent hanging
       const validationTimeout = setTimeout(() => {
         console.warn('⚠️ Navigation state validation timeout - using default');
+        clearTimeout(maxTimeout);
         onStateValidated(null);
-      }, 3000); // 3 second timeout
+      }, 2000); // 2 second timeout for validation (reduced from 3s)
 
       try {
         // If we have a pre-loaded initial state, validate it
@@ -407,11 +473,12 @@ const NavigationStateValidator: React.FC<{
               );
               await navigationSyncService.clearState();
               clearTimeout(validationTimeout);
+              clearTimeout(maxTimeout);
               onStateValidated(null);
               return;
             }
 
-            // Add timeout to getSafeInitialState call
+            // Add timeout to getSafeInitialState call (reduced to 1.5s)
             const safeState = await Promise.race([
               navigationSyncService.getSafeInitialState(
                 isAuthenticated,
@@ -419,14 +486,16 @@ const NavigationStateValidator: React.FC<{
                 user?.id,
               ),
               new Promise<NavigationState | null>((resolve) => {
-                setTimeout(() => resolve(null), 2000); // 2 second timeout
+                setTimeout(() => resolve(null), 1500); // 1.5 second timeout (reduced from 2s)
               }),
             ]);
 
             clearTimeout(validationTimeout);
+            clearTimeout(maxTimeout);
             onStateValidated(safeState);
           } catch (error) {
             clearTimeout(validationTimeout);
+            clearTimeout(maxTimeout);
             console.error(
               '❌ NavigationSync: Error validating initial state:',
               error,
@@ -438,10 +507,12 @@ const NavigationStateValidator: React.FC<{
         } else {
           // No initial state to validate
           clearTimeout(validationTimeout);
+          clearTimeout(maxTimeout);
           onStateValidated(null);
         }
       } catch (error) {
         clearTimeout(validationTimeout);
+        clearTimeout(maxTimeout);
         onStateValidated(null);
       }
     };
@@ -583,6 +654,19 @@ const AppWithErrorBoundary: React.FC<{
     setSafeInitialState(state);
     setIsStateValidated(true);
   }, []);
+
+  // Add fallback timeout - show app after 6 seconds even if validation hasn't completed
+  useEffect(() => {
+    const fallbackTimeout = setTimeout(() => {
+      if (!isStateValidated) {
+        console.warn('⚠️ Navigation state validation fallback timeout - showing app');
+        setIsStateValidated(true);
+        setSafeInitialState(null);
+      }
+    }, 6000); // 6 second fallback
+
+    return () => clearTimeout(fallbackTimeout);
+  }, [isStateValidated]);
 
   // Don't render NavigationContainer until navigation state validation is complete
   // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
@@ -786,7 +870,7 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
                 console.warn('⚠️ SyncManager init timeout - continuing without it');
               }
               resolve();
-            }, 2000), // 2 second timeout - don't block app startup
+            }, 2000); // 2 second timeout - don't block app startup
           }),
         ]).catch(error => {
           if (__DEV__) {

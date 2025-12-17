@@ -1,7 +1,6 @@
-import { supabase } from '@/services/supabase';
+import { VersionedApiClient } from '@/services/VersionedApiClient';
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes in milliseconds
 
 export interface LockoutStatus {
   isLocked: boolean;
@@ -9,6 +8,8 @@ export interface LockoutStatus {
   lockedUntil?: Date;
   minutesRemaining?: number;
 }
+
+const versionedApiClient = VersionedApiClient.getInstance();
 
 /**
  * Checks if an account is currently locked
@@ -19,57 +20,37 @@ export async function checkAccountLockout(
   email: string,
 ): Promise<LockoutStatus> {
   try {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('locked_until, failed_login_attempts')
-      .eq('email', email)
-      .single();
+    const response = await versionedApiClient.checkAccountLockout(email);
 
-    if (error) {
-      // If permission denied (RLS issue), assume account is not locked
-      // This allows login to proceed without blocking users
-      if (error.code === '42501') {
-        console.warn(
-          'Permission denied for lockout check, proceeding with login',
-        );
-        return { isLocked: false };
-      }
-      console.error('Error checking account lockout:', error);
+    if (response.error) {
+      console.error('Error checking account lockout:', response.error);
+      // On error, assume account is not locked to allow login to proceed
       return { isLocked: false };
     }
 
-    if (!user) {
+    if (!response.data) {
       return { isLocked: false };
     }
 
-    // Check if account is locked
-    if (user.locked_until && new Date(user.locked_until) > new Date()) {
-      const minutesRemaining = Math.ceil(
-        (new Date(user.locked_until).getTime() - Date.now()) / 60000,
-      );
+    const data = response.data;
 
+    // If account is locked, return lockout status
+    if (data.isLocked && data.lockedUntil) {
       return {
         isLocked: true,
-        lockedUntil: new Date(user.locked_until),
-        minutesRemaining,
+        lockedUntil: new Date(data.lockedUntil),
+        minutesRemaining: data.minutesRemaining,
       };
     }
 
-    // If lockout expired, auto-unlock
-    if (user.locked_until && new Date(user.locked_until) <= new Date()) {
-      await resetFailedAttempts(email);
-      return { isLocked: false, attemptsRemaining: MAX_ATTEMPTS };
-    }
-
-    // Calculate attempts remaining
-    const attemptsRemaining = MAX_ATTEMPTS - (user.failed_login_attempts || 0);
-
+    // Account is not locked
     return {
       isLocked: false,
-      attemptsRemaining,
+      attemptsRemaining: data.attemptsRemaining,
     };
   } catch (error) {
     console.error('Error in checkAccountLockout:', error);
+    // On error, assume account is not locked to allow login to proceed
     return { isLocked: false };
   }
 }
@@ -86,48 +67,25 @@ export async function recordFailedAttempt(
   userAgent?: string,
 ): Promise<void> {
   try {
-    // Get current failed attempts count
-    const { data: user } = await supabase
-      .from('users')
-      .select('id, failed_login_attempts')
-      .eq('email', email)
-      .single();
-
-    if (!user) return;
-
-    const attempts = (user.failed_login_attempts || 0) + 1;
-
-    // Record login attempt in login_attempts table
-    await supabase.from('login_attempts').insert({
+    const response = await versionedApiClient.recordFailedAttempt({
       email,
-      user_id: user.id,
-      success: false,
-      ip_address: ipAddress,
-      user_agent: userAgent,
-      failure_reason: reason,
+      reason,
+      ipAddress,
+      userAgent,
     });
 
-    // Lock account if max attempts reached
-    if (attempts >= MAX_ATTEMPTS) {
-      const lockedUntil = new Date(Date.now() + LOCKOUT_DURATION);
+    if (response.error) {
+      console.error('Error recording failed attempt:', response.error);
+      return;
+    }
 
-      await supabase
-        .from('users')
-        .update({
-          failed_login_attempts: attempts,
-          locked_until: lockedUntil.toISOString(),
-        })
-        .eq('email', email);
-
-      console.log(`Account locked for ${email} until ${lockedUntil}`);
-    } else {
-      // Just increment failed attempts
-      await supabase
-        .from('users')
-        .update({ failed_login_attempts: attempts })
-        .eq('email', email);
-
-      console.log(`Failed attempt ${attempts}/${MAX_ATTEMPTS} for ${email}`);
+    if (response.data) {
+      const { attempts, isLocked } = response.data;
+      if (isLocked) {
+        console.log(`Account locked for ${email} (${attempts}/${MAX_ATTEMPTS} attempts)`);
+      } else {
+        console.log(`Failed attempt ${attempts}/${MAX_ATTEMPTS} for ${email}`);
+      }
     }
   } catch (error) {
     console.error('Error recording failed attempt:', error);
@@ -136,27 +94,22 @@ export async function recordFailedAttempt(
 
 /**
  * Resets failed login attempts after successful login
- * @param userId - User's ID or email
+ * @param userIdOrEmail - User's ID or email
  */
 export async function resetFailedAttempts(
   userIdOrEmail: string,
 ): Promise<void> {
   try {
-    // Check if it's an email or UUID
-    const isEmail = userIdOrEmail.includes('@');
+    const response = await versionedApiClient.resetFailedAttempts(userIdOrEmail);
 
-    const updateQuery = supabase.from('users').update({
-      failed_login_attempts: 0,
-      locked_until: null,
-    });
-
-    if (isEmail) {
-      await updateQuery.eq('email', userIdOrEmail);
-    } else {
-      await updateQuery.eq('id', userIdOrEmail);
+    if (response.error) {
+      console.error('Error resetting failed attempts:', response.error);
+      return;
     }
 
-    console.log(`Reset failed attempts for ${userIdOrEmail}`);
+    if (response.data?.reset) {
+      console.log(`Reset failed attempts for ${userIdOrEmail}`);
+    }
   } catch (error) {
     console.error('Error resetting failed attempts:', error);
   }
@@ -179,47 +132,21 @@ export async function recordSuccessfulLogin(
   },
 ): Promise<void> {
   try {
-    // Get user email
-    const { data: user } = await supabase
-      .from('users')
-      .select('email')
-      .eq('id', userId)
-      .single();
-
-    if (!user) return;
-
-    // Record in login_attempts
-    await supabase.from('login_attempts').insert({
-      email: user.email,
-      user_id: userId,
-      success: true,
-      ip_address: deviceInfo?.ipAddress,
-      user_agent: deviceInfo?.userAgent,
-      device_info: deviceInfo
-        ? {
-            platform: deviceInfo.platform,
-            version: deviceInfo.version,
-          }
-        : null,
-    });
-
-    // Record in login_history
-    await supabase.from('login_history').insert({
-      user_id: userId,
-      success: true,
+    const response = await versionedApiClient.recordSuccessfulLogin({
+      userId,
       method,
-      ip_address: deviceInfo?.ipAddress,
-      user_agent: deviceInfo?.userAgent,
-      device_info: deviceInfo
-        ? {
-            platform: deviceInfo.platform,
-            version: deviceInfo.version,
-          }
-        : null,
+      deviceInfo,
     });
 
-    // Reset failed attempts
-    await resetFailedAttempts(userId);
+    if (response.error) {
+      console.error('Error recording successful login:', response.error);
+      return;
+    }
+
+    if (response.data?.recorded) {
+      // Reset failed attempts is handled by the Edge Function
+      console.log(`Successful login recorded for user ${userId}`);
+    }
   } catch (error) {
     console.error('Error recording successful login:', error);
   }

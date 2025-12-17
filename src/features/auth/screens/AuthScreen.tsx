@@ -321,7 +321,9 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
         // Don't try to navigate back - let AppNavigator handle the switch automatically
         // The AppNavigator will detect the session change and switch to AuthenticatedNavigator
         // This is more reliable than trying to navigate back, especially when Auth is the initial route
-        console.log('✅ [AuthScreen] Auth successful, waiting for AppNavigator to switch...');
+        console.log(
+          '✅ [AuthScreen] Auth successful, waiting for AppNavigator to switch...',
+        );
       }
     } catch (err) {
       console.error('❌ [AuthScreen] handleAuth error caught:', err);

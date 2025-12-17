@@ -4,9 +4,18 @@ import { mixpanelService } from '@/services/mixpanel';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 export const useScreenTracking = () => {
-  // useNavigationState will return undefined if navigation container isn't ready
-  // This hook can only be used inside NavigationContainer, so it should be safe
-  const navigationState = useNavigationState(state => state);
+  // Wrap in try-catch to handle initialization errors gracefully
+  // useNavigationState can throw if navigation container isn't ready yet
+  let navigationState;
+  try {
+    navigationState = useNavigationState(state => state);
+  } catch (error) {
+    // Navigation not ready yet - this is expected during initialization
+    if (__DEV__) {
+      console.warn('⚠️ [useScreenTracking] Navigation not ready:', error);
+    }
+    navigationState = null;
+  }
 
   useEffect(() => {
     // Only track if navigation state is valid and has routes

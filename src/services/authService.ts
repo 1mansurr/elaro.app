@@ -62,10 +62,42 @@ export const authService = {
 
     // Store session in Supabase client if session is returned
     if (response.data?.session) {
-      await supabase.auth.setSession({
-        access_token: response.data.session.access_token,
-        refresh_token: response.data.session.refresh_token,
-      });
+      // Validate session structure
+      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+        console.error('❌ [authService] Invalid session structure in signup:', {
+          hasAccessToken: !!response.data.session.access_token,
+          hasRefreshToken: !!response.data.session.refresh_token,
+          sessionKeys: Object.keys(response.data.session),
+        });
+        throw new AppError(
+          'Invalid session structure received from server',
+          500,
+          'INVALID_SESSION_STRUCTURE',
+        );
+      }
+
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: response.data.session.access_token,
+          refresh_token: response.data.session.refresh_token,
+        });
+        
+        if (sessionError) {
+          console.error('❌ [authService] Failed to set session in signup:', sessionError);
+          throw new AppError(
+            sessionError.message || 'Failed to set session',
+            500,
+            'SESSION_SET_ERROR',
+          );
+        }
+        
+        if (__DEV__) {
+          console.log('✅ [authService] Session stored in Supabase client (signup)');
+        }
+      } catch (error) {
+        console.error('❌ [authService] Error setting session in signup:', error);
+        throw error;
+      }
     }
 
     return {
@@ -81,6 +113,19 @@ export const authService = {
       password,
     });
 
+    // Debug: Log the raw response structure
+    if (__DEV__) {
+      console.log('🔍 [authService] Raw API response:', {
+        hasError: !!response.error,
+        hasData: !!response.data,
+        dataKeys: response.data ? Object.keys(response.data) : [],
+        dataType: typeof response.data,
+        hasUser: !!response.data?.user,
+        hasSession: !!response.data?.session,
+        fullResponsePreview: JSON.stringify(response).substring(0, 300),
+      });
+    }
+
     if (response.error) {
       throw new AppError(
         response.message || response.error || 'Invalid email or password',
@@ -91,10 +136,45 @@ export const authService = {
 
     // Store session in Supabase client
     if (response.data?.session) {
-      await supabase.auth.setSession({
-        access_token: response.data.session.access_token,
-        refresh_token: response.data.session.refresh_token,
-      });
+      // Validate session structure
+      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+        console.error('❌ [authService] Invalid session structure:', {
+          hasAccessToken: !!response.data.session.access_token,
+          hasRefreshToken: !!response.data.session.refresh_token,
+          sessionKeys: Object.keys(response.data.session),
+        });
+        throw new AppError(
+          'Invalid session structure received from server',
+          500,
+          'INVALID_SESSION_STRUCTURE',
+        );
+      }
+
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: response.data.session.access_token,
+          refresh_token: response.data.session.refresh_token,
+        });
+        
+        if (sessionError) {
+          console.error('❌ [authService] Failed to set session:', sessionError);
+          throw new AppError(
+            sessionError.message || 'Failed to set session',
+            500,
+            'SESSION_SET_ERROR',
+          );
+        }
+        
+        if (__DEV__) {
+          console.log('✅ [authService] Session stored in Supabase client');
+        }
+      } catch (error) {
+        console.error('❌ [authService] Error setting session:', error);
+        // Re-throw to let the caller handle it
+        throw error;
+      }
+    } else if (__DEV__) {
+      console.warn('⚠️ [authService] No session in API response, but login succeeded');
     }
 
     return {
@@ -120,26 +200,22 @@ export const authService = {
   },
 
   // Method to get the current session
+  // IMPORTANT: This should NOT call setSession() as it would consume refresh tokens
+  // The session should already be set by login/signup/verifyEmail
   getSession: async () => {
-    const response = await versionedApiClient.getSession();
-
-    if (response.error && response.error !== 'User not authenticated') {
+    // Get session directly from Supabase client - don't use API layer here
+    // The API layer's getSession endpoint requires auth, which creates a circular dependency
+    const { data: { session }, error } = await supabase.auth.getSession();
+    
+    if (error) {
       throw new AppError(
-        response.message || response.error || 'Failed to get session',
+        error.message || 'Failed to get session',
         500,
-        response.code || 'AUTH_ERROR',
+        'SESSION_ERROR',
       );
     }
 
-    // Update Supabase client session if we got a valid session
-    if (response.data?.session) {
-      await supabase.auth.setSession({
-        access_token: response.data.session.access_token,
-        refresh_token: response.data.session.refresh_token,
-      });
-    }
-
-    return response.data?.session || null;
+    return session;
   },
 
   // Method to subscribe to auth state changes
@@ -232,10 +308,32 @@ export const authService = {
 
     // Store session if returned
     if (response.data?.session) {
-      await supabase.auth.setSession({
-        access_token: response.data.session.access_token,
-        refresh_token: response.data.session.refresh_token,
-      });
+      // Validate session structure
+      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+        throw new AppError(
+          'Invalid session structure received from server',
+          500,
+          'INVALID_SESSION_STRUCTURE',
+        );
+      }
+
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: response.data.session.access_token,
+          refresh_token: response.data.session.refresh_token,
+        });
+
+        if (sessionError) {
+          throw new AppError(
+            sessionError.message || 'Failed to set session',
+            500,
+            'SESSION_SET_ERROR',
+          );
+        }
+      } catch (error) {
+        console.error('❌ [authService] Error setting session in verifyEmail:', error);
+        throw error;
+      }
     }
 
     return {

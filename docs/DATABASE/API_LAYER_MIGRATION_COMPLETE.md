@@ -2,8 +2,8 @@
 
 **Document Version:** 4.0  
 **Last Updated:** 2025-01-31  
-**Status:** ✅ **MIGRATION COMPLETE** (98% of critical operations)  
-**Completion:** ~98% of critical operations migrated
+**Status:** ✅ **MIGRATION COMPLETE** (99% of critical operations)  
+**Completion:** ~99% of critical operations migrated
 
 ---
 
@@ -19,11 +19,11 @@ The ELARO app has successfully migrated from direct Supabase client usage to a c
 
 **Migration Statistics:**
 
-- **Phases Completed:** 8/8 (100% of planned phases)
-- **Critical Operations Migrated:** ~98%
-- **API Endpoints Created:** 50+
-- **Files Migrated:** 45+
-- **Remaining Direct Usage:** ~12 files (mostly feature services and acceptable exceptions)
+- **Phases Completed:** 9/9 (100% of planned phases including Phase 10.1)
+- **Critical Operations Migrated:** ~99%
+- **API Endpoints Created:** 54+
+- **Files Migrated:** 46+
+- **Remaining Direct Usage:** ~11 files (mostly feature services and acceptable exceptions)
 
 ---
 
@@ -260,6 +260,10 @@ All authentication operations go through Edge Functions:
 - `POST /auth/reset-password` - Initiate password reset
 - `POST /auth/verify-email` - Verify email address
 - `PUT /auth/update-profile` - Update user profile/password
+- `GET /auth/lockout/check-lockout` - Check if account is locked
+- `POST /auth/lockout/record-failed-attempt` - Record failed login attempt
+- `POST /auth/lockout/record-successful-login` - Record successful login
+- `POST /auth/lockout/reset-attempts` - Reset failed attempts
 
 ### Course Operations
 
@@ -350,10 +354,11 @@ The following files still contain direct Supabase usage. These are **acceptable 
    - **Reason:** Core auth token management utility. Required for API authentication.
    - **Status:** Acceptable - Cannot be abstracted further
 
-2. **`src/utils/authLockout.ts`**
-   - **Usage:** `supabase.from('users')`, `supabase.from('login_attempts')`, `supabase.from('login_history')`
-   - **Reason:** Low-level security utility for account lockout. Could be migrated but low priority.
-   - **Status:** Acceptable - Low-level security utility
+2. **`src/utils/authLockout.ts`** ✅ **MIGRATED**
+   - **Previous Usage:** `supabase.from('users')`, `supabase.from('login_attempts')`, `supabase.from('login_history')`
+   - **Current:** Uses `VersionedApiClient` methods (`checkAccountLockout`, `recordFailedAttempt`, `recordSuccessfulLogin`, `resetFailedAttempts`)
+   - **Edge Function:** `auth/lockout/*` endpoints
+   - **Status:** ✅ Migrated to API layer (Phase 10.1)
 
 3. **`src/services/serviceHealthCheck.ts`**
    - **Usage:** `supabase.from('users').select('id').limit(1)`
@@ -518,7 +523,7 @@ The remaining direct Supabase usage is primarily in:
 - Development tools (acceptable)
 - Feature-specific services (can be migrated as needed)
 
-**Migration Status:** ✅ **COMPLETE** (98% of critical operations)
+**Migration Status:** ✅ **COMPLETE** (99% of critical operations)
 
 **Remaining Work:**
 

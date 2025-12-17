@@ -210,6 +210,135 @@ Verify a user's email address.
 
 ---
 
+## Auth Lockout Endpoints
+
+### Check Account Lockout
+
+**GET** `/auth/lockout/check-lockout?email=user@example.com`
+
+Check if an account is currently locked due to failed login attempts.
+
+**Query Parameters:**
+
+- `email` (required) - User's email address
+
+**Response:**
+
+```json
+{
+  "data": {
+    "isLocked": false,
+    "attemptsRemaining": 5,
+    "lockedUntil": null,
+    "minutesRemaining": null
+  }
+}
+```
+
+**Response (Locked):**
+
+```json
+{
+  "data": {
+    "isLocked": true,
+    "lockedUntil": "2025-01-31T12:00:00Z",
+    "minutesRemaining": 15
+  }
+}
+```
+
+---
+
+### Record Failed Login Attempt
+
+**POST** `/auth/lockout/record-failed-attempt`
+
+Record a failed login attempt and lock account if threshold is reached.
+
+**Request Body:**
+
+```json
+{
+  "email": "user@example.com",
+  "reason": "invalid_credentials",
+  "ipAddress": "192.168.1.1",
+  "userAgent": "Mozilla/5.0..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "recorded": true,
+    "attempts": 3,
+    "isLocked": false
+  }
+}
+```
+
+---
+
+### Record Successful Login
+
+**POST** `/auth/lockout/record-successful-login`
+
+Record a successful login and reset failed attempts.
+
+**Request Body:**
+
+```json
+{
+  "userId": "uuid-here",
+  "method": "email",
+  "deviceInfo": {
+    "platform": "ios",
+    "version": "17.0",
+    "ipAddress": "192.168.1.1",
+    "userAgent": "Mozilla/5.0..."
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "recorded": true
+  }
+}
+```
+
+---
+
+### Reset Failed Attempts
+
+**POST** `/auth/lockout/reset-attempts`
+
+Reset failed login attempts for a user.
+
+**Request Body:**
+
+```json
+{
+  "userIdOrEmail": "user@example.com"
+}
+```
+
+**Response:**
+
+```json
+{
+  "data": {
+    "reset": true
+  }
+}
+```
+
+---
+
 ### Update Profile
 
 **PUT** `/auth/update-profile`
