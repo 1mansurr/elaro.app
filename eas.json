@@ -33,10 +33,5 @@
   },
   "submit": {
     "production": {}
-  },
-  "hooks": {
-    "eas-build-post-install": {
-      "path": "./eas-build-post-install.sh"
-    }
   }
 }
