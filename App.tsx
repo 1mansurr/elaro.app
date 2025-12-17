@@ -93,11 +93,12 @@ if (__DEV__) {
         const errorName = arg.name || '';
         const errorMessage = arg.message || '';
         const errorStack = arg.stack || '';
-        
+
         // Check if it's a SyntaxError about undefined JSON
         if (
           errorName === 'SyntaxError' &&
-          (errorMessage.includes('undefined') || errorMessage.includes('not valid JSON'))
+          (errorMessage.includes('undefined') ||
+            errorMessage.includes('not valid JSON'))
         ) {
           // Check if stack trace contains Metro symbolication references
           if (
@@ -246,6 +247,42 @@ if (typeof process !== 'undefined' && process.on) {
 
 // Navigation ref needs to be accessible globally
 const navigationRef = React.createRef<NavigationContainerRef<any>>();
+
+// Helper function to safely navigate - checks if navigation is ready before navigating
+const navigateIfReady = (
+  screen: keyof RootStackParamList,
+  params?: any,
+): void => {
+  if (navigationRef.current?.isReady()) {
+    try {
+      (navigationRef.current as any).navigate(screen, params);
+    } catch (error) {
+      console.error(`Navigation error to ${String(screen)}:`, error);
+    }
+  } else {
+    if (__DEV__) {
+      console.warn(
+        `Navigation not ready - cannot navigate to ${String(screen)}. Navigation will be queued.`,
+      );
+    }
+    // Queue navigation for when it becomes ready
+    const checkInterval = setInterval(() => {
+      if (navigationRef.current?.isReady()) {
+        clearInterval(checkInterval);
+        try {
+          (navigationRef.current as any).navigate(screen, params);
+        } catch (error) {
+          console.error(`Queued navigation error to ${String(screen)}:`, error);
+        }
+      }
+    }, 100);
+
+    // Clear interval after 5 seconds to prevent infinite checking
+    setTimeout(() => {
+      clearInterval(checkInterval);
+    }, 5000);
+  }
+};
 
 // Prevent auto-hide of splash until we're ready
 SplashScreen.preventAutoHideAsync();
@@ -399,7 +436,9 @@ const NavigationStateValidator: React.FC<{
     const validateNavigationState = async () => {
       // Add maximum timeout - don't wait more than 5 seconds total
       const maxTimeout = setTimeout(() => {
-        console.warn('⚠️ Navigation state validation max timeout - using default');
+        console.warn(
+          '⚠️ Navigation state validation max timeout - using default',
+        );
         onStateValidated(null);
       }, 5000); // 5 second max timeout
 
@@ -460,7 +499,8 @@ const NavigationStateValidator: React.FC<{
             };
 
             const currentRoute = getRouteName(initialNavigationState);
-            const authenticatedRoutes = AUTHENTICATED_ROUTES as readonly string[];
+            const authenticatedRoutes =
+              AUTHENTICATED_ROUTES as readonly string[];
 
             // If user is not authenticated but saved state contains authenticated route, clear it immediately
             if (
@@ -485,7 +525,7 @@ const NavigationStateValidator: React.FC<{
                 authLoading,
                 user?.id,
               ),
-              new Promise<NavigationState | null>((resolve) => {
+              new Promise<NavigationState | null>(resolve => {
                 setTimeout(() => resolve(null), 1500); // 1.5 second timeout (reduced from 2s)
               }),
             ]);
@@ -590,20 +630,10 @@ const DeepLinkHandler: React.FC = () => {
         if (url && isDeepLink(url) && navigationRef.current) {
           const parsed = parseDeepLink(url);
           if (parsed?.screen) {
-            // Wait a bit for navigation to be ready
-            setTimeout(() => {
-              if (navigationRef.current) {
-                try {
-                  const screen = parsed.screen as keyof RootStackParamList;
-                  const params =
-                    parsed.params as RootStackParamList[typeof screen];
-                  // Use type assertion for navigation since React Navigation types are complex
-                  (navigationRef.current as any).navigate(screen, params);
-                } catch (error) {
-                  console.error('Failed to navigate from deep link:', error);
-                }
-              }
-            }, 1000);
+            // Use safe navigation helper
+            const screen = parsed.screen as keyof RootStackParamList;
+            const params = parsed.params as RootStackParamList[typeof screen];
+            navigateIfReady(screen, params);
           }
         }
       })
@@ -619,14 +649,9 @@ const DeepLinkHandler: React.FC = () => {
         if (isDeepLink(url) && navigationRef.current) {
           const parsed = parseDeepLink(url);
           if (parsed?.screen) {
-            try {
-              const screen = parsed.screen as keyof RootStackParamList;
-              const params = parsed.params as RootStackParamList[typeof screen];
-              // Use type assertion for navigation since React Navigation types are complex
-              (navigationRef.current as any).navigate(screen, params);
-            } catch (error) {
-              console.error('Failed to navigate from deep link:', error);
-            }
+            const screen = parsed.screen as keyof RootStackParamList;
+            const params = parsed.params as RootStackParamList[typeof screen];
+            navigateIfReady(screen, params);
           }
         }
       },
@@ -659,7 +684,9 @@ const AppWithErrorBoundary: React.FC<{
   useEffect(() => {
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
-        console.warn('⚠️ Navigation state validation fallback timeout - showing app');
+        console.warn(
+          '⚠️ Navigation state validation fallback timeout - showing app',
+        );
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
@@ -864,10 +891,12 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
               console.log('✅ Sync Manager initialized');
             }
           }),
-          new Promise<void>((resolve) => {
+          new Promise<void>(resolve => {
             setTimeout(() => {
               if (__DEV__) {
-                console.warn('⚠️ SyncManager init timeout - continuing without it');
+                console.warn(
+                  '⚠️ SyncManager init timeout - continuing without it',
+                );
               }
               resolve();
             }, 2000); // 2 second timeout - don't block app startup
@@ -1084,13 +1113,9 @@ function NotificationHandler() {
           return;
       }
 
-      try {
-        navigationRef.current.navigate(modalName, {
-          initialData: { taskToEdit: task },
-        });
-      } catch (error) {
-        console.error('Error navigating to edit screen:', error);
-      }
+      navigateIfReady(modalName, {
+        initialData: { taskToEdit: task },
+      });
     }
   };
 

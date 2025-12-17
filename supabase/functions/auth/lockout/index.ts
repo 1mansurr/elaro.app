@@ -412,10 +412,5 @@ async function resetFailedAttemptsInternal(
     await updateQuery.eq('id', userIdOrEmail);
   }
 
-  await logger.info(
-    'Failed attempts reset',
-    { userIdOrEmail },
-    traceContext,
-  );
+  await logger.info('Failed attempts reset', { userIdOrEmail }, traceContext);
 }
-

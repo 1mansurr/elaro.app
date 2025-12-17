@@ -82,7 +82,9 @@ export async function recordFailedAttempt(
     if (response.data) {
       const { attempts, isLocked } = response.data;
       if (isLocked) {
-        console.log(`Account locked for ${email} (${attempts}/${MAX_ATTEMPTS} attempts)`);
+        console.log(
+          `Account locked for ${email} (${attempts}/${MAX_ATTEMPTS} attempts)`,
+        );
       } else {
         console.log(`Failed attempt ${attempts}/${MAX_ATTEMPTS} for ${email}`);
       }
@@ -100,7 +102,8 @@ export async function resetFailedAttempts(
   userIdOrEmail: string,
 ): Promise<void> {
   try {
-    const response = await versionedApiClient.resetFailedAttempts(userIdOrEmail);
+    const response =
+      await versionedApiClient.resetFailedAttempts(userIdOrEmail);
 
     if (response.error) {
       console.error('Error resetting failed attempts:', response.error);

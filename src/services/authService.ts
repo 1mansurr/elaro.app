@@ -63,7 +63,10 @@ export const authService = {
     // Store session in Supabase client if session is returned
     if (response.data?.session) {
       // Validate session structure
-      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+      if (
+        !response.data.session.access_token ||
+        !response.data.session.refresh_token
+      ) {
         console.error('❌ [authService] Invalid session structure in signup:', {
           hasAccessToken: !!response.data.session.access_token,
           hasRefreshToken: !!response.data.session.refresh_token,
@@ -77,25 +80,34 @@ export const authService = {
       }
 
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: response.data.session.access_token,
-          refresh_token: response.data.session.refresh_token,
-        });
-        
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.setSession({
+            access_token: response.data.session.access_token,
+            refresh_token: response.data.session.refresh_token,
+          });
+
         if (sessionError) {
-          console.error('❌ [authService] Failed to set session in signup:', sessionError);
+          console.error(
+            '❌ [authService] Failed to set session in signup:',
+            sessionError,
+          );
           throw new AppError(
             sessionError.message || 'Failed to set session',
             500,
             'SESSION_SET_ERROR',
           );
         }
-        
+
         if (__DEV__) {
-          console.log('✅ [authService] Session stored in Supabase client (signup)');
+          console.log(
+            '✅ [authService] Session stored in Supabase client (signup)',
+          );
         }
       } catch (error) {
-        console.error('❌ [authService] Error setting session in signup:', error);
+        console.error(
+          '❌ [authService] Error setting session in signup:',
+          error,
+        );
         throw error;
       }
     }
@@ -137,7 +149,10 @@ export const authService = {
     // Store session in Supabase client
     if (response.data?.session) {
       // Validate session structure
-      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+      if (
+        !response.data.session.access_token ||
+        !response.data.session.refresh_token
+      ) {
         console.error('❌ [authService] Invalid session structure:', {
           hasAccessToken: !!response.data.session.access_token,
           hasRefreshToken: !!response.data.session.refresh_token,
@@ -151,20 +166,24 @@ export const authService = {
       }
 
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: response.data.session.access_token,
-          refresh_token: response.data.session.refresh_token,
-        });
-        
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.setSession({
+            access_token: response.data.session.access_token,
+            refresh_token: response.data.session.refresh_token,
+          });
+
         if (sessionError) {
-          console.error('❌ [authService] Failed to set session:', sessionError);
+          console.error(
+            '❌ [authService] Failed to set session:',
+            sessionError,
+          );
           throw new AppError(
             sessionError.message || 'Failed to set session',
             500,
             'SESSION_SET_ERROR',
           );
         }
-        
+
         if (__DEV__) {
           console.log('✅ [authService] Session stored in Supabase client');
         }
@@ -174,7 +193,9 @@ export const authService = {
         throw error;
       }
     } else if (__DEV__) {
-      console.warn('⚠️ [authService] No session in API response, but login succeeded');
+      console.warn(
+        '⚠️ [authService] No session in API response, but login succeeded',
+      );
     }
 
     return {
@@ -205,8 +226,11 @@ export const authService = {
   getSession: async () => {
     // Get session directly from Supabase client - don't use API layer here
     // The API layer's getSession endpoint requires auth, which creates a circular dependency
-    const { data: { session }, error } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
     if (error) {
       throw new AppError(
         error.message || 'Failed to get session',
@@ -309,7 +333,10 @@ export const authService = {
     // Store session if returned
     if (response.data?.session) {
       // Validate session structure
-      if (!response.data.session.access_token || !response.data.session.refresh_token) {
+      if (
+        !response.data.session.access_token ||
+        !response.data.session.refresh_token
+      ) {
         throw new AppError(
           'Invalid session structure received from server',
           500,
@@ -318,10 +345,11 @@ export const authService = {
       }
 
       try {
-        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-          access_token: response.data.session.access_token,
-          refresh_token: response.data.session.refresh_token,
-        });
+        const { data: sessionData, error: sessionError } =
+          await supabase.auth.setSession({
+            access_token: response.data.session.access_token,
+            refresh_token: response.data.session.refresh_token,
+          });
 
         if (sessionError) {
           throw new AppError(
@@ -331,7 +359,10 @@ export const authService = {
           );
         }
       } catch (error) {
-        console.error('❌ [authService] Error setting session in verifyEmail:', error);
+        console.error(
+          '❌ [authService] Error setting session in verifyEmail:',
+          error,
+        );
         throw error;
       }
     }

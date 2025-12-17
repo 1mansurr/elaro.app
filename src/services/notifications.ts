@@ -234,16 +234,37 @@ export const notificationService = {
     if (url) {
       console.log('Handling notification with deep link:', url);
       try {
-        // Use React Navigation's linking to navigate
-        if (navigationRef.current) {
+        // Check if navigation is ready before navigating
+        if (navigationRef.current?.isReady()) {
           // Navigate using the deep link
           navigationRef.current.navigate(url as never);
           console.log('Successfully navigated to:', url);
         } else {
           console.warn(
-            'Navigation ref not available, falling back to legacy method',
+            'Navigation not ready, queuing navigation for deep link:',
+            url,
           );
-          await this.handleNotificationTapLegacy(data);
+          // Queue navigation for when it becomes ready
+          const checkInterval = setInterval(() => {
+            if (navigationRef.current?.isReady()) {
+              clearInterval(checkInterval);
+              try {
+                navigationRef.current.navigate(url as never);
+                console.log('Successfully navigated to queued deep link:', url);
+              } catch (error) {
+                console.error('Error navigating to queued deep link:', error);
+                // Fallback to legacy method if queued navigation fails
+                this.handleNotificationTapLegacy(data).catch(() => {});
+              }
+            }
+          }, 100);
+
+          // Clear interval after 5 seconds to prevent infinite checking
+          setTimeout(() => {
+            clearInterval(checkInterval);
+            // Fallback to legacy method if navigation doesn't become ready
+            this.handleNotificationTapLegacy(data).catch(() => {});
+          }, 5000);
         }
       } catch (error) {
         console.error('Error navigating with deep link:', error);

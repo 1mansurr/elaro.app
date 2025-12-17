@@ -31,7 +31,9 @@ export const AppNavigator: React.FC = () => {
   useEffect(() => {
     if (loading) {
       const timeout = setTimeout(() => {
-        console.warn('⚠️ [AppNavigator] Auth loading timeout - showing app anyway');
+        console.warn(
+          '⚠️ [AppNavigator] Auth loading timeout - showing app anyway',
+        );
         setForceShow(true);
       }, 5000); // 5 second max timeout
 

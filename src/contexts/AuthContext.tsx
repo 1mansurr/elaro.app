@@ -259,7 +259,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         // FAST PATH: Use direct Supabase client getSession() - no API round-trip
         // This reads from local storage immediately (no network latency)
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
 
         if (error) {
           console.error('❌ Error getting initial session:', error);
@@ -310,40 +313,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Set up auth state change listener (single source of truth)
     // This handles session changes from Supabase automatically
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (__DEV__) {
-          console.log(`🔄 Auth event: ${event}`);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (__DEV__) {
+        console.log(`🔄 Auth event: ${event}`);
+      }
 
-        // Update session state (single update point)
-        setSession(session);
+      // Update session state (single update point)
+      setSession(session);
 
-        // Sync to authSyncService for local cache (non-blocking)
-        if (session) {
-          authSyncService.saveAuthState(session).catch(err => {
-            if (__DEV__) {
-              console.warn('⚠️ Failed to save auth state (non-blocking):', err);
-            }
+      // Sync to authSyncService for local cache (non-blocking)
+      if (session) {
+        authSyncService.saveAuthState(session).catch(err => {
+          if (__DEV__) {
+            console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+          }
+        });
+      } else {
+        authSyncService.clearAuthState().catch(() => {});
+      }
+
+      // Fetch profile if session exists (non-blocking)
+      if (session?.user) {
+        fetchUserProfile(session.user.id)
+          .then(userProfile => {
+            if (userProfile) setUser(userProfile);
+          })
+          .catch(() => {
+            // Silently fail - profile can be fetched later
           });
-        } else {
-          authSyncService.clearAuthState().catch(() => {});
-        }
-
-        // Fetch profile if session exists (non-blocking)
-        if (session?.user) {
-          fetchUserProfile(session.user.id)
-            .then(userProfile => {
-              if (userProfile) setUser(userProfile);
-            })
-            .catch(() => {
-              // Silently fail - profile can be fetched later
-            });
-        } else {
-          setUser(null);
-        }
-      },
-    );
+      } else {
+        setUser(null);
+      }
+    });
 
     return () => {
       subscription.unsubscribe();
@@ -357,165 +360,162 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const handleUserProfileReady = async () => {
       // Complete any pending task after authentication
       if (user && session.user.id) {
-          try {
-            // Fire-and-forget: complete pending task in background
-            const { getPendingTask, clearPendingTask } = await import(
-              '@/utils/taskPersistence'
-            );
-            const { api } = await import('@/services/api');
+        try {
+          // Fire-and-forget: complete pending task in background
+          const { getPendingTask, clearPendingTask } = await import(
+            '@/utils/taskPersistence'
+          );
+          const { api } = await import('@/services/api');
 
-            const pending = await getPendingTask();
-            if (pending && pending.taskData) {
-              const userId = session.user.id;
-              const isOnline = true; // Server writes only happen when online
+          const pending = await getPendingTask();
+          if (pending && pending.taskData) {
+            const userId = session.user.id;
+            const isOnline = true; // Server writes only happen when online
 
-              try {
-                let taskCreated = false;
-                let taskTypeName = '';
+            try {
+              let taskCreated = false;
+              let taskTypeName = '';
 
-                if (pending.taskType === 'assignment') {
-                  taskTypeName = 'assignment';
-                  const {
-                    course,
-                    title,
-                    description,
-                    dueDate,
-                    submissionMethod,
-                    submissionLink,
-                    reminders,
-                  } = pending.taskData || {};
-                  if (course?.id && dueDate && title) {
-                    await api.mutations.assignments.create(
-                      {
-                        course_id: course.id,
-                        title: String(title).trim(),
-                        description: String(description || '').trim(),
-                        submission_method: submissionMethod || undefined,
-                        submission_link:
-                          submissionMethod === 'Online'
-                            ? String(submissionLink || '').trim()
-                            : undefined,
-                        due_date: new Date(dueDate).toISOString(),
-                        reminders: reminders || [120],
-                      },
-                      isOnline,
-                      userId,
-                    );
-                    await clearPendingTask();
-                    taskCreated = true;
-                    console.log('✅ Pending assignment created after auth');
-                  } else {
-                    console.warn(
-                      '⚠️ Pending assignment missing required fields:',
-                      {
-                        hasCourse: !!course?.id,
-                        hasDueDate: !!dueDate,
-                        hasTitle: !!title,
-                      },
-                    );
-                  }
-                } else if (pending.taskType === 'lecture') {
-                  taskTypeName = 'lecture';
-                  const {
-                    course,
-                    title,
-                    startTime,
-                    endTime,
-                    recurrence,
-                    reminders,
-                  } = pending.taskData || {};
-                  if (course?.id && startTime && endTime && title) {
-                    await api.mutations.lectures.create(
-                      {
-                        course_id: course.id,
-                        lecture_name: String(title).trim(),
-                        description: course?.courseName
-                          ? `A lecture for the course: ${course.courseName}.`
-                          : '',
-                        start_time: new Date(startTime).toISOString(),
-                        end_time: new Date(endTime).toISOString(),
-                        is_recurring: recurrence && recurrence !== 'none',
-                        recurring_pattern: recurrence || 'none',
-                        reminders: reminders || [30],
-                      },
-                      isOnline,
-                      userId,
-                    );
-                    await clearPendingTask();
-                    taskCreated = true;
-                    console.log('✅ Pending lecture created after auth');
-                  } else {
-                    console.warn(
-                      '⚠️ Pending lecture missing required fields:',
-                      {
-                        hasCourse: !!course?.id,
-                        hasStartTime: !!startTime,
-                        hasEndTime: !!endTime,
-                        hasTitle: !!title,
-                      },
-                    );
-                  }
-                } else if (pending.taskType === 'study_session') {
-                  taskTypeName = 'study session';
-                  const {
-                    course,
-                    topic,
-                    description,
-                    sessionDate,
-                    hasSpacedRepetition,
-                    reminders,
-                  } = pending.taskData || {};
-                  if (course?.id && sessionDate && topic) {
-                    await api.mutations.studySessions.create(
-                      {
-                        course_id: course.id,
-                        topic: String(topic).trim(),
-                        notes: String(description || '').trim(),
-                        session_date: new Date(sessionDate).toISOString(),
-                        has_spaced_repetition: !!hasSpacedRepetition,
-                        reminders: reminders || [15],
-                      },
-                      isOnline,
-                      userId,
-                    );
-                    await clearPendingTask();
-                    taskCreated = true;
-                    console.log('✅ Pending study session created after auth');
-                  } else {
-                    console.warn(
-                      '⚠️ Pending study session missing required fields:',
-                      {
-                        hasCourse: !!course?.id,
-                        hasSessionDate: !!sessionDate,
-                        hasTopic: !!topic,
-                      },
-                    );
-                  }
-                }
-
-                if (!taskCreated && pending.taskType) {
-                  // Task data was incomplete - clear it to prevent retry loops
-                  console.warn(
-                    `⚠️ Pending ${pending.taskType} had incomplete data, clearing it`,
+              if (pending.taskType === 'assignment') {
+                taskTypeName = 'assignment';
+                const {
+                  course,
+                  title,
+                  description,
+                  dueDate,
+                  submissionMethod,
+                  submissionLink,
+                  reminders,
+                } = pending.taskData || {};
+                if (course?.id && dueDate && title) {
+                  await api.mutations.assignments.create(
+                    {
+                      course_id: course.id,
+                      title: String(title).trim(),
+                      description: String(description || '').trim(),
+                      submission_method: submissionMethod || undefined,
+                      submission_link:
+                        submissionMethod === 'Online'
+                          ? String(submissionLink || '').trim()
+                          : undefined,
+                      due_date: new Date(dueDate).toISOString(),
+                      reminders: reminders || [120],
+                    },
+                    isOnline,
+                    userId,
                   );
                   await clearPendingTask();
+                  taskCreated = true;
+                  console.log('✅ Pending assignment created after auth');
+                } else {
+                  console.warn(
+                    '⚠️ Pending assignment missing required fields:',
+                    {
+                      hasCourse: !!course?.id,
+                      hasDueDate: !!dueDate,
+                      hasTitle: !!title,
+                    },
+                  );
                 }
-              } catch (createError) {
-                // Don't block auth flow if pending task creation fails
-                // Log error with more context for debugging
-                console.error(
-                  `❌ Failed to create pending ${pending.taskType} after auth:`,
-                  createError,
-                );
-                // Note: We keep the pending task so user can try again manually
-                // This is better than losing their data
+              } else if (pending.taskType === 'lecture') {
+                taskTypeName = 'lecture';
+                const {
+                  course,
+                  title,
+                  startTime,
+                  endTime,
+                  recurrence,
+                  reminders,
+                } = pending.taskData || {};
+                if (course?.id && startTime && endTime && title) {
+                  await api.mutations.lectures.create(
+                    {
+                      course_id: course.id,
+                      lecture_name: String(title).trim(),
+                      description: course?.courseName
+                        ? `A lecture for the course: ${course.courseName}.`
+                        : '',
+                      start_time: new Date(startTime).toISOString(),
+                      end_time: new Date(endTime).toISOString(),
+                      is_recurring: recurrence && recurrence !== 'none',
+                      recurring_pattern: recurrence || 'none',
+                      reminders: reminders || [30],
+                    },
+                    isOnline,
+                    userId,
+                  );
+                  await clearPendingTask();
+                  taskCreated = true;
+                  console.log('✅ Pending lecture created after auth');
+                } else {
+                  console.warn('⚠️ Pending lecture missing required fields:', {
+                    hasCourse: !!course?.id,
+                    hasStartTime: !!startTime,
+                    hasEndTime: !!endTime,
+                    hasTitle: !!title,
+                  });
+                }
+              } else if (pending.taskType === 'study_session') {
+                taskTypeName = 'study session';
+                const {
+                  course,
+                  topic,
+                  description,
+                  sessionDate,
+                  hasSpacedRepetition,
+                  reminders,
+                } = pending.taskData || {};
+                if (course?.id && sessionDate && topic) {
+                  await api.mutations.studySessions.create(
+                    {
+                      course_id: course.id,
+                      topic: String(topic).trim(),
+                      notes: String(description || '').trim(),
+                      session_date: new Date(sessionDate).toISOString(),
+                      has_spaced_repetition: !!hasSpacedRepetition,
+                      reminders: reminders || [15],
+                    },
+                    isOnline,
+                    userId,
+                  );
+                  await clearPendingTask();
+                  taskCreated = true;
+                  console.log('✅ Pending study session created after auth');
+                } else {
+                  console.warn(
+                    '⚠️ Pending study session missing required fields:',
+                    {
+                      hasCourse: !!course?.id,
+                      hasSessionDate: !!sessionDate,
+                      hasTopic: !!topic,
+                    },
+                  );
+                }
               }
+
+              if (!taskCreated && pending.taskType) {
+                // Task data was incomplete - clear it to prevent retry loops
+                console.warn(
+                  `⚠️ Pending ${pending.taskType} had incomplete data, clearing it`,
+                );
+                await clearPendingTask();
+              }
+            } catch (createError) {
+              // Don't block auth flow if pending task creation fails
+              // Log error with more context for debugging
+              console.error(
+                `❌ Failed to create pending ${pending.taskType} after auth:`,
+                createError,
+              );
+              // Note: We keep the pending task so user can try again manually
+              // This is better than losing their data
             }
-          } catch (importError) {
-            // Silently ignore import errors - pending task completion is optional
-            console.log('Pending task completion skipped:', importError);
           }
+        } catch (importError) {
+          // Silently ignore import errors - pending task completion is optional
+          console.log('Pending task completion skipped:', importError);
         }
+      }
 
       // Identify user in Mixpanel and set user properties
       if (user) {
@@ -725,18 +725,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.warn(
           '⚠️ No session in login result, waiting briefly then fetching from Supabase client',
         );
-        
+
         // Give setSession time to complete (if it was called)
         await new Promise(resolve => setTimeout(resolve, 500));
-        
+
         const sessionTimeoutPromise = new Promise<never>((_, reject) => {
           setTimeout(() => reject(new Error('Session fetch timeout')), 5000);
         });
 
         try {
           // Try getting session from Supabase client directly first (faster)
-          const { data: { session: directSession } } = await supabase.auth.getSession();
-          
+          const {
+            data: { session: directSession },
+          } = await supabase.auth.getSession();
+
           if (directSession) {
             console.log(
               '✅ [AuthContext] Setting session from Supabase client (direct)',
@@ -777,7 +779,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
               // Save auth state (non-blocking)
               authSyncService.saveAuthState(currentSession).catch(err => {
-                console.warn('⚠️ Failed to save auth state (non-blocking):', err);
+                console.warn(
+                  '⚠️ Failed to save auth state (non-blocking):',
+                  err,
+                );
               });
 
               // Fetch user profile (non-blocking)

@@ -14,15 +14,20 @@ if [ -f "$SENTRY_FILE" ]; then
   # Make file writable
   chmod 644 "$SENTRY_FILE"
   
-  # Fix 1: Replace return statements with problematic method calls
+  # Fix 1: Replace standalone capture(userFeedback:) calls (the actual error pattern)
+  # Pattern: SentrySDKInternal.capture(userFeedback: userFeedback)
+  # Replace with: // SentrySDKInternal.capture(userFeedback: userFeedback) // Fixed - deprecated API
+  sed -i.bak 's/SentrySDKInternal\.capture(userFeedback:[[:space:]]*userFeedback)/\/\/ SentrySDKInternal.capture(userFeedback: userFeedback) \/\/ Fixed - deprecated API/g' "$SENTRY_FILE"
+  
+  # Fix 2: Replace return statements with problematic method calls
   # Pattern: return SentrySDKInternal.capture(error: error).sentryId
   # Replace with: return SentryId()
   sed -i.bak 's/return[[:space:]]*SentrySDKInternal\.capture(error:[[:space:]]*error)[[:space:]]*\.sentryId/return SentryId() \/\/ Fixed - replaced undefined error/g' "$SENTRY_FILE"
   
-  # Fix 2: Replace return statements with userFeedback calls
+  # Fix 3: Replace return statements with userFeedback calls
   sed -i.bak 's/return[[:space:]]*SentrySDKInternal\.capture(userFeedback:[[:space:]]*userFeedback)[[:space:]]*\.sentryId/return SentryId() \/\/ Fixed - deprecated API/g' "$SENTRY_FILE"
   
-  # Fix 3: Replace return statements with error: userFeedback calls
+  # Fix 4: Replace return statements with error: userFeedback calls
   sed -i.bak 's/return[[:space:]]*SentrySDKInternal\.capture(error:[[:space:]]*userFeedback)[[:space:]]*\.sentryId/return SentryId() \/\/ Fixed - type mismatch/g' "$SENTRY_FILE"
   
   # Clean up backup file
