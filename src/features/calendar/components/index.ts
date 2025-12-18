@@ -4,3 +4,7 @@ export { default as WeekStrip } from './WeekStrip';
 export { default as WeekGridView } from './WeekGridView';
 export { CalendarTaskCard } from './CalendarTaskCard';
 export { ViewModeToggle } from './ViewModeToggle';
+export { CalendarHeader } from './CalendarHeader';
+export { CalendarMonthView } from './CalendarMonthView';
+export { CalendarAgendaView } from './CalendarAgendaView';
+export { CalendarTaskItem } from './CalendarTaskItem';

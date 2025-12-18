@@ -153,18 +153,18 @@ function CoursesScreen() {
 
 ### Consolidated Edge Functions
 
-| Legacy Function     | New Consolidated Function | Endpoint                          |
-| ------------------- | ------------------------- | --------------------------------- |
-| `create-course`     | `create-course`          | `/create-course` (creates course + lecture) |
-| `update-course`     | `api-v2`                  | `/api-v2/courses/update/{id}`     |
-| `delete-course`     | `api-v2`                  | `/api-v2/courses/delete/{id}`     |
-| `create-assignment` | `api-v2`                  | `/api-v2/assignments/create`      |
-| `update-assignment` | `api-v2`                  | `/api-v2/assignments/update/{id}` |
-| `delete-assignment` | `api-v2`                  | `/api-v2/assignments/delete/{id}` |
-| `send-notification` | `notification-system`     | `/notification-system/send`       |
-| `schedule-reminder` | `notification-system`     | `/notification-system/schedule`   |
-| `admin-export`      | `admin-system`            | `/admin-system/export`            |
-| `health-check`      | `admin-system`            | `/admin-system/health`            |
+| Legacy Function     | New Consolidated Function | Endpoint                                    |
+| ------------------- | ------------------------- | ------------------------------------------- |
+| `create-course`     | `create-course`           | `/create-course` (creates course + lecture) |
+| `update-course`     | `api-v2`                  | `/api-v2/courses/update/{id}`               |
+| `delete-course`     | `api-v2`                  | `/api-v2/courses/delete/{id}`               |
+| `create-assignment` | `api-v2`                  | `/api-v2/assignments/create`                |
+| `update-assignment` | `api-v2`                  | `/api-v2/assignments/update/{id}`           |
+| `delete-assignment` | `api-v2`                  | `/api-v2/assignments/delete/{id}`           |
+| `send-notification` | `notification-system`     | `/notification-system/send`                 |
+| `schedule-reminder` | `notification-system`     | `/notification-system/schedule`             |
+| `admin-export`      | `admin-system`            | `/admin-system/export`                      |
+| `health-check`      | `admin-system`            | `/admin-system/health`                      |
 
 ### Batch Operations
 

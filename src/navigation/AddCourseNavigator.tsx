@@ -3,13 +3,13 @@ import { createStackNavigator } from '@react-navigation/stack';
 
 import {
   AddCourseInfoScreen,
-  AddLectureDateTimeScreen,
+  AddLectureSettingScreen,
   AddLectureRemindersScreen,
 } from '@/features/courses/screens';
 
 export type AddCourseStackParamList = {
   AddCourseInfo: undefined;
-  AddLectureDateTime: undefined;
+  AddLectureSetting: undefined;
   AddLectureReminders: undefined;
 };
 
@@ -23,8 +23,8 @@ const AddCourseNavigator = () => {
       }}>
       <Stack.Screen name="AddCourseInfo" component={AddCourseInfoScreen} />
       <Stack.Screen
-        name="AddLectureDateTime"
-        component={AddLectureDateTimeScreen}
+        name="AddLectureSetting"
+        component={AddLectureSettingScreen}
       />
       <Stack.Screen
         name="AddLectureReminders"

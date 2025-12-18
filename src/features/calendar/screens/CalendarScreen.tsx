@@ -22,9 +22,13 @@ import {
   WeekStrip,
   Timeline,
   WeekGridView,
+  CalendarHeader,
+  CalendarMonthView,
+  CalendarAgendaView,
+  CalendarTaskItem,
+  ViewModeToggle,
 } from '@/features/calendar/components';
 import { CalendarTaskCard } from '@/features/calendar/components/CalendarTaskCard';
-import { ViewModeToggle } from '@/features/calendar/components/ViewModeToggle';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
@@ -431,83 +435,17 @@ const CalendarScreen = () => {
   );
 
   const renderTaskItem = useCallback(
-    ({ item }: { item: Task }) => {
-      const taskTime = format(new Date(item.date), 'h:mm a');
-      const isLocked = item.isLocked;
-      const isExample =
-        'is_example' in item &&
-        (item as Task & { is_example?: boolean }).is_example === true;
-
-      return (
-        <TouchableOpacity
-          style={[styles.taskItem, isLocked && styles.taskItemLocked]}
-          onPress={() =>
-            isLocked ? handleLockedTaskPress(item) : handleTaskPress(item)
-          }
-          accessibilityLabel={`${item.name || item.title}, ${item.type}, ${taskTime}`}
-          accessibilityHint={
-            isLocked
-              ? 'This task is locked. Upgrade to access.'
-              : 'Opens task details'
-          }
-          accessibilityRole="button"
-          accessibilityState={{ disabled: isLocked }}>
-          <View style={styles.taskItemContent}>
-            <View
-              style={[
-                styles.taskTypeBadge,
-                { backgroundColor: getTaskColor(item.type) },
-              ]}>
-              <Text style={styles.taskTypeBadgeText}>
-                {item.type === 'study_session' ? 'Study' : item.type}
-              </Text>
-            </View>
-            <View style={styles.taskItemDetails}>
-              <View style={styles.taskTitleRow}>
-                <Text
-                  style={[
-                    styles.taskItemTitle,
-                    isLocked && styles.taskItemTitleLocked,
-                  ]}
-                  numberOfLines={2}>
-                  {item.name || item.title}
-                </Text>
-                {isExample && (
-                  <View style={styles.exampleBadgeSmall}>
-                    <Text style={styles.exampleBadgeText}>EXAMPLE</Text>
-                  </View>
-                )}
-              </View>
-              <Text style={styles.taskItemTime}>{taskTime}</Text>
-              {item.courses && (
-                <Text style={styles.taskItemCourse} numberOfLines={1}>
-                  {item.courses.courseName}
-                </Text>
-              )}
-            </View>
-            {isLocked && (
-              <Ionicons name="lock-closed" size={20} color={COLORS.gray} />
-            )}
-          </View>
-        </TouchableOpacity>
-      );
-    },
+    ({ item }: { item: Task }) => (
+      <CalendarTaskItem
+        task={item}
+        onPress={() =>
+          item.isLocked ? handleLockedTaskPress(item) : handleTaskPress(item)
+        }
+        isLocked={item.isLocked}
+      />
+    ),
     [handleTaskPress, handleLockedTaskPress],
   );
-
-  const getTaskColor = (type: string) => {
-    switch (type) {
-      case 'lecture':
-        return '#10B981'; // Green
-      case 'assignment':
-        return '#F97316'; // Orange
-      case 'study_session':
-        return '#137FEC'; // Blue
-      default:
-        // Review sessions also use blue
-        return '#137FEC';
-    }
-  };
 
   const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
     useState(false);
@@ -523,11 +461,7 @@ const CalendarScreen = () => {
   // Render calendar content - used both for empty state and normal state
   const renderCalendarContent = () => (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Schedule</Text>
-        <NotificationBell onPress={handleNotificationBellPress} />
-      </View>
+      <CalendarHeader onNotificationPress={handleNotificationBellPress} />
 
       {/* View Mode Toggle */}
       <View style={styles.viewToggleContainer}>
@@ -536,56 +470,14 @@ const CalendarScreen = () => {
 
       {/* Month View */}
       {viewMode === 'month' && (
-        <View style={styles.monthViewContainer}>
-          <Calendar
-            current={selectedDate.toISOString()}
-            onDayPress={handleMonthDayPress}
-            onVisibleMonthsChange={handleMonthChange}
-            markedDates={markedDates}
-            markingType="multi-dot"
-            theme={{
-              backgroundColor: COLORS.background,
-              calendarBackground: COLORS.background,
-              textSectionTitleColor: COLORS.gray,
-              selectedDayBackgroundColor: COLORS.primary,
-              selectedDayTextColor: COLORS.background,
-              todayTextColor: COLORS.primary,
-              dayTextColor: COLORS.text,
-              textDisabledColor: COLORS.lightGray,
-              monthTextColor: COLORS.text,
-              textMonthFontWeight: 'bold',
-              textDayFontSize: FONT_SIZES.md,
-              textMonthFontSize: FONT_SIZES.lg,
-              textDayHeaderFontSize: FONT_SIZES.sm,
-            }}
-          />
-
-          {/* Task List for Selected Date */}
-          <View style={styles.selectedDateContainer}>
-            <Text style={styles.selectedDateTitle}>
-              {format(selectedDate, 'EEEE, MMMM d')}
-            </Text>
-            {tasksForSelectedDay.length === 0 ? (
-              <View style={styles.noTasksContainer}>
-                <Text style={styles.noTasksText}>No tasks for this day</Text>
-              </View>
-            ) : (
-              <FlatList
-                data={tasksForSelectedDay}
-                renderItem={renderTaskItem}
-                keyExtractor={item => item.id}
-                contentContainerStyle={styles.taskList}
-                showsVerticalScrollIndicator={false}
-                // Performance optimizations
-                removeClippedSubviews={true}
-                maxToRenderPerBatch={10}
-                windowSize={5}
-                updateCellsBatchingPeriod={50}
-                initialNumToRender={10}
-              />
-            )}
-          </View>
-        </View>
+        <CalendarMonthView
+          selectedDate={selectedDate}
+          markedDates={markedDates}
+          tasksForSelectedDay={tasksForSelectedDay}
+          onDayPress={handleMonthDayPress}
+          onMonthChange={handleMonthChange}
+          renderTaskItem={renderTaskItem}
+        />
       )}
 
       {/* Week Grid View */}
@@ -600,62 +492,14 @@ const CalendarScreen = () => {
 
       {/* Agenda View */}
       {viewMode === 'agenda' && (
-        <>
-          <View style={styles.weekStripContainer}>
-            <WeekStrip
-              selectedDate={selectedDate}
-              onDateSelect={handleDateSelect}
-            />
-          </View>
-
-          <ScrollView
-            style={styles.agendaScrollView}
-            contentContainerStyle={styles.agendaContent}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}>
-            {tasksForSelectedDay.length === 0 ? (
-              <View style={styles.emptyAgendaContainer}>
-                <Text style={styles.emptyAgendaText}>
-                  No tasks scheduled for this day
-                </Text>
-              </View>
-            ) : (
-              tasksForSelectedDay.map((task, index) => {
-                const taskTime = new Date(task.startTime || task.date);
-                const endTime = task.endTime ? new Date(task.endTime) : null;
-                const timeStr = format(taskTime, 'h:mm');
-                const endTimeStr = endTime ? format(endTime, 'h:mm') : null;
-
-                return (
-                  <View
-                    key={`${task.type}-${task.id}-${index}`}
-                    style={styles.agendaRow}>
-                    <View style={styles.timeColumn}>
-                      <Text style={styles.timeText}>{timeStr}</Text>
-                      {endTimeStr && (
-                        <Text style={styles.endTimeText}>{endTimeStr}</Text>
-                      )}
-                    </View>
-                    <CalendarTaskCard
-                      task={task}
-                      onPress={() =>
-                        task.isLocked
-                          ? handleLockedTaskPress(task)
-                          : handleTaskPress(task)
-                      }
-                      onMorePress={() => {
-                        if (!task.isLocked) {
-                          handleTaskPress(task);
-                        }
-                      }}
-                      isLocked={task.isLocked}
-                    />
-                  </View>
-                );
-              })
-            )}
-          </ScrollView>
-        </>
+        <CalendarAgendaView
+          selectedDate={selectedDate}
+          tasksForSelectedDay={tasksForSelectedDay}
+          onDateSelect={handleDateSelect}
+          onTaskPress={handleTaskPress}
+          onLockedTaskPress={handleLockedTaskPress}
+          onScroll={handleScroll}
+        />
       )}
 
       <TaskDetailSheet

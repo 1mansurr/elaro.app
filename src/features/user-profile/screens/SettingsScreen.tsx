@@ -20,7 +20,6 @@ import { authService } from '@/services/authService';
 import { supabase } from '@/services/supabase';
 import {
   ExpandableDetails,
-  InlineNotificationSettings,
 } from '@/shared/components';
 import { AnalyticsToggle } from '@/shared/components/AnalyticsToggle';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -28,119 +27,14 @@ import { showToast } from '@/utils/showToast';
 import { cache } from '@/utils/cache';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {
+  SettingsHeader,
+  SettingsCategoryCard,
+  SettingsItem,
+  SettingsNotificationsSection,
+} from './components';
 
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
-
-interface SettingItemProps {
-  label: string;
-  onPress: () => void;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor?: string;
-  iconBgColor?: string;
-  isDestructive?: boolean;
-  disabled?: boolean;
-  rightContent?: React.ReactNode;
-  showChevron?: boolean;
-}
-
-const SettingItem: React.FC<SettingItemProps> = ({
-  label,
-  onPress,
-  icon,
-  iconColor,
-  iconBgColor,
-  isDestructive = false,
-  disabled = false,
-  rightContent,
-  showChevron = true,
-}) => {
-  const { theme } = useTheme();
-
-  const defaultIconColor = isDestructive
-    ? '#EF4444'
-    : iconColor || (theme.isDark ? '#9CA3AF' : '#4B5563');
-  const defaultIconBg = isDestructive
-    ? theme.isDark
-      ? 'rgba(239, 68, 68, 0.2)'
-      : '#FEE2E2'
-    : iconBgColor || (theme.isDark ? '#374151' : '#F3F4F6');
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[
-        styles.settingItem,
-        disabled && styles.settingItemDisabled,
-        isDestructive && styles.settingItemDestructive,
-      ]}
-      disabled={disabled}
-      activeOpacity={0.7}>
-      <View style={[styles.iconContainer, { backgroundColor: defaultIconBg }]}>
-        <Ionicons name={icon} size={22} color={defaultIconColor} />
-      </View>
-      <Text
-        style={[
-          styles.settingLabel,
-          isDestructive && styles.settingLabelDestructive,
-        ]}>
-        {label}
-      </Text>
-      {rightContent ||
-        (showChevron && (
-          <Ionicons
-            name="chevron-forward"
-            size={20}
-            color={theme.isDark ? '#6B7280' : '#9CA3AF'}
-          />
-        ))}
-    </TouchableOpacity>
-  );
-};
-
-interface CategoryCardProps {
-  title: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  children: React.ReactNode;
-}
-
-const CategoryCard: React.FC<CategoryCardProps> = ({
-  title,
-  icon,
-  children,
-}) => {
-  const { theme } = useTheme();
-
-  return (
-    <View
-      style={[
-        styles.categoryCard,
-        {
-          backgroundColor: theme.isDark ? '#1E2330' : '#FFFFFF',
-          borderColor: theme.isDark
-            ? 'rgba(255, 255, 255, 0.05)'
-            : 'rgba(0, 0, 0, 0.05)',
-        },
-      ]}>
-      <View
-        style={[
-          styles.categoryHeader,
-          {
-            borderBottomColor: theme.isDark ? '#374151' : '#F3F4F6',
-          },
-        ]}>
-        <Ionicons name={icon} size={20} color={COLORS.primary} />
-        <Text
-          style={[
-            styles.categoryTitle,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
-          ]}>
-          {title}
-        </Text>
-      </View>
-      <View style={styles.categoryContent}>{children}</View>
-    </View>
-  );
-};
 
 export function SettingsScreen() {
   const { user, session, signOut } = useAuth();
@@ -342,42 +236,15 @@ export function SettingsScreen() {
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}>
-      {/* Header with backdrop blur */}
-      <View style={styles.header}>
-        <BlurView
-          intensity={80}
-          tint={theme.isDark ? 'dark' : 'light'}
-          style={StyleSheet.absoluteFill}
-        />
-        <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            activeOpacity={0.7}>
-            <Ionicons
-              name="arrow-back-ios"
-              size={24}
-              color={theme.isDark ? '#FFFFFF' : '#111318'}
-            />
-          </TouchableOpacity>
-          <Text
-            style={[
-              styles.headerTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111318' },
-            ]}>
-            Settings
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-      </View>
+      <SettingsHeader onBack={() => navigation.goBack()} />
 
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* Profile & Security */}
-        <CategoryCard title="PROFILE & SECURITY" icon="shield">
-          <SettingItem
+        <SettingsCategoryCard title="PROFILE & SECURITY" icon="shield">
+          <SettingsItem
             label="Change Password"
             onPress={handleChangePassword}
             icon="key"
@@ -391,7 +258,7 @@ export function SettingsScreen() {
               { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
-          <SettingItem
+          <SettingsItem
             label="Multi-Factor Authentication"
             onPress={handleEnableMfa}
             icon="lock-closed"
@@ -399,46 +266,11 @@ export function SettingsScreen() {
             iconBgColor={theme.isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
             showChevron
           />
-        </CategoryCard>
+        </SettingsCategoryCard>
 
         {/* App Settings */}
-        <CategoryCard title="APP SETTINGS" icon="settings">
-          {/* Notifications */}
-          <View style={styles.notificationsSection}>
-            <View style={styles.notificationsHeader}>
-              <View
-                style={[
-                  styles.notificationsIconContainer,
-                  {
-                    backgroundColor: theme.isDark
-                      ? 'rgba(249, 115, 22, 0.2)'
-                      : '#FED7AA',
-                  },
-                ]}>
-                <Ionicons
-                  name="notifications"
-                  size={18}
-                  color={theme.isDark ? '#FB923C' : '#EA580C'}
-                />
-              </View>
-              <View style={styles.notificationsHeaderText}>
-                <Text
-                  style={[styles.notificationsTitle, { color: theme.text }]}>
-                  Notifications
-                </Text>
-                <Text
-                  style={[
-                    styles.notificationsDescription,
-                    { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
-                  ]}>
-                  Manage how you receive alerts for revisions and schedules.
-                </Text>
-              </View>
-            </View>
-            <View style={styles.notificationsContainer}>
-              <InlineNotificationSettings />
-            </View>
-          </View>
+        <SettingsCategoryCard title="APP SETTINGS" icon="settings">
+          <SettingsNotificationsSection />
 
           <View
             style={[
@@ -507,7 +339,7 @@ export function SettingsScreen() {
           />
 
           {/* Clear Cache */}
-          <SettingItem
+          <SettingsItem
             label="Clear Cache"
             onPress={handleClearCache}
             icon="trash-outline"
@@ -530,7 +362,7 @@ export function SettingsScreen() {
           />
 
           {/* Reset All Settings */}
-          <SettingItem
+          <SettingsItem
             label="Reset All Settings"
             onPress={handleResetSettings}
             icon="refresh"
@@ -540,11 +372,11 @@ export function SettingsScreen() {
             disabled={isResettingSettings}
             showChevron={false}
           />
-        </CategoryCard>
+        </SettingsCategoryCard>
 
         {/* Account Management */}
-        <CategoryCard title="ACCOUNT MANAGEMENT" icon="person-circle">
-          <SettingItem
+        <SettingsCategoryCard title="ACCOUNT MANAGEMENT" icon="person-circle">
+          <SettingsItem
             label="Recycle Bin"
             onPress={() => navigation.navigate('RecycleBin')}
             icon="trash-outline"
@@ -558,7 +390,7 @@ export function SettingsScreen() {
               { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
-          <SettingItem
+          <SettingsItem
             label="Log Out From All Devices"
             onPress={handleGlobalSignOut}
             icon="phone-portrait-outline"
@@ -567,7 +399,7 @@ export function SettingsScreen() {
             isDestructive
             showChevron={false}
           />
-        </CategoryCard>
+        </SettingsCategoryCard>
       </ScrollView>
     </View>
   );
@@ -577,35 +409,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  header: {
-    position: 'relative',
-    zIndex: 10,
-  },
-  headerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.xs,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: FONT_WEIGHTS.bold,
-    letterSpacing: -0.015,
-    flex: 1,
-    textAlign: 'center',
-    paddingRight: 40,
-  },
-  headerSpacer: {
-    width: 40,
-  },
   scrollView: {
     flex: 1,
   },
@@ -614,100 +417,9 @@ const styles = StyleSheet.create({
     paddingBottom: 200, // Extra padding so bottom buttons sit above nav bar
     gap: 24,
   },
-  categoryCard: {
-    borderRadius: 16,
-    borderWidth: 1,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  categoryTitle: {
-    fontSize: 12,
-    fontWeight: FONT_WEIGHTS.bold,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  categoryContent: {
-    flexDirection: 'column',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-    paddingHorizontal: SPACING.lg,
-    paddingVertical: SPACING.md,
-  },
-  settingItemDisabled: {
-    opacity: 0.5,
-  },
-  settingItemDestructive: {
-    backgroundColor: 'transparent',
-  },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  settingLabel: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium,
-    flex: 1,
-    color: COLORS.text,
-  },
-  settingLabelDestructive: {
-    color: '#EF4444',
-  },
   divider: {
     height: 1,
     marginHorizontal: SPACING.lg,
-  },
-  notificationsSection: {
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.lg,
-    paddingBottom: SPACING.xs,
-  },
-  notificationsHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginBottom: 12,
-  },
-  notificationsIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  notificationsHeaderText: {
-    flex: 1,
-  },
-  notificationsTitle: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    marginBottom: 4,
-  },
-  notificationsDescription: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 18,
-  },
-  notificationsContainer: {
-    marginTop: 8,
   },
   privacySummary: {
     flexDirection: 'row',

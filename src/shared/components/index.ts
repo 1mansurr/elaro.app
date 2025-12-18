@@ -62,3 +62,6 @@ export { LectureDetailSheet } from './LectureDetailSheet';
 export { StudySessionDetailSheet } from './StudySessionDetailSheet';
 export { UsageLimitPaywall } from './UsageLimitPaywall';
 export { UpgradeSuccessModal } from './UpgradeSuccessModal';
+
+// Task form components
+export * from './task-forms';

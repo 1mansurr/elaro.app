@@ -95,7 +95,7 @@ const AddCourseInfoScreen = () => {
       courseCode: courseCode.trim(),
       courseDescription: description.trim(),
     });
-    navigation.navigate('AddLectureDateTime');
+    navigation.navigate('AddLectureSetting');
   };
 
   const handleCancel = () => {

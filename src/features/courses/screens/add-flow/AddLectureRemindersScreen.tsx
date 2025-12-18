@@ -69,12 +69,9 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
-      const { error } = await invokeEdgeFunctionWithAuth(
-        'create-course',
-        {
-          body: taskData,
-        },
-      );
+      const { error } = await invokeEdgeFunctionWithAuth('create-course', {
+        body: taskData,
+      });
 
       if (error) throw new Error(error.message);
 
