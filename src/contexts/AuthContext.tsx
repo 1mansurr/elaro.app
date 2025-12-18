@@ -125,10 +125,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // No cache - fetch from server with timeout
         console.log('🌐 Fetching user profile from server');
-        
+
         // Add timeout wrapper (8 seconds total - 5s for API + 3s buffer)
         const profileFetchPromise = supabaseAuthService.getUserProfile(userId);
-        const timeoutPromise = new Promise<null>((resolve) => {
+        const timeoutPromise = new Promise<null>(resolve => {
           setTimeout(() => {
             console.warn(
               '⚠️ [AuthContext] User profile fetch timeout - proceeding with minimal user data',
@@ -147,18 +147,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.warn(
             '⚠️ [AuthContext] User profile fetch failed, checking session for minimal user data',
           );
-          
+
           try {
-            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            const {
+              data: { session: currentSession },
+            } = await supabase.auth.getSession();
             if (currentSession?.user) {
               // Create minimal user profile from session data
               const minimalUser: User = {
                 id: currentSession.user.id,
                 email: currentSession.user.email ?? '',
                 name: currentSession.user.user_metadata?.name || null,
-                first_name: currentSession.user.user_metadata?.first_name || null,
+                first_name:
+                  currentSession.user.user_metadata?.first_name || null,
                 last_name: currentSession.user.user_metadata?.last_name || null,
-                university: currentSession.user.user_metadata?.university || null,
+                university:
+                  currentSession.user.user_metadata?.university || null,
                 program: currentSession.user.user_metadata?.program || null,
                 role: 'user',
                 onboarding_completed: false, // Default to false, will be updated when full profile loads
@@ -170,19 +174,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 deletion_scheduled_at: null,
                 suspension_end_date: null,
                 created_at: currentSession.user.created_at,
-                updated_at: currentSession.user.updated_at || currentSession.user.created_at,
+                updated_at:
+                  currentSession.user.updated_at ||
+                  currentSession.user.created_at,
                 user_metadata: currentSession.user.user_metadata || {},
               };
-              
-              console.log('✅ [AuthContext] Using minimal user data from session');
+
+              console.log(
+                '✅ [AuthContext] Using minimal user data from session',
+              );
               // Cache the minimal profile temporarily
               await cache.setLong(cacheKey, minimalUser);
               return minimalUser;
             }
           } catch (sessionError) {
-            console.error('❌ [AuthContext] Failed to get session for minimal user:', sessionError);
+            console.error(
+              '❌ [AuthContext] Failed to get session for minimal user:',
+              sessionError,
+            );
           }
-          
+
           return null;
         }
 
@@ -354,10 +365,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             updated_at: session.user.updated_at || session.user.created_at,
             user_metadata: session.user.user_metadata || {},
           };
-          
+
           // Set minimal user immediately so app can proceed
           setUser(minimalUserFromSession);
-          
+
           // Then fetch full profile in background and update when ready
           fetchUserProfile(session.user.id)
             .then(userProfile => {

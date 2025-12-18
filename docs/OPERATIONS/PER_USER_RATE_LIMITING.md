@@ -52,7 +52,6 @@ const RATE_LIMITS = {
   'create-assignment': { requests: 100, window: 60 }, // 100 requests/minute/user
   'create-lecture': { requests: 100, window: 60 },
   'create-study-session': { requests: 100, window: 60 },
-  'create-course': { requests: 50, window: 60 },
   'update-assignment': { requests: 200, window: 60 },
   'update-course': { requests: 200, window: 60 },
   'update-lecture': { requests: 200, window: 60 },
@@ -260,7 +259,6 @@ Edit `supabase/functions/_shared/rate-limiter.ts`:
 ```typescript
 const RATE_LIMITS = {
   'create-assignment': { requests: 200, window: 60 }, // Increase to 200/minute
-  'create-course': { requests: 100, window: 60 }, // Increase to 100/minute
   default: { requests: 150, window: 60 }, // Increase default
 };
 ```

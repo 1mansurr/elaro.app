@@ -155,7 +155,7 @@ function CoursesScreen() {
 
 | Legacy Function     | New Consolidated Function | Endpoint                          |
 | ------------------- | ------------------------- | --------------------------------- |
-| `create-course`     | `api-v2`                  | `/api-v2/courses/create`          |
+| `create-course`     | `create-course`          | `/create-course` (creates course + lecture) |
 | `update-course`     | `api-v2`                  | `/api-v2/courses/update/{id}`     |
 | `delete-course`     | `api-v2`                  | `/api-v2/courses/delete/{id}`     |
 | `create-assignment` | `api-v2`                  | `/api-v2/assignments/create`      |

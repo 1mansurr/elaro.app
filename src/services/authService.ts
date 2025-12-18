@@ -212,8 +212,10 @@ export const authService = {
             directAuthError,
           );
           // Check if email confirmation is needed
-          if (directAuthError.message?.includes('email') || 
-              directAuthError.message?.includes('confirm')) {
+          if (
+            directAuthError.message?.includes('email') ||
+            directAuthError.message?.includes('confirm')
+          ) {
             throw new AppError(
               'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
               403,
@@ -228,11 +230,14 @@ export const authService = {
         }
 
         if (!directAuthData.session) {
-          console.error('❌ [authService] Fallback auth succeeded but no session returned', {
-            hasUser: !!directAuthData.user,
-            userId: directAuthData.user?.id,
-            emailConfirmed: !!directAuthData.user?.email_confirmed_at,
-          });
+          console.error(
+            '❌ [authService] Fallback auth succeeded but no session returned',
+            {
+              hasUser: !!directAuthData.user,
+              userId: directAuthData.user?.id,
+              emailConfirmed: !!directAuthData.user?.email_confirmed_at,
+            },
+          );
 
           // Check if email confirmation is required
           if (directAuthData.user && !directAuthData.user.email_confirmed_at) {
@@ -250,7 +255,9 @@ export const authService = {
           );
         }
 
-        console.log('✅ [authService] Fallback: Session created via direct Supabase auth');
+        console.log(
+          '✅ [authService] Fallback: Session created via direct Supabase auth',
+        );
 
         // Return the session from direct auth
         return {

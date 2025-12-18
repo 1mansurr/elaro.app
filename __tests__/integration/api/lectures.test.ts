@@ -42,16 +42,8 @@ describe('API Boundary: Lectures Edge Function', () => {
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    // Create a test course
-    (mockSupabase.functions.invoke as jest.Mock).mockResolvedValueOnce({
-      data: { id: 'course-lecture-test-123', course_name: 'Test Course' },
-      error: null,
-    });
-
-    const { data } = await mockSupabase.functions.invoke('create-course', {
-      body: { course_name: 'Test Course' },
-    });
-    testCourseId = data?.id || 'course-lecture-test-123';
+    // Use a mock course ID for testing (create-course function removed)
+    testCourseId = 'course-lecture-test-123';
   });
 
   describe('create-lecture Edge Function', () => {

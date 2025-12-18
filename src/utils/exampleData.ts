@@ -38,7 +38,7 @@ export async function createExampleData(
 
     // Step 1: Create a sample course
     const { data: courseData, error: courseError } =
-      await supabase.functions.invoke('create-course-and-lecture', {
+      await supabase.functions.invoke('create-course', {
         headers: authHeaders,
         body: {
           courseName: 'Getting Started with ELARO',

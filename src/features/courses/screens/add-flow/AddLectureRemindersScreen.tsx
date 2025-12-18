@@ -24,6 +24,7 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 const ReminderOptions = [
   { label: '10 minutes before', value: 10 },
@@ -68,8 +69,8 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
-      const { error } = await supabase.functions.invoke(
-        'create-course-and-lecture',
+      const { error } = await invokeEdgeFunctionWithAuth(
+        'create-course',
         {
           body: taskData,
         },
@@ -133,14 +134,35 @@ const AddLectureRemindersScreen = () => {
     }
 
     try {
-      const { error } = await supabase.functions.invoke(
-        'create-course-and-lecture',
+      // Validate required fields before making the API call
+      if (!finalPayload.courseName?.trim()) {
+        Alert.alert('Error', 'Course name is required.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!finalPayload.startTime || !finalPayload.endTime) {
+        Alert.alert('Error', 'Start time and end time are required.');
+        setIsLoading(false);
+        return;
+      }
+
+      const { error, data } = await invokeEdgeFunctionWithAuth(
+        'create-course',
         {
           body: finalPayload,
         },
       );
 
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error('Edge function error:', {
+          error,
+          message: error.message,
+          context: error.context,
+          payload: finalPayload,
+        });
+        throw error;
+      }
 
       Alert.alert(
         'Success!',
@@ -174,6 +196,7 @@ const AddLectureRemindersScreen = () => {
         navigation.getParent()?.goBack();
       }
     } catch (err) {
+      console.error('Failed to create course and lecture:', err);
       const errorTitle = getErrorTitle(err);
       const errorMessage = mapErrorCodeToMessage(err);
       Alert.alert(errorTitle, errorMessage);
@@ -214,8 +237,10 @@ const AddLectureRemindersScreen = () => {
           Set Lecture Reminders
         </Text>
         <Text style={[styles.subtitle, { color: '#64748b' }]}>
-          When would you like to be notified before each lecture starts? You can
-          select multiple options.
+          When would you like to be notified before each lecture starts?
+        </Text>
+        <Text style={[styles.subtitle, { color: '#64748b', marginTop: 4 }]}>
+          You can select multiple options.
         </Text>
 
         <View

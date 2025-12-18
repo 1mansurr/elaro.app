@@ -496,8 +496,8 @@ export const AuthenticatedNavigator: React.FC = () => {
   // Determine initial route based on course count and welcome screen status
   let initialRouteName: keyof RootStackParamList = 'Main';
 
-  if (courseCount === 0 && hasSeenAddCourseFirst === false) {
-    // No courses and hasn't seen AddCourseFirst screen
+  // Prioritize AddCourseFirst if user hasn't seen it yet (regardless of course count)
+  if (hasSeenAddCourseFirst === false) {
     initialRouteName = 'AddCourseFirst';
   } else if (courseCount > 0 && hasSeenPostOnboardingWelcome === false) {
     // Has courses but hasn't seen PostOnboardingWelcome screen

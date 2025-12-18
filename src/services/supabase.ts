@@ -131,7 +131,7 @@ export const authService = {
     // Try API layer first with timeout
     try {
       const { versionedApiClient } = await import('./VersionedApiClient');
-      
+
       // Add timeout to API call (5 seconds)
       const apiPromise = versionedApiClient.getUserProfile();
       const timeoutPromise = new Promise<never>((_, reject) => {
@@ -167,7 +167,8 @@ export const authService = {
             | null) ?? null,
         subscription_expires_at: data.subscription_expires_at ?? null,
         account_status:
-          (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+          (data.account_status as 'active' | 'deleted' | 'suspended') ??
+          'active',
         deleted_at: data.deleted_at ?? null,
         deletion_scheduled_at: data.deletion_scheduled_at ?? null,
         suspension_end_date: data.suspension_end_date ?? null,
@@ -199,8 +200,11 @@ export const authService = {
           .single();
 
         if (error) {
-          console.error('❌ [supabaseAuthService] Direct Supabase query failed:', error);
-          
+          console.error(
+            '❌ [supabaseAuthService] Direct Supabase query failed:',
+            error,
+          );
+
           // Check if it's an RLS policy error or permission issue
           if (
             error.code === 'PGRST301' ||
@@ -213,14 +217,14 @@ export const authService = {
               '⚠️ [supabaseAuthService] RLS policy may be blocking direct query - user profile may not exist yet or RLS is restricting access',
             );
           }
-          
+
           // Check if user doesn't exist (common after signup before trigger runs)
           if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
             console.warn(
               '⚠️ [supabaseAuthService] User profile not found in database - may need to wait for database trigger',
             );
           }
-          
+
           return null;
         }
 
@@ -250,7 +254,8 @@ export const authService = {
               | null) ?? null,
           subscription_expires_at: data.subscription_expires_at ?? null,
           account_status:
-            (data.account_status as 'active' | 'deleted' | 'suspended') ?? 'active',
+            (data.account_status as 'active' | 'deleted' | 'suspended') ??
+            'active',
           deleted_at: data.deleted_at ?? null,
           deletion_scheduled_at: data.deletion_scheduled_at ?? null,
           suspension_end_date: data.suspension_end_date ?? null,
@@ -265,7 +270,9 @@ export const authService = {
           },
         };
 
-        console.log('✅ [supabaseAuthService] Fallback: User profile fetched via direct Supabase');
+        console.log(
+          '✅ [supabaseAuthService] Fallback: User profile fetched via direct Supabase',
+        );
         return userProfile;
       } catch (fallbackError) {
         console.error(

@@ -79,9 +79,7 @@ const AddLectureDateTimeScreen = () => {
     selectedDate?: Date,
     type?: 'start' | 'end',
   ) => {
-    if (Platform.OS === 'android') {
-      setShowTimePicker(null);
-    }
+    // Don't auto-close on either platform - wait for "Done" button
     if (event.type === 'set' && selectedDate && type) {
       if (type === 'start') {
         setStartTime(selectedDate);
@@ -97,9 +95,7 @@ const AddLectureDateTimeScreen = () => {
           Alert.alert('Invalid Time', 'End time must be after start time.');
         }
       }
-      if (Platform.OS === 'ios') {
-        setShowTimePicker(null);
-      }
+      // Keep picker open - only close when "Done" is tapped
     } else if (event.type === 'dismissed') {
       setShowTimePicker(null);
     }
@@ -233,9 +229,7 @@ const AddLectureDateTimeScreen = () => {
                 style={[styles.iconContainer, { backgroundColor: '#fee2e2' }]}>
                 <Ionicons name="calendar-outline" size={20} color="#dc2626" />
               </View>
-              <Text style={[styles.cardLabel, { color: theme.text }]}>
-                Day
-              </Text>
+              <Text style={[styles.cardLabel, { color: theme.text }]}>Day</Text>
             </View>
             <View style={styles.cardRowRight}>
               <Text style={styles.dayBadge}>
@@ -293,6 +287,44 @@ const AddLectureDateTimeScreen = () => {
                 </TouchableOpacity>
               </View>
             </View>
+          </View>
+        </View>
+
+        {/* Venue Card - Moved above Repeat Card */}
+        <View
+          style={[
+            styles.card,
+            {
+              backgroundColor: theme.surface || '#FFFFFF',
+              borderColor: theme.border,
+            },
+          ]}>
+          <View style={styles.venueSection}>
+            <View style={styles.venueSectionHeader}>
+              <View
+                style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+                <Ionicons name="location-outline" size={20} color="#16a34a" />
+              </View>
+              <Text style={[styles.cardLabel, { color: theme.text }]}>
+                Venue
+              </Text>
+            </View>
+            <TextInput
+              style={[
+                styles.venueInput,
+                {
+                  backgroundColor: theme.surface || '#FFFFFF',
+                  borderColor: '#dbdfe6',
+                  color: theme.text,
+                },
+              ]}
+              value={venue}
+              onChangeText={setVenue}
+              placeholder="e.g. Room 404, Main Building"
+              placeholderTextColor="#9ca3af"
+              autoCapitalize="words"
+              returnKeyType="done"
+            />
           </View>
         </View>
 
@@ -362,44 +394,6 @@ const AddLectureDateTimeScreen = () => {
             </View>
           )}
         </View>
-
-        {/* Venue Card */}
-        <View
-          style={[
-            styles.card,
-            {
-              backgroundColor: theme.surface || '#FFFFFF',
-              borderColor: theme.border,
-            },
-          ]}>
-          <View style={styles.venueSection}>
-            <View style={styles.venueSectionHeader}>
-              <View
-                style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
-                <Ionicons name="location-outline" size={20} color="#16a34a" />
-              </View>
-              <Text style={[styles.cardLabel, { color: theme.text }]}>
-                Venue
-              </Text>
-            </View>
-            <TextInput
-              style={[
-                styles.venueInput,
-                {
-                  backgroundColor: theme.surface || '#FFFFFF',
-                  borderColor: '#dbdfe6',
-                  color: theme.text,
-                },
-              ]}
-              value={venue}
-              onChangeText={setVenue}
-              placeholder="e.g. Room 404, Main Building"
-              placeholderTextColor="#9ca3af"
-              autoCapitalize="words"
-              returnKeyType="done"
-            />
-          </View>
-        </View>
       </ScrollView>
 
       {/* Footer */}
@@ -447,23 +441,19 @@ const AddLectureDateTimeScreen = () => {
               <DateTimePicker
                 value={showTimePicker === 'start' ? startTime : endTime}
                 mode="time"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="spinner"
                 onChange={(e, date) => onTimeChange(e, date, showTimePicker)}
                 style={styles.picker}
               />
             )}
-            {Platform.OS === 'ios' && (
-              <TouchableOpacity
-                style={[
-                  styles.pickerDoneButton,
-                  { borderTopColor: theme.border || '#e5e7eb' },
-                ]}
-                onPress={() => {
-                  setShowTimePicker(null);
-                }}>
-                <Text style={styles.pickerDoneButtonText}>Done</Text>
-              </TouchableOpacity>
-            )}
+            {/* Done button for both iOS and Android */}
+            <TouchableOpacity
+              style={styles.pickerDoneButton}
+              onPress={() => {
+                setShowTimePicker(null);
+              }}>
+              <Text style={styles.pickerDoneButtonText}>Done</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -527,10 +517,7 @@ const AddLectureDateTimeScreen = () => {
             </View>
             {Platform.OS === 'ios' && (
               <TouchableOpacity
-                style={[
-                  styles.pickerDoneButton,
-                  { borderTopColor: theme.border || '#e5e7eb' },
-                ]}
+                style={styles.pickerDoneButton}
                 onPress={() => setShowDayPicker(false)}>
                 <Text style={styles.pickerDoneButtonText}>Done</Text>
               </TouchableOpacity>
@@ -774,7 +761,6 @@ const styles = StyleSheet.create({
   pickerDoneButton: {
     padding: 16,
     alignItems: 'center',
-    borderTopWidth: 1,
   },
   pickerDoneButtonText: {
     fontSize: 16,
