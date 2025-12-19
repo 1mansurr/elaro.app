@@ -142,7 +142,8 @@ export const authService = {
 
       if (response.error || !response.data) {
         const errorMsg = response.error || 'No data in API response';
-        const httpStatus = (response as any)?.status || (response as any)?.statusCode;
+        const httpStatus =
+          (response as any)?.status || (response as any)?.statusCode;
         const statusInfo = httpStatus ? ` (HTTP ${httpStatus})` : '';
         throw new Error(`${errorMsg}${statusInfo}`);
       }
@@ -189,10 +190,12 @@ export const authService = {
       return userProfile;
     } catch (apiError) {
       // FALLBACK: API failed or timed out, use direct Supabase query
-      const errorMessage = apiError instanceof Error ? apiError.message : String(apiError);
-      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('Timeout');
+      const errorMessage =
+        apiError instanceof Error ? apiError.message : String(apiError);
+      const isTimeout =
+        errorMessage.includes('timeout') || errorMessage.includes('Timeout');
       const errorType = isTimeout ? 'timeout' : 'API error';
-      
+
       // Only log in development to reduce production noise
       if (__DEV__) {
         console.warn(
@@ -299,7 +302,9 @@ export const authService = {
         if (__DEV__) {
           console.error(
             '❌ [supabaseAuthService] Both API and fallback failed:',
-            fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : String(fallbackError),
           );
         }
         return null;

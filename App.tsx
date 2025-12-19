@@ -151,7 +151,8 @@ if (__DEV__) {
       (hasSyntaxError && hasUndefinedJson && hasMetroReference) ||
       (allArgsAsString.includes('JSON.parse') &&
         hasUndefinedJson &&
-        (allArgsAsString.includes('metro') || allArgsAsString.includes('Server')))
+        (allArgsAsString.includes('metro') ||
+          allArgsAsString.includes('Server')))
     );
   };
 

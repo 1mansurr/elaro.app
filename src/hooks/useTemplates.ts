@@ -63,11 +63,11 @@ export const useTemplates = () => {
         // Check if it's an auth/API error that should be handled gracefully
         const isHandledError =
           errorMessage.includes('No valid session') ||
-          errorMessage.includes('Failed to refresh token') ||
-          errorMessage.includes('Session expired') ||
-          errorMessage.includes('Edge Function returned a non-2xx') ||
-          errorMessage.includes('Authentication required') ||
-          errorMessage.includes('Auth session missing') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing') ||
           (error as any).name === 'FunctionsHttpError' ||
           isAuthError ||
           (isHttpError && httpStatus >= 400 && httpStatus < 500);
