@@ -17,7 +17,7 @@ interface UseRemindersOptions {
 }
 
 export const useReminders = (
-  options: UseRemindersOptions = {}
+  options: UseRemindersOptions = {},
 ): UseRemindersReturn => {
   const {
     maxReminders = 2,
@@ -32,13 +32,16 @@ export const useReminders = (
       setRemindersState(newReminders);
       onRemindersChange?.(newReminders);
     },
-    [onRemindersChange]
+    [onRemindersChange],
   );
 
   const addReminder = useCallback(
     (minutes: number) => {
       if (reminders.length >= maxReminders) {
-        Alert.alert('Limit Reached', `You can only add up to ${maxReminders} reminders.`);
+        Alert.alert(
+          'Limit Reached',
+          `You can only add up to ${maxReminders} reminders.`,
+        );
         return;
       }
 
@@ -49,7 +52,7 @@ export const useReminders = (
       const newReminders = [...reminders, minutes].sort((a, b) => a - b);
       setReminders(newReminders);
     },
-    [reminders, maxReminders, setReminders]
+    [reminders, maxReminders, setReminders],
   );
 
   const removeReminder = useCallback(
@@ -57,14 +60,14 @@ export const useReminders = (
       const newReminders = reminders.filter(r => r !== minutes);
       setReminders(newReminders);
     },
-    [reminders, setReminders]
+    [reminders, setReminders],
   );
 
   const hasReminder = useCallback(
     (minutes: number) => {
       return reminders.includes(minutes);
     },
-    [reminders]
+    [reminders],
   );
 
   return {
@@ -76,4 +79,3 @@ export const useReminders = (
     maxReminders,
   };
 };
-

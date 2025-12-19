@@ -1,6 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { Button } from '@/shared/components';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
+import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SPACING } from '@/constants/theme';
@@ -79,4 +85,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-

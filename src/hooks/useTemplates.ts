@@ -55,26 +55,44 @@ export const useTemplates = () => {
               ? error
               : 'Unknown error';
 
-        if (
-          error instanceof Error &&
-          errorMessage &&
-          (errorMessage.includes('No valid session') ||
-            errorMessage.includes('Failed to refresh token') ||
-            errorMessage.includes('Session expired') ||
-            errorMessage.includes('Edge Function returned a non-2xx') ||
-            errorMessage.includes('Authentication required') ||
-            errorMessage.includes('Auth session missing') ||
-            (error as any).name === 'FunctionsHttpError')
-        ) {
+        // Check for HTTP status codes in error object
+        const httpStatus = (error as any)?.status || (error as any)?.statusCode;
+        const isHttpError = httpStatus !== undefined;
+        const isAuthError = httpStatus === 401 || httpStatus === 403;
+
+        // Check if it's an auth/API error that should be handled gracefully
+        const isHandledError =
+          errorMessage.includes('No valid session') ||
+          errorMessage.includes('Failed to refresh token') ||
+          errorMessage.includes('Session expired') ||
+          errorMessage.includes('Edge Function returned a non-2xx') ||
+          errorMessage.includes('Authentication required') ||
+          errorMessage.includes('Auth session missing') ||
+          (error as any).name === 'FunctionsHttpError' ||
+          isAuthError ||
+          (isHttpError && httpStatus >= 400 && httpStatus < 500);
+
+        if (isHandledError) {
           // Only log warnings in development to reduce production noise
           if (__DEV__) {
+            const statusInfo = httpStatus ? ` (HTTP ${httpStatus})` : '';
             console.warn(
-              '⚠️ Auth/API error in templates, returning empty array:',
+              `⚠️ Auth/API error in templates, returning empty array${statusInfo}:`,
               errorMessage,
             );
           }
           return [];
         }
+
+        // For other errors (network, server errors), log more details but still handle gracefully
+        if (__DEV__ && isHttpError) {
+          console.error(
+            `❌ Template API error (HTTP ${httpStatus}):`,
+            errorMessage,
+          );
+        }
+
+        // Re-throw unexpected errors
         throw error;
       }
     },

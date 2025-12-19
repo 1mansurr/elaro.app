@@ -1,8 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import {
-  TaskRemindersSection,
-} from '@/shared/components/task-forms';
+import { TaskRemindersSection } from '@/shared/components/task-forms';
 import { AssignmentDescriptionField } from './AssignmentDescriptionField';
 import { AssignmentSubmissionSection } from './AssignmentSubmissionSection';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -24,7 +22,9 @@ interface AssignmentOptionalFieldsProps {
   onAddReminder: () => void;
 }
 
-export const AssignmentOptionalFields: React.FC<AssignmentOptionalFieldsProps> = ({
+export const AssignmentOptionalFields: React.FC<
+  AssignmentOptionalFieldsProps
+> = ({
   description,
   onDescriptionChange,
   submissionMethod,
@@ -81,4 +81,3 @@ const styles = StyleSheet.create({
     paddingLeft: SPACING.xs,
   },
 });
-

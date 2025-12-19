@@ -8,19 +8,15 @@ interface AssignmentDescriptionFieldProps {
   onDescriptionChange: (description: string) => void;
 }
 
-export const AssignmentDescriptionField: React.FC<AssignmentDescriptionFieldProps> = ({
-  description,
-  onDescriptionChange,
-}) => {
+export const AssignmentDescriptionField: React.FC<
+  AssignmentDescriptionFieldProps
+> = ({ description, onDescriptionChange }) => {
   const { theme } = useTheme();
 
   return (
     <View style={styles.field}>
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         Description
       </Text>
       <TextInput
@@ -62,4 +58,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
   },
 });
-

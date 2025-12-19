@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -13,7 +19,9 @@ interface AssignmentSubmissionSectionProps {
   onSubmissionLinkChange: (link: string) => void;
 }
 
-export const AssignmentSubmissionSection: React.FC<AssignmentSubmissionSectionProps> = ({
+export const AssignmentSubmissionSection: React.FC<
+  AssignmentSubmissionSectionProps
+> = ({
   submissionMethod,
   submissionLink,
   onSubmissionMethodChange,
@@ -24,10 +32,7 @@ export const AssignmentSubmissionSection: React.FC<AssignmentSubmissionSectionPr
   return (
     <View style={styles.field}>
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         Submission Method
       </Text>
       <View style={styles.submissionGrid}>
@@ -270,4 +275,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
   },
 });
-

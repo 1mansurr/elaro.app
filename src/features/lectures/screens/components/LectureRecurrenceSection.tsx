@@ -10,10 +10,9 @@ interface LectureRecurrenceSectionProps {
   onRecurrenceChange: (recurrence: RecurrenceType) => void;
 }
 
-export const LectureRecurrenceSection: React.FC<LectureRecurrenceSectionProps> = ({
-  recurrence,
-  onRecurrenceChange,
-}) => {
+export const LectureRecurrenceSection: React.FC<
+  LectureRecurrenceSectionProps
+> = ({ recurrence, onRecurrenceChange }) => {
   const { theme } = useTheme();
 
   const recurrenceOptions: RecurrenceType[] = ['none', 'weekly', 'bi-weekly'];
@@ -21,10 +20,7 @@ export const LectureRecurrenceSection: React.FC<LectureRecurrenceSectionProps> =
   return (
     <View style={styles.field}>
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         Recurrence
       </Text>
       <View style={styles.recurrenceGrid}>
@@ -106,4 +102,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

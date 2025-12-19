@@ -21,4 +21,3 @@ export const LectureFormHeader: React.FC<LectureFormHeaderProps> = ({
     />
   );
 };
-

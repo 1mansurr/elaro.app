@@ -8,10 +8,7 @@ import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useTotalTaskCount } from '@/hooks';
-import {
-  savePendingTask,
-  getPendingTask,
-} from '@/utils/taskPersistence';
+import { savePendingTask, getPendingTask } from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { SPACING } from '@/constants/theme';
 import { saveDraft, getDraft, clearDraft } from '@/utils/draftStorage';
@@ -44,7 +41,8 @@ import {
 } from './components';
 
 type SubmissionMethod = 'Online' | 'In-person' | null;
-type AddAssignmentScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+type AddAssignmentScreenNavigationProp =
+  StackNavigationProp<RootStackParamList>;
 type AddAssignmentScreenRouteProp = RouteProp<
   RootStackParamList,
   'AddAssignmentFlow'
@@ -91,15 +89,12 @@ const AddAssignmentScreen = () => {
   const [submissionLink, setSubmissionLink] = useState('');
 
   // Reminders hook
-  const {
-    reminders,
-    addReminder,
-    removeReminder,
-    setReminders,
-  } = useReminders({
-    maxReminders: 2,
-    initialReminders: [120],
-  });
+  const { reminders, addReminder, removeReminder, setReminders } = useReminders(
+    {
+      maxReminders: 2,
+      initialReminders: [120],
+    },
+  );
 
   // Template hook
   const {
@@ -114,7 +109,7 @@ const AddAssignmentScreen = () => {
   } = useTaskTemplate({
     taskType: 'assignment',
     courses,
-    onTemplateDataLoad: (templateData) => {
+    onTemplateDataLoad: templateData => {
       if (templateData.title) {
         setTitle(templateData.title);
       }
@@ -373,7 +368,10 @@ const AddAssignmentScreen = () => {
 
         if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
           try {
-            await handleSaveAsTemplate(taskData, generateTemplateName(title.trim()));
+            await handleSaveAsTemplate(
+              taskData,
+              generateTemplateName(title.trim()),
+            );
           } catch (templateError) {
             console.error('Error saving template:', templateError);
           }
@@ -435,7 +433,9 @@ const AddAssignmentScreen = () => {
       ]}>
       <AssignmentFormHeader
         onClose={handleClose}
-        onTemplatePress={() => handleMyTemplatesPress(() => setShowEmptyStateModal(true))}
+        onTemplatePress={() =>
+          handleMyTemplatesPress(() => setShowEmptyStateModal(true))
+        }
         hasTemplates={hasTemplates}
       />
 
@@ -494,7 +494,9 @@ const AddAssignmentScreen = () => {
             'assignment',
           )}
           hasTemplates={hasTemplates}
-          onMyTemplatesPress={() => handleMyTemplatesPress(() => setShowEmptyStateModal(true))}
+          onMyTemplatesPress={() =>
+            handleMyTemplatesPress(() => setShowEmptyStateModal(true))
+          }
           selectedTemplate={selectedTemplate}
         />
       </ScrollView>
@@ -559,4 +561,3 @@ const styles = StyleSheet.create({
 });
 
 export default AddAssignmentScreen;
-

@@ -1,6 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { debounce } from '@/utils/debounce';
-import { saveDraft, getDraft, clearDraft, DraftType } from '@/utils/draftStorage';
+import {
+  saveDraft,
+  getDraft,
+  clearDraft,
+  DraftType,
+} from '@/utils/draftStorage';
 import { Course } from '@/types';
 
 export interface TaskFormData {
@@ -35,13 +40,13 @@ export interface UseTaskFormReturn {
   isValid: boolean;
   isSaving: boolean;
   errors: Record<string, string>;
-  
+
   // Form actions
   updateField: (field: string, value: any) => void;
   updateFields: (fields: Partial<TaskFormData>) => void;
   handleSave: () => Promise<void>;
   resetForm: () => void;
-  
+
   // Draft management
   saveDraft: () => void;
   loadDraft: () => void;
@@ -54,9 +59,7 @@ const defaultFormData: TaskFormData = {
   reminders: [],
 };
 
-export const useTaskForm = (
-  options: UseTaskFormOptions
-): UseTaskFormReturn => {
+export const useTaskForm = (options: UseTaskFormOptions): UseTaskFormReturn => {
   const {
     taskType,
     initialData,
@@ -89,17 +92,17 @@ export const useTaskForm = (
   const defaultValidate = useCallback((data: TaskFormData): boolean => {
     if (!data.selectedCourse) return false;
     if (!data.title || data.title.trim().length === 0) return false;
-    
+
     // For range mode (lectures)
     if (data.startTime && data.endTime) {
       if (data.startTime >= data.endTime) return false;
     }
-    
+
     // For single mode (assignments)
     if (data.date) {
       if (data.date <= new Date()) return false;
     }
-    
+
     return true;
   }, []);
 
@@ -108,28 +111,31 @@ export const useTaskForm = (
       const validator = validate || defaultValidate;
       return validator(data);
     },
-    [validate, defaultValidate]
+    [validate, defaultValidate],
   );
 
   const isValid = validateForm(formData);
 
   // Update single field
-  const updateField = useCallback((field: string, value: any) => {
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Clear error for this field when updated
-      if (errors[field]) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[field];
-          return newErrors;
-        });
-      }
-      
-      return updated;
-    });
-  }, [errors]);
+  const updateField = useCallback(
+    (field: string, value: any) => {
+      setFormData(prev => {
+        const updated = { ...prev, [field]: value };
+
+        // Clear error for this field when updated
+        if (errors[field]) {
+          setErrors(prev => {
+            const newErrors = { ...prev };
+            delete newErrors[field];
+            return newErrors;
+          });
+        }
+
+        return updated;
+      });
+    },
+    [errors],
+  );
 
   // Update multiple fields at once
   const updateFields = useCallback((fields: Partial<TaskFormData>) => {
@@ -187,15 +193,9 @@ export const useTaskForm = (
         ...prev,
         title: draft.title || prev.title,
         selectedCourse: draft.course || prev.selectedCourse,
-        date: draft.dateTime
-          ? new Date(draft.dateTime)
-          : prev.date,
-        startTime: draft.dateTime
-          ? new Date(draft.dateTime)
-          : prev.startTime,
-        endTime: draft.endTime
-          ? new Date(draft.endTime)
-          : prev.endTime,
+        date: draft.dateTime ? new Date(draft.dateTime) : prev.date,
+        startTime: draft.dateTime ? new Date(draft.dateTime) : prev.startTime,
+        endTime: draft.endTime ? new Date(draft.endTime) : prev.endTime,
         recurrence: draft.recurrence || prev.recurrence,
         reminders: draft.reminders || prev.reminders,
         description: draft.description || prev.description,
@@ -255,4 +255,3 @@ export const useTaskForm = (
     clearDraft: clearDraftFromStorage,
   };
 };
-

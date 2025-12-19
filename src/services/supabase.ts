@@ -141,7 +141,10 @@ export const authService = {
       const response = await Promise.race([apiPromise, timeoutPromise]);
 
       if (response.error || !response.data) {
-        throw new Error(response.error || 'No data in API response');
+        const errorMsg = response.error || 'No data in API response';
+        const httpStatus = (response as any)?.status || (response as any)?.statusCode;
+        const statusInfo = httpStatus ? ` (HTTP ${httpStatus})` : '';
+        throw new Error(`${errorMsg}${statusInfo}`);
       }
 
       // Map API response to User type
@@ -186,10 +189,17 @@ export const authService = {
       return userProfile;
     } catch (apiError) {
       // FALLBACK: API failed or timed out, use direct Supabase query
-      console.warn(
-        '⚠️ [supabaseAuthService] API getUserProfile failed, using direct Supabase fallback:',
-        apiError instanceof Error ? apiError.message : String(apiError),
-      );
+      const errorMessage = apiError instanceof Error ? apiError.message : String(apiError);
+      const isTimeout = errorMessage.includes('timeout') || errorMessage.includes('Timeout');
+      const errorType = isTimeout ? 'timeout' : 'API error';
+      
+      // Only log in development to reduce production noise
+      if (__DEV__) {
+        console.warn(
+          `⚠️ [supabaseAuthService] API getUserProfile ${errorType}, using direct Supabase fallback:`,
+          errorMessage,
+        );
+      }
 
       try {
         // Direct Supabase query as fallback
@@ -200,10 +210,14 @@ export const authService = {
           .single();
 
         if (error) {
-          console.error(
-            '❌ [supabaseAuthService] Direct Supabase query failed:',
-            error,
-          );
+          // Only log errors in development to reduce production noise
+          if (__DEV__) {
+            console.error(
+              '❌ [supabaseAuthService] Direct Supabase query failed:',
+              error.code || 'Unknown error',
+              error.message || '',
+            );
+          }
 
           // Check if it's an RLS policy error or permission issue
           if (
@@ -213,16 +227,20 @@ export const authService = {
             error.message?.includes('RLS') ||
             error.code === '42501'
           ) {
-            console.warn(
-              '⚠️ [supabaseAuthService] RLS policy may be blocking direct query - user profile may not exist yet or RLS is restricting access',
-            );
+            if (__DEV__) {
+              console.warn(
+                '⚠️ [supabaseAuthService] RLS policy may be blocking direct query - user profile may not exist yet or RLS is restricting access',
+              );
+            }
           }
 
           // Check if user doesn't exist (common after signup before trigger runs)
           if (error.code === 'PGRST116' || error.message?.includes('No rows')) {
-            console.warn(
-              '⚠️ [supabaseAuthService] User profile not found in database - may need to wait for database trigger',
-            );
+            if (__DEV__) {
+              console.warn(
+                '⚠️ [supabaseAuthService] User profile not found in database - may need to wait for database trigger',
+              );
+            }
           }
 
           return null;
@@ -270,15 +288,20 @@ export const authService = {
           },
         };
 
-        console.log(
-          '✅ [supabaseAuthService] Fallback: User profile fetched via direct Supabase',
-        );
+        if (__DEV__) {
+          console.log(
+            '✅ [supabaseAuthService] Fallback: User profile fetched via direct Supabase',
+          );
+        }
         return userProfile;
       } catch (fallbackError) {
-        console.error(
-          '❌ [supabaseAuthService] Both API and fallback failed:',
-          fallbackError,
-        );
+        // Only log in development to reduce production noise
+        if (__DEV__) {
+          console.error(
+            '❌ [supabaseAuthService] Both API and fallback failed:',
+            fallbackError instanceof Error ? fallbackError.message : String(fallbackError),
+          );
+        }
         return null;
       }
     }

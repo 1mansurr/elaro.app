@@ -88,7 +88,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   } = useTaskTemplate({
     taskType,
     courses,
-    onTemplateDataLoad: (templateData) => {
+    onTemplateDataLoad: templateData => {
       if (templateData.title) {
         setTitle(templateData.title);
       }
@@ -215,7 +215,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             'study_session',
           );
         }
-        Alert.alert('Task Saved!', 'Your task is almost saved! Sign up to complete it.');
+        Alert.alert(
+          'Task Saved!',
+          'Your task is almost saved! Sign up to complete it.',
+        );
         navigation.navigate('Auth', { mode: 'signup' });
       } catch (error) {
         console.error('Error saving pending task:', error);
@@ -306,14 +309,21 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             has_spaced_repetition: false,
             reminders: [15],
           };
-          await api.mutations.studySessions.create(taskData, isOnline, user!.id);
+          await api.mutations.studySessions.create(
+            taskData,
+            isOnline,
+            user!.id,
+          );
           break;
       }
 
       // Save as template if enabled
       if (saveAsTemplate && canSaveAsTemplate(taskData, taskType)) {
         try {
-          await handleSaveAsTemplate(taskData, generateTemplateName(title.trim()));
+          await handleSaveAsTemplate(
+            taskData,
+            generateTemplateName(title.trim()),
+          );
         } catch (templateError) {
           console.error('Error saving template:', templateError);
         }
@@ -325,7 +335,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
 
       // Invalidate queries
-      const { invalidateTaskQueries } = await import('@/utils/queryInvalidation');
+      const { invalidateTaskQueries } = await import(
+        '@/utils/queryInvalidation'
+      );
       await invalidateTaskQueries(queryClient);
 
       onClose();
@@ -557,4 +569,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

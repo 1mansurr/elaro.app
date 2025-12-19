@@ -18,10 +18,7 @@ export const LectureVenueField: React.FC<LectureVenueFieldProps> = ({
   return (
     <View style={styles.field}>
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         Venue
       </Text>
       <View style={styles.venueInputContainer}>
@@ -80,4 +77,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
   },
 });
-

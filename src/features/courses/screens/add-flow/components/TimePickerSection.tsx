@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
 import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
@@ -47,13 +53,10 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
     <View style={[styles.timeSection, { backgroundColor: '#f8fafc' }]}>
       <View style={styles.timeRow}>
         <View style={styles.timeRowLeft}>
-          <View
-            style={[styles.iconContainer, { backgroundColor: '#dbeafe' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#dbeafe' }]}>
             <Ionicons name="time-outline" size={20} color="#2563eb" />
           </View>
-          <Text style={[styles.cardLabel, { color: theme.text }]}>
-            Starts
-          </Text>
+          <Text style={[styles.cardLabel, { color: theme.text }]}>Starts</Text>
         </View>
         <TouchableOpacity onPress={() => onToggle('start')}>
           <Text style={[styles.timeText, { color: theme.text }]}>
@@ -77,8 +80,7 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
 
       <View style={styles.timeRow}>
         <View style={styles.timeRowLeft}>
-          <View
-            style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#f3e8ff' }]}>
             <Ionicons name="stopwatch-outline" size={20} color="#9333ea" />
           </View>
           <Text style={[styles.cardLabel, { color: theme.text }]}>Ends</Text>
@@ -165,4 +167,3 @@ const styles = StyleSheet.create({
     height: Platform.OS === 'ios' ? 200 : undefined,
   },
 });
-

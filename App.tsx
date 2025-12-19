@@ -98,14 +98,16 @@ if (__DEV__) {
         if (
           errorName === 'SyntaxError' &&
           (errorMessage.includes('undefined') ||
-            errorMessage.includes('not valid JSON'))
+            errorMessage.includes('not valid JSON') ||
+            errorMessage.includes('"undefined"'))
         ) {
           // Check if stack trace contains Metro symbolication references
           if (
             errorStack.includes('_symbolicate') ||
             errorStack.includes('metro/src/Server.js') ||
             errorStack.includes('Server._processRequest') ||
-            errorStack.includes('Server._symbolicate')
+            errorStack.includes('Server._symbolicate') ||
+            errorStack.includes('metro')
           ) {
             return true;
           }
@@ -131,17 +133,25 @@ if (__DEV__) {
       .join(' ');
 
     // More aggressive pattern matching for Metro errors
+    // Match various forms of the error message
+    const hasSyntaxError = allArgsAsString.includes('SyntaxError');
+    const hasUndefinedJson =
+      allArgsAsString.includes('undefined') ||
+      allArgsAsString.includes('not valid JSON') ||
+      allArgsAsString.includes('"undefined"');
+    const hasMetroReference =
+      allArgsAsString.includes('_symbolicate') ||
+      allArgsAsString.includes('metro/src/Server.js') ||
+      allArgsAsString.includes('Server._processRequest') ||
+      allArgsAsString.includes('Server._symbolicate') ||
+      allArgsAsString.includes('metro') ||
+      allArgsAsString.includes('JSON.parse');
+
     return (
-      (allArgsAsString.includes('SyntaxError') &&
-        (allArgsAsString.includes('undefined') ||
-          allArgsAsString.includes('not valid JSON')) &&
-        (allArgsAsString.includes('_symbolicate') ||
-          allArgsAsString.includes('metro/src/Server.js') ||
-          allArgsAsString.includes('Server._processRequest') ||
-          allArgsAsString.includes('Server._symbolicate'))) ||
+      (hasSyntaxError && hasUndefinedJson && hasMetroReference) ||
       (allArgsAsString.includes('JSON.parse') &&
-        allArgsAsString.includes('undefined') &&
-        allArgsAsString.includes('metro'))
+        hasUndefinedJson &&
+        (allArgsAsString.includes('metro') || allArgsAsString.includes('Server')))
     );
   };
 

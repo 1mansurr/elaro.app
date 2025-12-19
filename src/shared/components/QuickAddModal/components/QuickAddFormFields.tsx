@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -33,8 +39,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
 }) => {
   const { theme } = useTheme();
 
-  const titleLabel =
-    taskType === 'study_session' ? 'Topic *' : 'Title *';
+  const titleLabel = taskType === 'study_session' ? 'Topic *' : 'Title *';
   const placeholder =
     taskType === 'assignment'
       ? 'e.g., Math Homework'
@@ -48,10 +53,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
     <View style={styles.container}>
       {/* Title Input */}
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         {titleLabel}
       </Text>
       <TextInput
@@ -80,10 +82,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
 
       {/* Course Selector */}
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         Course *
       </Text>
       <TouchableOpacity
@@ -123,10 +122,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
 
       {/* Date & Time */}
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         {dateTimeLabel}
       </Text>
       <View style={styles.dateTimeRow}>
@@ -141,11 +137,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
             },
           ]}
           onPress={onOpenDatePicker}>
-          <Ionicons
-            name="calendar-outline"
-            size={18}
-            color={COLORS.primary}
-          />
+          <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
           <Text
             style={[
               styles.dateTimeButtonText,
@@ -165,11 +157,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
             },
           ]}
           onPress={onOpenTimePicker}>
-          <Ionicons
-            name="time-outline"
-            size={18}
-            color={COLORS.primary}
-          />
+          <Ionicons name="time-outline" size={18} color={COLORS.primary} />
           <Text
             style={[
               styles.dateTimeButtonText,
@@ -238,4 +226,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

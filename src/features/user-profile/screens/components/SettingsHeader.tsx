@@ -9,9 +9,7 @@ interface SettingsHeaderProps {
   onBack: () => void;
 }
 
-export const SettingsHeader: React.FC<SettingsHeaderProps> = ({
-  onBack,
-}) => {
+export const SettingsHeader: React.FC<SettingsHeaderProps> = ({ onBack }) => {
   const { theme } = useTheme();
 
   return (
@@ -75,4 +73,3 @@ const styles = StyleSheet.create({
     width: 40,
   },
 });
-

@@ -93,4 +93,3 @@ const styles = StyleSheet.create({
     paddingLeft: SPACING.xs,
   },
 });
-

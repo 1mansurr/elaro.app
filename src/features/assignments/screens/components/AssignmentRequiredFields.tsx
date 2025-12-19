@@ -24,7 +24,9 @@ interface AssignmentRequiredFieldsProps {
   onTimeChange: (time: Date) => void;
 }
 
-export const AssignmentRequiredFields: React.FC<AssignmentRequiredFieldsProps> = ({
+export const AssignmentRequiredFields: React.FC<
+  AssignmentRequiredFieldsProps
+> = ({
   selectedCourse,
   onCourseSelect,
   isLoadingCourses,
@@ -86,4 +88,3 @@ const styles = StyleSheet.create({
     paddingLeft: SPACING.xs,
   },
 });
-

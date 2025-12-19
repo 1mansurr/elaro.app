@@ -49,7 +49,9 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
       onPress={onPress}
       accessibilityLabel={`${task.name || task.title}, ${task.type}, ${taskTime}`}
       accessibilityHint={
-        isLocked ? 'This task is locked. Upgrade to access.' : 'Opens task details'
+        isLocked
+          ? 'This task is locked. Upgrade to access.'
+          : 'Opens task details'
       }
       accessibilityRole="button"
       accessibilityState={{ disabled: isLocked }}>
@@ -171,4 +173,3 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
 });
-

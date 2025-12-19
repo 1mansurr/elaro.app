@@ -11,10 +11,9 @@ interface QuickAddTaskTypeSelectorProps {
   onTaskTypeChange: (type: TaskType) => void;
 }
 
-export const QuickAddTaskTypeSelector: React.FC<QuickAddTaskTypeSelectorProps> = ({
-  taskType,
-  onTaskTypeChange,
-}) => {
+export const QuickAddTaskTypeSelector: React.FC<
+  QuickAddTaskTypeSelectorProps
+> = ({ taskType, onTaskTypeChange }) => {
   const { theme } = useTheme();
 
   const taskTypes: Array<{ type: TaskType; icon: string; label: string }> = [
@@ -50,7 +49,9 @@ export const QuickAddTaskTypeSelector: React.FC<QuickAddTaskTypeSelectorProps> =
             <Ionicons
               name={icon as any}
               size={20}
-              color={isActive ? COLORS.primary : theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={
+                isActive ? COLORS.primary : theme.isDark ? '#9CA3AF' : '#6B7280'
+              }
             />
             <Text
               style={[
@@ -101,4 +102,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold,
   },
 });
-

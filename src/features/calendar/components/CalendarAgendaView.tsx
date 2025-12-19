@@ -78,7 +78,9 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
                       style={[
                         styles.endTimeText,
                         {
-                          color: theme.isDark ? '#9CA3AF' : COLORS.textSecondary,
+                          color: theme.isDark
+                            ? '#9CA3AF'
+                            : COLORS.textSecondary,
                         },
                       ]}>
                       {endTimeStr}
@@ -88,9 +90,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
                 <CalendarTaskCard
                   task={task}
                   onPress={() =>
-                    task.isLocked
-                      ? onLockedTaskPress(task)
-                      : onTaskPress(task)
+                    task.isLocked ? onLockedTaskPress(task) : onTaskPress(task)
                   }
                   onMorePress={() => {
                     if (!task.isLocked) {
@@ -145,4 +145,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
   },
 });
-

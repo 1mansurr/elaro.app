@@ -105,15 +105,12 @@ const AddLectureScreen = () => {
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
 
   // Reminders hook
-  const {
-    reminders,
-    addReminder,
-    removeReminder,
-    setReminders,
-  } = useReminders({
-    maxReminders: 2,
-    initialReminders: [30],
-  });
+  const { reminders, addReminder, removeReminder, setReminders } = useReminders(
+    {
+      maxReminders: 2,
+      initialReminders: [30],
+    },
+  );
 
   // Template hook
   const {
@@ -128,7 +125,7 @@ const AddLectureScreen = () => {
   } = useTaskTemplate({
     taskType: 'lecture',
     courses,
-    onTemplateDataLoad: (templateData) => {
+    onTemplateDataLoad: templateData => {
       if (templateData.lecture_name) {
         setLectureName(templateData.lecture_name);
       }
@@ -398,7 +395,10 @@ const AddLectureScreen = () => {
 
         if (saveAsTemplate && canSaveAsTemplate(taskData, 'lecture')) {
           try {
-            await handleSaveAsTemplate(taskData, generateTemplateName(lectureName.trim()));
+            await handleSaveAsTemplate(
+              taskData,
+              generateTemplateName(lectureName.trim()),
+            );
           } catch (templateError) {
             console.error('Error saving template:', templateError);
           }
@@ -460,7 +460,9 @@ const AddLectureScreen = () => {
       ]}>
       <LectureFormHeader
         onClose={handleClose}
-        onTemplatePress={() => handleMyTemplatesPress(() => setShowEmptyStateModal(true))}
+        onTemplatePress={() =>
+          handleMyTemplatesPress(() => setShowEmptyStateModal(true))
+        }
         hasTemplates={hasTemplates}
       />
 
@@ -519,7 +521,9 @@ const AddLectureScreen = () => {
             'lecture',
           )}
           hasTemplates={hasTemplates}
-          onMyTemplatesPress={() => handleMyTemplatesPress(() => setShowEmptyStateModal(true))}
+          onMyTemplatesPress={() =>
+            handleMyTemplatesPress(() => setShowEmptyStateModal(true))
+          }
           selectedTemplate={selectedTemplate}
         />
       </ScrollView>
@@ -584,4 +588,3 @@ const styles = StyleSheet.create({
 });
 
 export default AddLectureScreen;
-

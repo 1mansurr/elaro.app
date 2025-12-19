@@ -71,7 +71,7 @@ export const PaywallScreen: React.FC = () => {
   // Mock offerings for now
   const offerings = { current: null as any };
 
-  // Benefits data based on your schema
+  // Benefits data based on your schema (Weekly Analytics removed)
   const benefits = [
     {
       icon: 'school-outline',
@@ -90,12 +90,6 @@ export const PaywallScreen: React.FC = () => {
       title: '112 Spaced Repetition Reminders/Month',
       description: 'vs 15 on free plan',
       color: 'COLORS.green500',
-    },
-    {
-      icon: 'analytics-outline',
-      title: 'Weekly Analytics',
-      description: 'Oddity exclusive',
-      color: 'COLORS.purple500',
     },
   ];
 
@@ -284,8 +278,8 @@ export const PaywallScreen: React.FC = () => {
         <ScrollView
           style={[styles.container, { backgroundColor: bgColor }]}
           contentContainerStyle={styles.contentContainer}>
-          {/* Hero Image Card */}
-          <View style={[styles.heroCard, { backgroundColor: surfaceColor }]}>
+          {/* Hero Image (no card wrapper) */}
+          <View style={styles.heroImageContainer}>
             <Image
               source={require('../../../../assets/focus.png')}
               style={styles.heroImage}
@@ -333,20 +327,34 @@ export const PaywallScreen: React.FC = () => {
             </View>
           </View>
 
-          {/* CTA Card */}
-          <View style={[styles.ctaCard, { backgroundColor: surfaceColor }]}>
-            <PrimaryButton
-              title="Become an Oddity for $1.99/month"
-              onPress={handlePurchase}
-              loading={isLoading}
-              style={styles.purchaseButton}
-            />
-
-            <Text style={[styles.ctaSubtext, { color: theme.textSecondary }]}>
+          {/* Price Card (text only, no button) */}
+          <View style={[styles.priceCard, { backgroundColor: surfaceColor }]}>
+            <Text style={[styles.priceText, { color: theme.text }]}>
+              Become An Oddity for $1.99/month
+            </Text>
+            <Text style={[styles.priceSubtext, { color: theme.textSecondary }]}>
               Cancel anytime • No commitment required
             </Text>
           </View>
         </ScrollView>
+
+        {/* Footer with Proceed Button */}
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: bgColor,
+              paddingBottom: insets.bottom,
+              borderTopColor: isDark ? '#1C252E' : '#E5E7EB',
+            },
+          ]}>
+          <PrimaryButton
+            title="Proceed"
+            onPress={handlePurchase}
+            loading={isLoading}
+            style={styles.proceedButton}
+          />
+        </View>
       </Animated.View>
     </PanGestureHandler>
   );
@@ -361,14 +369,11 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
+    paddingBottom: SPACING.md,
   },
-  heroCard: {
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.lg,
-    marginBottom: SPACING.md,
+  heroImageContainer: {
     alignItems: 'center',
-    ...SHADOWS.md,
+    marginBottom: SPACING.md,
   },
   heroImage: {
     width: 200,
@@ -377,7 +382,7 @@ const styles = StyleSheet.create({
   benefitsCard: {
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.lg,
     ...SHADOWS.md,
   },
   benefitsTitle: {
@@ -417,19 +422,31 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
     lineHeight: 18,
   },
-  ctaCard: {
+  priceCard: {
     borderRadius: BORDER_RADIUS.lg,
     padding: SPACING.lg,
     alignItems: 'center',
+    marginBottom: 16,
     ...SHADOWS.md,
   },
-  purchaseButton: {
-    width: '100%',
-    marginBottom: SPACING.md,
+  priceText: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.bold,
+    textAlign: 'center',
+    marginBottom: SPACING.xs,
   },
-  ctaSubtext: {
+  priceSubtext: {
     fontSize: FONT_SIZES.sm,
     textAlign: 'center',
+  },
+  footer: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: 16,
+    borderTopWidth: 1,
+  },
+  proceedButton: {
+    width: '100%',
+    borderRadius: 30,
   },
 });
 

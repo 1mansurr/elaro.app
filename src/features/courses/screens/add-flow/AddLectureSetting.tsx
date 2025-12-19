@@ -208,14 +208,14 @@ const AddLectureSettingScreen = () => {
             startTime={startTime}
             endTime={endTime}
             activePicker={activePicker}
-            onToggle={(picker) => handlePickerToggle(picker)}
+            onToggle={picker => handlePickerToggle(picker)}
             onTimeChange={onTimeChange}
           />
         </View>
 
         <VenueCard
           venue={venue}
-          onVenueChange={(text) => {
+          onVenueChange={text => {
             setVenue(text);
             setActivePicker(null);
           }}
@@ -336,4 +336,3 @@ const styles = StyleSheet.create({
 });
 
 export default AddLectureSettingScreen;
-

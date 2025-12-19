@@ -112,4 +112,3 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.lg,
   },
 });
-

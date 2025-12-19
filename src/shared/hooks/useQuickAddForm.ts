@@ -59,7 +59,7 @@ interface UseQuickAddFormReturn {
 }
 
 export const useQuickAddForm = (
-  options: UseQuickAddFormOptions
+  options: UseQuickAddFormOptions,
 ): UseQuickAddFormReturn => {
   const { isVisible, onClose } = options;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -93,7 +93,7 @@ export const useQuickAddForm = (
   } = useTaskTemplate({
     taskType,
     courses,
-    onTemplateDataLoad: (templateData) => {
+    onTemplateDataLoad: templateData => {
       if (templateData.title) {
         setTitle(templateData.title);
       }
@@ -235,4 +235,3 @@ export const useQuickAddForm = (
     isFormValid,
   };
 };
-

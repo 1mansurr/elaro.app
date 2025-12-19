@@ -65,7 +65,8 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           <ScrollView style={styles.reminderOptionsList}>
             {REMINDER_OPTIONS.map(option => {
               const isSelected = selectedReminders.includes(option.value);
-              const isDisabled = !isSelected && selectedReminders.length >= maxReminders;
+              const isDisabled =
+                !isSelected && selectedReminders.length >= maxReminders;
               return (
                 <TouchableOpacity
                   key={option.value}
@@ -160,4 +161,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

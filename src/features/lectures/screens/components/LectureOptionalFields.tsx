@@ -1,8 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import {
-  TaskRemindersSection,
-} from '@/shared/components/task-forms';
+import { TaskRemindersSection } from '@/shared/components/task-forms';
 import { LectureVenueField } from './LectureVenueField';
 import { LectureRecurrenceSection } from './LectureRecurrenceSection';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -70,4 +68,3 @@ const styles = StyleSheet.create({
     paddingLeft: SPACING.xs,
   },
 });
-

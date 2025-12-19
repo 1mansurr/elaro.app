@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { CardBasedDateTimePicker } from '@/shared/components';
+import { CardBasedDateTimePicker } from '@/shared/components/CardBasedDateTimePicker';
 import { SPACING } from '@/constants/theme';
 
 interface TaskDateTimeSectionProps {
@@ -8,13 +8,13 @@ interface TaskDateTimeSectionProps {
   date?: Date;
   onDateChange?: (date: Date) => void;
   onTimeChange?: (time: Date) => void;
-  
+
   // For range (lectures)
   startTime?: Date;
   endTime?: Date;
   onStartTimeChange?: (time: Date) => void;
   onEndTimeChange?: (time: Date) => void;
-  
+
   mode: 'single' | 'range';
   label?: string;
 }
@@ -31,7 +31,13 @@ export const TaskDateTimeSection: React.FC<TaskDateTimeSectionProps> = ({
   label,
 }) => {
   if (mode === 'range') {
-    if (!startTime || !endTime || !onStartTimeChange || !onEndTimeChange || !onDateChange) {
+    if (
+      !startTime ||
+      !endTime ||
+      !onStartTimeChange ||
+      !onEndTimeChange ||
+      !onDateChange
+    ) {
       return null;
     }
 
@@ -76,4 +82,3 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
 });
-

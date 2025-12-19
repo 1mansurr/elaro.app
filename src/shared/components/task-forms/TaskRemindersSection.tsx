@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ReminderChip } from '@/shared/components';
+import { ReminderChip } from '@/shared/components/ReminderChip';
 import { formatReminderLabel } from '@/utils/reminderUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -139,4 +139,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

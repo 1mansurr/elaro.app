@@ -34,8 +34,7 @@ export const RecurrenceCard: React.FC<RecurrenceCardProps> = ({
       ]}>
       <View style={styles.repeatHeader}>
         <View style={styles.repeatHeaderLeft}>
-          <View
-            style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
             <Ionicons name="repeat-outline" size={20} color="#16a34a" />
           </View>
           <Text style={[styles.cardLabel, { color: theme.text }]}>Repeat</Text>
@@ -156,4 +155,3 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
-

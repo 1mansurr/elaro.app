@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Input } from '@/shared/components';
+import { Input } from '@/shared/components/Input';
 import { useTheme } from '@/contexts/ThemeContext';
 import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
@@ -74,4 +74,3 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.medium,
   },
 });
-

@@ -23,10 +23,7 @@ export const QuickAddModalHeader: React.FC<QuickAddModalHeaderProps> = ({
         },
       ]}>
       <Text
-        style={[
-          styles.title,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
-        ]}>
+        style={[styles.title, { color: theme.isDark ? '#FFFFFF' : '#111418' }]}>
         Quick Add
       </Text>
       <TouchableOpacity
@@ -60,4 +57,3 @@ const styles = StyleSheet.create({
     padding: SPACING.xs,
   },
 });
-

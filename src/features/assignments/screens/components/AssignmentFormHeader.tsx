@@ -21,4 +21,3 @@ export const AssignmentFormHeader: React.FC<AssignmentFormHeaderProps> = ({
     />
   );
 };
-

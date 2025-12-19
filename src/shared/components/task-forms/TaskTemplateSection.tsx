@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { TemplateCard } from '@/shared/components';
+import { TemplateCard } from '@/shared/components/TemplateCard';
 import { SPACING } from '@/constants/theme';
 
 interface TaskTemplateSectionProps {
@@ -41,4 +41,3 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.lg,
   },
 });
-

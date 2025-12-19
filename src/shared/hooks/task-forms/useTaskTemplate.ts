@@ -22,7 +22,7 @@ export interface UseTaskTemplateReturn {
 }
 
 export const useTaskTemplate = (
-  options: UseTaskTemplateOptions
+  options: UseTaskTemplateOptions,
 ): UseTaskTemplateReturn => {
   const { taskType, courses, onTemplateDataLoad } = options;
   const { createTemplate, hasTemplates } = useTemplateManagement();
@@ -49,7 +49,7 @@ export const useTaskTemplate = (
 
   const handleSaveAsTemplate = async (
     formData: any,
-    templateName?: string
+    templateName?: string,
   ): Promise<void> => {
     if (!templateName) {
       throw new Error('Template name is required');
@@ -82,4 +82,3 @@ export const useTaskTemplate = (
     handleMyTemplatesPress,
   };
 };
-

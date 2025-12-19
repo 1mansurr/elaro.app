@@ -18,9 +18,7 @@ import { BlurView } from 'expo-blur';
 import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 import { supabase } from '@/services/supabase';
-import {
-  ExpandableDetails,
-} from '@/shared/components';
+import { ExpandableDetails } from '@/shared/components';
 import { AnalyticsToggle } from '@/shared/components/AnalyticsToggle';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/utils/showToast';

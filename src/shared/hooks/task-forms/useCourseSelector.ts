@@ -44,7 +44,8 @@ export const useCourseSelector = (): UseCourseSelectorReturn => {
 
       setCourses(formattedCourses);
     } catch (err) {
-      const error = err instanceof Error ? err : new Error('Failed to fetch courses');
+      const error =
+        err instanceof Error ? err : new Error('Failed to fetch courses');
       setError(error);
       console.error('Error fetching courses:', error);
     } finally {
@@ -63,4 +64,3 @@ export const useCourseSelector = (): UseCourseSelectorReturn => {
     refetch: fetchCourses,
   };
 };
-

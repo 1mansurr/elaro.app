@@ -8,7 +8,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Course } from '@/types';
-import { Button } from '@/shared/components';
+import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -194,4 +194,3 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.sm,
   },
 });
-

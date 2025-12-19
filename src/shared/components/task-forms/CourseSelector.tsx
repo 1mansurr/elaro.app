@@ -1,5 +1,11 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Course } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -29,10 +35,7 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
   return (
     <View style={styles.field}>
       <Text
-        style={[
-          styles.label,
-          { color: theme.isDark ? '#FFFFFF' : '#374151' },
-        ]}>
+        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
         {label} {required && '*'}
       </Text>
       <TouchableOpacity
@@ -108,4 +111,3 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 });
-

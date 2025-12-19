@@ -27,8 +27,7 @@ export const VenueCard: React.FC<VenueCardProps> = ({
       ]}>
       <View style={styles.venueSection}>
         <View style={styles.venueSectionHeader}>
-          <View
-            style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
+          <View style={[styles.iconContainer, { backgroundColor: '#dcfce7' }]}>
             <Ionicons name="location-outline" size={20} color="#16a34a" />
           </View>
           <Text style={[styles.cardLabel, { color: theme.text }]}>Venue</Text>
@@ -96,4 +95,3 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
-
