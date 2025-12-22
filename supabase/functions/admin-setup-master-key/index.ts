@@ -14,7 +14,6 @@ import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   AppError,
   ERROR_CODES,
-  ERROR_MESSAGES,
   ERROR_STATUS_CODES,
 } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -28,7 +27,7 @@ const SetupMasterKeySchema = z.object({
 });
 
 async function handleSetupMasterKey(req: AuthenticatedRequest) {
-  const { user, supabaseClient, body } = req;
+  const { user, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 

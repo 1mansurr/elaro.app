@@ -103,7 +103,7 @@ function isPIIField(fieldName: string): boolean {
 /**
  * Redact a single value based on type and options
  */
-function redactValue(value: any, options: RedactionOptions): any {
+function redactValue(value: unknown, options: RedactionOptions): unknown {
   if (value === null || value === undefined) {
     return value;
   }
@@ -146,7 +146,7 @@ function redactValue(value: any, options: RedactionOptions): any {
 /**
  * Redact PII from an object recursively
  */
-function redactObject(obj: any, options: RedactionOptions, path = ''): any {
+function redactObject(obj: unknown, options: RedactionOptions, path = ''): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }
@@ -159,8 +159,8 @@ function redactObject(obj: any, options: RedactionOptions, path = ''): any {
   }
 
   // Handle objects
-  if (typeof obj === 'object') {
-    const redacted: any = {};
+  if (typeof obj === 'object' && obj !== null) {
+    const redacted: Record<string, unknown> = {};
 
     for (const [key, value] of Object.entries(obj)) {
       const currentPath = path ? `${path}.${key}` : key;

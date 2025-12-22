@@ -16,11 +16,11 @@ import {
   type Job,
 } from '../_shared/job-queue.ts';
 import { successResponse } from '../_shared/response.ts';
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import {
   AppError,
   ERROR_CODES,
   ERROR_STATUS_CODES,
-  ERROR_MESSAGES,
 } from '../_shared/function-handler.ts';
 
 /**
@@ -29,7 +29,7 @@ import {
  */
 const jobProcessors: Record<
   string,
-  (job: Job, supabaseAdmin: any) => Promise<void>
+  (job: Job, supabaseAdmin: SupabaseClient) => Promise<void>
 > = {
   // Add your job handlers here
   // Example:
@@ -44,7 +44,7 @@ const jobProcessors: Record<
  */
 export function registerJobProcessor(
   jobName: string,
-  processor: (job: Job, supabaseAdmin: any) => Promise<void>,
+  processor: (job: Job, supabaseAdmin: SupabaseClient) => Promise<void>,
 ): void {
   jobProcessors[jobName] = processor;
 }
@@ -52,7 +52,7 @@ export function registerJobProcessor(
 /**
  * Process a single job
  */
-async function processJob(job: Job, supabaseAdmin: any): Promise<void> {
+async function processJob(job: Job, supabaseAdmin: SupabaseClient): Promise<void> {
   const processor = jobProcessors[job.job_name];
 
   if (!processor) {

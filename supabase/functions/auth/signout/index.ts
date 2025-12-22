@@ -22,7 +22,7 @@ serve(async (req: Request) => {
       throw new AppError('Authorization header required', 401, 'UNAUTHORIZED');
     }
 
-    const token = authHeader.replace('Bearer ', '');
+    // const token = authHeader.replace('Bearer ', ''); // Unused
 
     // Create Supabase client with user's token
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';

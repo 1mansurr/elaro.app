@@ -12,7 +12,7 @@
  * @param errorMessage - Custom error message for timeout
  * @returns Promise that resolves with the result or rejects with timeout error
  */
-export async function withTimeout<T>(
+export function withTimeout<T>(
   promise: Promise<T>,
   timeoutMs: number,
   errorMessage: string = 'Operation timed out',

@@ -34,7 +34,7 @@ serve(async (req: Request) => {
     );
 
     // Send password reset email
-    const { data, error } = await supabaseAdmin.auth.resetPasswordForEmail(
+    const { error } = await supabaseAdmin.auth.resetPasswordForEmail(
       validatedData.email,
       {
         redirectTo: validatedData.redirectTo || 'elaro://reset-password',

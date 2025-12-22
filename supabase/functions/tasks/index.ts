@@ -27,7 +27,6 @@ import { z } from 'zod';
 import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
-  EventUtils,
 } from '../_shared/event-driven-architecture.ts';
 
 // Schemas for validation
@@ -77,10 +76,10 @@ const BatchOperationSchema = z.object({
 
 // Task service class
 class TaskService {
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: SupabaseClient) {}
 
   // Assignment operations
-  async createAssignment(data: any, userId: string) {
+  async createAssignment(data: Record<string, unknown>, userId: string) {
     const { data: assignment, error } = await this.supabaseClient
       .from('assignments')
       .insert({
@@ -107,7 +106,7 @@ class TaskService {
     return assignment;
   }
 
-  async updateAssignment(id: string, data: any, userId: string) {
+  async updateAssignment(id: string, data: Record<string, unknown>, userId: string) {
     const { data: assignment, error } = await this.supabaseClient
       .from('assignments')
       .update({
@@ -126,7 +125,7 @@ class TaskService {
 
   async deleteAssignment(id: string, userId: string) {
     // Use centralized soft delete function
-    const { data, error } = await this.supabaseClient.rpc(
+    const { error } = await this.supabaseClient.rpc(
       'soft_delete_record',
       {
         table_name: 'assignments',
@@ -141,7 +140,7 @@ class TaskService {
   }
 
   // Lecture operations
-  async createLecture(data: any, userId: string) {
+  async createLecture(data: Record<string, unknown>, userId: string) {
     const { data: lecture, error } = await this.supabaseClient
       .from('lectures')
       .insert({
@@ -167,7 +166,7 @@ class TaskService {
     return lecture;
   }
 
-  async updateLecture(id: string, data: any, userId: string) {
+  async updateLecture(id: string, data: Record<string, unknown>, userId: string) {
     const { data: lecture, error } = await this.supabaseClient
       .from('lectures')
       .update({
@@ -184,7 +183,7 @@ class TaskService {
   }
 
   async deleteLecture(id: string, userId: string) {
-    const { data, error } = await this.supabaseClient.rpc(
+    const { error } = await this.supabaseClient.rpc(
       'soft_delete_record',
       {
         table_name: 'lectures',
@@ -198,7 +197,7 @@ class TaskService {
   }
 
   // Study session operations
-  async createStudySession(data: any, userId: string) {
+  async createStudySession(data: Record<string, unknown>, userId: string) {
     const { data: session, error } = await this.supabaseClient
       .from('study_sessions')
       .insert({
@@ -225,7 +224,7 @@ class TaskService {
     return session;
   }
 
-  async updateStudySession(id: string, data: any, userId: string) {
+  async updateStudySession(id: string, data: Record<string, unknown>, userId: string) {
     const { data: session, error } = await this.supabaseClient
       .from('study_sessions')
       .update({
@@ -243,7 +242,7 @@ class TaskService {
   }
 
   async deleteStudySession(id: string, userId: string) {
-    const { data, error } = await this.supabaseClient.rpc(
+    const { error } = await this.supabaseClient.rpc(
       'soft_delete_record',
       {
         table_name: 'study_sessions',
@@ -258,7 +257,7 @@ class TaskService {
   }
 
   // Batch operations
-  async batchOperations(operations: any[], userId: string) {
+  async batchOperations(operations: Record<string, unknown>[], userId: string) {
     const results = [];
 
     for (const operation of operations) {
@@ -320,7 +319,7 @@ class TaskService {
 }
 
 // Main handler function
-async function handleTasksRequest({ user, supabaseClient, body, url }: any) {
+async function handleTasksRequest({ user, supabaseClient, body, url }: AuthenticatedRequest & { url: string }) {
   const taskService = new TaskService(supabaseClient);
   const path = new URL(url).pathname;
   const method = new URL(url).searchParams.get('method') || 'GET';

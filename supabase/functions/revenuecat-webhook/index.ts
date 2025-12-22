@@ -107,7 +107,7 @@ async function handleRevenueCatWebhook(
     switch (eventType) {
       case 'INITIAL_PURCHASE':
       case 'RENEWAL':
-      case 'PRODUCT_CHANGE':
+      case 'PRODUCT_CHANGE': {
         await logger.info(
           'Processing subscription event',
           {
@@ -156,10 +156,11 @@ async function handleRevenueCatWebhook(
           subscriptionTier,
           expirationDate: expirationDate?.toISOString(),
         };
+      }
 
       case 'CANCELLATION':
       case 'EXPIRATION':
-      case 'BILLING_ISSUE':
+      case 'BILLING_ISSUE': {
         await logger.info(
           'Processing subscription cancellation/expiration',
           {
@@ -273,6 +274,7 @@ async function handleRevenueCatWebhook(
           status: 'success',
           message: 'Subscription cancelled successfully',
         };
+      }
 
       case 'NON_RENEWING_PURCHASE':
         await logger.info(

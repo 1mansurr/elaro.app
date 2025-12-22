@@ -6,6 +6,7 @@ import {
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { z } from 'zod';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // ============================================================================
 // VALIDATION SCHEMAS
@@ -18,8 +19,8 @@ const BatchOperationSchema = z.object({
         type: z.enum(['assignment', 'lecture', 'study_session', 'course']),
         action: z.enum(['create', 'update', 'delete', 'restore', 'list']),
         table: z.string().min(1).max(50),
-        data: z.record(z.any()).optional(),
-        filters: z.record(z.any()).optional(),
+        data: z.record(z.unknown()).optional(),
+        filters: z.record(z.unknown()).optional(),
         pageParam: z.number().int().min(0).optional(),
         pageSize: z.number().int().min(1).max(100).optional(),
       }),
@@ -183,7 +184,7 @@ serve(
 
 async function processBatchOperations(
   operations: z.infer<typeof BatchOperationSchema>['operations'],
-  supabase: any,
+  supabase: ReturnType<typeof createClient>,
   userId: string,
 ) {
   const results = [];
@@ -192,11 +193,13 @@ async function processBatchOperations(
     try {
       const result = await executeOperation(operation, supabase, userId);
       results.push({ success: true, data: result });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorCode = error instanceof AppError ? error.code : 'OPERATION_ERROR';
       results.push({
         success: false,
-        error: error.message || 'Unknown error',
-        code: error.code || 'OPERATION_ERROR',
+        error: errorMessage,
+        code: errorCode,
       });
     }
   }
@@ -206,16 +209,16 @@ async function processBatchOperations(
 
 async function executeOperation(
   operation: z.infer<typeof BatchOperationSchema>['operations'][0],
-  supabase: any,
+  supabase: ReturnType<typeof createClient>,
   userId: string,
 ) {
-  const { type, table, action, data, filters, pageParam, pageSize } = operation;
+  const { table, action, data, filters, pageParam, pageSize } = operation;
 
   // Ensure user_id is always in filters
   const safeFilters = { ...filters, user_id: userId };
 
   switch (action) {
-    case 'create':
+    case 'create': {
       if (!data)
         throw new AppError(
           'Create operation requires data',
@@ -231,8 +234,9 @@ async function executeOperation(
         .single();
       if (createError) throw handleDbError(createError);
       return created;
+    }
 
-    case 'update':
+    case 'update': {
       if (!data)
         throw new AppError(
           'Update operation requires data',
@@ -248,8 +252,9 @@ async function executeOperation(
         .single();
       if (updateError) throw handleDbError(updateError);
       return updated;
+    }
 
-    case 'delete':
+    case 'delete': {
       let deleteQuery = supabase
         .from(table)
         .update({ deleted_at: new Date().toISOString() });
@@ -261,8 +266,9 @@ async function executeOperation(
         .single();
       if (deleteError) throw handleDbError(deleteError);
       return deleted;
+    }
 
-    case 'restore':
+    case 'restore': {
       let restoreQuery = supabase.from(table).update({ deleted_at: null });
       Object.entries(safeFilters).forEach(([key, value]) => {
         restoreQuery = restoreQuery.eq(key, value);
@@ -272,8 +278,9 @@ async function executeOperation(
         .single();
       if (restoreError) throw handleDbError(restoreError);
       return restored;
+    }
 
-    case 'list':
+    case 'list': {
       const defaultPageSize = pageSize || 50;
       const defaultPageParam = pageParam || 0;
 
@@ -292,6 +299,7 @@ async function executeOperation(
       const { data: listData, error: listError } = await listQuery;
       if (listError) throw handleDbError(listError);
       return listData;
+    }
 
     default:
       throw new AppError(

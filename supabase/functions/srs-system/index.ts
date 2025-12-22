@@ -24,10 +24,11 @@ import {
   handleDbError,
 } from '../api-v2/_handler-utils.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const RecordSRSPerformanceSchema = z.object({
   session_id: z.string().uuid(),
@@ -46,17 +47,17 @@ const ScheduleReviewSchema = z.object({
 // SRS service class
 class SRSService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async recordPerformance(data: any) {
+  async recordPerformance(data: Record<string, unknown>) {
     const {
       session_id,
       reminder_id,
       quality_rating,
       response_time_seconds,
-      schedule_next,
+      schedule_next: _schedule_next,
     } = RecordSRSPerformanceSchema.parse(data);
 
     // 1. Verify the study session belongs to the user
@@ -86,9 +87,9 @@ class SRSService {
       .maybeSingle();
 
     // Calculate parameters from last performance or defaults
-    let currentInterval = lastPerformance?.next_interval_days || 1;
-    let currentEaseFactor = lastPerformance?.ease_factor || 2.5;
-    let repetitionNumber = (lastPerformance?.repetition_number || 0) + 1;
+    const currentInterval = lastPerformance?.next_interval_days || 1;
+    const currentEaseFactor = lastPerformance?.ease_factor || 2.5;
+    const repetitionNumber = (lastPerformance?.repetition_number || 0) + 1;
 
     // Check for cramming
     const { data: crammingData } = await this.supabaseClient.rpc(
@@ -219,8 +220,8 @@ class SRSService {
     return dueReminders || [];
   }
 
-  async scheduleReview(data: any) {
-    const { session_id, next_review_date, interval_days } =
+  async scheduleReview(data: Record<string, unknown>) {
+    const { session_id, next_review_date, interval_days: _interval_days } =
       ScheduleReviewSchema.parse(data);
 
     // Verify session ownership
@@ -305,7 +306,7 @@ class SRSService {
 
   // Removed: calculateNextReview - use calculate_next_srs_interval RPC instead
 
-  private getQualityDistribution(stats: any[]): Record<number, number> {
+  private getQualityDistribution(stats: Array<{ quality_rating?: number }>): Record<number, number> {
     const distribution: Record<number, number> = {
       0: 0,
       1: 0,
@@ -420,7 +421,8 @@ serve(async req => {
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  type HandlerFunction = (req: Request) => Promise<Response>;
+  const handlers: Record<string, HandlerFunction> = {
     'record-performance': wrapOldHandler(
       handleRecordPerformance,
       'srs-record-performance',

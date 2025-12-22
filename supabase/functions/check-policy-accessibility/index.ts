@@ -41,7 +41,6 @@ async function checkUrl(url: string, name: string): Promise<UrlCheckResult> {
     const statusCode = response.status;
 
     if (!accessible) {
-      const error = `HTTP ${statusCode}: ${response.statusText}`;
       await logger.error(
         `Policy URL not accessible: ${name}`,
         {

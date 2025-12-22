@@ -19,9 +19,9 @@ const RATE_LIMIT_DAYS = 7;
 /**
  * Convert export data to CSV format
  */
-function convertToCSV(data: any): string {
-  const flatten = (obj: any, prefix = ''): Record<string, any> => {
-    const result: Record<string, any> = {};
+function convertToCSV(data: Record<string, unknown>): string {
+  const flatten = (obj: unknown, prefix = ''): Record<string, unknown> => {
+    const result: Record<string, unknown> = {};
     for (const key in obj) {
       const newKey = prefix ? `${prefix}.${key}` : key;
       if (
@@ -38,15 +38,15 @@ function convertToCSV(data: any): string {
     return result;
   };
 
-  const allRows: Record<string, any>[] = [];
+  const allRows: Record<string, unknown>[] = [];
 
   // Flatten user data
-  if (data.data.user) {
+  if (data.data && typeof data.data === 'object' && 'user' in data.data) {
     allRows.push({ type: 'user', ...flatten(data.data.user) });
   }
 
   // Flatten arrays
-  const processArray = (arr: any[], type: string) => {
+  const processArray = (arr: unknown[], type: string) => {
     if (Array.isArray(arr)) {
       arr.forEach((item, index) => {
         allRows.push({ type: `${type}[${index}]`, ...flatten(item) });
@@ -244,7 +244,7 @@ serve(async (req: Request) => {
     ]);
 
     // Admin-only data (only actions performed by this admin)
-    let adminActions: any = null;
+    let adminActions: Record<string, unknown>[] | null = null;
     if (isAdmin) {
       const { data: adminActionsData } = await supabaseAdmin
         .from('admin_actions')

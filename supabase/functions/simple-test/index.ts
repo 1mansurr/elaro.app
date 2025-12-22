@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
-serve(async req => {
+serve((req) => {
   console.log('Simple test function called');
 
   if (req.method === 'OPTIONS') {
@@ -26,7 +26,8 @@ serve(async req => {
     });
   } catch (error) {
     console.error('Error in simple test:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return new Response(JSON.stringify({ error: errorMessage }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     });

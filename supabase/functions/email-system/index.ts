@@ -14,7 +14,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import {
   AuthenticatedRequest,
   AppError,
@@ -24,7 +24,6 @@ import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
@@ -38,18 +37,18 @@ const CustomEmailSchema = z.object({
   to: z.string().email(),
   subject: z.string().min(1),
   template: z.string().min(1),
-  data: z.record(z.any()),
+  data: z.record(z.unknown()),
 });
 
 // Email service class
 class EmailService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async sendWelcomeEmail(data: any) {
-    const { userEmail, userFirstName, userId } = WelcomeEmailSchema.parse(data);
+  async sendWelcomeEmail(data: Record<string, unknown>) {
+    const { userEmail, userFirstName, userId: _userId } = WelcomeEmailSchema.parse(data);
 
     const emailContent = `
       <!DOCTYPE html>
@@ -124,7 +123,7 @@ class EmailService {
     };
   }
 
-  async sendCustomEmail(data: any) {
+  async sendCustomEmail(data: Record<string, unknown>) {
     const {
       to,
       subject,
@@ -190,7 +189,7 @@ class EmailService {
     return templates;
   }
 
-  async scheduleEmail(data: any) {
+  async scheduleEmail(data: Record<string, unknown>) {
     const { to, subject, template, data: templateData, scheduled_time } = data;
 
     // Store scheduled email in database
@@ -289,8 +288,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     'send-welcome': wrapOldHandler(
       handleSendWelcomeEmail,
       'email-send-welcome',
@@ -316,7 +317,7 @@ function getHandler(action: string | null) {
         to: z.string().email(),
         subject: z.string().min(1),
         template: z.string().min(1),
-        data: z.record(z.any()),
+        data: z.record(z.unknown()),
         scheduled_time: z.string().datetime(),
       }),
       true,

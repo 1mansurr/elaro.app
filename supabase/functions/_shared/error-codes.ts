@@ -207,7 +207,7 @@ export const ERROR_MESSAGES: Record<ErrorCode, string> = {
  * @param error - Database error object from Supabase
  * @returns Mapped error with code, message, and status code
  */
-export function mapDatabaseError(error: any): {
+export function mapDatabaseError(error: unknown): {
   code: ErrorCode;
   message: string;
   statusCode: number;

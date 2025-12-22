@@ -35,6 +35,7 @@ export { default as TaskDetailModal } from './TaskDetailModal';
 export { default as TaskDetailSheet } from './TaskDetailSheet';
 export { QueryStateWrapper } from './QueryStateWrapper';
 export { EmptyState } from './EmptyState';
+export { ErrorFallback } from './ErrorFallback';
 export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 export { SkeletonLoader } from './SkeletonLoader';
 export { OfflineBanner } from './OfflineBanner';

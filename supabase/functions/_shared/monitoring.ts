@@ -5,6 +5,8 @@
  * for all Edge Functions and database operations.
  */
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+
 export interface PerformanceMetrics {
   functionName: string;
   executionTime: number;
@@ -31,7 +33,7 @@ export interface BusinessMetrics {
   eventCount: number;
   timestamp: string;
   userId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface SystemHealth {
@@ -55,7 +57,7 @@ export class MonitoringService {
   private dbMetrics: DatabaseMetrics[] = [];
   private businessMetrics: BusinessMetrics[] = [];
 
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: ReturnType<typeof createClient>) {}
 
   /**
    * Record performance metrics for Edge Functions
@@ -173,7 +175,7 @@ export class MonitoringService {
 
     try {
       // Event processing health check
-      const { data: recentEvents } = await this.supabaseClient
+      await this.supabaseClient
         .from('user_events')
         .select('id')
         .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString()) // Last 5 minutes
@@ -484,17 +486,17 @@ export class MonitoringService {
 /**
  * Performance monitoring decorator
  */
-export function monitorPerformance(functionName: string, supabaseClient: any) {
+export function monitorPerformance(functionName: string, supabaseClient: ReturnType<typeof createClient>) {
   return function (
-    target: any,
-    propertyName: string,
+    _target: unknown,
+    _propertyName: string,
     descriptor: PropertyDescriptor,
   ) {
     const method = descriptor.value;
 
-    descriptor.value = async function (...args: any[]) {
+    descriptor.value = async function (...args: unknown[]) {
       const startTime = Date.now();
-      const startMemory = (performance as any).memory?.usedJSHeapSize || 0;
+      const startMemory = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
       let success = true;
       let errorMessage: string | undefined;
 
@@ -507,7 +509,7 @@ export function monitorPerformance(functionName: string, supabaseClient: any) {
         throw error;
       } finally {
         const endTime = Date.now();
-        const endMemory = (performance as any).memory?.usedJSHeapSize || 0;
+        const endMemory = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
         const executionTime = endTime - startTime;
         const memoryUsage = endMemory - startMemory;
 
@@ -535,7 +537,7 @@ export const globalMonitoringService = new MonitoringService(null);
 /**
  * Initialize monitoring system
  */
-export function initializeMonitoring(supabaseClient: any): void {
+export function initializeMonitoring(supabaseClient: ReturnType<typeof createClient>): void {
   globalMonitoringService['supabaseClient'] = supabaseClient;
   console.log('Monitoring system initialized');
 }

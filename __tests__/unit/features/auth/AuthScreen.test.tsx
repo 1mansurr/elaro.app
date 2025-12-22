@@ -26,8 +26,28 @@ jest.mock('react-native', () => {
     Linking: {
       openURL: jest.fn(() => Promise.resolve()),
     },
+    Keyboard: {
+      dismiss: jest.fn(),
+    },
+    Dimensions: {
+      get: jest.fn(() => ({ width: 375, height: 812 })),
+    },
   };
 });
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: jest.fn(() => ({
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  })),
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('@expo/vector-icons', () => ({
+  Ionicons: 'Ionicons',
+}));
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockUseTheme = useTheme as jest.MockedFunction<typeof useTheme>;
@@ -57,6 +77,9 @@ describe('AuthScreen', () => {
 
     mockUseTheme.mockReturnValue({
       theme: {
+        background: '#FFFFFF',
+        text: '#000000',
+        accent: '#2C5EFF',
         colors: {
           primary: '#007AFF',
           background: '#FFFFFF',

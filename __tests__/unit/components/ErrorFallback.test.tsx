@@ -5,16 +5,22 @@
  */
 
 import React from 'react';
-import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-} from '@testing-library/react-native';
-import { ErrorFallback } from '@/shared/components/ErrorFallback';
-import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 
-// Mock error mapping utilities
+// Note: react-native is already mocked in jest-setup.ts
+
+// Mock @expo/vector-icons BEFORE importing component
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return {
+    Ionicons: ({ name, size, color, ...props }: any) => {
+      return React.createElement(Text, { ...props, testID: `icon-${name}` }, name);
+    },
+  };
+});
+
+// Mock error mapping utilities BEFORE importing component
 jest.mock('@/utils/errorMapping', () => ({
   mapErrorCodeToMessage: jest.fn(error => {
     if (error instanceof Error) {
@@ -30,6 +36,28 @@ jest.mock('@/utils/errorMapping', () => ({
   }),
   isRecoverableError: jest.fn(() => true),
 }));
+
+// Mock ThemeContext
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: {
+      background: '#FFFFFF',
+      text: '#000000',
+      textSecondary: '#666666',
+      accent: '#2C5EFF',
+      error: '#FF3B30',
+      errorBackground: '#FFEBEE',
+    },
+    toggleTheme: jest.fn(),
+    isDarkMode: false,
+    isDark: false,
+  }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Import component AFTER mocks
+import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { ErrorFallback } from '@/shared/components';
 
 describe('ErrorFallback', () => {
   describe('Basic Rendering', () => {

@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createScheduledHandler } from '../_shared/function-handler.ts';
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { sendPushNotification } from '../_shared/send-push-notification.ts';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
@@ -86,9 +85,6 @@ async function handleSendDailySummaries(supabaseAdminClient: SupabaseClient) {
       );
       if (!userPrefs) continue;
 
-      const pushTokens = user.user_devices
-        .map(d => d.push_token)
-        .filter(Boolean);
       const timezone = user.timezone || 'UTC';
 
       // 3. Calculate the start and end of "today" in the user's timezone

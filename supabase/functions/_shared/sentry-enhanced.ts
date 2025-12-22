@@ -38,7 +38,7 @@ if (SENTRY_SUPPORTED && !sentry.getCurrentHub().getClient()) {
       Deno.env.get('SENTRY_TRACES_SAMPLE_RATE') || '0.1',
     ),
     release: RELEASE_VERSION,
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // Redact PII from event before sending
       if (event.user) {
         // Hash user ID instead of sending directly
@@ -104,7 +104,7 @@ export function addBreadcrumb(
   message: string,
   category: string = 'custom',
   level: 'info' | 'warning' | 'error' | 'debug' = 'info',
-  data?: Record<string, any>,
+  data?: Record<string, unknown>,
 ): void {
   if (!SENTRY_SUPPORTED) return;
   sentry.addBreadcrumb({
@@ -120,9 +120,9 @@ export function addBreadcrumb(
  * Sanitize breadcrumb data (remove PII)
  */
 function sanitizeBreadcrumbData(
-  data: Record<string, any>,
-): Record<string, any> {
-  const sanitized: Record<string, any> = {};
+  data: Record<string, unknown>,
+): Record<string, unknown> {
+  const sanitized: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
     const lowerKey = key.toLowerCase();
@@ -152,7 +152,7 @@ function sanitizeBreadcrumbData(
 /**
  * Set custom context/tags
  */
-export function setContext(key: string, context: Record<string, any>): void {
+export function setContext(key: string, context: Record<string, unknown>): void {
   if (!SENTRY_SUPPORTED) return;
   sentry.setContext(key, sanitizeBreadcrumbData(context));
 }
@@ -174,7 +174,7 @@ export function captureException(
     function?: string;
     userId?: string;
     traceId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   },
 ): string {
   if (!SENTRY_SUPPORTED) {
@@ -209,7 +209,7 @@ export function captureMessage(
     function?: string;
     userId?: string;
     traceId?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   },
 ): string {
   if (!SENTRY_SUPPORTED) {
@@ -237,11 +237,11 @@ export function captureMessage(
 /**
  * Wrap a function with Sentry error tracking and breadcrumbs
  */
-export function withSentry<T extends (...args: any[]) => Promise<any>>(
+export function withSentry<T extends (...args: unknown[]) => Promise<unknown>>(
   fn: T,
   functionName: string,
 ): T {
-  return (async (...args: any[]) => {
+  return (async (...args: unknown[]) => {
     if (SENTRY_SUPPORTED) {
       // Add breadcrumb for function start
       addBreadcrumb(`Starting ${functionName}`, 'function', 'info', {

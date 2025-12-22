@@ -199,7 +199,6 @@ export const canCreateTask = async (
       return { allowed: false, reason: 'User not found' };
     }
 
-    const role = getRoleBySubscriptionTier(userData.subscription_tier);
     const limits = getTaskLimits(userData.subscription_tier);
 
     // Check if unlimited (admin)

@@ -2,21 +2,14 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createScheduledHandler,
   SupabaseClient,
-  AppError,
 } from '../_shared/function-handler.ts';
-import {
-  sendPushNotification,
-  NotificationResult,
-} from '../_shared/send-push-notification.ts';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
-import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   generateDeduplicationKey,
   getUserNotificationPreferences,
-  isWithinQuietHours,
 } from '../_shared/notification-helpers.ts';
 
 // This interface defines the shape of the data we expect from our complex query.
@@ -75,7 +68,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
   const lockId = crypto.randomUUID(); // Generate unique lock ID for this run
 
   // Initialize metrics
-  let jobMetrics = {
+  const jobMetrics = {
     job_name: 'process-due-reminders',
     reminders_found: 0,
     reminders_processed: 0,
@@ -83,7 +76,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
     notifications_failed: 0,
     errors: [] as string[],
     status: 'success' as 'success' | 'failure' | 'partial',
-    metadata: {} as any,
+    metadata: {} as Record<string, unknown>,
   };
 
   // Step 1: Clean up stale locks first (older than 10 minutes)
@@ -541,7 +534,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
           error_details: {
             stack: error instanceof Error ? error.stack : undefined,
             reminder_type: reminder.reminder_type,
-            priority: (reminder as any).priority,
+            priority: reminder.priority,
           },
           retry_count: 0,
           next_retry_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), // Retry in 1 hour

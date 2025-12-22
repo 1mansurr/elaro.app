@@ -558,6 +558,9 @@ class SyncManager {
   async clearQueue(): Promise<void> {
     console.log('🗑️ SyncManager: Clearing queue...');
     this.queue = [];
+    // Reset processing state when clearing queue
+    this.isProcessing = false;
+    this.isSyncing = false;
     await this.saveQueue();
     this.notifyListeners();
     console.log('✅ SyncManager: Queue cleared');

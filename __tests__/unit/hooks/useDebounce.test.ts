@@ -43,7 +43,7 @@ describe('useDebounce', () => {
   });
 
   it('should cancel debounce on unmount', () => {
-    const { result, unmount } = renderHook(
+    const { result, rerender, unmount } = renderHook(
       ({ value, delay }) => useDebounce(value, delay),
       { initialProps: { value: 'test', delay: 500 } },
     );

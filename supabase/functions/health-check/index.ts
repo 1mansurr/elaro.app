@@ -5,7 +5,7 @@ import { corsHeaders } from '../_shared/cors.ts';
 /**
  * Check notification system health
  */
-async function checkNotificationHealth(supabaseClient: any): Promise<{
+async function checkNotificationHealth(supabaseClient: ReturnType<typeof createClient>): Promise<{
   status: 'ok' | 'error';
   expoPush: 'ok' | 'error';
   queue: 'ok' | 'error';
@@ -43,7 +43,7 @@ async function checkNotificationHealth(supabaseClient: any): Promise<{
       expoPush: expoStatus,
       queue: queueStatus,
     };
-  } catch (error) {
+  } catch (_error) {
     return {
       status: 'error',
       expoPush: 'error',
@@ -95,7 +95,7 @@ serve(async req => {
     try {
       // Perform a simple, fast read-only query
       // Remove .single() to allow empty results - we just need to verify DB is accessible
-      const { data, error } = await supabaseClient
+      const { error } = await supabaseClient
         .from('users')
         .select('id')
         .limit(1);

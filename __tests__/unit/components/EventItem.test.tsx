@@ -5,8 +5,51 @@
  */
 
 import React from 'react';
+// Note: react-native is already mocked in jest-setup.ts
+
+// Mock @expo/vector-icons BEFORE importing component
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return {
+    Ionicons: ({ name, size, color, ...props }: any) => {
+      return React.createElement(Text, { ...props, testID: `icon-${name}` }, name);
+    },
+  };
+});
+
+// Mock date-fns
+jest.mock('date-fns', () => ({
+  format: jest.fn((date: Date, formatStr: string) => {
+    if (formatStr === 'h:mm a') {
+      return '10:00 AM';
+    }
+    return date.toISOString().slice(0, 10); // Simple mock
+  }),
+}));
+
+// Mock constants
+jest.mock('@/constants/theme', () => ({
+  BORDER_RADIUS: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+  },
+  SHADOWS: {
+    sm: {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+      elevation: 2,
+    },
+  },
+}));
+
+// Import component AFTER mocks
 import { render, screen, fireEvent } from '@testing-library/react-native';
-import { EventItem } from '@/features/calendar/components/EventItem';
+import { EventItem } from '@/features/calendar/components';
 import { Task } from '@/types';
 
 const mockTask: Task = {

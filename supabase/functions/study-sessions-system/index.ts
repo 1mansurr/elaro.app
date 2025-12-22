@@ -29,18 +29,19 @@ import {
 } from '../_shared/schemas/studySession.ts';
 import { encrypt, decrypt } from '../_shared/encryption.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Study Session service class
 class StudySessionService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async createStudySession(data: any) {
+  async createStudySession(data: Record<string, unknown>) {
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
       throw new AppError(
@@ -122,7 +123,7 @@ class StudySessionService {
     return newSession;
   }
 
-  async updateStudySession(data: any) {
+  async updateStudySession(data: Record<string, unknown>) {
     const { study_session_id, ...updates } = data;
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
@@ -156,7 +157,7 @@ class StudySessionService {
       encryptedUpdates.notes = await encrypt(updates.notes, encryptionKey);
     }
 
-    const { data, error: updateError } = await this.supabaseClient
+    const { data: updatedData, error: updateError } = await this.supabaseClient
       .from('study_sessions')
       .update({
         ...encryptedUpdates,
@@ -169,10 +170,10 @@ class StudySessionService {
     if (updateError)
       throw new AppError(updateError.message, 500, ERROR_CODES.DB_UPDATE_ERROR);
 
-    return data;
+    return updatedData;
   }
 
-  async deleteStudySession(data: any) {
+  async deleteStudySession(data: Record<string, unknown>) {
     const { study_session_id } = data;
 
     // SECURITY: Verify ownership before deleting
@@ -202,7 +203,7 @@ class StudySessionService {
     return { success: true, message: 'Study session deleted successfully.' };
   }
 
-  async restoreStudySession(data: any) {
+  async restoreStudySession(data: Record<string, unknown>) {
     const { study_session_id } = data;
 
     // SECURITY: Verify ownership before restoring
@@ -236,7 +237,7 @@ class StudySessionService {
     return { success: true, message: 'Study session restored successfully.' };
   }
 
-  async deletePermanently(data: any) {
+  async deletePermanently(data: Record<string, unknown>) {
     const { study_session_id } = data;
 
     // SECURITY: Verify ownership before permanently deleting
@@ -449,8 +450,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     create: wrapOldHandler(
       handleCreateStudySession,
       'study-sessions-create',

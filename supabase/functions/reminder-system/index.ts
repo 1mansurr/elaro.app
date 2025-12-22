@@ -24,14 +24,14 @@ import {
   extractIdFromUrl,
   handleDbError,
 } from '../api-v2/_handler-utils.ts';
-import { isPremium } from '../_shared/permissions.ts';
 import { ScheduleRemindersSchema } from '../_shared/schemas/reminders.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
 import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const CancelReminderSchema = z.object({
   reminder_id: z.string().uuid(),
@@ -52,11 +52,11 @@ const UpdateReminderSchema = z.object({
 // Reminder service class
 class ReminderService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async scheduleReminders(data: any) {
+  async scheduleReminders(data: Record<string, unknown>) {
     const { session_id, session_date, topic } = data;
 
     // SECURITY: Verify the user owns the study session
@@ -165,7 +165,7 @@ class ReminderService {
     return createdReminders;
   }
 
-  async cancelReminder(data: any) {
+  async cancelReminder(data: Record<string, unknown>) {
     const { reminder_id } = data;
 
     // SECURITY: Verify ownership
@@ -198,7 +198,7 @@ class ReminderService {
     return { success: true, message: 'Reminder cancelled successfully' };
   }
 
-  async cancelAllReminders(data: any) {
+  async cancelAllReminders(data: Record<string, unknown>) {
     const { item_id, item_type } = data;
 
     // SECURITY: Verify ownership based on item type
@@ -351,7 +351,7 @@ class ReminderService {
     };
   }
 
-  async updateReminder(reminderId: string, data: any) {
+  async updateReminder(reminderId: string, data: Record<string, unknown>) {
     // SECURITY: Verify ownership
     const { error: checkError } = await this.supabaseClient
       .from('reminders')
@@ -487,8 +487,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     schedule: wrapOldHandler(
       handleScheduleReminders,
       'reminders-schedule',

@@ -5,12 +5,27 @@ import { useBatchAction } from '@/hooks/useBatchAction';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { syncManager } from '@/services/syncManager';
-import { supabase } from '@/services/supabase';
 
 jest.mock('@/contexts/NetworkContext');
 jest.mock('@/contexts/AuthContext');
 jest.mock('@/services/syncManager');
-jest.mock('@/services/supabase');
+jest.mock('@/services/supabase', () => ({
+  supabase: {
+    functions: {
+      invoke: jest.fn(),
+    },
+    auth: {
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: null },
+        error: null,
+      }),
+    },
+  },
+}));
+
+jest.mock('@/utils/invokeEdgeFunction', () => ({
+  invokeEdgeFunctionWithAuth: jest.fn(),
+}));
 jest.mock('@/utils/cache', () => ({
   cache: {
     remove: jest.fn().mockResolvedValue(undefined),
@@ -20,7 +35,6 @@ jest.mock('@/utils/cache', () => ({
 const mockUseNetwork = useNetwork as jest.MockedFunction<typeof useNetwork>;
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockSyncManager = syncManager as jest.Mocked<typeof syncManager>;
-const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 
 describe('useBatchAction', () => {
   let queryClient: QueryClient;
@@ -46,9 +60,6 @@ describe('useBatchAction', () => {
     } as any);
 
     mockSyncManager.addToQueue = jest.fn().mockResolvedValue({} as any);
-    mockSupabase.functions = {
-      invoke: jest.fn(),
-    } as any;
   });
 
   const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -79,7 +90,8 @@ describe('useBatchAction', () => {
       },
     };
 
-    (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
     });
@@ -95,18 +107,15 @@ describe('useBatchAction', () => {
     });
 
     await waitFor(() => {
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
-        'batch-action',
-        {
-          body: expect.objectContaining({
-            action: 'DELETE_PERMANENTLY',
-            items: expect.arrayContaining([
-              { id: 'item-1', type: 'assignment' },
-              { id: 'item-2', type: 'assignment' },
-            ]),
-          }),
-        },
-      );
+      expect(invokeEdgeFunctionWithAuth).toHaveBeenCalledWith('batch-action', {
+        body: expect.objectContaining({
+          action: 'DELETE_PERMANENTLY',
+          items: expect.arrayContaining([
+            { id: 'item-1', type: 'assignment' },
+            { id: 'item-2', type: 'assignment' },
+          ]),
+        }),
+      });
     });
   });
 
@@ -128,7 +137,8 @@ describe('useBatchAction', () => {
       expect(mockSyncManager.addToQueue).toHaveBeenCalled();
     });
 
-    expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    expect(invokeEdgeFunctionWithAuth).not.toHaveBeenCalled();
   });
 
   it('should handle batch restore', async () => {
@@ -145,7 +155,8 @@ describe('useBatchAction', () => {
       },
     };
 
-    (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
     });
@@ -158,14 +169,11 @@ describe('useBatchAction', () => {
     });
 
     await waitFor(() => {
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
-        'batch-action',
-        {
-          body: expect.objectContaining({
-            action: 'RESTORE',
-          }),
-        },
-      );
+      expect(invokeEdgeFunctionWithAuth).toHaveBeenCalledWith('batch-action', {
+        body: expect.objectContaining({
+          action: 'RESTORE',
+        }),
+      });
     });
   });
 
@@ -183,7 +191,8 @@ describe('useBatchAction', () => {
       },
     };
 
-    (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
     });
@@ -208,8 +217,8 @@ describe('useBatchAction', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    const mockError = new Error('Batch operation failed');
-    (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: null,
       error: { message: 'Batch operation failed' },
     });

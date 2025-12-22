@@ -13,6 +13,9 @@ jest.mock('@react-native-async-storage/async-storage');
 jest.mock('@react-native-community/netinfo');
 jest.mock('@/services/supabase');
 jest.mock('@/utils/circuitBreaker');
+jest.mock('@/utils/invokeEdgeFunction', () => ({
+  invokeEdgeFunctionWithAuth: jest.fn(),
+}));
 jest.mock('@/utils/cache', () => ({
   cache: {
     remove: jest.fn().mockResolvedValue(undefined),
@@ -27,24 +30,44 @@ const mockCircuitBreaker = CircuitBreaker as jest.MockedClass<
 >;
 
 describe('SyncManager', () => {
+  // Store for AsyncStorage mock
+  const asyncStorageStore: Record<string, string> = {};
+
   beforeEach(async () => {
+    // Wait a bit to ensure any ongoing processing completes first
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
     await syncManager.clearQueue();
     jest.clearAllMocks();
 
-    // Mock AsyncStorage
-    mockAsyncStorage.getItem = jest.fn().mockResolvedValue(null);
-    mockAsyncStorage.setItem = jest.fn().mockResolvedValue(undefined);
-    mockAsyncStorage.removeItem = jest.fn().mockResolvedValue(undefined);
+    // Clear AsyncStorage store
+    Object.keys(asyncStorageStore).forEach(key => delete asyncStorageStore[key]);
+
+    // Mock AsyncStorage with persistent storage
+    mockAsyncStorage.getItem = jest.fn((key: string) => {
+      return Promise.resolve(asyncStorageStore[key] || null);
+    });
+    mockAsyncStorage.setItem = jest.fn((key: string, value: string) => {
+      asyncStorageStore[key] = value;
+      return Promise.resolve(undefined);
+    });
+    mockAsyncStorage.removeItem = jest.fn((key: string) => {
+      delete asyncStorageStore[key];
+      return Promise.resolve(undefined);
+    });
 
     // Mock NetInfo
     mockNetInfo.fetch = jest.fn().mockResolvedValue({
       isConnected: true,
       isInternetReachable: true,
     } as any);
+    
+    // Mock NetInfo.addEventListener to return unsubscribe function
+    mockNetInfo.addEventListener = jest.fn(() => jest.fn());
 
-    // Mock Circuit Breaker
-    const mockCircuitBreakerInstance = {
-      execute: jest.fn(fn => fn()),
+    // Mock Circuit Breaker - default instance
+    const defaultMockCircuitBreakerInstance = {
+      execute: jest.fn(async (fn) => await fn()),
       getState: jest.fn().mockReturnValue('closed'),
       getStats: jest
         .fn()
@@ -54,7 +77,7 @@ describe('SyncManager', () => {
 
     mockCircuitBreaker.getInstance = jest
       .fn()
-      .mockReturnValue(mockCircuitBreakerInstance as any);
+      .mockReturnValue(defaultMockCircuitBreakerInstance as any);
   });
 
   afterAll(async () => {
@@ -122,23 +145,48 @@ describe('SyncManager', () => {
         isInternetReachable: true,
       } as any);
 
-      (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: { id: 'created-1' },
         error: null,
       });
+
+      // Reset circuit breaker mock for this test
+      const mockExecute = jest.fn(async (fn) => await fn());
+      const mockCircuitBreakerInstance = {
+        execute: mockExecute,
+        getState: jest.fn().mockReturnValue('closed'),
+        getStats: jest.fn(),
+        reset: jest.fn(),
+      };
+      mockCircuitBreaker.getInstance = jest
+        .fn()
+        .mockReturnValue(mockCircuitBreakerInstance as any);
+
+      // Ensure processing is not in progress
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       await syncManager.addToQueue(
         'CREATE',
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync to test processQueue directly
       );
+
+      // Wait a bit to ensure addToQueue completes
+      await new Promise(resolve => setTimeout(resolve, 10));
 
       const results = await syncManager.processQueue();
 
       expect(results.length).toBe(1);
       expect(results[0].success).toBe(true);
-      expect(mockSupabase.functions.invoke).toHaveBeenCalled();
+      expect(invokeEdgeFunctionWithAuth).toHaveBeenCalledWith(
+        'create-assignment',
+        expect.objectContaining({
+          body: expect.objectContaining({ title: 'Test' }),
+        }),
+      );
     });
 
     it('should not process queue when offline', async () => {
@@ -152,24 +200,46 @@ describe('SyncManager', () => {
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       const results = await syncManager.processQueue();
 
       expect(results.length).toBe(0);
-      expect(mockSupabase.functions.invoke).not.toHaveBeenCalled();
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      expect(invokeEdgeFunctionWithAuth).not.toHaveBeenCalled();
     });
 
     it('should retry failed actions with exponential backoff', async () => {
-      (mockSupabase.functions.invoke as jest.Mock)
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({ data: { id: 'created-1' }, error: null });
+
+      // Reset circuit breaker mock for this test
+      const mockExecute = jest.fn(async (fn) => {
+        try {
+          return await fn();
+        } catch (error) {
+          throw error;
+        }
+      });
+      const mockCircuitBreakerInstance = {
+        execute: mockExecute,
+        getState: jest.fn().mockReturnValue('closed'),
+        getStats: jest.fn(),
+        reset: jest.fn(),
+      };
+      mockCircuitBreaker.getInstance = jest
+        .fn()
+        .mockReturnValue(mockCircuitBreakerInstance as any);
 
       const action = await syncManager.addToQueue(
         'CREATE',
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       // First attempt fails
@@ -178,7 +248,9 @@ describe('SyncManager', () => {
       // Verify retry delay is set
       const queue = syncManager.getQueue();
       const queuedAction = queue.find(a => a.id === action.id);
+      expect(queuedAction).toBeDefined();
       expect((queuedAction as any).nextRetryAt).toBeDefined();
+      expect((queuedAction as any).nextRetryAt).toBeGreaterThan(Date.now());
     });
   });
 
@@ -201,6 +273,7 @@ describe('SyncManager', () => {
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       await syncManager.processQueue();
@@ -230,6 +303,7 @@ describe('SyncManager', () => {
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       await syncManager.processQueue();
@@ -249,12 +323,14 @@ describe('SyncManager', () => {
         'assignment',
         { type: 'CREATE', data: {} },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
       await syncManager.addToQueue(
         'UPDATE',
         'assignment',
         { type: 'UPDATE', resourceId: 'id-1', updates: {} },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       const stats = syncManager.getQueueStats();
@@ -266,19 +342,40 @@ describe('SyncManager', () => {
 
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
-      (mockSupabase.functions.invoke as jest.Mock).mockRejectedValue(
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock).mockRejectedValue(
         new Error('Network error'),
       );
+
+      // Reset circuit breaker mock for this test
+      const mockExecute = jest.fn(async (fn) => {
+        try {
+          return await fn();
+        } catch (error) {
+          throw error;
+        }
+      });
+      const mockCircuitBreakerInstance = {
+        execute: mockExecute,
+        getState: jest.fn().mockReturnValue('closed'),
+        getStats: jest.fn(),
+        reset: jest.fn(),
+      };
+      mockCircuitBreaker.getInstance = jest
+        .fn()
+        .mockReturnValue(mockCircuitBreakerInstance as any);
 
       await syncManager.addToQueue(
         'CREATE',
         'assignment',
         { type: 'CREATE', data: { title: 'Test' } },
         'user-1',
+        { syncImmediately: false }, // Disable immediate sync
       );
 
       const results = await syncManager.processQueue();
 
+      expect(results.length).toBeGreaterThan(0);
       expect(results[0].success).toBe(false);
       expect(results[0].error).toBeDefined();
     });

@@ -6,13 +6,31 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
+import { View, Text } from 'react-native';
 import { SwipeableTaskCard } from '@/features/dashboard/components/SwipeableTaskCard';
+
+// Mock ThemeContext
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: {
+      background: '#FFFFFF',
+      text: '#000000',
+      accent: '#2C5EFF',
+    },
+    toggleTheme: jest.fn(),
+    isDarkMode: false,
+    isDark: false,
+  }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
 describe('SwipeableTaskCard', () => {
   it('should render children', () => {
     render(
       <SwipeableTaskCard onSwipeComplete={jest.fn()}>
-        <div testID="card-content">Card Content</div>
+        <View testID="card-content">
+          <Text>Card Content</Text>
+        </View>
       </SwipeableTaskCard>,
     );
 
@@ -24,7 +42,9 @@ describe('SwipeableTaskCard', () => {
 
     render(
       <SwipeableTaskCard onSwipeComplete={onSwipeComplete}>
-        <div testID="card-content">Card Content</div>
+        <View testID="card-content">
+          <Text>Card Content</Text>
+        </View>
       </SwipeableTaskCard>,
     );
 
@@ -38,7 +58,9 @@ describe('SwipeableTaskCard', () => {
 
     render(
       <SwipeableTaskCard onSwipeComplete={onSwipeComplete} enabled={false}>
-        <div testID="card-content">Card Content</div>
+        <View testID="card-content">
+          <Text>Card Content</Text>
+        </View>
       </SwipeableTaskCard>,
     );
 
@@ -49,8 +71,12 @@ describe('SwipeableTaskCard', () => {
   it('should handle multiple children', () => {
     render(
       <SwipeableTaskCard onSwipeComplete={jest.fn()}>
-        <div testID="child-1">Child 1</div>
-        <div testID="child-2">Child 2</div>
+        <View testID="child-1">
+          <Text>Child 1</Text>
+        </View>
+        <View testID="child-2">
+          <Text>Child 2</Text>
+        </View>
       </SwipeableTaskCard>,
     );
 

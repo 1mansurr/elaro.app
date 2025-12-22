@@ -21,7 +21,7 @@ export interface NotificationResult {
 /**
  * Check if an Expo push notification error is retryable
  */
-function isRetryableExpoError(error: unknown): boolean {
+function _isRetryableExpoError(error: unknown): boolean {
   const err = error as { message?: string; statusCode?: number; code?: string };
 
   // Don't retry permanent errors

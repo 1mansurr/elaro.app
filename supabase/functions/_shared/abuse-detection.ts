@@ -25,7 +25,7 @@ const ABUSE_THRESHOLDS = {
 };
 
 // Time windows for violation counting (in hours)
-const VIOLATION_WINDOW = 24; // Count violations in last 24 hours
+// const VIOLATION_WINDOW = 24; // Count violations in last 24 hours (unused)
 
 /**
  * Check abuse status for a user/IP combination

@@ -29,18 +29,19 @@ import {
 } from '../_shared/schemas/lecture.ts';
 import { encrypt, decrypt } from '../_shared/encryption.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Lecture service class
 class LectureService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async createLecture(data: any) {
+  async createLecture(data: Record<string, unknown>) {
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
       throw new AppError(
@@ -126,7 +127,7 @@ class LectureService {
     return newLecture;
   }
 
-  async updateLecture(data: any) {
+  async updateLecture(data: Record<string, unknown>) {
     const { lecture_id, ...updates } = data;
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
@@ -166,7 +167,7 @@ class LectureService {
       );
     }
 
-    const { data, error: updateError } = await this.supabaseClient
+    const { data: updatedData, error: updateError } = await this.supabaseClient
       .from('lectures')
       .update({
         ...encryptedUpdates,
@@ -179,10 +180,10 @@ class LectureService {
     if (updateError)
       throw new AppError(updateError.message, 500, ERROR_CODES.DB_UPDATE_ERROR);
 
-    return data;
+    return updatedData;
   }
 
-  async deleteLecture(data: any) {
+  async deleteLecture(data: Record<string, unknown>) {
     const { lecture_id } = data;
 
     // SECURITY: Verify ownership before deleting
@@ -212,7 +213,7 @@ class LectureService {
     return { success: true, message: 'Lecture deleted successfully.' };
   }
 
-  async restoreLecture(data: any) {
+  async restoreLecture(data: Record<string, unknown>) {
     const { lecture_id } = data;
 
     // SECURITY: Verify ownership before restoring
@@ -246,7 +247,7 @@ class LectureService {
     return { success: true, message: 'Lecture restored successfully.' };
   }
 
-  async deletePermanently(data: any) {
+  async deletePermanently(data: Record<string, unknown>) {
     const { lecture_id } = data;
 
     // SECURITY: Verify ownership before permanently deleting
@@ -468,8 +469,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     create: wrapOldHandler(
       handleCreateLecture,
       'lectures-create',

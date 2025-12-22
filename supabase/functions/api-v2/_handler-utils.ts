@@ -12,9 +12,6 @@ import {
 } from '../_shared/function-handler.ts';
 import { z } from 'zod';
 import {
-  ERROR_CODES,
-  ERROR_MESSAGES,
-  ERROR_STATUS_CODES,
   mapDatabaseError,
 } from '../_shared/error-codes.ts';
 
@@ -55,7 +52,7 @@ export function wrapOldHandler<T>(
  * @param error - Database error from Supabase
  * @throws AppError with sanitized message and proper error code
  */
-export function handleDbError(error: any): never {
+export function handleDbError(error: unknown): never {
   const mapped = mapDatabaseError(error);
   throw new AppError(
     mapped.message,

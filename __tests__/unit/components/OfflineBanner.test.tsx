@@ -5,25 +5,34 @@
  */
 
 import React from 'react';
+// Note: react-native is already mocked in jest-setup.ts
+
+// Mock NetworkContext
+jest.mock('@/contexts/NetworkContext', () => ({
+  useNetwork: jest.fn(),
+  NetworkProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// Mock ThemeContext
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: jest.fn(),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 import { render, screen } from '@testing-library/react-native';
 import { OfflineBanner } from '@/shared/components/OfflineBanner';
-import { NetworkProvider } from '@/contexts/NetworkContext';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { useNetwork } from '@/contexts/NetworkContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
-// Mock theme context
+const mockUseNetwork = useNetwork as jest.MockedFunction<typeof useNetwork>;
+const mockUseTheme = useTheme as jest.MockedFunction<typeof useTheme>;
+
 const mockTheme = {
   background: '#FFFFFF',
   text: '#000000',
   textSecondary: '#666666',
   accent: '#2C5EFF',
   warning: '#FF9800',
-};
-
-const mockThemeContextValue = {
-  theme: mockTheme,
-  toggleTheme: jest.fn(),
-  isDarkMode: false,
-  isDark: false,
 };
 
 const TestWrapper = ({
@@ -33,17 +42,22 @@ const TestWrapper = ({
   children: React.ReactNode;
   isOffline?: boolean;
 }) => {
-  const mockNetworkContext = {
+  mockUseNetwork.mockReturnValue({
     isOffline,
+    isOnline: !isOffline,
     isConnected: !isOffline,
+    isInternetReachable: !isOffline,
     networkType: isOffline ? 'none' : 'wifi',
-  };
+  } as any);
 
-  return (
-    <NetworkProvider value={mockNetworkContext}>
-      <ThemeProvider value={mockThemeContextValue}>{children}</ThemeProvider>
-    </NetworkProvider>
-  );
+  mockUseTheme.mockReturnValue({
+    theme: mockTheme,
+    toggleTheme: jest.fn(),
+    isDarkMode: false,
+    isDark: false,
+  } as any);
+
+  return <>{children}</>;
 };
 
 describe('OfflineBanner', () => {

@@ -29,19 +29,19 @@ import {
 } from '../_shared/schemas/assignment.ts';
 import { encrypt, decrypt } from '../_shared/encryption.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Assignment service class
 class AssignmentService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async createAssignment(data: any) {
+  async createAssignment(data: Record<string, unknown>) {
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
       throw new AppError(
@@ -125,7 +125,7 @@ class AssignmentService {
     return newAssignment;
   }
 
-  async updateAssignment(data: any) {
+  async updateAssignment(data: Record<string, unknown>) {
     const { assignment_id, ...updates } = data;
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
@@ -162,7 +162,7 @@ class AssignmentService {
       );
     }
 
-    const { data, error: updateError } = await this.supabaseClient
+    const { data: updatedData, error: updateError } = await this.supabaseClient
       .from('assignments')
       .update({
         ...encryptedUpdates,
@@ -175,10 +175,10 @@ class AssignmentService {
     if (updateError)
       throw new AppError(updateError.message, 500, ERROR_CODES.DB_UPDATE_ERROR);
 
-    return data;
+    return updatedData;
   }
 
-  async deleteAssignment(data: any) {
+  async deleteAssignment(data: Record<string, unknown>) {
     const { assignment_id } = data;
 
     // SECURITY: Verify ownership before deleting
@@ -208,7 +208,7 @@ class AssignmentService {
     return { success: true, message: 'Assignment deleted successfully.' };
   }
 
-  async restoreAssignment(data: any) {
+  async restoreAssignment(data: Record<string, unknown>) {
     const { assignment_id } = data;
 
     // SECURITY: Verify ownership before restoring
@@ -242,7 +242,7 @@ class AssignmentService {
     return { success: true, message: 'Assignment restored successfully.' };
   }
 
-  async deletePermanently(data: any) {
+  async deletePermanently(data: Record<string, unknown>) {
     const { assignment_id } = data;
 
     // SECURITY: Verify ownership before permanently deleting
@@ -462,8 +462,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     create: wrapOldHandler(
       handleCreateAssignment,
       'assignments-create',

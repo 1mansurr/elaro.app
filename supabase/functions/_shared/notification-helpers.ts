@@ -350,10 +350,10 @@ export function getTodayBoundsInTimezone(timezone: string): {
   const now = new Date();
 
   // Get current date in user's timezone (YYYY-MM-DD format)
-  const dateFormatter = new Intl.DateTimeFormat('en-CA', {
-    timeZone: timezone,
-  });
-  const dateStr = dateFormatter.format(now); // "YYYY-MM-DD"
+  // const dateFormatter = new Intl.DateTimeFormat('en-CA', {
+  //   timeZone: timezone,
+  // });
+  // const dateStr = dateFormatter.format(now); // "YYYY-MM-DD" (unused)
 
   // Get current time components in user's timezone
   const timeFormatter = new Intl.DateTimeFormat('en-US', {
@@ -379,31 +379,31 @@ export function getTodayBoundsInTimezone(timezone: string): {
   // Calculate timezone offset more accurately
   // Create a formatter that includes timezone offset info
   // We'll calculate offset by creating a date string and parsing it
-  const utcFormatter = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'UTC',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  // const utcFormatter = new Intl.DateTimeFormat('en-US', {
+  //   timeZone: 'UTC',
+  //   hour: 'numeric',
+  //   minute: 'numeric',
+  //   second: 'numeric',
+  //   hour12: false,
+  //   year: 'numeric',
+  //   month: '2-digit',
+  //   day: '2-digit',
+  // }); // Unused
 
-  const utcParts = utcFormatter.formatToParts(now);
-  const utcHour = parseInt(utcParts.find(p => p.type === 'hour')?.value || '0');
-  const utcMinute = parseInt(
-    utcParts.find(p => p.type === 'minute')?.value || '0',
-  );
-  const utcSecond = parseInt(
-    utcParts.find(p => p.type === 'second')?.value || '0',
-  );
-  const utcMsSinceMidnight =
-    (utcHour * 3600 + utcMinute * 60 + utcSecond) * 1000;
+  // const utcParts = utcFormatter.formatToParts(now); // Unused
+  // const utcHour = parseInt(utcParts.find(p => p.type === 'hour')?.value || '0'); // Unused
+  // const utcMinute = parseInt(
+  //   utcParts.find(p => p.type === 'minute')?.value || '0',
+  // ); // Unused
+  // const utcSecond = parseInt(
+  //   utcParts.find(p => p.type === 'second')?.value || '0',
+  // ); // Unused
+  // const utcMsSinceMidnight =
+  //   (utcHour * 3600 + utcMinute * 60 + utcSecond) * 1000; // Unused
 
   // The difference in msSinceMidnight represents the timezone offset
   // If user is ahead of UTC, their midnight happened earlier in UTC time
-  const offset = msSinceMidnight - utcMsSinceMidnight;
+  // const offset = msSinceMidnight - utcMsSinceMidnight; // Unused
 
   // Calculate UTC timestamp for midnight in user's timezone
   // User's midnight = UTC midnight + offset

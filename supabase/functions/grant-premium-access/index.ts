@@ -2,9 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AuthenticatedRequest,
-  AppError,
 } from '../_shared/function-handler.ts';
-import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';

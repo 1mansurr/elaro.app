@@ -2,7 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
-import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
+import { wrapOldHandler } from '../api-v2/_handler-utils.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
@@ -12,12 +12,13 @@ import {
   UpdateTemplateSchema,
   DeleteTemplateSchema,
 } from '../_shared/schemas/template.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Template service class
 class TemplateService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
   async getTemplates() {
@@ -34,7 +35,7 @@ class TemplateService {
     return { templates: templates || [] };
   }
 
-  async createTemplate(data: any) {
+  async createTemplate(data: Record<string, unknown>) {
     const { template_name, task_type, template_data } =
       CreateTemplateSchema.parse(data);
 
@@ -56,7 +57,7 @@ class TemplateService {
     return { template };
   }
 
-  async updateTemplate(data: any) {
+  async updateTemplate(data: Record<string, unknown>) {
     const { id, ...updates } = UpdateTemplateSchema.parse(data);
 
     // Verify ownership before updating
@@ -158,8 +159,10 @@ async function handleDeleteTemplate(req: AuthenticatedRequest) {
 }
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(method: string) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     GET: wrapOldHandler(handleGetTemplates, 'template-list', undefined, false),
     POST: wrapOldHandler(
       handleCreateTemplate,

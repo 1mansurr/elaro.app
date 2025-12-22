@@ -69,10 +69,10 @@ async function calculateBaseline(): Promise<CrashRateBaseline> {
     // Sentry returns data in format: [[timestamp, count], ...]
     // We need to calculate crash rate from error counts
     let totalErrors = 0;
-    let totalSessions = 0;
+    const totalSessions = 0;
 
     if (Array.isArray(data)) {
-      data.forEach((day: any) => {
+      data.forEach((day: unknown) => {
         if (Array.isArray(day) && day.length >= 2) {
           totalErrors += day[1] || 0;
         }

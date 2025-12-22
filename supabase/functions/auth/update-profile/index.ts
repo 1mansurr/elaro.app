@@ -50,7 +50,7 @@ serve(async (req: Request) => {
     }
 
     // Update user metadata or password
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     if (validatedData.first_name !== undefined) {
       updateData.first_name = validatedData.first_name;
     }
@@ -62,10 +62,9 @@ serve(async (req: Request) => {
     }
 
     // Check if password is being updated (from body, not schema)
-    const body = await req.json();
     const password = body.password;
 
-    const updatePayload: { data?: Record<string, any>; password?: string } = {};
+    const updatePayload: { data?: Record<string, unknown>; password?: string } = {};
     if (Object.keys(updateData).length > 0) {
       updatePayload.data = updateData;
     }

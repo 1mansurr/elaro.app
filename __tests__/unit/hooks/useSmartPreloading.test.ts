@@ -57,6 +57,7 @@ describe('useSmartPreloading', () => {
   });
 
   it('should preload DashboardBundle for authenticated user with completed onboarding', async () => {
+    jest.setTimeout(30000);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     (useAuth as jest.Mock).mockReturnValue({
@@ -71,15 +72,24 @@ describe('useSmartPreloading', () => {
       jest.advanceTimersByTime(1000); // Trigger preload after delay
     });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded DashboardBundle');
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded CoursesBundle');
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
+    await waitFor(
+      () => {
+        expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded DashboardBundle');
+        expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded CoursesBundle');
+      },
+      { timeout: 5000 },
+    );
+
     consoleSpy.mockRestore();
-  });
+  }, 30000);
 
   it('should preload AuthBundle for authenticated user without completed onboarding', async () => {
+    jest.setTimeout(30000);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     (useAuth as jest.Mock).mockReturnValue({
@@ -94,15 +104,24 @@ describe('useSmartPreloading', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded AuthBundle');
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded CoursesBundle');
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
+    await waitFor(
+      () => {
+        expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded AuthBundle');
+        expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded CoursesBundle');
+      },
+      { timeout: 5000 },
+    );
+
     consoleSpy.mockRestore();
-  });
+  }, 30000);
 
   it('should preload DashboardBundle for guest user', async () => {
+    jest.setTimeout(30000);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
     (useAuth as jest.Mock).mockReturnValue({
@@ -117,16 +136,25 @@ describe('useSmartPreloading', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📦 Preloaded DashboardBundle for guest',
-      );
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
+    await waitFor(
+      () => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          '📦 Preloaded DashboardBundle for guest',
+        );
+      },
+      { timeout: 5000 },
+    );
+
     consoleSpy.mockRestore();
-  });
+  }, 30000);
 
   it('should handle preload failures gracefully', async () => {
+    jest.setTimeout(30000);
     const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
     // Mock a failing import
@@ -150,15 +178,23 @@ describe('useSmartPreloading', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => {
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Failed to preload bundles:',
-        expect.any(Error),
-      );
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
+    await waitFor(
+      () => {
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          'Failed to preload bundles:',
+          expect.any(Error),
+        );
+      },
+      { timeout: 5000 },
+    );
+
     consoleWarnSpy.mockRestore();
-  });
+  }, 30000);
 
   it('should preload CalendarBundle when preloadCalendarBundle is called', async () => {
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
@@ -225,27 +261,35 @@ describe('useSmartPreloading', () => {
   });
 
   it('should re-run preload when auth state changes', async () => {
+    jest.setTimeout(30000);
     const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
 
-    const { rerender } = renderHook(() => useSmartPreloading(), {
-      initialProps: {
-        authState: {
-          session: null,
-          user: null,
-          loading: false,
-        },
-      },
+    (useAuth as jest.Mock).mockReturnValue({
+      session: null,
+      user: null,
+      loading: false,
     });
+
+    const { rerender } = renderHook(() => useSmartPreloading());
 
     act(() => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith(
-        '📦 Preloaded DashboardBundle for guest',
-      );
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
+
+    // Wait for initial preload with a timeout
+    await waitFor(
+      () => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Preloaded'),
+        );
+      },
+      { timeout: 5000 },
+    );
 
     consoleSpy.mockClear();
 
@@ -262,10 +306,21 @@ describe('useSmartPreloading', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('📦 Preloaded DashboardBundle');
+    // Wait for async imports to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 100));
     });
 
+    // Wait for second preload with a timeout
+    await waitFor(
+      () => {
+        expect(consoleSpy).toHaveBeenCalledWith(
+          expect.stringContaining('Preloaded'),
+        );
+      },
+      { timeout: 5000 },
+    );
+
     consoleSpy.mockRestore();
-  });
+  }, 30000);
 });

@@ -15,7 +15,17 @@ jest.mock('@/services/supabase', () => ({
     functions: {
       invoke: jest.fn(),
     },
+    auth: {
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: null },
+        error: null,
+      }),
+    },
   },
+}));
+
+jest.mock('@/utils/invokeEdgeFunction', () => ({
+  invokeEdgeFunctionWithAuth: jest.fn(),
 }));
 
 const mockUseNetwork = useNetwork as jest.MockedFunction<typeof useNetwork>;
@@ -72,9 +82,11 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle online completion', async () => {
-      const { supabase } = require('@/services/supabase');
-      const mockInvoke = supabase.functions.invoke as jest.Mock;
-      mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
 
       const { result } = renderHook(() => useCompleteTask(), { wrapper });
 
@@ -85,12 +97,15 @@ describe('useTaskMutations', () => {
       });
 
       await waitFor(() => {
-        expect(mockInvoke).toHaveBeenCalledWith('update-assignment', {
-          body: expect.objectContaining({
-            assignmentId: 'task-1',
-            updates: { status: 'completed' },
-          }),
-        });
+        expect(invokeEdgeFunctionWithAuth).toHaveBeenCalledWith(
+          'update-assignment',
+          {
+            body: expect.objectContaining({
+              assignmentId: 'task-1',
+              updates: { status: 'completed' },
+            }),
+          },
+        );
       });
     });
 
@@ -124,9 +139,8 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { supabase } = require('@/services/supabase');
-      const mockInvoke = supabase.functions.invoke as jest.Mock;
-      mockInvoke.mockResolvedValue({
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: null,
         error: { message: 'Server error' },
       });
@@ -156,9 +170,11 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle online deletion', async () => {
-      const { supabase } = require('@/services/supabase');
-      const mockInvoke = supabase.functions.invoke as jest.Mock;
-      mockInvoke.mockResolvedValue({ data: { success: true }, error: null });
+      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
 
       const { result } = renderHook(() => useDeleteTask(), { wrapper });
 
@@ -169,7 +185,7 @@ describe('useTaskMutations', () => {
       });
 
       await waitFor(() => {
-        expect(mockInvoke).toHaveBeenCalled();
+        expect(invokeEdgeFunctionWithAuth).toHaveBeenCalled();
       });
     });
 

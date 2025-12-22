@@ -1,9 +1,13 @@
 import { renderHook } from '@testing-library/react-native';
 import { useOnboardingStatus } from '@/hooks/useOnboardingStatus';
+
+// Mock AuthContext properly
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: jest.fn(),
+  AuthProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
 import { useAuth } from '@/contexts/AuthContext';
-
-jest.mock('@/contexts/AuthContext');
-
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 
 describe('useOnboardingStatus', () => {

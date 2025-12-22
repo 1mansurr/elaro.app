@@ -13,7 +13,7 @@ export interface InvocationRecord {
   statusCode?: number;
   errorMessage?: string;
   userId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -72,11 +72,11 @@ export async function checkHighFrequencyFunctions(
       return [];
     }
 
-    return (data || []).map((row: any) => ({
-      functionName: row.function_name,
-      invocationCount: row.invocation_count,
-      threshold: row.threshold,
-      alertNeeded: row.alert_needed,
+    return (data || []).map((row: Record<string, unknown>) => ({
+      functionName: row.function_name as string,
+      invocationCount: row.invocation_count as number,
+      threshold: row.threshold as number,
+      alertNeeded: row.alert_needed as boolean,
     }));
   } catch (error) {
     await logger.error('Exception checking high frequency functions', {
@@ -112,12 +112,12 @@ export async function checkHighErrorRateFunctions(
       return [];
     }
 
-    return (data || []).map((row: any) => ({
-      functionName: row.function_name,
+    return (data || []).map((row: Record<string, unknown>) => ({
+      functionName: row.function_name as string,
       errorRate: Number(row.error_rate),
-      errorCount: row.error_count,
-      totalCount: row.total_count,
-      alertNeeded: row.alert_needed,
+      errorCount: row.error_count as number,
+      totalCount: row.total_count as number,
+      alertNeeded: row.alert_needed as boolean,
     }));
   } catch (error) {
     await logger.error('Exception checking high error rate functions', {

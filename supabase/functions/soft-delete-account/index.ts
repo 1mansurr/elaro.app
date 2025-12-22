@@ -55,7 +55,7 @@ async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
   deletionDate.setDate(deletionDate.getDate() + 7); // 7 days from now
 
   // Update user account status to 'deleted' and set deletion timestamp
-  const { data, error: updateError } = await supabaseClient
+  const { error: updateError } = await supabaseClient
     .from('users')
     .update({
       account_status: 'deleted',

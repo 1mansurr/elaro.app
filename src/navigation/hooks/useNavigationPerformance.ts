@@ -197,18 +197,9 @@ export const useNavigationPerformance = (
  * Hook for optimizing screen transitions
  */
 export const useScreenTransitionOptimization = () => {
-  let navigation: ReturnType<typeof useNavigation> | null = null;
-  try {
-    navigation = useNavigation();
-  } catch (error) {
-    // Navigation not ready yet - this is expected during initialization
-    if (__DEV__) {
-      console.warn(
-        'Navigation not initialized for screen transition optimization:',
-        error,
-      );
-    }
-  }
+  // Call hook unconditionally at the top level (React Hooks rule)
+  // Handle errors/edge cases after the hook call
+  const navigation = useNavigation();
   const transitionStartTime = useRef<number>(0);
 
   const startTransition = useCallback(() => {
@@ -228,6 +219,7 @@ export const useScreenTransitionOptimization = () => {
   return {
     startTransition,
     endTransition,
+    navigation, // Expose navigation for use if needed
   };
 };
 

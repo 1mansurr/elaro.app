@@ -16,6 +16,23 @@ jest.mock('@/utils/cache', () => ({
   },
 }));
 
+// Mock useInfiniteQuery locally since the test uses real QueryClientProvider
+jest.mock('@tanstack/react-query', () => {
+  const actual = jest.requireActual('@tanstack/react-query');
+  return {
+    ...actual,
+    useInfiniteQuery: jest.fn(() => ({
+      data: { pages: [], pageParams: [] },
+      isLoading: false,
+      error: null,
+      refetch: jest.fn(),
+      fetchNextPage: jest.fn(),
+      hasNextPage: false,
+      isFetchingNextPage: false,
+    })),
+  };
+});
+
 const mockApi = api as jest.Mocked<typeof api>;
 
 describe('useDataQueries', () => {
@@ -62,13 +79,19 @@ describe('useDataQueries', () => {
     });
 
     it('should use correct query key', () => {
+      const { useInfiniteQuery } = require('@tanstack/react-query');
       const { result } = renderHook(
         () => useCourses({ searchQuery: 'test', sortOption: 'name-desc' }),
         { wrapper },
       );
 
       expect(result.current).toBeDefined();
-      expect(mockApi.courses.getAll).toHaveBeenCalled();
+      // Verify useInfiniteQuery was called with correct query key
+      expect(useInfiniteQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: ['courses', 'test', 'name-desc', false],
+        }),
+      );
     });
   });
 
@@ -81,13 +104,19 @@ describe('useDataQueries', () => {
     });
 
     it('should use correct query options', () => {
+      const { useInfiniteQuery } = require('@tanstack/react-query');
       const { result } = renderHook(
         () => useAssignments({ sortBy: 'title', sortAscending: false }),
         { wrapper },
       );
 
       expect(result.current).toBeDefined();
-      expect(mockApi.assignments.listPage).toHaveBeenCalled();
+      // Verify useInfiniteQuery was called with correct query key
+      expect(useInfiniteQuery).toHaveBeenCalledWith(
+        expect.objectContaining({
+          queryKey: ['assignments', 'title', false],
+        }),
+      );
     });
   });
 

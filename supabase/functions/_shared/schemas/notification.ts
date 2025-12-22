@@ -11,7 +11,7 @@ export const SendNotificationSchema = z.object({
     .string()
     .min(1, 'Body is required')
     .max(500, 'Body must be 500 characters or less'),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.unknown()).optional(),
 });
 
 // Schema for scheduling a notification
@@ -26,7 +26,7 @@ export const ScheduleNotificationSchema = z.object({
     .min(1, 'Body is required')
     .max(500, 'Body must be 500 characters or less'),
   scheduled_at: z.string().datetime('Invalid scheduled time format'),
-  data: z.record(z.any()).optional(),
+  data: z.record(z.unknown()).optional(),
 });
 
 // Schema for canceling a notification

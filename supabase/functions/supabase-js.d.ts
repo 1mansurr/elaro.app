@@ -25,8 +25,8 @@ declare module 'https://esm.sh/@supabase/supabase-js@2.39.3' {
     id: string;
     email?: string;
     phone?: string;
-    app_metadata?: Record<string, any>;
-    user_metadata?: Record<string, any>;
+    app_metadata?: Record<string, unknown>;
+    user_metadata?: Record<string, unknown>;
     aud?: string;
     confirmation_sent_at?: string;
     recovery_sent_at?: string;
@@ -62,10 +62,35 @@ declare module 'https://esm.sh/@supabase/supabase-js@2.39.3' {
     }): Promise<AuthResponse>;
   }
 
+  export interface SupabaseQueryBuilder {
+    select(columns?: string): SupabaseQueryBuilder;
+    insert(values: unknown): SupabaseQueryBuilder;
+    update(values: unknown): SupabaseQueryBuilder;
+    delete(): SupabaseQueryBuilder;
+    eq(column: string, value: unknown): SupabaseQueryBuilder;
+    neq(column: string, value: unknown): SupabaseQueryBuilder;
+    gt(column: string, value: unknown): SupabaseQueryBuilder;
+    gte(column: string, value: unknown): SupabaseQueryBuilder;
+    lt(column: string, value: unknown): SupabaseQueryBuilder;
+    lte(column: string, value: unknown): SupabaseQueryBuilder;
+    like(column: string, pattern: string): SupabaseQueryBuilder;
+    ilike(column: string, pattern: string): SupabaseQueryBuilder;
+    is(column: string, value: unknown): SupabaseQueryBuilder;
+    in(column: string, values: unknown[]): SupabaseQueryBuilder;
+    contains(column: string, value: unknown): SupabaseQueryBuilder;
+    containedBy(column: string, value: unknown): SupabaseQueryBuilder;
+    range(from: number, to: number): SupabaseQueryBuilder;
+    limit(count: number): SupabaseQueryBuilder;
+    order(column: string, options?: { ascending?: boolean }): SupabaseQueryBuilder;
+    single(): Promise<{ data: unknown; error: Error | null }>;
+    maybeSingle(): Promise<{ data: unknown; error: Error | null }>;
+    then<T>(onfulfilled?: (value: { data: T | null; error: Error | null }) => T | PromiseLike<T>): Promise<T>;
+  }
+
   export interface SupabaseClient {
     auth: AuthClient;
-    from(table: string): any;
-    rpc(functionName: string, args?: Record<string, any>): Promise<any>;
+    from(table: string): SupabaseQueryBuilder;
+    rpc(functionName: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: Error | null }>;
   }
 
   export function createClient(

@@ -1,5 +1,4 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
 import { validateApiVersion } from '../_shared/versioning.ts';
@@ -63,7 +62,7 @@ serve(async req => {
     // Extract API version and route
     const url = new URL(req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
-    const version = pathParts[1]; // api-v2
+    const _version = pathParts[1]; // api-v2
     const resource = pathParts[2]; // courses, assignments, queries, etc.
     const action = pathParts[3]; // create, update, delete, deleted-items, count, etc.
 
@@ -107,8 +106,10 @@ serve(async req => {
 });
 
 // Route handlers - Course handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(resource: string, action: string) {
-  const handlers: Record<string, Record<string, Function>> = {
+  const handlers: Record<string, Record<string, HandlerFunction>> = {
     courses: {
       create: wrapOldHandler(
         handleCreateCourse,
@@ -386,7 +387,7 @@ async function handleUpdateCourse(req: AuthenticatedRequest) {
   }
 
   const { course_name, course_code, about_course } = body;
-  const updates: any = {};
+  const updates: Record<string, unknown> = {};
   if (course_name !== undefined) updates.course_name = course_name;
   if (course_code !== undefined) updates.course_code = course_code;
   if (about_course !== undefined) updates.about_course = about_course;
@@ -519,7 +520,7 @@ async function handleUpdateAssignment(req: AuthenticatedRequest) {
     );
   }
 
-  const { assignment_id, ...updates } = body;
+  const { assignment_id: _assignment_id, ...updates } = body;
   const { data, error } = await supabaseClient
     .from('assignments')
     .update(updates)
@@ -655,7 +656,7 @@ async function handleUpdateLecture(req: AuthenticatedRequest) {
     );
   }
 
-  const { lecture_id, ...updates } = body;
+  const { lecture_id: _lecture_id, ...updates } = body;
   const { data, error } = await supabaseClient
     .from('lectures')
     .update(updates)
@@ -791,7 +792,7 @@ async function handleUpdateStudySession(req: AuthenticatedRequest) {
     );
   }
 
-  const { study_session_id, ...updates } = body;
+  const { study_session_id: _study_session_id, ...updates } = body;
   const { data, error } = await supabaseClient
     .from('study_sessions')
     .update(updates)
@@ -958,7 +959,7 @@ async function handleSendNotification({
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
-  const dedupKey = generateDeduplicationKey(user_id, type || 'custom', itemId);
+  const _dedupKey = generateDeduplicationKey(user_id, type || 'custom', itemId);
 
   // Check if notification was recently sent (within last hour)
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -1320,7 +1321,7 @@ async function handleGetCount({
             // Support operators like { operator: 'gte', value: '2024-01-01' }
             const { operator, value: filterValue } = value as {
               operator: string;
-              value: any;
+              value: unknown;
             };
             if (operator === 'gte') {
               query = query.gte(key, filterValue);
@@ -1334,7 +1335,7 @@ async function handleGetCount({
           }
         }
       });
-    } catch (e) {
+    } catch (_e) {
       throw new AppError(
         'Invalid filters parameter',
         400,

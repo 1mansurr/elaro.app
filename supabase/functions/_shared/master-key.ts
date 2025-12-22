@@ -2,7 +2,6 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import {
   AppError,
   ERROR_CODES,
-  ERROR_MESSAGES,
   ERROR_STATUS_CODES,
 } from './error-codes.ts';
 
@@ -147,7 +146,7 @@ export async function verifyMasterKey(providedKey: string): Promise<boolean> {
  */
 export async function isTopLevelAdmin(
   userId: string,
-  supabaseClient: any,
+  supabaseClient: ReturnType<typeof createClient>,
 ): Promise<boolean> {
   const { data, error } = await supabaseClient
     .from('users')
@@ -166,7 +165,7 @@ export async function isTopLevelAdmin(
  * Get count of top-level admins
  */
 export async function getTopLevelAdminCount(
-  supabaseClient: any,
+  supabaseClient: ReturnType<typeof createClient>,
 ): Promise<number> {
   const { count, error } = await supabaseClient
     .from('users')

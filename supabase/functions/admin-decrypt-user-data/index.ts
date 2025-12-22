@@ -5,13 +5,11 @@ import {
 } from '../_shared/admin-handler.ts';
 import { decrypt } from '../_shared/encryption.ts';
 import { verifyMasterKey, isTopLevelAdmin } from '../_shared/master-key.ts';
-import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   AppError,
   ERROR_CODES,
-  ERROR_MESSAGES,
   ERROR_STATUS_CODES,
 } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -39,12 +37,12 @@ const BulkDecryptSchema = z.object({
 const DecryptSchema = z.union([SingleFieldDecryptSchema, BulkDecryptSchema]);
 
 async function logDecryptionAttempt(
-  supabaseAdmin: any,
+  supabaseAdmin: ReturnType<typeof createClient>,
   adminId: string,
   targetUserId: string | null,
   action: string,
   reason: string,
-  metadata: any,
+  metadata: Record<string, unknown>,
 ) {
   await supabaseAdmin.from('admin_actions').insert({
     admin_id: adminId,
@@ -139,7 +137,7 @@ async function handleDecrypt(req: AuthenticatedRequest) {
     }
 
     // Decrypt requested fields
-    const decryptedRecord: any = { ...record };
+    const decryptedRecord: Record<string, unknown> = { ...record };
     for (const field of fields) {
       if (record[field] && typeof record[field] === 'string') {
         try {

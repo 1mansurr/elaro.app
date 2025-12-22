@@ -1,10 +1,8 @@
-import { supabase } from '@/services/supabase';
 import { createMockUser, createMockAssignment } from '@tests/utils/testUtils';
 
-// Mock the supabase client - inline factory to avoid scope issues
-jest.mock('@supabase/supabase-js', () => {
-  const createMockSupabaseClient = () => ({
-    from: jest.fn().mockReturnThis(),
+// Create a mock supabase client
+const createMockSupabaseClient = () => {
+  const mockChain = {
     select: jest.fn().mockReturnThis(),
     insert: jest.fn().mockReturnThis(),
     update: jest.fn().mockReturnThis(),
@@ -14,6 +12,10 @@ jest.mock('@supabase/supabase-js', () => {
     limit: jest.fn().mockResolvedValue({ data: [], error: null }),
     order: jest.fn().mockReturnThis(),
     range: jest.fn().mockResolvedValue({ data: [], error: null }),
+  };
+
+  return {
+    from: jest.fn(() => mockChain),
     auth: {
       getUser: jest
         .fn()
@@ -29,12 +31,24 @@ jest.mock('@supabase/supabase-js', () => {
     functions: {
       invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
     },
-  });
+  };
+};
 
+// Mock the supabase service module
+jest.mock('@/services/supabase', () => {
+  const mockClient = createMockSupabaseClient();
   return {
-    createClient: jest.fn(() => createMockSupabaseClient()),
+    supabase: mockClient,
   };
 });
+
+// Mock @supabase/supabase-js
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => createMockSupabaseClient()),
+}));
+
+// Import after mocks
+import { supabase } from '@/services/supabase';
 
 describe('SupabaseService', () => {
   let mockSupabase: {
@@ -61,8 +75,7 @@ describe('SupabaseService', () => {
 
   beforeEach(() => {
     // Get the mock client from the mocked module
-    const { createClient } = require('@supabase/supabase-js');
-    mockSupabase = createClient();
+    mockSupabase = supabase as any;
     // Reset all mocks
     jest.clearAllMocks();
   });
@@ -152,7 +165,10 @@ describe('SupabaseService', () => {
   describe('data operations', () => {
     it('should select data from table', async () => {
       const mockData = [createMockUser(), createMockUser()];
-      mockSupabase.from().select().eq().single.mockResolvedValue({
+      const mockChain = mockSupabase.from('users') as any;
+      mockChain.select.mockReturnValue(mockChain);
+      mockChain.eq.mockReturnValue(mockChain);
+      mockChain.single.mockResolvedValue({
         data: mockData[0],
         error: null,
       });
@@ -169,7 +185,8 @@ describe('SupabaseService', () => {
 
     it('should insert data into table', async () => {
       const mockAssignment = createMockAssignment();
-      mockSupabase.from().insert.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.insert.mockResolvedValue({
         data: [mockAssignment],
         error: null,
       });
@@ -185,13 +202,12 @@ describe('SupabaseService', () => {
         ...createMockAssignment(),
         title: 'Updated Title',
       };
-      mockSupabase
-        .from()
-        .update()
-        .eq.mockResolvedValue({
-          data: [updatedAssignment],
-          error: null,
-        });
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.update.mockReturnValue(mockChain);
+      mockChain.eq.mockResolvedValue({
+        data: [updatedAssignment],
+        error: null,
+      });
 
       const result = await supabase
         .from('assignments')
@@ -203,7 +219,9 @@ describe('SupabaseService', () => {
     });
 
     it('should delete data from table', async () => {
-      mockSupabase.from().delete().eq.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.delete.mockReturnValue(mockChain);
+      mockChain.eq.mockResolvedValue({
         data: [],
         error: null,
       });
@@ -219,7 +237,8 @@ describe('SupabaseService', () => {
 
     it('should handle query errors', async () => {
       const mockError = { message: 'Table not found' };
-      mockSupabase.from().select.mockResolvedValue({
+      const mockChain = mockSupabase.from('nonexistent_table') as any;
+      mockChain.select.mockResolvedValue({
         data: null,
         error: mockError,
       });
@@ -268,7 +287,10 @@ describe('SupabaseService', () => {
   describe('query chaining', () => {
     it('should chain select with filters', async () => {
       const mockData = [createMockAssignment()];
-      mockSupabase.from().select().eq().limit.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.select.mockReturnValue(mockChain);
+      mockChain.eq.mockReturnValue(mockChain);
+      mockChain.limit.mockResolvedValue({
         data: mockData,
         error: null,
       });
@@ -284,13 +306,12 @@ describe('SupabaseService', () => {
 
     it('should chain update with conditions', async () => {
       const updatedData = { title: 'Updated' };
-      mockSupabase
-        .from()
-        .update()
-        .eq.mockResolvedValue({
-          data: [updatedData],
-          error: null,
-        });
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.update.mockReturnValue(mockChain);
+      mockChain.eq.mockResolvedValue({
+        data: [updatedData],
+        error: null,
+      });
 
       const result = await supabase
         .from('assignments')
@@ -304,7 +325,8 @@ describe('SupabaseService', () => {
   describe('error handling', () => {
     it('should handle network errors', async () => {
       const networkError = new Error('Network request failed');
-      mockSupabase.from().select.mockRejectedValue(networkError);
+      const mockChain = mockSupabase.from('users') as any;
+      mockChain.select.mockRejectedValue(networkError);
 
       await expect(supabase.from('users').select('*')).rejects.toThrow(
         'Network request failed',
@@ -336,8 +358,8 @@ describe('SupabaseService', () => {
     it('should validate required fields on insert', async () => {
       const incompleteData = { title: 'Test' }; // Missing required fields
       const validationError = { message: 'Missing required fields' };
-
-      mockSupabase.from().insert.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.insert.mockResolvedValue({
         data: null,
         error: validationError,
       });
@@ -349,7 +371,8 @@ describe('SupabaseService', () => {
 
     it('should handle constraint violations', async () => {
       const constraintError = { message: 'Unique constraint violation' };
-      mockSupabase.from().insert.mockResolvedValue({
+      const mockChain = mockSupabase.from('users') as any;
+      mockChain.insert.mockResolvedValue({
         data: null,
         error: constraintError,
       });
@@ -367,8 +390,9 @@ describe('SupabaseService', () => {
       const largeDataSet = Array.from({ length: 1000 }, (_, i) =>
         createMockAssignment({ id: `assignment-${i}` }),
       );
-
-      mockSupabase.from().select().limit.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.select.mockReturnValue(mockChain);
+      mockChain.limit.mockResolvedValue({
         data: largeDataSet,
         error: null,
       });
@@ -380,7 +404,9 @@ describe('SupabaseService', () => {
 
     it('should handle pagination', async () => {
       const pageData = [createMockAssignment()];
-      mockSupabase.from().select().range.mockResolvedValue({
+      const mockChain = mockSupabase.from('assignments') as any;
+      mockChain.select.mockReturnValue(mockChain);
+      mockChain.range.mockResolvedValue({
         data: pageData,
         error: null,
       });

@@ -4,7 +4,7 @@ import {
   AuthenticatedRequest,
   AppError,
 } from '../_shared/function-handler.ts';
-import { isPremium, PERMISSIONS } from '../_shared/permissions.ts';
+import { isPremium } from '../_shared/permissions.ts';
 import { ScheduleRemindersSchema } from '../_shared/schemas/reminders.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';

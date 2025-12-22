@@ -27,7 +27,7 @@ import { isAdmin } from './permissions.ts';
  * @returns Wrapped handler with admin check
  */
 export function createAdminHandler(
-  handler: (req: AuthenticatedRequest) => Promise<any>,
+  handler: (req: AuthenticatedRequest) => Promise<Response | Record<string, unknown>>,
   rateLimitName: string,
   schema?: z.ZodSchema,
   requireIdempotency: boolean = false,

@@ -8,8 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useOnboardingStatus = () => {
   const { user, loading } = useAuth();
 
-  const needsOnboarding = user && !user.onboarding_completed;
-  const isOnboardingComplete = user && user.onboarding_completed;
+  const needsOnboarding = !!(user && !user.onboarding_completed);
+  const isOnboardingComplete = !!(user && user.onboarding_completed);
   const isAuthenticated = !!user;
 
   return {

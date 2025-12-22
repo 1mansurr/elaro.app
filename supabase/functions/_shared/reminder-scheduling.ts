@@ -133,7 +133,7 @@ export async function scheduleMultipleSRSReminders(
   const { intervals, ...baseOptions } = options;
 
   const reminders = await Promise.all(
-    intervals.map(async daysOffset => {
+    intervals.map(daysOffset => {
       return scheduleSRSReminder(supabaseClient, {
         ...baseOptions,
         daysOffset,

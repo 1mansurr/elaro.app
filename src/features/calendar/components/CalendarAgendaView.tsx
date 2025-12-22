@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { format } from 'date-fns';
 import { Task } from '@/types';
-import { WeekStrip } from './WeekStrip';
+import WeekStrip from './WeekStrip';
 import { CalendarTaskCard } from './CalendarTaskCard';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';

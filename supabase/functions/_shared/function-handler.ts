@@ -11,7 +11,6 @@ import { corsHeaders } from './cors.ts';
 import {
   checkRateLimit,
   RateLimitError,
-  RateLimitInfo,
   extractIPAddress,
 } from './rate-limiter.ts';
 import { checkTaskLimit } from './check-task-limit.ts';
@@ -52,7 +51,7 @@ export class AppError extends Error {
     message: string,
     public statusCode: number = 500,
     public code?: string,
-    public details?: any,
+    public details?: unknown,
   ) {
     super(message);
     this.name = 'AppError';
@@ -63,7 +62,7 @@ export class AppError extends Error {
 export interface AuthenticatedRequest extends Request {
   user: User;
   supabaseClient: SupabaseClient;
-  body: any;
+  body: Record<string, unknown>;
   traceContext?: TraceContext;
 }
 
@@ -90,7 +89,7 @@ function handleError(error: unknown, functionName?: string): Response {
     try {
       // Safely stringify error, replacing undefined with null to prevent JSON.parse errors
       const safeErrorForLogging = JSON.parse(
-        JSON.stringify(errorForLogging, (key, value) =>
+        JSON.stringify(errorForLogging, (_key, value) =>
           value === undefined ? null : value,
         ),
       );
@@ -98,7 +97,7 @@ function handleError(error: unknown, functionName?: string): Response {
         '--- Function Error ---',
         JSON.stringify(safeErrorForLogging),
       );
-    } catch (stringifyError) {
+    } catch (_stringifyError) {
       // If stringify fails, log a safe message
       console.error('--- Function Error ---', {
         message: error instanceof Error ? error.message : 'Unknown error',
@@ -123,7 +122,7 @@ function handleError(error: unknown, functionName?: string): Response {
         ? ERROR_MESSAGES[errorCode]
         : sanitizedError) || 'An unexpected error occurred';
 
-    const response: any = {
+    const response: Record<string, unknown> = {
       error:
         typeof userMessage === 'string'
           ? userMessage
@@ -141,7 +140,7 @@ function handleError(error: unknown, functionName?: string): Response {
     }
 
     // Ensure response can be stringified (replace undefined with null)
-    const responseString = JSON.stringify(response, (key, value) =>
+    const responseString = JSON.stringify(response, (_key, value) =>
       value === undefined ? null : value,
     );
 
@@ -152,7 +151,7 @@ function handleError(error: unknown, functionName?: string): Response {
   }
 
   if (error instanceof RateLimitError) {
-    const response: any = {
+    const response: Record<string, unknown> = {
       error: ERROR_MESSAGES.RATE_LIMIT_EXCEEDED || 'Rate limit exceeded',
       message: sanitizedError || 'Too many requests',
       code: ERROR_CODES.RATE_LIMIT_EXCEEDED,
@@ -164,7 +163,7 @@ function handleError(error: unknown, functionName?: string): Response {
     }
 
     // Ensure response can be stringified (replace undefined with null)
-    const responseString = JSON.stringify(response, (key, value) =>
+    const responseString = JSON.stringify(response, (_key, value) =>
       value === undefined ? null : value,
     );
 
@@ -183,7 +182,7 @@ function handleError(error: unknown, functionName?: string): Response {
     };
 
     // Ensure response can be stringified (replace undefined with null)
-    const dbResponseString = JSON.stringify(dbResponse, (key, value) =>
+    const dbResponseString = JSON.stringify(dbResponse, (_key, value) =>
       value === undefined ? null : value,
     );
 
@@ -202,7 +201,7 @@ function handleError(error: unknown, functionName?: string): Response {
   // Ensure response can be stringified (replace undefined with null)
   const fallbackResponseString = JSON.stringify(
     fallbackResponse,
-    (key, value) => (value === undefined ? null : value),
+    (_key, value) => (value === undefined ? null : value),
   );
 
   return new Response(fallbackResponseString, {
@@ -213,7 +212,7 @@ function handleError(error: unknown, functionName?: string): Response {
 
 // The generic handler wrapper
 export function createAuthenticatedHandler(
-  handler: (req: AuthenticatedRequest) => Promise<Response | any>,
+  handler: (req: AuthenticatedRequest) => Promise<Response | Record<string, unknown>>,
   options: {
     rateLimitName: string;
     checkTaskLimit?: boolean;
@@ -300,7 +299,7 @@ export function createAuthenticatedHandler(
       }
 
       // Extract the JWT token from the Bearer header
-      const jwtToken = authHeader.replace('Bearer ', '');
+      // const jwtToken = authHeader.replace('Bearer ', ''); // Unused
 
       // Verify the JWT token using Supabase Auth REST API
       // This is the most reliable way to verify tokens in Edge Functions
@@ -464,9 +463,9 @@ export function createAuthenticatedHandler(
 
       // 5. Parse body and enforce validation for mutations
       // Handle body parsing safely - some functions don't require a body
-      let body: any = {};
-      const contentType = req.headers.get('content-type') || '';
-      const contentLength = req.headers.get('content-length');
+      let body: Record<string, unknown> = {};
+      // const contentType = req.headers.get('content-type') || ''; // Unused
+      // const contentLength = req.headers.get('content-length'); // Unused
 
       // Only try to parse body for POST/PUT/PATCH/DELETE requests
       // Check if there's actually content to parse
@@ -551,7 +550,7 @@ export function createAuthenticatedHandler(
           if (prop === 'body') return body;
           if (prop === 'traceContext') return traceContext;
           // Delegate everything else to the original request
-          const value = (target as any)[prop];
+          const value = (target as Record<string, unknown>)[prop as string];
           // If it's a function, bind it to the target to preserve 'this' context
           return typeof value === 'function' ? value.bind(target) : value;
         },
@@ -687,7 +686,7 @@ export function createAuthenticatedHandler(
             : 'Unknown error occurred';
 
       // Try to get supabaseClient for tracking (may not exist if auth failed)
-      let trackingClient: any;
+      let trackingClient: SupabaseClient | null = null;
       try {
         trackingClient = createClient(
           Deno.env.get('SUPABASE_URL') ?? '',
@@ -794,7 +793,7 @@ export function createAuthenticatedHandler(
 
 // New handler for scheduled functions (cron jobs) that need admin access
 export function createScheduledHandler(
-  handler: (supabaseAdminClient: SupabaseClient) => Promise<Response | any>,
+  handler: (supabaseAdminClient: SupabaseClient) => Promise<Response | Record<string, unknown>>,
   options?: { requireSecret?: boolean; secretEnvVar?: string },
 ) {
   return async (req: Request): Promise<Response> => {
@@ -837,7 +836,7 @@ export function createScheduledHandler(
 }
 
 // Constant-time string comparison to prevent timing attacks
-async function constantTimeCompare(a: string, b: string): Promise<boolean> {
+function constantTimeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
     return false;
   }
@@ -858,9 +857,9 @@ async function constantTimeCompare(a: string, b: string): Promise<boolean> {
 export function createWebhookHandler(
   handler: (
     supabaseAdmin: SupabaseClient,
-    payload: any,
+    payload: Record<string, unknown>,
     eventType: string,
-  ) => Promise<Response | any>,
+  ) => Promise<Response | Record<string, unknown>>,
   options: { secretKeyEnvVar: string; headerName: string },
 ) {
   return async (req: Request): Promise<Response> => {
@@ -887,7 +886,7 @@ export function createWebhookHandler(
 
       // Securely compare the authorization headers using constant-time comparison
       // This prevents timing attacks
-      const isValid = await constantTimeCompare(
+      const isValid = constantTimeCompare(
         receivedAuthHeader,
         expectedAuthHeader,
       );

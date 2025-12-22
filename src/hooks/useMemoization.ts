@@ -7,13 +7,14 @@ import React, { useMemo, useCallback, useRef } from 'react';
 export const useExpensiveMemo = <T>(
   factory: () => T,
   deps: React.DependencyList,
-  equalityFn?: (a: T, b: T) => boolean,
+  equalityFn?: (a: React.DependencyList, b: React.DependencyList) => boolean,
 ): T => {
   const ref = useRef<{ value: T; deps: React.DependencyList } | undefined>(
     undefined,
   );
 
-  if (!ref.current || !areEqual(ref.current.deps, deps)) {
+  const depsEqual = equalityFn ? equalityFn : areEqual;
+  if (!ref.current || !depsEqual(ref.current.deps, deps)) {
     ref.current = { value: factory(), deps };
   }
 
@@ -28,15 +29,19 @@ export const useStableCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList,
 ): T => {
-  const ref = useRef<{ callback: T; deps: React.DependencyList } | undefined>(
+  const ref = useRef<{ callback: T; deps: React.DependencyList; stableCallback: T } | undefined>(
     undefined,
   );
 
   if (!ref.current || !areEqual(ref.current.deps, deps)) {
-    ref.current = { callback, deps };
+    // Create a new stable callback wrapper
+    const stableCallback = ((...args: unknown[]) => {
+      return callback(...args);
+    }) as T;
+    ref.current = { callback, deps, stableCallback };
   }
 
-  return ref.current.callback;
+  return ref.current.stableCallback;
 };
 
 /**

@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
@@ -18,7 +18,6 @@ import {
   canSendNotification,
 } from '../_shared/notification-helpers.ts';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Consolidated Notification System - Handles all notification operations
 serve(async req => {
@@ -156,8 +155,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     send: wrapOldHandler(
       handleSendNotification,
       'notification-send',
@@ -247,7 +248,7 @@ async function handleSendNotification({
 
   // Verify user can send notification (either to themselves or admin)
   if (user_id !== user.id) {
-    // TODO: Check if user is admin here if needed
+    // TODO(@admin): Check if user is admin here if needed
     throw new AppError(
       'You can only send notifications to yourself',
       403,
@@ -257,7 +258,7 @@ async function handleSendNotification({
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
-  const dedupKey = generateDeduplicationKey(user_id, type || 'custom', itemId);
+  const _dedupKey = generateDeduplicationKey(user_id, type || 'custom', itemId);
 
   // Check if notification was recently sent (within last hour)
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -678,7 +679,7 @@ async function handleWelcomeNotification({
   // Verify user can send welcome notification (typically admin or system)
   // For now, allow if it's for themselves or if they're sending it (system use case)
   if (user_id && user_id !== user.id) {
-    // TODO: Check admin status if needed
+    // TODO(@admin): Check admin status if needed
     throw new AppError(
       'You can only send welcome notifications for yourself',
       403,
@@ -843,8 +844,8 @@ async function handlePreferences({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const method = (body as any)?.method || 'GET';
-  const preferences = body as Record<string, any>;
+  const method = (body as Record<string, unknown>)?.method || 'GET';
+  const preferences = body as Record<string, unknown>;
 
   if (method === 'GET' || method === 'get') {
     // Get preferences
@@ -911,7 +912,7 @@ async function handleHistory({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const urlParams = (body as any)?.urlParams || {};
+  const urlParams = (body as Record<string, unknown>)?.urlParams || {};
   const limit = parseInt(urlParams.limit || '50');
   const offset = parseInt(urlParams.offset || '0');
   const filter = urlParams.filter || 'all';
@@ -1016,8 +1017,8 @@ async function handleQueue({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const method = (body as any)?.method || 'GET';
-  const urlParams = (body as any)?.urlParams || {};
+  const method = (body as Record<string, unknown>)?.method || 'GET';
+  const urlParams = (body as Record<string, unknown>)?.urlParams || {};
 
   if (method === 'GET' || method === 'get') {
     // Get queue items
@@ -1053,7 +1054,7 @@ async function handleQueue({
       notification_type: string;
       title: string;
       body: string;
-      data?: Record<string, any>;
+      data?: Record<string, unknown>;
       scheduled_for: string;
       priority?: number;
     };
@@ -1077,7 +1078,7 @@ async function handleQueue({
     return data;
   } else if (method === 'DELETE' || method === 'delete') {
     // Remove from queue
-    const queueId = (body as any)?.queue_id;
+    const queueId = (body as Record<string, unknown>)?.queue_id;
 
     if (!queueId) {
       throw new AppError('queue_id is required', 400, 'VALIDATION_ERROR');

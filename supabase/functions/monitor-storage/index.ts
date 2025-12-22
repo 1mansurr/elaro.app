@@ -14,7 +14,6 @@ import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   checkAllStorageQuotas,
-  StorageQuotaStatus,
 } from '../_shared/storage-monitor.ts';
 
 serve(async (req: Request) => {

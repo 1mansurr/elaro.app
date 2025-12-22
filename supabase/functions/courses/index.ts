@@ -37,10 +37,10 @@ const UpdateCourseSchema = CreateCourseSchema.partial();
 
 // Course service class
 class CourseService {
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: SupabaseClient) {}
 
   // Course operations
-  async createCourse(data: any, userId: string) {
+  async createCourse(data: Record<string, unknown>, userId: string) {
     // Check course limits based on subscription tier
     const { data: userProfile } = await this.supabaseClient
       .from('users')
@@ -87,7 +87,7 @@ class CourseService {
     return course;
   }
 
-  async updateCourse(id: string, data: any, userId: string) {
+  async updateCourse(id: string, data: Record<string, unknown>, userId: string) {
     const { data: course, error } = await this.supabaseClient
       .from('courses')
       .update({
@@ -113,7 +113,7 @@ class CourseService {
       .single();
 
     // Use centralized soft delete function
-    const { data, error } = await this.supabaseClient.rpc(
+    const { error } = await this.supabaseClient.rpc(
       'soft_delete_record_cascade',
       {
         table_name: 'courses',
@@ -180,7 +180,7 @@ class CourseService {
   }
 
   async restoreCourse(id: string, userId: string) {
-    const { data, error } = await this.supabaseClient.rpc(
+    const { error } = await this.supabaseClient.rpc(
       'restore_soft_deleted_record',
       {
         table_name: 'courses',
@@ -195,7 +195,7 @@ class CourseService {
 }
 
 // Main handler function
-async function handleCoursesRequest({ user, supabaseClient, body, url }: any) {
+async function handleCoursesRequest({ user, supabaseClient, body, url }: AuthenticatedRequest & { url: string }) {
   const courseService = new CourseService(supabaseClient);
   const path = new URL(url).pathname;
   const method = new URL(url).searchParams.get('method') || 'GET';

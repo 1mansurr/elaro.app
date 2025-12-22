@@ -17,7 +17,7 @@ export type JobStatus =
 export interface Job {
   id: number;
   job_name: string;
-  job_data: any;
+  job_data: Record<string, unknown>;
   status: JobStatus;
   priority: number;
   retry_count: number;
@@ -49,7 +49,7 @@ export interface EnqueueJobOptions {
 export async function enqueueJob(
   supabaseClient: SupabaseClient,
   jobName: string,
-  jobData: any,
+  jobData: Record<string, unknown>,
   options: EnqueueJobOptions = {},
 ): Promise<number> {
   const scheduledAt = options.scheduledAt

@@ -6,33 +6,39 @@
 
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { EmptyState } from '@/shared/components/EmptyState';
-import { ThemeProvider } from '@/contexts/ThemeContext';
 
-// Mock theme context
-const mockTheme = {
-  background: '#FFFFFF',
-  text: '#000000',
-  textSecondary: '#666666',
-};
+// Mock @expo/vector-icons BEFORE importing component
+jest.mock('@expo/vector-icons', () => {
+  const React = require('react');
+  const { Text } = require('react-native');
+  return {
+    Ionicons: ({ name, size, color, ...props }: any) => {
+      return React.createElement(Text, { ...props, testID: `icon-${name}` }, name);
+    },
+  };
+});
 
-const mockThemeContextValue = {
-  theme: mockTheme,
-  toggleTheme: jest.fn(),
-  isDarkMode: false,
-};
+// Mock ThemeContext BEFORE importing component
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    theme: {
+      background: '#FFFFFF',
+      text: '#000000',
+      textSecondary: '#666666',
+    },
+    toggleTheme: jest.fn(),
+    isDarkMode: false,
+    isDark: false,
+  }),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
 
-const TestWrapper = ({ children }: { children: React.ReactNode }) => (
-  <ThemeProvider value={mockThemeContextValue}>{children}</ThemeProvider>
-);
+// Import component AFTER mocks - try importing from index
+import { EmptyState } from '@/shared/components';
 
 describe('EmptyState', () => {
   it('should render with default props', () => {
-    render(
-      <TestWrapper>
-        <EmptyState title="No items" message="No items found" />
-      </TestWrapper>,
-    );
+    render(<EmptyState title="No items" message="No items found" />);
 
     expect(screen.getByText('No items')).toBeTruthy();
     expect(screen.getByText('No items found')).toBeTruthy();
@@ -40,13 +46,11 @@ describe('EmptyState', () => {
 
   it('should render with custom icon', () => {
     render(
-      <TestWrapper>
-        <EmptyState
-          title="No assignments"
-          message="Create your first assignment"
-          icon="document-text-outline"
-        />
-      </TestWrapper>,
+      <EmptyState
+        title="No assignments"
+        message="Create your first assignment"
+        icon="document-text-outline"
+      />,
     );
 
     expect(screen.getByText('No assignments')).toBeTruthy();
@@ -55,9 +59,7 @@ describe('EmptyState', () => {
 
   it('should apply correct styles', () => {
     const { getByText } = render(
-      <TestWrapper>
-        <EmptyState title="Test Title" message="Test Message" />
-      </TestWrapper>,
+      <EmptyState title="Test Title" message="Test Message" />,
     );
 
     const title = getByText('Test Title');

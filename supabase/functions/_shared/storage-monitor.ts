@@ -127,7 +127,7 @@ export async function trackStorageQuota(
     const quotaLimit = STORAGE_LIMITS[storageType];
 
     // Track in database
-    const { data, error } = await supabaseClient.rpc('track_storage_quota', {
+    const { error } = await supabaseClient.rpc('track_storage_quota', {
       p_storage_type: storageType,
       p_usage_bytes: actualUsage,
       p_quota_limit_bytes: quotaLimit,

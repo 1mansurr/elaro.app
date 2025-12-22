@@ -1,7 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import {
   AuthenticatedRequest,
   AppError,
@@ -111,8 +110,10 @@ serve(async req => {
 });
 
 // Route handlers - All handlers are wrapped with createAdminHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     export: createAdminHandler(
       handleExportData,
       'admin-export',
@@ -181,7 +182,7 @@ function getHandler(action: string | null) {
 
 // Handler functions - All use AuthenticatedRequest but use admin client for DB operations
 async function handleExportData({ body }: AuthenticatedRequest) {
-  const { user_id, format } = body || {};
+  const { user_id } = body || {};
   const supabaseAdmin = getAdminClient();
 
   if (user_id) {
@@ -255,7 +256,7 @@ async function handleCleanupData({ body }: AuthenticatedRequest) {
   const cutoffDate = new Date(
     Date.now() - older_than_days * 24 * 60 * 60 * 1000,
   ).toISOString();
-  const results: Record<string, any> = {};
+  const results: Record<string, unknown> = {};
 
   switch (type) {
     case 'rate_limits': {
@@ -317,7 +318,7 @@ async function handleCleanupData({ body }: AuthenticatedRequest) {
 
 async function handleHealthCheck({ supabaseClient }: AuthenticatedRequest) {
   // Check database connectivity using authenticated client
-  const { data, error } = await supabaseClient
+  const { error } = await supabaseClient
     .from('users')
     .select('count')
     .limit(1);
@@ -340,7 +341,7 @@ async function handleSuspendUser({ body }: AuthenticatedRequest) {
   const { user_id, reason } = body;
   const supabaseAdmin = getAdminClient();
 
-  const { data, error } = await supabaseAdmin
+  const { data: suspendedUser, error } = await supabaseAdmin
     .from('users')
     .update({
       account_status: 'suspended',
@@ -352,14 +353,14 @@ async function handleSuspendUser({ body }: AuthenticatedRequest) {
     .single();
 
   if (error) handleDbError(error);
-  return data;
+  return suspendedUser;
 }
 
 async function handleUnsuspendUser({ body }: AuthenticatedRequest) {
   const { user_id } = body;
   const supabaseAdmin = getAdminClient();
 
-  const { data, error } = await supabaseAdmin
+  const { data: unsuspendedUser, error } = await supabaseAdmin
     .from('users')
     .update({
       account_status: 'active',
@@ -371,7 +372,7 @@ async function handleUnsuspendUser({ body }: AuthenticatedRequest) {
     .single();
 
   if (error) handleDbError(error);
-  return data;
+  return unsuspendedUser;
 }
 
 async function handleDeleteUser({ body }: AuthenticatedRequest) {
@@ -380,7 +381,7 @@ async function handleDeleteUser({ body }: AuthenticatedRequest) {
 
   if (permanent) {
     // Permanently delete user and all associated data
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', user_id);
@@ -389,7 +390,7 @@ async function handleDeleteUser({ body }: AuthenticatedRequest) {
     return { deleted: true };
   } else {
     // Soft delete user
-    const { data, error } = await supabaseAdmin
+    const { data: deletedUser, error } = await supabaseAdmin
       .from('users')
       .update({
         account_status: 'deleted',
@@ -400,7 +401,7 @@ async function handleDeleteUser({ body }: AuthenticatedRequest) {
       .single();
 
     if (error) handleDbError(error);
-    return data;
+    return deletedUser;
   }
 }
 
@@ -408,7 +409,7 @@ async function handleRestoreUser({ body }: AuthenticatedRequest) {
   const { user_id } = body;
   const supabaseAdmin = getAdminClient();
 
-  const { data, error } = await supabaseAdmin
+  const { data: restoredUser, error } = await supabaseAdmin
     .from('users')
     .update({
       account_status: 'active',
@@ -419,14 +420,14 @@ async function handleRestoreUser({ body }: AuthenticatedRequest) {
     .single();
 
   if (error) handleDbError(error);
-  return data;
+  return restoredUser;
 }
 
 async function handleGrantPremium({ body }: AuthenticatedRequest) {
   const { user_id, subscription_tier = 'oddity' } = body;
   const supabaseAdmin = getAdminClient();
 
-  const { data, error } = await supabaseAdmin
+  const { data: premiumUser, error } = await supabaseAdmin
     .from('users')
     .update({ subscription_tier })
     .eq('id', user_id)
@@ -434,7 +435,7 @@ async function handleGrantPremium({ body }: AuthenticatedRequest) {
     .single();
 
   if (error) handleDbError(error);
-  return data;
+  return premiumUser;
 }
 
 // handleStartTrial function removed - no longer supporting free trials
@@ -489,7 +490,7 @@ async function handleGetMetrics({ body }: AuthenticatedRequest) {
   };
 }
 
-async function handleAutoUnsuspend({ supabaseClient }: AuthenticatedRequest) {
+async function handleAutoUnsuspend({}: AuthenticatedRequest) {
   // Find users who should be auto-unsuspended
   const supabaseAdmin = getAdminClient();
   const { data: suspendedUsers, error } = await supabaseAdmin
@@ -507,7 +508,7 @@ async function handleAutoUnsuspend({ supabaseClient }: AuthenticatedRequest) {
   const results = [];
   for (const user of suspendedUsers || []) {
     try {
-      const { data, error: updateError } = await supabaseAdmin
+      const { error: updateError } = await supabaseAdmin
         .from('users')
         .update({
           account_status: 'active',

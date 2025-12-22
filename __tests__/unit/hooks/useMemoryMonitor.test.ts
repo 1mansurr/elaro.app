@@ -116,10 +116,9 @@ describe('useMemoryMonitor', () => {
       jest.advanceTimersByTime(1000);
     });
 
-    // Should log that memory monitoring is not available
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Memory monitoring not available'),
-    );
+    // The hook returns early when memory API is missing, so no logs should occur
+    // (The hook doesn't log "Memory monitoring not available" - it just returns)
+    expect(consoleSpy).not.toHaveBeenCalled();
 
     // Restore
     (global as any).performance.memory = originalMemory;

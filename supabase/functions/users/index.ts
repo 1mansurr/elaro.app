@@ -17,6 +17,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AppError,
+  AuthenticatedRequest,
 } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -24,6 +25,7 @@ import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
 } from '../_shared/event-driven-architecture.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Schemas for validation
 const UpdateProfileSchema = z.object({
@@ -52,7 +54,7 @@ const SoftDeleteAccountSchema = z.object({
 
 // User service class
 class UserService {
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: ReturnType<typeof createClient>) {}
 
   async getUserProfile(userId: string) {
     const { data: profile, error } = await this.supabaseClient
@@ -74,7 +76,7 @@ class UserService {
     return profile;
   }
 
-  async updateUserProfile(userId: string, data: any) {
+  async updateUserProfile(userId: string, data: Record<string, unknown>) {
     const { data: profile, error } = await this.supabaseClient
       .from('users')
       .update({
@@ -89,7 +91,7 @@ class UserService {
     return profile;
   }
 
-  async completeOnboarding(userId: string, data: any) {
+  async completeOnboarding(userId: string, data: Record<string, unknown>) {
     const { data: profile, error } = await this.supabaseClient
       .from('users')
       .update({
@@ -125,12 +127,12 @@ class UserService {
     return profile;
   }
 
-  async softDeleteAccount(userId: string, reason?: string) {
+  async softDeleteAccount(userId: string, _reason?: string) {
     const now = new Date().toISOString();
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 7); // 7 days from now
 
-    const { data, error } = await this.supabaseClient
+    const { error } = await this.supabaseClient
       .from('users')
       .update({
         account_status: 'deleted',
@@ -151,7 +153,7 @@ class UserService {
   }
 
   async restoreAccount(userId: string) {
-    const { data, error } = await this.supabaseClient
+    const { error } = await this.supabaseClient
       .from('users')
       .update({
         account_status: 'active',
@@ -244,7 +246,7 @@ class UserService {
     };
   }
 
-  private calculateStudyStreak(studySessions: any[]): number {
+  private calculateStudyStreak(studySessions: Array<{ session_date: string }>): number {
     // Simplified streak calculation
     const sortedSessions = studySessions.sort(
       (a, b) =>
@@ -271,7 +273,7 @@ class UserService {
     return streak;
   }
 
-  private calculateTaskStreak(assignments: any[]): number {
+  private calculateTaskStreak(assignments: Array<{ completed: boolean; completed_at: string }>): number {
     // Simplified task completion streak
     const completedAssignments = assignments
       .filter(a => a.completed)
@@ -389,9 +391,10 @@ class UserService {
       }
 
       return data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get login history';
       throw new AppError(
-        error.message || 'Failed to get login history',
+        errorMessage,
         500,
         'LOGIN_HISTORY_ERROR',
       );
@@ -430,7 +433,7 @@ async function handleUsersRequest({
   body,
   url,
   method: requestMethod,
-}: any) {
+}: AuthenticatedRequest & { url: string }) {
   const userService = new UserService(supabaseClient);
   const path = new URL(url).pathname;
   const method =

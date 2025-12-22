@@ -381,12 +381,6 @@ const mainScreens = {
     },
   },
   OnboardingFlow: { component: OnboardingFlow },
-  PostOnboardingWelcome: {
-    component: PostOnboardingWelcomeScreen,
-    options: {
-      headerShown: false,
-    },
-  },
   AddCourseFirst: {
     component: AddCourseFirstScreen,
     options: {
@@ -496,13 +490,13 @@ export const AuthenticatedNavigator: React.FC = () => {
   // Determine initial route based on course count and welcome screen status
   let initialRouteName: keyof RootStackParamList = 'Main';
 
-  // Prioritize AddCourseFirst if user hasn't seen it yet (regardless of course count)
+  // Show AddCourseFirst if user hasn't seen it yet (regardless of course count)
+  // After onboarding, users will always see this first
   if (hasSeenAddCourseFirst === false) {
     initialRouteName = 'AddCourseFirst';
-  } else if (courseCount > 0 && hasSeenPostOnboardingWelcome === false) {
-    // Has courses but hasn't seen PostOnboardingWelcome screen
-    initialRouteName = 'PostOnboardingWelcome';
   }
+  // PostOnboardingWelcome is only shown after course creation from AddCourseFirst,
+  // not automatically based on course count
 
   // Show main app if onboarding is completed
   return (
@@ -517,6 +511,17 @@ export const AuthenticatedNavigator: React.FC = () => {
 
           {/* Modal flows */}
           <Stack.Group>
+            {/* PostOnboardingWelcome - full screen modal to hide tab bar */}
+            <Stack.Screen
+              name="PostOnboardingWelcome"
+              component={PostOnboardingWelcomeScreen}
+              options={{
+                headerShown: false,
+                presentation: 'fullScreenModal',
+                gestureEnabled: false,
+              }}
+            />
+
             {/* Auth screen - available for switching accounts */}
             <Stack.Screen
               name="Auth"

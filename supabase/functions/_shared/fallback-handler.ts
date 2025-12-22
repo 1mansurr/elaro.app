@@ -142,7 +142,7 @@ export async function processNotificationQueue(
           notification.title,
           notification.body,
           notification.data,
-          { priority: notification.priority as any },
+          { priority: notification.priority as 'normal' | 'high' | 'urgent' },
         );
 
         if (result.success && result.sentCount > 0) {

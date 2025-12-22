@@ -313,7 +313,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     if (session?.user) {
       // Clear cache to ensure fresh data (especially after onboarding completion)
       const cacheKey = `user_profile:${session.user.id}`;
-      await cache.delete(cacheKey);
+      await cache.remove(cacheKey);
 
       const userProfile = await fetchUserProfile(session.user.id);
       setUser(userProfile);

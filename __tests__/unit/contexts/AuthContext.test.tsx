@@ -5,14 +5,14 @@ import {
   checkAccountLockout,
   resetFailedAttempts,
   recordSuccessfulLogin,
-} from '@/features/auth/services/accountLockout';
+} from '@/utils/authLockout';
 import { updateLastActiveTimestamp } from '@/utils/sessionTimeout';
 import { mixpanelService } from '@/services/analytics';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 // Mock dependencies
 jest.mock('@/features/auth/services/authService');
-jest.mock('@/features/auth/services/accountLockout');
+jest.mock('@/utils/authLockout');
 jest.mock('@/utils/sessionTimeout');
 jest.mock('@/services/analytics');
 jest.mock('@/services/analyticsEvents', () => ({

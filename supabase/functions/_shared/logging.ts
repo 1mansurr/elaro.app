@@ -17,7 +17,7 @@ interface LogEntry {
   userId?: string;
   traceId?: string;
   spanId?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   timestamp: string;
   error?: {
     message: string;
@@ -83,7 +83,7 @@ async function appendLogToStorage(logEntry: LogEntry): Promise<void> {
           .filter(line => line.trim())
           .map(line => JSON.parse(line));
       }
-    } catch (error) {
+    } catch (_error) {
       // File doesn't exist yet, start with empty array
       console.debug(`Log file ${filePath} doesn't exist yet, creating new one`);
     }
@@ -123,18 +123,18 @@ async function appendLogToStorage(logEntry: LogEntry): Promise<void> {
  * @param metadata - Additional metadata (will be redacted)
  * @param traceContext - Trace context for distributed tracing
  */
-export async function sendLog(
+export function sendLog(
   level: LogLevel,
   message: string,
-  metadata: Record<string, any> = {},
+  metadata: Record<string, unknown> = {},
   traceContext?: { traceId?: string; spanId?: string; parentSpanId?: string },
-): Promise<void> {
+): void {
   // Redact PII from metadata
   const redactedMetadata = redactPII(metadata, {
     hashIds: true,
     maskEmails: true,
     redactIpAddresses: true,
-  }) as Record<string, any>;
+  }) as Record<string, unknown>;
 
   const logEntry: LogEntry = {
     level,
@@ -180,28 +180,28 @@ export async function sendLog(
 export const logger = {
   info: (
     message: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     traceContext?: { traceId?: string; spanId?: string },
   ) => {
     return sendLog('info', message, metadata, traceContext);
   },
   warn: (
     message: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     traceContext?: { traceId?: string; spanId?: string },
   ) => {
     return sendLog('warn', message, metadata, traceContext);
   },
   error: (
     message: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     traceContext?: { traceId?: string; spanId?: string },
   ) => {
     return sendLog('error', message, metadata, traceContext);
   },
   debug: (
     message: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
     traceContext?: { traceId?: string; spanId?: string },
   ) => {
     return sendLog('debug', message, metadata, traceContext);

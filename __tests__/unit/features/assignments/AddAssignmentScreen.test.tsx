@@ -19,16 +19,160 @@ jest.mock('@/contexts/AuthContext');
 jest.mock('@/contexts/NetworkContext');
 jest.mock('@tanstack/react-query');
 jest.mock('@react-navigation/native');
-jest.mock('@/services/api');
+const mockApiMutations = {
+  assignments: {
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+};
+
+jest.mock('@/services/api', () => ({
+  api: {
+    mutations: mockApiMutations,
+    assignments: {
+      getById: jest.fn(),
+      list: jest.fn(),
+    },
+  },
+}));
 jest.mock('@/services/supabase');
 jest.mock('@/services/notifications');
-jest.mock('@/hooks/useMonthlyTaskCount');
-jest.mock('@/hooks/useTotalTaskCount');
-jest.mock('@/utils/taskPersistence');
-jest.mock('@/utils/draftStorage');
-jest.mock('@/hooks/useTemplates');
-jest.mock('@/shared/hooks/useTemplateManagement');
-jest.mock('@/shared/hooks/useTemplateSelection');
+const mockUseMonthlyTaskCount = jest.fn(() => ({
+  monthlyTaskCount: 0,
+  monthlyLimit: 15,
+  isPremium: false,
+  limitReached: false,
+  isLoading: false,
+}));
+
+const mockUseWeeklyTaskCount = jest.fn(() => ({
+  weeklyTaskCount: 0,
+  WEEKLY_TASK_LIMIT: 15,
+  isPremium: false,
+  limitReached: false,
+  isLoading: false,
+}));
+
+jest.mock('@/hooks/useWeeklyTaskCount', () => ({
+  useMonthlyTaskCount: jest.fn(),
+  useWeeklyTaskCount: jest.fn(),
+}));
+jest.mock('@/hooks/useTotalTaskCount', () => ({
+  useTotalTaskCount: jest.fn(() => ({
+    isFirstTask: false,
+    isLoading: false,
+  })),
+}));
+
+jest.mock('@/hooks/useLimitCheck', () => ({
+  useLimitCheck: jest.fn(() => ({
+    checkActivityLimit: jest.fn().mockResolvedValue({ allowed: true }),
+  })),
+}));
+
+jest.mock('@/contexts/UsageLimitPaywallContext', () => ({
+  useUsageLimitPaywall: jest.fn(() => ({
+    showUsageLimitPaywall: jest.fn(),
+  })),
+}));
+
+jest.mock('@/contexts/ThemeContext', () => ({
+  useTheme: jest.fn(() => ({
+    theme: {
+      background: '#FFFFFF',
+      text: '#000000',
+      accent: '#2C5EFF',
+      colors: {
+        primary: '#007AFF',
+        background: '#FFFFFF',
+        text: '#000000',
+      },
+    },
+    isDark: false,
+    toggleTheme: jest.fn(),
+  })),
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: jest.fn(() => ({
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  })),
+  SafeAreaProvider: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock('@/shared/hooks/task-forms', () => ({
+  useCourseSelector: jest.fn(() => ({
+    courses: [],
+    isLoading: false,
+    selectedCourse: null,
+    setSelectedCourse: jest.fn(),
+  })),
+  useReminders: jest.fn(() => ({
+    reminders: [120],
+    addReminder: jest.fn(),
+    removeReminder: jest.fn(),
+    setReminders: jest.fn(),
+  })),
+  useTaskTemplate: jest.fn(() => ({
+    isTemplateBrowserOpen: false,
+    selectedTemplate: null,
+    openTemplateBrowser: jest.fn(),
+    closeTemplateBrowser: jest.fn(),
+    handleTemplateSelect: jest.fn(),
+    handleSaveAsTemplate: jest.fn(),
+    hasTemplates: false,
+    handleMyTemplatesPress: jest.fn(),
+  })),
+}));
+
+const mockSavePendingTask = jest.fn();
+const mockGetPendingTask = jest.fn();
+
+jest.mock('@/utils/taskPersistence', () => ({
+  savePendingTask: jest.fn(),
+  getPendingTask: jest.fn(),
+}));
+
+const mockSaveDraft = jest.fn();
+const mockGetDraft = jest.fn();
+const mockClearDraft = jest.fn();
+
+jest.mock('@/utils/draftStorage', () => ({
+  saveDraft: jest.fn(),
+  getDraft: jest.fn(),
+  clearDraft: jest.fn(),
+}));
+
+jest.mock('@/hooks/useTemplates', () => ({
+  useTemplates: jest.fn(() => ({
+    templates: [],
+    isLoading: false,
+  })),
+}));
+
+jest.mock('@/shared/hooks/useTemplateManagement', () => ({
+  useTemplateManagement: jest.fn(() => ({
+    createTemplate: jest.fn(),
+    hasTemplates: false,
+  })),
+}));
+
+jest.mock('@/shared/hooks/useTemplateSelection', () => ({
+  useTemplateSelection: jest.fn(() => ({
+    isTemplateBrowserOpen: false,
+    isUsingTemplate: false,
+    selectedTemplate: null,
+    openTemplateBrowser: jest.fn(),
+    closeTemplateBrowser: jest.fn(),
+    selectTemplate: jest.fn(),
+    resetTemplateSelection: jest.fn(),
+  })),
+}));
 
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockUseNetwork = useNetwork as jest.MockedFunction<typeof useNetwork>;
@@ -50,6 +194,44 @@ describe('AddAssignmentScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Reset all mocks to default values
+    mockApiMutations.assignments.create.mockResolvedValue({
+      id: 'assignment-123',
+      title: 'Test Assignment',
+    });
+    mockSavePendingTask.mockResolvedValue(undefined);
+    mockGetPendingTask.mockResolvedValue(null);
+    mockSaveDraft.mockResolvedValue(undefined);
+    mockGetDraft.mockResolvedValue(null);
+    mockClearDraft.mockResolvedValue(undefined);
+
+    // Reset hook mocks
+    const { useMonthlyTaskCount, useWeeklyTaskCount } = require('@/hooks/useWeeklyTaskCount');
+    (useMonthlyTaskCount as jest.Mock).mockReturnValue({
+      monthlyTaskCount: 0,
+      monthlyLimit: 15,
+      isPremium: false,
+      limitReached: false,
+      isLoading: false,
+    });
+    (useWeeklyTaskCount as jest.Mock).mockReturnValue({
+      weeklyTaskCount: 0,
+      WEEKLY_TASK_LIMIT: 15,
+      isPremium: false,
+      limitReached: false,
+      isLoading: false,
+    });
+
+    // Reset utility mocks
+    const { savePendingTask, getPendingTask } = require('@/utils/taskPersistence');
+    (savePendingTask as jest.Mock).mockImplementation(mockSavePendingTask);
+    (getPendingTask as jest.Mock).mockImplementation(mockGetPendingTask);
+
+    const { saveDraft, getDraft, clearDraft } = require('@/utils/draftStorage');
+    (saveDraft as jest.Mock).mockImplementation(mockSaveDraft);
+    (getDraft as jest.Mock).mockImplementation(mockGetDraft);
+    (clearDraft as jest.Mock).mockImplementation(mockClearDraft);
 
     mockUseAuth.mockReturnValue({
       session: { user: { id: 'user-123' } } as any,
@@ -78,41 +260,6 @@ describe('AddAssignmentScreen', () => {
     mockUseRoute.mockReturnValue({
       params: {},
     } as any);
-
-    // Mock hooks
-    jest.doMock('@/hooks/useMonthlyTaskCount', () => ({
-      useMonthlyTaskCount: () => ({
-        limitReached: false,
-        monthlyTaskCount: 5,
-        monthlyLimit: 10,
-      }),
-    }));
-
-    jest.doMock('@/hooks/useTotalTaskCount', () => ({
-      useTotalTaskCount: () => ({
-        isFirstTask: false,
-        isLoading: false,
-      }),
-    }));
-
-    jest.doMock('@/shared/hooks/useTemplateManagement', () => ({
-      useTemplateManagement: () => ({
-        createTemplate: jest.fn(),
-        hasTemplates: false,
-      }),
-    }));
-
-    jest.doMock('@/shared/hooks/useTemplateSelection', () => ({
-      useTemplateSelection: () => ({
-        isTemplateBrowserOpen: false,
-        isUsingTemplate: false,
-        selectedTemplate: null,
-        openTemplateBrowser: jest.fn(),
-        closeTemplateBrowser: jest.fn(),
-        selectTemplate: jest.fn(),
-        resetTemplateSelection: jest.fn(),
-      }),
-    }));
   });
 
   describe('rendering', () => {
@@ -254,21 +401,6 @@ describe('AddAssignmentScreen', () => {
 
   describe('assignment creation', () => {
     it('should create assignment when online', async () => {
-      const mockCreate = jest.fn().mockResolvedValue({
-        id: 'assignment-123',
-        title: 'Test Assignment',
-      });
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
-
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
       );
@@ -280,7 +412,7 @@ describe('AddAssignmentScreen', () => {
       fireEvent.press(saveButton);
 
       await waitFor(() => {
-        expect(mockCreate).toHaveBeenCalled();
+        expect(mockApiMutations.assignments.create).toHaveBeenCalled();
       });
     });
 
@@ -290,12 +422,6 @@ describe('AddAssignmentScreen', () => {
         isOffline: true,
         isInternetReachable: false,
       });
-
-      const mockSavePendingTask = jest.fn();
-      jest.doMock('@/utils/taskPersistence', () => ({
-        savePendingTask: mockSavePendingTask,
-        clearPendingTask: jest.fn(),
-      }));
 
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
@@ -313,19 +439,9 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should handle creation errors', async () => {
-      const mockCreate = jest
-        .fn()
-        .mockRejectedValue(new Error('Failed to create assignment'));
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
+      mockApiMutations.assignments.create.mockRejectedValue(
+        new Error('Failed to create assignment'),
+      );
 
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
@@ -343,20 +459,6 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should invalidate queries after successful creation', async () => {
-      const mockCreate = jest.fn().mockResolvedValue({
-        id: 'assignment-123',
-      });
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
-
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
       );
@@ -428,13 +530,14 @@ describe('AddAssignmentScreen', () => {
 
   describe('task limits', () => {
     it('should show limit warning when limit reached', () => {
-      jest.doMock('@/hooks/useMonthlyTaskCount', () => ({
-        useMonthlyTaskCount: () => ({
-          limitReached: true,
-          monthlyTaskCount: 10,
-          monthlyLimit: 10,
-        }),
-      }));
+      const { useMonthlyTaskCount } = require('@/hooks/useWeeklyTaskCount');
+      (useMonthlyTaskCount as jest.Mock).mockReturnValue({
+        limitReached: true,
+        monthlyTaskCount: 10,
+        monthlyLimit: 10,
+        isPremium: false,
+        isLoading: false,
+      });
 
       const { getByText } = render(<AddAssignmentScreen />);
 
@@ -443,13 +546,14 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should prevent creation when limit reached', async () => {
-      jest.doMock('@/hooks/useMonthlyTaskCount', () => ({
-        useMonthlyTaskCount: () => ({
-          limitReached: true,
-          monthlyTaskCount: 10,
-          monthlyLimit: 10,
-        }),
-      }));
+      const { useMonthlyTaskCount } = require('@/hooks/useWeeklyTaskCount');
+      (useMonthlyTaskCount as jest.Mock).mockReturnValue({
+        limitReached: true,
+        monthlyTaskCount: 10,
+        monthlyLimit: 10,
+        isPremium: false,
+        isLoading: false,
+      });
 
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
@@ -477,20 +581,6 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should navigate back after successful creation', async () => {
-      const mockCreate = jest.fn().mockResolvedValue({
-        id: 'assignment-123',
-      });
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
-
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,
       );
@@ -509,13 +599,6 @@ describe('AddAssignmentScreen', () => {
 
   describe('draft saving', () => {
     it('should save draft automatically', async () => {
-      const mockSaveDraft = jest.fn();
-      jest.doMock('@/utils/draftStorage', () => ({
-        saveDraft: mockSaveDraft,
-        getDraft: jest.fn().mockResolvedValue(null),
-        clearDraft: jest.fn(),
-      }));
-
       const { getByPlaceholderText } = render(<AddAssignmentScreen />);
 
       fireEvent.changeText(getByPlaceholderText(/title/i), 'Test Assignment');
@@ -535,12 +618,7 @@ describe('AddAssignmentScreen', () => {
         description: 'Draft description',
       };
 
-      const mockGetDraft = jest.fn().mockResolvedValue(mockDraft);
-      jest.doMock('@/utils/draftStorage', () => ({
-        saveDraft: jest.fn(),
-        getDraft: mockGetDraft,
-        clearDraft: jest.fn(),
-      }));
+      mockGetDraft.mockResolvedValue(mockDraft);
 
       const { getByDisplayValue } = render(<AddAssignmentScreen />);
 
@@ -552,22 +630,12 @@ describe('AddAssignmentScreen', () => {
 
   describe('loading states', () => {
     it('should show loading indicator during save', async () => {
-      const mockCreate = jest.fn(
+      mockApiMutations.assignments.create.mockImplementation(
         () =>
           new Promise(resolve =>
             setTimeout(() => resolve({ id: 'assignment-123' }), 100),
           ),
       );
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
 
       const { getByPlaceholderText, getByText, getByTestId } = render(
         <AddAssignmentScreen />,
@@ -587,22 +655,12 @@ describe('AddAssignmentScreen', () => {
     });
 
     it('should disable form during save', async () => {
-      const mockCreate = jest.fn(
+      mockApiMutations.assignments.create.mockImplementation(
         () =>
           new Promise(resolve =>
             setTimeout(() => resolve({ id: 'assignment-123' }), 100),
           ),
       );
-
-      jest.doMock('@/services/api', () => ({
-        api: {
-          mutations: {
-            assignments: {
-              create: mockCreate,
-            },
-          },
-        },
-      }));
 
       const { getByPlaceholderText, getByText } = render(
         <AddAssignmentScreen />,

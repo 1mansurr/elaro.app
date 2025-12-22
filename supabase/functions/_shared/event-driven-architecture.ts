@@ -5,13 +5,15 @@
  * business logic that was previously embedded in database triggers.
  */
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+
 export interface BaseEvent {
   id: string;
   type: string;
   timestamp: string;
   userId?: string;
-  data: Record<string, any>;
-  metadata?: Record<string, any>;
+  data: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface UserCreatedEvent extends BaseEvent {
@@ -135,7 +137,7 @@ export class CentralEventProcessor implements EventProcessor {
   /**
    * Execute a handler with timeout
    */
-  private async executeHandler(
+  private executeHandler(
     handler: EventHandler,
     event: AppEvent,
   ): Promise<void> {
@@ -215,7 +217,7 @@ export class CentralEventProcessor implements EventProcessor {
  * Event Emitter for Database Events
  */
 export class DatabaseEventEmitter {
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: ReturnType<typeof createClient>) {}
 
   /**
    * Emit a user created event
@@ -322,7 +324,7 @@ export class DatabaseEventEmitter {
  * Business Logic Event Handlers
  */
 export class BusinessLogicHandlers {
-  constructor(private supabaseClient: any) {}
+  constructor(private supabaseClient: ReturnType<typeof createClient>) {}
 
   /**
    * Handle user created events
@@ -401,12 +403,12 @@ export class BusinessLogicHandlers {
   /**
    * Send welcome email (placeholder)
    */
-  private async sendWelcomeEmail(userData: {
+  private sendWelcomeEmail(userData: {
     userId: string;
     email: string;
     firstName?: string;
     lastName?: string;
-  }): Promise<void> {
+  }): void {
     // This would integrate with your email service
     console.log('Sending welcome email to:', userData.email);
   }
@@ -414,11 +416,11 @@ export class BusinessLogicHandlers {
   /**
    * Send deletion notification (placeholder)
    */
-  private async sendDeletionNotification(data: {
+  private sendDeletionNotification(data: {
     userId: string;
     courseName: string;
     cascadeCount: number;
-  }): Promise<void> {
+  }): void {
     // This would integrate with your notification service
     console.log('Sending deletion notification for course:', data.courseName);
   }
@@ -426,7 +428,7 @@ export class BusinessLogicHandlers {
   /**
    * Update user streak
    */
-  private async updateUserStreak(userId: string): Promise<void> {
+  private updateUserStreak(userId: string): void {
     // Implementation for updating user streaks
     console.log('Updating streak for user:', userId);
   }
@@ -434,7 +436,7 @@ export class BusinessLogicHandlers {
   /**
    * Check for achievement unlocks
    */
-  private async checkAchievements(userId: string): Promise<void> {
+  private checkAchievements(userId: string): void {
     // Implementation for checking achievements
     console.log('Checking achievements for user:', userId);
   }
@@ -448,7 +450,7 @@ export const globalEventProcessor = new CentralEventProcessor();
 /**
  * Initialize Event-Driven Architecture
  */
-export function initializeEventDrivenArchitecture(supabaseClient: any): void {
+export function initializeEventDrivenArchitecture(supabaseClient: ReturnType<typeof createClient>): void {
   const businessHandlers = new BusinessLogicHandlers(supabaseClient);
 
   // Register event handlers
@@ -490,7 +492,7 @@ export const EventUtils = {
     type: T['type'],
     data: T['data'],
     userId?: string,
-    metadata?: Record<string, any>,
+    metadata?: Record<string, unknown>,
   ): T {
     return {
       id: crypto.randomUUID(),
@@ -505,7 +507,7 @@ export const EventUtils = {
   /**
    * Validate event structure
    */
-  validateEvent(event: any): event is AppEvent {
+  validateEvent(event: unknown): event is AppEvent {
     return (
       event &&
       typeof event.id === 'string' &&
@@ -518,10 +520,10 @@ export const EventUtils = {
   /**
    * Get event statistics
    */
-  async getEventStatistics(supabaseClient: any): Promise<{
+  async getEventStatistics(supabaseClient: ReturnType<typeof createClient>): Promise<{
     totalEvents: number;
     eventsByType: Record<string, number>;
-    recentEvents: any[];
+    recentEvents: Array<{ event_type: string; created_at: string }>;
   }> {
     const { data: events } = await supabaseClient
       .from('user_events')

@@ -9,7 +9,6 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { sendPushNotification } from './send-push-notification.ts';
 import { logger } from './logging.ts';
 import {
-  isWithinQuietHours,
   getUserNotificationPreferences,
   canSendNotification,
 } from './notification-helpers.ts';

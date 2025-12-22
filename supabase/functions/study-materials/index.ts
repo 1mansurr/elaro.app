@@ -20,7 +20,7 @@ import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
@@ -30,15 +30,16 @@ import {
   ApplyTemplateSchema,
   ShareMaterialsSchema,
 } from '../_shared/schemas/studyMaterials.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Study Materials service class
 class StudyMaterialsService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
-  async createTemplate(data: any) {
+  async createTemplate(data: Record<string, unknown>) {
     const { template_name, task_type, template_data, is_public } =
       CreateTemplateSchema.parse(data);
 
@@ -75,7 +76,7 @@ class StudyMaterialsService {
     return templates;
   }
 
-  async updateTemplate(templateId: string, data: any) {
+  async updateTemplate(templateId: string, data: Record<string, unknown>) {
     // Verify ownership
     const { data: existingTemplate, error: checkError } =
       await this.supabaseClient
@@ -140,7 +141,7 @@ class StudyMaterialsService {
     return { success: true, message: 'Template deleted successfully' };
   }
 
-  async applyTemplate(data: any) {
+  async applyTemplate(data: Record<string, unknown>) {
     const { template_id, course_id, customizations } =
       ApplyTemplateSchema.parse(data);
 
@@ -190,7 +191,7 @@ class StudyMaterialsService {
     const { encrypt } = await import('../_shared/encryption.ts');
 
     switch (template.task_type) {
-      case 'assignment':
+      case 'assignment': {
         const encryptedTitle = await encrypt(templateData.title, encryptionKey);
         const encryptedDescription = templateData.description
           ? await encrypt(templateData.description, encryptionKey)
@@ -216,8 +217,9 @@ class StudyMaterialsService {
         }
         createdItem = assignment;
         break;
+      }
 
-      case 'lecture':
+      case 'lecture': {
         const encryptedLectureName = await encrypt(
           templateData.lecture_name,
           encryptionKey,
@@ -246,8 +248,9 @@ class StudyMaterialsService {
         }
         createdItem = lecture;
         break;
+      }
 
-      case 'study_session':
+      case 'study_session': {
         const encryptedTopic = await encrypt(templateData.topic, encryptionKey);
         const encryptedNotes = templateData.notes
           ? await encrypt(templateData.notes, encryptionKey)
@@ -273,6 +276,7 @@ class StudyMaterialsService {
         }
         createdItem = studySession;
         break;
+      }
 
       default:
         throw new AppError(
@@ -314,7 +318,7 @@ class StudyMaterialsService {
     return materials;
   }
 
-  async shareMaterials(data: any) {
+  async shareMaterials(data: Record<string, unknown>) {
     const { material_id, share_with_users, share_level } = data;
 
     // Verify ownership
@@ -448,7 +452,8 @@ function getHandler(
     }
   }
 
-  const handlers: Record<string, Function> = {
+  type HandlerFunction = (req: Request) => Promise<Response>;
+  const handlers: Record<string, HandlerFunction> = {
     'create-template': wrapOldHandler(
       handleCreateTemplate,
       'materials-create-template',

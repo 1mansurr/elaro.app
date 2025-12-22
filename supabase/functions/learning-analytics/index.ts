@@ -18,15 +18,16 @@ import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler } from '../api-v2/_handler-utils.ts';
 import { corsHeaders } from '../_shared/cors.ts';
-import { createResponse, errorResponse } from '../_shared/response.ts';
+import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
+import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Learning Analytics service class
 class LearningAnalyticsService {
   constructor(
-    private supabaseClient: any,
-    private user: any,
+    private supabaseClient: SupabaseClient,
+    private user: User,
   ) {}
 
   async getStreakInfo() {
@@ -61,7 +62,7 @@ class LearningAnalyticsService {
     });
 
     // Calculate current streak (consecutive days from today backwards)
-    let checkDate = new Date(today);
+    const checkDate = new Date(today);
     while (sessionDates.some(d => d.getTime() === checkDate.getTime())) {
       currentStreak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -276,7 +277,7 @@ class LearningAnalyticsService {
     };
   }
 
-  private calculateActivityScore(sessions: any[], assignments: any[]): number {
+  private calculateActivityScore(sessions: Array<{ session_date: string }>, assignments: Array<{ due_date: string }>): number {
     const recentSessions = sessions.filter(s => {
       const sessionDate = new Date(s.session_date);
       const sevenDaysAgo = new Date();
@@ -292,7 +293,7 @@ class LearningAnalyticsService {
     return Math.min(recentSessions + upcomingAssignments, 10);
   }
 
-  private analyzeStudyPattern(sessions: any[]): any {
+  private analyzeStudyPattern(sessions: Array<{ session_date: string }>): Record<string, unknown> {
     const dayOfWeekCount: Record<number, number> = {};
     const hourCount: Record<number, number> = {};
 
@@ -319,7 +320,7 @@ class LearningAnalyticsService {
     };
   }
 
-  private calculateRetentionScore(srsData: any[]): number {
+  private calculateRetentionScore(srsData: Array<{ quality_rating: number }>): number {
     if (srsData.length === 0) return 0;
 
     const qualityScores = srsData.map(s => s.quality_rating);
@@ -364,8 +365,10 @@ async function handleGetRetentionMetrics(req: AuthenticatedRequest) {
 }
 
 // Route handlers - All handlers are wrapped with createAuthenticatedHandler
+type HandlerFunction = (req: Request) => Promise<Response>;
+
 function getHandler(action: string | null) {
-  const handlers: Record<string, Function> = {
+  const handlers: Record<string, HandlerFunction> = {
     streak: wrapOldHandler(
       handleGetStreakInfo,
       'analytics-streak',

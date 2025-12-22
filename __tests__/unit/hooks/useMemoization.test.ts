@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import {
   useExpensiveMemo,
   useStableCallback,
@@ -163,6 +163,7 @@ describe('useMemoization', () => {
     });
 
     afterEach(() => {
+      jest.runOnlyPendingTimers();
       jest.useRealTimers();
     });
 
@@ -181,8 +182,10 @@ describe('useMemoization', () => {
       rerender({ deps: [2] });
       expect(factory).toHaveBeenCalledTimes(1); // Still old value
 
-      // Fast forward time
-      jest.advanceTimersByTime(300);
+      // Fast forward time with act()
+      act(() => {
+        jest.advanceTimersByTime(300);
+      });
       expect(factory).toHaveBeenCalledTimes(2);
     });
   });

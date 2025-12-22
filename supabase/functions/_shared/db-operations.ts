@@ -13,6 +13,7 @@ import {
   ERROR_MESSAGES,
 } from './error-codes.ts';
 import { mapDatabaseError } from './error-codes.ts';
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 /**
  * Execute database operation with automatic retry for transient errors
@@ -23,13 +24,13 @@ import { mapDatabaseError } from './error-codes.ts';
  * @throws AppError for non-retryable errors or after max retries
  */
 export async function executeDbOperation<T>(
-  operation: () => Promise<{ data: T | null; error: any }>,
+  operation: () => Promise<{ data: T | null; error: unknown }>,
   options: {
     maxRetries?: number;
     operationName: string;
   } = { operationName: 'database_operation' },
 ): Promise<T> {
-  return retryWithBackoff(
+  return await retryWithBackoff(
     async () => {
       const result = await operation();
 
@@ -81,11 +82,11 @@ export async function executeDbOperation<T>(
  * @returns Created record
  */
 export async function dbInsert<T>(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   table: string,
-  data: any,
+  data: Record<string, unknown>,
 ): Promise<T> {
-  return executeDbOperation(
+  return await executeDbOperation(
     () => supabaseClient.from(table).insert(data).select().single(),
     { operationName: `insert_${table}` },
   );
@@ -101,12 +102,12 @@ export async function dbInsert<T>(
  * @returns Updated record
  */
 export async function dbUpdate<T>(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   table: string,
   id: string,
-  updates: any,
+  updates: Record<string, unknown>,
 ): Promise<T> {
-  return executeDbOperation(
+  return await executeDbOperation(
     () =>
       supabaseClient.from(table).update(updates).eq('id', id).select().single(),
     { operationName: `update_${table}` },
@@ -121,11 +122,11 @@ export async function dbUpdate<T>(
  * @param id - Record ID to delete
  */
 export async function dbDelete(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   table: string,
   id: string,
 ): Promise<void> {
-  return executeDbOperation(
+  return await executeDbOperation(
     async () => {
       const { error } = await supabaseClient.from(table).delete().eq('id', id);
       return { data: null, error };
@@ -143,11 +144,11 @@ export async function dbDelete(
  * @returns Found record
  */
 export async function dbGetById<T>(
-  supabaseClient: any,
+  supabaseClient: SupabaseClient,
   table: string,
   id: string,
 ): Promise<T> {
-  return executeDbOperation(
+  return await executeDbOperation(
     () => supabaseClient.from(table).select('*').eq('id', id).single(),
     { operationName: `get_${table}_by_id` },
   );
@@ -162,14 +163,15 @@ export async function dbGetById<T>(
  * @returns Query result
  */
 export async function dbQuery<T>(
-  supabaseClient: any,
+  supabaseClient: ReturnType<typeof createClient>,
   table: string,
-  queryBuilder: (query: any) => any,
+  queryBuilder: (query: ReturnType<typeof createClient>['from']) => ReturnType<typeof createClient>['from'],
 ): Promise<T[]> {
-  return executeDbOperation(
+  return await executeDbOperation(
     async () => {
       const query = supabaseClient.from(table).select('*');
-      const result = queryBuilder(query);
+      const builtQuery = queryBuilder(query);
+      const result = await builtQuery;
       return result;
     },
     { operationName: `query_${table}` },

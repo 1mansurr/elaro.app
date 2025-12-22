@@ -28,7 +28,7 @@ export function generateSpanId(): string {
 /**
  * Extract trace context from request headers
  */
-export function extractTraceContext(req: Request | any): TraceContext {
+export function extractTraceContext(req: Request | Record<string, unknown>): TraceContext {
   // Handle case where req might have been spread or modified and lost headers
   // Try to access headers from the request object safely
   let headers: Headers | null = null;
@@ -51,7 +51,7 @@ export function extractTraceContext(req: Request | any): TraceContext {
         }
       }
     }
-  } catch (error) {
+  } catch (_error) {
     // If accessing headers fails, continue without them
     // This can happen if the request object has been modified
   }
@@ -66,7 +66,7 @@ export function extractTraceContext(req: Request | any): TraceContext {
       traceId = headers.get('X-Trace-ID') || traceId;
       spanId = headers.get('X-Span-ID') || spanId;
       parentSpanId = headers.get('X-Parent-Span-ID') || undefined;
-    } catch (error) {
+    } catch (_error) {
       // If get() fails, use generated IDs
     }
   }

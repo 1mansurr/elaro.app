@@ -6,20 +6,100 @@ import {
 } from '@tests/utils/testUtils';
 
 // Mock the individual services
-jest.mock('@/services/notifications/NotificationDeliveryService');
-jest.mock('@/services/notifications/NotificationPreferenceService');
-jest.mock('@/services/notifications/NotificationSchedulingService');
-jest.mock('@/services/notifications/NotificationHistoryService');
-jest.mock('@/services/analytics/WeeklyAnalyticsService');
-jest.mock('@/services/analytics/BatchProcessingService');
+const mockDeliveryService = {
+  scheduleNotification: jest.fn(),
+  sendPushNotification: jest.fn(),
+  scheduleLocalNotification: jest.fn(),
+  cancelNotification: jest.fn(),
+  cancelAllUserNotifications: jest.fn(),
+  getScheduledNotifications: jest.fn(),
+  setupNotificationCategories: jest.fn(),
+  setupAndroidChannels: jest.fn(),
+  setNavigationRef: jest.fn(),
+};
+
+const mockPreferenceService = {
+  getUserPreferences: jest.fn(),
+  updateUserPreferences: jest.fn(),
+  areNotificationsEnabled: jest.fn(),
+};
+
+const mockSchedulingService = {
+  scheduleNotification: jest.fn(),
+  cancelNotification: jest.fn(),
+  getOptimalTimes: jest.fn(),
+};
+
+const mockHistoryService = {
+  recordNotification: jest.fn(),
+  getNotificationHistory: jest.fn(),
+};
+
+const mockWeeklyAnalytics = {
+  generateWeeklyReport: jest.fn(),
+  getWeeklyReport: jest.fn(),
+  generateReportForUser: jest.fn(),
+};
+
+const mockBatchProcessing = {
+  processBatch: jest.fn(),
+  processBatchForUsers: jest.fn(),
+};
+
+// Export mocks so they can be accessed
+export { mockWeeklyAnalytics, mockBatchProcessing, mockHistoryService };
+
+jest.mock('@/services/notifications/NotificationDeliveryService', () => ({
+  NotificationDeliveryService: {
+    getInstance: jest.fn(() => mockDeliveryService),
+  },
+}));
+
+jest.mock('@/services/notifications/NotificationPreferenceService', () => ({
+  NotificationPreferenceService: {
+    getInstance: jest.fn(() => mockPreferenceService),
+  },
+}));
+
+jest.mock('@/services/notifications/NotificationSchedulingService', () => ({
+  NotificationSchedulingService: {
+    getInstance: jest.fn(() => mockSchedulingService),
+  },
+}));
+
+// Mock history service - it's imported as a named export
+// Mock history service - it's imported as a named export
+jest.mock('@/services/notifications/NotificationHistoryService', () => ({
+  notificationHistoryService: mockHistoryService,
+}));
+
+// Mock analytics services - they're imported as named exports
+// These need to be mocked before NotificationService imports them
+jest.mock('@/services/analytics/WeeklyAnalyticsService', () => ({
+  weeklyAnalyticsService: mockWeeklyAnalytics,
+}));
+
+jest.mock('@/services/analytics/BatchProcessingService', () => ({
+  batchProcessingService: mockBatchProcessing,
+}));
 
 describe('NotificationService', () => {
   let notificationService: NotificationService;
-  let mockSupabase: any;
 
   beforeEach(() => {
-    mockSupabase = createMockSupabaseClient();
+    // Clear the singleton instance by accessing private property
+    // @ts-ignore - accessing private property for testing
+    NotificationService.instance = undefined;
     notificationService = NotificationService.getInstance();
+    jest.clearAllMocks();
+    
+    // Manually set the analytics services on the instance since mocks might not be applied
+    // @ts-ignore - accessing private property for testing
+    notificationService.weeklyAnalytics = mockWeeklyAnalytics;
+    // @ts-ignore - accessing private property for testing
+    notificationService.batchProcessing = mockBatchProcessing;
+    // @ts-ignore - accessing private property for testing
+    notificationService.history = mockHistoryService;
   });
 
   afterEach(() => {

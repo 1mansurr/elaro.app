@@ -26,6 +26,11 @@ module.exports = {
     '^@tests/(.*)$': '<rootDir>/__tests__/$1',
   },
 
+  // Transform configuration - ensure ES modules are transformed
+  transform: {
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { rootMode: 'upward' }],
+  },
+
   // Coverage configuration - enabled with selective collection
   collectCoverage: true,
   collectCoverageFrom: [
@@ -42,8 +47,9 @@ module.exports = {
   coverageDirectory: 'coverage',
 
   // Ignore patterns - allow more React Native modules to be transformed
+  // Also allow ES modules from node_modules to be transformed
   transformIgnorePatterns: [
-    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-.*|@react-native.*|expo-modules-core|expo-.*))',
+    'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg|react-native-.*|@react-native.*|expo-modules-core|expo-.*|@tanstack/.*))',
   ],
 
   // Test timeout
@@ -60,6 +66,9 @@ module.exports = {
 
   // Module directories
   moduleDirectories: ['node_modules', 'src', '__tests__'],
+
+  // Extensions to resolve
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
 
   // Global variables
   globals: {

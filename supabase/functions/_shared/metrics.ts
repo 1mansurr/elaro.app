@@ -17,7 +17,7 @@ type StatsDConstructor = new (options: {
 };
 
 // Lazy-load StatsD module to prevent boot failures
-let StatsDModulePromise: Promise<any> | null = null;
+let StatsDModulePromise: Promise<unknown> | null = null;
 let StatsDConstructor: StatsDConstructor | undefined = undefined;
 
 async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
@@ -188,7 +188,7 @@ export class MetricsCollector {
   }
 
   // Record error
-  recordError(errorType: string, errorMessage: string): void {
+  recordError(errorType: string, _errorMessage: string): void {
     // Fire and forget - don't await to avoid blocking
     this.ensureClient()
       .then(client => {
