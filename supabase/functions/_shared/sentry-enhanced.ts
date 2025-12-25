@@ -152,7 +152,10 @@ function sanitizeBreadcrumbData(
 /**
  * Set custom context/tags
  */
-export function setContext(key: string, context: Record<string, unknown>): void {
+export function setContext(
+  key: string,
+  context: Record<string, unknown>,
+): void {
   if (!SENTRY_SUPPORTED) return;
   sentry.setContext(key, sanitizeBreadcrumbData(context));
 }

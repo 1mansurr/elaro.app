@@ -44,7 +44,7 @@ export function SubscriptionManagementCard() {
   const freeBenefits = [
     'Up to 15 tasks/month',
     '2 courses',
-    '5 Spaced Repetition Reminders',
+    '15 Spaced Repetition Reminders',
   ];
 
   const oddityBenefits = [

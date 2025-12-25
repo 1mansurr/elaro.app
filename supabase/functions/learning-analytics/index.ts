@@ -21,7 +21,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Learning Analytics service class
 class LearningAnalyticsService {
@@ -277,7 +280,10 @@ class LearningAnalyticsService {
     };
   }
 
-  private calculateActivityScore(sessions: Array<{ session_date: string }>, assignments: Array<{ due_date: string }>): number {
+  private calculateActivityScore(
+    sessions: Array<{ session_date: string }>,
+    assignments: Array<{ due_date: string }>,
+  ): number {
     const recentSessions = sessions.filter(s => {
       const sessionDate = new Date(s.session_date);
       const sevenDaysAgo = new Date();
@@ -293,7 +299,9 @@ class LearningAnalyticsService {
     return Math.min(recentSessions + upcomingAssignments, 10);
   }
 
-  private analyzeStudyPattern(sessions: Array<{ session_date: string }>): Record<string, unknown> {
+  private analyzeStudyPattern(
+    sessions: Array<{ session_date: string }>,
+  ): Record<string, unknown> {
     const dayOfWeekCount: Record<number, number> = {};
     const hourCount: Record<number, number> = {};
 
@@ -320,7 +328,9 @@ class LearningAnalyticsService {
     };
   }
 
-  private calculateRetentionScore(srsData: Array<{ quality_rating: number }>): number {
+  private calculateRetentionScore(
+    srsData: Array<{ quality_rating: number }>,
+  ): number {
     if (srsData.length === 0) return 0;
 
     const qualityScores = srsData.map(s => s.quality_rating);

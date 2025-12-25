@@ -13,7 +13,11 @@ jest.mock('@expo/vector-icons', () => {
   const { Text } = require('react-native');
   return {
     Ionicons: ({ name, size, color, ...props }: any) => {
-      return React.createElement(Text, { ...props, testID: `icon-${name}` }, name);
+      return React.createElement(
+        Text,
+        { ...props, testID: `icon-${name}` },
+        name,
+      );
     },
   };
 });

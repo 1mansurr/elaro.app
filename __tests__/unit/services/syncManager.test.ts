@@ -36,12 +36,14 @@ describe('SyncManager', () => {
   beforeEach(async () => {
     // Wait a bit to ensure any ongoing processing completes first
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     await syncManager.clearQueue();
     jest.clearAllMocks();
 
     // Clear AsyncStorage store
-    Object.keys(asyncStorageStore).forEach(key => delete asyncStorageStore[key]);
+    Object.keys(asyncStorageStore).forEach(
+      key => delete asyncStorageStore[key],
+    );
 
     // Mock AsyncStorage with persistent storage
     mockAsyncStorage.getItem = jest.fn((key: string) => {
@@ -61,13 +63,13 @@ describe('SyncManager', () => {
       isConnected: true,
       isInternetReachable: true,
     } as any);
-    
+
     // Mock NetInfo.addEventListener to return unsubscribe function
     mockNetInfo.addEventListener = jest.fn(() => jest.fn());
 
     // Mock Circuit Breaker - default instance
     const defaultMockCircuitBreakerInstance = {
-      execute: jest.fn(async (fn) => await fn()),
+      execute: jest.fn(async fn => await fn()),
       getState: jest.fn().mockReturnValue('closed'),
       getStats: jest
         .fn()
@@ -145,14 +147,16 @@ describe('SyncManager', () => {
         isInternetReachable: true,
       } as any);
 
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: { id: 'created-1' },
         error: null,
       });
 
       // Reset circuit breaker mock for this test
-      const mockExecute = jest.fn(async (fn) => await fn());
+      const mockExecute = jest.fn(async fn => await fn());
       const mockCircuitBreakerInstance = {
         execute: mockExecute,
         getState: jest.fn().mockReturnValue('closed'),
@@ -206,18 +210,22 @@ describe('SyncManager', () => {
       const results = await syncManager.processQueue();
 
       expect(results.length).toBe(0);
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       expect(invokeEdgeFunctionWithAuth).not.toHaveBeenCalled();
     });
 
     it('should retry failed actions with exponential backoff', async () => {
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({ data: { id: 'created-1' }, error: null });
 
       // Reset circuit breaker mock for this test
-      const mockExecute = jest.fn(async (fn) => {
+      const mockExecute = jest.fn(async fn => {
         try {
           return await fn();
         } catch (error) {
@@ -342,13 +350,15 @@ describe('SyncManager', () => {
 
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock).mockRejectedValue(
         new Error('Network error'),
       );
 
       // Reset circuit breaker mock for this test
-      const mockExecute = jest.fn(async (fn) => {
+      const mockExecute = jest.fn(async fn => {
         try {
           return await fn();
         } catch (error) {

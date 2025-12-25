@@ -194,8 +194,10 @@ async function processBatchOperations(
       const result = await executeOperation(operation, supabase, userId);
       results.push({ success: true, data: result });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const errorCode = error instanceof AppError ? error.code : 'OPERATION_ERROR';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const errorCode =
+        error instanceof AppError ? error.code : 'OPERATION_ERROR';
       results.push({
         success: false,
         error: errorMessage,

@@ -509,19 +509,23 @@ export const AuthenticatedNavigator: React.FC = () => {
           {/* Main app screens */}
           {renderScreens(mainScreens)}
 
-          {/* Modal flows */}
-          <Stack.Group>
-            {/* PostOnboardingWelcome - full screen modal to hide tab bar */}
+          {/* PostOnboardingWelcome - full screen modal in its own group to hide tab bar */}
+          <Stack.Group
+            screenOptions={{
+              presentation: 'fullScreenModal',
+              headerShown: false,
+            }}>
             <Stack.Screen
               name="PostOnboardingWelcome"
               component={PostOnboardingWelcomeScreen}
               options={{
-                headerShown: false,
-                presentation: 'fullScreenModal',
                 gestureEnabled: false,
               }}
             />
+          </Stack.Group>
 
+          {/* Modal flows */}
+          <Stack.Group>
             {/* Auth screen - available for switching accounts */}
             <Stack.Screen
               name="Auth"

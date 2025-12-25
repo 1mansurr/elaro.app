@@ -212,7 +212,9 @@ function handleError(error: unknown, functionName?: string): Response {
 
 // The generic handler wrapper
 export function createAuthenticatedHandler(
-  handler: (req: AuthenticatedRequest) => Promise<Response | Record<string, unknown>>,
+  handler: (
+    req: AuthenticatedRequest,
+  ) => Promise<Response | Record<string, unknown>>,
   options: {
     rateLimitName: string;
     checkTaskLimit?: boolean;
@@ -793,7 +795,9 @@ export function createAuthenticatedHandler(
 
 // New handler for scheduled functions (cron jobs) that need admin access
 export function createScheduledHandler(
-  handler: (supabaseAdminClient: SupabaseClient) => Promise<Response | Record<string, unknown>>,
+  handler: (
+    supabaseAdminClient: SupabaseClient,
+  ) => Promise<Response | Record<string, unknown>>,
   options?: { requireSecret?: boolean; secretEnvVar?: string },
 ) {
   return async (req: Request): Promise<Response> => {

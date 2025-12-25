@@ -48,7 +48,11 @@ class EmailService {
   ) {}
 
   async sendWelcomeEmail(data: Record<string, unknown>) {
-    const { userEmail, userFirstName, userId: _userId } = WelcomeEmailSchema.parse(data);
+    const {
+      userEmail,
+      userFirstName,
+      userId: _userId,
+    } = WelcomeEmailSchema.parse(data);
 
     const emailContent = `
       <!DOCTYPE html>

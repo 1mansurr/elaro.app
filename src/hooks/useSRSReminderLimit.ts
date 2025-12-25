@@ -18,7 +18,7 @@ interface SRSReminderLimitResult {
 export const useSRSReminderLimit = (): SRSReminderLimitResult => {
   const { user } = useAuth();
   const [currentReminders, setCurrentReminders] = useState(0);
-  const [maxLimit, setMaxLimit] = useState(5); // Default free plan limit
+  const [maxLimit, setMaxLimit] = useState(15); // Default free plan limit
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

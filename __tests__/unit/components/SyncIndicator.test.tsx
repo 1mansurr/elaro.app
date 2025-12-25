@@ -69,7 +69,7 @@ describe('SyncIndicator', () => {
       completed: 0,
     });
     (syncManager.getIsSyncing as jest.Mock).mockReturnValue(true);
-    (syncManager.subscribe as jest.Mock).mockImplementation((callback) => {
+    (syncManager.subscribe as jest.Mock).mockImplementation(callback => {
       // Call callback immediately to simulate subscription
       callback({ pending: 3, failed: 0, completed: 0 });
       return jest.fn(); // Return unsubscribe function
@@ -93,7 +93,7 @@ describe('SyncIndicator', () => {
       completed: 0,
     });
     (syncManager.getIsSyncing as jest.Mock).mockReturnValue(false);
-    (syncManager.subscribe as jest.Mock).mockImplementation((callback) => {
+    (syncManager.subscribe as jest.Mock).mockImplementation(callback => {
       callback({ pending: 2, failed: 0, completed: 0 });
       return jest.fn();
     });
@@ -115,7 +115,7 @@ describe('SyncIndicator', () => {
       completed: 0,
     });
     (syncManager.getIsSyncing as jest.Mock).mockReturnValue(false);
-    (syncManager.subscribe as jest.Mock).mockImplementation((callback) => {
+    (syncManager.subscribe as jest.Mock).mockImplementation(callback => {
       callback({ pending: 1, failed: 2, completed: 0 });
       return jest.fn();
     });
@@ -136,7 +136,7 @@ describe('SyncIndicator', () => {
       completed: 0,
     });
     (syncManager.getIsSyncing as jest.Mock).mockReturnValue(true);
-    (syncManager.subscribe as jest.Mock).mockImplementation((callback) => {
+    (syncManager.subscribe as jest.Mock).mockImplementation(callback => {
       callback({ pending: 1, failed: 0, completed: 0 });
       return jest.fn();
     });

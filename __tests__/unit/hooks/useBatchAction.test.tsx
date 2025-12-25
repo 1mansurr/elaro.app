@@ -90,7 +90,9 @@ describe('useBatchAction', () => {
       },
     };
 
-    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    const {
+      invokeEdgeFunctionWithAuth,
+    } = require('@/utils/invokeEdgeFunction');
     (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
@@ -137,7 +139,9 @@ describe('useBatchAction', () => {
       expect(mockSyncManager.addToQueue).toHaveBeenCalled();
     });
 
-    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    const {
+      invokeEdgeFunctionWithAuth,
+    } = require('@/utils/invokeEdgeFunction');
     expect(invokeEdgeFunctionWithAuth).not.toHaveBeenCalled();
   });
 
@@ -155,7 +159,9 @@ describe('useBatchAction', () => {
       },
     };
 
-    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    const {
+      invokeEdgeFunctionWithAuth,
+    } = require('@/utils/invokeEdgeFunction');
     (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
@@ -191,7 +197,9 @@ describe('useBatchAction', () => {
       },
     };
 
-    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    const {
+      invokeEdgeFunctionWithAuth,
+    } = require('@/utils/invokeEdgeFunction');
     (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: mockResult,
       error: null,
@@ -217,7 +225,9 @@ describe('useBatchAction', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+    const {
+      invokeEdgeFunctionWithAuth,
+    } = require('@/utils/invokeEdgeFunction');
     (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
       data: null,
       error: { message: 'Batch operation failed' },

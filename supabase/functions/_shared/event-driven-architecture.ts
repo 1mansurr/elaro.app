@@ -450,7 +450,9 @@ export const globalEventProcessor = new CentralEventProcessor();
 /**
  * Initialize Event-Driven Architecture
  */
-export function initializeEventDrivenArchitecture(supabaseClient: ReturnType<typeof createClient>): void {
+export function initializeEventDrivenArchitecture(
+  supabaseClient: ReturnType<typeof createClient>,
+): void {
   const businessHandlers = new BusinessLogicHandlers(supabaseClient);
 
   // Register event handlers
@@ -520,7 +522,9 @@ export const EventUtils = {
   /**
    * Get event statistics
    */
-  async getEventStatistics(supabaseClient: ReturnType<typeof createClient>): Promise<{
+  async getEventStatistics(
+    supabaseClient: ReturnType<typeof createClient>,
+  ): Promise<{
     totalEvents: number;
     eventsByType: Record<string, number>;
     recentEvents: Array<{ event_type: string; created_at: string }>;

@@ -207,7 +207,10 @@ describe('AddAssignmentScreen', () => {
     mockClearDraft.mockResolvedValue(undefined);
 
     // Reset hook mocks
-    const { useMonthlyTaskCount, useWeeklyTaskCount } = require('@/hooks/useWeeklyTaskCount');
+    const {
+      useMonthlyTaskCount,
+      useWeeklyTaskCount,
+    } = require('@/hooks/useWeeklyTaskCount');
     (useMonthlyTaskCount as jest.Mock).mockReturnValue({
       monthlyTaskCount: 0,
       monthlyLimit: 15,
@@ -224,7 +227,10 @@ describe('AddAssignmentScreen', () => {
     });
 
     // Reset utility mocks
-    const { savePendingTask, getPendingTask } = require('@/utils/taskPersistence');
+    const {
+      savePendingTask,
+      getPendingTask,
+    } = require('@/utils/taskPersistence');
     (savePendingTask as jest.Mock).mockImplementation(mockSavePendingTask);
     (getPendingTask as jest.Mock).mockImplementation(mockGetPendingTask);
 

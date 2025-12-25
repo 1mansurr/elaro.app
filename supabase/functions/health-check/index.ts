@@ -5,7 +5,9 @@ import { corsHeaders } from '../_shared/cors.ts';
 /**
  * Check notification system health
  */
-async function checkNotificationHealth(supabaseClient: ReturnType<typeof createClient>): Promise<{
+async function checkNotificationHealth(
+  supabaseClient: ReturnType<typeof createClient>,
+): Promise<{
   status: 'ok' | 'error';
   expoPush: 'ok' | 'error';
   queue: 'ok' | 'error';

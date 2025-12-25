@@ -146,7 +146,11 @@ function redactValue(value: unknown, options: RedactionOptions): unknown {
 /**
  * Redact PII from an object recursively
  */
-function redactObject(obj: unknown, options: RedactionOptions, path = ''): unknown {
+function redactObject(
+  obj: unknown,
+  options: RedactionOptions,
+  path = '',
+): unknown {
   if (obj === null || obj === undefined) {
     return obj;
   }

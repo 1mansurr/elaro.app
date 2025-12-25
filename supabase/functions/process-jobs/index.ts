@@ -52,7 +52,10 @@ export function registerJobProcessor(
 /**
  * Process a single job
  */
-async function processJob(job: Job, supabaseAdmin: SupabaseClient): Promise<void> {
+async function processJob(
+  job: Job,
+  supabaseAdmin: SupabaseClient,
+): Promise<void> {
   const processor = jobProcessors[job.job_name];
 
   if (!processor) {

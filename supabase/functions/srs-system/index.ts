@@ -28,7 +28,10 @@ import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const RecordSRSPerformanceSchema = z.object({
   session_id: z.string().uuid(),
@@ -221,8 +224,11 @@ class SRSService {
   }
 
   async scheduleReview(data: Record<string, unknown>) {
-    const { session_id, next_review_date, interval_days: _interval_days } =
-      ScheduleReviewSchema.parse(data);
+    const {
+      session_id,
+      next_review_date,
+      interval_days: _interval_days,
+    } = ScheduleReviewSchema.parse(data);
 
     // Verify session ownership
     const { data: session, error: sessionError } = await this.supabaseClient
@@ -306,7 +312,9 @@ class SRSService {
 
   // Removed: calculateNextReview - use calculate_next_srs_interval RPC instead
 
-  private getQualityDistribution(stats: Array<{ quality_rating?: number }>): Record<number, number> {
+  private getQualityDistribution(
+    stats: Array<{ quality_rating?: number }>,
+  ): Record<number, number> {
     const distribution: Record<number, number> = {
       0: 0,
       1: 0,

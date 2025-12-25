@@ -246,7 +246,9 @@ class UserService {
     };
   }
 
-  private calculateStudyStreak(studySessions: Array<{ session_date: string }>): number {
+  private calculateStudyStreak(
+    studySessions: Array<{ session_date: string }>,
+  ): number {
     // Simplified streak calculation
     const sortedSessions = studySessions.sort(
       (a, b) =>
@@ -273,7 +275,9 @@ class UserService {
     return streak;
   }
 
-  private calculateTaskStreak(assignments: Array<{ completed: boolean; completed_at: string }>): number {
+  private calculateTaskStreak(
+    assignments: Array<{ completed: boolean; completed_at: string }>,
+  ): number {
     // Simplified task completion streak
     const completedAssignments = assignments
       .filter(a => a.completed)
@@ -392,12 +396,9 @@ class UserService {
 
       return data || [];
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to get login history';
-      throw new AppError(
-        errorMessage,
-        500,
-        'LOGIN_HISTORY_ERROR',
-      );
+      const errorMessage =
+        error instanceof Error ? error.message : 'Failed to get login history';
+      throw new AppError(errorMessage, 500, 'LOGIN_HISTORY_ERROR');
     }
   }
 

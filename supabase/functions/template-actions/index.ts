@@ -12,7 +12,10 @@ import {
   UpdateTemplateSchema,
   DeleteTemplateSchema,
 } from '../_shared/schemas/template.ts';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Template service class
 class TemplateService {

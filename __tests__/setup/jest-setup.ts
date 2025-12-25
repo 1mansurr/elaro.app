@@ -76,16 +76,16 @@ jest.mock('react-native', () => {
         stopAnimation: jest.fn(),
       })),
       timing: jest.fn(() => ({
-        start: jest.fn((callback) => callback && callback({ finished: true })),
+        start: jest.fn(callback => callback && callback({ finished: true })),
       })),
       spring: jest.fn(() => ({
-        start: jest.fn((callback) => callback && callback({ finished: true })),
+        start: jest.fn(callback => callback && callback({ finished: true })),
       })),
       sequence: jest.fn(() => ({
-        start: jest.fn((callback) => callback && callback({ finished: true })),
+        start: jest.fn(callback => callback && callback({ finished: true })),
       })),
       parallel: jest.fn(() => ({
-        start: jest.fn((callback) => callback && callback({ finished: true })),
+        start: jest.fn(callback => callback && callback({ finished: true })),
       })),
     },
     Easing: {
@@ -356,12 +356,16 @@ jest.mock('expo-updates', () => ({
 jest.mock('expo-notifications', () => ({
   setNotificationHandler: jest.fn(),
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  requestPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
+  requestPermissionsAsync: jest.fn(() =>
+    Promise.resolve({ status: 'granted' }),
+  ),
   scheduleNotificationAsync: jest.fn(() => Promise.resolve('notification-id')),
   cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
   cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve()),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
-  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({
+    remove: jest.fn(),
+  })),
   DEFAULT_ACTION_IDENTIFIER: 'DEFAULT',
 }));
 

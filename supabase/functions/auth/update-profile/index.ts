@@ -64,7 +64,8 @@ serve(async (req: Request) => {
     // Check if password is being updated (from body, not schema)
     const password = body.password;
 
-    const updatePayload: { data?: Record<string, unknown>; password?: string } = {};
+    const updatePayload: { data?: Record<string, unknown>; password?: string } =
+      {};
     if (Object.keys(updateData).length > 0) {
       updatePayload.data = updateData;
     }

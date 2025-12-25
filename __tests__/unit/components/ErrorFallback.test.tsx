@@ -15,7 +15,11 @@ jest.mock('@expo/vector-icons', () => {
   const { Text } = require('react-native');
   return {
     Ionicons: ({ name, size, color, ...props }: any) => {
-      return React.createElement(Text, { ...props, testID: `icon-${name}` }, name);
+      return React.createElement(
+        Text,
+        { ...props, testID: `icon-${name}` },
+        name,
+      );
     },
   };
 });
@@ -56,7 +60,12 @@ jest.mock('@/contexts/ThemeContext', () => ({
 }));
 
 // Import component AFTER mocks
-import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+} from '@testing-library/react-native';
 import { ErrorFallback } from '@/shared/components';
 
 describe('ErrorFallback', () => {

@@ -81,16 +81,27 @@ declare module 'https://esm.sh/@supabase/supabase-js@2.39.3' {
     containedBy(column: string, value: unknown): SupabaseQueryBuilder;
     range(from: number, to: number): SupabaseQueryBuilder;
     limit(count: number): SupabaseQueryBuilder;
-    order(column: string, options?: { ascending?: boolean }): SupabaseQueryBuilder;
+    order(
+      column: string,
+      options?: { ascending?: boolean },
+    ): SupabaseQueryBuilder;
     single(): Promise<{ data: unknown; error: Error | null }>;
     maybeSingle(): Promise<{ data: unknown; error: Error | null }>;
-    then<T>(onfulfilled?: (value: { data: T | null; error: Error | null }) => T | PromiseLike<T>): Promise<T>;
+    then<T>(
+      onfulfilled?: (value: {
+        data: T | null;
+        error: Error | null;
+      }) => T | PromiseLike<T>,
+    ): Promise<T>;
   }
 
   export interface SupabaseClient {
     auth: AuthClient;
     from(table: string): SupabaseQueryBuilder;
-    rpc(functionName: string, args?: Record<string, unknown>): Promise<{ data: unknown; error: Error | null }>;
+    rpc(
+      functionName: string,
+      args?: Record<string, unknown>,
+    ): Promise<{ data: unknown; error: Error | null }>;
   }
 
   export function createClient(

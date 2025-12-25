@@ -28,7 +28,9 @@ export function generateSpanId(): string {
 /**
  * Extract trace context from request headers
  */
-export function extractTraceContext(req: Request | Record<string, unknown>): TraceContext {
+export function extractTraceContext(
+  req: Request | Record<string, unknown>,
+): TraceContext {
   // Handle case where req might have been spread or modified and lost headers
   // Try to access headers from the request object safely
   let headers: Headers | null = null;

@@ -150,7 +150,9 @@ describe('PermissionService', () => {
 
       // Clear module cache and re-import to get the mocked supabase
       jest.resetModules();
-      const { PermissionService: FreshPermissionService } = require('@/features/auth/permissions/PermissionService');
+      const {
+        PermissionService: FreshPermissionService,
+      } = require('@/features/auth/permissions/PermissionService');
       const freshPermissionService = FreshPermissionService.getInstance();
 
       const result = await freshPermissionService.canCreateTask(

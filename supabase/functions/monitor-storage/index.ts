@@ -12,9 +12,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { corsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import {
-  checkAllStorageQuotas,
-} from '../_shared/storage-monitor.ts';
+import { checkAllStorageQuotas } from '../_shared/storage-monitor.ts';
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {

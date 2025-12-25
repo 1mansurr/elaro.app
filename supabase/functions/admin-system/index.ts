@@ -318,10 +318,7 @@ async function handleCleanupData({ body }: AuthenticatedRequest) {
 
 async function handleHealthCheck({ supabaseClient }: AuthenticatedRequest) {
   // Check database connectivity using authenticated client
-  const { error } = await supabaseClient
-    .from('users')
-    .select('count')
-    .limit(1);
+  const { error } = await supabaseClient.from('users').select('count').limit(1);
 
   if (error) {
     return {

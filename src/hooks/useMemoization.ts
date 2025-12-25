@@ -29,9 +29,9 @@ export const useStableCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList,
 ): T => {
-  const ref = useRef<{ callback: T; deps: React.DependencyList; stableCallback: T } | undefined>(
-    undefined,
-  );
+  const ref = useRef<
+    { callback: T; deps: React.DependencyList; stableCallback: T } | undefined
+  >(undefined);
 
   if (!ref.current || !areEqual(ref.current.deps, deps)) {
     // Create a new stable callback wrapper

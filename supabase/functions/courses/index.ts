@@ -87,7 +87,11 @@ class CourseService {
     return course;
   }
 
-  async updateCourse(id: string, data: Record<string, unknown>, userId: string) {
+  async updateCourse(
+    id: string,
+    data: Record<string, unknown>,
+    userId: string,
+  ) {
     const { data: course, error } = await this.supabaseClient
       .from('courses')
       .update({
@@ -195,7 +199,12 @@ class CourseService {
 }
 
 // Main handler function
-async function handleCoursesRequest({ user, supabaseClient, body, url }: AuthenticatedRequest & { url: string }) {
+async function handleCoursesRequest({
+  user,
+  supabaseClient,
+  body,
+  url,
+}: AuthenticatedRequest & { url: string }) {
   const courseService = new CourseService(supabaseClient);
   const path = new URL(url).pathname;
   const method = new URL(url).searchParams.get('method') || 'GET';

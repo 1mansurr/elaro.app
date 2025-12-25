@@ -30,7 +30,10 @@ import {
   ApplyTemplateSchema,
   ShareMaterialsSchema,
 } from '../_shared/schemas/studyMaterials.ts';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Study Materials service class
 class StudyMaterialsService {

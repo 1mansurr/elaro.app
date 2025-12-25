@@ -82,7 +82,9 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle online completion', async () => {
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: { success: true },
         error: null,
@@ -139,7 +141,9 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: null,
         error: { message: 'Server error' },
@@ -170,7 +174,9 @@ describe('useTaskMutations', () => {
     });
 
     it('should handle online deletion', async () => {
-      const { invokeEdgeFunctionWithAuth } = require('@/utils/invokeEdgeFunction');
+      const {
+        invokeEdgeFunctionWithAuth,
+      } = require('@/utils/invokeEdgeFunction');
       (invokeEdgeFunctionWithAuth as jest.Mock).mockResolvedValue({
         data: { success: true },
         error: null,

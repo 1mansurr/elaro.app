@@ -92,7 +92,7 @@ describe('NotificationService', () => {
     NotificationService.instance = undefined;
     notificationService = NotificationService.getInstance();
     jest.clearAllMocks();
-    
+
     // Manually set the analytics services on the instance since mocks might not be applied
     // @ts-ignore - accessing private property for testing
     notificationService.weeklyAnalytics = mockWeeklyAnalytics;

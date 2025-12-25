@@ -42,7 +42,9 @@ describe('notificationQueue', () => {
 
   describe('queueNotification', () => {
     it('should successfully queue a notification', async () => {
-      (mockVersionedApiClient.addToNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.addToNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: { id: 'notification-123' },
         error: null,
         message: null,
@@ -66,7 +68,9 @@ describe('notificationQueue', () => {
     it('should detect duplicate notifications', async () => {
       // The function checks response.error first, then checks if message contains 'duplicate' or 'already'
       // If error is set, it checks the message for duplicate keywords
-      (mockVersionedApiClient.addToNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.addToNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: null,
         error: 'duplicate', // Set error to trigger the duplicate check
         message: 'Notification already queued (duplicate)',
@@ -88,7 +92,9 @@ describe('notificationQueue', () => {
     });
 
     it('should handle database errors', async () => {
-      (mockVersionedApiClient.addToNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.addToNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: null,
         error: 'Database error',
         message: 'Database error',
@@ -187,7 +193,9 @@ describe('notificationQueue', () => {
     });
 
     it('should handle errors in batch', async () => {
-      (mockVersionedApiClient.addToNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.addToNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: null,
         error: 'Database error',
         message: 'Database error',
@@ -211,7 +219,9 @@ describe('notificationQueue', () => {
 
   describe('cancelQueuedNotification', () => {
     it('should successfully cancel a notification', async () => {
-      (mockVersionedApiClient.removeFromNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.removeFromNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: { success: true },
         error: null,
         message: null,
@@ -220,11 +230,15 @@ describe('notificationQueue', () => {
       const result = await cancelQueuedNotification('notif-123');
 
       expect(result.success).toBe(true);
-      expect(mockVersionedApiClient.removeFromNotificationQueue).toHaveBeenCalledWith('notif-123');
+      expect(
+        mockVersionedApiClient.removeFromNotificationQueue,
+      ).toHaveBeenCalledWith('notif-123');
     });
 
     it('should handle errors when canceling', async () => {
-      (mockVersionedApiClient.removeFromNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.removeFromNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: null,
         error: 'Update failed',
         message: 'Update failed',
@@ -243,7 +257,9 @@ describe('notificationQueue', () => {
         { id: 'notif-2', title: 'Notification 2' },
       ];
 
-      (mockVersionedApiClient.getNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.getNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: mockNotifications,
         error: null,
         message: null,
@@ -255,7 +271,9 @@ describe('notificationQueue', () => {
     });
 
     it('should return empty array on error', async () => {
-      (mockVersionedApiClient.getNotificationQueue as jest.Mock).mockResolvedValue({
+      (
+        mockVersionedApiClient.getNotificationQueue as jest.Mock
+      ).mockResolvedValue({
         data: null,
         error: 'Database error',
         message: 'Database error',

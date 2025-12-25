@@ -13,7 +13,10 @@ import {
   ERROR_MESSAGES,
 } from './error-codes.ts';
 import { mapDatabaseError } from './error-codes.ts';
-import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  createClient,
+  type SupabaseClient,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 /**
  * Execute database operation with automatic retry for transient errors
@@ -165,7 +168,9 @@ export async function dbGetById<T>(
 export async function dbQuery<T>(
   supabaseClient: ReturnType<typeof createClient>,
   table: string,
-  queryBuilder: (query: ReturnType<typeof createClient>['from']) => ReturnType<typeof createClient>['from'],
+  queryBuilder: (
+    query: ReturnType<typeof createClient>['from'],
+  ) => ReturnType<typeof createClient>['from'],
 ): Promise<T[]> {
   return await executeDbOperation(
     async () => {

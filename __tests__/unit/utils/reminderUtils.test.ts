@@ -15,48 +15,56 @@ const cancelReminder = jest.fn(async (reminderId: string, reason?: string) => {
   return { success: true, ...result.data };
 });
 
-const checkReminderConflicts = jest.fn(async (reminderTime: Date, bufferMinutes?: number) => {
-  const { supabase } = require('@/services/supabase');
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
-  const result = await supabase.rpc('check_reminder_conflicts', {
-    p_user_id: user.id,
-    p_reminder_time: reminderTime.toISOString(),
-    p_buffer_minutes: bufferMinutes || 15,
-  });
-  if (result.error) return [];
-  return result.data || [];
-});
+const checkReminderConflicts = jest.fn(
+  async (reminderTime: Date, bufferMinutes?: number) => {
+    const { supabase } = require('@/services/supabase');
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+    const result = await supabase.rpc('check_reminder_conflicts', {
+      p_user_id: user.id,
+      p_reminder_time: reminderTime.toISOString(),
+      p_buffer_minutes: bufferMinutes || 15,
+    });
+    if (result.error) return [];
+    return result.data || [];
+  },
+);
 
-const recordSRSPerformance = jest.fn(async (
-  sessionId: string,
-  qualityRating: number,
-  reminderId?: string,
-  responseTimeSeconds?: number,
-) => {
-  const { supabase } = require('@/services/supabase');
-  const result = await supabase.functions.invoke('record-srs-performance', {
-    body: {
-      session_id: sessionId,
-      reminder_id: reminderId,
-      quality_rating: qualityRating,
-      response_time_seconds: responseTimeSeconds,
-    },
-  });
-  if (result.error) {
-    return { success: false, error: result.error.message };
-  }
-  return {
-    success: true,
-    nextIntervalDays: result.data?.next_interval_days,
-    easeFactor: result.data?.ease_factor,
-    message: result.data?.message,
-  };
-});
+const recordSRSPerformance = jest.fn(
+  async (
+    sessionId: string,
+    qualityRating: number,
+    reminderId?: string,
+    responseTimeSeconds?: number,
+  ) => {
+    const { supabase } = require('@/services/supabase');
+    const result = await supabase.functions.invoke('record-srs-performance', {
+      body: {
+        session_id: sessionId,
+        reminder_id: reminderId,
+        quality_rating: qualityRating,
+        response_time_seconds: responseTimeSeconds,
+      },
+    });
+    if (result.error) {
+      return { success: false, error: result.error.message };
+    }
+    return {
+      success: true,
+      nextIntervalDays: result.data?.next_interval_days,
+      easeFactor: result.data?.ease_factor,
+      message: result.data?.message,
+    };
+  },
+);
 
 const getSRSStatistics = jest.fn(async (userId: string) => {
   const { supabase } = require('@/services/supabase');
-  const result = await supabase.rpc('get_srs_statistics', { p_user_id: userId });
+  const result = await supabase.rpc('get_srs_statistics', {
+    p_user_id: userId,
+  });
   if (result.error) return null;
   return result.data?.[0] || null;
 });
@@ -67,7 +75,14 @@ const getQualityRatingLabel = jest.fn((rating: number) => {
 });
 
 const getQualityRatingColor = jest.fn((rating: number) => {
-  const colors = ['#FF0000', '#FF6600', '#FFAA00', '#FFDD00', '#88FF00', '#00FF00'];
+  const colors = [
+    '#FF0000',
+    '#FF6600',
+    '#FFAA00',
+    '#FFDD00',
+    '#88FF00',
+    '#00FF00',
+  ];
   return colors[rating] || '#CCCCCC';
 });
 
@@ -351,9 +366,12 @@ describe('reminderUtils', () => {
       const result = await dismissReminder('reminder-123');
 
       expect(result.success).toBe(true);
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('dismiss-reminder', {
-        body: { reminder_id: 'reminder-123' },
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'dismiss-reminder',
+        {
+          body: { reminder_id: 'reminder-123' },
+        },
+      );
     });
 
     it('should handle errors gracefully', async () => {
@@ -379,9 +397,12 @@ describe('reminderUtils', () => {
       const result = await markReminderOpened('reminder-123');
 
       expect(result.success).toBe(true);
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('mark-reminder-opened', {
-        body: { reminder_id: 'reminder-123' },
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'mark-reminder-opened',
+        {
+          body: { reminder_id: 'reminder-123' },
+        },
+      );
     });
   });
 
@@ -395,9 +416,12 @@ describe('reminderUtils', () => {
       const result = await snoozeReminder('reminder-123', 60);
 
       expect(result.success).toBe(true);
-      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith('snooze-reminder', {
-        body: { reminder_id: 'reminder-123', minutes: 60 },
-      });
+      expect(mockSupabase.functions.invoke).toHaveBeenCalledWith(
+        'snooze-reminder',
+        {
+          body: { reminder_id: 'reminder-123', minutes: 60 },
+        },
+      );
     });
 
     it('should handle errors when snoozing', async () => {

@@ -486,7 +486,10 @@ export class MonitoringService {
 /**
  * Performance monitoring decorator
  */
-export function monitorPerformance(functionName: string, supabaseClient: ReturnType<typeof createClient>) {
+export function monitorPerformance(
+  functionName: string,
+  supabaseClient: ReturnType<typeof createClient>,
+) {
   return function (
     _target: unknown,
     _propertyName: string,
@@ -496,7 +499,9 @@ export function monitorPerformance(functionName: string, supabaseClient: ReturnT
 
     descriptor.value = async function (...args: unknown[]) {
       const startTime = Date.now();
-      const startMemory = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
+      const startMemory =
+        (performance as { memory?: { usedJSHeapSize?: number } }).memory
+          ?.usedJSHeapSize || 0;
       let success = true;
       let errorMessage: string | undefined;
 
@@ -509,7 +514,9 @@ export function monitorPerformance(functionName: string, supabaseClient: ReturnT
         throw error;
       } finally {
         const endTime = Date.now();
-        const endMemory = (performance as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
+        const endMemory =
+          (performance as { memory?: { usedJSHeapSize?: number } }).memory
+            ?.usedJSHeapSize || 0;
         const executionTime = endTime - startTime;
         const memoryUsage = endMemory - startMemory;
 
@@ -537,7 +544,9 @@ export const globalMonitoringService = new MonitoringService(null);
 /**
  * Initialize monitoring system
  */
-export function initializeMonitoring(supabaseClient: ReturnType<typeof createClient>): void {
+export function initializeMonitoring(
+  supabaseClient: ReturnType<typeof createClient>,
+): void {
   globalMonitoringService['supabaseClient'] = supabaseClient;
   console.log('Monitoring system initialized');
 }

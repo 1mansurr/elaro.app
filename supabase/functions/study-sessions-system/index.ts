@@ -32,7 +32,10 @@ import { corsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Study Session service class
 class StudySessionService {

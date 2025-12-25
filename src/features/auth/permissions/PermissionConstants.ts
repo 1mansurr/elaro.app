@@ -137,7 +137,7 @@ export const TASK_LIMITS = {
     lectures: 15,
     study_sessions: 15,
     courses: 2,
-    srs_reminders: 5,
+    srs_reminders: 15,
   },
   oddity: {
     assignments: 70,

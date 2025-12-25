@@ -38,12 +38,19 @@ jest.mock('@/utils/uuid', () => ({
 
 // Mock taskCache - these will be used by dynamic imports
 const mockGetCachedTask = jest.fn();
-const mockMergeTaskUpdates = jest.fn((task, updates) => ({ ...task, ...updates }));
+const mockMergeTaskUpdates = jest.fn((task, updates) => ({
+  ...task,
+  ...updates,
+}));
 
-jest.mock('@/utils/taskCache', () => ({
-  getCachedTask: jest.fn(),
-  mergeTaskUpdates: jest.fn((task, updates) => ({ ...task, ...updates })),
-}), { virtual: true });
+jest.mock(
+  '@/utils/taskCache',
+  () => ({
+    getCachedTask: jest.fn(),
+    mergeTaskUpdates: jest.fn((task, updates) => ({ ...task, ...updates })),
+  }),
+  { virtual: true },
+);
 
 jest.mock('@/utils/invokeEdgeFunction', () => ({
   invokeEdgeFunctionWithAuth: jest.fn(),
@@ -51,9 +58,10 @@ jest.mock('@/utils/invokeEdgeFunction', () => ({
 
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 const mockSyncManager = syncManager as jest.Mocked<typeof syncManager>;
-const mockInvokeEdgeFunction = invokeEdgeFunctionWithAuth as jest.MockedFunction<
-  typeof invokeEdgeFunctionWithAuth
->;
+const mockInvokeEdgeFunction =
+  invokeEdgeFunctionWithAuth as jest.MockedFunction<
+    typeof invokeEdgeFunctionWithAuth
+  >;
 
 describe('assignmentsApiMutations', () => {
   const userId = 'user-123';
@@ -97,10 +105,9 @@ describe('assignmentsApiMutations', () => {
         userId,
       );
 
-      expect(mockInvokeEdgeFunction).toHaveBeenCalledWith(
-        'create-assignment',
-        { body: createRequest },
-      );
+      expect(mockInvokeEdgeFunction).toHaveBeenCalledWith('create-assignment', {
+        body: createRequest,
+      });
       expect(result).toEqual(mockAssignment);
       expect(mockSyncManager.addToQueue).not.toHaveBeenCalled();
     });
@@ -216,15 +223,12 @@ describe('assignmentsApiMutations', () => {
         userId,
       );
 
-      expect(mockInvokeEdgeFunction).toHaveBeenCalledWith(
-        'update-assignment',
-        {
-          body: {
-            assignment_id: assignmentId,
-            ...updateRequest,
-          },
+      expect(mockInvokeEdgeFunction).toHaveBeenCalledWith('update-assignment', {
+        body: {
+          assignment_id: assignmentId,
+          ...updateRequest,
         },
-      );
+      });
 
       expect(result).toEqual(updatedAssignment);
       expect(mockSyncManager.addToQueue).not.toHaveBeenCalled();
@@ -245,7 +249,9 @@ describe('assignmentsApiMutations', () => {
 
       // Reset modules to ensure the mock is used
       jest.resetModules();
-      const { assignmentsApiMutations: freshMutations } = require('@/features/assignments/services/mutations');
+      const {
+        assignmentsApiMutations: freshMutations,
+      } = require('@/features/assignments/services/mutations');
 
       const result = await freshMutations.update(
         assignmentId,
@@ -284,15 +290,12 @@ describe('assignmentsApiMutations', () => {
 
       // Reset modules to ensure the mock is used
       jest.resetModules();
-      const { assignmentsApiMutations: freshMutations } = require('@/features/assignments/services/mutations');
+      const {
+        assignmentsApiMutations: freshMutations,
+      } = require('@/features/assignments/services/mutations');
 
       await expect(
-        freshMutations.update(
-          assignmentId,
-          updateRequest,
-          false,
-          userId,
-        ),
+        freshMutations.update(assignmentId, updateRequest, false, userId),
       ).rejects.toThrow(/Assignment not found in cache/);
     });
 

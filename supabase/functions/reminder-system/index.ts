@@ -31,7 +31,10 @@ import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
 import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts';
-import { type SupabaseClient, type User } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+import {
+  type SupabaseClient,
+  type User,
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const CancelReminderSchema = z.object({
   reminder_id: z.string().uuid(),

@@ -11,9 +11,7 @@ import {
   AppError,
 } from '../_shared/function-handler.ts';
 import { z } from 'zod';
-import {
-  mapDatabaseError,
-} from '../_shared/error-codes.ts';
+import { mapDatabaseError } from '../_shared/error-codes.ts';
 
 /**
  * Wraps an old-style handler function to work with createAuthenticatedHandler

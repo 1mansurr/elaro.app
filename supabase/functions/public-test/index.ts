@@ -1,7 +1,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { corsHeaders } from '../_shared/cors.ts';
 
-serve((req) => {
+serve(req => {
   console.log('Public test function called');
 
   if (req.method === 'OPTIONS') {
