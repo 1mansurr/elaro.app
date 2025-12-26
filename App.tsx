@@ -113,6 +113,19 @@ if (__DEV__) {
           }
         }
       }
+      // Also check if arg is a string that matches the pattern
+      if (typeof arg === 'string') {
+        if (
+          arg.includes('SyntaxError') &&
+          (arg.includes('undefined') || arg.includes('not valid JSON')) &&
+          (arg.includes('_symbolicate') ||
+            arg.includes('metro/src/Server.js') ||
+            arg.includes('Server._processRequest') ||
+            arg.includes('metro'))
+        ) {
+          return true;
+        }
+      }
     }
 
     // Convert all args to strings for comprehensive pattern matching
@@ -182,6 +195,16 @@ if (__DEV__) {
       return; // Suppress Metro symbolication errors
     }
     originalError.apply(console, args);
+  };
+
+  // Also intercept console.log to catch Metro errors logged there
+  const originalLog = console.log;
+  console.log = (...args: any[]) => {
+    // Suppress Metro symbolication errors in logs too
+    if (isMetroSymbolicateError(args)) {
+      return;
+    }
+    originalLog.apply(console, args);
   };
 
   // Patch Error.prototype.toJSON globally to prevent undefined values in serialization

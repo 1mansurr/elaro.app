@@ -74,14 +74,17 @@ class UserService {
       .single();
 
     if (error) throw new AppError(error.message, 500, 'PROFILE_FETCH_ERROR');
-    
+
     // Decrypt sensitive fields (university and program) before returning
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (encryptionKey && profile) {
       const decryptedProfile = { ...profile };
-      
+
       // Decrypt university if it exists and appears to be encrypted
-      if (decryptedProfile.university && typeof decryptedProfile.university === 'string') {
+      if (
+        decryptedProfile.university &&
+        typeof decryptedProfile.university === 'string'
+      ) {
         try {
           // Only attempt decryption if the string looks like base64-encoded encrypted data
           // Encrypted data is typically long and contains base64 characters
@@ -101,9 +104,12 @@ class UserService {
           // Keep the original value if decryption fails
         }
       }
-      
+
       // Decrypt program if it exists and appears to be encrypted
-      if (decryptedProfile.program && typeof decryptedProfile.program === 'string') {
+      if (
+        decryptedProfile.program &&
+        typeof decryptedProfile.program === 'string'
+      ) {
         try {
           // Only attempt decryption if the string looks like base64-encoded encrypted data
           if (decryptedProfile.program.length > 20) {
@@ -122,10 +128,10 @@ class UserService {
           // Keep the original value if decryption fails
         }
       }
-      
+
       return decryptedProfile;
     }
-    
+
     return profile;
   }
 

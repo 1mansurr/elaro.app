@@ -11,11 +11,11 @@ import { shouldHideTabBar } from '@/navigation/utils/RouteGuards';
 /**
  * Traverses the navigation hierarchy to find the root stack navigator
  * and returns the currently active route name.
- * 
+ *
  * This is necessary because the tab bar is nested inside MainTabNavigator,
  * which is nested inside the root Stack Navigator. We need to check
  * the root stack to see if a fullscreen modal is active.
- * 
+ *
  * Navigation hierarchy:
  * - AuthenticatedNavigator (Stack - root)
  *   - Main (screen containing MainTabNavigator)

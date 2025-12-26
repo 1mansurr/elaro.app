@@ -228,10 +228,7 @@ const ProfileScreen = () => {
           ]}>
           <TouchableOpacity
             onPress={handleSaveChanges}
-            style={[
-              styles.saveButton,
-              isLoading && styles.saveButtonDisabled,
-            ]}
+            style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
             disabled={isLoading}
             activeOpacity={0.7}>
             <Text

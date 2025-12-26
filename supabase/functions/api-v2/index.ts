@@ -911,14 +911,17 @@ async function handleUserProfile({
     .single();
 
   if (error) handleDbError(error);
-  
+
   // Decrypt sensitive fields (university and program) before returning
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (encryptionKey && data) {
     const decryptedData = { ...data };
-    
+
     // Decrypt university if it exists and appears to be encrypted
-    if (decryptedData.university && typeof decryptedData.university === 'string') {
+    if (
+      decryptedData.university &&
+      typeof decryptedData.university === 'string'
+    ) {
       try {
         // Only attempt decryption if the string looks like base64-encoded encrypted data
         if (decryptedData.university.length > 20) {
@@ -937,7 +940,7 @@ async function handleUserProfile({
         // Keep the original value if decryption fails
       }
     }
-    
+
     // Decrypt program if it exists and appears to be encrypted
     if (decryptedData.program && typeof decryptedData.program === 'string') {
       try {
@@ -958,10 +961,10 @@ async function handleUserProfile({
         // Keep the original value if decryption fails
       }
     }
-    
+
     return decryptedData;
   }
-  
+
   return data;
 }
 
