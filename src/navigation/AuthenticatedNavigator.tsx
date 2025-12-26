@@ -349,7 +349,7 @@ const mainScreens = {
     component: ProfileScreen,
     options: {
       ...SCREEN_CONFIGS.Profile,
-      headerTitle: 'Edit Profile',
+      headerShown: false, // Hide navigation header - ProfileScreen has its own custom header
     },
   },
   Settings: {

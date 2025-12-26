@@ -48,6 +48,7 @@ import {
   getUserNotificationPreferences,
   canSendNotification,
 } from '../_shared/notification-helpers.ts';
+import { decrypt } from '../_shared/encryption.ts';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
 import { logger } from '../_shared/logging.ts';
 
@@ -910,6 +911,57 @@ async function handleUserProfile({
     .single();
 
   if (error) handleDbError(error);
+  
+  // Decrypt sensitive fields (university and program) before returning
+  const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
+  if (encryptionKey && data) {
+    const decryptedData = { ...data };
+    
+    // Decrypt university if it exists and appears to be encrypted
+    if (decryptedData.university && typeof decryptedData.university === 'string') {
+      try {
+        // Only attempt decryption if the string looks like base64-encoded encrypted data
+        if (decryptedData.university.length > 20) {
+          decryptedData.university = await decrypt(
+            decryptedData.university,
+            encryptionKey,
+          );
+        }
+      } catch (decryptError) {
+        // If decryption fails, the data might not be encrypted (legacy data)
+        // or might be corrupted - log warning but don't fail the request
+        console.warn(
+          `Failed to decrypt university for user ${user.id}:`,
+          decryptError,
+        );
+        // Keep the original value if decryption fails
+      }
+    }
+    
+    // Decrypt program if it exists and appears to be encrypted
+    if (decryptedData.program && typeof decryptedData.program === 'string') {
+      try {
+        // Only attempt decryption if the string looks like base64-encoded encrypted data
+        if (decryptedData.program.length > 20) {
+          decryptedData.program = await decrypt(
+            decryptedData.program,
+            encryptionKey,
+          );
+        }
+      } catch (decryptError) {
+        // If decryption fails, the data might not be encrypted (legacy data)
+        // or might be corrupted - log warning but don't fail the request
+        console.warn(
+          `Failed to decrypt program for user ${user.id}:`,
+          decryptError,
+        );
+        // Keep the original value if decryption fails
+      }
+    }
+    
+    return decryptedData;
+  }
+  
   return data;
 }
 

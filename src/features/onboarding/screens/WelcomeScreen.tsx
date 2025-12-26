@@ -217,12 +217,12 @@ const WelcomeScreen = () => {
           </View>
           <View style={styles.limitItem}>
             <Text style={styles.limitIcon}>🔔</Text>
-              <Text style={styles.limitText}>
-                <Text style={styles.limitNumber}>
+            <Text style={styles.limitText}>
+              <Text style={styles.limitNumber}>
                 15 spaced repetition reminders/month
-                </Text>{' '}
-                for effective learning
-              </Text>
+              </Text>{' '}
+              for effective learning
+            </Text>
           </View>
         </View>
         <Text style={styles.limitsNote}>

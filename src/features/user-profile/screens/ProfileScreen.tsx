@@ -124,6 +124,7 @@ const ProfileScreen = () => {
     setProgram(sanitizedData.program);
     setCountry(sanitizedData.country);
     setIsEditMode(false);
+    navigation.goBack(); // Navigate back instead of just exiting edit mode
   };
 
   const fullName = useMemo(() => {
@@ -170,34 +171,19 @@ const ProfileScreen = () => {
             <>
               <TouchableOpacity
                 onPress={handleCancel}
-                style={styles.headerButton}
+                style={styles.backButton}
                 activeOpacity={0.7}>
-                <Text
-                  style={[
-                    styles.headerButtonText,
-                    { color: theme.isDark ? '#9CA3AF' : '#616F89' },
-                  ]}>
-                  Cancel
-                </Text>
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={theme.isDark ? '#FFFFFF' : '#111318'}
+                />
               </TouchableOpacity>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
                 Edit Profile
               </Text>
-              <TouchableOpacity
-                onPress={handleSaveChanges}
-                style={styles.headerButton}
-                disabled={isLoading}
-                activeOpacity={0.7}>
-                <Text
-                  style={[
-                    styles.headerButtonText,
-                    styles.headerButtonPrimary,
-                    { color: COLORS.primary },
-                    isLoading && styles.headerButtonDisabled,
-                  ]}>
-                  {isLoading ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
+              {/* Empty space to balance the back button */}
+              <View style={styles.backButton} />
             </>
           ) : (
             <>
@@ -233,6 +219,33 @@ const ProfileScreen = () => {
         </View>
       </View>
 
+      {/* Save button positioned below header (only in edit mode) */}
+      {isEditMode && (
+        <View
+          style={[
+            styles.saveButtonContainer,
+            { backgroundColor: theme.background },
+          ]}>
+          <TouchableOpacity
+            onPress={handleSaveChanges}
+            style={[
+              styles.saveButton,
+              isLoading && styles.saveButtonDisabled,
+            ]}
+            disabled={isLoading}
+            activeOpacity={0.7}>
+            <Text
+              style={[
+                styles.saveButtonText,
+                { color: COLORS.primary },
+                isLoading && styles.saveButtonTextDisabled,
+              ]}>
+              {isLoading ? 'Saving...' : 'Save'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -242,7 +255,7 @@ const ProfileScreen = () => {
           <View style={styles.editContainer}>
             <ProfileFormInput
               label="Username"
-              value={username}
+              value={username || ''}
               onChangeText={setUsername}
               placeholder="@username"
               helperText="Changeable every 14 days"
@@ -273,7 +286,7 @@ const ProfileScreen = () => {
               <SearchableSelector
                 label="Country"
                 data={countryData}
-                selectedValue={country}
+                selectedValue={country || ''}
                 onValueChange={setCountry}
                 placeholder="Select your country..."
                 searchPlaceholder="Search for your country"
@@ -447,6 +460,26 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.bold,
   },
   headerButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonContainer: {
+    paddingHorizontal: SPACING.md,
+    paddingTop: SPACING.sm,
+    paddingBottom: SPACING.xs,
+  },
+  saveButton: {
+    alignSelf: 'flex-end',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+  },
+  saveButtonDisabled: {
+    opacity: 0.5,
+  },
+  saveButtonText: {
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold,
+  },
+  saveButtonTextDisabled: {
     opacity: 0.5,
   },
   scrollView: {

@@ -40,6 +40,14 @@ export const PUBLIC_ROUTES = ['Launch', 'Auth'] as const;
 // Routes accessible during onboarding (authenticated but onboarding incomplete)
 export const ONBOARDING_ROUTES = ['OnboardingFlow'] as const;
 
+// Routes that should hide the tab bar (onboarding and post-onboarding fullscreen modals)
+// These routes are presented as fullscreen modals and should not show the bottom tab bar
+export const ROUTES_HIDING_TAB_BAR = [
+  ...ONBOARDING_ROUTES,
+  'PostOnboardingWelcome',
+  'AddCourseFirst',
+] as const;
+
 /**
  * Check if a route requires authentication
  */
@@ -59,6 +67,13 @@ export function isPublicRoute(routeName: string): boolean {
  */
 export function isOnboardingRoute(routeName: string): boolean {
   return (ONBOARDING_ROUTES as readonly string[]).includes(routeName);
+}
+
+/**
+ * Check if a route should hide the tab bar
+ */
+export function shouldHideTabBar(routeName: string): boolean {
+  return (ROUTES_HIDING_TAB_BAR as readonly string[]).includes(routeName);
 }
 
 /**
