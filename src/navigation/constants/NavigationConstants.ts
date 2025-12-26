@@ -415,6 +415,12 @@ export const SCREEN_CONFIGS = {
     ...GESTURES.horizontal,
   },
 
+  NotificationManagement: {
+    ...SCREEN_OPTIONS.standard,
+    ...TRANSITIONS.slideFromRight,
+    ...GESTURES.horizontal,
+  },
+
   // Study and analytics screens
   StudyResult: {
     ...SCREEN_OPTIONS.standard,

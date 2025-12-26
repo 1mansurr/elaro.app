@@ -227,36 +227,43 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
 
   return (
     <View style={styles.container}>
-      {/* Week Header */}
-      <View style={styles.headerRow}>
-        <View style={styles.timeHeaderPlaceholder} />
-        {weekDays.map((day, index) => {
-          const isToday = isSameDay(day, new Date());
-          const isSelected = isSameDay(day, selectedDate);
+      {/* Week Header - Horizontally scrollable */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.headerRowContainer}>
+        <View style={styles.headerRow}>
+          <View style={styles.timeHeaderPlaceholder} />
+          {weekDays.map((day, index) => {
+            const isToday = isSameDay(day, new Date());
+            const isSelected = isSameDay(day, selectedDate);
 
-          return (
-            <View
-              key={index}
-              style={[
-                styles.dayHeader,
-                isSelected && styles.dayHeaderSelected,
-              ]}>
-              <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
-                {format(day, 'EEE')}
-              </Text>
-              <Text
-                style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
-                {format(day, 'd')}
-              </Text>
-            </View>
-          );
-        })}
-      </View>
+            return (
+              <View
+                key={index}
+                style={[
+                  styles.dayHeader,
+                  isSelected && styles.dayHeaderSelected,
+                ]}>
+                <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
+                  {format(day, 'EEE')}
+                </Text>
+                <Text
+                  style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
+                  {format(day, 'd')}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </ScrollView>
 
-      {/* Scrollable Grid */}
+      {/* Scrollable Grid - Both vertical and horizontal */}
       <ScrollView
         style={styles.scrollView}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        horizontal
+        showsHorizontalScrollIndicator={false}>
         <View style={styles.gridContainer}>
           {/* Time Column */}
           <View style={styles.timeColumn}>
@@ -301,11 +308,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  headerRow: {
-    flexDirection: 'row',
+  headerRowContainer: {
     borderBottomWidth: 2,
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.background,
+    minWidth: 7 * DAY_WIDTH, // Ensure all 7 days are visible
+  },
+  headerRow: {
+    flexDirection: 'row',
   },
   timeHeaderPlaceholder: {
     width: TIME_COLUMN_WIDTH,
@@ -323,7 +333,7 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: FONT_SIZES.xs,
     fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.gray,
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
   },
   dayNameToday: {
@@ -344,6 +354,7 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     minHeight: 24 * HOUR_HEIGHT,
+    minWidth: TIME_COLUMN_WIDTH + 7 * DAY_WIDTH, // Time column + 7 days
   },
   timeColumn: {
     width: TIME_COLUMN_WIDTH,
@@ -357,7 +368,7 @@ const styles = StyleSheet.create({
   },
   hourLabel: {
     fontSize: FONT_SIZES.xs,
-    color: COLORS.gray,
+    color: COLORS.textSecondary,
     fontWeight: FONT_WEIGHTS.medium as any,
   },
   daysGrid: {
@@ -382,7 +393,7 @@ const styles = StyleSheet.create({
   },
   taskCard: {
     position: 'absolute',
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: BORDER_RADIUS.lg, // Capsule shape with rounded edges
     padding: 6,
     borderLeftWidth: 3,
     borderLeftColor: 'rgba(255, 255, 255, 0.6)',

@@ -35,6 +35,7 @@ export type RootStackParamList = {
   RecycleBin: undefined;
   Profile: undefined;
   Settings: undefined;
+  NotificationManagement: undefined;
 
   // Account management screens (names match navigator registrations)
   DeleteAccountScreen: undefined;

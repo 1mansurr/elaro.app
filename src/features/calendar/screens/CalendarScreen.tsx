@@ -451,8 +451,8 @@ const CalendarScreen = () => {
     useState(false);
 
   const handleNotificationBellPress = useCallback(() => {
-    setIsNotificationHistoryVisible(true);
-  }, []);
+    navigation.navigate('NotificationManagement');
+  }, [navigation]);
 
   const handleNotificationHistoryClose = useCallback(() => {
     setIsNotificationHistoryVisible(false);

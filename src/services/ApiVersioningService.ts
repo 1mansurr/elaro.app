@@ -164,7 +164,61 @@ export class ApiVersioningService {
         headers,
       });
 
-      const data = await response.json();
+      // Read response body once (can only be read once)
+      const contentType = response.headers.get('content-type');
+      const hasJsonContent = contentType?.includes('application/json');
+      const responseText = await response.text();
+
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        // Try to get error message from response body
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorCode: string | undefined;
+        
+        if (hasJsonContent && responseText && responseText.trim()) {
+          try {
+            const parsed = JSON.parse(responseText);
+            errorMessage = parsed.message || parsed.error?.message || parsed.error || errorMessage;
+            errorCode = parsed.code || parsed.error?.code;
+          } catch (parseError) {
+            // If we can't parse error, use status text
+            console.warn('Failed to parse error response:', parseError);
+          }
+        }
+        
+        return {
+          error: 'Request failed',
+          message: errorMessage,
+          code: errorCode || `HTTP_${response.status}`,
+        };
+      }
+
+      // Parse successful response
+      let data: any = {};
+      
+      if (hasJsonContent) {
+        if (responseText && responseText.trim()) {
+          try {
+            data = JSON.parse(responseText);
+          } catch (parseError) {
+            console.warn('Failed to parse response as JSON:', parseError);
+            return {
+              error: 'Invalid response format',
+              message: 'Server returned invalid JSON',
+            };
+          }
+        } else {
+          // Empty JSON response is valid
+          data = {};
+        }
+      } else if (responseText) {
+        // Non-JSON response with content
+        return {
+          error: 'Unexpected response format',
+          message: `Server returned ${contentType || 'unknown'} content`,
+          data: responseText,
+        };
+      }
 
       // Check for version-related headers
       const isDeprecated =
@@ -211,10 +265,18 @@ export class ApiVersioningService {
         migrationGuide: migrationGuide || undefined,
       };
     } catch (error) {
+      // Handle network errors (fetch fails, no response received)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const isNetworkError = 
+        errorMessage.includes('Network request failed') ||
+        errorMessage.includes('Failed to fetch') ||
+        errorMessage.includes('network') ||
+        error instanceof TypeError;
+      
       console.error('API request failed:', error);
       return {
-        error: 'Network error',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: isNetworkError ? 'Network error' : 'Request failed',
+        message: errorMessage,
       };
     }
   }

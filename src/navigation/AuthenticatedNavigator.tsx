@@ -58,6 +58,13 @@ const LoginHistoryScreen = lazy(() =>
     default: module.LoginHistoryScreen,
   })),
 );
+const NotificationManagementScreen = lazy(() =>
+  import('@/features/notifications/screens/NotificationManagementScreen').then(
+    module => ({
+      default: module.NotificationManagementScreen,
+    }),
+  ),
+);
 const CoursesScreen = lazy(() =>
   import('@/navigation/bundles/CoursesBundle').then(module => ({
     default: module.CoursesScreen,
@@ -378,6 +385,13 @@ const mainScreens = {
     options: {
       ...SCREEN_CONFIGS.LoginHistory,
       headerTitle: 'Login History',
+    },
+  },
+  NotificationManagement: {
+    component: NotificationManagementScreen,
+    options: {
+      ...SCREEN_CONFIGS.NotificationManagement,
+      headerTitle: 'Notifications',
     },
   },
   OnboardingFlow: { component: OnboardingFlow },

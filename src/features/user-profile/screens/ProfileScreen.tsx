@@ -46,6 +46,7 @@ const ProfileScreen = () => {
   const [country, setCountry] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isInitializing, setIsInitializing] = useState(true);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
 
   // Extract country names for the selector
   const countryData = useMemo(() => {
@@ -63,8 +64,29 @@ const ProfileScreen = () => {
     }
   }, [user?.created_at]);
 
+  // Force refresh user data on mount to get decrypted values from backend
   useEffect(() => {
-    if (authLoading) {
+    if (authLoading || hasRefreshed) {
+      return;
+    }
+
+    const refreshUserData = async () => {
+      try {
+        // Refresh user data to clear cache and fetch fresh decrypted data
+        await refreshUser();
+        setHasRefreshed(true);
+      } catch (error) {
+        console.error('Error refreshing user data:', error);
+        setHasRefreshed(true); // Continue even if refresh fails
+      }
+    };
+
+    refreshUserData();
+  }, [authLoading, hasRefreshed, refreshUser]);
+
+  // Update form fields when user data changes (after refresh)
+  useEffect(() => {
+    if (authLoading || !hasRefreshed) {
       return;
     }
 
@@ -78,7 +100,7 @@ const ProfileScreen = () => {
     setUniversity(sanitizedData.university);
     setProgram(sanitizedData.program);
     setCountry(sanitizedData.country);
-  }, [user, authLoading]);
+  }, [user, authLoading, hasRefreshed]);
 
   const handleSaveChanges = async () => {
     setIsLoading(true);

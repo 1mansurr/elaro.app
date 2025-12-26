@@ -225,7 +225,12 @@ export function AccountScreen() {
   const renderAuthenticatedView = () => (
     <ScrollView
       style={[styles.container, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.scrollContent}>
+      contentContainerStyle={[
+        styles.scrollContent,
+        {
+          paddingBottom: insets.bottom + 80 + SPACING.lg, // Safe area + tab bar height (80px) + spacing
+        },
+      ]}>
       {/* Profile Section - NOT in a card */}
       <View style={styles.profileSection}>
         <Text style={[styles.profileName, { color: theme.text }]}>

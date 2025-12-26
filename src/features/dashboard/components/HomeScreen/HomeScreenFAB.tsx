@@ -133,6 +133,7 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
           onDoubleTap={onDoubleTap}
           draftCount={draftCount}
           onDraftBadgePress={onDraftBadgePress}
+          isOpen={isFabOpen}
         />
       </>
     );
