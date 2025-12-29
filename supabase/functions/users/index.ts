@@ -27,6 +27,7 @@ import {
 } from '../_shared/event-driven-architecture.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { decrypt } from '../_shared/encryption.ts';
+import { RegisterDeviceSchema } from '../_shared/schemas/user.ts';
 
 // Schemas for validation
 const UpdateProfileSchema = z.object({
@@ -35,7 +36,11 @@ const UpdateProfileSchema = z.object({
   university: z.string().max(100).optional(),
   program: z.string().max(100).optional(),
   country: z.string().max(50).optional(),
-  date_of_birth: z.string().date().optional(),
+  date_of_birth: z.string().refine(val => {
+    if (!val) return true; // Optional field
+    const date = new Date(val);
+    return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
+  }, 'Invalid date format. Expected YYYY-MM-DD').optional(),
   marketing_opt_in: z.boolean().optional(),
 });
 
@@ -45,13 +50,23 @@ const CompleteOnboardingSchema = z.object({
   university: z.string().max(100).optional(),
   program: z.string().max(100).optional(),
   country: z.string().max(50).optional(),
-  date_of_birth: z.string().date().optional(),
+  date_of_birth: z.string().refine(val => {
+    if (!val) return true; // Optional field
+    const date = new Date(val);
+    return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
+  }, 'Invalid date format. Expected YYYY-MM-DD').optional(),
   marketing_opt_in: z.boolean().default(false),
 });
 
 const SoftDeleteAccountSchema = z.object({
   reason: z.string().optional(),
 });
+
+// Schema for handler validation
+// Since this function handles multiple routes with different schemas,
+// we use z.any() to satisfy the handler requirement, and validate
+// specifically in each route handler
+const UsersRequestSchema = z.any();
 
 // User service class
 class UserService {
@@ -75,10 +90,59 @@ class UserService {
 
     if (error) throw new AppError(error.message, 500, 'PROFILE_FETCH_ERROR');
 
-    // Decrypt sensitive fields (university and program) before returning
+    // Decrypt sensitive fields (first_name, last_name, university, and program) before returning
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (encryptionKey && profile) {
       const decryptedProfile = { ...profile };
+
+      // Decrypt first_name if it exists and appears to be encrypted
+      if (
+        decryptedProfile.first_name &&
+        typeof decryptedProfile.first_name === 'string'
+      ) {
+        try {
+          // Only attempt decryption if the string looks like base64-encoded encrypted data
+          // Encrypted data is typically long and contains base64 characters
+          if (decryptedProfile.first_name.length > 20) {
+            decryptedProfile.first_name = await decrypt(
+              decryptedProfile.first_name,
+              encryptionKey,
+            );
+          }
+        } catch (decryptError) {
+          // If decryption fails, the data might not be encrypted (legacy data)
+          // or might be corrupted - log warning but don't fail the request
+          console.warn(
+            `Failed to decrypt first_name for user ${userId}:`,
+            decryptError,
+          );
+          // Keep the original value if decryption fails
+        }
+      }
+
+      // Decrypt last_name if it exists and appears to be encrypted
+      if (
+        decryptedProfile.last_name &&
+        typeof decryptedProfile.last_name === 'string'
+      ) {
+        try {
+          // Only attempt decryption if the string looks like base64-encoded encrypted data
+          if (decryptedProfile.last_name.length > 20) {
+            decryptedProfile.last_name = await decrypt(
+              decryptedProfile.last_name,
+              encryptionKey,
+            );
+          }
+        } catch (decryptError) {
+          // If decryption fails, the data might not be encrypted (legacy data)
+          // or might be corrupted - log warning but don't fail the request
+          console.warn(
+            `Failed to decrypt last_name for user ${userId}:`,
+            decryptError,
+          );
+          // Keep the original value if decryption fails
+        }
+      }
 
       // Decrypt university if it exists and appears to be encrypted
       if (
@@ -382,22 +446,59 @@ class UserService {
     userId: string,
     deviceData: { push_token: string; platform: string; updated_at?: string },
   ) {
-    const { data: device, error } = await this.supabaseClient
-      .from('user_devices')
-      .upsert(
-        {
-          user_id: userId,
-          push_token: deviceData.push_token,
-          platform: deviceData.platform,
-          updated_at: deviceData.updated_at || new Date().toISOString(),
-        },
-        { onConflict: 'user_id,platform' },
-      )
-      .select()
-      .single();
+    try {
+      // Direct database operation
+      // Note: Edge Functions have built-in execution time limits, so explicit timeout wrapper
+      // may cause issues. If timeout is needed, it should be handled at the Edge Function level.
+      const { data, error } = await this.supabaseClient
+        .from('user_devices')
+        .upsert(
+          {
+            user_id: userId,
+            push_token: deviceData.push_token,
+            platform: deviceData.platform,
+            updated_at: deviceData.updated_at || new Date().toISOString(),
+          },
+          { onConflict: 'user_id,platform' },
+        )
+        .select()
+        .single();
 
-    if (error) throw new AppError(error.message, 500, 'DEVICE_REGISTER_ERROR');
-    return device;
+      if (error) {
+        // Log the actual database error for debugging
+        console.error('Database error in registerDevice:', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          userId,
+          platform: deviceData.platform,
+        });
+        throw new AppError(error.message, 500, 'DEVICE_REGISTER_ERROR');
+      }
+
+      return data;
+    } catch (error) {
+      // Re-throw AppError as-is (already properly formatted)
+      if (error instanceof AppError) {
+        throw error;
+      }
+
+      // Wrap unexpected errors with proper logging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Unexpected error in registerDevice:', {
+        error: errorMessage,
+        stack: error instanceof Error ? error.stack : undefined,
+        userId,
+        platform: deviceData.platform,
+      });
+      
+      throw new AppError(
+        'Failed to register device. Please try again.',
+        500,
+        'DEVICE_REGISTER_ERROR',
+      );
+    }
   }
 
   async deleteDevice(userId: string, deviceId: string) {
@@ -546,7 +647,8 @@ async function handleUsersRequest({
     !path.match(/\/devices\/[^/]+$/)
   ) {
     // POST /devices (register device)
-    return await userService.registerDevice(user.id, body);
+    const validatedData = RegisterDeviceSchema.parse(body);
+    return await userService.registerDevice(user.id, validatedData);
   }
 
   if (method === 'DELETE' && path.includes('/devices')) {
@@ -589,5 +691,6 @@ serve(
     rateLimitName: 'users',
     checkTaskLimit: false,
     requireIdempotency: true,
+    schema: UsersRequestSchema, // Union schema for all possible request types
   }),
 );

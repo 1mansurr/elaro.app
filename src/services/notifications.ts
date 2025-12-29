@@ -48,21 +48,128 @@ function getTableName(taskType: string): string {
 }
 
 /**
- * Save push token to Supabase user_devices table
+ * Check if an error is a timeout error (HTTP 504)
+ */
+function isTimeoutError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('504') ||
+      message.includes('gateway timeout') ||
+      message.includes('timeout') ||
+      message.includes('http_504')
+    );
+  }
+  if (typeof error === 'object' && error !== null) {
+    const errorObj = error as { code?: string; error?: string; message?: string };
+    return (
+      errorObj.code === 'HTTP_504' ||
+      errorObj.error?.toLowerCase().includes('timeout') ||
+      errorObj.message?.toLowerCase().includes('504') ||
+      errorObj.message?.toLowerCase().includes('timeout')
+    );
+  }
+  return false;
+}
+
+/**
+ * Check if an error is a worker/function error that might be retryable
+ */
+function isWorkerError(error: unknown): boolean {
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return (
+      message.includes('worker_error') ||
+      message.includes('function exited') ||
+      message.includes('please check logs')
+    );
+  }
+  if (typeof error === 'object' && error !== null) {
+    const errorObj = error as { code?: string; error?: string; message?: string };
+    return (
+      errorObj.code === 'WORKER_ERROR' ||
+      errorObj.error?.toLowerCase().includes('function exited') ||
+      errorObj.message?.toLowerCase().includes('function exited')
+    );
+  }
+  return false;
+}
+
+/**
+ * Save push token to Supabase user_devices table with retry logic for timeouts
  * @param userId string
  * @param token string
  */
 async function savePushTokenToSupabase(userId: string, token: string) {
   const platform = Platform.OS;
   const updated_at = new Date().toISOString();
-  const { versionedApiClient } = await import('@/services/VersionedApiClient');
-  const response = await versionedApiClient.registerDevice({
-    push_token: token,
-    platform,
-    updated_at,
-  });
-  if (response.error) {
-    console.error('❌ Error saving push token to Supabase:', response.error);
+  
+  // Import retry utility
+  const { retryWithBackoff } = await import('@/utils/errorRecovery');
+  
+  const saveToken = async () => {
+    const { versionedApiClient } = await import('@/services/VersionedApiClient');
+    const response = await versionedApiClient.registerDevice({
+      push_token: token,
+      platform,
+      updated_at,
+    });
+    
+    if (response.error) {
+      // Create error object that can be checked by retry logic
+      const error = new Error(response.message || response.error) as Error & {
+        code?: string;
+        response?: typeof response;
+      };
+      error.code = response.code;
+      error.response = response;
+      throw error;
+    }
+    
+    return response;
+  };
+  
+  try {
+      // Retry with exponential backoff for timeout errors (504) and worker errors
+      const result = await retryWithBackoff(saveToken, {
+        maxRetries: 3,
+        baseDelay: 1000, // Start with 1 second
+        maxDelay: 10000, // Max 10 seconds between retries
+        retryCondition: (error) => {
+          // Retry on timeout errors (504) or worker errors (may be transient)
+          return isTimeoutError(error) || isWorkerError(error);
+        },
+      });
+    
+    if (!result.success) {
+      const error = result.error as Error & { code?: string; response?: any };
+      console.error('❌ Error saving push token to Supabase after retries:', {
+        error: error instanceof Error ? error.message : String(error),
+        code: error.code,
+        attempts: result.attempts,
+        userId,
+        platform,
+      });
+      throw error;
+    }
+    
+    console.log('✅ Push token saved successfully to Supabase');
+  } catch (error) {
+    const isTimeout = isTimeoutError(error);
+    const isWorkerErr = isWorkerError(error);
+    console.error(
+      `❌ ${isTimeout ? 'Timeout' : isWorkerErr ? 'Worker Error' : 'Exception'} saving push token to Supabase:`,
+      {
+        error: error instanceof Error ? error.message : String(error),
+        code: (error as { code?: string })?.code,
+        isTimeout,
+        isWorkerError: isWorkerErr,
+        userId,
+        platform,
+      },
+    );
+    // Re-throw to allow caller to handle
+    throw error;
   }
 }
 

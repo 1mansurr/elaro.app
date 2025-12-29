@@ -460,6 +460,8 @@ const NavigationStateHandler: React.FC = () => {
 };
 
 // Component to handle navigation state validation (must be inside AuthProvider)
+// This component ensures the app never blocks indefinitely during startup.
+// It always resolves with either a validated state or a safe fallback (null).
 const NavigationStateValidator: React.FC<{
   initialNavigationState?: NavigationState;
   onStateValidated: (state: NavigationState | null) => void;
@@ -467,52 +469,51 @@ const NavigationStateValidator: React.FC<{
   const { session, user, loading: authLoading } = useAuth();
 
   useEffect(() => {
+    let isCancelled = false;
+    let maxTimeoutId: NodeJS.Timeout | null = null;
+    let validationTimeoutId: NodeJS.Timeout | null = null;
+
     const validateNavigationState = async () => {
-      // Add maximum timeout - don't wait more than 5 seconds total
-      const maxTimeout = setTimeout(() => {
+      // GUARANTEED EXIT: Maximum timeout ensures we always resolve
+      // This is the final safety net - app will render after 3 seconds maximum
+      maxTimeoutId = setTimeout(() => {
+        if (isCancelled) return;
         console.warn(
-          '⚠️ Navigation state validation max timeout - using default',
+          '⚠️ [NavigationStateValidator] Maximum timeout reached - proceeding with safe fallback',
         );
         onStateValidated(null);
-      }, 5000); // 5 second max timeout
-
-      // Wait for auth to finish loading, but with a timeout (max 3 seconds)
-      if (authLoading) {
-        const authWaitTimeout = setTimeout(() => {
-          console.warn('⚠️ Auth loading timeout - proceeding without waiting');
-          // Continue validation even if auth is still loading
-          // This prevents the app from hanging indefinitely
-        }, 3000); // 3 second timeout for auth loading
-
-        // Wait up to 3 seconds for auth to load
-        await new Promise<void>(resolve => {
-          const checkAuth = setInterval(() => {
-            if (!authLoading) {
-              clearInterval(checkAuth);
-              clearTimeout(authWaitTimeout);
-              resolve();
-            }
-          }, 100); // Check every 100ms
-
-          // Clear interval after timeout
-          setTimeout(() => {
-            clearInterval(checkAuth);
-            clearTimeout(authWaitTimeout);
-            resolve(); // Resolve anyway after timeout
-          }, 3000);
-        });
-      }
-
-      // Add timeout to prevent hanging
-      const validationTimeout = setTimeout(() => {
-        console.warn('⚠️ Navigation state validation timeout - using default');
-        clearTimeout(maxTimeout);
-        onStateValidated(null);
-      }, 2000); // 2 second timeout for validation (reduced from 3s)
+      }, 3000); // 3 second absolute maximum
 
       try {
+        // Wait for auth to finish loading, but with a hard limit
+        // If auth is still loading after 1.5 seconds, proceed with current state
+        // Note: If authLoading changes, the effect will re-run (it's in dependencies)
+        if (authLoading) {
+          await new Promise<void>(resolve => {
+            if (isCancelled) {
+              resolve();
+              return;
+            }
+
+            const timeoutId = setTimeout(() => {
+              console.warn(
+                '⚠️ [NavigationStateValidator] Auth still loading after timeout - proceeding with current state',
+              );
+              resolve();
+            }, 1500); // 1.5 seconds max wait for auth
+
+            // If component unmounts, cancel the wait
+            // The effect cleanup will handle isCancelled
+            // We resolve immediately if already cancelled
+            if (isCancelled) {
+              clearTimeout(timeoutId);
+              resolve();
+            }
+          });
+        }
+
         // If we have a pre-loaded initial state, validate it
-        if (initialNavigationState) {
+        if (initialNavigationState && !isCancelled) {
           try {
             const isAuthenticated = !!session;
 
@@ -536,68 +537,107 @@ const NavigationStateValidator: React.FC<{
             const authenticatedRoutes =
               AUTHENTICATED_ROUTES as readonly string[];
 
-            // If user is not authenticated but saved state contains authenticated route, clear it immediately
+            // If user is not authenticated but saved state contains authenticated route, clear it
             if (
               !isAuthenticated &&
               currentRoute &&
               authenticatedRoutes.includes(currentRoute)
             ) {
               console.log(
-                '🔒 NavigationSync: Auth failed, clearing authenticated navigation state',
+                '🔒 [NavigationStateValidator] User not authenticated, clearing authenticated navigation state',
               );
-              await navigationSyncService.clearState();
-              clearTimeout(validationTimeout);
-              clearTimeout(maxTimeout);
+              await navigationSyncService.clearState().catch(() => {
+                // Ignore errors - we're clearing state anyway
+              });
+              if (isCancelled) return;
+              if (maxTimeoutId) clearTimeout(maxTimeoutId);
               onStateValidated(null);
               return;
             }
 
-            // Add timeout to getSafeInitialState call (reduced to 1.5s)
+            // Get safe initial state with timeout protection
+            // This ensures we never wait indefinitely for navigation sync
+            validationTimeoutId = setTimeout(() => {
+              if (isCancelled) return;
+              console.warn(
+                '⚠️ [NavigationStateValidator] Navigation sync timeout - using safe fallback',
+              );
+              if (maxTimeoutId) clearTimeout(maxTimeoutId);
+              onStateValidated(null);
+            }, 1500); // 1.5 second timeout for navigation sync
+
             const safeState = await Promise.race([
               navigationSyncService.getSafeInitialState(
                 isAuthenticated,
-                authLoading,
+                false, // Don't pass authLoading - we've already waited
                 user?.id,
               ),
               new Promise<NavigationState | null>(resolve => {
-                setTimeout(() => resolve(null), 1500); // 1.5 second timeout (reduced from 2s)
+                setTimeout(() => resolve(null), 1500);
               }),
             ]);
 
-            clearTimeout(validationTimeout);
-            clearTimeout(maxTimeout);
+            if (isCancelled) return;
+            if (validationTimeoutId) clearTimeout(validationTimeoutId);
+            if (maxTimeoutId) clearTimeout(maxTimeoutId);
+
+            console.log(
+              `✅ [NavigationStateValidator] Navigation state validated successfully`,
+            );
             onStateValidated(safeState);
+            return;
           } catch (error) {
-            clearTimeout(validationTimeout);
-            clearTimeout(maxTimeout);
+            if (isCancelled) return;
             console.error(
-              '❌ NavigationSync: Error validating initial state:',
+              '❌ [NavigationStateValidator] Error validating initial state:',
               error,
             );
             // Clear state on error to prevent navigation errors
-            await navigationSyncService.clearState().catch(() => {});
+            await navigationSyncService.clearState().catch(() => {
+              // Ignore errors during cleanup
+            });
+            if (validationTimeoutId) clearTimeout(validationTimeoutId);
+            if (maxTimeoutId) clearTimeout(maxTimeoutId);
             onStateValidated(null);
+            return;
           }
-        } else {
-          // No initial state to validate
-          clearTimeout(validationTimeout);
-          clearTimeout(maxTimeout);
-          onStateValidated(null);
         }
+
+        // No initial state to validate - proceed with default (null = default navigation)
+        if (isCancelled) return;
+        if (maxTimeoutId) clearTimeout(maxTimeoutId);
+        console.log(
+          '✅ [NavigationStateValidator] No initial state - using default navigation',
+        );
+        onStateValidated(null);
       } catch (error) {
-        clearTimeout(validationTimeout);
-        clearTimeout(maxTimeout);
+        // Final catch-all - ensures we always resolve
+        if (isCancelled) return;
+        console.error(
+          '❌ [NavigationStateValidator] Unexpected error during validation:',
+          error,
+        );
+        if (validationTimeoutId) clearTimeout(validationTimeoutId);
+        if (maxTimeoutId) clearTimeout(maxTimeoutId);
         onStateValidated(null);
       }
     };
 
     validateNavigationState();
+
+    // Cleanup function - prevents state updates if component unmounts
+    return () => {
+      isCancelled = true;
+      if (maxTimeoutId) clearTimeout(maxTimeoutId);
+      if (validationTimeoutId) clearTimeout(validationTimeoutId);
+    };
   }, [
     authLoading,
     session,
     user?.id,
     initialNavigationState,
-    onStateValidated,
+    // Note: onStateValidated is intentionally NOT in deps to prevent re-runs
+    // It's stable from useCallback in parent component
   ]);
 
   return null;
@@ -705,6 +745,15 @@ const AppWithErrorBoundary: React.FC<{
   const [safeInitialState, setSafeInitialState] =
     useState<NavigationState | null>(null);
   const [isStateValidated, setIsStateValidated] = useState(false);
+  const [navigationContainerMounted, setNavigationContainerMounted] =
+    useState(false);
+  const [appInitializerState, setAppInitializerState] = useState<{
+    appIsReady: boolean;
+    isAnimationFinished: boolean;
+  }>({
+    appIsReady: false,
+    isAnimationFinished: false,
+  });
 
   // Sync auth state on app resume
   useAppStateSync();
@@ -714,18 +763,125 @@ const AppWithErrorBoundary: React.FC<{
     setIsStateValidated(true);
   }, []);
 
-  // Add fallback timeout - show app after 4 seconds even if validation hasn't completed
-  // Reduced from 6s to prevent white screen hanging
+  const handleAppInitializerStateChange = useCallback(
+    (state: { appIsReady: boolean; isAnimationFinished: boolean }) => {
+      console.log('📱 [AppWithErrorBoundary] AppInitializer state changed:', state);
+      setAppInitializerState(state);
+    },
+    [],
+  );
+
+  const { appIsReady, isAnimationFinished } = appInitializerState;
+
+  // Hide native splash screen ONLY when ALL conditions are met:
+  // 1. appIsReady === true
+  // 2. isAnimationFinished === true
+  // 3. isStateValidated === true
+  // 4. NavigationContainer has mounted (shouldShowLoading === false AND onReady fired OR fallback timeout)
+  const hasHiddenSplashRef = useRef(false);
+  const navigationContainerRenderTimeRef = useRef<number | null>(null);
+
+  // Track when NavigationContainer starts rendering
+  useEffect(() => {
+    if (!shouldShowLoading && navigationContainerRenderTimeRef.current === null) {
+      navigationContainerRenderTimeRef.current = Date.now();
+    }
+  }, [shouldShowLoading]);
+
+  useEffect(() => {
+    // Check if NavigationContainer is rendered (even if onReady hasn't fired yet)
+    const navigationContainerRendered = !shouldShowLoading;
+
+    // If NavigationContainer has been rendered for more than 500ms, assume it's mounted
+    const navigationContainerMountedOrTimedOut =
+      navigationContainerMounted ||
+      (navigationContainerRendered &&
+        navigationContainerRenderTimeRef.current !== null &&
+        Date.now() - navigationContainerRenderTimeRef.current > 500);
+
+    // Check if all conditions are met
+    const allConditionsMet =
+      appIsReady &&
+      isAnimationFinished &&
+      isStateValidated &&
+      navigationContainerRendered &&
+      navigationContainerMountedOrTimedOut;
+
+    // Log current state for debugging
+    if (__DEV__) {
+      console.log('🔍 [AppWithErrorBoundary] Splash hide conditions check:', {
+        appIsReady,
+        isAnimationFinished,
+        isStateValidated,
+        navigationContainerRendered,
+        navigationContainerMounted,
+        navigationContainerMountedOrTimedOut,
+        allConditionsMet,
+        hasHiddenSplash: hasHiddenSplashRef.current,
+      });
+    }
+
+    if (allConditionsMet && !hasHiddenSplashRef.current) {
+      hasHiddenSplashRef.current = true;
+      console.log(
+        '✅ [AppWithErrorBoundary] All conditions met - hiding native splash',
+        {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          navigationContainerRendered,
+          navigationContainerMounted,
+        },
+      );
+      SplashScreen.hideAsync().catch(error => {
+        console.error('❌ Failed to hide splash screen:', error);
+        // Don't throw - app can continue
+      });
+    }
+  }, [
+    appIsReady,
+    isAnimationFinished,
+    isStateValidated,
+    shouldShowLoading,
+    navigationContainerMounted,
+  ]);
+
+  // Fallback: Force hide splash after 6 seconds maximum (safety net)
+  useEffect(() => {
+    const fallbackSplashTimeout = setTimeout(() => {
+      if (!hasHiddenSplashRef.current) {
+        console.warn(
+          '⚠️ [AppWithErrorBoundary] Splash screen fallback timeout - forcing hide',
+          {
+            appIsReady,
+            isAnimationFinished,
+            isStateValidated,
+            shouldShowLoading,
+            navigationContainerMounted,
+          },
+        );
+        hasHiddenSplashRef.current = true;
+        SplashScreen.hideAsync().catch(error => {
+          console.error('❌ Failed to hide splash screen (fallback):', error);
+        });
+      }
+    }, 6000); // 6 second absolute maximum
+
+    return () => clearTimeout(fallbackSplashTimeout);
+  }, [appIsReady, isAnimationFinished, isStateValidated, shouldShowLoading, navigationContainerMounted]);
+
+  // Defensive fallback: NavigationStateValidator guarantees resolution within 3 seconds,
+  // but this provides a final safety net (5 seconds) in case of unexpected issues
   useEffect(() => {
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
-        console.warn(
-          '⚠️ Navigation state validation fallback timeout - showing app',
+        console.error(
+          '❌ [AppWithErrorBoundary] Navigation state validation did not complete within expected time - forcing render',
         );
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
-    }, 4000); // 4 second fallback (reduced to prevent white screen)
+    }, 5000); // 5 second final safety net (NavigationStateValidator max is 3s)
 
     return () => clearTimeout(fallbackTimeout);
   }, [isStateValidated]);
@@ -738,7 +894,7 @@ const AppWithErrorBoundary: React.FC<{
     <ErrorBoundary onReset={reset}>
       <AppProviders queryClient={queryClient}>
         {!__DEV__ && <QueryCacheSetup queryClient={queryClient} />}
-        <AppInitializer>
+        <AppInitializer onStateChange={handleAppInitializerStateChange}>
           {shouldShowLoading ? (
             <View
               style={{
@@ -760,6 +916,10 @@ const AppWithErrorBoundary: React.FC<{
                 ref={navigationRef}
                 initialState={safeInitialState ?? undefined}
                 linking={linking}
+                onReady={() => {
+                  // Mark NavigationContainer as mounted
+                  setNavigationContainerMounted(true);
+                }}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
                   await updateLastActiveTimestamp();
@@ -789,11 +949,39 @@ const AppWithErrorBoundary: React.FC<{
 };
 
 // App Initializer Component for handling async setup
-const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+const AppInitializer: React.FC<{
+  children: React.ReactNode;
+  onStateChange?: (state: {
+    appIsReady: boolean;
+    isAnimationFinished: boolean;
+  }) => void;
+}> = ({ children, onStateChange }) => {
   const [appIsReady, setAppIsReady] = useState(false);
   const [isAnimationFinished, setAnimationFinished] = useState(false);
+
+  // Notify parent when state changes
+  useEffect(() => {
+    if (onStateChange) {
+      console.log('📱 [AppInitializer] State changed, notifying parent:', {
+        appIsReady,
+        isAnimationFinished,
+      });
+      onStateChange({ appIsReady, isAnimationFinished });
+    }
+  }, [appIsReady, isAnimationFinished, onStateChange]);
+
+  // Add safety timeout - force show app after 3 seconds max
+  useEffect(() => {
+    const safetyTimeout = setTimeout(() => {
+      if (!appIsReady || !isAnimationFinished) {
+        console.warn('⚠️ App initialization timeout - forcing app to show');
+        setAppIsReady(true);
+        setAnimationFinished(true);
+      }
+    }, 3000); // 3 second max timeout
+
+    return () => clearTimeout(safetyTimeout);
+  }, []);
 
   useEffect(() => {
     const prepare = async () => {
@@ -977,10 +1165,20 @@ const AppInitializer: React.FC<{ children: React.ReactNode }> = ({
     prepare();
   }, []);
 
-  // Hide native splash screen as soon as we show animated splash
+  // REMOVED: SplashScreen.hideAsync() - now called only when app is fully ready
+  // See AppWithErrorBoundary for the proper lifecycle management
+
+  // Add timeout to force animation finish if it doesn't complete
   useEffect(() => {
-    SplashScreen.hideAsync().catch(console.error);
-  }, []);
+    const animationTimeout = setTimeout(() => {
+      if (!isAnimationFinished) {
+        console.warn('⚠️ Animation timeout - forcing finish');
+        setAnimationFinished(true);
+      }
+    }, 2000); // 2 second timeout for animation
+
+    return () => clearTimeout(animationTimeout);
+  }, [isAnimationFinished]);
 
   const onLayoutRootView = useCallback(async () => {
     // Layout callback - no longer needed for splash hiding

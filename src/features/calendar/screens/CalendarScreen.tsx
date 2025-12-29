@@ -604,7 +604,7 @@ const styles = StyleSheet.create({
   },
   viewToggleContainer: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
+    paddingVertical: SPACING.xs, // Reduced spacing to bring day cards closer to view toggle
   },
   weekStripContainer: {
     borderBottomWidth: 1,

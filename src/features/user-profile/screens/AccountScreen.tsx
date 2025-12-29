@@ -247,7 +247,20 @@ export function AccountScreen() {
             styles.viewProfileButton,
             { backgroundColor: COLORS.primary },
           ]}
-          onPress={() => navigation.navigate('Profile')}
+          onPress={() => {
+            // Check if onboarding is completed before navigating to Profile
+            if (!user?.onboarding_completed) {
+              Alert.alert(
+                'Complete Your Profile',
+                'Please complete your profile setup first to access your profile.',
+                [
+                  { text: 'OK', style: 'default' },
+                ],
+              );
+              return;
+            }
+            navigation.navigate('Profile');
+          }}
           activeOpacity={0.7}>
           <Text style={[styles.viewProfileButtonText, { color: COLORS.white }]}>
             View Profile

@@ -374,6 +374,42 @@ const ProfileScreen = () => {
                     : 'rgba(0, 0, 0, 0.05)',
                 },
               ]}>
+              {firstName && (
+                <ProfileFieldRow
+                  label="First Name"
+                  value={firstName}
+                  icon="person-outline"
+                  iconColor={theme.isDark ? '#60A5FA' : '#2563EB'}
+                  iconBgColor={
+                    theme.isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
+                  }
+                  showBorder
+                />
+              )}
+              {lastName && (
+                <ProfileFieldRow
+                  label="Last Name"
+                  value={lastName}
+                  icon="person-outline"
+                  iconColor={theme.isDark ? '#60A5FA' : '#2563EB'}
+                  iconBgColor={
+                    theme.isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
+                  }
+                  showBorder
+                />
+              )}
+              {username && (
+                <ProfileFieldRow
+                  label="Username"
+                  value={`@${username}`}
+                  icon="at-outline"
+                  iconColor={theme.isDark ? '#A78BFA' : '#9333EA'}
+                  iconBgColor={
+                    theme.isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
+                  }
+                  showBorder
+                />
+              )}
               {country && (
                 <ProfileFieldRow
                   label="Country"

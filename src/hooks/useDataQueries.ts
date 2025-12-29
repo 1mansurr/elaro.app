@@ -178,16 +178,17 @@ export const useHomeScreenData = (enabled: boolean = true) => {
             errorMessage.includes('Failed to refresh token') ||
             errorMessage.includes('Session expired') ||
             errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Function failed to start') ||
+            errorMessage.includes('please check logs') ||
+            errorMessage.includes('WORKER_ERROR') ||
             errorMessage.includes('Authentication required') ||
             errorMessage.includes('Auth session missing'))
         ) {
-          // Only log warnings in development to reduce production noise
-          if (__DEV__) {
-            console.warn(
-              '⚠️ Auth/API error in homeScreenData, returning null:',
-              errorMessage,
-            );
-          }
+          // Log warnings for Edge Function failures (these are backend issues)
+          console.warn(
+            '⚠️ [useHomeScreenData] Edge Function error, returning null:',
+            errorMessage,
+          );
           return null;
         }
         // Re-throw other errors
@@ -255,16 +256,17 @@ export const useCalendarData = (
             errorMessage.includes('Failed to refresh token') ||
             errorMessage.includes('Session expired') ||
             errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Function failed to start') ||
+            errorMessage.includes('please check logs') ||
+            errorMessage.includes('WORKER_ERROR') ||
             errorMessage.includes('Authentication required') ||
             errorMessage.includes('Auth session missing'))
         ) {
-          // Only log warnings in development to reduce production noise
-          if (__DEV__) {
-            console.warn(
-              '⚠️ Auth/API error in calendarData, returning empty object:',
-              errorMessage,
-            );
-          }
+          // Log warnings for Edge Function failures (these are backend issues)
+          console.warn(
+            '⚠️ [useCalendarData] Edge Function error, returning empty object:',
+            errorMessage,
+          );
           return {};
         }
         // Re-throw other errors
@@ -333,16 +335,17 @@ export const useCalendarMonthData = (
             errorMessage.includes('Failed to refresh token') ||
             errorMessage.includes('Session expired') ||
             errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Function failed to start') ||
+            errorMessage.includes('please check logs') ||
+            errorMessage.includes('WORKER_ERROR') ||
             errorMessage.includes('Authentication required') ||
             errorMessage.includes('Auth session missing'))
         ) {
-          // Only log warnings in development to reduce production noise
-          if (__DEV__) {
-            console.warn(
-              '⚠️ Auth/API error in calendarMonthData, returning empty object:',
-              errorMessage,
-            );
-          }
+          // Log warnings for Edge Function failures (these are backend issues)
+          console.warn(
+            '⚠️ [useCalendarMonthData] Edge Function error, returning empty object:',
+            errorMessage,
+          );
           return {};
         }
         // Re-throw other errors

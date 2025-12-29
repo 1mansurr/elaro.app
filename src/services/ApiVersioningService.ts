@@ -158,6 +158,16 @@ export class ApiVersioningService {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
+    // Add idempotency key for POST/PUT/DELETE operations to endpoints that require it
+    const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
+      options.method || 'GET',
+    );
+    if (isMutation && (endpoint.includes('/devices') || endpoint.includes('/users/devices'))) {
+      // Generate idempotency key for device registration
+      const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+      headers['Idempotency-Key'] = idempotencyKey;
+    }
+
     try {
       const response = await fetch(url, {
         ...options,
@@ -172,22 +182,35 @@ export class ApiVersioningService {
       // Check if response is ok before parsing
       if (!response.ok) {
         // Try to get error message from response body
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorMessage = `HTTP ${response.status}: ${response.statusText || 'Unknown error'}`;
         let errorCode: string | undefined;
-        
+
+        // Special handling for timeout errors (504)
+        const isTimeout = response.status === 504;
+        if (isTimeout && !response.statusText) {
+          errorMessage = 'Gateway Timeout: The server did not respond in time. Please try again.';
+        }
+
         if (hasJsonContent && responseText && responseText.trim()) {
           try {
             const parsed = JSON.parse(responseText);
-            errorMessage = parsed.message || parsed.error?.message || parsed.error || errorMessage;
+            errorMessage =
+              parsed.message ||
+              parsed.error?.message ||
+              parsed.error ||
+              errorMessage;
             errorCode = parsed.code || parsed.error?.code;
           } catch (parseError) {
-            // If we can't parse error, use status text
+            // If we can't parse error, use status text or default message
             console.warn('Failed to parse error response:', parseError);
+            if (isTimeout && errorMessage.includes('Unknown error')) {
+              errorMessage = 'Gateway Timeout: The server did not respond in time. Please try again.';
+            }
           }
         }
-        
+
         return {
-          error: 'Request failed',
+          error: isTimeout ? 'Gateway Timeout' : 'Request failed',
           message: errorMessage,
           code: errorCode || `HTTP_${response.status}`,
         };
@@ -195,7 +218,7 @@ export class ApiVersioningService {
 
       // Parse successful response
       let data: any = {};
-      
+
       if (hasJsonContent) {
         if (responseText && responseText.trim()) {
           try {
@@ -266,13 +289,14 @@ export class ApiVersioningService {
       };
     } catch (error) {
       // Handle network errors (fetch fails, no response received)
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      const isNetworkError = 
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      const isNetworkError =
         errorMessage.includes('Network request failed') ||
         errorMessage.includes('Failed to fetch') ||
         errorMessage.includes('network') ||
         error instanceof TypeError;
-      
+
       console.error('API request failed:', error);
       return {
         error: isNetworkError ? 'Network error' : 'Request failed',

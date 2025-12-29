@@ -94,10 +94,14 @@ export const useUsernameAvailability = (
             accessToken.substring(0, 30) + '...',
           );
 
+          // Normalize username to lowercase before sending to server
+          // Server schema only accepts lowercase: /^[a-z0-9_.]+$/
+          const normalizedUsername = newUsername.toLowerCase();
+
           const { data, error } = await supabase.functions.invoke(
             'check-username-availability',
             {
-              body: { username: newUsername },
+              body: { username: normalizedUsername },
               signal: controller.signal,
               headers: {
                 Authorization: `Bearer ${accessToken}`,

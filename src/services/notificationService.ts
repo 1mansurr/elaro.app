@@ -107,24 +107,115 @@ const notificationService = {
       const platform = Platform.OS;
       const updated_at = new Date().toISOString();
 
-      const { versionedApiClient } = await import(
-        '@/services/VersionedApiClient'
-      );
-      const response = await versionedApiClient.registerDevice({
-        push_token: token,
-        platform,
-        updated_at,
+      // Helper to check if error is a timeout
+      const isTimeoutError = (error: unknown): boolean => {
+        if (error instanceof Error) {
+          const message = error.message.toLowerCase();
+          return (
+            message.includes('504') ||
+            message.includes('gateway timeout') ||
+            message.includes('timeout') ||
+            message.includes('http_504')
+          );
+        }
+        if (typeof error === 'object' && error !== null) {
+          const errorObj = error as { code?: string; error?: string; message?: string };
+          return (
+            errorObj.code === 'HTTP_504' ||
+            errorObj.error?.toLowerCase().includes('timeout') ||
+            errorObj.message?.toLowerCase().includes('504') ||
+            errorObj.message?.toLowerCase().includes('timeout')
+          );
+        }
+        return false;
+      };
+
+      // Helper to check if error is a worker/function error that might be retryable
+      const isWorkerError = (error: unknown): boolean => {
+        if (error instanceof Error) {
+          const message = error.message.toLowerCase();
+          return (
+            message.includes('worker_error') ||
+            message.includes('function exited') ||
+            message.includes('please check logs')
+          );
+        }
+        if (typeof error === 'object' && error !== null) {
+          const errorObj = error as { code?: string; error?: string; message?: string };
+          return (
+            errorObj.code === 'WORKER_ERROR' ||
+            errorObj.error?.toLowerCase().includes('function exited') ||
+            errorObj.message?.toLowerCase().includes('function exited')
+          );
+        }
+        return false;
+      };
+
+      // Import retry utility
+      const { retryWithBackoff } = await import('@/utils/errorRecovery');
+
+      const saveToken = async () => {
+        const { versionedApiClient } = await import(
+          '@/services/VersionedApiClient'
+        );
+        const response = await versionedApiClient.registerDevice({
+          push_token: token,
+          platform,
+          updated_at,
+        });
+
+        if (response.error) {
+          // Create error object that can be checked by retry logic
+          const error = new Error(
+            response.message || response.error || 'Failed to save push token',
+          ) as Error & { code?: string; response?: typeof response };
+          error.code = response.code;
+          error.response = response;
+          throw error;
+        }
+
+        return response;
+      };
+
+      // Retry with exponential backoff for timeout errors (504) and worker errors
+      const result = await retryWithBackoff(saveToken, {
+        maxRetries: 3,
+        baseDelay: 1000, // Start with 1 second
+        maxDelay: 10000, // Max 10 seconds between retries
+        retryCondition: (error) => {
+          // Retry on timeout errors (504) or worker errors (may be transient)
+          return isTimeoutError(error) || isWorkerError(error);
+        },
       });
 
-      if (response.error) {
-        throw new Error(
-          response.message || response.error || 'Failed to save push token',
-        );
+      if (!result.success) {
+        const error = result.error as Error & { code?: string; response?: any };
+        const isTimeout = isTimeoutError(error);
+        console.error(`❌ Error saving push token after ${result.attempts} attempt(s):`, {
+          error: error instanceof Error ? error.message : String(error),
+          code: error.code,
+          isTimeout,
+          attempts: result.attempts,
+          userId,
+          platform,
+        });
+        throw error;
       }
 
-      console.log('Push token saved successfully to user_devices table.');
+      console.log('✅ Push token saved successfully to user_devices table');
     } catch (error) {
-      console.error('Error saving push token:', error);
+      const isTimeout = isTimeoutError(error);
+      const isWorkerErr = isWorkerError(error);
+      console.error(
+        `❌ ${isTimeout ? 'Timeout' : isWorkerErr ? 'Worker Error' : 'Exception'} saving push token:`,
+        {
+          error: error instanceof Error ? error.message : String(error),
+          code: (error as { code?: string })?.code,
+          isTimeout,
+          isWorkerError: isWorkerErr,
+          userId,
+        },
+      );
       throw error; // Re-throw to allow calling code to handle the error
     }
   },

@@ -181,16 +181,37 @@ const AddLectureRemindersScreen = () => {
         'hasSeenPostOnboardingWelcome',
       );
 
-      // If user came from AddCourseFirstScreen (has seen it) but hasn't seen PostOnboardingWelcome
+      // Get current navigation state to check if we're in a flow
+      const parentNav = navigation.getParent();
+      const currentRoute = parentNav?.getState()?.routes[
+        parentNav?.getState()?.index || 0
+      ];
+
+      // Only navigate to PostOnboardingWelcome if:
+      // 1. User came from AddCourseFirstScreen (has seen it)
+      // 2. User hasn't seen PostOnboardingWelcome
+      // 3. We're still in the AddCourseFlow (not already navigated away)
       if (
         hasSeenAddCourseFirst === 'true' &&
-        hasSeenPostOnboardingWelcome !== 'true'
+        hasSeenPostOnboardingWelcome !== 'true' &&
+        currentRoute?.name === 'AddCourseFlow'
       ) {
         // Navigate to PostOnboardingWelcomeScreen
-        navigation.getParent()?.navigate('PostOnboardingWelcome' as any);
+        console.log(
+          '✅ [AddLectureRemindersScreen] Navigating to PostOnboardingWelcome after course creation',
+        );
+        parentNav?.navigate('PostOnboardingWelcome' as any);
       } else {
         // Otherwise go back normally
-        navigation.getParent()?.goBack();
+        console.log(
+          '✅ [AddLectureRemindersScreen] Course created, going back',
+          {
+            hasSeenAddCourseFirst,
+            hasSeenPostOnboardingWelcome,
+            currentRoute: currentRoute?.name,
+          },
+        );
+        parentNav?.goBack();
       }
     } catch (err) {
       console.error('Failed to create course and lecture:', err);

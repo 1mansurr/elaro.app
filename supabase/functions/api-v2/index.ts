@@ -912,10 +912,58 @@ async function handleUserProfile({
 
   if (error) handleDbError(error);
 
-  // Decrypt sensitive fields (university and program) before returning
+  // Decrypt sensitive fields (first_name, last_name, university, and program) before returning
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (encryptionKey && data) {
     const decryptedData = { ...data };
+
+    // Decrypt first_name if it exists and appears to be encrypted
+    if (
+      decryptedData.first_name &&
+      typeof decryptedData.first_name === 'string'
+    ) {
+      try {
+        // Only attempt decryption if the string looks like base64-encoded encrypted data
+        if (decryptedData.first_name.length > 20) {
+          decryptedData.first_name = await decrypt(
+            decryptedData.first_name,
+            encryptionKey,
+          );
+        }
+      } catch (decryptError) {
+        // If decryption fails, the data might not be encrypted (legacy data)
+        // or might be corrupted - log warning but don't fail the request
+        console.warn(
+          `Failed to decrypt first_name for user ${user.id}:`,
+          decryptError,
+        );
+        // Keep the original value if decryption fails
+      }
+    }
+
+    // Decrypt last_name if it exists and appears to be encrypted
+    if (
+      decryptedData.last_name &&
+      typeof decryptedData.last_name === 'string'
+    ) {
+      try {
+        // Only attempt decryption if the string looks like base64-encoded encrypted data
+        if (decryptedData.last_name.length > 20) {
+          decryptedData.last_name = await decrypt(
+            decryptedData.last_name,
+            encryptionKey,
+          );
+        }
+      } catch (decryptError) {
+        // If decryption fails, the data might not be encrypted (legacy data)
+        // or might be corrupted - log warning but don't fail the request
+        console.warn(
+          `Failed to decrypt last_name for user ${user.id}:`,
+          decryptError,
+        );
+        // Keep the original value if decryption fails
+      }
+    }
 
     // Decrypt university if it exists and appears to be encrypted
     if (

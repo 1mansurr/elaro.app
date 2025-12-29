@@ -118,3 +118,12 @@ export const CompleteOnboardingSchema = z.object({
   hasParentalConsent: z.boolean().default(false),
   marketingOptIn: z.boolean().default(false),
 });
+
+// Schema for registering a device
+export const RegisterDeviceSchema = z.object({
+  push_token: z.string().min(1, 'Push token is required'),
+  platform: z.enum(['ios', 'android', 'web'], {
+    errorMap: () => ({ message: 'Platform must be ios, android, or web' }),
+  }),
+  updated_at: z.string().optional(),
+});

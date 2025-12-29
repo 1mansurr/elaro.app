@@ -511,6 +511,17 @@ export const AuthenticatedNavigator: React.FC = () => {
   }
   // PostOnboardingWelcome is only shown after course creation from AddCourseFirst,
   // not automatically based on course count
+  // IMPORTANT: PostOnboardingWelcome is NEVER set as initialRouteName - it's only
+  // navigated to programmatically after course creation
+
+  if (__DEV__) {
+    console.log('🔍 [AuthenticatedNavigator] Initial route determined:', {
+      initialRouteName,
+      hasSeenAddCourseFirst,
+      hasSeenPostOnboardingWelcome,
+      courseCount,
+    });
+  }
 
   // Show main app if onboarding is completed
   return (

@@ -81,7 +81,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
         }).start();
       }
     } catch (error) {
-      console.error('Error loading unread count:', error);
+      // Silently handle Edge Function failures (backend issue)
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (
+        errorMessage.includes('Function failed to start') ||
+        errorMessage.includes('please check logs')
+      ) {
+        // Backend Edge Function issue - don't log as error
+        if (__DEV__) {
+          console.warn('⚠️ Notification service temporarily unavailable');
+        }
+      } else {
+        console.error('Error loading unread count:', error);
+      }
+      setUnreadCount(0); // Default to 0 on error
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,16 +10,18 @@ import {
 import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
+import { useTheme } from '@/contexts/ThemeContext';
 import {
   COLORS,
   FONT_SIZES,
   FONT_WEIGHTS,
   SPACING,
   BORDER_RADIUS,
+  SHADOWS,
 } from '@/constants/theme';
 
 const HOUR_HEIGHT = 60;
-const DAY_WIDTH = 120;
+const DAY_WIDTH = 60; // Match WeekStrip card width
 const TIME_COLUMN_WIDTH = 50;
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -45,6 +47,12 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
   onTaskPress,
   onLockedTaskPress,
 }) => {
+  const { theme } = useTheme();
+  // Refs for scroll synchronization
+  const headerScrollRef = useRef<ScrollView>(null);
+  const gridScrollRef = useRef<ScrollView>(null);
+  const isScrollingRef = useRef(false);
+
   const weekStart = useMemo(
     () => startOfWeek(selectedDate, { weekStartsOn: 1 }),
     [selectedDate],
@@ -158,6 +166,35 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
     return positioned;
   }, [tasksByDay]);
 
+  // Synchronize horizontal scrolling between header and grid
+  const handleHeaderScroll = (event: any) => {
+    if (!isScrollingRef.current) {
+      isScrollingRef.current = true;
+      const offsetX = event.nativeEvent.contentOffset.x;
+      // Use requestAnimationFrame for smoother sync
+      requestAnimationFrame(() => {
+        gridScrollRef.current?.scrollTo({ x: offsetX, animated: false });
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 100); // Increased timeout for better sync
+      });
+    }
+  };
+
+  const handleGridScroll = (event: any) => {
+    if (!isScrollingRef.current) {
+      isScrollingRef.current = true;
+      const offsetX = event.nativeEvent.contentOffset.x;
+      // Use requestAnimationFrame for smoother sync
+      requestAnimationFrame(() => {
+        headerScrollRef.current?.scrollTo({ x: offsetX, animated: false });
+        setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 100); // Increased timeout for better sync
+      });
+    }
+  };
+
   const getTaskColor = (type: string) => {
     switch (type) {
       case 'lecture':
@@ -229,8 +266,11 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
     <View style={styles.container}>
       {/* Week Header - Horizontally scrollable */}
       <ScrollView
+        ref={headerScrollRef}
         horizontal
         showsHorizontalScrollIndicator={false}
+        onScroll={handleHeaderScroll}
+        scrollEventThrottle={16}
         contentContainerStyle={styles.headerRowContainer}>
         <View style={styles.headerRow}>
           <View style={styles.timeHeaderPlaceholder} />
@@ -239,20 +279,54 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
             const isSelected = isSameDay(day, selectedDate);
 
             return (
-              <View
+              <TouchableOpacity
                 key={index}
                 style={[
                   styles.dayHeader,
-                  isSelected && styles.dayHeaderSelected,
+                  {
+                    backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
+                    borderColor: theme.isDark
+                      ? 'rgba(255, 255, 255, 0.1)'
+                      : '#E5E7EB',
+                  },
+                  isSelected && [
+                    styles.dayHeaderSelected,
+                    {
+                      backgroundColor: COLORS.primary,
+                    },
+                  ],
                 ]}>
-                <Text style={[styles.dayName, isToday && styles.dayNameToday]}>
-                  {format(day, 'EEE')}
+                <Text
+                  style={[
+                    styles.dayName,
+                    {
+                      color: isSelected
+                        ? '#FFFFFF'
+                        : isToday
+                          ? COLORS.primary
+                          : theme.isDark
+                            ? '#9CA3AF'
+                            : '#6B7280',
+                    },
+                  ]}>
+                  {format(day, 'E')}
                 </Text>
                 <Text
-                  style={[styles.dayNumber, isToday && styles.dayNumberToday]}>
+                  style={[
+                    styles.dayNumber,
+                    {
+                      color: isSelected
+                        ? '#FFFFFF'
+                        : isToday
+                          ? COLORS.primary
+                          : theme.isDark
+                            ? '#FFFFFF'
+                            : '#111418',
+                    },
+                  ]}>
                   {format(day, 'd')}
                 </Text>
-              </View>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -260,10 +334,13 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
 
       {/* Scrollable Grid - Both vertical and horizontal */}
       <ScrollView
+        ref={gridScrollRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         horizontal
-        showsHorizontalScrollIndicator={false}>
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleGridScroll}
+        scrollEventThrottle={16}>
         <View style={styles.gridContainer}>
           {/* Time Column */}
           <View style={styles.timeColumn}>
@@ -312,10 +389,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.background,
-    minWidth: 7 * DAY_WIDTH, // Ensure all 7 days are visible
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs, // Reduced spacing to bring day cards closer to view toggle and grid
   },
   headerRow: {
     flexDirection: 'row',
+    alignItems: 'center',
   },
   timeHeaderPlaceholder: {
     width: TIME_COLUMN_WIDTH,
@@ -323,30 +402,25 @@ const styles = StyleSheet.create({
   },
   dayHeader: {
     width: DAY_WIDTH,
-    padding: SPACING.sm,
+    height: 70,
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    justifyContent: 'center',
+    borderRadius: BORDER_RADIUS.md,
+    marginHorizontal: SPACING.xs,
+    borderWidth: 1,
+    ...SHADOWS.xs,
   },
   dayHeaderSelected: {
-    backgroundColor: '#F0F5FF',
+    ...SHADOWS.sm,
   },
   dayName: {
-    fontSize: FONT_SIZES.xs,
-    fontWeight: FONT_WEIGHTS.semibold as any,
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
-  },
-  dayNameToday: {
-    color: COLORS.primary,
+    fontSize: FONT_SIZES.sm,
+    marginBottom: SPACING.xs,
+    fontWeight: FONT_WEIGHTS.medium as any,
   },
   dayNumber: {
     fontSize: FONT_SIZES.lg,
     fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
-    marginTop: 2,
-  },
-  dayNumberToday: {
-    color: COLORS.primary,
   },
   scrollView: {
     flex: 1,
