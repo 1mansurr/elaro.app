@@ -162,7 +162,10 @@ export class ApiVersioningService {
     const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(
       options.method || 'GET',
     );
-    if (isMutation && (endpoint.includes('/devices') || endpoint.includes('/users/devices'))) {
+    if (
+      isMutation &&
+      (endpoint.includes('/devices') || endpoint.includes('/users/devices'))
+    ) {
       // Generate idempotency key for device registration
       const idempotencyKey = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
       headers['Idempotency-Key'] = idempotencyKey;
@@ -188,7 +191,8 @@ export class ApiVersioningService {
         // Special handling for timeout errors (504)
         const isTimeout = response.status === 504;
         if (isTimeout && !response.statusText) {
-          errorMessage = 'Gateway Timeout: The server did not respond in time. Please try again.';
+          errorMessage =
+            'Gateway Timeout: The server did not respond in time. Please try again.';
         }
 
         if (hasJsonContent && responseText && responseText.trim()) {
@@ -204,7 +208,8 @@ export class ApiVersioningService {
             // If we can't parse error, use status text or default message
             console.warn('Failed to parse error response:', parseError);
             if (isTimeout && errorMessage.includes('Unknown error')) {
-              errorMessage = 'Gateway Timeout: The server did not respond in time. Please try again.';
+              errorMessage =
+                'Gateway Timeout: The server did not respond in time. Please try again.';
             }
           }
         }

@@ -82,7 +82,8 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
       }
     } catch (error) {
       // Silently handle Edge Function failures (backend issue)
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       if (
         errorMessage.includes('Function failed to start') ||
         errorMessage.includes('please check logs')

@@ -765,7 +765,10 @@ const AppWithErrorBoundary: React.FC<{
 
   const handleAppInitializerStateChange = useCallback(
     (state: { appIsReady: boolean; isAnimationFinished: boolean }) => {
-      console.log('📱 [AppWithErrorBoundary] AppInitializer state changed:', state);
+      console.log(
+        '📱 [AppWithErrorBoundary] AppInitializer state changed:',
+        state,
+      );
       setAppInitializerState(state);
     },
     [],
@@ -783,7 +786,10 @@ const AppWithErrorBoundary: React.FC<{
 
   // Track when NavigationContainer starts rendering
   useEffect(() => {
-    if (!shouldShowLoading && navigationContainerRenderTimeRef.current === null) {
+    if (
+      !shouldShowLoading &&
+      navigationContainerRenderTimeRef.current === null
+    ) {
       navigationContainerRenderTimeRef.current = Date.now();
     }
   }, [shouldShowLoading]);
@@ -868,7 +874,13 @@ const AppWithErrorBoundary: React.FC<{
     }, 6000); // 6 second absolute maximum
 
     return () => clearTimeout(fallbackSplashTimeout);
-  }, [appIsReady, isAnimationFinished, isStateValidated, shouldShowLoading, navigationContainerMounted]);
+  }, [
+    appIsReady,
+    isAnimationFinished,
+    isStateValidated,
+    shouldShowLoading,
+    navigationContainerMounted,
+  ]);
 
   // Defensive fallback: NavigationStateValidator guarantees resolution within 3 seconds,
   // but this provides a final safety net (5 seconds) in case of unexpected issues

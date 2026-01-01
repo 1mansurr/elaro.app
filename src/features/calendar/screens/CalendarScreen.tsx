@@ -487,6 +487,7 @@ const CalendarScreen = () => {
           selectedDate={selectedDate}
           onTaskPress={handleTaskPress}
           onLockedTaskPress={handleLockedTaskPress}
+          onDateSelect={handleDateSelect}
         />
       )}
 

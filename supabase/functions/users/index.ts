@@ -36,11 +36,14 @@ const UpdateProfileSchema = z.object({
   university: z.string().max(100).optional(),
   program: z.string().max(100).optional(),
   country: z.string().max(50).optional(),
-  date_of_birth: z.string().refine(val => {
-    if (!val) return true; // Optional field
-    const date = new Date(val);
-    return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
-  }, 'Invalid date format. Expected YYYY-MM-DD').optional(),
+  date_of_birth: z
+    .string()
+    .refine(val => {
+      if (!val) return true; // Optional field
+      const date = new Date(val);
+      return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
+    }, 'Invalid date format. Expected YYYY-MM-DD')
+    .optional(),
   marketing_opt_in: z.boolean().optional(),
 });
 
@@ -50,11 +53,14 @@ const CompleteOnboardingSchema = z.object({
   university: z.string().max(100).optional(),
   program: z.string().max(100).optional(),
   country: z.string().max(50).optional(),
-  date_of_birth: z.string().refine(val => {
-    if (!val) return true; // Optional field
-    const date = new Date(val);
-    return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
-  }, 'Invalid date format. Expected YYYY-MM-DD').optional(),
+  date_of_birth: z
+    .string()
+    .refine(val => {
+      if (!val) return true; // Optional field
+      const date = new Date(val);
+      return !isNaN(date.getTime()) && val.match(/^\d{4}-\d{2}-\d{2}$/);
+    }, 'Invalid date format. Expected YYYY-MM-DD')
+    .optional(),
   marketing_opt_in: z.boolean().default(false),
 });
 
@@ -63,10 +69,16 @@ const SoftDeleteAccountSchema = z.object({
 });
 
 // Schema for handler validation
-// Since this function handles multiple routes with different schemas,
-// we use z.any() to satisfy the handler requirement, and validate
-// specifically in each route handler
-const UsersRequestSchema = z.any();
+// Union schema that covers all possible request body types for this function
+// This ensures proper validation at the handler level while allowing
+// route-specific validation in individual handlers
+const UsersRequestSchema = z.union([
+  UpdateProfileSchema,
+  CompleteOnboardingSchema,
+  SoftDeleteAccountSchema,
+  RegisterDeviceSchema,
+  z.object({}), // For routes without body (e.g., restore-account)
+]);
 
 // User service class
 class UserService {
@@ -485,14 +497,15 @@ class UserService {
       }
 
       // Wrap unexpected errors with proper logging
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error('Unexpected error in registerDevice:', {
         error: errorMessage,
         stack: error instanceof Error ? error.stack : undefined,
         userId,
         platform: deviceData.platform,
       });
-      
+
       throw new AppError(
         'Failed to register device. Please try again.',
         500,

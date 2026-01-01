@@ -119,7 +119,11 @@ const notificationService = {
           );
         }
         if (typeof error === 'object' && error !== null) {
-          const errorObj = error as { code?: string; error?: string; message?: string };
+          const errorObj = error as {
+            code?: string;
+            error?: string;
+            message?: string;
+          };
           return (
             errorObj.code === 'HTTP_504' ||
             errorObj.error?.toLowerCase().includes('timeout') ||
@@ -141,7 +145,11 @@ const notificationService = {
           );
         }
         if (typeof error === 'object' && error !== null) {
-          const errorObj = error as { code?: string; error?: string; message?: string };
+          const errorObj = error as {
+            code?: string;
+            error?: string;
+            message?: string;
+          };
           return (
             errorObj.code === 'WORKER_ERROR' ||
             errorObj.error?.toLowerCase().includes('function exited') ||
@@ -182,7 +190,7 @@ const notificationService = {
         maxRetries: 3,
         baseDelay: 1000, // Start with 1 second
         maxDelay: 10000, // Max 10 seconds between retries
-        retryCondition: (error) => {
+        retryCondition: error => {
           // Retry on timeout errors (504) or worker errors (may be transient)
           return isTimeoutError(error) || isWorkerError(error);
         },
@@ -191,14 +199,17 @@ const notificationService = {
       if (!result.success) {
         const error = result.error as Error & { code?: string; response?: any };
         const isTimeout = isTimeoutError(error);
-        console.error(`❌ Error saving push token after ${result.attempts} attempt(s):`, {
-          error: error instanceof Error ? error.message : String(error),
-          code: error.code,
-          isTimeout,
-          attempts: result.attempts,
-          userId,
-          platform,
-        });
+        console.error(
+          `❌ Error saving push token after ${result.attempts} attempt(s):`,
+          {
+            error: error instanceof Error ? error.message : String(error),
+            code: error.code,
+            isTimeout,
+            attempts: result.attempts,
+            userId,
+            platform,
+          },
+        );
         throw error;
       }
 

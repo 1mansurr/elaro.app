@@ -183,9 +183,8 @@ const AddLectureRemindersScreen = () => {
 
       // Get current navigation state to check if we're in a flow
       const parentNav = navigation.getParent();
-      const currentRoute = parentNav?.getState()?.routes[
-        parentNav?.getState()?.index || 0
-      ];
+      const currentRoute =
+        parentNav?.getState()?.routes[parentNav?.getState()?.index || 0];
 
       // Only navigate to PostOnboardingWelcome if:
       // 1. User came from AddCourseFirstScreen (has seen it)

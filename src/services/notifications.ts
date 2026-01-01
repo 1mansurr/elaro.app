@@ -61,7 +61,11 @@ function isTimeoutError(error: unknown): boolean {
     );
   }
   if (typeof error === 'object' && error !== null) {
-    const errorObj = error as { code?: string; error?: string; message?: string };
+    const errorObj = error as {
+      code?: string;
+      error?: string;
+      message?: string;
+    };
     return (
       errorObj.code === 'HTTP_504' ||
       errorObj.error?.toLowerCase().includes('timeout') ||
@@ -85,7 +89,11 @@ function isWorkerError(error: unknown): boolean {
     );
   }
   if (typeof error === 'object' && error !== null) {
-    const errorObj = error as { code?: string; error?: string; message?: string };
+    const errorObj = error as {
+      code?: string;
+      error?: string;
+      message?: string;
+    };
     return (
       errorObj.code === 'WORKER_ERROR' ||
       errorObj.error?.toLowerCase().includes('function exited') ||
@@ -103,18 +111,20 @@ function isWorkerError(error: unknown): boolean {
 async function savePushTokenToSupabase(userId: string, token: string) {
   const platform = Platform.OS;
   const updated_at = new Date().toISOString();
-  
+
   // Import retry utility
   const { retryWithBackoff } = await import('@/utils/errorRecovery');
-  
+
   const saveToken = async () => {
-    const { versionedApiClient } = await import('@/services/VersionedApiClient');
+    const { versionedApiClient } = await import(
+      '@/services/VersionedApiClient'
+    );
     const response = await versionedApiClient.registerDevice({
       push_token: token,
       platform,
       updated_at,
     });
-    
+
     if (response.error) {
       // Create error object that can be checked by retry logic
       const error = new Error(response.message || response.error) as Error & {
@@ -125,22 +135,22 @@ async function savePushTokenToSupabase(userId: string, token: string) {
       error.response = response;
       throw error;
     }
-    
+
     return response;
   };
-  
+
   try {
-      // Retry with exponential backoff for timeout errors (504) and worker errors
-      const result = await retryWithBackoff(saveToken, {
-        maxRetries: 3,
-        baseDelay: 1000, // Start with 1 second
-        maxDelay: 10000, // Max 10 seconds between retries
-        retryCondition: (error) => {
-          // Retry on timeout errors (504) or worker errors (may be transient)
-          return isTimeoutError(error) || isWorkerError(error);
-        },
-      });
-    
+    // Retry with exponential backoff for timeout errors (504) and worker errors
+    const result = await retryWithBackoff(saveToken, {
+      maxRetries: 3,
+      baseDelay: 1000, // Start with 1 second
+      maxDelay: 10000, // Max 10 seconds between retries
+      retryCondition: error => {
+        // Retry on timeout errors (504) or worker errors (may be transient)
+        return isTimeoutError(error) || isWorkerError(error);
+      },
+    });
+
     if (!result.success) {
       const error = result.error as Error & { code?: string; response?: any };
       console.error('❌ Error saving push token to Supabase after retries:', {
@@ -152,7 +162,7 @@ async function savePushTokenToSupabase(userId: string, token: string) {
       });
       throw error;
     }
-    
+
     console.log('✅ Push token saved successfully to Supabase');
   } catch (error) {
     const isTimeout = isTimeoutError(error);

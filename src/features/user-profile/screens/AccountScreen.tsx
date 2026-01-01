@@ -253,9 +253,7 @@ export function AccountScreen() {
               Alert.alert(
                 'Complete Your Profile',
                 'Please complete your profile setup first to access your profile.',
-                [
-                  { text: 'OK', style: 'default' },
-                ],
+                [{ text: 'OK', style: 'default' }],
               );
               return;
             }

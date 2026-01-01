@@ -30,6 +30,7 @@ interface WeekGridViewProps {
   selectedDate: Date;
   onTaskPress: (task: Task) => void;
   onLockedTaskPress?: (task: Task) => void;
+  onDateSelect?: (date: Date) => void;
 }
 
 interface PositionedTask {
@@ -46,6 +47,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
   selectedDate,
   onTaskPress,
   onLockedTaskPress,
+  onDateSelect,
 }) => {
   const { theme } = useTheme();
   // Refs for scroll synchronization
@@ -215,8 +217,8 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
     const isExample = (task as any).is_example === true;
 
     const columnWidth = DAY_WIDTH / totalColumns;
-    const left =
-      TIME_COLUMN_WIDTH + dayIndex * DAY_WIDTH + column * columnWidth;
+    // Time column is now outside the scrollable area, so don't add TIME_COLUMN_WIDTH
+    const left = dayIndex * DAY_WIDTH + column * columnWidth;
 
     const startTime = new Date(task.startTime || task.date);
     const timeStr = format(startTime, 'h:mm a');
@@ -295,7 +297,8 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                       backgroundColor: COLORS.primary,
                     },
                   ],
-                ]}>
+                ]}
+                onPress={() => onDateSelect?.(day)}>
                 <Text
                   style={[
                     styles.dayName,
@@ -332,17 +335,13 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
         </View>
       </ScrollView>
 
-      {/* Scrollable Grid - Both vertical and horizontal */}
+      {/* Grid Container with Fixed Time Column */}
       <ScrollView
-        ref={gridScrollRef}
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleGridScroll}
-        scrollEventThrottle={16}>
-        <View style={styles.gridContainer}>
-          {/* Time Column */}
+        style={styles.verticalScrollView}
+        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true}>
+        <View style={styles.gridWrapper}>
+          {/* Fixed Time Column - Outside horizontal ScrollView */}
           <View style={styles.timeColumn}>
             {hours.map(hour => (
               <View key={hour} style={styles.hourSlot}>
@@ -353,27 +352,39 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
             ))}
           </View>
 
-          {/* Days Grid */}
-          <View style={styles.daysGrid}>
-            {/* Background grid lines */}
-            {hours.map(hour => (
-              <View
-                key={`line-${hour}`}
-                style={[styles.gridLine, { top: hour * HOUR_HEIGHT }]}
-              />
-            ))}
+          {/* Scrollable Days Grid - Only this scrolls horizontally */}
+          <ScrollView
+            ref={gridScrollRef}
+            style={styles.scrollView}
+            showsVerticalScrollIndicator={false}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleGridScroll}
+            scrollEventThrottle={16}
+            nestedScrollEnabled={true}>
+            <View style={styles.daysGridContainer}>
+              <View style={styles.daysGrid}>
+                {/* Background grid lines */}
+                {hours.map(hour => (
+                  <View
+                    key={`line-${hour}`}
+                    style={[styles.gridLine, { top: hour * HOUR_HEIGHT }]}
+                  />
+                ))}
 
-            {/* Day columns */}
-            {weekDays.map((_, index) => (
-              <View
-                key={`col-${index}`}
-                style={[styles.dayColumn, { left: index * DAY_WIDTH }]}
-              />
-            ))}
+                {/* Day columns */}
+                {weekDays.map((_, index) => (
+                  <View
+                    key={`col-${index}`}
+                    style={[styles.dayColumn, { left: index * DAY_WIDTH }]}
+                  />
+                ))}
 
-            {/* Tasks */}
-            {positionedTasks.map(positioned => renderTask(positioned))}
-          </View>
+                {/* Tasks */}
+                {positionedTasks.map(positioned => renderTask(positioned))}
+              </View>
+            </View>
+          </ScrollView>
         </View>
       </ScrollView>
     </View>
@@ -390,7 +401,6 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.background,
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs, // Reduced spacing to bring day cards closer to view toggle and grid
   },
   headerRow: {
     flexDirection: 'row',
@@ -422,17 +432,24 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.lg,
     fontWeight: FONT_WEIGHTS.bold as any,
   },
+  verticalScrollView: {
+    flex: 1,
+  },
+  gridWrapper: {
+    flexDirection: 'row',
+    minHeight: 24 * HOUR_HEIGHT,
+  },
   scrollView: {
     flex: 1,
   },
-  gridContainer: {
-    flexDirection: 'row',
+  daysGridContainer: {
     minHeight: 24 * HOUR_HEIGHT,
-    minWidth: TIME_COLUMN_WIDTH + 7 * DAY_WIDTH, // Time column + 7 days
+    width: 7 * DAY_WIDTH,
   },
   timeColumn: {
     width: TIME_COLUMN_WIDTH,
     backgroundColor: COLORS.background,
+    zIndex: 10, // Ensure it stays on top
   },
   hourSlot: {
     height: HOUR_HEIGHT,
