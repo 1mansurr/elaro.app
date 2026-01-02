@@ -150,10 +150,22 @@ export async function getBiometricCredentials(): Promise<{
     const credentialsStr = await SecureStore.getItemAsync(
       BIOMETRIC_CREDENTIALS_KEY,
     );
-    if (!credentialsStr) return null;
-
-    const credentials = JSON.parse(credentialsStr);
-    return credentials;
+    if (
+      !credentialsStr ||
+      !credentialsStr.trim() ||
+      credentialsStr === 'undefined' ||
+      credentialsStr === 'null'
+    ) {
+      return null;
+    }
+    
+    let credentials: any;
+    try {
+      credentials = JSON.parse(credentialsStr);
+      return credentials;
+    } catch {
+      return null;
+    }
   } catch (error) {
     console.error('Error retrieving biometric credentials:', error);
     return null;

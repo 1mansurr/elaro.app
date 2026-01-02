@@ -13,7 +13,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { Resend } from 'https://esm.sh/resend@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import {
   AuthenticatedRequest,
@@ -24,8 +24,6 @@ import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
 
 const WelcomeEmailSchema = z.object({
   userEmail: z.string().email(),
@@ -46,6 +44,18 @@ class EmailService {
     private supabaseClient: SupabaseClient,
     private user: User,
   ) {}
+
+  private getResendClient(): Resend {
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      throw new AppError(
+        'RESEND_API_KEY is not configured',
+        500,
+        ERROR_CODES.CONFIG_ERROR,
+      );
+    }
+    return new Resend(apiKey);
+  }
 
   async sendWelcomeEmail(data: Record<string, unknown>) {
     const {
@@ -105,6 +115,7 @@ class EmailService {
       </html>
     `;
 
+    const resend = this.getResendClient();
     const { data: emailData, error } = await resend.emails.send({
       from: 'ELARO <noreply@myelaro.com>',
       to: [userEmail],
@@ -160,6 +171,7 @@ class EmailService {
       );
     });
 
+    const resend = this.getResendClient();
     const { data: emailData, error } = await resend.emails.send({
       from: 'ELARO <noreply@myelaro.com>',
       to: [to],
@@ -248,9 +260,11 @@ async function handleScheduleEmail(req: AuthenticatedRequest) {
 
 // Main handler with routing
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

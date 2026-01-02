@@ -86,7 +86,7 @@ const CalendarScreen = () => {
   const jsThreadMetrics = useJSThreadMonitor({
     enabled: __DEV__,
     logSlowFrames: false, // Disable individual frame logging - too verbose
-    slowFrameThreshold: 20,
+    slowFrameThreshold: 25, // Increased from 20ms to reduce false positives (25ms = 40fps)
   });
 
   // Memory monitoring (dev only)
@@ -95,14 +95,17 @@ const CalendarScreen = () => {
   // Log warnings in dev if too many slow frames (only log summary at intervals)
   const lastLoggedCountRef = React.useRef(0);
   React.useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 100) {
-      // Only log every 50 frames to reduce noise
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 200) {
+      // Only log every 100 frames to reduce noise, and only after 200 slow frames
       const framesSinceLastLog =
         jsThreadMetrics.slowFrameCount - lastLoggedCountRef.current;
-      if (framesSinceLastLog >= 50) {
-        console.warn(
-          `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
-        );
+      if (framesSinceLastLog >= 100) {
+        // Only warn if average frame time is actually problematic (> 20ms)
+        if (jsThreadMetrics.averageFrameTime > 20) {
+          console.warn(
+            `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+          );
+        }
         lastLoggedCountRef.current = jsThreadMetrics.slowFrameCount;
       }
     }
@@ -605,7 +608,7 @@ const styles = StyleSheet.create({
   },
   viewToggleContainer: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs, // Reduced spacing to bring day cards closer to view toggle
+    paddingBottom: SPACING.xs, // Only bottom padding to control spacing below toggle
   },
   weekStripContainer: {
     borderBottomWidth: 1,

@@ -114,7 +114,10 @@ export const CompleteOnboardingSchema = z.object({
       }),
     )
     .default([]),
-  dateOfBirth: z.string().date('Invalid date format'),
+  dateOfBirth: z.string().refine(
+    (v) => !Number.isNaN(Date.parse(v)),
+    { message: 'Invalid date format' }
+  ),
   hasParentalConsent: z.boolean().default(false),
   marketingOptIn: z.boolean().default(false),
 });

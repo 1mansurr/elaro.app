@@ -48,7 +48,21 @@ class SettingsSyncService {
         return null;
       }
 
-      const settings: SettingsCache = JSON.parse(cached);
+      // Guard: Only parse if cached is valid
+      if (
+        !cached.trim() ||
+        cached === 'undefined' ||
+        cached === 'null'
+      ) {
+        return null;
+      }
+      
+      let settings: SettingsCache;
+      try {
+        settings = JSON.parse(cached);
+      } catch {
+        return null;
+      }
 
       // Check version
       if (settings.version !== SETTINGS_VERSION) {
@@ -393,8 +407,20 @@ class SettingsSyncService {
     try {
       const key = `${PENDING_CHANGES_KEY}:${userId}`;
       const stored = await AsyncStorage.getItem(key);
-      if (!stored) return [];
-      return JSON.parse(stored);
+      if (
+        !stored ||
+        !stored.trim() ||
+        stored === 'undefined' ||
+        stored === 'null'
+      ) {
+        return [];
+      }
+      
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [];
+      }
     } catch (error) {
       console.error('❌ SettingsSync: Failed to get pending changes:', error);
       return [];

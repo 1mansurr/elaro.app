@@ -108,7 +108,21 @@ export async function restoreQueryCache(
       return;
     }
 
-    const queries: SerializedQuery[] = JSON.parse(serialized);
+    // Guard: Only parse if serialized is valid
+    if (
+      !serialized.trim() ||
+      serialized === 'undefined' ||
+      serialized === 'null'
+    ) {
+      return;
+    }
+    
+    let queries: SerializedQuery[];
+    try {
+      queries = JSON.parse(serialized);
+    } catch {
+      return;
+    }
 
     // Restore queries to cache
     queries.forEach((queryData: SerializedQuery) => {

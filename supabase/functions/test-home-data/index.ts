@@ -1,10 +1,12 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from '@supabase/supabase-js';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -36,7 +38,10 @@ serve(async req => {
     };
 
     return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...getCorsHeaders(origin),
+        'Content-Type': 'application/json',
+      },
       status: 200,
     });
   } catch (error) {
@@ -47,7 +52,10 @@ serve(async req => {
         details: error.toString(),
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
         status: 500,
       },
     );

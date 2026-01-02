@@ -1,5 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
 import { validateApiVersion } from '../_shared/versioning.ts';
 import {
@@ -37,7 +37,10 @@ import {
   DeleteStudySessionSchema,
   RestoreStudySessionSchema,
 } from '../_shared/schemas/studySession.ts';
-import { UpdateUserProfileSchema } from '../_shared/schemas/user.ts';
+import {
+  UpdateUserProfileSchema,
+  RegisterDeviceSchema,
+} from '../_shared/schemas/user.ts';
 import {
   SendNotificationSchema,
   ScheduleNotificationSchema,
@@ -54,9 +57,11 @@ import { logger } from '../_shared/logging.ts';
 
 // Consolidated API v2 - Handles multiple operations through routing
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -275,6 +280,12 @@ function getHandler(resource: string, action: string) {
         'api-v2-users-update',
         UpdateUserProfileSchema,
         true,
+      ),
+      devices: wrapOldHandler(
+        handleUserDevices,
+        'api-v2-users-devices',
+        RegisterDeviceSchema, // Schema for POST requests (GET has no body so won't validate)
+        true, // Require idempotency for POST
       ),
       // Note: suspend, unsuspend, delete are admin operations - removed from api-v2
       // They are available in admin-system only
@@ -1031,6 +1042,48 @@ async function handleUpdateUserProfile({
 
   if (error) handleDbError(error);
   return data;
+}
+
+// Device handlers - handles both GET and POST based on request method
+async function handleUserDevices(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const method = req.method;
+
+  if (method === 'GET') {
+    const { data, error } = await supabaseClient
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+
+    if (error) handleDbError(error);
+    return data || [];
+  }
+
+  if (method === 'POST') {
+    // Validate with schema
+    const validatedData = RegisterDeviceSchema.parse(body);
+    const { push_token, platform, updated_at } = validatedData;
+
+    const { data, error } = await supabaseClient
+      .from('user_devices')
+      .upsert(
+        {
+          user_id: user.id,
+          push_token,
+          platform,
+          updated_at: updated_at || new Date().toISOString(),
+        },
+        { onConflict: 'user_id,platform' },
+      )
+      .select()
+      .single();
+
+    if (error) handleDbError(error);
+    return data;
+  }
+
+  throw new AppError('Method not allowed', 405, ERROR_CODES.VALIDATION_ERROR);
 }
 
 // Note: suspend, unsuspend, delete user handlers removed from api-v2

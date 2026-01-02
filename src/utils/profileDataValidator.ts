@@ -44,24 +44,32 @@ export function sanitizeProfileData(user: User | null): {
       trimmed.includes(']')
     ) {
       // If it looks like JSON, try to parse it
-      try {
-        const parsed = JSON.parse(trimmed);
-        // If it's an object, try to extract meaningful values
-        if (typeof parsed === 'object' && parsed !== null) {
-          // Look for common field names
-          const value =
-            parsed.first_name ||
-            parsed.firstName ||
-            parsed.name ||
-            parsed.value ||
-            '';
-          return typeof value === 'string' ? value.trim() : '';
+      // Guard: Only parse if trimmed is valid
+      if (
+        trimmed &&
+        trimmed !== 'undefined' &&
+        trimmed !== 'null'
+      ) {
+        try {
+          const parsed = JSON.parse(trimmed);
+          // If it's an object, try to extract meaningful values
+          if (typeof parsed === 'object' && parsed !== null) {
+            // Look for common field names
+            const value =
+              parsed.first_name ||
+              parsed.firstName ||
+              parsed.name ||
+              parsed.value ||
+              '';
+            return typeof value === 'string' ? value.trim() : '';
+          }
+          return '';
+        } catch {
+          return '';
         }
-        return '';
-      } catch {
-        // Not valid JSON, return empty
-        return '';
       }
+      // Not valid JSON, return empty
+      return '';
     }
 
     // Check for database column names that might leak through

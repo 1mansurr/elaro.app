@@ -154,7 +154,21 @@ class AuthSyncService {
       const cached = await AsyncStorage.getItem(AUTH_STATE_KEY);
       if (!cached) return null;
 
-      const state = JSON.parse(cached);
+      // Guard: Only parse if cached is valid
+      if (
+        !cached.trim() ||
+        cached === 'undefined' ||
+        cached === 'null'
+      ) {
+        return null;
+      }
+      
+      let state: AuthStateSnapshot;
+      try {
+        state = JSON.parse(cached);
+      } catch {
+        return null;
+      }
 
       // Check version
       if (state.version !== AUTH_STATE_VERSION) {

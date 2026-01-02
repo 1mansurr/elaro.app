@@ -58,7 +58,18 @@ export class CacheManager {
       };
 
       const cacheKey = `${CACHE_PREFIX}:${key}`;
-      const serialized = JSON.stringify(cachedData);
+      // Guard: Ensure undefined is never stringified
+      const serialized = JSON.stringify(cachedData, (_key, value) =>
+        value === undefined ? null : value,
+      );
+
+      // Guard: Only save if serialized is valid
+      if (!serialized || serialized === 'undefined') {
+        if (__DEV__) {
+          console.warn(`⚠️ Cannot cache ${key}: serialized value is invalid`);
+        }
+        return;
+      }
 
       // Check cache size before adding
       await this.ensureCacheSpace(serialized.length);
@@ -138,20 +149,30 @@ export class CacheManager {
 
     try {
       const metricsData = await AsyncStorage.getItem(CACHE_METRICS_KEY);
-      if (metricsData) {
-        this.metrics = JSON.parse(metricsData);
-        // Reset window if > 30 minutes old
-        const now = Date.now();
-        if (now - (this.metrics?.windowStart || 0) > 30 * 60 * 1000) {
-          this.metrics = {
-            hits: 0,
-            misses: 0,
-            lastResetAt: now,
-            windowStart: now,
-          };
-          await this.saveMetrics();
+      // Guard: Only parse if metricsData is valid
+      if (
+        metricsData &&
+        metricsData.trim() &&
+        metricsData !== 'undefined' &&
+        metricsData !== 'null'
+      ) {
+        try {
+          this.metrics = JSON.parse(metricsData);
+          // Reset window if > 30 minutes old
+          const now = Date.now();
+          if (now - (this.metrics?.windowStart || 0) > 30 * 60 * 1000) {
+            this.metrics = {
+              hits: 0,
+              misses: 0,
+              lastResetAt: now,
+              windowStart: now,
+            };
+            await this.saveMetrics();
+          }
+          return this.metrics!;
+        } catch {
+          // If parse fails, initialize new metrics
         }
-        return this.metrics!;
       }
     } catch (error) {
       console.error('Failed to load cache metrics:', error);
@@ -173,10 +194,14 @@ export class CacheManager {
   private static async saveMetrics(): Promise<void> {
     if (!this.metrics) return;
     try {
-      await AsyncStorage.setItem(
-        CACHE_METRICS_KEY,
-        JSON.stringify(this.metrics),
+      // Guard: Ensure undefined is never stringified
+      const serialized = JSON.stringify(this.metrics, (_key, value) =>
+        value === undefined ? null : value,
       );
+      // Guard: Only save if serialized is valid
+      if (serialized && serialized !== 'undefined') {
+        await AsyncStorage.setItem(CACHE_METRICS_KEY, serialized);
+      }
     } catch (error) {
       console.error('Failed to save cache metrics:', error);
     }
@@ -254,7 +279,32 @@ export class CacheManager {
         return null;
       }
 
-      const cachedData: CachedData<T> = JSON.parse(cached);
+      // Guard: Check if cached is valid before parsing
+      if (
+        !cached.trim() ||
+        cached === 'undefined' ||
+        cached === 'null'
+      ) {
+        await this.recordMiss();
+        await this.remove(key); // Auto-clear corrupted entry
+        if (__DEV__) {
+          console.log(`⚠️ Cache corrupted (empty/null): ${key}, cleared`);
+        }
+        return null;
+      }
+
+      let cachedData: CachedData<T>;
+      try {
+        cachedData = JSON.parse(cached);
+      } catch (parseError) {
+        // Auto-clear corrupted cache entry
+        await this.recordMiss();
+        await this.remove(key);
+        if (__DEV__) {
+          console.error(`❌ Cache parse error for ${key}, cleared:`, parseError);
+        }
+        return null;
+      }
 
       // Check version mismatch
       if (cachedData.version !== CACHE_VERSION) {
@@ -342,15 +392,27 @@ export class CacheManager {
           const size = value ? new Blob([value]).size : 0;
 
           try {
-            const cached: CachedData<any> = JSON.parse(value || '{}');
-            const age = Math.floor((Date.now() - cached.timestamp) / 60000);
+            // Guard: Only parse if value exists and is valid
+            if (
+              value &&
+              value.trim() &&
+              value !== 'undefined' &&
+              value !== 'null'
+            ) {
+              const cached: CachedData<any> = JSON.parse(value);
+              const age = Math.floor((Date.now() - cached.timestamp) / 60000);
 
-            return {
-              key: key.replace(`${CACHE_PREFIX}:`, ''),
-              age,
-              size,
-            };
+              return {
+                key: key.replace(`${CACHE_PREFIX}:`, ''),
+                age,
+                size,
+              };
+            } else {
+              // Return default for corrupted entries
+              return { key, age: 0, size };
+            }
           } catch {
+            // Return default for parse errors
             return { key, age: 0, size };
           }
         }),

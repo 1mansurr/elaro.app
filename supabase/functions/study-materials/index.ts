@@ -19,7 +19,7 @@ import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -494,9 +494,11 @@ function getHandler(
 
 // Main handler with routing
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

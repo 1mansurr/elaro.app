@@ -161,10 +161,12 @@ ALTER TABLE user_activity_tracking ENABLE ROW LEVEL SECURITY;
 
 -- Weekly reports: Users can only see their own reports
 DROP POLICY IF EXISTS "Users can view their own weekly reports" ON weekly_reports;
+DROP POLICY IF EXISTS "Users can view their own weekly reports" ON weekly_reports;
 CREATE POLICY "Users can view their own weekly reports" ON weekly_reports
     FOR ALL USING (auth.uid() = user_id);
 
 -- Report templates: Only admins can manage templates
+DROP POLICY IF EXISTS "Admins can manage report templates" ON report_templates;
 DROP POLICY IF EXISTS "Admins can manage report templates" ON report_templates;
 CREATE POLICY "Admins can manage report templates" ON report_templates
     FOR ALL USING (
@@ -177,10 +179,12 @@ CREATE POLICY "Admins can manage report templates" ON report_templates
 
 -- Notification deliveries: Users can only see their own notifications
 DROP POLICY IF EXISTS "Users can view their own notification deliveries" ON notification_deliveries;
+DROP POLICY IF EXISTS "Users can view their own notification deliveries" ON notification_deliveries;
 CREATE POLICY "Users can view their own notification deliveries" ON notification_deliveries
     FOR ALL USING (auth.uid() = user_id);
 
 -- Batch processing logs: Only admins can view
+DROP POLICY IF EXISTS "Admins can view batch processing logs" ON batch_processing_logs;
 DROP POLICY IF EXISTS "Admins can view batch processing logs" ON batch_processing_logs;
 CREATE POLICY "Admins can view batch processing logs" ON batch_processing_logs
     FOR ALL USING (
@@ -192,6 +196,7 @@ CREATE POLICY "Admins can view batch processing logs" ON batch_processing_logs
     );
 
 -- User activity tracking: Users can only see their own activity
+DROP POLICY IF EXISTS "Users can view their own activity tracking" ON user_activity_tracking;
 CREATE POLICY "Users can view their own activity tracking" ON user_activity_tracking
     FOR ALL USING (auth.uid() = user_id);
 
@@ -209,15 +214,19 @@ END;
 $$ language 'plpgsql';
 
 -- Triggers for updated_at
+DROP TRIGGER IF EXISTS update_weekly_reports_updated_at ON weekly_reports;
 CREATE TRIGGER update_weekly_reports_updated_at BEFORE UPDATE ON weekly_reports
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_report_templates_updated_at ON report_templates;
 CREATE TRIGGER update_report_templates_updated_at BEFORE UPDATE ON report_templates
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_notification_deliveries_updated_at ON notification_deliveries;
 CREATE TRIGGER update_notification_deliveries_updated_at BEFORE UPDATE ON notification_deliveries
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+DROP TRIGGER IF EXISTS update_user_activity_tracking_updated_at ON user_activity_tracking;
 CREATE TRIGGER update_user_activity_tracking_updated_at BEFORE UPDATE ON user_activity_tracking
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
@@ -225,7 +234,7 @@ CREATE TRIGGER update_user_activity_tracking_updated_at BEFORE UPDATE ON user_ac
 -- SAMPLE TEMPLATES
 -- ============================================================================
 
--- Insert sample templates for different scenarios
+-- Insert sample templates for different scenarios (idempotent)
 INSERT INTO report_templates (name, category, scenario, template_content, status, created_by) VALUES
 -- High Activity Templates
 ('High Activity Academic Summary', 'academic_performance', 'high_activity', 
@@ -260,7 +269,8 @@ INSERT INTO report_templates (name, category, scenario, template_content, status
 'Welcome to your first week of tracking! You completed {{assignments_completed}} assignments and studied for {{study_time_hours}} hours. This baseline will help us track your progress in future weeks.', 'published', NULL),
 
 ('First Week Time Management', 'time_management', 'first_week',
-'This is your first week of activity tracking. You had {{study_sessions_count}} study sessions, averaging {{avg_session_duration}} minutes each. We''ll use this data to provide personalized insights in future reports.', 'published', NULL);
+'This is your first week of activity tracking. You had {{study_sessions_count}} study sessions, averaging {{avg_session_duration}} minutes each. We''ll use this data to provide personalized insights in future reports.', 'published', NULL)
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================================
 -- COMMENTS

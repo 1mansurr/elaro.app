@@ -8,7 +8,7 @@
  */
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 // Sentry is optional - will import dynamically if needed
@@ -85,8 +85,10 @@ async function checkUrl(url: string, name: string): Promise<UrlCheckResult> {
 }
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
@@ -128,7 +130,10 @@ serve(async (req: Request) => {
     );
 
     return new Response(JSON.stringify(result), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...getCorsHeaders(origin),
+        'Content-Type': 'application/json',
+      },
       status: 200,
     });
   } catch (error) {
@@ -148,7 +153,10 @@ serve(async (req: Request) => {
         message: error instanceof Error ? error.message : String(error),
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
         status: 500,
       },
     );

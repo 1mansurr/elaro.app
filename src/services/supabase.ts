@@ -197,12 +197,14 @@ export const authService = {
       const errorType = isTimeout ? 'timeout' : 'API error';
 
       // Only log in development to reduce production noise
+      // Suppress the warning in production to reduce log noise
       if (__DEV__) {
         console.warn(
           `⚠️ [supabaseAuthService] API getUserProfile ${errorType}, using direct Supabase fallback:`,
           errorMessage,
         );
       }
+      // In production, silently fall back to direct Supabase query
 
       try {
         // Direct Supabase query as fallback

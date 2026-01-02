@@ -9,14 +9,16 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { checkAllStorageQuotas } from '../_shared/storage-monitor.ts';
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
@@ -64,7 +66,10 @@ serve(async (req: Request) => {
     );
 
     return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...getCorsHeaders(origin),
+        'Content-Type': 'application/json',
+      },
       status: 200,
     });
   } catch (error) {
@@ -82,7 +87,10 @@ serve(async (req: Request) => {
         message: error instanceof Error ? error.message : String(error),
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
         status: 500,
       },
     );

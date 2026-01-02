@@ -22,8 +22,19 @@ const CACHED_CUSTOMER_INFO_KEY = '@elaro_cached_customer_info';
 async function getCachedOfferings(): Promise<PurchasesOffering | null> {
   try {
     const cached = await AsyncStorage.getItem(CACHED_OFFERINGS_KEY);
-    if (cached) {
-      const parsed = JSON.parse(cached);
+    // Guard: Only parse if cached is valid
+    if (
+      cached &&
+      cached.trim() &&
+      cached !== 'undefined' &&
+      cached !== 'null'
+    ) {
+      let parsed: any;
+      try {
+        parsed = JSON.parse(cached);
+      } catch {
+        return null;
+      }
       // Check if cache is still valid (not older than 1 hour)
       const cacheAge = Date.now() - (parsed.timestamp || 0);
       if (cacheAge < 60 * 60 * 1000) {
@@ -44,13 +55,18 @@ async function cacheOfferings(
 ): Promise<void> {
   try {
     if (offerings) {
-      await AsyncStorage.setItem(
-        CACHED_OFFERINGS_KEY,
-        JSON.stringify({
-          data: offerings,
-          timestamp: Date.now(),
-        }),
+      // Guard: Ensure undefined is never stringified
+      const dataToCache = {
+        data: offerings,
+        timestamp: Date.now(),
+      };
+      const serialized = JSON.stringify(dataToCache, (_key, value) =>
+        value === undefined ? null : value,
       );
+      // Guard: Only save if serialized is valid
+      if (serialized && serialized !== 'undefined') {
+        await AsyncStorage.setItem(CACHED_OFFERINGS_KEY, serialized);
+      }
     }
   } catch (error) {
     console.error('Failed to cache offerings:', error);
@@ -135,9 +151,19 @@ export async function getCustomerInfoWithRecovery(): Promise<
     console.warn('⚠️ RevenueCat not available - using cached customer info');
     try {
       const cached = await AsyncStorage.getItem(CACHED_CUSTOMER_INFO_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return parsed.data;
+      if (
+        cached &&
+        cached.trim() &&
+        cached !== 'undefined' &&
+        cached !== 'null'
+      ) {
+        let parsed: any;
+        try {
+          parsed = JSON.parse(cached);
+          return parsed.data;
+        } catch {
+          return null;
+        }
       }
     } catch {
       // Ignore cache errors
@@ -156,8 +182,18 @@ export async function getCustomerInfoWithRecovery(): Promise<
       async () => {
         try {
           const cached = await AsyncStorage.getItem(CACHED_CUSTOMER_INFO_KEY);
-          if (cached) {
-            const parsed = JSON.parse(cached);
+          if (
+            cached &&
+            cached.trim() &&
+            cached !== 'undefined' &&
+            cached !== 'null'
+          ) {
+            let parsed: any;
+            try {
+              parsed = JSON.parse(cached);
+            } catch {
+              return null;
+            }
             const cacheAge = Date.now() - (parsed.timestamp || 0);
             // Cache valid for 24 hours
             if (cacheAge < 24 * 60 * 60 * 1000) {

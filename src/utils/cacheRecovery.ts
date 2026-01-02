@@ -17,8 +17,35 @@ function validateCacheData(data: unknown): boolean {
 
   try {
     if (typeof data === 'string') {
-      const parsed = JSON.parse(data);
-      return Array.isArray(parsed) || typeof parsed === 'object';
+      // Guard: Only parse if data is valid
+      if (
+        !data.trim() ||
+        data === 'undefined' ||
+        data === 'null'
+      ) {
+        return false;
+      }
+      
+      try {
+        // Guard: Only parse if data is valid
+        if (
+          !data.trim() ||
+          data === 'undefined' ||
+          data === 'null'
+        ) {
+          throw new Error('Invalid cache data');
+        }
+        
+        let parsed: any;
+        try {
+          parsed = JSON.parse(data);
+        } catch {
+          throw new Error('Failed to parse cache data');
+        }
+        return Array.isArray(parsed) || typeof parsed === 'object';
+      } catch {
+        return false;
+      }
     }
 
     return Array.isArray(data) || typeof data === 'object';
@@ -56,7 +83,22 @@ export async function restoreQueryCacheWithRecovery(
           }
 
           // Try to parse and restore
-          const queries = JSON.parse(cached);
+          // Guard: Only parse if cached is valid
+          if (
+            !cached ||
+            !cached.trim() ||
+            cached === 'undefined' ||
+            cached === 'null'
+          ) {
+            throw new Error('No valid cache found');
+          }
+          
+          let queries: any;
+          try {
+            queries = JSON.parse(cached);
+          } catch {
+            throw new Error('Failed to parse cached queries');
+          }
 
           // Validate each query structure
           const validQueries = queries.filter((q: unknown) => {
@@ -117,7 +159,21 @@ export async function validateSyncQueue(): Promise<boolean> {
       return false;
     }
 
-    const queue = JSON.parse(queueData);
+    // Guard: Only parse if queueData is valid
+    if (
+      !queueData.trim() ||
+      queueData === 'undefined' ||
+      queueData === 'null'
+    ) {
+      return false;
+    }
+    
+    let queue: any;
+    try {
+      queue = JSON.parse(queueData);
+    } catch {
+      return false;
+    }
 
     // Validate queue structure
     if (!Array.isArray(queue)) {
@@ -165,7 +221,22 @@ export async function recoverSyncQueue(): Promise<void> {
             return; // No queue to fix
           }
 
-          const queue = JSON.parse(queueData);
+          // Guard: Only parse if queueData is valid
+          if (
+            !queueData ||
+            !queueData.trim() ||
+            queueData === 'undefined' ||
+            queueData === 'null'
+          ) {
+            throw new Error('No valid queue data found');
+          }
+          
+          let queue: any;
+          try {
+            queue = JSON.parse(queueData);
+          } catch {
+            throw new Error('Failed to parse queue data');
+          }
 
           // Filter out invalid actions
           const validActions = queue.filter((action: unknown) => {

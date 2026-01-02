@@ -1,6 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../../_shared/cors.ts';
+import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
 import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
 import { logger } from '../../_shared/logging.ts';
@@ -44,8 +44,10 @@ const ResetAttemptsSchema = z.object({
 });
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
@@ -67,13 +69,14 @@ serve(async (req: Request) => {
 
     // Route to appropriate handler
     if (method === 'GET' && path.endsWith('/check-lockout')) {
-      return await handleCheckLockout(req, supabaseAdmin, traceContext);
+      return await handleCheckLockout(req, supabaseAdmin, traceContext, origin);
     } else if (method === 'POST' && path.endsWith('/record-failed-attempt')) {
       return await handleRecordFailedAttempt(
         req,
         supabaseAdmin,
         ipAddress,
         traceContext,
+        origin,
       );
     } else if (method === 'POST' && path.endsWith('/record-successful-login')) {
       return await handleRecordSuccessfulLogin(
@@ -81,9 +84,15 @@ serve(async (req: Request) => {
         supabaseAdmin,
         ipAddress,
         traceContext,
+        origin,
       );
     } else if (method === 'POST' && path.endsWith('/reset-attempts')) {
-      return await handleResetAttempts(req, supabaseAdmin, traceContext);
+      return await handleResetAttempts(
+        req,
+        supabaseAdmin,
+        traceContext,
+        origin,
+      );
     } else {
       throw new AppError('Invalid endpoint', 404, ERROR_CODES.NOT_FOUND);
     }
@@ -97,19 +106,23 @@ serve(async (req: Request) => {
     );
 
     if (error instanceof AppError) {
-      return errorResponse(error, error.statusCode);
+      return errorResponse(error, error.statusCode, {}, origin);
     }
 
     if (error instanceof Error && error.name === 'ZodError') {
       return errorResponse(
         new AppError('Invalid input data', 400, 'VALIDATION_ERROR'),
         400,
+        {},
+        origin,
       );
     }
 
     return errorResponse(
       new AppError('Internal server error', 500, ERROR_CODES.INTERNAL_ERROR),
       500,
+      {},
+      origin,
     );
   }
 });
@@ -122,6 +135,7 @@ async function handleCheckLockout(
   req: Request,
   supabaseAdmin: ReturnType<typeof createClient>,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
   const url = new URL(req.url);
   const email = url.searchParams.get('email');
@@ -147,9 +161,13 @@ async function handleCheckLockout(
         { email: validatedData.email, error: error.code },
         traceContext,
       );
-      return successResponse({
-        isLocked: false,
-      });
+      return successResponse(
+        {
+          isLocked: false,
+        },
+        {},
+        origin,
+      );
     }
     throw new AppError(
       error.message || 'Failed to check lockout status',
@@ -159,9 +177,13 @@ async function handleCheckLockout(
   }
 
   if (!user) {
-    return successResponse({
-      isLocked: false,
-    });
+    return successResponse(
+      {
+        isLocked: false,
+      },
+      {},
+      origin,
+    );
   }
 
   // Check if account is locked
@@ -170,11 +192,15 @@ async function handleCheckLockout(
       (new Date(user.locked_until).getTime() - Date.now()) / 60000,
     );
 
-    return successResponse({
-      isLocked: true,
-      lockedUntil: user.locked_until,
-      minutesRemaining,
-    });
+    return successResponse(
+      {
+        isLocked: true,
+        lockedUntil: user.locked_until,
+        minutesRemaining,
+      },
+      {},
+      origin,
+    );
   }
 
   // If lockout expired, auto-unlock
@@ -184,19 +210,27 @@ async function handleCheckLockout(
       validatedData.email,
       traceContext,
     );
-    return successResponse({
-      isLocked: false,
-      attemptsRemaining: MAX_ATTEMPTS,
-    });
+    return successResponse(
+      {
+        isLocked: false,
+        attemptsRemaining: MAX_ATTEMPTS,
+      },
+      {},
+      origin,
+    );
   }
 
   // Calculate attempts remaining
   const attemptsRemaining = MAX_ATTEMPTS - (user.failed_login_attempts || 0);
 
-  return successResponse({
-    isLocked: false,
-    attemptsRemaining,
-  });
+  return successResponse(
+    {
+      isLocked: false,
+      attemptsRemaining,
+    },
+    {},
+    origin,
+  );
 }
 
 /**
@@ -208,6 +242,7 @@ async function handleRecordFailedAttempt(
   supabaseAdmin: ReturnType<typeof createClient>,
   ipAddress: string,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
   const body = await req.json();
   const validatedData = RecordFailedAttemptSchema.parse({
@@ -229,7 +264,7 @@ async function handleRecordFailedAttempt(
       { email: validatedData.email },
       traceContext,
     );
-    return successResponse({ recorded: true });
+    return successResponse({ recorded: true }, {}, origin);
   }
 
   const attempts = (user.failed_login_attempts || 0) + 1;
@@ -283,11 +318,15 @@ async function handleRecordFailedAttempt(
     );
   }
 
-  return successResponse({
-    recorded: true,
-    attempts,
-    isLocked: attempts >= MAX_ATTEMPTS,
-  });
+  return successResponse(
+    {
+      recorded: true,
+      attempts,
+      isLocked: attempts >= MAX_ATTEMPTS,
+    },
+    {},
+    origin,
+  );
 }
 
 /**
@@ -299,6 +338,7 @@ async function handleRecordSuccessfulLogin(
   supabaseAdmin: ReturnType<typeof createClient>,
   ipAddress: string,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
   const body = await req.json();
   const validatedData = RecordSuccessfulLoginSchema.parse({
@@ -366,7 +406,7 @@ async function handleRecordSuccessfulLogin(
     traceContext,
   );
 
-  return successResponse({ recorded: true });
+  return successResponse({ recorded: true }, {}, origin);
 }
 
 /**
@@ -377,6 +417,7 @@ async function handleResetAttempts(
   req: Request,
   supabaseAdmin: ReturnType<typeof createClient>,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
   const body = await req.json();
   const validatedData = ResetAttemptsSchema.parse(body);
@@ -387,7 +428,7 @@ async function handleResetAttempts(
     traceContext,
   );
 
-  return successResponse({ reset: true });
+  return successResponse({ reset: true }, {}, origin);
 }
 
 /**

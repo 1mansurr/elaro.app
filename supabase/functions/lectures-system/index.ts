@@ -28,7 +28,7 @@ import {
   RestoreLectureSchema,
 } from '../_shared/schemas/lecture.ts';
 import { encrypt, decrypt } from '../_shared/encryption.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -418,9 +418,11 @@ async function handleGetLecture(req: AuthenticatedRequest) {
 
 // Main handler with routing
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

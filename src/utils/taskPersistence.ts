@@ -34,7 +34,21 @@ export const getPendingTask = async (): Promise<PendingTaskData | null> => {
     const data = await AsyncStorage.getItem(TASK_DATA_KEY);
     if (!data) return null;
 
-    const parsed = JSON.parse(data);
+    // Guard: Only parse if data is valid
+    if (
+      !data.trim() ||
+      data === 'undefined' ||
+      data === 'null'
+    ) {
+      return null;
+    }
+    
+    let parsed: any;
+    try {
+      parsed = JSON.parse(data);
+    } catch {
+      return null;
+    }
 
     // Check if data is older than 1 hour (3600000 ms)
     const isExpired = Date.now() - parsed.timestamp > 3600000;

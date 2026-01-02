@@ -3,7 +3,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 // @ts-ignore - ESM imports are valid in Deno runtime
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { AppError } from '../_shared/function-handler.ts';
 import {
   ERROR_CODES,
@@ -130,6 +130,9 @@ function convertToCSV(data: Record<string, unknown>): string {
 }
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+  const corsHeaders = getCorsHeaders(origin);
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }

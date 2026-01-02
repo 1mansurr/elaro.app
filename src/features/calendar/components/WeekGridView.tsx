@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, startOfDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -273,12 +273,16 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
         showsHorizontalScrollIndicator={false}
         onScroll={handleHeaderScroll}
         scrollEventThrottle={16}
+        style={styles.headerScrollView}
         contentContainerStyle={styles.headerRowContainer}>
         <View style={styles.headerRow}>
           <View style={styles.timeHeaderPlaceholder} />
           {weekDays.map((day, index) => {
-            const isToday = isSameDay(day, new Date());
-            const isSelected = isSameDay(day, selectedDate);
+            const isToday = isSameDay(startOfDay(day), startOfDay(new Date()));
+            const isSelected = isSameDay(
+              startOfDay(day),
+              startOfDay(selectedDate),
+            );
 
             return (
               <TouchableOpacity
@@ -396,11 +400,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerScrollView: {
+    flexShrink: 0, // Prevent shrinking
+    flexGrow: 0, // Prevent vertical expansion - height defined by content only
+  },
   headerRowContainer: {
     borderBottomWidth: 2,
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: 0, // Explicitly zero to remove all vertical spacing
   },
   headerRow: {
     flexDirection: 'row',
@@ -416,7 +424,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.md,
-    marginHorizontal: SPACING.xs,
     borderWidth: 1,
     ...SHADOWS.xs,
   },

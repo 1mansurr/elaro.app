@@ -164,7 +164,21 @@ class NavigationSyncService {
         return null;
       }
 
-      const snapshot: NavigationSnapshot = JSON.parse(savedStateString);
+      // Guard: Only parse if savedStateString is valid
+      if (
+        !savedStateString.trim() ||
+        savedStateString === 'undefined' ||
+        savedStateString === 'null'
+      ) {
+        return null;
+      }
+      
+      let snapshot: NavigationSnapshot;
+      try {
+        snapshot = JSON.parse(savedStateString);
+      } catch {
+        return null;
+      }
 
       // Validate state structure
       if (!snapshot.state || !snapshot.state.routes) {
@@ -450,7 +464,21 @@ class NavigationSyncService {
         };
       }
 
-      const snapshot: NavigationSnapshot = JSON.parse(savedStateString);
+      // Guard: Only parse if savedStateString is valid
+      if (
+        !savedStateString.trim() ||
+        savedStateString === 'undefined' ||
+        savedStateString === 'null'
+      ) {
+        return null;
+      }
+      
+      let snapshot: NavigationSnapshot;
+      try {
+        snapshot = JSON.parse(savedStateString);
+      } catch {
+        return null;
+      }
       const routeCount = snapshot.state?.routes?.length || 0;
       const currentRoute = snapshot.state
         ? this.getCurrentRouteName(snapshot.state)

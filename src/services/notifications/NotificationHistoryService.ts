@@ -419,7 +419,18 @@ export class NotificationHistoryService {
         `${NotificationHistoryService.CACHE_KEY}_${userId}`,
       );
       if (cachedData) {
-        return JSON.parse(cachedData);
+        // Guard: Only parse if cachedData is valid
+        if (
+          cachedData.trim() &&
+          cachedData !== 'undefined' &&
+          cachedData !== 'null'
+        ) {
+          try {
+            return JSON.parse(cachedData);
+          } catch {
+            return null;
+          }
+        }
       }
       return null;
     } catch (error) {
@@ -465,7 +476,21 @@ export class NotificationHistoryService {
       const actions = await AsyncStorage.getItem(
         NotificationHistoryService.OFFLINE_ACTIONS_KEY,
       );
-      return actions ? JSON.parse(actions) : [];
+      if (actions) {
+        // Guard: Only parse if actions is valid
+        if (
+          actions.trim() &&
+          actions !== 'undefined' &&
+          actions !== 'null'
+        ) {
+          try {
+            return JSON.parse(actions);
+          } catch {
+            return [];
+          }
+        }
+      }
+      return [];
     } catch (error) {
       console.error('Error getting offline actions:', error);
       return [];

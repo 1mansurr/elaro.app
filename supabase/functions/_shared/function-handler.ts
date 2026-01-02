@@ -7,7 +7,7 @@ import {
 } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 // @ts-ignore - ESM imports are valid in Deno runtime
 import { z } from 'zod';
-import { corsHeaders } from './cors.ts';
+import { corsHeaders, getCorsHeaders } from './cors.ts';
 import {
   checkRateLimit,
   RateLimitError,
@@ -67,7 +67,11 @@ export interface AuthenticatedRequest extends Request {
 }
 
 // Centralized error handler with PII redaction and error sanitization
-function handleError(error: unknown, functionName?: string): Response {
+function handleError(
+  error: unknown,
+  functionName?: string,
+  req?: Request,
+): Response {
   // Sanitize error message for logging (remove internal details)
   const sanitizedError = sanitizeErrorMessage(error);
 
@@ -106,9 +110,10 @@ function handleError(error: unknown, functionName?: string): Response {
     }
   }
 
-  // Base headers with versioning
+  // Base headers with versioning and origin-aware CORS
+  const origin = req?.headers?.get('Origin') ?? '*';
   const baseHeaders = new Headers({
-    ...corsHeaders,
+    ...getCorsHeaders(origin),
     ...addVersionHeaders(),
     'Content-Type': 'application/json',
   });
@@ -210,6 +215,22 @@ function handleError(error: unknown, functionName?: string): Response {
   });
 }
 
+/**
+ * Check if a value is a valid Zod schema by testing for the safeParse method.
+ * This works for all Zod schema types (object, union, discriminated union, effects, etc.)
+ * using only the public Zod API.
+ *
+ * @param schema - Potential schema to check
+ * @returns true if schema has the safeParse method (indicating it's a valid Zod schema)
+ */
+function canValidateRequestBody(schema: unknown): schema is z.ZodSchema {
+  return (
+    typeof schema === 'object' &&
+    schema !== null &&
+    typeof (schema as any).safeParse === 'function'
+  );
+}
+
 // The generic handler wrapper
 export function createAuthenticatedHandler(
   handler: (
@@ -237,7 +258,8 @@ export function createAuthenticatedHandler(
     let supabaseClient: SupabaseClient | null = null;
 
     if (req.method === 'OPTIONS') {
-      const responseHeaders = new Headers(corsHeaders);
+      const origin = req.headers.get('Origin');
+      const responseHeaders = new Headers(getCorsHeaders(origin));
       addTraceHeaders(responseHeaders, traceContext);
       return new Response('ok', { headers: responseHeaders });
     }
@@ -434,8 +456,9 @@ export function createAuthenticatedHandler(
         );
         if (idempotencyResult.cached) {
           // Idempotency key cache hit - returning cached response
+          const origin = req.headers.get('Origin');
           const responseHeaders = {
-            ...corsHeaders,
+            ...getCorsHeaders(origin),
             ...addVersionHeaders(),
             'X-Idempotency-Cached': 'true',
             'Content-Type': 'application/json',
@@ -505,25 +528,33 @@ export function createAuthenticatedHandler(
 
       // Enforce schema validation for mutations that have a body
       // Mutations without a body don't need a schema
-      if (isMutation && hasBody && !options.schema) {
+      // Use capability-based check that works for all Zod schema types
+      const schemaExists = canValidateRequestBody(options.schema);
+
+      if (isMutation && hasBody && !schemaExists) {
         throw new AppError(
-          'Validation schema required for mutation operations with a body',
+          ERROR_MESSAGES.VALIDATION_SCHEMA_MISSING,
           ERROR_STATUS_CODES.VALIDATION_SCHEMA_MISSING,
           ERROR_CODES.VALIDATION_SCHEMA_MISSING,
         );
       }
 
       if (options.schema) {
-        const validationResult = options.schema.safeParse(body);
-        if (!validationResult.success) {
-          throw new AppError(
-            ERROR_MESSAGES.VALIDATION_ERROR,
-            ERROR_STATUS_CODES.VALIDATION_ERROR,
-            ERROR_CODES.VALIDATION_ERROR,
-            validationResult.error.flatten(),
-          );
+        // Only validate if there's actually a body to validate
+        // GET requests and mutations without bodies don't need validation
+        if (hasBody) {
+          const validationResult = options.schema.safeParse(body);
+          if (!validationResult.success) {
+            throw new AppError(
+              ERROR_MESSAGES.VALIDATION_ERROR,
+              ERROR_STATUS_CODES.VALIDATION_ERROR,
+              ERROR_CODES.VALIDATION_ERROR,
+              validationResult.error.flatten(),
+            );
+          }
+          body = validationResult.data; // Use the parsed (and potentially transformed) data
         }
-        body = validationResult.data; // Use the parsed (and potentially transformed) data
+        // If no body, skip validation (schema is provided but not needed for this request)
       }
 
       // 6. Log structured request with PII redaction and tracing
@@ -645,8 +676,9 @@ export function createAuthenticatedHandler(
       );
 
       // 9. Return success response with rate limit, version, and trace headers
+      const origin = req.headers.get('Origin');
       const responseHeaders = new Headers({
-        ...corsHeaders,
+        ...getCorsHeaders(origin),
         ...addVersionHeaders(),
         'X-RateLimit-Limit': rateLimitInfo.limit.toString(),
         'X-RateLimit-Remaining': rateLimitInfo.remaining.toString(),
@@ -785,7 +817,7 @@ export function createAuthenticatedHandler(
       );
 
       // 9. Centralized error handling with function name for context
-      return handleError(error, options.rateLimitName);
+      return handleError(error, options.rateLimitName, req);
     } finally {
       // Ensure metrics are recorded even if there's an error
       metrics.recordExecutionTime();
@@ -828,13 +860,17 @@ export function createScheduledHandler(
       if (result instanceof Response) {
         return result;
       }
+      const origin = req.headers.get('Origin');
       return new Response(JSON.stringify(result), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
         status: 200,
       });
     } catch (error) {
       // Use the same centralized error handler
-      return handleError(error);
+      return handleError(error, undefined, req);
     }
   };
 }
@@ -935,7 +971,7 @@ export function createWebhookHandler(
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      return handleError(error);
+      return handleError(error, undefined, req);
     }
   };
 }

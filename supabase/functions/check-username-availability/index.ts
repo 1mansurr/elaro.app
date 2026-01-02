@@ -7,7 +7,7 @@ import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { CheckUsernameSchema } from '../_shared/schemas/user.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { addVersionHeaders } from '../_shared/versioning.ts';
 import { isReservedUsername } from '../_shared/reserved-usernames.ts';
 
@@ -15,8 +15,9 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const { username } = body;
+  const origin = (req as unknown as Request).headers.get('Origin');
   const responseHeaders = {
-    ...corsHeaders,
+    ...getCorsHeaders(origin),
     ...addVersionHeaders(),
     'Content-Type': 'application/json',
   };

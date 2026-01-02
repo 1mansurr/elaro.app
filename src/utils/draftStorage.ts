@@ -57,9 +57,21 @@ export async function getDraft(taskType: DraftType): Promise<DraftData | null> {
     const key = `${DRAFT_KEY_PREFIX}${taskType}`;
     const draftJson = await AsyncStorage.getItem(key);
 
-    if (!draftJson) return null;
-
-    const draft = JSON.parse(draftJson) as DraftData;
+    if (
+      !draftJson ||
+      !draftJson.trim() ||
+      draftJson === 'undefined' ||
+      draftJson === 'null'
+    ) {
+      return null;
+    }
+    
+    let draft: DraftData;
+    try {
+      draft = JSON.parse(draftJson) as DraftData;
+    } catch {
+      return null;
+    }
 
     // Convert string dates back to Date objects
     if (draft.dateTime) {
@@ -106,7 +118,22 @@ export async function getAllDrafts(): Promise<DraftData[]> {
       .map(([_, value]) => {
         if (!value) return null;
         try {
-          const draft = JSON.parse(value) as DraftData;
+          // Guard: Only parse if value is valid
+          if (
+            !value ||
+            !value.trim() ||
+            value === 'undefined' ||
+            value === 'null'
+          ) {
+            return null;
+          }
+          
+          let draft: DraftData;
+          try {
+            draft = JSON.parse(value) as DraftData;
+          } catch {
+            return null;
+          }
           // Convert string dates back to Date objects
           if (draft.dateTime) {
             draft.dateTime = new Date(draft.dateTime);

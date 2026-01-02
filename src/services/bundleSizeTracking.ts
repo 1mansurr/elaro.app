@@ -48,9 +48,21 @@ export async function trackBundleSize(): Promise<void> {
 
     // Load history
     const historyData = await AsyncStorage.getItem(BUNDLE_SIZE_HISTORY_KEY);
-    const history: BundleSizeHistory = historyData
-      ? JSON.parse(historyData)
-      : { entries: [], lastUpdated: 0 };
+    if (
+      !historyData ||
+      !historyData.trim() ||
+      historyData === 'undefined' ||
+      historyData === 'null'
+    ) {
+      return { entries: [], lastUpdated: 0 };
+    }
+    
+    let history: BundleSizeHistory;
+    try {
+      history = JSON.parse(historyData);
+    } catch {
+      return { entries: [], lastUpdated: 0 };
+    }
 
     // Add current metrics
     history.entries.push(metrics);
@@ -111,8 +123,23 @@ export async function getBundleSizeHistory(): Promise<BundleSizeMetrics[]> {
       return [];
     }
 
-    const history: BundleSizeHistory = JSON.parse(historyData);
-    return history.entries;
+    // Guard: Only parse if historyData is valid
+    if (
+      !historyData ||
+      !historyData.trim() ||
+      historyData === 'undefined' ||
+      historyData === 'null'
+    ) {
+      return [];
+    }
+    
+    let history: BundleSizeHistory;
+    try {
+      history = JSON.parse(historyData);
+      return history.entries;
+    } catch {
+      return [];
+    }
   } catch (error) {
     console.error('Failed to get bundle size history:', error);
     return [];

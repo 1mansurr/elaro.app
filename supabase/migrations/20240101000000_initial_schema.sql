@@ -1175,8 +1175,18 @@ CREATE INDEX IF NOT EXISTS "idx_users_suspension_end_date" ON "public"."users" U
 
 
 -- Conditionally add foreign key constraints
+-- SECURITY: Ensure users table has primary key before creating foreign keys
 DO $$
 BEGIN
+    -- CRITICAL: Ensure users table has primary key BEFORE creating any foreign keys
+    -- This must be done unconditionally to guarantee the constraint exists
+    -- Use DO block exception handling to ignore if already exists
+    BEGIN
+        ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY ("id");
+    EXCEPTION
+        WHEN duplicate_object THEN NULL; -- Primary key already exists, continue
+    END;
+    
     IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'admin_actions_admin_id_fkey') THEN
         ALTER TABLE ONLY "public"."admin_actions" ADD CONSTRAINT "admin_actions_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."users"("id");
     END IF;

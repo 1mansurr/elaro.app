@@ -314,7 +314,21 @@ class StudySessionSyncService {
         return;
       }
 
-      const session: ActiveSession = JSON.parse(stored);
+      // Guard: Only parse if stored is valid
+      if (
+        !stored.trim() ||
+        stored === 'undefined' ||
+        stored === 'null'
+      ) {
+        return null;
+      }
+      
+      let session: ActiveSession;
+      try {
+        session = JSON.parse(stored);
+      } catch {
+        return null;
+      }
 
       // Check if session is too old (more than 24 hours)
       const age = Date.now() - session.lastUpdatedAt;
@@ -440,7 +454,21 @@ class StudySessionSyncService {
       const stored = await AsyncStorage.getItem(SESSION_PROGRESS_KEY);
       if (!stored) return null;
 
-      const progress: SessionProgress = JSON.parse(stored);
+      // Guard: Only parse if stored is valid
+      if (
+        !stored.trim() ||
+        stored === 'undefined' ||
+        stored === 'null'
+      ) {
+        return null;
+      }
+      
+      let progress: SessionProgress;
+      try {
+        progress = JSON.parse(stored);
+      } catch {
+        return null;
+      }
 
       // Only return if it matches the requested session
       if (progress.sessionId !== sessionId) {
@@ -548,8 +576,20 @@ class StudySessionSyncService {
   private async getSRSQueue(): Promise<PendingSRSPerformance[]> {
     try {
       const stored = await AsyncStorage.getItem(SRS_QUEUE_KEY);
-      if (!stored) return [];
-      return JSON.parse(stored);
+      if (
+        !stored ||
+        !stored.trim() ||
+        stored === 'undefined' ||
+        stored === 'null'
+      ) {
+        return [];
+      }
+      
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [];
+      }
     } catch (error) {
       console.error('❌ StudySessionSync: Failed to get SRS queue:', error);
       return [];

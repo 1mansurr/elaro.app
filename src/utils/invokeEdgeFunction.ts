@@ -63,33 +63,61 @@ export async function invokeEdgeFunctionWithAuth<T = any>(
     if (!response.ok) {
       // Try to parse error response
       try {
-        const errorData = JSON.parse(responseText);
-        error = {
-          message:
-            errorData.message || `Edge Function returned a non-2xx status code`,
-          context: {
-            status: response.status,
-            statusText: response.statusText,
-            ...errorData,
-          },
-        };
+        // Guard: Only parse if responseText exists, is not empty, and not "undefined" string
+        if (
+          responseText &&
+          responseText.trim() &&
+          responseText !== 'undefined' &&
+          responseText !== 'null'
+        ) {
+          const errorData = JSON.parse(responseText);
+          error = {
+            message:
+              errorData.message || `Edge Function returned a non-2xx status code`,
+            context: {
+              status: response.status,
+              statusText: response.statusText,
+              ...errorData,
+            },
+          };
+        } else {
+          // No valid JSON body, create error from status
+          error = {
+            message: `Edge Function returned a non-2xx status code`,
+            context: {
+              status: response.status,
+              statusText: response.statusText,
+              body: responseText || null,
+            },
+          };
+        }
       } catch {
         error = {
           message: `Edge Function returned a non-2xx status code`,
           context: {
             status: response.status,
             statusText: response.statusText,
-            body: responseText,
+            body: responseText || null,
           },
         };
       }
     } else {
       // Parse success response
       try {
-        data = responseText ? JSON.parse(responseText) : null;
+        // Guard: Only parse if responseText exists, is not empty, and not "undefined" string
+        if (
+          responseText &&
+          responseText.trim() &&
+          responseText !== 'undefined' &&
+          responseText !== 'null'
+        ) {
+          data = JSON.parse(responseText);
+        } else {
+          data = null;
+        }
       } catch {
-        // If response is not JSON, return as text
-        data = responseText as any;
+        // If response is not JSON, return null
+        data = null;
       }
     }
 

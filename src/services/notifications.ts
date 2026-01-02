@@ -226,12 +226,26 @@ export async function sendTestPushNotification(
       },
       body: JSON.stringify(message),
     });
-    const data = await response.json();
-    if (data.data && data.data.status === 'ok') {
+    
+    // Guard: Only parse JSON if response is ok and has JSON content-type
+    let data: any = null;
+    if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        try {
+          data = await response.json();
+        } catch {
+          console.error('❌ Failed to parse push notification response as JSON');
+          return { error: 'Invalid response format' };
+        }
+      }
+    }
+    
+    if (data && data.data && data.data.status === 'ok') {
     } else {
       console.error('❌ Failed to send test push notification:', data);
     }
-    return data;
+    return data || { error: 'No response data' };
   } catch (error) {
     console.error('❌ Error sending test push notification:', error);
     throw error;
@@ -440,8 +454,21 @@ export const notificationService = {
     const settings = await AsyncStorage.getItem('notificationSettings');
     if (!settings) return true;
 
-    const parsed = JSON.parse(settings);
-    return parsed.enabled !== false;
+    // Guard: Only parse if settings is valid
+    if (
+      settings.trim() &&
+      settings !== 'undefined' &&
+      settings !== 'null'
+    ) {
+      try {
+        const parsed = JSON.parse(settings);
+        return parsed.enabled !== false;
+      } catch {
+        // If parse fails, default to enabled
+        return true;
+      }
+    }
+    return true;
   },
 
   /**

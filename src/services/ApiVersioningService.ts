@@ -77,8 +77,15 @@ export class ApiVersioningService {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        return data.supportedVersions || this.supportedVersions;
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          try {
+            const data = await response.json();
+            return data.supportedVersions || this.supportedVersions;
+          } catch {
+            console.warn('Failed to parse version response as JSON');
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to fetch supported versions:', error);
@@ -109,7 +116,14 @@ export class ApiVersioningService {
       );
 
       if (response.ok) {
-        return await response.json();
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          try {
+            return await response.json();
+          } catch {
+            console.warn('Failed to parse version info as JSON');
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to fetch version info:', error);
@@ -195,7 +209,13 @@ export class ApiVersioningService {
             'Gateway Timeout: The server did not respond in time. Please try again.';
         }
 
-        if (hasJsonContent && responseText && responseText.trim()) {
+        if (
+          hasJsonContent &&
+          responseText &&
+          responseText.trim() &&
+          responseText !== 'undefined' &&
+          responseText !== 'null'
+        ) {
           try {
             const parsed = JSON.parse(responseText);
             errorMessage =
@@ -225,7 +245,12 @@ export class ApiVersioningService {
       let data: any = {};
 
       if (hasJsonContent) {
-        if (responseText && responseText.trim()) {
+        if (
+          responseText &&
+          responseText.trim() &&
+          responseText !== 'undefined' &&
+          responseText !== 'null'
+        ) {
           try {
             data = JSON.parse(responseText);
           } catch (parseError) {
