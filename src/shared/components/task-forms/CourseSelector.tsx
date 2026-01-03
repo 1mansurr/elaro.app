@@ -73,7 +73,7 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
           </Text>
         )}
         <Ionicons
-          name="expand-more"
+          name="chevron-down"
           size={24}
           color={theme.isDark ? '#FFFFFF' : '#111418'}
         />

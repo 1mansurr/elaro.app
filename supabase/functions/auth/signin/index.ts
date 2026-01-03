@@ -25,9 +25,35 @@ serve(async (req: Request) => {
     const ipAddress = extractIPAddress(req);
     await checkRateLimit('auth-signin', ipAddress);
 
-    // Parse and validate request body
-    const body = await req.json();
-    const validatedData = SignInSchema.parse(body);
+    // Parse and validate request body (PASS 1: Crash safety)
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (error) {
+      return errorResponse(
+        new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+        400,
+        {},
+        origin,
+      );
+    }
+
+    // Use safeParse to prevent ZodError from crashing worker
+    const validationResult = SignInSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      return errorResponse(
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        }),
+        400,
+        {},
+        origin,
+      );
+    }
+    const validatedData = validationResult.data;
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -87,9 +113,11 @@ serve(async (req: Request) => {
       return errorResponse(error, error.statusCode, {}, origin);
     }
 
+    // ZodError should never reach here (caught by safeParse above)
+    // But keep as fallback for safety
     if (error instanceof Error && error.name === 'ZodError') {
       return errorResponse(
-        new AppError('Invalid input data', 400, 'VALIDATION_ERROR'),
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR),
         400,
         {},
         origin,

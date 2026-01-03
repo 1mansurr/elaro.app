@@ -29,13 +29,50 @@ const UpdateSubscriptionSchema = z.object({
 async function handleUpdateSubscription(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
-  const { customerInfo, userId } = body as {
-    customerInfo: CustomerInfo;
-    userId?: string;
-  };
+  // PASS 2: Validate body is object before accessing properties
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new AppError(
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
+    );
+  }
 
-  // Use the userId from the request body if provided, otherwise use the authenticated user
-  const targetUserId = userId || user.id;
+  const bodyObj = body as { customerInfo?: unknown; userId?: unknown };
+  const { customerInfo, userId } = bodyObj;
+
+  // PASS 2: Validate userId if provided (never trust client-provided IDs for non-admin operations)
+  let targetUserId = user.id; // Default to authenticated user
+  if (userId !== undefined && userId !== null) {
+    // Validate format
+    if (typeof userId !== 'string') {
+      throw new AppError(
+        'userId must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'userId', message: 'userId must be a string type' },
+      );
+    }
+    // Validate UUID format
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+      throw new AppError(
+        'Invalid userId format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'userId', message: 'userId must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Users can only update their own subscription (unless admin)
+    // For now, enforce that userId must match authenticated user
+    if (userId !== user.id) {
+      throw new AppError(
+        'You can only update your own subscription',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+    targetUserId = userId;
+  }
 
   if (!customerInfo) {
     throw new AppError(

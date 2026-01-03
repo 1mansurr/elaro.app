@@ -83,13 +83,25 @@ const notificationService = {
         const tokenData = await Notifications.getExpoPushTokenAsync({
           projectId: legacyProjectId,
         });
-        return tokenData.data;
+        // Ensure we extract the string token, not the full object
+        const token = tokenData?.data;
+        if (!token || typeof token !== 'string') {
+          console.warn('Invalid push token received:', tokenData);
+          return null;
+        }
+        return token;
       }
 
       const tokenData = await Notifications.getExpoPushTokenAsync({
         projectId,
       });
-      return tokenData.data;
+      // Ensure we extract the string token, not the full object
+      const token = tokenData?.data;
+      if (!token || typeof token !== 'string') {
+        console.warn('Invalid push token received:', tokenData);
+        return null;
+      }
+      return token;
     } catch (error) {
       console.error('Error getting push token:', error);
       return null;
@@ -103,10 +115,55 @@ const notificationService = {
    * @returns {Promise<void>}
    */
   async savePushToken(userId: string, token: string): Promise<void> {
-    try {
-      const platform = Platform.OS;
-      const updated_at = new Date().toISOString();
+    // ============================================================================
+    // VALIDATION PHASE: Validate ALL inputs BEFORE any retry logic or API calls
+    // ============================================================================
+    
+    // Guard: Do not call API if token is undefined/null/empty
+    if (!token || typeof token !== 'string' || token.trim().length === 0) {
+      console.warn('⚠️ Cannot save push token: token is invalid or missing', {
+        token: token ? 'present but invalid' : 'missing',
+        userId,
+      });
+      return; // EXIT: Never call API with invalid token
+    }
 
+    // Derive platform ONCE before retry logic
+    const platformOS = Platform.OS;
+    const platform = platformOS === 'ios' ? 'ios' : platformOS === 'android' ? 'android' : null;
+    
+    // Guard: Do not call API if platform is invalid
+    if (!platform || (platform !== 'ios' && platform !== 'android')) {
+      console.warn('⚠️ Cannot save push token: unsupported platform', {
+        platformOS,
+        userId,
+      });
+      return; // EXIT: Never call API with invalid platform
+    }
+
+    // ============================================================================
+    // PAYLOAD CONSTRUCTION: Build payload ONCE with validated values
+    // ============================================================================
+    
+    // Construct payload ONCE with validated values (before retry logic)
+    const deviceData = {
+      push_token: token,      // Already validated above
+      platform: platform,     // Already validated above
+      updated_at: new Date().toISOString(),
+    };
+
+    // Final validation: Ensure payload is complete (defense in depth)
+    // This should never fail if above guards work, but provides extra safety
+    if (!deviceData.push_token || !deviceData.platform) {
+      console.error('❌ CRITICAL: Payload validation failed - this should never happen', {
+        push_token: deviceData.push_token ? 'present' : 'missing',
+        platform: deviceData.platform ? 'present' : 'missing',
+        userId,
+      });
+      return; // EXIT: Never call API with incomplete payload
+    }
+
+    try {
       // Helper to check if error is a timeout
       const isTimeoutError = (error: unknown): boolean => {
         if (error instanceof Error) {
@@ -162,35 +219,72 @@ const notificationService = {
       // Import retry utility
       const { retryWithBackoff } = await import('@/utils/errorRecovery');
 
-      const saveToken = async () => {
+      // ============================================================================
+      // RETRY LOGIC: Retry function receives payload as parameter (no closure capture)
+      // ============================================================================
+      
+      // Retry function receives validated payload as parameter (NOT from closure)
+      const saveToken = async (payload: typeof deviceData) => {
+        // Payload is passed as parameter - no closure capture of outer variables
+        // All values are guaranteed to exist because validation happened before this function
+        
         const { versionedApiClient } = await import(
           '@/services/VersionedApiClient'
         );
-        const response = await versionedApiClient.registerDevice({
-          push_token: token,
-          platform,
-          updated_at,
-        });
+        
+    const response = await versionedApiClient.registerDevice(payload);
 
-        if (response.error) {
-          // Create error object that can be checked by retry logic
-          const error = new Error(
-            response.message || response.error || 'Failed to save push token',
-          ) as Error & { code?: string; response?: typeof response };
-          error.code = response.code;
-          error.response = response;
-          throw error;
-        }
+    // Handle new response format: check for ok, skipped, error fields
+    if (response.data && typeof response.data === 'object') {
+      const data = response.data as { ok?: boolean; skipped?: boolean; reason?: string; error?: string; details?: unknown };
+      
+      // Treat skipped as success (race condition safe)
+      if (data.skipped === true) {
+        console.log('✅ Push token registration skipped (token not ready):', data.reason);
+        return response; // Return as success
+      }
+      
+      // Check for error in new format
+      if (data.ok === false) {
+        const error = new Error(data.error || 'Registration failed') as Error & {
+          code?: string;
+          response?: typeof response;
+        };
+        error.code = data.error || 'REGISTRATION_ERROR';
+        error.response = response;
+        throw error;
+      }
+    }
 
-        return response;
+    // Legacy error handling
+    if (response.error) {
+      // Create error object that can be checked by retry logic
+      const error = new Error(
+        response.message || response.error || 'Failed to save push token',
+      ) as Error & { code?: string; response?: typeof response };
+      error.code = response.code;
+      error.response = response;
+      throw error;
+    }
+
+    return response;
       };
 
+      // ============================================================================
+      // EXECUTE: Call retry function with validated payload
+      // ============================================================================
+      
       // Retry with exponential backoff for timeout errors (504) and worker errors
-      const result = await retryWithBackoff(saveToken, {
+      // Pass validated payload as parameter (not from closure)
+      const result = await retryWithBackoff(() => saveToken(deviceData), {
         maxRetries: 3,
         baseDelay: 1000, // Start with 1 second
         maxDelay: 10000, // Max 10 seconds between retries
         retryCondition: error => {
+          // Don't retry validation errors (not transient)
+          if (error instanceof Error && error.code === 'VALIDATION_ERROR') {
+            return false;
+          }
           // Retry on timeout errors (504) or worker errors (may be transient)
           return isTimeoutError(error) || isWorkerError(error);
         },
@@ -207,7 +301,7 @@ const notificationService = {
             isTimeout,
             attempts: result.attempts,
             userId,
-            platform,
+            platform: Platform.OS, // Log current platform for debugging
           },
         );
         throw error;

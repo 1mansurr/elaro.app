@@ -2,7 +2,47 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
 serve(async req => {
   try {
-    const { to, subject, html } = await req.json();
+    // PASS 1: Crash safety - wrap req.json() in try/catch (already in outer try, but be explicit)
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (error) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid or missing JSON body' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    // PASS 2: Validate body is object before destructuring
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return new Response(
+        JSON.stringify({ error: 'Request body must be an object' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+
+    const bodyObj = body as { to?: unknown; subject?: unknown; html?: unknown };
+    const { to, subject, html } = bodyObj;
+
+    // PASS 2: Validate required fields
+    if (typeof to !== 'string' || to.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'to must be a non-empty string' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    if (typeof subject !== 'string' || subject.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'subject must be a non-empty string' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+    if (typeof html !== 'string' || html.trim().length === 0) {
+      return new Response(
+        JSON.stringify({ error: 'html must be a non-empty string' }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
 
     // Use Resend API for email delivery (if configured)
     const resendApiKey = Deno.env.get('RESEND_API_KEY');

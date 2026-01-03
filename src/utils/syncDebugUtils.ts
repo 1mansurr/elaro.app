@@ -208,11 +208,7 @@ export async function exportSyncState(): Promise<string> {
       const value = await AsyncStorage.getItem(key);
       if (value) {
         // Guard: Only parse if value is valid
-        if (
-          value.trim() &&
-          value !== 'undefined' &&
-          value !== 'null'
-        ) {
+        if (value.trim() && value !== 'undefined' && value !== 'null') {
           try {
             state[key] = JSON.parse(value);
           } catch {
@@ -248,7 +244,7 @@ export async function importSyncState(jsonString: string): Promise<void> {
     ) {
       return {};
     }
-    
+
     let state: any;
     try {
       state = JSON.parse(jsonString);

@@ -1061,8 +1061,23 @@ async function handleUserDevices(req: AuthenticatedRequest) {
   }
 
   if (method === 'POST') {
-    // Validate with schema
-    const validatedData = RegisterDeviceSchema.parse(body);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = RegisterDeviceSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     const { push_token, platform, updated_at } = validatedData;
 
     const { data, error } = await supabaseClient
@@ -1095,23 +1110,55 @@ async function handleSendNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    throw new AppError(
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
+    );
+  }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send notifications to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+
   const {
-    user_id,
     title,
     body: notificationBody,
     type,
     data,
     ...otherData
   } = body;
-
-  // Verify user can send notification (either to themselves or admin)
-  if (user_id !== user.id) {
-    throw new AppError(
-      'You can only send notifications to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
-    );
-  }
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
@@ -1209,15 +1256,48 @@ async function handleScheduleNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  // Verify user can schedule notification for this user_id
-  const { user_id, ...reminderData } = body;
-  if (user_id && user_id !== user.id) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only schedule notifications for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only schedule notifications for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { ...reminderData } = body;
 
   const { data, error } = await supabaseClient
     .from('reminders')
@@ -1467,8 +1547,16 @@ async function handleGetCount({
 
   // Apply filters if provided
   if (filters) {
+    // PASS 1: Crash safety - JSON.parse already in try/catch, but ensure it returns Response on error
     try {
       const filterObj = JSON.parse(filters);
+      if (!filterObj || typeof filterObj !== 'object' || Array.isArray(filterObj)) {
+        throw new AppError(
+          'Invalid filters format: must be an object',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+        );
+      }
       Object.entries(filterObj).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {

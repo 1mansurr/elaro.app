@@ -61,7 +61,25 @@ class SRSService {
       quality_rating,
       response_time_seconds,
       schedule_next: _schedule_next,
-    } = RecordSRSPerformanceSchema.parse(data);
+    } = (() => {
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = RecordSRSPerformanceSchema.safeParse(data);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          'VALIDATION_ERROR',
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      return validationResult.data;
+    })();
 
     // 1. Verify the study session belongs to the user
     const { data: session, error: sessionError } = await this.supabaseClient
@@ -224,11 +242,27 @@ class SRSService {
   }
 
   async scheduleReview(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = ScheduleReviewSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
     const {
       session_id,
       next_review_date,
       interval_days: _interval_days,
-    } = ScheduleReviewSchema.parse(data);
+    } = validationResult.data;
 
     // Verify session ownership
     const { data: session, error: sessionError } = await this.supabaseClient

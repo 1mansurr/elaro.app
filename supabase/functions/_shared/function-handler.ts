@@ -58,6 +58,46 @@ export class AppError extends Error {
   }
 }
 
+// PASS 2: Zero-trust validation helpers
+/**
+ * Validate UUID format
+ */
+export function isValidUUID(uuid: string | undefined | null): boolean {
+  if (!uuid || typeof uuid !== 'string') {
+    return false;
+  }
+  const uuidRegex =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+}
+
+/**
+ * Validate and extract UUID from path parameter
+ * Throws AppError if invalid
+ */
+export function validatePathUUID(
+  id: string | undefined | null,
+  paramName: string = 'id',
+): string {
+  if (!id || typeof id !== 'string' || id.trim().length === 0) {
+    throw new AppError(
+      `${paramName} is required`,
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
+      { field: paramName, message: 'Path parameter is missing or empty' },
+    );
+  }
+  if (!isValidUUID(id)) {
+    throw new AppError(
+      `Invalid ${paramName} format`,
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
+      { field: paramName, message: 'Path parameter must be a valid UUID' },
+    );
+  }
+  return id;
+}
+
 // Define the shape of an authenticated request
 export interface AuthenticatedRequest extends Request {
   user: User;
@@ -545,11 +585,30 @@ export function createAuthenticatedHandler(
         if (hasBody) {
           const validationResult = options.schema.safeParse(body);
           if (!validationResult.success) {
-            throw new AppError(
-              ERROR_MESSAGES.VALIDATION_ERROR,
-              ERROR_STATUS_CODES.VALIDATION_ERROR,
-              ERROR_CODES.VALIDATION_ERROR,
-              validationResult.error.flatten(),
+            // Return JSON response instead of throwing to prevent worker crashes
+            const zodError = validationResult.error;
+            const flattened = zodError.flatten();
+            const origin = req.headers.get('Origin');
+            const responseHeaders = new Headers({
+              ...getCorsHeaders(origin),
+              ...addVersionHeaders({}, requestedVersion),
+              'Content-Type': 'application/json',
+            });
+            addTraceHeaders(responseHeaders, traceContext);
+            
+            return new Response(
+              JSON.stringify({
+                ok: false,
+                error: 'INVALID_INPUT',
+                details: {
+                  errors: flattened.fieldErrors,
+                  formErrors: flattened.formErrors,
+                },
+              }),
+              {
+                status: 400,
+                headers: responseHeaders,
+              },
             );
           }
           body = validationResult.data; // Use the parsed (and potentially transformed) data

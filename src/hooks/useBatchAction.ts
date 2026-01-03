@@ -44,6 +44,26 @@ async function batchAction(
     throw new Error(error.message || 'Batch operation failed');
   }
 
+  // NULL SAFETY: If data is null (empty response), return a default result
+  if (!data) {
+    return {
+      message: 'Batch operation completed',
+      results: {
+        total: request.items.length,
+        succeeded: 0,
+        failed: request.items.length,
+        details: {
+          success: [],
+          failed: request.items.map(item => ({
+            id: item.id,
+            type: item.type,
+            error: 'No response from server',
+          })),
+        },
+      },
+    };
+  }
+
   return data;
 }
 

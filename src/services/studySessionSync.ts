@@ -315,14 +315,10 @@ class StudySessionSyncService {
       }
 
       // Guard: Only parse if stored is valid
-      if (
-        !stored.trim() ||
-        stored === 'undefined' ||
-        stored === 'null'
-      ) {
+      if (!stored.trim() || stored === 'undefined' || stored === 'null') {
         return null;
       }
-      
+
       let session: ActiveSession;
       try {
         session = JSON.parse(stored);
@@ -455,14 +451,10 @@ class StudySessionSyncService {
       if (!stored) return null;
 
       // Guard: Only parse if stored is valid
-      if (
-        !stored.trim() ||
-        stored === 'undefined' ||
-        stored === 'null'
-      ) {
+      if (!stored.trim() || stored === 'undefined' || stored === 'null') {
         return null;
       }
-      
+
       let progress: SessionProgress;
       try {
         progress = JSON.parse(stored);
@@ -584,7 +576,7 @@ class StudySessionSyncService {
       ) {
         return [];
       }
-      
+
       try {
         return JSON.parse(stored);
       } catch {

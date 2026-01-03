@@ -43,8 +43,24 @@ class StudyMaterialsService {
   ) {}
 
   async createTemplate(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CreateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
     const { template_name, task_type, template_data, is_public } =
-      CreateTemplateSchema.parse(data);
+      validationResult.data;
 
     const { data: template, error } = await this.supabaseClient
       .from('study_templates')
@@ -145,8 +161,24 @@ class StudyMaterialsService {
   }
 
   async applyTemplate(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = ApplyTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
     const { template_id, course_id, customizations } =
-      ApplyTemplateSchema.parse(data);
+      validationResult.data;
 
     // Get template
     const { data: template, error: templateError } = await this.supabaseClient

@@ -58,11 +58,27 @@ class EmailService {
   }
 
   async sendWelcomeEmail(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = WelcomeEmailSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
     const {
       userEmail,
       userFirstName,
       userId: _userId,
-    } = WelcomeEmailSchema.parse(data);
+    } = validationResult.data;
 
     const emailContent = `
       <!DOCTYPE html>
@@ -144,7 +160,25 @@ class EmailService {
       subject,
       template,
       data: templateData,
-    } = CustomEmailSchema.parse(data);
+    } = (() => {
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = CustomEmailSchema.safeParse(data);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          'VALIDATION_ERROR',
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      return validationResult.data;
+    })();
 
     // Get email template
     const { data: emailTemplate, error: templateError } =

@@ -23,7 +23,7 @@ The CI guardrail test for wildcard CORS detection was analyzed and improved. The
    - Push to main/develop
    - Pull requests to main/develop
    - Weekly schedule
-   
+
    It did NOT run in `test.yml` workflow, which runs on all PRs.
 
 2. **Regex Pattern Could Be Improved**: The original pattern worked but could be more robust.
@@ -31,20 +31,24 @@ The CI guardrail test for wildcard CORS detection was analyzed and improved. The
 ## Fixes Implemented
 
 ### 1. Fixed `cors.ts` File
+
 - **File**: `supabase/functions/_shared/cors.ts`
 - **Change**: Removed test wildcard CORS lines (lines 46-48)
 - **Status**: ✅ Fixed
 
 ### 2. Improved Security Check Regex
+
 - **File**: `scripts/security-check.sh`
 - **Change**: Enhanced wildcard CORS detection pattern:
+
   ```bash
   # Before:
   grep -rE "Access-Control-Allow-Origin.*['\"]\*['\"]" ...
-  
+
   # After:
   grep -rE "Access-Control-Allow-Origin.*['\"\`]\*['\"\`]" ...
   ```
+
 - **Improvements**:
   - Catches single quotes, double quotes, and template literals
   - Better comment exclusion (handles both `//` and `/* */`)
@@ -52,6 +56,7 @@ The CI guardrail test for wildcard CORS detection was analyzed and improved. The
 - **Status**: ✅ Improved
 
 ### 3. Added Security Check to Test Workflow
+
 - **File**: `.github/workflows/test.yml`
 - **Change**: Added `security-check.sh` to `security-scan` job
 - **Impact**: Security check now runs on ALL pull requests (not just main/develop)
@@ -60,12 +65,14 @@ The CI guardrail test for wildcard CORS detection was analyzed and improved. The
 ## Verification
 
 ### Test 1: Clean State
+
 ```bash
 bash scripts/security-check.sh
 # Result: ✅ All security checks passed
 ```
 
 ### Test 2: Wildcard CORS Detection
+
 ```bash
 echo "  'Access-Control-Allow-Origin': '*'," >> supabase/functions/_shared/cors.ts
 bash scripts/security-check.sh
@@ -74,6 +81,7 @@ bash scripts/security-check.sh
 ```
 
 ### Test 3: CI Workflow Coverage
+
 - ✅ `security-audit.yml`: Runs security-check.sh (existing)
 - ✅ `test.yml`: Now runs security-check.sh (newly added)
 
@@ -86,16 +94,19 @@ bash scripts/security-check.sh
 ## Security Guarantees
 
 ✅ **Wildcard CORS Detection**: Any wildcard CORS (`'*'`, `"*"`, `` `*` ``) in `supabase/functions/**/*.ts` will:
+
 - Be detected by `security-check.sh`
 - Cause CI to fail with exit code 1
 - Block deployment/merge
 
 ✅ **CI Coverage**: Security check runs in:
+
 - All pull requests (via `test.yml`)
 - Push/PR to main/develop (via `security-audit.yml`)
 - Weekly schedule (via `security-audit.yml`)
 
 ✅ **Pattern Matching**: Detects all common wildcard CORS patterns:
+
 - `'Access-Control-Allow-Origin': '*'`
 - `"Access-Control-Allow-Origin": "*"`
 - `` `Access-Control-Allow-Origin`: `*` ``
@@ -111,6 +122,7 @@ bash scripts/security-check.sh
 ## Conclusion
 
 The CI guardrail for wildcard CORS detection is now fully functional and will:
+
 - Catch wildcard CORS in all PRs
 - Block deployment if wildcard CORS is detected
 - Provide clear error messages to developers

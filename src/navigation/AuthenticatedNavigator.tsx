@@ -424,13 +424,10 @@ const mainScreens = {
   },
 };
 
-const POST_ONBOARDING_WELCOME_KEY = 'hasSeenPostOnboardingWelcome';
 const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
 
 export const AuthenticatedNavigator: React.FC = () => {
   const { user } = useAuth();
-  const [hasSeenPostOnboardingWelcome, setHasSeenPostOnboardingWelcome] =
-    useState<boolean | null>(null);
   const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] = useState<
     boolean | null
   >(null);
@@ -440,7 +437,8 @@ export const AuthenticatedNavigator: React.FC = () => {
   // Enable smart preloading for better performance
   useSmartPreloading();
 
-  // Check course count and welcome screen status
+  // Check AddCourseFirst screen status and course count
+  // NOTE: PostOnboardingWelcomeScreen manages its own visibility - we don't check it here
   useEffect(() => {
     const checkWelcomeScreens = async () => {
       if (!user || !user.onboarding_completed) {
@@ -449,16 +447,11 @@ export const AuthenticatedNavigator: React.FC = () => {
       }
 
       try {
-        // Check AsyncStorage for both screens
-        const [hasSeenWelcome, hasSeenAddCourse] = await Promise.all([
-          AsyncStorage.getItem(POST_ONBOARDING_WELCOME_KEY),
-          AsyncStorage.getItem(ADD_COURSE_FIRST_KEY),
-        ]);
-
-        setHasSeenPostOnboardingWelcome(hasSeenWelcome === 'true');
+        // Only check AddCourseFirst - PostOnboardingWelcomeScreen is self-managed
+        const hasSeenAddCourse = await AsyncStorage.getItem(ADD_COURSE_FIRST_KEY);
         setHasSeenAddCourseFirst(hasSeenAddCourse === 'true');
 
-        // Check course count
+        // Check course count (used for other logic, not PostOnboardingWelcome)
         const { count, error } = await supabase
           .from('courses')
           .select('*', { count: 'exact', head: true })
@@ -473,8 +466,7 @@ export const AuthenticatedNavigator: React.FC = () => {
         }
       } catch (error) {
         console.error('Error checking welcome screen status:', error);
-        // Default to NOT showing screens on error (assume already seen)
-        setHasSeenPostOnboardingWelcome(true);
+        // Default to NOT showing AddCourseFirst on error (assume already seen)
         setHasSeenAddCourseFirst(true);
         setCourseCount(0);
       } finally {
@@ -501,7 +493,7 @@ export const AuthenticatedNavigator: React.FC = () => {
     return <LoadingFallback />;
   }
 
-  // Determine initial route based on course count and welcome screen status
+  // Determine initial route based on AddCourseFirst screen status
   let initialRouteName: keyof RootStackParamList = 'Main';
 
   // Show AddCourseFirst if user hasn't seen it yet (regardless of course count)
@@ -509,16 +501,15 @@ export const AuthenticatedNavigator: React.FC = () => {
   if (hasSeenAddCourseFirst === false) {
     initialRouteName = 'AddCourseFirst';
   }
-  // PostOnboardingWelcome is only shown after course creation from AddCourseFirst,
-  // not automatically based on course count
-  // IMPORTANT: PostOnboardingWelcome is NEVER set as initialRouteName - it's only
-  // navigated to programmatically after course creation
+  // HARDENING: PostOnboardingWelcome is self-managed by PostOnboardingWelcomeScreen component
+  // It is NEVER set as initialRouteName - it's only navigated to programmatically
+  // The screen itself enforces all visibility rules and will redirect if already seen
+  // This ensures the screen never appears on app startup or navigation state restoration
 
   if (__DEV__) {
     console.log('🔍 [AuthenticatedNavigator] Initial route determined:', {
       initialRouteName,
       hasSeenAddCourseFirst,
-      hasSeenPostOnboardingWelcome,
       courseCount,
     });
   }
@@ -535,6 +526,7 @@ export const AuthenticatedNavigator: React.FC = () => {
           {renderScreens(mainScreens)}
 
           {/* PostOnboardingWelcome - full screen modal in its own group to hide tab bar */}
+          {/* NOTE: PostOnboardingWelcomeScreen is self-managed - it enforces all visibility rules */}
           <Stack.Group
             screenOptions={{
               presentation: 'fullScreenModal',
@@ -545,6 +537,9 @@ export const AuthenticatedNavigator: React.FC = () => {
               component={PostOnboardingWelcomeScreen}
               options={{
                 gestureEnabled: false,
+                // HARDENING: Screen component itself handles redirect if already seen
+                // This screen is NEVER used as initialRouteName (enforced by logic above)
+                // Screen is in MODAL_FLOW_ROUTES so it won't be restored on app restart
               }}
             />
           </Stack.Group>

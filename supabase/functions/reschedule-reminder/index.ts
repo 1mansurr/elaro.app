@@ -17,8 +17,24 @@ async function handleRescheduleReminder(
   req: AuthenticatedRequest,
 ): Promise<{ success: boolean; reminder_id: string }> {
   const { user, supabaseClient, body } = req;
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  const validationResult = schema.safeParse(body);
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    throw new AppError(
+      'Validation failed',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
+      {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      },
+    );
+  }
   const { reminder_id, new_scheduled_time, notification_id } =
-    schema.parse(body);
+    validationResult.data;
 
   // Validate that new scheduled time is in the future
   const scheduledDate = new Date(new_scheduled_time);

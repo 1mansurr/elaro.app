@@ -109,9 +109,11 @@ serve(async (req: Request) => {
       return errorResponse(error, error.statusCode, {}, origin);
     }
 
+    // ZodError should never reach here (caught by safeParse above)
+    // But keep as fallback for safety
     if (error instanceof Error && error.name === 'ZodError') {
       return errorResponse(
-        new AppError('Invalid input data', 400, 'VALIDATION_ERROR'),
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR),
         400,
         {},
         origin,
@@ -144,7 +146,22 @@ async function handleCheckLockout(
     throw new AppError('Email parameter is required', 400, 'VALIDATION_ERROR');
   }
 
-  const validatedData = CheckLockoutSchema.parse({ email });
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  const validationResult = CheckLockoutSchema.safeParse({ email });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get user lockout status
   const { data: user, error } = await supabaseAdmin
@@ -244,11 +261,49 @@ async function handleRecordFailedAttempt(
   traceContext: Record<string, unknown>,
   origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = RecordFailedAttemptSchema.parse({
-    ...body,
-    ipAddress: body.ipAddress || ipAddress,
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  // PASS 2: Validate body is object before accessing properties
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse(
+      new AppError('Request body must be an object', 400, ERROR_CODES.VALIDATION_ERROR),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  const bodyObj = body as Record<string, unknown>;
+  const validationResult = RecordFailedAttemptSchema.safeParse({
+    ...bodyObj,
+    ipAddress: bodyObj.ipAddress || ipAddress,
   });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get current failed attempts count
   const { data: user, error: userError } = await supabaseAdmin
@@ -340,14 +395,59 @@ async function handleRecordSuccessfulLogin(
   traceContext: Record<string, unknown>,
   origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = RecordSuccessfulLoginSchema.parse({
-    ...body,
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  // PASS 2: Validate body is object before accessing properties
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse(
+      new AppError('Request body must be an object', 400, ERROR_CODES.VALIDATION_ERROR),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  const bodyObj = body as Record<string, unknown>;
+  const validationResult = RecordSuccessfulLoginSchema.safeParse({
+    ...bodyObj,
     deviceInfo: {
-      ...body.deviceInfo,
-      ipAddress: body.deviceInfo?.ipAddress || ipAddress,
+      ...(bodyObj.deviceInfo && typeof bodyObj.deviceInfo === 'object' && !Array.isArray(bodyObj.deviceInfo)
+        ? bodyObj.deviceInfo
+        : {}),
+      ipAddress:
+        (bodyObj.deviceInfo &&
+          typeof bodyObj.deviceInfo === 'object' &&
+          !Array.isArray(bodyObj.deviceInfo) &&
+          (bodyObj.deviceInfo as { ipAddress?: unknown }).ipAddress) ||
+        ipAddress,
     },
   });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get user email
   const { data: user, error: userError } = await supabaseAdmin
@@ -419,8 +519,35 @@ async function handleResetAttempts(
   traceContext: Record<string, unknown>,
   origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = ResetAttemptsSchema.parse(body);
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  const validationResult = ResetAttemptsSchema.safeParse(body);
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   await resetFailedAttemptsInternal(
     supabaseAdmin,

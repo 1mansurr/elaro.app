@@ -1,10 +1,7 @@
 import React from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -38,22 +35,16 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
         },
       ]}>
       <Button
+        title={isSaving ? 'Saving...' : saveButtonText}
         onPress={onSave}
         disabled={!isValid || isSaving}
+        loading={isSaving}
+        variant="primary"
         style={[
           styles.saveButton,
           (!isValid || isSaving) && styles.saveButtonDisabled,
         ]}
-        variant="primary">
-        {isSaving ? (
-          <View style={styles.saveButtonContent}>
-            <ActivityIndicator size="small" color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Saving...</Text>
-          </View>
-        ) : (
-          <Text style={styles.saveButtonText}>{saveButtonText}</Text>
-        )}
-      </Button>
+      />
     </View>
   );
 };
@@ -73,15 +64,5 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     opacity: 0.6,
-  },
-  saveButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
   },
 });

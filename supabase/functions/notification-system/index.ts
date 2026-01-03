@@ -246,17 +246,50 @@ async function handleSendNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, title, body: notificationBody, type, data } = body;
-
-  // Verify user can send notification (either to themselves or admin)
-  if (user_id !== user.id) {
-    // TODO(@admin): Check if user is admin here if needed
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send notifications to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      // TODO(@admin): Check if user is admin here if needed
+      throw new AppError(
+        'You can only send notifications to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+
+  const { title, body: notificationBody, type, data } = body;
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
@@ -510,17 +543,47 @@ async function handleDailySummary({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id } = body || {};
-  const targetUserId = user_id || user.id;
-
-  // Verify user can access this summary
-  if (targetUserId !== user.id) {
+  // PASS 2: Validate body is object before accessing properties
+  if (body && (typeof body !== 'object' || Array.isArray(body))) {
     throw new AppError(
-      'You can only get your own daily summary',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body?.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only get your own daily summary',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const targetUserId = user.id;
 
   // Check preferences before processing
   const prefs = await getUserNotificationPreferences(
@@ -615,17 +678,47 @@ async function handleEveningCapture({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id } = body || {};
-  const targetUserId = user_id || user.id;
-
-  // Verify user can send this notification
-  if (targetUserId !== user.id) {
+  // PASS 2: Validate body is object before accessing properties
+  if (body && (typeof body !== 'object' || Array.isArray(body))) {
     throw new AppError(
-      'You can only send evening capture to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body?.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send evening capture to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const targetUserId = user.id;
 
   // Check preferences before sending
   const prefs = await getUserNotificationPreferences(
@@ -676,18 +769,49 @@ async function handleWelcomeNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, user_name } = body;
-
-  // Verify user can send welcome notification (typically admin or system)
-  // For now, allow if it's for themselves or if they're sending it (system use case)
-  if (user_id && user_id !== user.id) {
-    // TODO(@admin): Check admin status if needed
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send welcome notifications for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      // TODO(@admin): Check admin status if needed
+      throw new AppError(
+        'You can only send welcome notifications for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { user_name } = body;
 
   const title = `Welcome to ELARO, ${user_name || 'User'}!`;
   const notificationBody =
@@ -746,16 +870,48 @@ async function handleReminderNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, assignment_id, lecture_id } = body;
-
-  // Verify user can send reminder for this user_id
-  if (user_id !== user.id) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send reminders for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send reminders for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { assignment_id, lecture_id } = body;
 
   let title = 'Reminder';
   let notificationBody = 'You have an upcoming task';

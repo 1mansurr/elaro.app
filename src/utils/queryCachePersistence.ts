@@ -116,7 +116,7 @@ export async function restoreQueryCache(
     ) {
       return;
     }
-    
+
     let queries: SerializedQuery[];
     try {
       queries = JSON.parse(serialized);

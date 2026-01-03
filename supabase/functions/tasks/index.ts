@@ -21,6 +21,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AppError,
+  isValidUUID,
 } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -338,49 +339,215 @@ async function handleTasksRequest({
   // Route handling
   if (path.includes('/assignments')) {
     if (method === 'POST') {
-      const validatedData = CreateAssignmentSchema.parse(body);
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = CreateAssignmentSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.createAssignment(validatedData, user.id);
     } else if (method === 'PUT') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
-      const validatedData = UpdateAssignmentSchema.parse(body);
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid assignment ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Assignment ID must be a valid UUID' },
+        );
+      }
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = UpdateAssignmentSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.updateAssignment(id, validatedData, user.id);
     } else if (method === 'DELETE') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid assignment ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Assignment ID must be a valid UUID' },
+        );
+      }
       return await taskService.deleteAssignment(id, user.id);
     }
   }
 
   if (path.includes('/lectures')) {
     if (method === 'POST') {
-      const validatedData = CreateLectureSchema.parse(body);
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = CreateLectureSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.createLecture(validatedData, user.id);
     } else if (method === 'PUT') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
-      const validatedData = UpdateLectureSchema.parse(body);
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid lecture ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Lecture ID must be a valid UUID' },
+        );
+      }
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = UpdateLectureSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.updateLecture(id, validatedData, user.id);
     } else if (method === 'DELETE') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid lecture ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Lecture ID must be a valid UUID' },
+        );
+      }
       return await taskService.deleteLecture(id, user.id);
     }
   }
 
   if (path.includes('/study-sessions')) {
     if (method === 'POST') {
-      const validatedData = CreateStudySessionSchema.parse(body);
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = CreateStudySessionSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.createStudySession(validatedData, user.id);
     } else if (method === 'PUT') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
-      const validatedData = UpdateStudySessionSchema.parse(body);
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid study session ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Study session ID must be a valid UUID' },
+        );
+      }
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = UpdateStudySessionSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.updateStudySession(id, validatedData, user.id);
     } else if (method === 'DELETE') {
+      // PASS 2: Validate path parameter (UUID format, non-empty)
       const id = path.split('/').pop();
+      if (!id || !isValidUUID(id)) {
+        throw new AppError(
+          'Invalid study session ID format',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          { field: 'id', message: 'Study session ID must be a valid UUID' },
+        );
+      }
       return await taskService.deleteStudySession(id, user.id);
     }
   }
 
   if (path.includes('/batch')) {
     if (method === 'POST') {
-      const validatedData = BatchOperationSchema.parse(body);
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = BatchOperationSchema.safeParse(body);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError(
+          'Validation failed',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+          {
+            message: 'Request body validation failed',
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        );
+      }
+      const validatedData = validationResult.data;
       return await taskService.batchOperations(
         validatedData.operations,
         user.id,

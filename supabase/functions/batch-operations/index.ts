@@ -95,7 +95,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        AssignmentDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const assignmentValidation = AssignmentDataSchema.safeParse(operation.data);
+        if (!assignmentValidation.success) {
+          const zodError = assignmentValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for assignment data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'lecture':
         if (operation.table !== 'lectures') {
@@ -105,7 +119,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        LectureDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const lectureValidation = LectureDataSchema.safeParse(operation.data);
+        if (!lectureValidation.success) {
+          const zodError = lectureValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for lecture data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'study_session':
         if (operation.table !== 'study_sessions') {
@@ -115,7 +143,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        StudySessionDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const studySessionValidation = StudySessionDataSchema.safeParse(operation.data);
+        if (!studySessionValidation.success) {
+          const zodError = studySessionValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for study session data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'course':
         if (operation.table !== 'courses') {
@@ -125,7 +167,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        CourseDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const courseValidation = CourseDataSchema.safeParse(operation.data);
+        if (!courseValidation.success) {
+          const zodError = courseValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for course data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       default:
         throw new AppError(

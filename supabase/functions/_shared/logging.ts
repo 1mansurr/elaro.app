@@ -104,7 +104,17 @@ async function appendLogToStorage(logEntry: LogEntry): Promise<void> {
       });
 
     if (uploadError) {
-      console.error(`Failed to upload log to storage: ${uploadError.message}`);
+      // Check if bucket doesn't exist (common error)
+      const isBucketMissing = uploadError.message?.includes('Bucket') || 
+                              uploadError.message?.includes('not found') ||
+                              uploadError.message?.includes('does not exist');
+      
+      if (isBucketMissing) {
+        // Silently fall back to console - bucket needs to be created in Supabase Storage
+        console.debug(`Log storage bucket '${LOG_BUCKET}' not found. Logging to console only. Create the bucket in Supabase Storage to enable log aggregation.`);
+      } else {
+        console.error(`Failed to upload log to storage: ${uploadError.message}`);
+      }
       // Fallback to console
       console[logEntry.level](JSON.stringify(logEntry));
     }

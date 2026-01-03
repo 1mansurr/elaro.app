@@ -478,11 +478,7 @@ export class NotificationHistoryService {
       );
       if (actions) {
         // Guard: Only parse if actions is valid
-        if (
-          actions.trim() &&
-          actions !== 'undefined' &&
-          actions !== 'null'
-        ) {
+        if (actions.trim() && actions !== 'undefined' && actions !== 'null') {
           try {
             return JSON.parse(actions);
           } catch {

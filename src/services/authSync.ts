@@ -155,14 +155,10 @@ class AuthSyncService {
       if (!cached) return null;
 
       // Guard: Only parse if cached is valid
-      if (
-        !cached.trim() ||
-        cached === 'undefined' ||
-        cached === 'null'
-      ) {
+      if (!cached.trim() || cached === 'undefined' || cached === 'null') {
         return null;
       }
-      
+
       let state: AuthStateSnapshot;
       try {
         state = JSON.parse(cached);

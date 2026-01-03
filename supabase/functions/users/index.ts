@@ -610,8 +610,30 @@ async function handleUsersRequest({
 }: AuthenticatedRequest & { url: string }) {
   const userService = new UserService(supabaseClient);
   const path = new URL(url).pathname;
-  const method =
-    requestMethod || new URL(url).searchParams.get('method') || 'GET';
+  // PASS 2: Validate query parameter (enum)
+  const methodParam = new URL(url).searchParams.get('method');
+  const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
+  const method = requestMethod ||
+    (methodParam && validMethods.includes(methodParam.toUpperCase())
+      ? methodParam.toUpperCase()
+      : 'GET');
+  if (methodParam && !validMethods.includes(method.toUpperCase())) {
+    // Return JSON response instead of throwing
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        error: 'INVALID_INPUT',
+        details: {
+          field: 'method',
+          message: `Method must be one of: ${validMethods.join(', ')}`,
+        },
+      }),
+      {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
+  }
 
   // Initialize event-driven architecture
   initializeEventDrivenArchitecture(supabaseClient);
@@ -622,17 +644,80 @@ async function handleUsersRequest({
   }
 
   if (method === 'PUT' && path.endsWith('/profile')) {
-    const validatedData = UpdateProfileSchema.parse(body);
+    // Use safeParse to prevent ZodError from crashing worker
+    const validationResult = UpdateProfileSchema.safeParse(body);
+    if (!validationResult.success) {
+      // Return JSON response instead of throwing
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     return await userService.updateUserProfile(user.id, validatedData);
   }
 
   if (method === 'POST' && path.endsWith('/complete-onboarding')) {
-    const validatedData = CompleteOnboardingSchema.parse(body);
+    // Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CompleteOnboardingSchema.safeParse(body);
+    if (!validationResult.success) {
+      // Return JSON response instead of throwing
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     return await userService.completeOnboarding(user.id, validatedData);
   }
 
   if (method === 'POST' && path.endsWith('/soft-delete-account')) {
-    const validatedData = SoftDeleteAccountSchema.parse(body);
+    // Use safeParse to prevent ZodError from crashing worker
+    const validationResult = SoftDeleteAccountSchema.safeParse(body);
+    if (!validationResult.success) {
+      // Return JSON response instead of throwing
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     return await userService.softDeleteAccount(user.id, validatedData.reason);
   }
 
@@ -660,34 +745,159 @@ async function handleUsersRequest({
     !path.match(/\/devices\/[^/]+$/)
   ) {
     // POST /devices (register device)
-    const validatedData = RegisterDeviceSchema.parse(body);
+    
+    // ============================================================================
+    // EXPLICIT VALIDATION: Check required fields BEFORE Zod parsing
+    // ============================================================================
+    
+    // Ensure body exists and is an object
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      // Return JSON response instead of throwing
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            message: 'Request body must be a valid JSON object',
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    // Explicit check: push_token must exist - return skipped response if missing
+    if (body.push_token === undefined || body.push_token === null) {
+      // Return success with skipped flag (race condition safe)
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: 'push_token_not_ready',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    // Explicit check: platform must exist - return skipped response if missing
+    if (body.platform === undefined || body.platform === null) {
+      // Return success with skipped flag (race condition safe)
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          skipped: true,
+          reason: 'push_token_not_ready',
+        }),
+        {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    // ============================================================================
+    // ZOD VALIDATION: Use safeParse to prevent ZodError from crashing worker
+    // ============================================================================
+    
+    const validationResult = RegisterDeviceSchema.safeParse(body);
+    
+    if (!validationResult.success) {
+      // Return JSON response instead of throwing
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            errors: flattened.fieldErrors,
+            formErrors: flattened.formErrors,
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
+    }
+
+    // Use validated data (guaranteed to be valid)
+    const validatedData = validationResult.data;
     return await userService.registerDevice(user.id, validatedData);
   }
 
   if (method === 'DELETE' && path.includes('/devices')) {
-    // Extract device ID from path
+    // Extract and validate device ID from path
     const pathParts = path.split('/').filter(Boolean);
     const deviceIndex = pathParts.indexOf('devices');
     if (deviceIndex === -1 || deviceIndex === pathParts.length - 1) {
-      throw new AppError(
-        'Device ID is required',
-        400,
-        ERROR_CODES.VALIDATION_ERROR,
+      // Return JSON response instead of throwing
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            message: 'Device ID is required',
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
       );
     }
     const deviceId = pathParts[deviceIndex + 1];
-    if (!deviceId) {
-      throw new AppError(
-        'Device ID is required',
-        400,
-        ERROR_CODES.VALIDATION_ERROR,
+    if (!deviceId || typeof deviceId !== 'string' || deviceId.trim().length === 0) {
+      // Return JSON response instead of throwing
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: 'INVALID_INPUT',
+          details: {
+            field: 'deviceId',
+            message: 'Device ID is missing or invalid',
+          },
+        }),
+        {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        },
       );
     }
     return await userService.deleteDevice(user.id, deviceId);
   }
 
   if (method === 'GET' && path.endsWith('/login-history')) {
-    const limit = parseInt(new URL(url).searchParams.get('limit') || '50');
+    // Validate query parameter (type, range)
+    const limitParam = new URL(url).searchParams.get('limit');
+    let limit = 50; // Default
+    if (limitParam) {
+      const parsedLimit = parseInt(limitParam, 10);
+      if (isNaN(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
+        // Return JSON response instead of throwing
+        return new Response(
+          JSON.stringify({
+            ok: false,
+            error: 'INVALID_INPUT',
+            details: {
+              field: 'limit',
+              message: 'Limit must be between 1 and 100',
+            },
+          }),
+          {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
+      }
+      limit = parsedLimit;
+    }
     return await userService.getLoginHistory(user.id, limit);
   }
 
@@ -695,7 +905,20 @@ async function handleUsersRequest({
     return await userService.getSubscription(user.id);
   }
 
-  throw new AppError('Invalid route or method', 404, ERROR_CODES.NOT_FOUND);
+  // Return JSON response instead of throwing
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      error: 'NOT_FOUND',
+      details: {
+        message: 'Invalid route or method',
+      },
+    }),
+    {
+      status: 404,
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 }
 
 // Serve the function

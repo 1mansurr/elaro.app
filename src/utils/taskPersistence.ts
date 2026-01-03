@@ -35,14 +35,10 @@ export const getPendingTask = async (): Promise<PendingTaskData | null> => {
     if (!data) return null;
 
     // Guard: Only parse if data is valid
-    if (
-      !data.trim() ||
-      data === 'undefined' ||
-      data === 'null'
-    ) {
+    if (!data.trim() || data === 'undefined' || data === 'null') {
       return null;
     }
-    
+
     let parsed: any;
     try {
       parsed = JSON.parse(data);

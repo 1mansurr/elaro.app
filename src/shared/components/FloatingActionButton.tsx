@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   TouchableOpacity,
   StyleSheet,
@@ -20,25 +20,24 @@ interface Action {
 
 interface FloatingActionButtonProps {
   actions: Action[];
-  onStateChange?: (state: {
+  isOpen: boolean; // REQUIRED: Component is now fully controlled
+  onStateChange: (state: {
     isOpen: boolean;
     animation: Animated.Value;
   }) => void;
   onDoubleTap?: () => void;
   draftCount?: number;
   onDraftBadgePress?: () => void;
-  isOpen?: boolean; // Allow external control of FAB state
 }
 
 const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   actions,
+  isOpen,
   onStateChange,
   onDoubleTap,
   draftCount = 0,
   onDraftBadgePress,
-  isOpen: externalIsOpen,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
   const animation = useRef(new Animated.Value(0)).current;
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
 
@@ -46,8 +45,17 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const lastTap = useRef<number | null>(null);
   const DOUBLE_TAP_DELAY = 300; // 300ms between taps
 
-  const handleToggle = () => {
-    const toValue = isOpen ? 0 : 1;
+  // Dev-only warning if onStateChange exists but isOpen is missing (TypeScript should catch this, but runtime check for safety)
+  if (__DEV__ && onStateChange && isOpen === undefined) {
+    console.warn(
+      'FloatingActionButton: onStateChange provided but isOpen is missing. ' +
+        'FloatingActionButton is now a controlled component and requires isOpen prop.',
+    );
+  }
+
+  // Sync animation with isOpen prop
+  useEffect(() => {
+    const toValue = isOpen ? 1 : 0;
 
     // Stop any ongoing animation before starting a new one
     if (animationRef.current) {
@@ -62,12 +70,11 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
 
     animationRef.current = newAnimation;
     newAnimation.start();
+  }, [isOpen, animation]);
 
+  const handleToggle = () => {
     const newOpenState = !isOpen;
-    setIsOpen(newOpenState);
-    if (onStateChange) {
-      onStateChange({ isOpen: newOpenState, animation });
-    }
+    onStateChange({ isOpen: newOpenState, animation });
   };
 
   const handlePress = () => {
@@ -91,29 +98,6 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
       }, DOUBLE_TAP_DELAY);
     }
   };
-
-  // Sync external isOpen prop with internal state
-  useEffect(() => {
-    if (externalIsOpen !== undefined && externalIsOpen !== isOpen) {
-      const toValue = externalIsOpen ? 1 : 0;
-
-      // Stop any ongoing animation before starting a new one
-      if (animationRef.current) {
-        animationRef.current.stop();
-      }
-
-      const newAnimation = Animated.spring(animation, {
-        toValue,
-        friction: 6,
-        useNativeDriver: false,
-      });
-
-      animationRef.current = newAnimation;
-      newAnimation.start();
-      setIsOpen(externalIsOpen);
-      // Note: don't call onStateChange here; parent already controls state
-    }
-  }, [externalIsOpen, isOpen]);
 
   // Cleanup animation on unmount
   useEffect(() => {

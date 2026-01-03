@@ -158,7 +158,7 @@ export async function getBiometricCredentials(): Promise<{
     ) {
       return null;
     }
-    
+
     let credentials: any;
     try {
       credentials = JSON.parse(credentialsStr);

@@ -574,7 +574,7 @@ const AddStudySessionScreen = () => {
                   : selectedCourse?.courseName || 'Select Course'}
               </Text>
               <Ionicons
-                name="expand-more"
+                name="chevron-down"
                 size={24}
                 color={theme.isDark ? '#FFFFFF' : '#111418'}
               />

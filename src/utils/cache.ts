@@ -280,11 +280,7 @@ export class CacheManager {
       }
 
       // Guard: Check if cached is valid before parsing
-      if (
-        !cached.trim() ||
-        cached === 'undefined' ||
-        cached === 'null'
-      ) {
+      if (!cached.trim() || cached === 'undefined' || cached === 'null') {
         await this.recordMiss();
         await this.remove(key); // Auto-clear corrupted entry
         if (__DEV__) {
@@ -301,7 +297,10 @@ export class CacheManager {
         await this.recordMiss();
         await this.remove(key);
         if (__DEV__) {
-          console.error(`❌ Cache parse error for ${key}, cleared:`, parseError);
+          console.error(
+            `❌ Cache parse error for ${key}, cleared:`,
+            parseError,
+          );
         }
         return null;
       }

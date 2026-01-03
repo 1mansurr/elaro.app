@@ -65,7 +65,7 @@ export async function getDraft(taskType: DraftType): Promise<DraftData | null> {
     ) {
       return null;
     }
-    
+
     let draft: DraftData;
     try {
       draft = JSON.parse(draftJson) as DraftData;
@@ -127,7 +127,7 @@ export async function getAllDrafts(): Promise<DraftData[]> {
           ) {
             return null;
           }
-          
+
           let draft: DraftData;
           try {
             draft = JSON.parse(value) as DraftData;

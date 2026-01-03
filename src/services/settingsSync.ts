@@ -49,14 +49,10 @@ class SettingsSyncService {
       }
 
       // Guard: Only parse if cached is valid
-      if (
-        !cached.trim() ||
-        cached === 'undefined' ||
-        cached === 'null'
-      ) {
+      if (!cached.trim() || cached === 'undefined' || cached === 'null') {
         return null;
       }
-      
+
       let settings: SettingsCache;
       try {
         settings = JSON.parse(cached);
@@ -415,7 +411,7 @@ class SettingsSyncService {
       ) {
         return [];
       }
-      
+
       try {
         return JSON.parse(stored);
       } catch {

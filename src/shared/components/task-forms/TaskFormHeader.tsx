@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1, // Removed per user request
   },
   headerButton: {
     width: 40,

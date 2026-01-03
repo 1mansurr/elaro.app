@@ -473,7 +473,15 @@ const NavigationStateValidator: React.FC<{
     let maxTimeoutId: NodeJS.Timeout | null = null;
     let validationTimeoutId: NodeJS.Timeout | null = null;
 
+    console.log('🔍 [NavigationStateValidator] Effect triggered', {
+      authLoading,
+      hasSession: !!session,
+      hasUser: !!user,
+      hasInitialState: !!initialNavigationState,
+    });
+
     const validateNavigationState = async () => {
+      console.log('🚀 [NavigationStateValidator] Starting validation');
       // GUARANTEED EXIT: Maximum timeout ensures we always resolve
       // This is the final safety net - app will render after 3 seconds maximum
       maxTimeoutId = setTimeout(() => {
@@ -489,6 +497,7 @@ const NavigationStateValidator: React.FC<{
         // If auth is still loading after 1.5 seconds, proceed with current state
         // Note: If authLoading changes, the effect will re-run (it's in dependencies)
         if (authLoading) {
+          let authTimedOut = false;
           await new Promise<void>(resolve => {
             if (isCancelled) {
               resolve();
@@ -499,6 +508,13 @@ const NavigationStateValidator: React.FC<{
               console.warn(
                 '⚠️ [NavigationStateValidator] Auth still loading after timeout - proceeding with current state',
               );
+              authTimedOut = true;
+              // FIX: Immediately call onStateValidated when auth times out
+              // This prevents the app from getting stuck if there's an initialNavigationState
+              if (!isCancelled) {
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+              }
               resolve();
             }, 1500); // 1.5 seconds max wait for auth
 
@@ -510,6 +526,9 @@ const NavigationStateValidator: React.FC<{
               resolve();
             }
           });
+          
+          // If we timed out and already called onStateValidated, return early
+          if (authTimedOut || isCancelled) return;
         }
 
         // If we have a pre-loaded initial state, validate it
@@ -623,10 +642,12 @@ const NavigationStateValidator: React.FC<{
       }
     };
 
+    console.log('📞 [NavigationStateValidator] Calling validateNavigationState');
     validateNavigationState();
 
     // Cleanup function - prevents state updates if component unmounts
     return () => {
+      console.log('🧹 [NavigationStateValidator] Cleanup - cancelling validation');
       isCancelled = true;
       if (maxTimeoutId) clearTimeout(maxTimeoutId);
       if (validationTimeoutId) clearTimeout(validationTimeoutId);
@@ -759,6 +780,10 @@ const AppWithErrorBoundary: React.FC<{
   useAppStateSync();
 
   const handleStateValidated = useCallback((state: NavigationState | null) => {
+    console.log('✅ [AppWithErrorBoundary] handleStateValidated called', {
+      hasState: !!state,
+      stateType: state ? typeof state : 'null',
+    });
     setSafeInitialState(state);
     setIsStateValidated(true);
   }, []);
@@ -775,6 +800,16 @@ const AppWithErrorBoundary: React.FC<{
   );
 
   const { appIsReady, isAnimationFinished } = appInitializerState;
+
+  // Debug: Track when isStateValidated changes
+  useEffect(() => {
+    console.log('🔍 [AppWithErrorBoundary] isStateValidated changed:', {
+      isStateValidated,
+      shouldShowLoading: !isStateValidated,
+      appIsReady,
+      isAnimationFinished,
+    });
+  }, [isStateValidated, appIsReady, isAnimationFinished]);
 
   // Hide native splash screen ONLY when ALL conditions are met:
   // 1. appIsReady === true
@@ -885,6 +920,24 @@ const AppWithErrorBoundary: React.FC<{
   // Defensive fallback: NavigationStateValidator guarantees resolution within 3 seconds,
   // but this provides a final safety net (5 seconds) in case of unexpected issues
   useEffect(() => {
+    // IMMEDIATE FALLBACK: Force validation after 2 seconds if still stuck
+    // This helps debug and ensures the app doesn't stay on white screen
+    const immediateFallback = setTimeout(() => {
+      if (!isStateValidated) {
+        console.warn(
+          '⚠️ [AppWithErrorBoundary] Immediate fallback triggered (2s) - forcing render to prevent white screen',
+          {
+            appIsReady,
+            isAnimationFinished,
+            shouldShowLoading,
+          },
+        );
+        setIsStateValidated(true);
+        setSafeInitialState(null);
+      }
+    }, 2000); // 2 second immediate fallback
+
+    // EXISTING FALLBACK: 5 second final safety net
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
         console.error(
@@ -895,8 +948,11 @@ const AppWithErrorBoundary: React.FC<{
       }
     }, 5000); // 5 second final safety net (NavigationStateValidator max is 3s)
 
-    return () => clearTimeout(fallbackTimeout);
-  }, [isStateValidated]);
+    return () => {
+      clearTimeout(immediateFallback);
+      clearTimeout(fallbackTimeout);
+    };
+  }, [isStateValidated, appIsReady, isAnimationFinished, shouldShowLoading]);
 
   // Don't render NavigationContainer until navigation state validation is complete
   // Note: NavigationStateValidator (inside AppProviders) handles auth loading check

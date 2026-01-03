@@ -39,17 +39,56 @@ export const useCourses = (options?: CourseQueryOptions) => {
   return useInfiniteQuery<CoursesPage, Error>({
     queryKey: ['courses', searchQuery || '', sortOption, showArchived],
     queryFn: async ({ pageParam = 0 }) => {
-      const data = await api.courses.getAll({
-        ...options,
-        pageParam: pageParam as number,
-        pageSize,
-      });
+      try {
+        const data = await api.courses.getAll({
+          ...options,
+          pageParam: pageParam as number,
+          pageSize,
+        });
 
-      // Cache each page
-      const cacheKey = `courses:${searchQuery || 'all'}:${sortOption}:${showArchived}:page${pageParam}`;
-      await cache.setMedium(cacheKey, data);
+        // Cache each page
+        const cacheKey = `courses:${searchQuery || 'all'}:${sortOption}:${showArchived}:page${pageParam}`;
+        await cache.setMedium(cacheKey, data);
 
-      return data;
+        return data;
+      } catch (error) {
+        // On auth errors or edge function errors, return empty page instead of throwing
+        // This provides better UX - user sees empty state instead of error screen
+        const errorMessage =
+          error instanceof Error && error.message
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'Unknown error';
+
+        if (
+          error instanceof Error &&
+          errorMessage &&
+          (errorMessage.includes('No valid session') ||
+            errorMessage.includes('Failed to refresh token') ||
+            errorMessage.includes('Session expired') ||
+            errorMessage.includes('Edge Function returned a non-2xx') ||
+            errorMessage.includes('Function failed to start') ||
+            errorMessage.includes('please check logs') ||
+            errorMessage.includes('WORKER_ERROR') ||
+            errorMessage.includes('Authentication required') ||
+            errorMessage.includes('Auth session missing'))
+        ) {
+          // Log warnings for Edge Function failures (these are backend issues)
+          console.warn(
+            '⚠️ [useCourses] Edge Function error, returning empty page:',
+            errorMessage,
+          );
+          // Return empty page structure for infinite query
+          return {
+            courses: [],
+            nextOffset: undefined,
+            hasMore: false,
+          };
+        }
+        // Re-throw other errors
+        throw error;
+      }
     },
     getNextPageParam: lastPage => {
       // Return undefined if there are no more pages, otherwise return the next offset

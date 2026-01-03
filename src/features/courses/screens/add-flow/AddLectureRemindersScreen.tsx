@@ -173,12 +173,11 @@ const AddLectureRemindersScreen = () => {
 
       resetCourseData();
 
-      // Check if user came from AddCourseFirstScreen and should see PostOnboardingWelcomeScreen
+      // Check if user came from AddCourseFirstScreen (to know if we should navigate to PostOnboardingWelcome)
+      // NOTE: We only check this to determine if we should REQUEST navigation.
+      // PostOnboardingWelcomeScreen itself will decide if it should actually show.
       const hasSeenAddCourseFirst = await AsyncStorage.getItem(
         'hasSeenAddCourseFirstScreen',
-      );
-      const hasSeenPostOnboardingWelcome = await AsyncStorage.getItem(
-        'hasSeenPostOnboardingWelcome',
       );
 
       // Get current navigation state to check if we're in a flow
@@ -186,30 +185,28 @@ const AddLectureRemindersScreen = () => {
       const currentRoute =
         parentNav?.getState()?.routes[parentNav?.getState()?.index || 0];
 
-      // Only navigate to PostOnboardingWelcome if:
-      // 1. User came from AddCourseFirstScreen (has seen it)
-      // 2. User hasn't seen PostOnboardingWelcome
-      // 3. We're still in the AddCourseFlow (not already navigated away)
+      // If user came from AddCourseFirst and we're still in AddCourseFlow,
+      // request navigation to PostOnboardingWelcome.
+      // The screen itself will check if it should show and redirect if already seen.
       if (
         hasSeenAddCourseFirst === 'true' &&
-        hasSeenPostOnboardingWelcome !== 'true' &&
         currentRoute?.name === 'AddCourseFlow'
       ) {
-        // Navigate to PostOnboardingWelcomeScreen
-        console.log(
-          '✅ [AddLectureRemindersScreen] Navigating to PostOnboardingWelcome after course creation',
-        );
+        // Request navigation - PostOnboardingWelcomeScreen will enforce its own visibility rules
+        if (__DEV__) {
+          console.log(
+            '✅ [AddLectureRemindersScreen] Requesting navigation to PostOnboardingWelcome after course creation',
+          );
+        }
         parentNav?.navigate('PostOnboardingWelcome' as any);
       } else {
         // Otherwise go back normally
-        console.log(
-          '✅ [AddLectureRemindersScreen] Course created, going back',
-          {
+        if (__DEV__) {
+          console.log('✅ [AddLectureRemindersScreen] Course created, going back', {
             hasSeenAddCourseFirst,
-            hasSeenPostOnboardingWelcome,
             currentRoute: currentRoute?.name,
-          },
-        );
+          });
+        }
         parentNav?.goBack();
       }
     } catch (err) {

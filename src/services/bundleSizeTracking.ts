@@ -56,7 +56,7 @@ export async function trackBundleSize(): Promise<void> {
     ) {
       return { entries: [], lastUpdated: 0 };
     }
-    
+
     let history: BundleSizeHistory;
     try {
       history = JSON.parse(historyData);
@@ -132,7 +132,7 @@ export async function getBundleSizeHistory(): Promise<BundleSizeMetrics[]> {
     ) {
       return [];
     }
-    
+
     let history: BundleSizeHistory;
     try {
       history = JSON.parse(historyData);

@@ -45,11 +45,7 @@ export function sanitizeProfileData(user: User | null): {
     ) {
       // If it looks like JSON, try to parse it
       // Guard: Only parse if trimmed is valid
-      if (
-        trimmed &&
-        trimmed !== 'undefined' &&
-        trimmed !== 'null'
-      ) {
+      if (trimmed && trimmed !== 'undefined' && trimmed !== 'null') {
         try {
           const parsed = JSON.parse(trimmed);
           // If it's an object, try to extract meaningful values

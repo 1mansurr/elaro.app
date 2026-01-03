@@ -18,24 +18,16 @@ function validateCacheData(data: unknown): boolean {
   try {
     if (typeof data === 'string') {
       // Guard: Only parse if data is valid
-      if (
-        !data.trim() ||
-        data === 'undefined' ||
-        data === 'null'
-      ) {
+      if (!data.trim() || data === 'undefined' || data === 'null') {
         return false;
       }
-      
+
       try {
         // Guard: Only parse if data is valid
-        if (
-          !data.trim() ||
-          data === 'undefined' ||
-          data === 'null'
-        ) {
+        if (!data.trim() || data === 'undefined' || data === 'null') {
           throw new Error('Invalid cache data');
         }
-        
+
         let parsed: any;
         try {
           parsed = JSON.parse(data);
@@ -92,7 +84,7 @@ export async function restoreQueryCacheWithRecovery(
           ) {
             throw new Error('No valid cache found');
           }
-          
+
           let queries: any;
           try {
             queries = JSON.parse(cached);
@@ -167,7 +159,7 @@ export async function validateSyncQueue(): Promise<boolean> {
     ) {
       return false;
     }
-    
+
     let queue: any;
     try {
       queue = JSON.parse(queueData);
@@ -230,7 +222,7 @@ export async function recoverSyncQueue(): Promise<void> {
           ) {
             throw new Error('No valid queue data found');
           }
-          
+
           let queue: any;
           try {
             queue = JSON.parse(queueData);

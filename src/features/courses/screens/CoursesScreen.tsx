@@ -34,6 +34,7 @@ type CoursesScreenNavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
 // Memoized course item component - simplified design
+// Custom comparison function for better memoization
 const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
   ({ item, onPress }) => {
     const { theme } = useTheme();
@@ -59,6 +60,14 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
       </TouchableOpacity>
     );
   },
+  (prevProps, nextProps) => {
+    // Only re-render if item ID or courseName changes
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.courseName === nextProps.item.courseName &&
+      prevProps.onPress === nextProps.onPress
+    );
+  },
 );
 CourseItem.displayName = 'CourseItem';
 
@@ -70,10 +79,11 @@ const CoursesScreen = () => {
   const insets = useSafeAreaInsets();
 
   // JS Thread monitoring (dev only)
+  // Increased threshold to 25ms to reduce false positives (25ms = 40fps, acceptable for list screens)
   const jsThreadMetrics = useJSThreadMonitor({
     enabled: __DEV__,
     logSlowFrames: true,
-    slowFrameThreshold: 20,
+    slowFrameThreshold: 25,
   });
 
   // Memory monitoring (dev only)
@@ -206,13 +216,34 @@ const CoursesScreen = () => {
     );
   }, [isFetchingNextPage, theme]);
 
-  // Empty state
-  const renderEmptyState = () => (
-    <View style={styles.emptyStateContainer}>
-      <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-        {searchQuery.trim() ? 'No courses found' : 'You have no courses.'}
-      </Text>
-    </View>
+  // Empty state - memoized to prevent re-renders
+  const renderEmptyState = useCallback(
+    () => (
+      <View style={styles.emptyStateContainer}>
+        <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+          {searchQuery.trim() ? 'No courses found' : 'You have no courses.'}
+        </Text>
+      </View>
+    ),
+    [searchQuery, theme.textSecondary],
+  );
+
+  // Memoized header component to prevent re-renders
+  const renderHeader = useCallback(
+    () => <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />,
+    [handleUpgrade],
+  );
+
+  // getItemLayout for better FlatList performance (estimated item height: 88px)
+  // padding: 20*2 = 40, marginBottom: 16, text height: ~32 = ~88px total
+  const ITEM_HEIGHT = 88;
+  const getItemLayout = useCallback(
+    (_data: Course[] | null | undefined, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    [],
   );
 
   return (
@@ -298,22 +329,21 @@ const CoursesScreen = () => {
             data={courses}
             renderItem={renderCourse}
             keyExtractor={item => item.id}
+            getItemLayout={getItemLayout}
             contentContainerStyle={[
               styles.listContainer,
               courses.length === 0 && styles.listContainerEmpty,
             ]}
             ListEmptyComponent={renderEmptyState}
-            ListHeaderComponent={
-              <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
-            }
+            ListHeaderComponent={renderHeader}
             ListFooterComponent={renderFooter}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
             removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            windowSize={5}
+            maxToRenderPerBatch={8}
+            windowSize={3}
             updateCellsBatchingPeriod={50}
-            initialNumToRender={10}
+            initialNumToRender={8}
             showsVerticalScrollIndicator={false}
           />
         </QueryStateWrapper>

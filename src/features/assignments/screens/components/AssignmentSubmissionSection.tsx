@@ -15,8 +15,10 @@ type SubmissionMethod = 'Online' | 'In-person' | null;
 interface AssignmentSubmissionSectionProps {
   submissionMethod: SubmissionMethod;
   submissionLink: string;
+  submissionVenue?: string;
   onSubmissionMethodChange: (method: SubmissionMethod) => void;
   onSubmissionLinkChange: (link: string) => void;
+  onSubmissionVenueChange?: (venue: string) => void;
 }
 
 export const AssignmentSubmissionSection: React.FC<
@@ -24,8 +26,10 @@ export const AssignmentSubmissionSection: React.FC<
 > = ({
   submissionMethod,
   submissionLink,
+  submissionVenue = '',
   onSubmissionMethodChange,
   onSubmissionLinkChange,
+  onSubmissionVenueChange,
 }) => {
   const { theme } = useTheme();
 
@@ -131,54 +135,6 @@ export const AssignmentSubmissionSection: React.FC<
             In-person
           </Text>
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.submissionOption,
-            submissionMethod === null && styles.submissionOptionSelected,
-            {
-              backgroundColor:
-                submissionMethod === null
-                  ? COLORS.primary + '1A'
-                  : theme.isDark
-                    ? '#1C252E'
-                    : '#FFFFFF',
-              borderColor:
-                submissionMethod === null
-                  ? COLORS.primary + '33'
-                  : theme.isDark
-                    ? '#3B4754'
-                    : '#E5E7EB',
-            },
-          ]}
-          onPress={() => onSubmissionMethodChange(null)}>
-          <Ionicons
-            name="close-circle-outline"
-            size={20}
-            color={
-              submissionMethod === null
-                ? COLORS.primary
-                : theme.isDark
-                  ? '#FFFFFF'
-                  : '#111418'
-            }
-          />
-          <Text
-            style={[
-              styles.submissionOptionText,
-              {
-                color:
-                  submissionMethod === null
-                    ? COLORS.primary
-                    : theme.isDark
-                      ? '#FFFFFF'
-                      : '#111418',
-                fontWeight: submissionMethod === null ? '600' : '500',
-              },
-            ]}>
-            None
-          </Text>
-        </TouchableOpacity>
       </View>
 
       {submissionMethod === 'Online' && (
@@ -213,6 +169,41 @@ export const AssignmentSubmissionSection: React.FC<
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
+            />
+          </View>
+        </View>
+      )}
+
+      {submissionMethod === 'In-person' && onSubmissionVenueChange && (
+        <View style={styles.linkField}>
+          <Text
+            style={[
+              styles.label,
+              { color: theme.isDark ? '#FFFFFF' : '#374151' },
+            ]}>
+            Submission Venue
+          </Text>
+          <View style={styles.linkInputContainer}>
+            <Ionicons
+              name="location-outline"
+              size={20}
+              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              style={styles.linkIcon}
+            />
+            <TextInput
+              style={[
+                styles.linkInput,
+                {
+                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                  color: theme.isDark ? '#FFFFFF' : '#111418',
+                },
+              ]}
+              value={submissionVenue}
+              onChangeText={onSubmissionVenueChange}
+              placeholder="e.g., Room 101, Building A"
+              placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+              autoCapitalize="words"
             />
           </View>
         </View>

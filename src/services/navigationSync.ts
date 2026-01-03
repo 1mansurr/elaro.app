@@ -72,6 +72,7 @@ const MODAL_FLOW_ROUTES: Set<keyof RootStackParamList> = new Set([
   'PaywallScreen',
   'OddityWelcomeScreen',
   'StudyResult',
+  'PostOnboardingWelcome', // Should not be restored - only shown programmatically after course creation
   'StudySessionReview',
   'ForgotPassword',
   'ResetPassword',
@@ -172,7 +173,7 @@ class NavigationSyncService {
       ) {
         return null;
       }
-      
+
       let snapshot: NavigationSnapshot;
       try {
         snapshot = JSON.parse(savedStateString);
@@ -472,7 +473,7 @@ class NavigationSyncService {
       ) {
         return null;
       }
-      
+
       let snapshot: NavigationSnapshot;
       try {
         snapshot = JSON.parse(savedStateString);

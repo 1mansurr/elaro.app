@@ -39,8 +39,24 @@ class TemplateService {
   }
 
   async createTemplate(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CreateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
     const { template_name, task_type, template_data } =
-      CreateTemplateSchema.parse(data);
+      validationResult.data;
 
     const { data: template, error } = await this.supabaseClient
       .from('task_templates')
@@ -61,7 +77,23 @@ class TemplateService {
   }
 
   async updateTemplate(data: Record<string, unknown>) {
-    const { id, ...updates } = UpdateTemplateSchema.parse(data);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = UpdateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        'VALIDATION_ERROR',
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
+    const { id, ...updates } = validationResult.data;
 
     // Verify ownership before updating
     const { data: existing, error: checkError } = await this.supabaseClient

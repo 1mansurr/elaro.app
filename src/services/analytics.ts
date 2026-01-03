@@ -113,7 +113,9 @@ class AnalyticsService {
       ) {
         try {
           this.fallbackEvents = JSON.parse(stored);
-          console.log(`📊 Loaded ${this.fallbackEvents.length} fallback events`);
+          console.log(
+            `📊 Loaded ${this.fallbackEvents.length} fallback events`,
+          );
         } catch {
           this.fallbackEvents = [];
         }
