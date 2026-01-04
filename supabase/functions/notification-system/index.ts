@@ -268,7 +268,11 @@ async function handleSendNotification({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -565,7 +569,11 @@ async function handleDailySummary({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -700,7 +708,11 @@ async function handleEveningCapture({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -791,7 +803,11 @@ async function handleWelcomeNotification({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -892,7 +908,11 @@ async function handleReminderNotification({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,

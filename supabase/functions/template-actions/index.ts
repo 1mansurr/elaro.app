@@ -44,19 +44,13 @@ class TemplateService {
     if (!validationResult.success) {
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      throw new AppError(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        {
-          message: 'Request body validation failed',
-          errors: flattened.fieldErrors,
-          formErrors: flattened.formErrors,
-        },
-      );
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
     }
-    const { template_name, task_type, template_data } =
-      validationResult.data;
+    const { template_name, task_type, template_data } = validationResult.data;
 
     const { data: template, error } = await this.supabaseClient
       .from('task_templates')
@@ -82,16 +76,11 @@ class TemplateService {
     if (!validationResult.success) {
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      throw new AppError(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        {
-          message: 'Request body validation failed',
-          errors: flattened.fieldErrors,
-          formErrors: flattened.formErrors,
-        },
-      );
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
     }
     const { id, ...updates } = validationResult.data;
 

@@ -1,13 +1,13 @@
 /**
  * Safe JSON Parser Utility
- * 
+ *
  * Centralized utility for safely parsing JSON from network responses.
  * Prevents crashes from undefined, empty, or malformed JSON responses.
  */
 
 /**
  * Safely parses JSON from a response text string.
- * 
+ *
  * @param text - The response text to parse
  * @param source - Optional source identifier for error messages (e.g., endpoint URL)
  * @param statusCode - Optional status code for error messages
@@ -44,7 +44,7 @@ export function parseJsonSafely<T = any>(
     const sourceInfo = source ? ` from ${source}` : '';
     const statusInfo = statusCode ? ` (status ${statusCode})` : '';
     const errorMessage = `Invalid JSON response${sourceInfo}${statusInfo}`;
-    
+
     throw new Error(errorMessage);
   }
 }
@@ -52,7 +52,7 @@ export function parseJsonSafely<T = any>(
 /**
  * Safely parses JSON from a Response object.
  * Reads the response body as text first, then parses it.
- * 
+ *
  * @param response - The fetch Response object
  * @returns Parsed JSON object, or null if response is empty or parsing fails
  * @throws Error if response body exists but is invalid JSON
@@ -66,4 +66,3 @@ export async function parseResponseJsonSafely<T = any>(
   // Use the safe parser with response metadata
   return parseJsonSafely<T>(text, response.url, response.status);
 }
-

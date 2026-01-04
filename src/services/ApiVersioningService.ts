@@ -5,7 +5,10 @@
  * for client applications using the ELARO API.
  */
 
-import { parseJsonSafely, parseResponseJsonSafely } from '@/utils/safeJsonParser';
+import {
+  parseJsonSafely,
+  parseResponseJsonSafely,
+} from '@/utils/safeJsonParser';
 
 export interface VersionInfo {
   version: string;
@@ -85,7 +88,11 @@ export class ApiVersioningService {
             // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
             const data = await parseResponseJsonSafely(response);
             // NULL SAFETY: If data is null (empty response), fall back to default versions
-            if (data && typeof data === 'object' && 'supportedVersions' in data) {
+            if (
+              data &&
+              typeof data === 'object' &&
+              'supportedVersions' in data
+            ) {
               return data.supportedVersions || this.supportedVersions;
             }
           } catch (error) {
@@ -221,7 +228,11 @@ export class ApiVersioningService {
         if (hasJsonContent && responseText) {
           try {
             // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
-            const parsed = parseJsonSafely(responseText, endpoint, response.status);
+            const parsed = parseJsonSafely(
+              responseText,
+              endpoint,
+              response.status,
+            );
             if (parsed) {
               // Handle new error format: { ok: false, error: "...", details: {...} }
               if (parsed.ok === false) {
@@ -238,9 +249,10 @@ export class ApiVersioningService {
             }
           } catch (parseError) {
             // If we can't parse error, use status text or default message
-            const errorMsg = parseError instanceof Error 
-              ? parseError.message 
-              : 'Failed to parse error response';
+            const errorMsg =
+              parseError instanceof Error
+                ? parseError.message
+                : 'Failed to parse error response';
             console.warn('Failed to parse error response:', errorMsg);
             if (isTimeout && errorMessage.includes('Unknown error')) {
               errorMessage =
@@ -262,14 +274,19 @@ export class ApiVersioningService {
       if (hasJsonContent) {
         try {
           // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
-          const parsed = parseJsonSafely(responseText, endpoint, response.status);
+          const parsed = parseJsonSafely(
+            responseText,
+            endpoint,
+            response.status,
+          );
           // If parsing returns null (empty response), use empty object
           data = parsed ?? {};
         } catch (parseError) {
           // If parsing fails, return error response
-          const errorMessage = parseError instanceof Error 
-            ? parseError.message 
-            : 'Server returned invalid JSON';
+          const errorMessage =
+            parseError instanceof Error
+              ? parseError.message
+              : 'Server returned invalid JSON';
           console.warn('Failed to parse response as JSON:', errorMessage);
           return {
             error: 'Invalid response format',
@@ -286,7 +303,7 @@ export class ApiVersioningService {
           data: responseText,
         };
       }
-      
+
       // Handle new response format: check for ok, skipped fields
       // Treat skipped: true as success (race condition safe)
       if (data.skipped === true) {
@@ -295,7 +312,7 @@ export class ApiVersioningService {
           skipped: true,
         };
       }
-      
+
       // Check for error in new format (ok: false)
       if (data.ok === false) {
         return {
@@ -335,7 +352,10 @@ export class ApiVersioningService {
         if (data.ok === false) {
           return {
             error: data.error || 'Request failed',
-            message: (data.details as { message?: string })?.message || data.error || 'Request failed',
+            message:
+              (data.details as { message?: string })?.message ||
+              data.error ||
+              'Request failed',
             code: data.error,
             details: data.details,
             deprecationWarning: isDeprecated,
@@ -438,7 +458,7 @@ export class ApiVersioningService {
     // ============================================================================
     // DEFENSIVE CHECK: Throw synchronous error if data is undefined for device endpoints
     // ============================================================================
-    
+
     if (endpoint.includes('devices') || endpoint.includes('users/devices')) {
       // CRITICAL: Throw synchronous error BEFORE any async operations or fetch calls
       if (data === undefined || data === null) {
@@ -453,23 +473,30 @@ export class ApiVersioningService {
           'CRITICAL: push_token is undefined/null in registerDevice payload. Validation must occur before API call.',
         );
       }
-      
-      if (typeof data.push_token !== 'string' || data.push_token.trim().length === 0) {
+
+      if (
+        typeof data.push_token !== 'string' ||
+        data.push_token.trim().length === 0
+      ) {
         return {
           error: 'Validation error',
           message: 'push_token is required and must be a non-empty string',
           code: 'VALIDATION_ERROR',
         };
       }
-      
+
       // Validate platform exists and is valid
       if (data.platform === undefined || data.platform === null) {
         throw new Error(
           'CRITICAL: platform is undefined/null in registerDevice payload. Validation must occur before API call.',
         );
       }
-      
-      if (data.platform !== 'ios' && data.platform !== 'android' && data.platform !== 'web') {
+
+      if (
+        data.platform !== 'ios' &&
+        data.platform !== 'android' &&
+        data.platform !== 'web'
+      ) {
         return {
           error: 'Validation error',
           message: 'platform must be ios, android, or web',
@@ -481,7 +508,7 @@ export class ApiVersioningService {
       // This is a final safety check before stringification
       const safeData: Record<string, unknown> = {
         push_token: data.push_token, // Guaranteed to be string
-        platform: data.platform,     // Guaranteed to be valid enum
+        platform: data.platform, // Guaranteed to be valid enum
         ...(data.updated_at && { updated_at: data.updated_at }),
       };
 
@@ -494,7 +521,7 @@ export class ApiVersioningService {
         requireAuth,
       );
     }
-    
+
     // For non-device endpoints, use standard handling
     return this.request<T>(
       endpoint,

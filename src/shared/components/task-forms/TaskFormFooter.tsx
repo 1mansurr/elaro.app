@@ -1,8 +1,5 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-} from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

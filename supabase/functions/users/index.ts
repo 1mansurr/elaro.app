@@ -613,7 +613,8 @@ async function handleUsersRequest({
   // PASS 2: Validate query parameter (enum)
   const methodParam = new URL(url).searchParams.get('method');
   const validMethods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-  const method = requestMethod ||
+  const method =
+    requestMethod ||
     (methodParam && validMethods.includes(methodParam.toUpperCase())
       ? methodParam.toUpperCase()
       : 'GET');
@@ -745,11 +746,11 @@ async function handleUsersRequest({
     !path.match(/\/devices\/[^/]+$/)
   ) {
     // POST /devices (register device)
-    
+
     // ============================================================================
     // EXPLICIT VALIDATION: Check required fields BEFORE Zod parsing
     // ============================================================================
-    
+
     // Ensure body exists and is an object
     if (!body || typeof body !== 'object' || Array.isArray(body)) {
       // Return JSON response instead of throwing
@@ -803,14 +804,14 @@ async function handleUsersRequest({
     // ============================================================================
     // ZOD VALIDATION: Use safeParse to prevent ZodError from crashing worker
     // ============================================================================
-    
+
     const validationResult = RegisterDeviceSchema.safeParse(body);
-    
+
     if (!validationResult.success) {
       // Return JSON response instead of throwing
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      
+
       return new Response(
         JSON.stringify({
           ok: false,
@@ -853,7 +854,11 @@ async function handleUsersRequest({
       );
     }
     const deviceId = pathParts[deviceIndex + 1];
-    if (!deviceId || typeof deviceId !== 'string' || deviceId.trim().length === 0) {
+    if (
+      !deviceId ||
+      typeof deviceId !== 'string' ||
+      deviceId.trim().length === 0
+    ) {
       // Return JSON response instead of throwing
       return new Response(
         JSON.stringify({

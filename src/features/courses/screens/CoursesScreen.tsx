@@ -91,7 +91,8 @@ const CoursesScreen = () => {
 
   // Log warnings in dev if too many slow frames
   React.useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 20) {
+      // Only log if we have more than 20 slow frames (reduced frequency)
       console.warn(
         `⚠️ CoursesScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
       );
@@ -220,12 +221,23 @@ const CoursesScreen = () => {
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyStateContainer}>
-        <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-          {searchQuery.trim() ? 'No courses found' : 'You have no courses.'}
+        <Ionicons
+          name={searchQuery.trim() ? "search-outline" : "book-outline"}
+          size={64}
+          color={theme.textSecondary || '#9ca3af'}
+          style={styles.emptyStateIcon}
+        />
+        <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+          {searchQuery.trim() ? 'No courses found' : 'No courses yet'}
+        </Text>
+        <Text style={[styles.emptyStateMessage, { color: theme.textSecondary || '#9ca3af' }]}>
+          {searchQuery.trim()
+            ? 'Try adjusting your search terms or filters.'
+            : 'Create your first course to start organizing your studies. Tap "Add New Course" below to get started.'}
         </Text>
       </View>
     ),
-    [searchQuery, theme.textSecondary],
+    [searchQuery, theme.text, theme.textSecondary],
   );
 
   // Memoized header component to prevent re-renders
@@ -557,10 +569,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
+    paddingHorizontal: SPACING.xl,
+  },
+  emptyStateIcon: {
+    marginBottom: SPACING.lg,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
   },
   emptyStateText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  emptyStateMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 300,
   },
   courseItem: {
     flexDirection: 'row',

@@ -96,7 +96,9 @@ function validateOperationData(
           );
         }
         // PASS 1: Use safeParse to prevent ZodError from crashing worker
-        const assignmentValidation = AssignmentDataSchema.safeParse(operation.data);
+        const assignmentValidation = AssignmentDataSchema.safeParse(
+          operation.data,
+        );
         if (!assignmentValidation.success) {
           const zodError = assignmentValidation.error;
           const flattened = zodError.flatten();
@@ -144,7 +146,9 @@ function validateOperationData(
           );
         }
         // PASS 1: Use safeParse to prevent ZodError from crashing worker
-        const studySessionValidation = StudySessionDataSchema.safeParse(operation.data);
+        const studySessionValidation = StudySessionDataSchema.safeParse(
+          operation.data,
+        );
         if (!studySessionValidation.success) {
           const zodError = studySessionValidation.error;
           const flattened = zodError.flatten();

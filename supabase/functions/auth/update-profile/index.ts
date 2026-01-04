@@ -31,7 +31,11 @@ serve(async (req: Request) => {
       body = await req.json();
     } catch (error) {
       return errorResponse(
-        new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+        new AppError(
+          'Invalid or missing JSON body',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+        ),
         400,
         {},
         origin,
@@ -91,9 +95,10 @@ serve(async (req: Request) => {
 
     // Check if password is being updated (from body, not schema)
     // PASS 2: Validate body is object before accessing properties
-    const password = body && typeof body === 'object' && !Array.isArray(body)
-      ? (body as { password?: unknown }).password
-      : undefined;
+    const password =
+      body && typeof body === 'object' && !Array.isArray(body)
+        ? (body as { password?: unknown }).password
+        : undefined;
 
     const updatePayload: { data?: Record<string, unknown>; password?: string } =
       {};

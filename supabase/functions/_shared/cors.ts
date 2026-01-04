@@ -11,7 +11,9 @@ export const corsHeaders = {
  * @param origin - The origin header from the request (null or string)
  * @returns CORS headers object
  */
-export function getCorsHeaders(origin: string | null = null): Record<string, string> {
+export function getCorsHeaders(
+  origin: string | null = null,
+): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin || '*',
     'Access-Control-Allow-Headers':

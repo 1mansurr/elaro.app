@@ -26,7 +26,6 @@ import { cache } from '@/utils/cache';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
-  SettingsHeader,
   SettingsCategoryCard,
   SettingsItem,
   SettingsNotificationsSection,
@@ -234,8 +233,6 @@ export function SettingsScreen() {
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}>
-      <SettingsHeader onBack={() => navigation.goBack()} />
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

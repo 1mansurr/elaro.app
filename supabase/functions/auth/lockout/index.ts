@@ -267,7 +267,11 @@ async function handleRecordFailedAttempt(
     body = await req.json();
   } catch (error) {
     return errorResponse(
-      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
       400,
       {},
       origin,
@@ -278,7 +282,11 @@ async function handleRecordFailedAttempt(
   // PASS 2: Validate body is object before accessing properties
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return errorResponse(
-      new AppError('Request body must be an object', 400, ERROR_CODES.VALIDATION_ERROR),
+      new AppError(
+        'Request body must be an object',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
       400,
       {},
       origin,
@@ -401,7 +409,11 @@ async function handleRecordSuccessfulLogin(
     body = await req.json();
   } catch (error) {
     return errorResponse(
-      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
       400,
       {},
       origin,
@@ -412,7 +424,11 @@ async function handleRecordSuccessfulLogin(
   // PASS 2: Validate body is object before accessing properties
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     return errorResponse(
-      new AppError('Request body must be an object', 400, ERROR_CODES.VALIDATION_ERROR),
+      new AppError(
+        'Request body must be an object',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
       400,
       {},
       origin,
@@ -423,7 +439,9 @@ async function handleRecordSuccessfulLogin(
   const validationResult = RecordSuccessfulLoginSchema.safeParse({
     ...bodyObj,
     deviceInfo: {
-      ...(bodyObj.deviceInfo && typeof bodyObj.deviceInfo === 'object' && !Array.isArray(bodyObj.deviceInfo)
+      ...(bodyObj.deviceInfo &&
+      typeof bodyObj.deviceInfo === 'object' &&
+      !Array.isArray(bodyObj.deviceInfo)
         ? bodyObj.deviceInfo
         : {}),
       ipAddress:
@@ -525,7 +543,11 @@ async function handleResetAttempts(
     body = await req.json();
   } catch (error) {
     return errorResponse(
-      new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
       400,
       {},
       origin,

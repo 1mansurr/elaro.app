@@ -364,7 +364,7 @@ const ProfileSetupScreen = () => {
         isVisible={isModalVisible}
         onClose={() => setIsModalVisible(false)}
         title="Why We Ask for Your Info"
-        message="We're building special tools and integrations for specific universities and programs. Your username helps you connect with classmates and build your academic identity on ELARO!"
+        message="We will build tools and integrations for specific universities and programs. So we need to know which tools to show you."
       />
     </LinearGradient>
   );

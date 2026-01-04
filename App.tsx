@@ -47,7 +47,11 @@ import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 import { syncManager } from './src/services/syncManager';
 import { useAppStateSync } from './src/hooks/useAppState';
 import { navigationSyncService } from './src/services/navigationSync';
-import { AUTHENTICATED_ROUTES } from './src/navigation/utils/RouteGuards';
+import {
+  AUTHENTICATED_ROUTES,
+  NON_RESTORABLE_ROUTES,
+  isNonRestorableRoute,
+} from './src/navigation/utils/RouteGuards';
 import { validateAndLogConfig } from './src/utils/configValidator';
 import {
   setupQueryCachePersistence,
@@ -430,8 +434,21 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
 };
 
 // Component to handle navigation state saving with auth context
+// Made defensive to handle cases where AuthProvider might not be ready yet
 const NavigationStateHandler: React.FC = () => {
-  const { user, session } = useAuth();
+  // Safely access auth context
+  let user, session;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    session = auth.session;
+  } catch (error) {
+    // AuthProvider not ready yet - return null and let component re-render when ready
+    if (__DEV__) {
+      console.log('⚠️ [NavigationStateHandler] AuthProvider not ready yet');
+    }
+    return null;
+  }
 
   useEffect(() => {
     // Update current user ID in navigationSyncService
@@ -526,7 +543,7 @@ const NavigationStateValidator: React.FC<{
               resolve();
             }
           });
-          
+
           // If we timed out and already called onStateValidated, return early
           if (authTimedOut || isCancelled) return;
         }
@@ -555,6 +572,63 @@ const NavigationStateValidator: React.FC<{
             const currentRoute = getRouteName(initialNavigationState);
             const authenticatedRoutes =
               AUTHENTICATED_ROUTES as readonly string[];
+
+            // HARDENING: Check NON_RESTORABLE_ROUTES first - these should NEVER be restored
+            // This runs BEFORE getSafeInitialState to catch invalid routes early
+            if (currentRoute && isNonRestorableRoute(currentRoute)) {
+              console.log(
+                `🚫 [NavigationStateValidator] Non-restorable route "${currentRoute}" detected in saved state. Discarding to prevent restoration.`,
+              );
+              await navigationSyncService.clearState().catch(() => {
+                // Ignore errors - we're clearing state anyway
+              });
+              if (isCancelled) return;
+              if (maxTimeoutId) clearTimeout(maxTimeoutId);
+              onStateValidated(null);
+              return;
+            }
+
+            // Handle conditional routes that may be restored only under specific conditions
+            if (currentRoute === 'OnboardingFlow') {
+              // Only restore OnboardingFlow if onboarding is still incomplete
+              const isOnboardingComplete = user?.onboarding_completed ?? false;
+              if (isOnboardingComplete) {
+                console.log(
+                  '🚫 [NavigationStateValidator] OnboardingFlow detected but onboarding is complete. Discarding saved state.',
+                );
+                await navigationSyncService.clearState().catch(() => {
+                  // Ignore errors - we're clearing state anyway
+                });
+                if (isCancelled) return;
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+                return;
+              }
+              // Onboarding incomplete - will be validated further in getSafeInitialState
+            }
+
+            if (currentRoute === 'PaywallScreen') {
+              // Only restore PaywallScreen if subscription is inactive
+              const subscriptionStatus = user?.subscription_status;
+              const subscriptionTier = user?.subscription_tier;
+              const hasActiveSubscription =
+                subscriptionStatus === 'active' ||
+                (subscriptionTier && subscriptionTier !== 'free');
+              
+              if (hasActiveSubscription) {
+                console.log(
+                  '🚫 [NavigationStateValidator] PaywallScreen detected but subscription is active. Discarding saved state.',
+                );
+                await navigationSyncService.clearState().catch(() => {
+                  // Ignore errors - we're clearing state anyway
+                });
+                if (isCancelled) return;
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+                return;
+              }
+              // Subscription inactive - will be validated further in getSafeInitialState
+            }
 
             // If user is not authenticated but saved state contains authenticated route, clear it
             if (
@@ -585,11 +659,21 @@ const NavigationStateValidator: React.FC<{
               onStateValidated(null);
             }, 1500); // 1.5 second timeout for navigation sync
 
+            // Pass user info for conditional route validation (onboarding, subscription)
+            const userInfo = user
+              ? {
+                  onboarding_completed: user.onboarding_completed,
+                  subscription_status: user.subscription_status,
+                  subscription_tier: user.subscription_tier,
+                }
+              : undefined;
+
             const safeState = await Promise.race([
               navigationSyncService.getSafeInitialState(
                 isAuthenticated,
                 false, // Don't pass authLoading - we've already waited
                 user?.id,
+                userInfo,
               ),
               new Promise<NavigationState | null>(resolve => {
                 setTimeout(() => resolve(null), 1500);
@@ -642,12 +726,16 @@ const NavigationStateValidator: React.FC<{
       }
     };
 
-    console.log('📞 [NavigationStateValidator] Calling validateNavigationState');
+    console.log(
+      '📞 [NavigationStateValidator] Calling validateNavigationState',
+    );
     validateNavigationState();
 
     // Cleanup function - prevents state updates if component unmounts
     return () => {
-      console.log('🧹 [NavigationStateValidator] Cleanup - cancelling validation');
+      console.log(
+        '🧹 [NavigationStateValidator] Cleanup - cancelling validation',
+      );
       isCancelled = true;
       if (maxTimeoutId) clearTimeout(maxTimeoutId);
       if (validationTimeoutId) clearTimeout(validationTimeoutId);
@@ -1313,7 +1401,19 @@ const ThemedStatusBar = () => {
 // Main App Component
 // Move this logic into a child component
 function AuthEffects() {
-  const { user } = useAuth();
+  // Safely access auth context - don't throw if not ready
+  // Made defensive to handle cases where AuthProvider might not be ready yet
+  let user;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    // AuthProvider not ready yet - return null and let component re-render when ready
+    if (__DEV__) {
+      console.log('⚠️ [AuthEffects] AuthProvider not ready yet');
+    }
+    return null;
+  }
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -1507,6 +1607,40 @@ function App() {
             .loadState()
             .then(state => {
               if (state) {
+                // HARDENING: Sanitize state immediately after loading
+                // Check if PostOnboardingWelcome or other non-restorable routes are in the state
+                const getRouteName = (
+                  navState: NavigationState,
+                ): string | null => {
+                  if (!navState?.routes || navState.routes.length === 0)
+                    return null;
+                  const currentRoute =
+                    navState.routes[navState.index || 0];
+                  if (!currentRoute) return null;
+                  if (
+                    currentRoute.state &&
+                    'routes' in currentRoute.state
+                  ) {
+                    return getRouteName(
+                      currentRoute.state as NavigationState,
+                    );
+                  }
+                  return currentRoute.name || null;
+                };
+
+                const currentRoute = getRouteName(state);
+                if (
+                  currentRoute &&
+                  isNonRestorableRoute(currentRoute)
+                ) {
+                  console.log(
+                    `🚫 [App] Non-restorable route "${currentRoute}" detected in loaded state. Discarding.`,
+                  );
+                  // Don't set the state - let it start fresh
+                  navigationSyncService.clearState().catch(() => {});
+                  return;
+                }
+
                 setInitialNavigationState(state);
                 console.log(
                   '✅ Navigation state loaded, will validate after auth loads',
@@ -1516,6 +1650,9 @@ function App() {
             .catch(error => {
               console.warn('⚠️ Navigation state restoration failed:', error);
             }),
+
+          // Clean up legacy navigation state keys (non-blocking, idempotent)
+          navigationSyncService.cleanupLegacyKeys(),
         ]).catch(error => {
           console.warn('⚠️ Some app initialization tasks failed:', error);
         });

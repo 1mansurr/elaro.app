@@ -48,16 +48,11 @@ class StudyMaterialsService {
     if (!validationResult.success) {
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      throw new AppError(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        {
-          message: 'Request body validation failed',
-          errors: flattened.fieldErrors,
-          formErrors: flattened.formErrors,
-        },
-      );
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
     }
     const { template_name, task_type, template_data, is_public } =
       validationResult.data;
@@ -166,19 +161,13 @@ class StudyMaterialsService {
     if (!validationResult.success) {
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      throw new AppError(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        {
-          message: 'Request body validation failed',
-          errors: flattened.fieldErrors,
-          formErrors: flattened.formErrors,
-        },
-      );
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
     }
-    const { template_id, course_id, customizations } =
-      validationResult.data;
+    const { template_id, course_id, customizations } = validationResult.data;
 
     // Get template
     const { data: template, error: templateError } = await this.supabaseClient

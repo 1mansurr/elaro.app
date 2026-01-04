@@ -113,20 +113,24 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   // ============================================================================
   // VALIDATION PHASE: Validate ALL inputs BEFORE any retry logic or API calls
   // ============================================================================
-  
+
   // Guard: Do not call API if token is undefined/null/empty
   if (!token || typeof token !== 'string' || token.trim().length === 0) {
-    console.warn('⚠️ Cannot save push token to Supabase: token is invalid or missing', {
-      token: token ? 'present but invalid' : 'missing',
-      userId,
-    });
+    console.warn(
+      '⚠️ Cannot save push token to Supabase: token is invalid or missing',
+      {
+        token: token ? 'present but invalid' : 'missing',
+        userId,
+      },
+    );
     return; // EXIT: Never call API with invalid token
   }
 
   // Derive platform ONCE before retry logic
   const platformOS = Platform.OS;
-  const platform = platformOS === 'ios' ? 'ios' : platformOS === 'android' ? 'android' : null;
-  
+  const platform =
+    platformOS === 'ios' ? 'ios' : platformOS === 'android' ? 'android' : null;
+
   // Guard: Do not call API if platform is invalid
   if (!platform || (platform !== 'ios' && platform !== 'android')) {
     console.warn('⚠️ Cannot save push token: unsupported platform', {
@@ -139,29 +143,32 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   // ============================================================================
   // PAYLOAD CONSTRUCTION: Build payload ONCE with validated values
   // ============================================================================
-  
+
   // Construct payload ONCE with validated values (before retry logic)
   const deviceData = {
-    push_token: token,      // Already validated above
-    platform: platform,     // Already validated above
+    push_token: token, // Already validated above
+    platform: platform, // Already validated above
     updated_at: new Date().toISOString(),
   };
 
   // Final validation: Ensure payload is complete (defense in depth)
   // This should never fail if above guards work, but provides extra safety
   if (!deviceData.push_token || !deviceData.platform) {
-    console.error('❌ CRITICAL: Payload validation failed - this should never happen', {
-      push_token: deviceData.push_token ? 'present' : 'missing',
-      platform: deviceData.platform ? 'present' : 'missing',
-      userId,
-    });
+    console.error(
+      '❌ CRITICAL: Payload validation failed - this should never happen',
+      {
+        push_token: deviceData.push_token ? 'present' : 'missing',
+        platform: deviceData.platform ? 'present' : 'missing',
+        userId,
+      },
+    );
     return; // EXIT: Never call API with incomplete payload
   }
 
   // ============================================================================
   // RETRY LOGIC: Retry function receives payload as parameter (no closure capture)
   // ============================================================================
-  
+
   // Import retry utility
   const { retryWithBackoff } = await import('@/utils/errorRecovery');
 
@@ -169,26 +176,37 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   const saveToken = async (payload: typeof deviceData) => {
     // Payload is passed as parameter - no closure capture of outer variables
     // All values are guaranteed to exist because validation happened before this function
-    
+
     const { versionedApiClient } = await import(
       '@/services/VersionedApiClient'
     );
-    
+
     const response = await versionedApiClient.registerDevice(payload);
 
     // Handle new response format: check for ok, skipped, error fields
     if (response.data && typeof response.data === 'object') {
-      const data = response.data as { ok?: boolean; skipped?: boolean; reason?: string; error?: string; details?: unknown };
-      
+      const data = response.data as {
+        ok?: boolean;
+        skipped?: boolean;
+        reason?: string;
+        error?: string;
+        details?: unknown;
+      };
+
       // Treat skipped as success (race condition safe)
       if (data.skipped === true) {
-        console.log('✅ Push token registration skipped (token not ready):', data.reason);
+        console.log(
+          '✅ Push token registration skipped (token not ready):',
+          data.reason,
+        );
         return response; // Return as success
       }
-      
+
       // Check for error in new format
       if (data.ok === false) {
-        const error = new Error(data.error || 'Registration failed') as Error & {
+        const error = new Error(
+          data.error || 'Registration failed',
+        ) as Error & {
           code?: string;
           response?: typeof response;
         };
@@ -216,7 +234,7 @@ async function savePushTokenToSupabase(userId: string, token: string) {
   // ============================================================================
   // EXECUTE: Call retry function with validated payload
   // ============================================================================
-  
+
   try {
     // Retry with exponential backoff for timeout errors (504) and worker errors
     // Pass validated payload as parameter (not from closure)
@@ -403,7 +421,7 @@ export const notificationService = {
       const tokenData = await Notifications.getExpoPushTokenAsync();
       // Ensure we extract the string token, not the full object
       token = tokenData?.data;
-      
+
       if (!token || typeof token !== 'string') {
         console.warn('❌ Invalid push token received:', tokenData);
         return null;

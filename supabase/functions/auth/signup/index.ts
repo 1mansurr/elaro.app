@@ -31,7 +31,11 @@ serve(async (req: Request) => {
       body = await req.json();
     } catch (error) {
       return errorResponse(
-        new AppError('Invalid or missing JSON body', 400, ERROR_CODES.VALIDATION_ERROR),
+        new AppError(
+          'Invalid or missing JSON body',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+        ),
         400,
         {},
         origin,

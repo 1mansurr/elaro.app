@@ -6,64 +6,35 @@ import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { NavigationState } from '@react-navigation/native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, SPACING, BORDER_RADIUS, SHADOWS } from '@/constants/theme';
-import { shouldHideTabBar } from '@/navigation/utils/RouteGuards';
+import {
+  ROUTES_HIDING_TAB_BAR,
+  NON_RESTORABLE_ROUTES,
+} from '@/navigation/utils/RouteGuards';
 
 /**
- * Traverses the navigation hierarchy to find the root stack navigator
- * and returns the currently active route name.
- *
- * This is necessary because the tab bar is nested inside MainTabNavigator,
- * which is nested inside the root Stack Navigator. We need to check
- * the root stack to see if a fullscreen modal is active.
- *
- * Navigation hierarchy:
- * - AuthenticatedNavigator (Stack - root)
- *   - Main (screen containing MainTabNavigator)
- *     - MainTabNavigator (Tab Navigator - where CustomTabBar is)
- *   - PostOnboardingWelcome (screen - sibling to Main)
+ * Extracts the root stack active route name from navigation state.
+ * This is the single source of truth for tab bar visibility.
+ * 
+ * Traverses the navigation state tree to find the root stack navigator
+ * and returns the active route name at that level.
  */
-const getRootActiveRouteName = (
-  navigation: BottomTabBarProps['navigation'],
-): string | null => {
-  try {
-    // Traverse up the navigation hierarchy to find the root stack navigator
-    // Keep going until we reach the top (no more parents)
-    let currentNav = navigation.getParent();
-    let topmostState: NavigationState | undefined;
-
-    while (currentNav) {
-      const navState = currentNav.getState();
-      if (navState) {
-        topmostState = navState;
-        // Continue to the next parent
-        const parent = currentNav.getParent();
-        if (!parent) {
-          // We've reached the root - this is the topmost state
-          break;
-        }
-        currentNav = parent;
-      } else {
-        break;
-      }
-    }
-
-    // Extract the active route name from the topmost (root) navigator
-    if (topmostState?.routes && topmostState.routes.length > 0) {
-      const currentRoute = topmostState.routes[topmostState.index || 0];
-      if (currentRoute?.name) {
-        // Return the route name (e.g., 'PostOnboardingWelcome', 'Main', etc.)
-        // We want the route name itself, not nested routes
-        return currentRoute.name;
-      }
-    }
-
-    return null;
-  } catch (error) {
-    // Silently fail - if we can't determine the route, show the tab bar
-    // This ensures the app remains functional even if navigation state is unexpected
-    console.warn('CustomTabBar: Error getting root active route:', error);
+const getRootActiveRouteName = (rootState: NavigationState | undefined): string | null => {
+  if (!rootState || !rootState.routes || rootState.routes.length === 0) {
     return null;
   }
+
+  // Get the active route at the root level
+  const activeIndex = rootState.index ?? 0;
+  const activeRoute = rootState.routes[activeIndex];
+  
+  if (!activeRoute || !activeRoute.name) {
+    return null;
+  }
+
+  // Return the root route name directly - this is the source of truth
+  // We don't recurse into nested routes because we want the root stack route name
+  // (e.g., 'PostOnboardingWelcome', 'Main', not 'Home' or 'Calendar')
+  return activeRoute.name;
 };
 
 export const CustomTabBar: React.FC<BottomTabBarProps> = ({
@@ -74,11 +45,51 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
-  // Get the active route name from the root stack navigator
-  const rootActiveRouteName = getRootActiveRouteName(navigation);
+  // HARDENING: Get root active route name immediately and check multiple ways
+  let rootActiveRouteName: string | null = null;
+  try {
+    // Check if getRootState method exists before calling it
+    if (typeof navigation.getRootState === 'function') {
+      const rootState = navigation.getRootState();
+      rootActiveRouteName = getRootActiveRouteName(rootState);
+    } else {
+      // getRootState not available - this can happen during initial render
+      // Fall back to using tab navigator state
+      if (__DEV__) {
+        console.log(
+          'CustomTabBar: getRootState not available, using tab navigator state',
+        );
+      }
+    }
+  } catch (error) {
+    // If we can't get root state, default to showing tab bar (safe fallback)
+    if (__DEV__) {
+      console.warn('CustomTabBar: Error getting root state:', error);
+    }
+  }
 
-  // Hide tab bar if the active route should hide it (onboarding/fullscreen modals)
-  if (rootActiveRouteName && shouldHideTabBar(rootActiveRouteName)) {
+  // HARDENING: Also check the current route from the tab navigator state
+  // This provides a fallback if root state detection fails
+  const currentTabRoute = state.routes[state.index]?.name;
+
+  // Check if route is in NON_RESTORABLE_ROUTES or ROUTES_HIDING_TAB_BAR
+  const isNonRestorable =
+    rootActiveRouteName &&
+    (NON_RESTORABLE_ROUTES as readonly string[]).includes(rootActiveRouteName);
+
+  const shouldHideForRootRoute =
+    rootActiveRouteName &&
+    (ROUTES_HIDING_TAB_BAR.includes(rootActiveRouteName as any) ||
+      isNonRestorable);
+
+  // HARDENING: Also check if we're in a modal/flow that should hide tab bar
+  // This catches cases where the route name might not be detected correctly
+  if (shouldHideForRootRoute) {
+    if (__DEV__) {
+      console.log(
+        `🚫 CustomTabBar: Hiding tab bar for route "${rootActiveRouteName}"`,
+      );
+    }
     return null;
   }
 

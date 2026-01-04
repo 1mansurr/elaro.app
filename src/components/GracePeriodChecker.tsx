@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { Alert, Platform, Linking } from 'react-native';
-import { useAuth } from '@/contexts/AuthContext';
+import { AuthContext } from '@/contexts/AuthContext';
 import { revenueCatService } from '@/services/revenueCat';
 import { formatDate } from '@/i18n';
 
@@ -11,10 +11,21 @@ import { formatDate } from '@/i18n';
  * This component must be placed inside the AuthProvider to access the user context.
  *
  * This component doesn't render anything - it only handles side effects.
+ * Made defensive to handle cases where AuthProvider might not be ready yet.
  */
 export const GracePeriodChecker = () => {
-  const { user } = useAuth();
+  // Safely access auth context - don't throw if not ready
+  const authContext = useContext(AuthContext);
+  const user = authContext?.user;
   const [hasShownAlert, setHasShownAlert] = useState(false);
+
+  // If auth context is not ready, return null and let component re-render when ready
+  if (!authContext) {
+    if (__DEV__) {
+      console.log('⚠️ [GracePeriodChecker] AuthProvider not ready yet');
+    }
+    return null;
+  }
 
   useEffect(() => {
     const checkGracePeriod = async () => {

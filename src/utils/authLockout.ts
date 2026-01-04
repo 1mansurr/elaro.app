@@ -23,7 +23,27 @@ export async function checkAccountLockout(
     const response = await versionedApiClient.checkAccountLockout(email);
 
     if (response.error) {
-      console.error('Error checking account lockout:', response.error);
+      // Check if it's a "function not found" error
+      const isFunctionError =
+        response.code === 'HTTP_404' ||
+        response.code === 'NOT_FOUND' ||
+        response.message?.includes('not found') ||
+        response.message?.includes('Requested function was not found') ||
+        response.error?.includes('not found') ||
+        response.error?.includes('Requested function was not found');
+
+      if (isFunctionError) {
+        if (__DEV__) {
+          console.warn(
+            '⚠️ Account lockout edge function not available, assuming account is not locked',
+          );
+        }
+      } else {
+        // Only log non-function errors in dev mode
+        if (__DEV__) {
+          console.error('Error checking account lockout:', response.error);
+        }
+      }
       // On error, assume account is not locked to allow login to proceed
       return { isLocked: false };
     }
@@ -49,7 +69,10 @@ export async function checkAccountLockout(
       attemptsRemaining: data.attemptsRemaining,
     };
   } catch (error) {
-    console.error('Error in checkAccountLockout:', error);
+    // Only log in dev mode
+    if (__DEV__) {
+      console.error('Error in checkAccountLockout:', error);
+    }
     // On error, assume account is not locked to allow login to proceed
     return { isLocked: false };
   }
@@ -75,7 +98,27 @@ export async function recordFailedAttempt(
     });
 
     if (response.error) {
-      console.error('Error recording failed attempt:', response.error);
+      // Check if it's a "function not found" error
+      const isFunctionError =
+        response.code === 'HTTP_404' ||
+        response.code === 'NOT_FOUND' ||
+        response.message?.includes('not found') ||
+        response.message?.includes('Requested function was not found') ||
+        response.error?.includes('not found') ||
+        response.error?.includes('Requested function was not found');
+
+      if (isFunctionError) {
+        if (__DEV__) {
+          console.warn(
+            '⚠️ Record failed attempt edge function not available, skipping',
+          );
+        }
+      } else {
+        // Only log non-function errors in dev mode
+        if (__DEV__) {
+          console.error('Error recording failed attempt:', response.error);
+        }
+      }
       return;
     }
 
@@ -90,7 +133,10 @@ export async function recordFailedAttempt(
       }
     }
   } catch (error) {
-    console.error('Error recording failed attempt:', error);
+    // Only log in dev mode
+    if (__DEV__) {
+      console.error('Error recording failed attempt:', error);
+    }
   }
 }
 
@@ -106,15 +152,40 @@ export async function resetFailedAttempts(
       await versionedApiClient.resetFailedAttempts(userIdOrEmail);
 
     if (response.error) {
-      console.error('Error resetting failed attempts:', response.error);
+      // Check if it's a "function not found" error
+      const isFunctionError =
+        response.code === 'HTTP_404' ||
+        response.code === 'NOT_FOUND' ||
+        response.message?.includes('not found') ||
+        response.message?.includes('Requested function was not found') ||
+        response.error?.includes('not found') ||
+        response.error?.includes('Requested function was not found');
+
+      if (isFunctionError) {
+        if (__DEV__) {
+          console.warn(
+            '⚠️ Reset failed attempts edge function not available, skipping',
+          );
+        }
+      } else {
+        // Only log non-function errors in dev mode
+        if (__DEV__) {
+          console.error('Error resetting failed attempts:', response.error);
+        }
+      }
       return;
     }
 
     if (response.data?.reset) {
-      console.log(`Reset failed attempts for ${userIdOrEmail}`);
+      if (__DEV__) {
+        console.log(`Reset failed attempts for ${userIdOrEmail}`);
+      }
     }
   } catch (error) {
-    console.error('Error resetting failed attempts:', error);
+    // Only log in dev mode
+    if (__DEV__) {
+      console.error('Error resetting failed attempts:', error);
+    }
   }
 }
 
@@ -142,16 +213,41 @@ export async function recordSuccessfulLogin(
     });
 
     if (response.error) {
-      console.error('Error recording successful login:', response.error);
+      // Check if it's a "function not found" error
+      const isFunctionError =
+        response.code === 'HTTP_404' ||
+        response.code === 'NOT_FOUND' ||
+        response.message?.includes('not found') ||
+        response.message?.includes('Requested function was not found') ||
+        response.error?.includes('not found') ||
+        response.error?.includes('Requested function was not found');
+
+      if (isFunctionError) {
+        if (__DEV__) {
+          console.warn(
+            '⚠️ Record successful login edge function not available, skipping',
+          );
+        }
+      } else {
+        // Only log non-function errors in dev mode
+        if (__DEV__) {
+          console.error('Error recording successful login:', response.error);
+        }
+      }
       return;
     }
 
     if (response.data?.recorded) {
       // Reset failed attempts is handled by the Edge Function
-      console.log(`Successful login recorded for user ${userId}`);
+      if (__DEV__) {
+        console.log(`Successful login recorded for user ${userId}`);
+      }
     }
   } catch (error) {
-    console.error('Error recording successful login:', error);
+    // Only log in dev mode
+    if (__DEV__) {
+      console.error('Error recording successful login:', error);
+    }
   }
 }
 

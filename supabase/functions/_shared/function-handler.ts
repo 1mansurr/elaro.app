@@ -595,7 +595,7 @@ export function createAuthenticatedHandler(
               'Content-Type': 'application/json',
             });
             addTraceHeaders(responseHeaders, traceContext);
-            
+
             return new Response(
               JSON.stringify({
                 ok: false,

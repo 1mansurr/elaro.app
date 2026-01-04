@@ -32,7 +32,26 @@ export class NotificationPreferenceService
       const response = await versionedApiClient.getNotificationPreferences();
 
       if (response.error) {
-        console.error('Error getting user preferences:', response.error);
+        // Check if it's a "function not found" or "request failed" error
+        const isFunctionNotFound =
+          response.code === 'HTTP_404' ||
+          response.message?.includes('not found') ||
+          response.message?.includes('Requested function was not found') ||
+          response.message?.includes('Request failed');
+
+        if (isFunctionNotFound) {
+          if (__DEV__) {
+            console.warn(
+              '⚠️ Notification preferences edge function not available, using defaults',
+            );
+          }
+          return this.getDefaultPreferences();
+        }
+
+        // For other errors, only log in dev mode
+        if (__DEV__) {
+          console.error('Error getting user preferences:', response.error);
+        }
         return this.getDefaultPreferences();
       }
 
@@ -44,7 +63,10 @@ export class NotificationPreferenceService
       // Convert database format to our interface
       return this.convertFromDatabase(response.data);
     } catch (error) {
-      console.error('Error getting user preferences:', error);
+      // Always return defaults on error - app should continue working
+      if (__DEV__) {
+        console.error('Error getting user preferences:', error);
+      }
       return this.getDefaultPreferences();
     }
   }

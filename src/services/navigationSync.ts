@@ -11,14 +11,24 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationState, PartialState } from '@react-navigation/native';
 import { RootStackParamList } from '@/types/navigation';
-import { AUTHENTICATED_ROUTES } from '@/navigation/utils/RouteGuards';
+import {
+  AUTHENTICATED_ROUTES,
+  NON_RESTORABLE_ROUTES,
+  isNonRestorableRoute,
+} from '@/navigation/utils/RouteGuards';
 
-// Storage keys
-const NAVIGATION_STATE_KEY = '@elaro_navigation_state_v1';
-const NAVIGATION_VERSION_KEY = '@elaro_navigation_version';
+// Navigation state version (increment on breaking changes)
+// Version 2: Introduced versioned storage keys to automatically discard legacy state
+const NAVIGATION_STATE_VERSION = 2;
 
-// Current navigation version (increment on breaking changes)
-const NAVIGATION_VERSION = 'v1';
+// Storage key includes version number - ensures legacy state is automatically ignored
+const NAVIGATION_STATE_KEY = `@elaro_navigation_state_v${NAVIGATION_STATE_VERSION}`;
+
+// Legacy keys to clean up (previous versions)
+const LEGACY_NAVIGATION_KEYS = [
+  '@elaro_navigation_state_v1',
+  '@elaro_navigation_version',
+];
 
 // Valid route names (from RootStackParamList)
 const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
@@ -118,16 +128,16 @@ class NavigationSyncService {
 
       const snapshot: NavigationSnapshot = {
         state,
-        version: NAVIGATION_VERSION,
+        version: `v${NAVIGATION_STATE_VERSION}`,
         savedAt: Date.now(),
         userId: userIdToSave,
       };
 
+      // Save state to versioned key only
       await AsyncStorage.setItem(
         NAVIGATION_STATE_KEY,
         JSON.stringify(snapshot),
       );
-      await AsyncStorage.setItem(NAVIGATION_VERSION_KEY, NAVIGATION_VERSION);
 
       console.log('💾 NavigationSync: State saved', {
         routeCount: state.routes?.length || 0,
@@ -145,23 +155,15 @@ class NavigationSyncService {
 
   /**
    * Load navigation state from AsyncStorage
+   * Only loads from the current versioned key - legacy state is automatically ignored
    */
   async loadState(userId?: string): Promise<NavigationState | null> {
     try {
+      // Load only from current versioned key
       const savedStateString = await AsyncStorage.getItem(NAVIGATION_STATE_KEY);
-      const savedVersion = await AsyncStorage.getItem(NAVIGATION_VERSION_KEY);
 
       if (!savedStateString) {
         console.log('ℹ️ NavigationSync: No saved state found');
-        return null;
-      }
-
-      // Check version compatibility
-      if (savedVersion !== NAVIGATION_VERSION) {
-        console.log(
-          `⚠️ NavigationSync: Version mismatch (saved: ${savedVersion}, current: ${NAVIGATION_VERSION}). Clearing old state.`,
-        );
-        await this.clearState();
         return null;
       }
 
@@ -342,7 +344,6 @@ class NavigationSyncService {
   async clearState(): Promise<void> {
     try {
       await AsyncStorage.removeItem(NAVIGATION_STATE_KEY);
-      await AsyncStorage.removeItem(NAVIGATION_VERSION_KEY);
       this.currentState = null;
       this.currentUserId = undefined;
       this.notifyListeners(null);
@@ -353,13 +354,47 @@ class NavigationSyncService {
   }
 
   /**
+   * Clean up legacy navigation state keys
+   * Safe, idempotent, and non-blocking - can be called multiple times
+   */
+  async cleanupLegacyKeys(): Promise<void> {
+    try {
+      await Promise.all(
+        LEGACY_NAVIGATION_KEYS.map(key =>
+          AsyncStorage.removeItem(key).catch(() => {
+            // Ignore errors - key may not exist
+          }),
+        ),
+      );
+      if (__DEV__) {
+        console.log('🧹 NavigationSync: Legacy keys cleaned up');
+      }
+    } catch (error) {
+      // Non-blocking - ignore errors
+      if (__DEV__) {
+        console.warn('⚠️ NavigationSync: Error cleaning legacy keys:', error);
+      }
+    }
+  }
+
+  /**
    * Get safe initial state (auth-aware)
    * Returns null if user should be redirected based on auth state
+   * 
+   * @param isAuthenticated - Whether user is authenticated
+   * @param isLoading - Whether auth is still loading
+   * @param userId - Optional user ID for state validation
+   * @param userInfo - Optional user info for conditional route validation (onboarding, subscription)
    */
   async getSafeInitialState(
     isAuthenticated: boolean,
     isLoading: boolean,
     userId?: string,
+    userInfo?: {
+      onboarding_completed?: boolean;
+      subscription_status?: 'active' | 'past_due' | 'canceled' | null;
+      subscription_tier?: 'free' | 'oddity' | null;
+    },
   ): Promise<NavigationState | null> {
     // Don't restore state while auth is loading
     if (isLoading) {
@@ -393,16 +428,67 @@ class NavigationSyncService {
       return null;
     }
 
-    // Don't restore modal flows - reset to Main screen instead
-    // Modal flows are temporary screens that shouldn't persist across app restarts
-    if (
-      currentRoute &&
-      MODAL_FLOW_ROUTES.has(currentRoute as keyof RootStackParamList)
-    ) {
+    if (!currentRoute) {
+      // No route found in state - return null to start fresh
+      return null;
+    }
+
+    // HARDENING: Check NON_RESTORABLE_ROUTES first
+    // These routes should NEVER be restored on cold start
+    if (isNonRestorableRoute(currentRoute)) {
+      console.log(
+        `🚫 NavigationSync: Non-restorable route "${currentRoute}" detected. Discarding saved state.`,
+      );
+      await this.clearState();
+      return null;
+    }
+
+    // Handle conditional routes that may be restored only under specific conditions
+    if (currentRoute === 'OnboardingFlow') {
+      // Only restore OnboardingFlow if onboarding is still incomplete
+      const isOnboardingComplete = userInfo?.onboarding_completed ?? false;
+      if (isOnboardingComplete) {
+        console.log(
+          '🚫 NavigationSync: OnboardingFlow detected but onboarding is complete. Discarding saved state.',
+        );
+        await this.clearState();
+        return null;
+      }
+      // Onboarding incomplete - allow restoration
+      console.log(
+        '✅ NavigationSync: OnboardingFlow detected and onboarding incomplete. Allowing restoration.',
+      );
+      return savedState;
+    }
+
+    if (currentRoute === 'PaywallScreen') {
+      // Only restore PaywallScreen if subscription is inactive
+      const subscriptionStatus = userInfo?.subscription_status;
+      const subscriptionTier = userInfo?.subscription_tier;
+      const hasActiveSubscription =
+        subscriptionStatus === 'active' ||
+        (subscriptionTier && subscriptionTier !== 'free');
+      
+      if (hasActiveSubscription) {
+        console.log(
+          '🚫 NavigationSync: PaywallScreen detected but subscription is active. Discarding saved state.',
+        );
+        await this.clearState();
+        return null;
+      }
+      // Subscription inactive - allow restoration
+      console.log(
+        '✅ NavigationSync: PaywallScreen detected and subscription inactive. Allowing restoration.',
+      );
+      return savedState;
+    }
+
+    // Legacy check: Don't restore modal flows (now covered by NON_RESTORABLE_ROUTES, but kept for safety)
+    if (MODAL_FLOW_ROUTES.has(currentRoute as keyof RootStackParamList)) {
       console.log(
         `🚫 NavigationSync: Modal flow "${currentRoute}" detected. Resetting to Main screen.`,
       );
-      // Return null to let the app start fresh with default navigation
+      await this.clearState();
       return null;
     }
 
@@ -452,8 +538,8 @@ class NavigationSyncService {
     currentRoute: string | null;
   }> {
     try {
+      // Load only from current versioned key
       const savedStateString = await AsyncStorage.getItem(NAVIGATION_STATE_KEY);
-      const savedVersion = await AsyncStorage.getItem(NAVIGATION_VERSION_KEY);
 
       if (!savedStateString) {
         return {
@@ -487,7 +573,7 @@ class NavigationSyncService {
 
       return {
         hasState: true,
-        version: savedVersion || null,
+        version: snapshot.version || null,
         savedAt: snapshot.savedAt,
         routeCount,
         currentRoute,

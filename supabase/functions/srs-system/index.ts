@@ -67,16 +67,11 @@ class SRSService {
       if (!validationResult.success) {
         const zodError = validationResult.error;
         const flattened = zodError.flatten();
-        throw new AppError(
-          'Validation failed',
-          400,
-          'VALIDATION_ERROR',
-          {
-            message: 'Request body validation failed',
-            errors: flattened.fieldErrors,
-            formErrors: flattened.formErrors,
-          },
-        );
+        throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        });
       }
       return validationResult.data;
     })();
@@ -247,16 +242,11 @@ class SRSService {
     if (!validationResult.success) {
       const zodError = validationResult.error;
       const flattened = zodError.flatten();
-      throw new AppError(
-        'Validation failed',
-        400,
-        'VALIDATION_ERROR',
-        {
-          message: 'Request body validation failed',
-          errors: flattened.fieldErrors,
-          formErrors: flattened.formErrors,
-        },
-      );
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
     }
     const {
       session_id,

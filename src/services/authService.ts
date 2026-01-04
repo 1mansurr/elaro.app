@@ -45,262 +45,413 @@ export const authService = {
     firstName,
     lastName,
   }: SignUpCredentials) => {
-    const response = await versionedApiClient.signUp({
-      email,
-      password,
-      firstName,
-      lastName,
-    });
+    try {
+      const response = await versionedApiClient.signUp({
+        email,
+        password,
+        firstName,
+        lastName,
+      });
 
-    if (response.error) {
-      throw new AppError(
-        response.message || response.error || 'Failed to sign up',
-        response.code === 'VALIDATION_ERROR' ? 400 : 500,
-        response.code || 'AUTH_ERROR',
-      );
-    }
+      // Check if it's a "function not found" error - fallback to direct Supabase
+      if (response.error) {
+        const isFunctionNotFound =
+          response.code === 'HTTP_404' ||
+          response.code === 'NOT_FOUND' ||
+          response.message?.includes('not found') ||
+          response.message?.includes('Requested function was not found') ||
+          response.error?.includes('not found') ||
+          response.error?.includes('Requested function was not found');
 
-    // Store session in Supabase client if session is returned
-    if (response.data?.session) {
-      // Validate session structure
-      if (
-        !response.data.session.access_token ||
-        !response.data.session.refresh_token
-      ) {
-        console.error('❌ [authService] Invalid session structure in signup:', {
-          hasAccessToken: !!response.data.session.access_token,
-          hasRefreshToken: !!response.data.session.refresh_token,
-          sessionKeys: Object.keys(response.data.session),
-        });
-        throw new AppError(
-          'Invalid session structure received from server',
-          500,
-          'INVALID_SESSION_STRUCTURE',
-        );
+        if (isFunctionNotFound) {
+          if (__DEV__) {
+            console.warn(
+              '⚠️ [authService] Sign-up edge function not available, using direct Supabase sign-up',
+            );
+          }
+          // Fall through to direct Supabase auth below
+        } else {
+          // For other errors, throw as before
+          throw new AppError(
+            response.message || response.error || 'Failed to sign up',
+            response.code === 'VALIDATION_ERROR' ? 400 : 500,
+            response.code || 'AUTH_ERROR',
+          );
+        }
       }
 
-      try {
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.setSession({
-            access_token: response.data.session.access_token,
-            refresh_token: response.data.session.refresh_token,
+      // If we have a valid response with session, use it
+      if (response.data?.session) {
+        // Validate session structure
+        if (
+          !response.data.session.access_token ||
+          !response.data.session.refresh_token
+        ) {
+          console.error('❌ [authService] Invalid session structure in signup:', {
+            hasAccessToken: !!response.data.session.access_token,
+            hasRefreshToken: !!response.data.session.refresh_token,
+            sessionKeys: Object.keys(response.data.session),
           });
-
-        if (sessionError) {
-          console.error(
-            '❌ [authService] Failed to set session in signup:',
-            sessionError,
-          );
           throw new AppError(
-            sessionError.message || 'Failed to set session',
+            'Invalid session structure received from server',
             500,
-            'SESSION_SET_ERROR',
+            'INVALID_SESSION_STRUCTURE',
           );
         }
 
+        try {
+          const { data: sessionData, error: sessionError } =
+            await supabase.auth.setSession({
+              access_token: response.data.session.access_token,
+              refresh_token: response.data.session.refresh_token,
+            });
+
+          if (sessionError) {
+            console.error(
+              '❌ [authService] Failed to set session in signup:',
+              sessionError,
+            );
+            throw new AppError(
+              sessionError.message || 'Failed to set session',
+              500,
+              'SESSION_SET_ERROR',
+            );
+          }
+
+          if (__DEV__) {
+            console.log(
+              '✅ [authService] Session stored in Supabase client (signup)',
+            );
+          }
+
+          return {
+            user: response.data?.user || sessionData?.user || null,
+            session: response.data?.session || sessionData?.session || null,
+          };
+        } catch (error) {
+          console.error(
+            '❌ [authService] Error setting session in signup:',
+            error,
+          );
+          throw error;
+        }
+      }
+    } catch (error) {
+      // If it's an AppError that we already handled, re-throw it
+      if (error instanceof AppError && error.code !== 'AUTH_ERROR') {
+        throw error;
+      }
+
+      // For function not found errors or other errors, try direct Supabase fallback
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isFunctionError =
+        errorMessage.includes('not found') ||
+        errorMessage.includes('Requested function was not found') ||
+        errorMessage.includes('Function failed to start');
+
+      if (isFunctionError || error instanceof AppError) {
         if (__DEV__) {
-          console.log(
-            '✅ [authService] Session stored in Supabase client (signup)',
+          console.warn(
+            '⚠️ [authService] Sign-up edge function error, using direct Supabase sign-up fallback',
           );
         }
-      } catch (error) {
-        console.error(
-          '❌ [authService] Error setting session in signup:',
-          error,
-        );
+      } else {
+        // Re-throw non-function errors
         throw error;
       }
     }
 
-    return {
-      user: response.data?.user || null,
-      session: response.data?.session || null,
-    };
+    // FALLBACK: Use direct Supabase auth if edge function is not available
+    try {
+      const { data: directSignUpData, error: directSignUpError } =
+        await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              first_name: firstName,
+              last_name: lastName,
+            },
+          },
+        });
+
+      if (directSignUpError) {
+        console.error(
+          '❌ [authService] Fallback Supabase sign-up failed:',
+          directSignUpError,
+        );
+        throw new AppError(
+          directSignUpError.message || 'Failed to sign up',
+          500,
+          'AUTH_ERROR',
+        );
+      }
+
+      if (__DEV__) {
+        console.log(
+          '✅ [authService] Fallback: Sign-up successful via direct Supabase',
+        );
+      }
+
+      return {
+        user: directSignUpData?.user || null,
+        session: directSignUpData?.session || null,
+      };
+    } catch (fallbackError) {
+      // If fallback also fails, throw the error
+      throw fallbackError;
+    }
   },
 
   // Method to log in a user
   login: async ({ email, password }: LoginCredentials) => {
-    const response = await versionedApiClient.signIn({
-      email,
-      password,
-    });
-
-    // Debug: Log the raw response structure
-    if (__DEV__) {
-      console.log('🔍 [authService] Raw API response:', {
-        hasError: !!response.error,
-        hasData: !!response.data,
-        dataKeys: response.data ? Object.keys(response.data) : [],
-        dataType: typeof response.data,
-        hasUser: !!response.data?.user,
-        hasSession: !!response.data?.session,
-        fullResponsePreview: JSON.stringify(response).substring(0, 300),
+    try {
+      const response = await versionedApiClient.signIn({
+        email,
+        password,
       });
-    }
 
-    if (response.error) {
-      throw new AppError(
-        response.message || response.error || 'Invalid email or password',
-        response.code === 'VALIDATION_ERROR' ? 400 : 401,
-        response.code || 'AUTH_ERROR',
-      );
-    }
-
-    // Store session in Supabase client
-    if (response.data?.session) {
-      // Validate session structure
-      if (
-        !response.data.session.access_token ||
-        !response.data.session.refresh_token
-      ) {
-        console.error('❌ [authService] Invalid session structure:', {
-          hasAccessToken: !!response.data.session.access_token,
-          hasRefreshToken: !!response.data.session.refresh_token,
-          sessionKeys: Object.keys(response.data.session),
+      // Debug: Log the raw response structure
+      if (__DEV__) {
+        console.log('🔍 [authService] Raw API response:', {
+          hasError: !!response.error,
+          hasData: !!response.data,
+          dataKeys: response.data ? Object.keys(response.data) : [],
+          dataType: typeof response.data,
+          hasUser: !!response.data?.user,
+          hasSession: !!response.data?.session,
+          fullResponsePreview: JSON.stringify(response).substring(0, 300),
         });
-        throw new AppError(
-          'Invalid session structure received from server',
-          500,
-          'INVALID_SESSION_STRUCTURE',
-        );
       }
 
-      try {
-        const { data: sessionData, error: sessionError } =
-          await supabase.auth.setSession({
-            access_token: response.data.session.access_token,
-            refresh_token: response.data.session.refresh_token,
-          });
+      // Check if it's a "function not found" error - fallback to direct Supabase
+      if (response.error) {
+        const isFunctionNotFound =
+          response.code === 'HTTP_404' ||
+          response.code === 'NOT_FOUND' ||
+          response.message?.includes('not found') ||
+          response.message?.includes('Requested function was not found') ||
+          response.error?.includes('not found') ||
+          response.error?.includes('Requested function was not found');
 
-        if (sessionError) {
-          console.error(
-            '❌ [authService] Failed to set session:',
-            sessionError,
-          );
+        if (isFunctionNotFound) {
+          if (__DEV__) {
+            console.warn(
+              '⚠️ [authService] Sign-in edge function not available, using direct Supabase sign-in',
+            );
+          }
+          // Fall through to direct Supabase auth below
+        } else {
+          // For other errors, throw as before
           throw new AppError(
-            sessionError.message || 'Failed to set session',
+            response.message || response.error || 'Invalid email or password',
+            response.code === 'VALIDATION_ERROR' ? 400 : 401,
+            response.code || 'AUTH_ERROR',
+          );
+        }
+      }
+
+      // If we have a valid response with session, use it
+      if (response.data?.session) {
+        // Validate session structure
+        if (
+          !response.data.session.access_token ||
+          !response.data.session.refresh_token
+        ) {
+          console.error('❌ [authService] Invalid session structure:', {
+            hasAccessToken: !!response.data.session.access_token,
+            hasRefreshToken: !!response.data.session.refresh_token,
+            sessionKeys: Object.keys(response.data.session),
+          });
+          throw new AppError(
+            'Invalid session structure received from server',
             500,
-            'SESSION_SET_ERROR',
+            'INVALID_SESSION_STRUCTURE',
           );
         }
 
-        if (__DEV__) {
-          console.log('✅ [authService] Session stored in Supabase client');
+        try {
+          const { data: sessionData, error: sessionError } =
+            await supabase.auth.setSession({
+              access_token: response.data.session.access_token,
+              refresh_token: response.data.session.refresh_token,
+            });
+
+          if (sessionError) {
+            console.error(
+              '❌ [authService] Failed to set session:',
+              sessionError,
+            );
+            throw new AppError(
+              sessionError.message || 'Failed to set session',
+              500,
+              'SESSION_SET_ERROR',
+            );
+          }
+
+          if (__DEV__) {
+            console.log('✅ [authService] Session stored in Supabase client');
+          }
+
+          return {
+            user: response.data?.user || sessionData?.user || null,
+            session: response.data?.session || sessionData?.session || null,
+          };
+        } catch (error) {
+          console.error('❌ [authService] Error setting session:', error);
+          throw error;
         }
-      } catch (error) {
-        console.error('❌ [authService] Error setting session:', error);
-        // Re-throw to let the caller handle it
+      }
+    } catch (error) {
+      // If it's an AppError that we already handled, re-throw it
+      if (error instanceof AppError && error.code !== 'AUTH_ERROR') {
         throw error;
       }
-    } else {
-      // FALLBACK: API returned no session, try direct Supabase auth
-      console.warn(
-        '⚠️ [authService] No session in API response, attempting fallback to direct Supabase auth',
-      );
 
-      try {
-        // Fallback: Use Supabase directly
-        const { data: directAuthData, error: directAuthError } =
-          await supabase.auth.signInWithPassword({
-            email,
-            password,
-          });
+      // For function not found errors or other errors, try direct Supabase fallback
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      const isFunctionError =
+        errorMessage.includes('not found') ||
+        errorMessage.includes('Requested function was not found') ||
+        errorMessage.includes('Function failed to start');
 
-        if (directAuthError) {
-          console.error(
-            '❌ [authService] Fallback Supabase auth failed:',
-            directAuthError,
-          );
-          // Check if email confirmation is needed
-          if (
-            directAuthError.message?.includes('email') ||
-            directAuthError.message?.includes('confirm')
-          ) {
-            throw new AppError(
-              'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
-              403,
-              'EMAIL_NOT_CONFIRMED',
-            );
-          }
-          throw new AppError(
-            directAuthError.message || 'Authentication failed',
-            401,
-            'AUTH_ERROR',
-          );
-        }
-
-        if (!directAuthData.session) {
-          console.error(
-            '❌ [authService] Fallback auth succeeded but no session returned',
-            {
-              hasUser: !!directAuthData.user,
-              userId: directAuthData.user?.id,
-              emailConfirmed: !!directAuthData.user?.email_confirmed_at,
-            },
-          );
-
-          // Check if email confirmation is required
-          if (directAuthData.user && !directAuthData.user.email_confirmed_at) {
-            throw new AppError(
-              'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
-              403,
-              'EMAIL_NOT_CONFIRMED',
-            );
-          }
-
-          throw new AppError(
-            'Login succeeded but no session was created. Please try again.',
-            500,
-            'NO_SESSION_ERROR',
-          );
-        }
-
-        console.log(
-          '✅ [authService] Fallback: Session created via direct Supabase auth',
-        );
-
-        // Return the session from direct auth
-        return {
-          user: directAuthData.user,
-          session: directAuthData.session,
-        };
-      } catch (fallbackError) {
-        // If fallback also fails, check if we have user from API response
-        if (response.data?.user) {
+      if (isFunctionError || error instanceof AppError) {
+        if (__DEV__) {
           console.warn(
-            '⚠️ [authService] Fallback failed but API returned user, returning partial result',
+            '⚠️ [authService] Sign-in edge function error, using direct Supabase sign-in fallback',
           );
-          // Return what we have from API
-          return {
-            user: response.data.user,
-            session: null,
-          };
         }
-        // Re-throw the fallback error
-        throw fallbackError;
+      } else {
+        // Re-throw non-function errors
+        throw error;
       }
     }
 
-    return {
-      user: response.data?.user || null,
-      session: response.data?.session || null,
-    };
+    // FALLBACK: Use direct Supabase auth if edge function is not available
+    try {
+      // Fallback: Use Supabase directly
+      const { data: directAuthData, error: directAuthError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      if (directAuthError) {
+        console.error(
+          '❌ [authService] Fallback Supabase auth failed:',
+          directAuthError,
+        );
+        // Check if email confirmation is needed
+        if (
+          directAuthError.message?.includes('email') ||
+          directAuthError.message?.includes('confirm')
+        ) {
+          throw new AppError(
+            'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
+            403,
+            'EMAIL_NOT_CONFIRMED',
+          );
+        }
+        throw new AppError(
+          directAuthError.message || 'Authentication failed',
+          401,
+          'AUTH_ERROR',
+        );
+      }
+
+      if (!directAuthData.session) {
+        console.error(
+          '❌ [authService] Fallback auth succeeded but no session returned',
+          {
+            hasUser: !!directAuthData.user,
+            userId: directAuthData.user?.id,
+            emailConfirmed: !!directAuthData.user?.email_confirmed_at,
+          },
+        );
+
+        // Check if email confirmation is required
+        if (directAuthData.user && !directAuthData.user.email_confirmed_at) {
+          throw new AppError(
+            'Please confirm your email address before signing in. Check your inbox for a confirmation link.',
+            403,
+            'EMAIL_NOT_CONFIRMED',
+          );
+        }
+
+        throw new AppError(
+          'Login succeeded but no session was created. Please try again.',
+          500,
+          'NO_SESSION_ERROR',
+        );
+      }
+
+      if (__DEV__) {
+        console.log(
+          '✅ [authService] Fallback: Sign-in successful via direct Supabase',
+        );
+      }
+
+      // Return the session from direct auth
+      return {
+        user: directAuthData.user,
+        session: directAuthData.session,
+      };
+    } catch (fallbackError) {
+      // If fallback also fails, throw the error
+      throw fallbackError;
+    }
   },
 
   // Method to log out a user
   signOut: async () => {
-    const response = await versionedApiClient.signOut();
+    try {
+      // Try edge function first
+      const response = await versionedApiClient.signOut();
 
-    if (response.error) {
-      throw new AppError(
-        response.message || response.error || 'Failed to sign out',
-        500,
-        response.code || 'AUTH_ERROR',
+      if (response.error) {
+        // Check if it's a "function not found" error - fallback to direct Supabase sign out
+        const isFunctionNotFound =
+          response.code === 'HTTP_404' ||
+          response.message?.includes('not found') ||
+          response.message?.includes('Requested function was not found');
+
+        if (isFunctionNotFound) {
+          console.warn(
+            '⚠️ Sign out edge function not available, using direct Supabase sign out',
+          );
+          // Fallback to direct Supabase sign out
+          await supabase.auth.signOut();
+          return;
+        }
+
+        // For other errors, log but still try direct Supabase sign out as fallback
+        console.warn('⚠️ Sign out edge function error, falling back to direct Supabase sign out:', {
+          error: response.error,
+          message: response.message,
+          code: response.code,
+        });
+        await supabase.auth.signOut();
+        return;
+      }
+
+      // Edge function succeeded - also sign out from Supabase client to clear local session
+      await supabase.auth.signOut();
+    } catch (error) {
+      // If edge function doesn't exist or fails, use direct Supabase sign out
+      console.warn(
+        '⚠️ Sign out error, falling back to direct Supabase sign out:',
+        error,
       );
+      // Always try to sign out from Supabase client, even if edge function fails
+      try {
+        await supabase.auth.signOut();
+      } catch (supabaseError) {
+        // If even Supabase sign out fails, log but don't throw - user should still be able to continue
+        console.error('❌ Direct Supabase sign out also failed:', supabaseError);
+      }
     }
-
-    // Also sign out from Supabase client to clear local session
-    await supabase.auth.signOut();
   },
 
   // Method to get the current session

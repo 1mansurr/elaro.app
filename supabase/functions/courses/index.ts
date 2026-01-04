@@ -282,7 +282,9 @@ async function handleCoursesRequest({
 
   if (method === 'GET' && path.endsWith('/courses')) {
     // PASS 2: Validate query parameter
-    const includeDeletedParam = new URL(url).searchParams.get('include_deleted');
+    const includeDeletedParam = new URL(url).searchParams.get(
+      'include_deleted',
+    );
     const includeDeleted = includeDeletedParam === 'true'; // Only accept 'true', everything else is false
     return await courseService.getCourses(user.id, includeDeleted);
   }

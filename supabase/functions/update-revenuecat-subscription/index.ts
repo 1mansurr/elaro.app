@@ -54,7 +54,11 @@ async function handleUpdateSubscription(req: AuthenticatedRequest) {
       );
     }
     // Validate UUID format
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        userId,
+      )
+    ) {
       throw new AppError(
         'Invalid userId format',
         400,

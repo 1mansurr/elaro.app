@@ -427,7 +427,7 @@ const mainScreens = {
 const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
 
 export const AuthenticatedNavigator: React.FC = () => {
-  const { user } = useAuth();
+  const { user, isInitializing } = useAuth();
   const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] = useState<
     boolean | null
   >(null);
@@ -436,6 +436,15 @@ export const AuthenticatedNavigator: React.FC = () => {
 
   // Enable smart preloading for better performance
   useSmartPreloading();
+
+  // GUARD: Show loading screen while AuthContext is initializing
+  // This prevents race conditions where onboarding is shown before we have a valid profile
+  if (isInitializing) {
+    if (__DEV__) {
+      console.log('⏳ [AuthenticatedNavigator] Waiting for auth initialization...');
+    }
+    return <LoadingFallback />;
+  }
 
   // Check AddCourseFirst screen status and course count
   // NOTE: PostOnboardingWelcomeScreen manages its own visibility - we don't check it here
@@ -448,8 +457,12 @@ export const AuthenticatedNavigator: React.FC = () => {
 
       try {
         // Only check AddCourseFirst - PostOnboardingWelcomeScreen is self-managed
-        const hasSeenAddCourse = await AsyncStorage.getItem(ADD_COURSE_FIRST_KEY);
-        setHasSeenAddCourseFirst(hasSeenAddCourse === 'true');
+        const hasSeenAddCourse =
+          await AsyncStorage.getItem(ADD_COURSE_FIRST_KEY);
+        // Explicitly handle null/undefined - if not 'true', treat as false (user hasn't seen it)
+        // This ensures new users who complete onboarding will see AddCourseFirst
+        const hasSeen = hasSeenAddCourse === 'true';
+        setHasSeenAddCourseFirst(hasSeen);
 
         // Check course count (used for other logic, not PostOnboardingWelcome)
         const { count, error } = await supabase
@@ -478,6 +491,7 @@ export const AuthenticatedNavigator: React.FC = () => {
   }, [user]);
 
   // Show onboarding if user hasn't completed it
+  // NOTE: This check only runs after isInitializing is false, ensuring we have a valid profile
   if (user && !user.onboarding_completed) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -515,10 +529,16 @@ export const AuthenticatedNavigator: React.FC = () => {
   }
 
   // Show main app if onboarding is completed
+  // Use a key that includes hasSeenAddCourseFirst to force remount when it changes
+  // This ensures the navigator starts with the correct initialRouteName
+  // When hasSeenAddCourseFirst changes from null -> false, the navigator remounts with AddCourseFirst as initial route
+  const navigatorKey = `main-nav-${hasSeenAddCourseFirst ?? 'loading'}`;
+
   return (
     <UsageLimitPaywallProvider>
       <Suspense fallback={<LoadingFallback />}>
         <Stack.Navigator
+          key={navigatorKey}
           screenOptions={sharedScreenOptions}
           initialRouteName={initialRouteName}>
           {/* Launch screen removed - AppNavigator handles initial routing */}

@@ -1132,7 +1132,11 @@ async function handleSendNotification({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -1152,13 +1156,7 @@ async function handleSendNotification({
   // Use authenticated user.id (never use client-provided user_id)
   const user_id = user.id;
 
-  const {
-    title,
-    body: notificationBody,
-    type,
-    data,
-    ...otherData
-  } = body;
+  const { title, body: notificationBody, type, data, ...otherData } = body;
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
@@ -1278,7 +1276,11 @@ async function handleScheduleNotification({
       );
     }
     // Validate UUID format if provided
-    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(bodyUser_id)) {
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
       throw new AppError(
         'Invalid user_id format',
         400,
@@ -1550,7 +1552,11 @@ async function handleGetCount({
     // PASS 1: Crash safety - JSON.parse already in try/catch, but ensure it returns Response on error
     try {
       const filterObj = JSON.parse(filters);
-      if (!filterObj || typeof filterObj !== 'object' || Array.isArray(filterObj)) {
+      if (
+        !filterObj ||
+        typeof filterObj !== 'object' ||
+        Array.isArray(filterObj)
+      ) {
         throw new AppError(
           'Invalid filters format: must be an object',
           400,

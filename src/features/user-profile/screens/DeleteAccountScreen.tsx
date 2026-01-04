@@ -19,6 +19,7 @@ import {
   GestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -27,6 +28,7 @@ import { PrimaryButton, SecondaryButton } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
 import { showToast } from '@/utils/showToast';
+import { RootStackParamList } from '@/types/navigation';
 import {
   COLORS,
   FONT_SIZES,
@@ -40,7 +42,7 @@ const { width: screenWidth } = Dimensions.get('window');
 const EDGE_SWIPE_THRESHOLD = 50;
 
 const DeleteAccountScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, signOut } = useAuth();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
@@ -126,6 +128,10 @@ const DeleteAccountScreen = () => {
           onPress: async () => {
             setIsDeleting(true);
             try {
+              // Call the deletion function
+              // The backend will sign out the user (see soft-delete-account function),
+              // which will trigger onAuthStateChange and AppNavigator will
+              // automatically switch from AuthenticatedNavigator to AuthNavigator
               const { data, error } = await supabase.functions.invoke(
                 'soft-delete-account',
                 {
@@ -137,20 +143,24 @@ const DeleteAccountScreen = () => {
 
               if (error) throw new AppError('Failed to delete account.');
 
+              // Show success message - backend will sign out automatically
+              // The alert will be shown before the component unmounts
               Alert.alert(
                 'Account Scheduled for Deletion',
                 'Your account has been scheduled for deletion. You have 7 days to change your mind. Simply log in again within 7 days to cancel the deletion.',
                 [
                   {
                     text: 'OK',
-                    onPress: async () => {
-                      await signOut();
+                    onPress: () => {
+                      // Backend sign-out will handle navigation automatically
+                      // AppNavigator will switch to AuthNavigator when session becomes null
                     },
                   },
                 ],
               );
             } catch (error) {
               console.error('Error deleting account:', error);
+              setIsDeleting(false);
               showToast({
                 type: 'error',
                 message:
@@ -158,8 +168,6 @@ const DeleteAccountScreen = () => {
                     ? error.message
                     : 'Failed to delete account',
               });
-            } finally {
-              setIsDeleting(false);
             }
           },
         },
@@ -187,28 +195,6 @@ const DeleteAccountScreen = () => {
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View
-            style={[
-              styles.header,
-              {
-                backgroundColor: bgColor,
-                borderBottomColor: borderColor,
-                paddingTop: SPACING.md,
-              },
-            ]}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="arrow-back-ios" size={20} color={textColor} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Delete Account
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
-
           {/* Warning Header */}
           <View
             style={[
@@ -453,30 +439,6 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.md,
     paddingBottom: 200, // Extra padding so delete button sits above nav bar
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    flex: 1,
-    textAlign: 'center',
-    paddingRight: 40,
-  },
-  headerSpacer: {
-    width: 40,
   },
   warningHeader: {
     alignItems: 'center',

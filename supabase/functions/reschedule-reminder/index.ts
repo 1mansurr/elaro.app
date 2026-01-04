@@ -22,16 +22,11 @@ async function handleRescheduleReminder(
   if (!validationResult.success) {
     const zodError = validationResult.error;
     const flattened = zodError.flatten();
-    throw new AppError(
-      'Validation failed',
-      400,
-      ERROR_CODES.VALIDATION_ERROR,
-      {
-        message: 'Request body validation failed',
-        errors: flattened.fieldErrors,
-        formErrors: flattened.formErrors,
-      },
-    );
+    throw new AppError('Validation failed', 400, ERROR_CODES.VALIDATION_ERROR, {
+      message: 'Request body validation failed',
+      errors: flattened.fieldErrors,
+      formErrors: flattened.formErrors,
+    });
   }
   const { reminder_id, new_scheduled_time, notification_id } =
     validationResult.data;

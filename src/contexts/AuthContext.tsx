@@ -44,6 +44,7 @@ interface AuthContextType {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  isInitializing: boolean; // True while app is initializing and we don't have a valid profile yet
   isGuest: boolean;
   signIn: (credentials: LoginCredentials) => Promise<{
     error: Error | null;
@@ -55,7 +56,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -71,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true); // Track if we're still initializing with a valid profile
   // Navigation is handled in AppNavigator, not here
   // const { fetchInitialData } = useData(); // Removed to fix circular dependency
   // Grace period check moved to GracePeriodChecker component to avoid circular dependency
@@ -183,8 +185,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               console.log(
                 '✅ [AuthContext] Using minimal user data from session',
               );
-              // Cache the minimal profile temporarily
-              await cache.setLong(cacheKey, minimalUser);
+              // DO NOT cache minimal users - they have incorrect onboarding_completed: false
+              // Only cache real profiles fetched from the server
+              // await cache.setLong(cacheKey, minimalUser); // REMOVED - prevents bad caching
               return minimalUser;
             }
           } catch (sessionError) {
@@ -316,7 +319,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       await cache.remove(cacheKey);
 
       const userProfile = await fetchUserProfile(session.user.id);
-      setUser(userProfile);
+      if (userProfile) {
+        setUser(userProfile);
+        // Ensure isInitializing is false after refresh (we have a valid profile)
+        setIsInitializing(false);
+      }
     }
   };
 
@@ -334,71 +341,172 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.error('❌ Error getting initial session:', error);
           setSession(null);
           setUser(null);
+          setLoading(false);
+          setIsInitializing(false);
           return;
         }
 
         // Set session state immediately - don't wait for anything else
         setSession(session);
 
-        // If session exists, fetch profile asynchronously (non-blocking)
+        // If session exists, load user profile with proper caching strategy
         if (session?.user) {
-          // Create minimal user immediately from session to prevent white screen
-          // This ensures the app can proceed even if profile fetch fails
-          const minimalUserFromSession: User = {
-            id: session.user.id,
-            email: session.user.email ?? '',
-            name: session.user.user_metadata?.name || null,
-            first_name: session.user.user_metadata?.first_name || null,
-            last_name: session.user.user_metadata?.last_name || null,
-            university: session.user.user_metadata?.university || null,
-            program: session.user.user_metadata?.program || null,
-            role: 'user',
-            onboarding_completed: false,
-            subscription_tier: null,
-            subscription_status: null,
-            subscription_expires_at: null,
-            account_status: 'active',
-            deleted_at: null,
-            deletion_scheduled_at: null,
-            suspension_end_date: null,
-            created_at: session.user.created_at,
-            updated_at: session.user.updated_at || session.user.created_at,
-            user_metadata: session.user.user_metadata || {},
-          };
+          const userId = session.user.id;
+          const cacheKey = `user_profile:${userId}`;
 
-          // Set minimal user immediately so app can proceed
-          setUser(minimalUserFromSession);
+          // STEP 1: Try to load from AsyncStorage cache first (instant load)
+          try {
+            const cachedProfile = await cache.get<User>(cacheKey);
 
-          // Then fetch full profile in background and update when ready
-          fetchUserProfile(session.user.id)
-            .then(userProfile => {
-              if (userProfile) {
-                setUser(userProfile);
+            if (cachedProfile) {
+              // SMART CACHING: Only use cached profile if it has onboarding_completed: true
+              // If cached profile has onboarding_completed: false, it might be stale or a minimal user
+              // In that case, ignore it and fetch fresh from server
+              if (cachedProfile.onboarding_completed === true) {
+                console.log(
+                  '📱 [AuthContext] Using valid cached user profile (onboarding_completed: true)',
+                );
+                // Set cached profile immediately - this prevents loading screen and shows correct UI
+                setUser(cachedProfile);
+                setLoading(false);
+                setIsInitializing(false); // We have a valid profile
+
+                // STEP 2: Fetch fresh profile in background and update when ready
+                fetchUserProfile(userId)
+                  .then(freshProfile => {
+                    if (freshProfile) {
+                      // Only update if profile actually changed (avoid unnecessary re-renders)
+                      if (
+                        JSON.stringify(freshProfile) !==
+                        JSON.stringify(cachedProfile)
+                      ) {
+                        console.log(
+                          '🔄 [AuthContext] Updating user profile from server',
+                        );
+                        setUser(freshProfile);
+                      }
+                    }
+                  })
+                  .catch(err => {
+                    if (__DEV__) {
+                      console.warn(
+                        '⚠️ [AuthContext] Background profile fetch failed (non-critical):',
+                        err,
+                      );
+                    }
+                    // Keep using cached data - app continues to work
+                  });
+
+                return; // Exit early - we have valid cached profile
+              } else {
+                // Cached profile has onboarding_completed: false - might be stale or minimal user
+                // Ignore it and fetch fresh from server
+                console.log(
+                  '⚠️ [AuthContext] Cached profile has onboarding_completed: false, ignoring and fetching fresh',
+                );
+                // Clear the bad cache entry
+                await cache.remove(cacheKey);
               }
-            })
-            .catch(err => {
-              if (__DEV__) {
-                console.warn('⚠️ Profile fetch failed (non-blocking):', err);
-              }
-              // Continue with minimal user - can be fetched later
-            });
+            }
+          } catch (cacheError) {
+            if (__DEV__) {
+              console.warn(
+                '⚠️ [AuthContext] Error reading cache (non-critical):',
+                cacheError,
+              );
+            }
+            // Continue to fetch from server
+          }
+
+          // STEP 3: No valid cached profile exists - show loading and fetch from server
+          console.log('🌐 [AuthContext] Fetching user profile from server');
+          // Keep loading=true and isInitializing=true while we fetch (shows loading indicator)
+
+          try {
+            const userProfile = await fetchUserProfile(userId);
+
+            if (userProfile) {
+              // Profile fetched successfully - set it and cache it
+              setUser(userProfile);
+              setLoading(false);
+              setIsInitializing(false); // We have a valid profile from server
+              console.log('✅ [AuthContext] User profile loaded from server');
+            } else {
+              // Profile fetch failed - create minimal user as last resort
+              console.warn(
+                '⚠️ [AuthContext] Profile fetch returned null, creating minimal user',
+              );
+              const minimalUserFromSession: User = {
+                id: session.user.id,
+                email: session.user.email ?? '',
+                name: session.user.user_metadata?.name || null,
+                first_name: session.user.user_metadata?.first_name || null,
+                last_name: session.user.user_metadata?.last_name || null,
+                university: session.user.user_metadata?.university || null,
+                program: session.user.user_metadata?.program || null,
+                role: 'user',
+                onboarding_completed: false, // Last resort default
+                subscription_tier: null,
+                subscription_status: null,
+                subscription_expires_at: null,
+                account_status: 'active',
+                deleted_at: null,
+                deletion_scheduled_at: null,
+                suspension_end_date: null,
+                created_at: session.user.created_at,
+                updated_at: session.user.updated_at || session.user.created_at,
+                user_metadata: session.user.user_metadata || {},
+              };
+              setUser(minimalUserFromSession);
+              setLoading(false);
+              setIsInitializing(false); // Even minimal user is better than nothing
+            }
+          } catch (fetchError) {
+            console.error('❌ [AuthContext] Error fetching user profile:', fetchError);
+            // Create minimal user as fallback
+            const minimalUserFromSession: User = {
+              id: session.user.id,
+              email: session.user.email ?? '',
+              name: session.user.user_metadata?.name || null,
+              first_name: session.user.user_metadata?.first_name || null,
+              last_name: session.user.user_metadata?.last_name || null,
+              university: session.user.user_metadata?.university || null,
+              program: session.user.user_metadata?.program || null,
+              role: 'user',
+              onboarding_completed: false, // Last resort default
+              subscription_tier: null,
+              subscription_status: null,
+              subscription_expires_at: null,
+              account_status: 'active',
+              deleted_at: null,
+              deletion_scheduled_at: null,
+              suspension_end_date: null,
+              created_at: session.user.created_at,
+              updated_at: session.user.updated_at || session.user.created_at,
+              user_metadata: session.user.user_metadata || {},
+            };
+            setUser(minimalUserFromSession);
+            setLoading(false);
+            setIsInitializing(false); // Even minimal user is better than nothing
+          }
         } else {
           setUser(null);
+          setLoading(false);
+          setIsInitializing(false);
         }
       } catch (error) {
         console.error('❌ Error initializing auth:', error);
         // Don't block app - continue with no session
         setSession(null);
         setUser(null);
+        setLoading(false);
+        setIsInitializing(false);
 
         // Clear any saved navigation state that might reference authenticated routes
         // This prevents navigation errors when auth fails/times out
         navigationSyncService.clearState().catch(err => {
           console.warn('⚠️ Failed to clear navigation state:', err);
         });
-      } finally {
-        // Always set loading to false immediately - UI should render fast
-        setLoading(false);
       }
     };
 
@@ -416,6 +524,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Update session state (single update point)
       setSession(session);
 
+      // IMPORTANT: Set loading to false when we receive auth state change
+      // This ensures AppNavigator doesn't show white screen during sign-out
+      // and allows AuthNavigator to render immediately when session becomes null
+      setLoading(false);
+
       // Sync to authSyncService for local cache (non-blocking)
       if (session) {
         authSyncService.saveAuthState(session).catch(err => {
@@ -431,13 +544,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (session?.user) {
         fetchUserProfile(session.user.id)
           .then(userProfile => {
-            if (userProfile) setUser(userProfile);
+            if (userProfile) {
+              setUser(userProfile);
+              // If we were initializing, mark as complete
+              setIsInitializing(false);
+            }
           })
           .catch(() => {
             // Silently fail - profile can be fetched later
           });
       } else {
         setUser(null);
+        setIsInitializing(false);
       }
     });
 
@@ -798,6 +916,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             .then(userProfile => {
               if (userProfile) {
                 setUser(userProfile);
+                setIsInitializing(false); // Profile loaded after sign in
               }
             })
             .catch(err => {
@@ -970,7 +1089,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           const userProfile = await fetchUserProfile(
             signUpResponse.session.user.id,
           );
-          setUser(userProfile);
+          if (userProfile) {
+            setUser(userProfile);
+            setIsInitializing(false); // Profile loaded after sign up
+          }
         }
       } else {
         // No session in response - immediately sign in to create a session
@@ -1068,6 +1190,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     session,
     user,
     loading,
+    isInitializing,
     isGuest: !session,
     signIn,
     signUp,

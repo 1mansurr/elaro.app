@@ -207,27 +207,6 @@ const RecycleBinScreen = () => {
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: theme.background,
-            borderBottomColor: theme.border,
-          },
-        ]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Recycle Bin
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
       <QueryStateWrapper
         isLoading={isLoading}
         isError={isError}
@@ -290,31 +269,6 @@ const RecycleBinScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
-    letterSpacing: -0.015,
-  },
-  headerSpacer: {
-    width: 40,
   },
   scrollView: {
     flex: 1,

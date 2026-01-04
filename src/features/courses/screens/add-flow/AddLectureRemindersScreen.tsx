@@ -202,10 +202,13 @@ const AddLectureRemindersScreen = () => {
       } else {
         // Otherwise go back normally
         if (__DEV__) {
-          console.log('✅ [AddLectureRemindersScreen] Course created, going back', {
-            hasSeenAddCourseFirst,
-            currentRoute: currentRoute?.name,
-          });
+          console.log(
+            '✅ [AddLectureRemindersScreen] Course created, going back',
+            {
+              hasSeenAddCourseFirst,
+              currentRoute: currentRoute?.name,
+            },
+          );
         }
         parentNav?.goBack();
       }

@@ -373,35 +373,15 @@ const TemplatesScreen = () => {
             paddingTop: insets.top,
           },
         ]}>
-        {/* Header */}
-        <View
-          style={[
-            styles.header,
-            {
-              backgroundColor: bgColor,
-              borderBottomColor: borderColor,
-              paddingTop: SPACING.md,
-            },
-          ]}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: textColor }]}>
-            Saved Templates
-          </Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {/* Description */}
-        <View style={styles.descriptionContainer}>
-          <Text style={[styles.descriptionText, { color: textSecondaryColor }]}>
-            Select a template to quickly create a new item with pre-filled
-            details.
-          </Text>
-        </View>
+        {/* Description - Only show when templates exist */}
+        {templates && templates.length > 0 && (
+          <View style={styles.descriptionContainer}>
+            <Text style={[styles.descriptionText, { color: textSecondaryColor }]}>
+              Select a template to quickly create a new item with pre-filled
+              details.
+            </Text>
+          </View>
+        )}
 
         {/* Templates List */}
         <FlatList
@@ -532,30 +512,6 @@ const TemplatesScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: FONT_WEIGHTS.bold,
-    flex: 1,
-    textAlign: 'center',
-    paddingRight: 40,
-  },
-  headerSpacer: {
-    width: 40,
   },
   descriptionContainer: {
     paddingHorizontal: SPACING.md,
