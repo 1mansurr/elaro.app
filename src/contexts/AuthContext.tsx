@@ -56,7 +56,9 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined,
+);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -81,6 +83,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Track ongoing profile fetches to prevent duplicates
   const profileFetchPromises = new Map<string, Promise<User | null>>();
+
+  /**
+   * Create a safe minimal user from session data
+   * This ensures all required fields are present to prevent crashes
+   */
+  const createMinimalUserFromSession = (
+    sessionUser: SupabaseUser,
+  ): User | null => {
+    try {
+      if (!sessionUser?.id) {
+        console.error(
+          '❌ [AuthContext] Cannot create minimal user: session user missing id',
+        );
+        return null;
+      }
+
+      const minimalUser: User = {
+        id: sessionUser.id,
+        email: sessionUser.email ?? '',
+        name: sessionUser.user_metadata?.name || undefined,
+        first_name: sessionUser.user_metadata?.first_name || undefined,
+        last_name: sessionUser.user_metadata?.last_name || undefined,
+        university: sessionUser.user_metadata?.university || undefined,
+        program: sessionUser.user_metadata?.program || undefined,
+        role: 'user',
+        onboarding_completed: false, // Safe default - will show onboarding
+        subscription_tier: null,
+        subscription_status: null,
+        subscription_expires_at: null,
+        account_status: 'active',
+        deleted_at: null,
+        deletion_scheduled_at: null,
+        suspension_end_date: null,
+        created_at: sessionUser.created_at,
+        updated_at: sessionUser.updated_at || sessionUser.created_at,
+        user_metadata: sessionUser.user_metadata || {},
+      };
+
+      console.log(
+        '✅ [AuthContext] Created safe minimal user from session',
+        { id: minimalUser.id, email: minimalUser.email },
+      );
+      return minimalUser;
+    } catch (error) {
+      console.error(
+        '❌ [AuthContext] Failed to create minimal user from session:',
+        error,
+      );
+      return null;
+    }
+  };
 
   const fetchUserProfile = async (userId: string): Promise<User | null> => {
     // If already fetching for this user, return the existing promise
@@ -116,10 +169,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 setUser(freshProfile as User);
                 await cache.setLong(cacheKey, freshProfile);
               }
+              // Ensure isInitializing is false even if background fetch completes
+              setIsInitializing(false);
             })
             .catch(err => {
               console.error('Background profile fetch failed:', err);
               // Keep using cached data
+              // Ensure isInitializing is false even on error
+              setIsInitializing(false);
             });
 
           return cachedProfile;
@@ -155,40 +212,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               data: { session: currentSession },
             } = await supabase.auth.getSession();
             if (currentSession?.user) {
-              // Create minimal user profile from session data
-              const minimalUser: User = {
-                id: currentSession.user.id,
-                email: currentSession.user.email ?? '',
-                name: currentSession.user.user_metadata?.name || null,
-                first_name:
-                  currentSession.user.user_metadata?.first_name || null,
-                last_name: currentSession.user.user_metadata?.last_name || null,
-                university:
-                  currentSession.user.user_metadata?.university || null,
-                program: currentSession.user.user_metadata?.program || null,
-                role: 'user',
-                onboarding_completed: false, // Default to false, will be updated when full profile loads
-                subscription_tier: null,
-                subscription_status: null,
-                subscription_expires_at: null,
-                account_status: 'active',
-                deleted_at: null,
-                deletion_scheduled_at: null,
-                suspension_end_date: null,
-                created_at: currentSession.user.created_at,
-                updated_at:
-                  currentSession.user.updated_at ||
-                  currentSession.user.created_at,
-                user_metadata: currentSession.user.user_metadata || {},
-              };
-
-              console.log(
-                '✅ [AuthContext] Using minimal user data from session',
+              // Create safe minimal user from session data
+              const minimalUser = createMinimalUserFromSession(
+                currentSession.user,
               );
-              // DO NOT cache minimal users - they have incorrect onboarding_completed: false
-              // Only cache real profiles fetched from the server
-              // await cache.setLong(cacheKey, minimalUser); // REMOVED - prevents bad caching
-              return minimalUser;
+              if (minimalUser) {
+                console.log(
+                  '✅ [AuthContext] Using minimal user data from session (timeout fallback)',
+                );
+                // DO NOT cache minimal users - they have incorrect onboarding_completed: false
+                // Only cache real profiles fetched from the server
+                return minimalUser;
+              }
             }
           } catch (sessionError) {
             console.error(
@@ -197,6 +232,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             );
           }
 
+          console.error(
+            '❌ [AuthContext] Cannot create minimal user - session unavailable',
+          );
           return null;
         }
 
@@ -367,35 +405,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   '📱 [AuthContext] Using valid cached user profile (onboarding_completed: true)',
                 );
                 // Set cached profile immediately - this prevents loading screen and shows correct UI
+                // STEP 1 FIX: Eliminated background fetch to remove race condition
+                // Using cached user directly, set isInitializing to false only when we have definitive state
                 setUser(cachedProfile);
                 setLoading(false);
-                setIsInitializing(false); // We have a valid profile
-
-                // STEP 2: Fetch fresh profile in background and update when ready
-                fetchUserProfile(userId)
-                  .then(freshProfile => {
-                    if (freshProfile) {
-                      // Only update if profile actually changed (avoid unnecessary re-renders)
-                      if (
-                        JSON.stringify(freshProfile) !==
-                        JSON.stringify(cachedProfile)
-                      ) {
-                        console.log(
-                          '🔄 [AuthContext] Updating user profile from server',
-                        );
-                        setUser(freshProfile);
-                      }
-                    }
-                  })
-                  .catch(err => {
-                    if (__DEV__) {
-                      console.warn(
-                        '⚠️ [AuthContext] Background profile fetch failed (non-critical):',
-                        err,
-                      );
-                    }
-                    // Keep using cached data - app continues to work
-                  });
+                setIsInitializing(false); // We have a valid cached profile - definitive user state
 
                 return; // Exit early - we have valid cached profile
               } else {
@@ -432,62 +446,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               setIsInitializing(false); // We have a valid profile from server
               console.log('✅ [AuthContext] User profile loaded from server');
             } else {
-              // Profile fetch failed - create minimal user as last resort
+              // Profile fetch failed - create safe minimal user as last resort
               console.warn(
-                '⚠️ [AuthContext] Profile fetch returned null, creating minimal user',
+                '⚠️ [AuthContext] Profile fetch returned null, creating safe minimal user',
               );
-              const minimalUserFromSession: User = {
-                id: session.user.id,
-                email: session.user.email ?? '',
-                name: session.user.user_metadata?.name || null,
-                first_name: session.user.user_metadata?.first_name || null,
-                last_name: session.user.user_metadata?.last_name || null,
-                university: session.user.user_metadata?.university || null,
-                program: session.user.user_metadata?.program || null,
-                role: 'user',
-                onboarding_completed: false, // Last resort default
-                subscription_tier: null,
-                subscription_status: null,
-                subscription_expires_at: null,
-                account_status: 'active',
-                deleted_at: null,
-                deletion_scheduled_at: null,
-                suspension_end_date: null,
-                created_at: session.user.created_at,
-                updated_at: session.user.updated_at || session.user.created_at,
-                user_metadata: session.user.user_metadata || {},
-              };
+              const minimalUserFromSession = createMinimalUserFromSession(
+                session.user,
+              );
+              if (minimalUserFromSession) {
+                setUser(minimalUserFromSession);
+                setLoading(false);
+                setIsInitializing(false); // Even minimal user is better than nothing
+                console.log(
+                  '✅ [AuthContext] Minimal user set - app will show onboarding',
+                );
+              } else {
+                console.error(
+                  '❌ [AuthContext] Failed to create minimal user - cannot proceed',
+                );
+                setLoading(false);
+                // FIX: Set isInitializing to false after timeout to prevent white screen
+                // The app can still function with null user - AuthenticatedNavigator will handle it
+                setIsInitializing(false);
+                console.warn(
+                  '⚠️ [AuthContext] Setting isInitializing to false to prevent white screen - app will handle null user',
+                );
+              }
+            }
+          } catch (fetchError) {
+            console.error(
+              '❌ [AuthContext] Error fetching user profile:',
+              fetchError,
+            );
+            // Create safe minimal user as fallback
+            const minimalUserFromSession = createMinimalUserFromSession(
+              session.user,
+            );
+            if (minimalUserFromSession) {
               setUser(minimalUserFromSession);
               setLoading(false);
               setIsInitializing(false); // Even minimal user is better than nothing
+              console.log(
+                '✅ [AuthContext] Minimal user set after error - app will show onboarding',
+              );
+            } else {
+              console.error(
+                '❌ [AuthContext] Failed to create minimal user after error - cannot proceed',
+              );
+              setLoading(false);
+              // FIX: Set isInitializing to false after error to prevent white screen
+              setIsInitializing(false);
+              console.warn(
+                '⚠️ [AuthContext] Setting isInitializing to false after error - app will handle null user',
+              );
             }
-          } catch (fetchError) {
-            console.error('❌ [AuthContext] Error fetching user profile:', fetchError);
-            // Create minimal user as fallback
-            const minimalUserFromSession: User = {
-              id: session.user.id,
-              email: session.user.email ?? '',
-              name: session.user.user_metadata?.name || null,
-              first_name: session.user.user_metadata?.first_name || null,
-              last_name: session.user.user_metadata?.last_name || null,
-              university: session.user.user_metadata?.university || null,
-              program: session.user.user_metadata?.program || null,
-              role: 'user',
-              onboarding_completed: false, // Last resort default
-              subscription_tier: null,
-              subscription_status: null,
-              subscription_expires_at: null,
-              account_status: 'active',
-              deleted_at: null,
-              deletion_scheduled_at: null,
-              suspension_end_date: null,
-              created_at: session.user.created_at,
-              updated_at: session.user.updated_at || session.user.created_at,
-              user_metadata: session.user.user_metadata || {},
-            };
-            setUser(minimalUserFromSession);
-            setLoading(false);
-            setIsInitializing(false); // Even minimal user is better than nothing
           }
         } else {
           setUser(null);
@@ -540,18 +552,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         authSyncService.clearAuthState().catch(() => {});
       }
 
-      // Fetch profile if session exists (non-blocking)
+      // STEP 1 FIX: Unify auth initialization - disable fetchUserProfile for INITIAL_SESSION
+      // Only initializeAuth should handle the app's first load
+      // This prevents the primary race condition between initializeAuth and onAuthStateChange
+      if (event === 'INITIAL_SESSION') {
+        // Don't fetch profile here - initializeAuth is handling it
+        // Just update session state (already done above)
+        if (!session) {
+          setUser(null);
+          setIsInitializing(false);
+        }
+        // If session exists, initializeAuth will handle profile fetch
+        return;
+      }
+
+      // For other events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED), fetch profile
       if (session?.user) {
         fetchUserProfile(session.user.id)
           .then(userProfile => {
             if (userProfile) {
               setUser(userProfile);
-              // If we were initializing, mark as complete
+              // Only set isInitializing to false if we have a definitive user state
               setIsInitializing(false);
+            } else {
+              // Profile fetch returned null (timeout or error)
+              // FIX: Set isInitializing to false to prevent white screen
+              // Try to create minimal user as fallback
+              const minimalUser = createMinimalUserFromSession(session.user);
+              if (minimalUser) {
+                setUser(minimalUser);
+                setIsInitializing(false);
+                console.warn(
+                  '⚠️ [AuthContext] Using minimal user after profile fetch failed in onAuthStateChange',
+                );
+              } else {
+                setIsInitializing(false); // Still set to false to prevent white screen
+                console.warn(
+                  '⚠️ [AuthContext] Profile fetch failed, setting isInitializing to false to prevent white screen',
+                );
+              }
             }
           })
           .catch(() => {
-            // Silently fail - profile can be fetched later
+            // FIX: Set isInitializing to false even on error to prevent white screen
+            // Try to create minimal user as fallback
+            const minimalUser = createMinimalUserFromSession(session.user);
+            if (minimalUser) {
+              setUser(minimalUser);
+              setIsInitializing(false);
+              console.warn(
+                '⚠️ [AuthContext] Using minimal user after profile fetch error in onAuthStateChange',
+              );
+            } else {
+              setIsInitializing(false); // Still set to false to prevent white screen
+              console.warn(
+                '⚠️ [AuthContext] Profile fetch error, setting isInitializing to false to prevent white screen',
+              );
+            }
           });
       } else {
         setUser(null);
@@ -559,8 +616,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     });
 
+    // Safety timeout: Force isInitializing to false after 10 seconds maximum
+    // This prevents infinite white screen if something goes wrong during initialization
+    const safetyTimeout = setTimeout(() => {
+      if (isInitializing) {
+        console.warn(
+          '⚠️ [AuthContext] Safety timeout: Forcing isInitializing to false after 10s to prevent white screen',
+        );
+        setIsInitializing(false);
+        setLoading(false);
+      }
+    }, 10000); // 10 second absolute maximum
+
     return () => {
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
     };
   }, []);
 
@@ -589,6 +659,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
               if (pending.taskType === 'assignment') {
                 taskTypeName = 'assignment';
+                // Use type assertion since the saved data structure doesn't match the TaskData type
+                const taskData = pending.taskData as any;
                 const {
                   course,
                   title,
@@ -597,7 +669,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   submissionMethod,
                   submissionLink,
                   reminders,
-                } = pending.taskData || {};
+                } = taskData || {};
                 if (course?.id && dueDate && title) {
                   await api.mutations.assignments.create(
                     {
@@ -630,6 +702,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 }
               } else if (pending.taskType === 'lecture') {
                 taskTypeName = 'lecture';
+                // Use type assertion since the saved data structure doesn't match the TaskData type
+                const taskData = pending.taskData as any;
                 const {
                   course,
                   title,
@@ -637,7 +711,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   endTime,
                   recurrence,
                   reminders,
-                } = pending.taskData || {};
+                } = taskData || {};
                 if (course?.id && startTime && endTime && title) {
                   await api.mutations.lectures.create(
                     {
@@ -668,6 +742,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 }
               } else if (pending.taskType === 'study_session') {
                 taskTypeName = 'study session';
+                // Use type assertion since the saved data structure doesn't match the TaskData type
+                const taskData = pending.taskData as any;
                 const {
                   course,
                   topic,
@@ -675,7 +751,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                   sessionDate,
                   hasSpacedRepetition,
                   reminders,
-                } = pending.taskData || {};
+                } = taskData || {};
                 if (course?.id && sessionDate && topic) {
                   await api.mutations.studySessions.create(
                     {
@@ -830,7 +906,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           lockoutStatus.minutesRemaining,
         );
         Alert.alert('Account Locked', lockoutMessage);
-        return { error: { message: lockoutMessage } };
+        return { error: new Error(lockoutMessage) };
       }
 
       // Add timeout wrapper for login to prevent indefinite hanging
@@ -1158,7 +1234,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error_message: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      return { error };
+      return { error: error instanceof Error ? error : new Error(String(error)) };
     }
   };
 

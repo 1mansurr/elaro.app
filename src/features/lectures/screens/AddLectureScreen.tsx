@@ -78,7 +78,8 @@ const AddLectureScreen = () => {
     initialData?.course || null,
   );
   const [lectureName, setLectureName] = useState(initialData?.title || '');
-  const [startTime, setStartTime] = useState<Date>(() => {
+  // Initialize times as null - user must explicitly set them
+  const [startTime, setStartTime] = useState<Date | null>(() => {
     if (initialData?.dateTime) {
       const date =
         initialData.dateTime instanceof Date
@@ -86,29 +87,30 @@ const AddLectureScreen = () => {
           : new Date(initialData.dateTime);
       return date;
     }
-    return new Date();
+    return null;
   });
-  const [endTime, setEndTime] = useState<Date>(() => {
-    const start = (() => {
-      if (initialData?.dateTime) {
-        return initialData.dateTime instanceof Date
+  const [endTime, setEndTime] = useState<Date | null>(() => {
+    if (initialData?.dateTime) {
+      const date =
+        initialData.dateTime instanceof Date
           ? initialData.dateTime
           : new Date(initialData.dateTime);
-      }
-      return new Date();
-    })();
-    const end = new Date(start);
-    end.setHours(end.getHours() + 1);
-    return end;
+      const end = new Date(date);
+      end.setHours(end.getHours() + 1);
+      return end;
+    }
+    return null;
   });
+  const [hasPickedStartTime, setHasPickedStartTime] = useState(false);
+  const [hasPickedEndTime, setHasPickedEndTime] = useState(false);
   const [venue, setVenue] = useState('');
   const [recurrence, setRecurrence] = useState<RecurrenceType>('none');
 
-  // Reminders hook
+  // Reminders hook - no preselected reminders
   const { reminders, addReminder, removeReminder, setReminders } = useReminders(
     {
       maxReminders: 2,
-      initialReminders: [30],
+      initialReminders: [],
     },
   );
 
@@ -174,9 +176,11 @@ const AddLectureScreen = () => {
       }
       if (taskToEdit.startTime) {
         setStartTime(new Date(taskToEdit.startTime));
+        setHasPickedStartTime(true);
       }
       if (taskToEdit.endTime) {
         setEndTime(new Date(taskToEdit.endTime));
+        setHasPickedEndTime(true);
       } else if (taskToEdit.date) {
         const end = new Date(taskToEdit.date);
         end.setHours(end.getHours() + 1);
@@ -201,6 +205,10 @@ const AddLectureScreen = () => {
         }
         if (draft.endTime) {
           setEndTime(new Date(draft.endTime));
+          setHasPickedEndTime(true);
+        }
+        if (draft.dateTime) {
+          setHasPickedStartTime(true);
         }
         setRecurrence(draft.recurrence || 'none');
         if (draft.reminders) {
@@ -245,7 +253,8 @@ const AddLectureScreen = () => {
 
   const handleStartTimeChange = (time: Date) => {
     setStartTime(time);
-    if (endTime <= time) {
+    setHasPickedStartTime(true);
+    if (endTime && endTime <= time) {
       const newEndTime = new Date(time);
       newEndTime.setHours(newEndTime.getHours() + 1);
       setEndTime(newEndTime);
@@ -254,18 +263,32 @@ const AddLectureScreen = () => {
 
   const handleEndTimeChange = (time: Date) => {
     setEndTime(time);
+    setHasPickedEndTime(true);
   };
 
   const handleDateChange = (date: Date) => {
     const newStartTime = new Date(date);
-    newStartTime.setHours(startTime.getHours());
-    newStartTime.setMinutes(startTime.getMinutes());
+    if (startTime) {
+      newStartTime.setHours(startTime.getHours());
+      newStartTime.setMinutes(startTime.getMinutes());
+    }
     setStartTime(newStartTime);
+    if (!hasPickedStartTime) {
+      setHasPickedStartTime(true);
+    }
 
     const newEndTime = new Date(date);
-    newEndTime.setHours(endTime.getHours());
-    newEndTime.setMinutes(endTime.getMinutes());
+    if (endTime) {
+      newEndTime.setHours(endTime.getHours());
+      newEndTime.setMinutes(endTime.getMinutes());
+    } else {
+      // Default to 1 hour after start if end time not set
+      newEndTime.setHours(newStartTime.getHours() + 1);
+    }
     setEndTime(newEndTime);
+    if (!hasPickedEndTime) {
+      setHasPickedEndTime(true);
+    }
   };
 
   const handleAddReminder = () => {
@@ -287,6 +310,8 @@ const AddLectureScreen = () => {
     lectureName.trim().length > 0 &&
     startTime &&
     endTime &&
+    hasPickedStartTime &&
+    hasPickedEndTime &&
     startTime < endTime;
 
   const handleSave = async () => {
@@ -485,6 +510,8 @@ const AddLectureScreen = () => {
           onStartTimeChange={handleStartTimeChange}
           onEndTimeChange={handleEndTimeChange}
           onDateChange={handleDateChange}
+          hasPickedStartTime={hasPickedStartTime}
+          hasPickedEndTime={hasPickedEndTime}
         />
 
         <View

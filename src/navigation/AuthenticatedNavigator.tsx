@@ -437,20 +437,33 @@ export const AuthenticatedNavigator: React.FC = () => {
   // Enable smart preloading for better performance
   useSmartPreloading();
 
-  // GUARD: Show loading screen while AuthContext is initializing
-  // This prevents race conditions where onboarding is shown before we have a valid profile
-  if (isInitializing) {
-    if (__DEV__) {
-      console.log('⏳ [AuthenticatedNavigator] Waiting for auth initialization...');
-    }
-    return <LoadingFallback />;
-  }
-
   // Check AddCourseFirst screen status and course count
   // NOTE: PostOnboardingWelcomeScreen manages its own visibility - we don't check it here
+  // IMPORTANT: This useEffect must be called BEFORE any early returns to follow Rules of Hooks
+  // All hooks must be called in the same order on every render
   useEffect(() => {
+    // STEP 2 FIX: Add user guard to prevent crashes if user is null or minimal user without ID
+    if (!user?.id) {
+      setIsCheckingWelcome(false);
+      setHasSeenAddCourseFirst(true); // Default to true (skip screen) if no user
+      setCourseCount(0);
+      return;
+    }
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      if (isCheckingWelcome) {
+        console.warn(
+          '⚠️ [AuthenticatedNavigator] Welcome check timeout - proceeding with defaults',
+        );
+        setIsCheckingWelcome(false);
+        setHasSeenAddCourseFirst(true);
+        setCourseCount(0);
+      }
+    }, 5000); // 5 second timeout
+
     const checkWelcomeScreens = async () => {
-      if (!user || !user.onboarding_completed) {
+      if (!user.onboarding_completed) {
         setIsCheckingWelcome(false);
         return;
       }
@@ -488,7 +501,23 @@ export const AuthenticatedNavigator: React.FC = () => {
     };
 
     checkWelcomeScreens();
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, [user]);
+
+  // GUARD: Show loading screen while AuthContext is initializing
+  // This prevents race conditions where onboarding is shown before we have a valid profile
+  // NOTE: All hooks must be called BEFORE this early return to follow Rules of Hooks
+  if (isInitializing) {
+    if (__DEV__) {
+      console.log(
+        '⏳ [AuthenticatedNavigator] Waiting for auth initialization...',
+      );
+    }
+    return <LoadingFallback />;
+  }
 
   // Show onboarding if user hasn't completed it
   // NOTE: This check only runs after isInitializing is false, ensuring we have a valid profile

@@ -13,12 +13,7 @@
  * Navigation is optional - render guard handles visibility, not navigation.
  */
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,7 +39,9 @@ export const PostOnboardingWelcomeScreen: React.FC = () => {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [isChecking, setIsChecking] = useState(true);
-  const [hasSeenInStorage, setHasSeenInStorage] = useState<boolean | null>(null);
+  const [hasSeenInStorage, setHasSeenInStorage] = useState<boolean | null>(
+    null,
+  );
   const [dismissedInSession, setDismissedInSession] = useState(false);
 
   // STRICT RENDER CONTRACT: Check AsyncStorage once on mount

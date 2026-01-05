@@ -25,6 +25,7 @@ import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+import { generateUUID } from '@/utils/uuid';
 
 const ReminderOptions = [
   { label: '10 minutes before', value: 10 },
@@ -41,8 +42,9 @@ const AddLectureRemindersScreen = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
+  // Initialize with empty array - user must explicitly select reminders
   const [selectedReminders, setSelectedReminders] = useState<number[]>(
-    courseData.reminders || [30],
+    courseData.reminders || [],
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -69,8 +71,14 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
+      // Generate idempotency key for the mutation
+      const idempotencyKey = generateUUID();
+
       const { error } = await invokeEdgeFunctionWithAuth('create-course', {
         body: taskData,
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
       });
 
       if (error) throw new Error(error.message);
@@ -144,10 +152,16 @@ const AddLectureRemindersScreen = () => {
         return;
       }
 
+      // Generate idempotency key for the mutation
+      const idempotencyKey = generateUUID();
+
       const { error, data } = await invokeEdgeFunctionWithAuth(
         'create-course',
         {
           body: finalPayload,
+          headers: {
+            'Idempotency-Key': idempotencyKey,
+          },
         },
       );
 
@@ -161,16 +175,27 @@ const AddLectureRemindersScreen = () => {
         throw error;
       }
 
-      Alert.alert(
-        'Success!',
-        `${finalPayload.courseName} has been added to your schedule.`,
-      );
+      // Invalidate queries first (non-blocking, fire-and-forget)
+      // This allows queries to refetch in the background while we navigate
+      // Use refetchType: 'active' to ensure active queries refetch immediately
+      queryClient.invalidateQueries({ 
+        queryKey: ['courses'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['lectures'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['homeScreenData'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({ 
+        queryKey: ['calendarData'],
+        refetchType: 'active',
+      });
 
-      await queryClient.invalidateQueries({ queryKey: ['courses'] });
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-
+      // Reset course data
       resetCourseData();
 
       // Check if user came from AddCourseFirstScreen (to know if we should navigate to PostOnboardingWelcome)
@@ -185,9 +210,8 @@ const AddLectureRemindersScreen = () => {
       const currentRoute =
         parentNav?.getState()?.routes[parentNav?.getState()?.index || 0];
 
-      // If user came from AddCourseFirst and we're still in AddCourseFlow,
-      // request navigation to PostOnboardingWelcome.
-      // The screen itself will check if it should show and redirect if already seen.
+      // Navigate FIRST, then show success message
+      // This prevents the alert from blocking navigation and causing app restarts
       if (
         hasSeenAddCourseFirst === 'true' &&
         currentRoute?.name === 'AddCourseFlow'
@@ -199,6 +223,13 @@ const AddLectureRemindersScreen = () => {
           );
         }
         parentNav?.navigate('PostOnboardingWelcome' as any);
+        // Show success message after navigation completes
+        setTimeout(() => {
+          Alert.alert(
+            'Success!',
+            `${finalPayload.courseName} has been added to your schedule.`,
+          );
+        }, 300);
       } else {
         // Otherwise go back normally
         if (__DEV__) {
@@ -211,6 +242,13 @@ const AddLectureRemindersScreen = () => {
           );
         }
         parentNav?.goBack();
+        // Show success message after navigation completes
+        setTimeout(() => {
+          Alert.alert(
+            'Success!',
+            `${finalPayload.courseName} has been added to your schedule.`,
+          );
+        }, 300);
       }
     } catch (err) {
       console.error('Failed to create course and lecture:', err);

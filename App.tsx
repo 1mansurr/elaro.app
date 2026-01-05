@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import {
   NavigationContainer,
   NavigationContainerRef,
@@ -488,7 +488,6 @@ const NavigationStateValidator: React.FC<{
   useEffect(() => {
     let isCancelled = false;
     let maxTimeoutId: NodeJS.Timeout | null = null;
-    let validationTimeoutId: NodeJS.Timeout | null = null;
 
     console.log('🔍 [NavigationStateValidator] Effect triggered', {
       authLoading,
@@ -499,6 +498,7 @@ const NavigationStateValidator: React.FC<{
 
     const validateNavigationState = async () => {
       console.log('🚀 [NavigationStateValidator] Starting validation');
+      // STEP 3 FIX: Consolidated to single master timeout
       // GUARANTEED EXIT: Maximum timeout ensures we always resolve
       // This is the final safety net - app will render after 3 seconds maximum
       maxTimeoutId = setTimeout(() => {
@@ -614,7 +614,7 @@ const NavigationStateValidator: React.FC<{
               const hasActiveSubscription =
                 subscriptionStatus === 'active' ||
                 (subscriptionTier && subscriptionTier !== 'free');
-              
+
               if (hasActiveSubscription) {
                 console.log(
                   '🚫 [NavigationStateValidator] PaywallScreen detected but subscription is active. Discarding saved state.',
@@ -643,21 +643,14 @@ const NavigationStateValidator: React.FC<{
                 // Ignore errors - we're clearing state anyway
               });
               if (isCancelled) return;
-              if (maxTimeoutId) clearTimeout(maxTimeoutId);
               onStateValidated(null);
               return;
             }
 
+            // STEP 3 FIX: Removed validationTimeoutId - rely on master timeout
             // Get safe initial state with timeout protection
             // This ensures we never wait indefinitely for navigation sync
-            validationTimeoutId = setTimeout(() => {
-              if (isCancelled) return;
-              console.warn(
-                '⚠️ [NavigationStateValidator] Navigation sync timeout - using safe fallback',
-              );
-              if (maxTimeoutId) clearTimeout(maxTimeoutId);
-              onStateValidated(null);
-            }, 1500); // 1.5 second timeout for navigation sync
+            // Master timeout (maxTimeoutId) will handle overall timeout
 
             // Pass user info for conditional route validation (onboarding, subscription)
             const userInfo = user
@@ -681,7 +674,6 @@ const NavigationStateValidator: React.FC<{
             ]);
 
             if (isCancelled) return;
-            if (validationTimeoutId) clearTimeout(validationTimeoutId);
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
 
             console.log(
@@ -699,7 +691,6 @@ const NavigationStateValidator: React.FC<{
             await navigationSyncService.clearState().catch(() => {
               // Ignore errors during cleanup
             });
-            if (validationTimeoutId) clearTimeout(validationTimeoutId);
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
             onStateValidated(null);
             return;
@@ -720,7 +711,6 @@ const NavigationStateValidator: React.FC<{
           '❌ [NavigationStateValidator] Unexpected error during validation:',
           error,
         );
-        if (validationTimeoutId) clearTimeout(validationTimeoutId);
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
         onStateValidated(null);
       }
@@ -738,7 +728,6 @@ const NavigationStateValidator: React.FC<{
       );
       isCancelled = true;
       if (maxTimeoutId) clearTimeout(maxTimeoutId);
-      if (validationTimeoutId) clearTimeout(validationTimeoutId);
     };
   }, [
     authLoading,
@@ -1057,9 +1046,12 @@ const AppWithErrorBoundary: React.FC<{
                 flex: 1,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: COLORS.background,
+                backgroundColor: '#f8f9fa', // Changed from COLORS.background to ensure visibility
               }}>
               <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ marginTop: 16, color: '#666', fontSize: 14 }}>
+                Loading...
+              </Text>
               <NavigationStateValidator
                 initialNavigationState={initialNavigationState}
                 onStateValidated={handleStateValidated}
@@ -1614,25 +1606,16 @@ function App() {
                 ): string | null => {
                   if (!navState?.routes || navState.routes.length === 0)
                     return null;
-                  const currentRoute =
-                    navState.routes[navState.index || 0];
+                  const currentRoute = navState.routes[navState.index || 0];
                   if (!currentRoute) return null;
-                  if (
-                    currentRoute.state &&
-                    'routes' in currentRoute.state
-                  ) {
-                    return getRouteName(
-                      currentRoute.state as NavigationState,
-                    );
+                  if (currentRoute.state && 'routes' in currentRoute.state) {
+                    return getRouteName(currentRoute.state as NavigationState);
                   }
                   return currentRoute.name || null;
                 };
 
                 const currentRoute = getRouteName(state);
-                if (
-                  currentRoute &&
-                  isNonRestorableRoute(currentRoute)
-                ) {
+                if (currentRoute && isNonRestorableRoute(currentRoute)) {
                   console.log(
                     `🚫 [App] Non-restorable route "${currentRoute}" detected in loaded state. Discarding.`,
                   );

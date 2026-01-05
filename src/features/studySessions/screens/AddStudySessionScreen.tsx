@@ -107,19 +107,23 @@ const AddStudySessionScreen = () => {
     initialData?.course || null,
   );
   const [topic, setTopic] = useState(initialData?.title || '');
-  const [sessionDate, setSessionDate] = useState<Date>(() => {
+  // Initialize date as null - user must explicitly set it
+  const [sessionDate, setSessionDate] = useState<Date | null>(() => {
     if (initialData?.dateTime) {
       return initialData.dateTime instanceof Date
         ? initialData.dateTime
         : new Date(initialData.dateTime);
     }
-    return new Date();
+    return null;
   });
+  const [hasPickedDate, setHasPickedDate] = useState(false);
+  const [hasPickedTime, setHasPickedTime] = useState(false);
 
   // Optional fields
   const [description, setDescription] = useState('');
   const [hasSpacedRepetition, setHasSpacedRepetition] = useState(false);
-  const [reminders, setReminders] = useState<number[]>([15]); // Default 15-min reminder
+  // Initialize with empty array - user must explicitly select reminders
+  const [reminders, setReminders] = useState<number[]>([]);
 
   // UI state
   const [showOptionalFields, setShowOptionalFields] = useState(true);
@@ -145,6 +149,8 @@ const AddStudySessionScreen = () => {
       setTopic(taskToEdit.title || taskToEdit.name || '');
       if (taskToEdit.date) {
         setSessionDate(new Date(taskToEdit.date));
+        setHasPickedDate(true);
+        setHasPickedTime(true);
       }
       if (taskToEdit.description) {
         setDescription(taskToEdit.description);
@@ -166,10 +172,12 @@ const AddStudySessionScreen = () => {
         setTopic(draft.title);
         if (draft.dateTime) {
           setSessionDate(new Date(draft.dateTime));
+          setHasPickedDate(true);
+          setHasPickedTime(true);
         }
         setDescription(draft.description || '');
         setHasSpacedRepetition(draft.hasSpacedRepetition || false);
-        setReminders(draft.reminders || [15]);
+        setReminders(draft.reminders || []);
       }
     };
 
@@ -241,7 +249,12 @@ const AddStudySessionScreen = () => {
   }, [isGuest, user?.id]);
 
   // Check if form is valid
-  const isFormValid = selectedCourse && topic.trim().length > 0 && sessionDate;
+  const isFormValid =
+    selectedCourse &&
+    topic.trim().length > 0 &&
+    sessionDate &&
+    hasPickedDate &&
+    hasPickedTime;
 
   // Handle template selection
   const handleTemplateSelect = (template: any) => {
@@ -292,16 +305,24 @@ const AddStudySessionScreen = () => {
 
   const handleDateChange = (date: Date) => {
     const newSessionDate = new Date(date);
-    newSessionDate.setHours(sessionDate.getHours());
-    newSessionDate.setMinutes(sessionDate.getMinutes());
+    if (sessionDate) {
+      newSessionDate.setHours(sessionDate.getHours());
+      newSessionDate.setMinutes(sessionDate.getMinutes());
+    }
     setSessionDate(newSessionDate);
+    setHasPickedDate(true);
   };
 
   const handleTimeChange = (time: Date) => {
-    const newSessionDate = new Date(sessionDate);
-    newSessionDate.setHours(time.getHours());
-    newSessionDate.setMinutes(time.getMinutes());
-    setSessionDate(newSessionDate);
+    const newSessionDate = sessionDate || new Date();
+    const finalDate = new Date(newSessionDate);
+    finalDate.setHours(time.getHours());
+    finalDate.setMinutes(time.getMinutes());
+    setSessionDate(finalDate);
+    setHasPickedTime(true);
+    if (!hasPickedDate) {
+      setHasPickedDate(true);
+    }
   };
 
   const handleRemoveReminder = (minutes: number) => {
@@ -610,7 +631,7 @@ const AddStudySessionScreen = () => {
           {/* Session Date & Time */}
           <View style={styles.field}>
             <CardBasedDateTimePicker
-              date={sessionDate}
+              date={sessionDate || new Date()}
               time={sessionDate}
               onDateChange={handleDateChange}
               onTimeChange={handleTimeChange}

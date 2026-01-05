@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useScreenTracking } from '@/hooks/useScreenTracking';
@@ -13,38 +13,25 @@ const LoadingFallback = () => (
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f8f9fa',
+      backgroundColor: '#f8f9fa', // Changed from COLORS.background to ensure visibility
     }}>
     <ActivityIndicator size="large" color="#007AFF" />
+    <Text style={{ marginTop: 16, color: '#666', fontSize: 14 }}>
+      Loading...
+    </Text>
   </View>
 );
 
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
   const { session, loading } = useAuth();
-  const [forceShow, setForceShow] = useState(false);
 
   // Enable automatic screen tracking
   useScreenTracking();
 
-  // Add maximum timeout - don't wait more than 5 seconds for auth to load
-  useEffect(() => {
-    if (loading) {
-      const timeout = setTimeout(() => {
-        console.warn(
-          '⚠️ [AppNavigator] Auth loading timeout - showing app anyway',
-        );
-        setForceShow(true);
-      }, 5000); // 5 second max timeout
-
-      return () => clearTimeout(timeout);
-    } else {
-      setForceShow(false);
-    }
-  }, [loading]);
-
-  // Show loading screen while determining auth state (but not forever)
-  if (loading && !forceShow) {
+  // STEP 3 FIX: Removed forceShow timeout - rely on master timeout in AppWithErrorBoundary
+  // Show loading screen while determining auth state
+  if (loading) {
     return <LoadingFallback />;
   }
 

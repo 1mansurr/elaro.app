@@ -14,11 +14,13 @@ import {
 /**
  * Extracts the root stack active route name from navigation state.
  * This is the single source of truth for tab bar visibility.
- * 
+ *
  * Traverses the navigation state tree to find the root stack navigator
  * and returns the active route name at that level.
  */
-const getRootActiveRouteName = (rootState: NavigationState | undefined): string | null => {
+const getRootActiveRouteName = (
+  rootState: NavigationState | undefined,
+): string | null => {
   if (!rootState || !rootState.routes || rootState.routes.length === 0) {
     return null;
   }
@@ -26,7 +28,7 @@ const getRootActiveRouteName = (rootState: NavigationState | undefined): string 
   // Get the active route at the root level
   const activeIndex = rootState.index ?? 0;
   const activeRoute = rootState.routes[activeIndex];
-  
+
   if (!activeRoute || !activeRoute.name) {
     return null;
   }

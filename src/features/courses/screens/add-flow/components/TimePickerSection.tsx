@@ -14,8 +14,8 @@ import { formatDate as i18nFormatDate } from '@/i18n';
 import { useTheme } from '@/hooks/useTheme';
 
 interface TimePickerSectionProps {
-  startTime: Date;
-  endTime: Date;
+  startTime: Date | null;
+  endTime: Date | null;
   activePicker: 'day' | 'start' | 'end' | null;
   onToggle: (picker: 'start' | 'end') => void;
   onTimeChange: (
@@ -23,6 +23,8 @@ interface TimePickerSectionProps {
     selectedDate?: Date,
     type?: 'start' | 'end',
   ) => void;
+  hasPickedStartTime?: boolean;
+  hasPickedEndTime?: boolean;
 }
 
 export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
@@ -31,6 +33,8 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
   activePicker,
   onToggle,
   onTimeChange,
+  hasPickedStartTime = false,
+  hasPickedEndTime = false,
 }) => {
   const { theme } = useTheme();
 
@@ -39,6 +43,7 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
   };
 
   const getDuration = () => {
+    if (!startTime || !endTime) return '';
     const diff = endTime.getTime() - startTime.getTime();
     const minutes = Math.round(diff / (1000 * 60));
     if (minutes < 60) {
@@ -48,6 +53,10 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
     const mins = minutes % 60;
     return mins > 0 ? `${hours}h ${mins}m` : `${hours} hr`;
   };
+
+  // Use a default date for the picker when time is null
+  const pickerStartTime = startTime || new Date();
+  const pickerEndTime = endTime || new Date();
 
   return (
     <View style={[styles.timeSection, { backgroundColor: '#f8fafc' }]}>
@@ -59,8 +68,17 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
           <Text style={[styles.cardLabel, { color: theme.text }]}>Starts</Text>
         </View>
         <TouchableOpacity onPress={() => onToggle('start')}>
-          <Text style={[styles.timeText, { color: theme.text }]}>
-            {formatTime(startTime)}
+          <Text
+            style={[
+              styles.timeText,
+              {
+                color: hasPickedStartTime ? theme.text : '#9ca3af',
+                fontWeight: hasPickedStartTime ? 'bold' : '500',
+              },
+            ]}>
+            {hasPickedStartTime && startTime
+              ? formatTime(startTime)
+              : 'Set Time'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -69,7 +87,7 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
       {activePicker === 'start' && (
         <View style={styles.inlinePickerContainer}>
           <DateTimePicker
-            value={startTime}
+            value={pickerStartTime}
             mode="time"
             display="spinner"
             onChange={(e, date) => onTimeChange(e, date, 'start')}
@@ -86,10 +104,19 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
           <Text style={[styles.cardLabel, { color: theme.text }]}>Ends</Text>
         </View>
         <View style={styles.timeRowRight}>
-          <Text style={styles.durationBadge}>{getDuration()}</Text>
+          {hasPickedStartTime && hasPickedEndTime && startTime && endTime && (
+            <Text style={styles.durationBadge}>{getDuration()}</Text>
+          )}
           <TouchableOpacity onPress={() => onToggle('end')}>
-            <Text style={[styles.timeText, { color: theme.text }]}>
-              {formatTime(endTime)}
+            <Text
+              style={[
+                styles.timeText,
+                {
+                  color: hasPickedEndTime ? theme.text : '#9ca3af',
+                  fontWeight: hasPickedEndTime ? 'bold' : '500',
+                },
+              ]}>
+              {hasPickedEndTime && endTime ? formatTime(endTime) : 'Set Time'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -99,7 +126,7 @@ export const TimePickerSection: React.FC<TimePickerSectionProps> = ({
       {activePicker === 'end' && (
         <View style={styles.inlinePickerContainer}>
           <DateTimePicker
-            value={endTime}
+            value={pickerEndTime}
             mode="time"
             display="spinner"
             onChange={(e, date) => onTimeChange(e, date, 'end')}

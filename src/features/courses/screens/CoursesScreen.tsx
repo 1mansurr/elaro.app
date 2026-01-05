@@ -1,5 +1,5 @@
 // FILE: src/features/courses/screens/CoursesScreen.tsx
-import React, { useLayoutEffect, useCallback, useState, memo } from 'react';
+import React, { useLayoutEffect, useCallback, useState, memo, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCourses } from '@/hooks/useDataQueries';
@@ -28,6 +28,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 import { BlurView } from 'expo-blur';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/services/supabase';
 
 // Define the navigation prop type for this screen
 type CoursesScreenNavigationProp =
@@ -77,6 +79,10 @@ const CoursesScreen = () => {
   const offerings = { current: null as any };
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  
+  // State for total course count (to check if user has hit the limit)
+  const [totalCourseCount, setTotalCourseCount] = useState<number | null>(null);
 
   // JS Thread monitoring (dev only)
   // Increased threshold to 25ms to reduce false positives (25ms = 40fps, acceptable for list screens)
@@ -131,6 +137,63 @@ const CoursesScreen = () => {
 
   // Flatten all pages into a single array
   const courses = data?.pages.flatMap(page => page.courses) ?? [];
+
+  // Fetch total course count to check if user has hit the free tier limit
+  React.useEffect(() => {
+    const fetchTotalCourseCount = async () => {
+      if (!user?.id) {
+        setTotalCourseCount(null);
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('deleted_at', null);
+
+        if (error) {
+          console.error('Error fetching total course count:', error);
+          setTotalCourseCount(null);
+        } else {
+          setTotalCourseCount(count || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching total course count:', error);
+        setTotalCourseCount(null);
+      }
+    };
+
+    fetchTotalCourseCount();
+  }, [user?.id]);
+
+  // Refetch courses when screen comes into focus, but only if:
+  // 1. We don't have any data yet, OR
+  // 2. The data is stale (older than 30 seconds)
+  // This prevents excessive refetches while still ensuring fresh data after course creation
+  const lastRefetchTime = useRef<number>(0);
+  const REFETCH_COOLDOWN = 30000; // 30 seconds cooldown between refetches
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      const timeSinceLastRefetch = now - lastRefetchTime.current;
+      
+      // Only refetch if:
+      // - Not currently loading/refetching
+      // - At least 30 seconds have passed since the last refetch (cooldown)
+      // - We don't have data (first load) OR cooldown has passed (stale data refresh)
+      if (
+        !isLoading &&
+        !isRefetching &&
+        timeSinceLastRefetch >= REFETCH_COOLDOWN
+      ) {
+        lastRefetchTime.current = now;
+        refetch();
+      }
+    }, [refetch, isLoading, isRefetching, courses.length]),
+  );
 
   // Handle upgrade to unlock locked courses
   const handleUpgrade = useCallback(async () => {
@@ -217,12 +280,61 @@ const CoursesScreen = () => {
     );
   }, [isFetchingNextPage, theme]);
 
+  // Check if user should see the course limit banner
+  const subscriptionTier = user?.subscription_tier || 'free';
+  const shouldShowLimitBanner =
+    subscriptionTier === 'free' && totalCourseCount !== null && totalCourseCount >= 2;
+
+  // Course limit banner component
+  const renderCourseLimitBanner = useCallback(() => {
+    if (!shouldShowLimitBanner) {
+      return null;
+    }
+
+    return (
+      <View
+        style={[
+          styles.limitBanner,
+          {
+            backgroundColor: theme.warningBackground || '#FEF3C7',
+            borderColor: theme.border || '#FCD34D',
+          },
+        ]}>
+        <View style={styles.limitBannerContent}>
+          <Ionicons
+            name="information-circle"
+            size={20}
+            color={theme.warningText || '#92400E'}
+            style={styles.limitBannerIcon}
+          />
+          <Text
+            style={[
+              styles.limitBannerText,
+              { color: theme.warningText || '#92400E' },
+            ]}>
+            You're on the free plan with a limit of 2 courses. Upgrade to add
+            and view unlimited courses.
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.limitBannerButton,
+            { backgroundColor: COLORS.primary },
+          ]}
+          onPress={handleUpgrade}
+          activeOpacity={0.8}>
+          <Text style={styles.limitBannerButtonText}>Upgrade</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [shouldShowLimitBanner, theme, handleUpgrade]);
+
   // Empty state - memoized to prevent re-renders
   const renderEmptyState = useCallback(
     () => (
       <View style={styles.emptyStateContainer}>
         <Ionicons
-          name={searchQuery.trim() ? "search-outline" : "book-outline"}
+          name={searchQuery.trim() ? 'search-outline' : 'book-outline'}
           size={64}
           color={theme.textSecondary || '#9ca3af'}
           style={styles.emptyStateIcon}
@@ -230,7 +342,11 @@ const CoursesScreen = () => {
         <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
           {searchQuery.trim() ? 'No courses found' : 'No courses yet'}
         </Text>
-        <Text style={[styles.emptyStateMessage, { color: theme.textSecondary || '#9ca3af' }]}>
+        <Text
+          style={[
+            styles.emptyStateMessage,
+            { color: theme.textSecondary || '#9ca3af' },
+          ]}>
           {searchQuery.trim()
             ? 'Try adjusting your search terms or filters.'
             : 'Create your first course to start organizing your studies. Tap "Add New Course" below to get started.'}
@@ -242,8 +358,13 @@ const CoursesScreen = () => {
 
   // Memoized header component to prevent re-renders
   const renderHeader = useCallback(
-    () => <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />,
-    [handleUpgrade],
+    () => (
+      <>
+        {renderCourseLimitBanner()}
+        <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
+      </>
+    ),
+    [renderCourseLimitBanner, handleUpgrade],
   );
 
   // getItemLayout for better FlatList performance (estimated item height: 88px)
@@ -334,9 +455,7 @@ const CoursesScreen = () => {
           refetch={refetch}
           isRefetching={isRefetching}
           onRefresh={refetch}
-          emptyTitle=""
-          emptyMessage=""
-          emptyIcon="">
+          emptyStateComponent={renderEmptyState()}>
           <FlatList
             data={courses}
             renderItem={renderCourse}
@@ -561,8 +680,9 @@ const styles = StyleSheet.create({
     paddingBottom: 200, // Space for bottom section
   },
   listContainerEmpty: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyStateContainer: {
     flex: 1,
@@ -570,6 +690,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 60,
     paddingHorizontal: SPACING.xl,
+    minHeight: 400,
   },
   emptyStateIcon: {
     marginBottom: SPACING.lg,
@@ -589,6 +710,38 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 24,
     maxWidth: 300,
+    alignSelf: 'center',
+  },
+  limitBanner: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  limitBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  limitBannerIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  limitBannerText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  limitBannerButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  limitBannerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   courseItem: {
     flexDirection: 'row',

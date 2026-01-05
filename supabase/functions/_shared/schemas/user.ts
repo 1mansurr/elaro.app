@@ -59,6 +59,14 @@ export const UpdateUserProfileSchema = z.object({
     .string()
     .max(100, 'University name must be 100 characters or less')
     .optional(),
+  program: z
+    .string()
+    .max(100, 'Program name must be 100 characters or less')
+    .optional(),
+  country: z
+    .string()
+    .max(50, 'Country name must be 50 characters or less')
+    .optional(),
   bio: z.string().max(500, 'Bio must be 500 characters or less').optional(),
 });
 

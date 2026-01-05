@@ -15,19 +15,21 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 interface CardBasedDateTimePickerProps {
-  date: Date;
-  time?: Date;
+  date: Date | null;
+  time?: Date | null;
   onDateChange: (date: Date) => void;
   onTimeChange?: (time: Date) => void;
   label: string;
   startLabel?: string;
   endLabel?: string;
   showDuration?: boolean;
-  startTime?: Date;
-  endTime?: Date;
+  startTime?: Date | null;
+  endTime?: Date | null;
   onStartTimeChange?: (time: Date) => void;
   onEndTimeChange?: (time: Date) => void;
   mode?: 'single' | 'range';
+  hasPickedStartTime?: boolean;
+  hasPickedEndTime?: boolean;
 }
 
 export const CardBasedDateTimePicker: React.FC<
@@ -46,6 +48,8 @@ export const CardBasedDateTimePicker: React.FC<
   onStartTimeChange,
   onEndTimeChange,
   mode = 'single',
+  hasPickedStartTime = false,
+  hasPickedEndTime = false,
 }) => {
   const { theme } = useTheme();
   const [showDatePicker, setShowDatePicker] = useState(false);
@@ -114,7 +118,11 @@ export const CardBasedDateTimePicker: React.FC<
     }
   };
 
-  if (mode === 'range' && startTime && endTime) {
+  if (mode === 'range') {
+    // Use default dates for picker when times are null
+    const pickerStartTime = startTime || new Date();
+    const pickerEndTime = endTime || new Date();
+
     return (
       <>
         <View
@@ -131,7 +139,7 @@ export const CardBasedDateTimePicker: React.FC<
               onPress={() => setShowDatePicker(true)}
               style={styles.dateButton}>
               <Text style={[styles.dateText, { color: theme.text }]}>
-                {formatDate(startTime)}
+                {startTime ? formatDate(startTime) : 'Select Date'}
               </Text>
             </TouchableOpacity>
           </View>
@@ -150,8 +158,17 @@ export const CardBasedDateTimePicker: React.FC<
               <TouchableOpacity
                 onPress={() => setShowTimePicker('start')}
                 style={styles.timeButton}>
-                <Text style={[styles.timeText, { color: theme.text }]}>
-                  {formatTime(startTime)}
+                <Text
+                  style={[
+                    styles.timeText,
+                    {
+                      color: hasPickedStartTime ? theme.text : '#9ca3af',
+                      fontWeight: hasPickedStartTime ? 'medium' : 'normal',
+                    },
+                  ]}>
+                  {hasPickedStartTime && startTime
+                    ? formatTime(startTime)
+                    : 'Set Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -161,32 +178,45 @@ export const CardBasedDateTimePicker: React.FC<
                 <Text style={[styles.timeLabel, { color: theme.text }]}>
                   {endLabel}
                 </Text>
-                {showDuration && (
-                  <View
-                    style={[
-                      styles.durationBadge,
-                      {
-                        backgroundColor: COLORS.primary + '1A',
-                        borderColor: COLORS.primary + '33',
-                      },
-                    ]}>
-                    <Ionicons
-                      name="time-outline"
-                      size={14}
-                      color={COLORS.primary}
-                    />
-                    <Text
-                      style={[styles.durationText, { color: COLORS.primary }]}>
-                      {getDuration()}
-                    </Text>
-                  </View>
-                )}
+                {showDuration &&
+                  hasPickedStartTime &&
+                  hasPickedEndTime &&
+                  startTime &&
+                  endTime && (
+                    <View
+                      style={[
+                        styles.durationBadge,
+                        {
+                          backgroundColor: COLORS.primary + '1A',
+                          borderColor: COLORS.primary + '33',
+                        },
+                      ]}>
+                      <Ionicons
+                        name="time-outline"
+                        size={14}
+                        color={COLORS.primary}
+                      />
+                      <Text
+                        style={[styles.durationText, { color: COLORS.primary }]}>
+                        {getDuration()}
+                      </Text>
+                    </View>
+                  )}
               </View>
               <TouchableOpacity
                 onPress={() => setShowTimePicker('end')}
                 style={styles.timeButton}>
-                <Text style={[styles.timeText, { color: theme.text }]}>
-                  {formatTime(endTime)}
+                <Text
+                  style={[
+                    styles.timeText,
+                    {
+                      color: hasPickedEndTime ? theme.text : '#9ca3af',
+                      fontWeight: hasPickedEndTime ? 'medium' : 'normal',
+                    },
+                  ]}>
+                  {hasPickedEndTime && endTime
+                    ? formatTime(endTime)
+                    : 'Set Time'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -195,7 +225,7 @@ export const CardBasedDateTimePicker: React.FC<
 
         {showDatePicker && (
           <DateTimePicker
-            value={startTime}
+            value={pickerStartTime}
             mode="date"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleDateChange}
@@ -203,7 +233,7 @@ export const CardBasedDateTimePicker: React.FC<
         )}
         {showTimePicker && (
           <DateTimePicker
-            value={showTimePicker === 'start' ? startTime : endTime}
+            value={showTimePicker === 'start' ? pickerStartTime : pickerEndTime}
             mode="time"
             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
             onChange={handleTimeChange}
@@ -239,12 +269,19 @@ export const CardBasedDateTimePicker: React.FC<
               size={20}
               color={COLORS.primary}
             />
-            <Text style={[styles.singleButtonText, { color: theme.text }]}>
-              Select Date
+            <Text
+              style={[
+                styles.singleButtonText,
+                {
+                  color: date ? theme.text : '#9ca3af',
+                  fontWeight: date ? 'medium' : 'normal',
+                },
+              ]}>
+              {date ? 'Select Date' : 'Set Date'}
             </Text>
           </TouchableOpacity>
 
-          {time && onTimeChange && (
+          {onTimeChange && (
             <TouchableOpacity
               style={[
                 styles.singleButton,
@@ -255,8 +292,15 @@ export const CardBasedDateTimePicker: React.FC<
               ]}
               onPress={() => setShowTimePicker('single')}>
               <Ionicons name="time-outline" size={20} color={COLORS.primary} />
-              <Text style={[styles.singleButtonText, { color: theme.text }]}>
-                Select Time
+              <Text
+                style={[
+                  styles.singleButtonText,
+                  {
+                    color: time ? theme.text : '#9ca3af',
+                    fontWeight: time ? 'medium' : 'normal',
+                  },
+                ]}>
+                {time ? 'Select Time' : 'Set Time'}
               </Text>
             </TouchableOpacity>
           )}
@@ -265,16 +309,16 @@ export const CardBasedDateTimePicker: React.FC<
 
       {showDatePicker && (
         <DateTimePicker
-          value={date}
+          value={date || new Date()}
           mode="date"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleDateChange}
           minimumDate={new Date()}
         />
       )}
-      {showTimePicker === 'single' && time && (
+      {showTimePicker === 'single' && (
         <DateTimePicker
-          value={time}
+          value={time || new Date()}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}
           onChange={handleTimeChange}

@@ -42,29 +42,39 @@ const DueDateScreen = () => {
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [hasPickedDate, setHasPickedDate] = useState(false);
+  const [hasPickedTime, setHasPickedTime] = useState(false);
 
-  // Initialize with current date/time if not set
-  const dueDate = assignmentData.dueDate || new Date();
+  // Initialize as null - user must explicitly set it
+  const dueDate = assignmentData.dueDate || null;
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       const newDueDate = new Date(selectedDate);
-      newDueDate.setHours(dueDate.getHours());
-      newDueDate.setMinutes(dueDate.getMinutes());
+      if (dueDate) {
+        newDueDate.setHours(dueDate.getHours());
+        newDueDate.setMinutes(dueDate.getMinutes());
+      }
 
       updateAssignmentData({ dueDate: newDueDate });
+      setHasPickedDate(true);
     }
   };
 
   const handleTimeChange = (event: any, selectedTime?: Date) => {
     setShowTimePicker(Platform.OS === 'ios');
     if (selectedTime) {
-      const newDueDate = new Date(dueDate);
-      newDueDate.setHours(selectedTime.getHours());
-      newDueDate.setMinutes(selectedTime.getMinutes());
+      const newDueDate = dueDate || new Date();
+      const finalDate = new Date(newDueDate);
+      finalDate.setHours(selectedTime.getHours());
+      finalDate.setMinutes(selectedTime.getMinutes());
 
-      updateAssignmentData({ dueDate: newDueDate });
+      updateAssignmentData({ dueDate: finalDate });
+      setHasPickedTime(true);
+      if (!hasPickedDate) {
+        setHasPickedDate(true);
+      }
     }
   };
 
@@ -80,7 +90,11 @@ const DueDateScreen = () => {
     navigation.goBack();
   };
 
-  const isValid = assignmentData.dueDate && assignmentData.dueDate > new Date();
+  const isValid =
+    assignmentData.dueDate &&
+    hasPickedDate &&
+    hasPickedTime &&
+    assignmentData.dueDate > new Date();
 
   return (
     <View style={styles.container}>
@@ -105,23 +119,39 @@ const DueDateScreen = () => {
             <TouchableOpacity
               style={styles.dateTimeButton}
               onPress={() => setShowDatePicker(true)}>
-              <Text style={styles.dateTimeButtonText}>
-                {format(dueDate, 'MMM dd, yyyy')}
+              <Text
+                style={[
+                  styles.dateTimeButtonText,
+                  {
+                    color: hasPickedDate ? '#333' : '#9ca3af',
+                    fontWeight: hasPickedDate ? '500' : 'normal',
+                  },
+                ]}>
+                {hasPickedDate && dueDate
+                  ? format(dueDate, 'MMM dd, yyyy')
+                  : 'Select Date'}
               </Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.dateTimeButton}
               onPress={() => setShowTimePicker(true)}>
-              <Text style={styles.dateTimeButtonText}>
-                {format(dueDate, 'h:mm a')}
+              <Text
+                style={[
+                  styles.dateTimeButtonText,
+                  {
+                    color: hasPickedTime && dueDate ? '#333' : '#9ca3af',
+                    fontWeight: hasPickedTime && dueDate ? '500' : 'normal',
+                  },
+                ]}>
+                {hasPickedTime && dueDate ? format(dueDate, 'h:mm a') : 'Set Time'}
               </Text>
             </TouchableOpacity>
           </View>
 
           {showDatePicker && (
             <DateTimePicker
-              value={dueDate}
+              value={dueDate || new Date()}
               mode="date"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleDateChange}
@@ -131,7 +161,7 @@ const DueDateScreen = () => {
 
           {showTimePicker && (
             <DateTimePicker
-              value={dueDate}
+              value={dueDate || new Date()}
               mode="time"
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={handleTimeChange}
@@ -139,7 +169,7 @@ const DueDateScreen = () => {
           )}
         </View>
 
-        {!isValid && assignmentData.dueDate && (
+        {!isValid && dueDate && (
           <View style={styles.warningContainer}>
             <Text style={styles.warningText}>
               Due date must be in the future
@@ -147,7 +177,7 @@ const DueDateScreen = () => {
           </View>
         )}
 
-        {assignmentData.dueDate && isValid && (
+        {dueDate && isValid && (
           <View style={styles.summaryContainer}>
             <Text style={styles.summaryTitle}>Assignment Summary:</Text>
             <Text style={styles.summaryText}>

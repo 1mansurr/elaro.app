@@ -34,11 +34,12 @@ const AddLectureSettingScreen = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
-  const [startTime, setStartTime] = useState(
-    courseData.startTime || new Date(),
+  // Initialize times as null - user must explicitly set them
+  const [startTime, setStartTime] = useState<Date | null>(
+    courseData.startTime || null,
   );
-  const [endTime, setEndTime] = useState(
-    courseData.endTime || new Date(new Date().getTime() + 60 * 60 * 1000),
+  const [endTime, setEndTime] = useState<Date | null>(
+    courseData.endTime || null,
   );
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
   const [hasPickedDay, setHasPickedDay] = useState(false);
@@ -64,11 +65,12 @@ const AddLectureSettingScreen = () => {
       if (type === 'start') {
         setStartTime(selectedDate);
         setHasPickedStartTime(true);
-        if (selectedDate >= endTime) {
+        // Only auto-adjust end time if it exists and is invalid
+        if (endTime && selectedDate >= endTime) {
           setEndTime(new Date(selectedDate.getTime() + 60 * 60 * 1000));
         }
       } else {
-        if (selectedDate > startTime) {
+        if (startTime && selectedDate > startTime) {
           setEndTime(selectedDate);
           setHasPickedEndTime(true);
         } else {
@@ -110,6 +112,10 @@ const AddLectureSettingScreen = () => {
   };
 
   const handleNext = () => {
+    if (!startTime || !endTime) {
+      Alert.alert('Time Required', 'Please set both start and end times.');
+      return;
+    }
     if (endTime <= startTime) {
       Alert.alert('Invalid Time', 'End time must be after the start time.');
       return;
@@ -141,8 +147,8 @@ const AddLectureSettingScreen = () => {
 
   const handleBack = () => {
     updateCourseData({
-      startTime,
-      endTime,
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
       recurrence: repeats && recurrence ? recurrence : 'none',
     });
     navigation.goBack();
@@ -210,6 +216,8 @@ const AddLectureSettingScreen = () => {
             activePicker={activePicker}
             onToggle={picker => handlePickerToggle(picker)}
             onTimeChange={onTimeChange}
+            hasPickedStartTime={hasPickedStartTime}
+            hasPickedEndTime={hasPickedEndTime}
           />
         </View>
 

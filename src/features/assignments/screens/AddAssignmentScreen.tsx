@@ -89,11 +89,11 @@ const AddAssignmentScreen = () => {
   const [submissionLink, setSubmissionLink] = useState('');
   const [submissionVenue, setSubmissionVenue] = useState('');
 
-  // Reminders hook
+  // Reminders hook - no preselected reminders
   const { reminders, addReminder, removeReminder, setReminders } = useReminders(
     {
       maxReminders: 2,
-      initialReminders: [120],
+      initialReminders: [],
     },
   );
 

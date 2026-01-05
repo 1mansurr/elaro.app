@@ -3,11 +3,12 @@ import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { withTimeout, DEFAULT_TIMEOUTS } from './timeout.ts';
 import { retryWithBackoff } from './retry.ts';
 import { circuitBreakers } from './circuit-breaker.ts';
-import {
+import { queueNotificationForLater } from './fallback-handler.ts';
+import { 
+  trackQuotaUsage, 
+  getQuotaStatus,
   shouldUseFallback,
-  queueNotificationForLater,
-} from './fallback-handler.ts';
-import { trackQuotaUsage, getQuotaStatus } from './quota-monitor.ts';
+} from './quota-monitor.ts';
 
 // Define a clear return type for the function
 export interface NotificationResult {

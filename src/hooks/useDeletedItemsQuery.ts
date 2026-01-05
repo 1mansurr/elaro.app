@@ -37,7 +37,9 @@ export const useDeletedItemsQuery = () => {
           }
 
           throw new Error(
-            response.message || response.error || 'Failed to fetch deleted items',
+            response.message ||
+              response.error ||
+              'Failed to fetch deleted items',
           );
         }
 

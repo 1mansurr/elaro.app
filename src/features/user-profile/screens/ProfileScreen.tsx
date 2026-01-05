@@ -105,12 +105,14 @@ const ProfileScreen = () => {
   const handleSaveChanges = async () => {
     setIsLoading(true);
     try {
+      // Transform camelCase to snake_case for backend schema
       const { error } = await invokeEdgeFunctionWithAuth(
         'update-user-profile',
         {
           body: {
-            firstName,
-            lastName,
+            first_name: firstName,
+            last_name: lastName,
+            username, // Added: username was missing from update request
             university,
             program,
             country,
@@ -301,7 +303,6 @@ const ProfileScreen = () => {
             </View>
 
             <View style={styles.countryContainer}>
-              <Text style={[styles.label, { color: theme.text }]}>Country</Text>
               <SearchableSelector
                 label="Country"
                 data={countryData}

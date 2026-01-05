@@ -196,15 +196,14 @@ export const authService = {
         errorMessage.includes('timeout') || errorMessage.includes('Timeout');
       const errorType = isTimeout ? 'timeout' : 'API error';
 
-      // Only log in development to reduce production noise
-      // Suppress the warning in production to reduce log noise
-      if (__DEV__) {
-        console.warn(
-          `⚠️ [supabaseAuthService] API getUserProfile ${errorType}, using direct Supabase fallback:`,
-          errorMessage,
-        );
+      // Log error with full details for debugging
+      console.warn(
+        `⚠️ [supabaseAuthService] API getUserProfile ${errorType}, using direct Supabase fallback:`,
+        errorMessage,
+      );
+      if (apiError instanceof Error && apiError.stack) {
+        console.warn('API Error stack:', apiError.stack);
       }
-      // In production, silently fall back to direct Supabase query
 
       try {
         // Direct Supabase query as fallback
@@ -215,14 +214,16 @@ export const authService = {
           .single();
 
         if (error) {
-          // Only log errors in development to reduce production noise
-          if (__DEV__) {
-            console.error(
-              '❌ [supabaseAuthService] Direct Supabase query failed:',
-              error.code || 'Unknown error',
-              error.message || '',
-            );
-          }
+          // Log errors with full details for debugging
+          console.error(
+            '❌ [supabaseAuthService] Direct Supabase query failed:',
+            {
+              code: error.code || 'Unknown error',
+              message: error.message || '',
+              details: error.details || '',
+              hint: error.hint || '',
+            },
+          );
 
           // Check if it's an RLS policy error or permission issue
           if (

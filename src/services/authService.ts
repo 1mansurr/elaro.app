@@ -87,11 +87,14 @@ export const authService = {
           !response.data.session.access_token ||
           !response.data.session.refresh_token
         ) {
-          console.error('❌ [authService] Invalid session structure in signup:', {
-            hasAccessToken: !!response.data.session.access_token,
-            hasRefreshToken: !!response.data.session.refresh_token,
-            sessionKeys: Object.keys(response.data.session),
-          });
+          console.error(
+            '❌ [authService] Invalid session structure in signup:',
+            {
+              hasAccessToken: !!response.data.session.access_token,
+              hasRefreshToken: !!response.data.session.refresh_token,
+              sessionKeys: Object.keys(response.data.session),
+            },
+          );
           throw new AppError(
             'Invalid session structure received from server',
             500,
@@ -427,11 +430,14 @@ export const authService = {
         }
 
         // For other errors, log but still try direct Supabase sign out as fallback
-        console.warn('⚠️ Sign out edge function error, falling back to direct Supabase sign out:', {
-          error: response.error,
-          message: response.message,
-          code: response.code,
-        });
+        console.warn(
+          '⚠️ Sign out edge function error, falling back to direct Supabase sign out:',
+          {
+            error: response.error,
+            message: response.message,
+            code: response.code,
+          },
+        );
         await supabase.auth.signOut();
         return;
       }
@@ -449,7 +455,10 @@ export const authService = {
         await supabase.auth.signOut();
       } catch (supabaseError) {
         // If even Supabase sign out fails, log but don't throw - user should still be able to continue
-        console.error('❌ Direct Supabase sign out also failed:', supabaseError);
+        console.error(
+          '❌ Direct Supabase sign out also failed:',
+          supabaseError,
+        );
       }
     }
   },

@@ -28,6 +28,7 @@ import { PrimaryButton, SecondaryButton } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
 import { showToast } from '@/utils/showToast';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { RootStackParamList } from '@/types/navigation';
 import {
   COLORS,
@@ -141,7 +142,23 @@ const DeleteAccountScreen = () => {
                 },
               );
 
-              if (error) throw new AppError('Failed to delete account.');
+              if (error) {
+                // Log the full error details for debugging
+                console.error('Account deletion error details:', {
+                  error,
+                  message: error.message,
+                  context: error.context,
+                  code: error.code,
+                });
+                
+                // Use error mapping utilities to show user-friendly error message
+                const errorTitle = getErrorTitle(error);
+                const errorMessage = mapErrorCodeToMessage(error);
+                
+                setIsDeleting(false);
+                Alert.alert(errorTitle, errorMessage);
+                return;
+              }
 
               // Show success message - backend will sign out automatically
               // The alert will be shown before the component unmounts
@@ -161,13 +178,12 @@ const DeleteAccountScreen = () => {
             } catch (error) {
               console.error('Error deleting account:', error);
               setIsDeleting(false);
-              showToast({
-                type: 'error',
-                message:
-                  error instanceof Error
-                    ? error.message
-                    : 'Failed to delete account',
-              });
+              
+              // Use error mapping utilities for better error messages
+              const errorTitle = getErrorTitle(error);
+              const errorMessage = mapErrorCodeToMessage(error);
+              
+              Alert.alert(errorTitle, errorMessage);
             }
           },
         },

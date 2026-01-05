@@ -380,7 +380,7 @@ class NavigationSyncService {
   /**
    * Get safe initial state (auth-aware)
    * Returns null if user should be redirected based on auth state
-   * 
+   *
    * @param isAuthenticated - Whether user is authenticated
    * @param isLoading - Whether auth is still loading
    * @param userId - Optional user ID for state validation
@@ -468,7 +468,7 @@ class NavigationSyncService {
       const hasActiveSubscription =
         subscriptionStatus === 'active' ||
         (subscriptionTier && subscriptionTier !== 'free');
-      
+
       if (hasActiveSubscription) {
         console.log(
           '🚫 NavigationSync: PaywallScreen detected but subscription is active. Discarding saved state.',

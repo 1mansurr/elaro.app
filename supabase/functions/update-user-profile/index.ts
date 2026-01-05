@@ -55,9 +55,14 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
   }
 
   // Fields that don't need encryption can be passed through directly
+  // Ensure username is included if provided (it shouldn't be encrypted)
   const finalUpdates = {
     ...updates,
     ...encryptedUpdates,
+    // Explicitly include username if provided (not encrypted)
+    username: updates.username || undefined,
+    // Explicitly include country if provided (not encrypted)
+    country: updates.country || undefined,
     updated_at: new Date().toISOString(),
   };
 

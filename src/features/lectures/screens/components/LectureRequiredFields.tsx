@@ -19,11 +19,13 @@ interface LectureRequiredFieldsProps {
   lectureName: string;
   onLectureNameChange: (name: string) => void;
 
-  startTime: Date;
-  endTime: Date;
+  startTime: Date | null;
+  endTime: Date | null;
   onStartTimeChange: (time: Date) => void;
   onEndTimeChange: (time: Date) => void;
   onDateChange: (date: Date) => void;
+  hasPickedStartTime?: boolean;
+  hasPickedEndTime?: boolean;
 }
 
 export const LectureRequiredFields: React.FC<LectureRequiredFieldsProps> = ({
@@ -77,6 +79,8 @@ export const LectureRequiredFields: React.FC<LectureRequiredFieldsProps> = ({
         onDateChange={onDateChange}
         mode="range"
         label="Date & Time"
+        hasPickedStartTime={hasPickedStartTime}
+        hasPickedEndTime={hasPickedEndTime}
       />
     </View>
   );

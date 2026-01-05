@@ -376,7 +376,8 @@ const TemplatesScreen = () => {
         {/* Description - Only show when templates exist */}
         {templates && templates.length > 0 && (
           <View style={styles.descriptionContainer}>
-            <Text style={[styles.descriptionText, { color: textSecondaryColor }]}>
+            <Text
+              style={[styles.descriptionText, { color: textSecondaryColor }]}>
               Select a template to quickly create a new item with pre-filled
               details.
             </Text>
