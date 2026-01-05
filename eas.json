@@ -9,23 +9,33 @@
       "distribution": "internal",
       "channel": "development",
       "ios": {
-        "buildConfiguration": "Debug"
+        "buildConfiguration": "Debug",
+        "image": "macos-sequoia-15.6-xcode-16.4"
       }
     },
     "preview": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4"
+      }
     },
     "staging": {
       "developmentClient": false,
       "distribution": "internal",
-      "channel": "staging"
+      "channel": "staging",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4"
+      }
     },
     "production": {
       "developmentClient": false,
       "distribution": "store",
       "channel": "production",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4"
+      },
       "android": {
         "buildType": "app-bundle"
       }

@@ -150,11 +150,11 @@ const DeleteAccountScreen = () => {
                   context: error.context,
                   code: error.code,
                 });
-                
+
                 // Use error mapping utilities to show user-friendly error message
                 const errorTitle = getErrorTitle(error);
                 const errorMessage = mapErrorCodeToMessage(error);
-                
+
                 setIsDeleting(false);
                 Alert.alert(errorTitle, errorMessage);
                 return;
@@ -178,11 +178,11 @@ const DeleteAccountScreen = () => {
             } catch (error) {
               console.error('Error deleting account:', error);
               setIsDeleting(false);
-              
+
               // Use error mapping utilities for better error messages
               const errorTitle = getErrorTitle(error);
               const errorMessage = mapErrorCodeToMessage(error);
-              
+
               Alert.alert(errorTitle, errorMessage);
             }
           },

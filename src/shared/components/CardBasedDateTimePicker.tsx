@@ -197,7 +197,10 @@ export const CardBasedDateTimePicker: React.FC<
                         color={COLORS.primary}
                       />
                       <Text
-                        style={[styles.durationText, { color: COLORS.primary }]}>
+                        style={[
+                          styles.durationText,
+                          { color: COLORS.primary },
+                        ]}>
                         {getDuration()}
                       </Text>
                     </View>

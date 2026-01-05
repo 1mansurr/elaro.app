@@ -46,7 +46,8 @@ const fetchTotalItemCount = async (itemType: ItemType, userId: string) => {
 
       try {
         // Map itemType to table name
-        const tableName = itemType === 'study_sessions' ? 'study_sessions' : itemType;
+        const tableName =
+          itemType === 'study_sessions' ? 'study_sessions' : itemType;
 
         const { count, error: dbError } = await supabase
           .from(tableName)

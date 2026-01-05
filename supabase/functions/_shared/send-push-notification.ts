@@ -4,8 +4,8 @@ import { withTimeout, DEFAULT_TIMEOUTS } from './timeout.ts';
 import { retryWithBackoff } from './retry.ts';
 import { circuitBreakers } from './circuit-breaker.ts';
 import { queueNotificationForLater } from './fallback-handler.ts';
-import { 
-  trackQuotaUsage, 
+import {
+  trackQuotaUsage,
   getQuotaStatus,
   shouldUseFallback,
 } from './quota-monitor.ts';

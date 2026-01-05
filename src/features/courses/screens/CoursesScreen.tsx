@@ -1,5 +1,11 @@
 // FILE: src/features/courses/screens/CoursesScreen.tsx
-import React, { useLayoutEffect, useCallback, useState, memo, useRef } from 'react';
+import React, {
+  useLayoutEffect,
+  useCallback,
+  useState,
+  memo,
+  useRef,
+} from 'react';
 import {
   View,
   Text,
@@ -80,7 +86,7 @@ const CoursesScreen = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  
+
   // State for total course count (to check if user has hit the limit)
   const [totalCourseCount, setTotalCourseCount] = useState<number | null>(null);
 
@@ -179,7 +185,7 @@ const CoursesScreen = () => {
     useCallback(() => {
       const now = Date.now();
       const timeSinceLastRefetch = now - lastRefetchTime.current;
-      
+
       // Only refetch if:
       // - Not currently loading/refetching
       // - At least 30 seconds have passed since the last refetch (cooldown)
@@ -283,7 +289,9 @@ const CoursesScreen = () => {
   // Check if user should see the course limit banner
   const subscriptionTier = user?.subscription_tier || 'free';
   const shouldShowLimitBanner =
-    subscriptionTier === 'free' && totalCourseCount !== null && totalCourseCount >= 2;
+    subscriptionTier === 'free' &&
+    totalCourseCount !== null &&
+    totalCourseCount >= 2;
 
   // Course limit banner component
   const renderCourseLimitBanner = useCallback(() => {

@@ -144,7 +144,9 @@ const DueDateScreen = () => {
                     fontWeight: hasPickedTime && dueDate ? '500' : 'normal',
                   },
                 ]}>
-                {hasPickedTime && dueDate ? format(dueDate, 'h:mm a') : 'Set Time'}
+                {hasPickedTime && dueDate
+                  ? format(dueDate, 'h:mm a')
+                  : 'Set Time'}
               </Text>
             </TouchableOpacity>
           </View>

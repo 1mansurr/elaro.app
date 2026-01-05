@@ -183,6 +183,7 @@ module.exports = ({ config }) => {
           ios: {
             // Ensure Sentry CocoaPod is included
             useFrameworks: 'static',
+            deploymentTarget: '15.1',
           },
         },
       ],

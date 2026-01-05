@@ -121,10 +121,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         user_metadata: sessionUser.user_metadata || {},
       };
 
-      console.log(
-        '✅ [AuthContext] Created safe minimal user from session',
-        { id: minimalUser.id, email: minimalUser.email },
-      );
+      console.log('✅ [AuthContext] Created safe minimal user from session', {
+        id: minimalUser.id,
+        email: minimalUser.email,
+      });
       return minimalUser;
     } catch (error) {
       console.error(
@@ -1234,7 +1234,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         error_message: error instanceof Error ? error.message : 'Unknown error',
       });
 
-      return { error: error instanceof Error ? error : new Error(String(error)) };
+      return {
+        error: error instanceof Error ? error : new Error(String(error)),
+      };
     }
   };
 

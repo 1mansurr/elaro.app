@@ -178,19 +178,19 @@ const AddLectureRemindersScreen = () => {
       // Invalidate queries first (non-blocking, fire-and-forget)
       // This allows queries to refetch in the background while we navigate
       // Use refetchType: 'active' to ensure active queries refetch immediately
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ['courses'],
         refetchType: 'active',
       });
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ['lectures'],
         refetchType: 'active',
       });
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ['homeScreenData'],
         refetchType: 'active',
       });
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: ['calendarData'],
         refetchType: 'active',
       });
