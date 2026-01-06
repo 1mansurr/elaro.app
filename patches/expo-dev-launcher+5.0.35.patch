@@ -1,0 +1,15 @@
+diff --git a/node_modules/expo-dev-launcher/ios/DevLauncherInternal.swift b/node_modules/expo-dev-launcher/ios/DevLauncherInternal.swift
+index b0d2f11..1330792 100644
+--- a/node_modules/expo-dev-launcher/ios/DevLauncherInternal.swift
++++ b/node_modules/expo-dev-launcher/ios/DevLauncherInternal.swift
+@@ -67,9 +67,7 @@ public class DevLauncherInternal: Module, EXDevLauncherPendingDeepLinkListener {
+       EXDevLauncherController.sharedInstance().copy(toClipboard: content)
+     }
+ 
+-    AsyncFunction("loadFontsAsync") {
+-      DevMenuManager.shared.loadFonts()
+-    }
++    AsyncFunction("loadFontsAsync") {}
+ 
+     AsyncFunction("saveNavigationState") { (serializedNavigationState: String) in
+       UserDefaults.standard.set(serializedNavigationState, forKey: LAUNCHER_NAVIGATION_STATE_KEY)

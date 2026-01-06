@@ -184,6 +184,15 @@ module.exports = ({ config }) => {
             // Ensure Sentry CocoaPod is included
             useFrameworks: 'static',
             deploymentTarget: '15.1',
+            // Build settings to handle Xcode 16.4 nullability warnings
+            buildSettings: {
+              // Treat nullability completeness warnings as warnings, not errors
+              CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER: 'NO',
+              // Allow nullability warnings in framework headers
+              CLANG_WARN_NULLABILITY: 'YES',
+              // Don't treat nullability warnings as errors
+              CLANG_WARN_NULLABILITY_COMPLETENESS: 'NO',
+            },
           },
         },
       ],
@@ -205,7 +214,7 @@ module.exports = ({ config }) => {
       //   },
       // ],
       // Temporarily commented out for binary search test (packages in first 35)
-      // 'expo-font',
+      'expo-font',
       // Note: Apple Authentication is handled as a dependency, not a plugin
       // Note: react-native-reanimated/plugin should be in babel.config.js, not here
     ],
