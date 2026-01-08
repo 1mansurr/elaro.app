@@ -616,17 +616,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     });
 
-    // Safety timeout: Force isInitializing to false after 10 seconds maximum
+    // Safety timeout: Force isInitializing to false after 5 seconds maximum
     // This prevents infinite white screen if something goes wrong during initialization
+    // Reduced from 10s to 5s for better UX on physical devices with slower networks
     const safetyTimeout = setTimeout(() => {
       if (isInitializing) {
         console.warn(
-          '⚠️ [AuthContext] Safety timeout: Forcing isInitializing to false after 10s to prevent white screen',
+          '⚠️ [AuthContext] Safety timeout: Forcing isInitializing to false after 5s to prevent white screen',
         );
         setIsInitializing(false);
         setLoading(false);
       }
-    }, 10000); // 10 second absolute maximum
+    }, 5000); // 5 second maximum (reduced from 10s for better UX)
 
     return () => {
       subscription.unsubscribe();
@@ -643,9 +644,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (user && session.user.id) {
         try {
           // Fire-and-forget: complete pending task in background
-          const { getPendingTask, clearPendingTask } = await import(
-            '@/utils/taskPersistence'
-          );
+          const { getPendingTask, clearPendingTask } =
+            await import('@/utils/taskPersistence');
           const { api } = await import('@/services/api');
 
           const pending = await getPendingTask();

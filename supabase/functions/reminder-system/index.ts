@@ -121,9 +121,8 @@ class ReminderService {
     const sessionDate = new Date(session_date);
 
     // Cancel existing reminders for this session before scheduling new ones
-    const { cancelExistingSRSReminders } = await import(
-      '../_shared/reminder-scheduling.ts'
-    );
+    const { cancelExistingSRSReminders } =
+      await import('../_shared/reminder-scheduling.ts');
     const cancelledCount = await cancelExistingSRSReminders(
       this.supabaseClient,
       this.user.id,

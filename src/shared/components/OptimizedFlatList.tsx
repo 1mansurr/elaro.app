@@ -17,8 +17,10 @@
 import React from 'react';
 import { FlatList, FlatListProps, ListRenderItem } from 'react-native';
 
-interface OptimizedFlatListProps<T>
-  extends Omit<FlatListProps<T>, 'renderItem'> {
+interface OptimizedFlatListProps<T> extends Omit<
+  FlatListProps<T>,
+  'renderItem'
+> {
   /**
    * Render function for list items
    * Prefer passing a memoized component

@@ -26,12 +26,11 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
   }
 
   if (!StatsDModulePromise) {
-    StatsDModulePromise = import(
-      'https://deno.land/x/statsd@0.2.0/mod.ts'
-    ).catch(error => {
-      console.warn('StatsD module not available, metrics disabled:', error);
-      return null;
-    });
+    StatsDModulePromise =
+      import('https://deno.land/x/statsd@0.2.0/mod.ts').catch(error => {
+        console.warn('StatsD module not available, metrics disabled:', error);
+        return null;
+      });
   }
 
   try {

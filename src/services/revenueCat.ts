@@ -190,9 +190,8 @@ export const revenueCatService = {
    */
   getOfferings: async (): Promise<PurchasesOffering | null> => {
     try {
-      const { getOfferingsWithRecovery } = await import(
-        '@/utils/revenueCatRecovery'
-      );
+      const { getOfferingsWithRecovery } =
+        await import('@/utils/revenueCatRecovery');
       return await getOfferingsWithRecovery();
     } catch (error) {
       console.error('Error in getOfferings with recovery:', error);

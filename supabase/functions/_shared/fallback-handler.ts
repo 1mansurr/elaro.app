@@ -131,9 +131,8 @@ export async function processNotificationQueue(
           .eq('id', notification.id);
 
         // Import notification sender dynamically to avoid circular dependencies
-        const { sendPushNotification } = await import(
-          './send-push-notification.ts'
-        );
+        const { sendPushNotification } =
+          await import('./send-push-notification.ts');
 
         // Send notification
         const result = await sendPushNotification(

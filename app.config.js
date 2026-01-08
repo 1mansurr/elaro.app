@@ -1,5 +1,7 @@
 const dotenv = require('dotenv');
-dotenv.config();
+const path = require('path');
+// Use explicit path to ensure .env is loaded regardless of working directory
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const packageJson = require('./package.json');
 

@@ -468,9 +468,8 @@ const AddStudySessionScreen = () => {
       }
 
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'study_session');
 
       // Clear draft on successful save

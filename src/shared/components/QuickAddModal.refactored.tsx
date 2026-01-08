@@ -335,9 +335,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
 
       // Invalidate queries
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient);
 
       onClose();

@@ -393,9 +393,8 @@ const AddAssignmentScreen = () => {
         }
       }
 
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'assignment');
 
       await clearDraft('assignment');

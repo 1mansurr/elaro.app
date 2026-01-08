@@ -436,9 +436,8 @@ const AddLectureScreen = () => {
         }
       }
 
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'lecture');
 
       await clearDraft('lecture');

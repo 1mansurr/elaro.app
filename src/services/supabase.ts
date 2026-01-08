@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { User } from '@/types';
 import {
   executeSupabaseQuery,
@@ -7,8 +8,26 @@ import {
   executeSupabaseMutation,
 } from '@/utils/supabaseQueryWrapper';
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+// Get environment variables from Constants (Expo's way) with fallback to process.env
+const supabaseUrl =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate that required variables are present
+if (!supabaseUrl || !supabaseAnonKey) {
+  const missing = [];
+  if (!supabaseUrl) missing.push('EXPO_PUBLIC_SUPABASE_URL');
+  if (!supabaseAnonKey) missing.push('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+  console.error(
+    `❌ Missing required Supabase configuration: ${missing.join(', ')}`,
+  );
+  console.error(
+    '💡 Make sure these are set in your .env file and restart Metro bundler',
+  );
+}
 
 /**
  * Custom fetch wrapper that enforces a timeout on all requests.
@@ -80,9 +99,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export const authService = {
   async signUp(email: string, password: string, name?: string) {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import(
-      '@/services/authService'
-    );
+    const { authService: migratedAuthService } =
+      await import('@/services/authService');
     // Use migrated auth service
     const result = await migratedAuthService.signUp({
       email,
@@ -99,27 +117,24 @@ export const authService = {
 
   async signIn(email: string, password: string) {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import(
-      '@/services/authService'
-    );
+    const { authService: migratedAuthService } =
+      await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.login({ email, password });
   },
 
   async signOut() {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import(
-      '@/services/authService'
-    );
+    const { authService: migratedAuthService } =
+      await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.signOut();
   },
 
   async getCurrentUser() {
     // Dynamic import to break circular dependency
-    const { authService: migratedAuthService } = await import(
-      '@/services/authService'
-    );
+    const { authService: migratedAuthService } =
+      await import('@/services/authService');
     // Use migrated auth service
     return await migratedAuthService.getCurrentUser();
   },

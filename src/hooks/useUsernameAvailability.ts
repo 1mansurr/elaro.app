@@ -83,9 +83,8 @@ export const useUsernameAvailability = (
           // Get fresh access token from Supabase session (not from context which may be stale)
           // This ensures we have the latest valid token and the Edge Function receives the JWT for RLS context
           // Get fresh access token to ensure it's valid and not expired
-          const { getFreshAccessToken } = await import(
-            '@/utils/getFreshAccessToken'
-          );
+          const { getFreshAccessToken } =
+            await import('@/utils/getFreshAccessToken');
           const accessToken = await getFreshAccessToken();
 
           // Debug logging to see the actual request

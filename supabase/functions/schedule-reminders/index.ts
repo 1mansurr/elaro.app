@@ -117,9 +117,8 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
   const preferredHour = optimalHour || 10; // Default to 10 AM if no data
 
   // Cancel existing reminders for this session before scheduling new ones
-  const { cancelExistingSRSReminders } = await import(
-    '../_shared/reminder-scheduling.ts'
-  );
+  const { cancelExistingSRSReminders } =
+    await import('../_shared/reminder-scheduling.ts');
   const cancelledCount = await cancelExistingSRSReminders(
     supabaseClient,
     user.id,

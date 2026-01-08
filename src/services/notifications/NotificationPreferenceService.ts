@@ -9,9 +9,7 @@ import {
  * Service responsible for notification preference management
  * Handles user settings, validation, and preference optimization
  */
-export class NotificationPreferenceService
-  implements INotificationPreferenceService
-{
+export class NotificationPreferenceService implements INotificationPreferenceService {
   private static instance: NotificationPreferenceService;
 
   private constructor() {}

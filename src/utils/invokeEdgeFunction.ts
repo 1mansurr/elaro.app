@@ -3,8 +3,14 @@ import { FunctionsInvokeOptions } from '@supabase/supabase-js';
 import { parseJsonSafely } from './safeJsonParser';
 
 // Get Supabase URL and anon key from environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+import Constants from 'expo-constants';
+
+const supabaseUrl =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
  * Invokes a Supabase Edge Function with automatic fresh token authentication.

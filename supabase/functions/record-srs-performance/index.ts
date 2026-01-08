@@ -211,9 +211,8 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
 
   // 6.5: Cancel all future reminders for this session (regardless of schedule_next)
   // This ensures that when a user reviews, pending reminders are cleared
-  const { cancelExistingSRSReminders } = await import(
-    '../_shared/reminder-scheduling.ts'
-  );
+  const { cancelExistingSRSReminders } =
+    await import('../_shared/reminder-scheduling.ts');
   const cancelledCount = await cancelExistingSRSReminders(
     supabaseClient,
     user.id,
@@ -259,9 +258,8 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
       );
 
       // Apply deterministic jitter (same as initial scheduling)
-      const { addDeterministicJitter } = await import(
-        '../_shared/deterministic-jitter.ts'
-      );
+      const { addDeterministicJitter } =
+        await import('../_shared/deterministic-jitter.ts');
       const baseTime = nextReminderTime
         ? new Date(nextReminderTime)
         : new Date();

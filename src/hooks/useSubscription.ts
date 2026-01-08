@@ -43,9 +43,8 @@ export const useSubscription = (): UseSubscriptionReturn => {
 
       try {
         // Get fresh access token to ensure it's valid
-        const { getFreshAccessToken } = await import(
-          '@/utils/getFreshAccessToken'
-        );
+        const { getFreshAccessToken } =
+          await import('@/utils/getFreshAccessToken');
         const accessToken = await getFreshAccessToken();
 
         const { error } = await supabase.functions.invoke(

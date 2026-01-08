@@ -121,8 +121,10 @@ export async function scheduleSRSReminder(
  * @param options - Scheduling options (with intervals array)
  * @returns Array of scheduled reminder data
  */
-export interface ScheduleMultipleRemindersOptions
-  extends Omit<ScheduleReminderOptions, 'daysOffset'> {
+export interface ScheduleMultipleRemindersOptions extends Omit<
+  ScheduleReminderOptions,
+  'daysOffset'
+> {
   intervals: number[]; // Array of day offsets (e.g., [1, 3, 7, 14])
 }
 

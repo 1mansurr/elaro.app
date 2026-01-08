@@ -1,0 +1,30 @@
+diff --git a/node_modules/expo-font/src/Font.ts b/node_modules/expo-font/src/Font.ts
+index 7b05700..421e41b 100644
+--- a/node_modules/expo-font/src/Font.ts
++++ b/node_modules/expo-font/src/Font.ts
+@@ -34,6 +34,10 @@ export function isLoaded(fontFamily: string): boolean {
+  * @returns Returns array of strings which you can use as `fontFamily` [style prop](https://reactnative.dev/docs/text#style).
+  */
+ export function getLoadedFonts(): string[] {
++  // Safety check: ensure native module is initialized
++  if (!ExpoFontLoader || typeof ExpoFontLoader.getLoadedFonts !== 'function') {
++    return [];
++  }
+   return ExpoFontLoader.getLoadedFonts();
+ }
+ 
+diff --git a/node_modules/expo-font/src/memory.ts b/node_modules/expo-font/src/memory.ts
+index b959f75..64cb25a 100644
+--- a/node_modules/expo-font/src/memory.ts
++++ b/node_modules/expo-font/src/memory.ts
+@@ -17,6 +17,10 @@ export function isLoadedNative(fontFamily: string): boolean {
+   if (isLoadedInCache(fontFamily)) {
+     return true;
+   } else {
++    // Safety check: ensure native module is initialized
++    if (!ExpoFontLoader || typeof ExpoFontLoader.getLoadedFonts !== 'function') {
++      return false;
++    }
+     const loadedNativeFonts: string[] = ExpoFontLoader.getLoadedFonts();
+     loadedNativeFonts.forEach((font) => {
+       cache[font] = true;

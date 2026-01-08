@@ -3,7 +3,7 @@ import {
   createStackNavigator,
   StackNavigationOptions,
 } from '@react-navigation/stack';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RootStackParamList } from '@/types';
@@ -159,9 +159,12 @@ const LoadingFallback = () => (
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f8f9fa',
+      backgroundColor: '#FFFFFF', // Explicit white background for visibility
     }}>
     <ActivityIndicator size="large" color="#007AFF" />
+    <Text style={{ marginTop: 16, color: '#666', fontSize: 14 }}>
+      Loading...
+    </Text>
   </View>
 );
 
@@ -427,7 +430,7 @@ const mainScreens = {
 const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
 
 export const AuthenticatedNavigator: React.FC = () => {
-  const { user, isInitializing } = useAuth();
+  const { user, isInitializing, session } = useAuth();
   const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] = useState<
     boolean | null
   >(null);
@@ -510,7 +513,9 @@ export const AuthenticatedNavigator: React.FC = () => {
   // GUARD: Show loading screen while AuthContext is initializing
   // This prevents race conditions where onboarding is shown before we have a valid profile
   // NOTE: All hooks must be called BEFORE this early return to follow Rules of Hooks
-  if (isInitializing) {
+  // OPTIMIZATION: Only wait for initialization if we don't have a session
+  // If we have a session, show the app immediately (profile will load in background)
+  if (isInitializing && !session) {
     if (__DEV__) {
       console.log(
         '⏳ [AuthenticatedNavigator] Waiting for auth initialization...',

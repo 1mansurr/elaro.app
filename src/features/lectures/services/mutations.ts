@@ -92,9 +92,8 @@ export const lecturesApiMutations = {
         console.log('📴 Offline: Queueing UPDATE lecture action');
 
         // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } = await import(
-          '@/utils/taskCache'
-        );
+        const { getCachedTask, mergeTaskUpdates } =
+          await import('@/utils/taskCache');
         const cachedTask = await getCachedTask(lectureId, 'lecture');
 
         if (!cachedTask) {

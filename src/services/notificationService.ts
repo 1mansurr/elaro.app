@@ -236,9 +236,8 @@ const notificationService = {
         // Payload is passed as parameter - no closure capture of outer variables
         // All values are guaranteed to exist because validation happened before this function
 
-        const { versionedApiClient } = await import(
-          '@/services/VersionedApiClient'
-        );
+        const { versionedApiClient } =
+          await import('@/services/VersionedApiClient');
 
         const response = await versionedApiClient.registerDevice(payload);
 

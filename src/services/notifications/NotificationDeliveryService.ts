@@ -22,9 +22,7 @@ import { RootStackParamList } from '@/types/navigation';
  * Service responsible for notification delivery operations
  * Handles push notifications, local notifications, and cancellation
  */
-export class NotificationDeliveryService
-  implements INotificationDeliveryService
-{
+export class NotificationDeliveryService implements INotificationDeliveryService {
   private static instance: NotificationDeliveryService;
   private navigationRef: NavigationContainerRef<RootStackParamList> | null =
     null;

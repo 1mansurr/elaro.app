@@ -11,9 +11,7 @@ import { NotificationPreferenceService } from './NotificationPreferenceService';
  * Service responsible for intelligent notification scheduling
  * Handles smart timing, batching, and contextual awareness
  */
-export class NotificationSchedulingService
-  implements INotificationSchedulingService
-{
+export class NotificationSchedulingService implements INotificationSchedulingService {
   private static instance: NotificationSchedulingService;
   private preferenceService: NotificationPreferenceService;
 
@@ -448,9 +446,8 @@ export class NotificationSchedulingService
   ): Promise<void> {
     try {
       // Use API layer for queue operations
-      const { versionedApiClient } = await import(
-        '@/services/VersionedApiClient'
-      );
+      const { versionedApiClient } =
+        await import('@/services/VersionedApiClient');
 
       const response = await versionedApiClient.addToNotificationQueue({
         notification_type: notification.type,

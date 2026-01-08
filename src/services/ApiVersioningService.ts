@@ -5,6 +5,7 @@
  * for client applications using the ELARO API.
  */
 
+import Constants from 'expo-constants';
 import {
   parseJsonSafely,
   parseResponseJsonSafely,
@@ -39,7 +40,10 @@ export class ApiVersioningService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    this.baseUrl =
+      Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
+      process.env.EXPO_PUBLIC_SUPABASE_URL ||
+      '';
   }
 
   static getInstance(): ApiVersioningService {
