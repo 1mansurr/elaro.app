@@ -15,7 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.elaro.app",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "CFBundleURLTypes": [
           {

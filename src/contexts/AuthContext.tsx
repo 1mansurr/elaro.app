@@ -437,7 +437,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           // Keep loading=true and isInitializing=true while we fetch (shows loading indicator)
 
           try {
-            const userProfile = await fetchUserProfile(userId);
+            // CRITICAL: Add timeout to prevent infinite loading on slow networks
+            const profileFetchWithTimeout = Promise.race([
+              fetchUserProfile(userId),
+              new Promise<null>((resolve) => {
+                setTimeout(() => {
+                  console.warn('⚠️ [AuthContext] Profile fetch timeout - proceeding unauthenticated');
+                  resolve(null);
+                }, 5000); // 5 second timeout
+              }),
+            ]);
+
+            const userProfile = await profileFetchWithTimeout;
 
             if (userProfile) {
               // Profile fetched successfully - set it and cache it

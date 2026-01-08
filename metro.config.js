@@ -3,10 +3,17 @@ const path = require('path');
 const envPath = path.resolve(__dirname, '.env');
 const dotenvResult = require('dotenv').config({ path: envPath });
 if (dotenvResult.error) {
-  console.warn('⚠️ Metro: Failed to load .env file:', dotenvResult.error.message);
+  console.warn(
+    '⚠️ Metro: Failed to load .env file:',
+    dotenvResult.error.message,
+  );
 } else {
-  const loadedCount = dotenvResult.parsed ? Object.keys(dotenvResult.parsed).length : 0;
-  console.log(`✅ Metro: Loaded ${loadedCount} environment variables from ${envPath}`);
+  const loadedCount = dotenvResult.parsed
+    ? Object.keys(dotenvResult.parsed).length
+    : 0;
+  console.log(
+    `✅ Metro: Loaded ${loadedCount} environment variables from ${envPath}`,
+  );
 }
 
 const { getDefaultConfig } = require('expo/metro-config');

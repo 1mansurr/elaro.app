@@ -1031,6 +1031,39 @@ const AppWithErrorBoundary: React.FC<{
     };
   }, [isStateValidated, appIsReady, isAnimationFinished, shouldShowLoading]);
 
+  // CRITICAL: Hard safety net - guarantees splash always hides and app always renders
+  // This ensures no path exists where app remains stuck on white screen
+  useEffect(() => {
+    const hardSafetyTimeout = setTimeout(() => {
+      // Force unblock all gates if still blocking after 5 seconds
+      if (!hasHiddenSplashRef.current) {
+        console.warn(
+          '⚠️ [AppWithErrorBoundary] Hard safety net triggered - forcing all gates open',
+          {
+            appIsReady,
+            isAnimationFinished,
+            isStateValidated,
+            navigationContainerMounted,
+          },
+        );
+        
+        // Force all conditions to true
+        if (!isStateValidated) {
+          setIsStateValidated(true);
+          setSafeInitialState(null);
+        }
+        
+        // Force hide splash screen
+        hasHiddenSplashRef.current = true;
+        SplashScreen.hideAsync().catch(error => {
+          console.error('❌ Failed to hide splash screen (hard safety):', error);
+        });
+      }
+    }, 5000); // 5 second absolute maximum
+
+    return () => clearTimeout(hardSafetyTimeout);
+  }, [appIsReady, isAnimationFinished, isStateValidated, navigationContainerMounted]);
+
   // Don't render NavigationContainer until navigation state validation is complete
   // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
   const shouldShowLoading = !isStateValidated;
@@ -1118,15 +1151,20 @@ const AppInitializer: React.FC<{
     }
   }, [appIsReady, isAnimationFinished, onStateChange]);
 
-  // Add safety timeout - force show app after 3 seconds max
+  // CRITICAL: Hard safety net - guarantees app always renders
+  // This is a production-safe fallback that does NOT change happy path behavior
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
+      // Force unblock if any gate is still blocking after 4 seconds
       if (!appIsReady || !isAnimationFinished) {
-        console.warn('⚠️ App initialization timeout - forcing app to show');
+        console.warn('⚠️ [AppInitializer] Safety timeout - forcing app to show', {
+          appIsReady,
+          isAnimationFinished,
+        });
         setAppIsReady(true);
         setAnimationFinished(true);
       }
-    }, 3000); // 3 second max timeout
+    }, 4000); // 4 second absolute maximum
 
     return () => clearTimeout(safetyTimeout);
   }, []);
@@ -1320,10 +1358,10 @@ const AppInitializer: React.FC<{
   useEffect(() => {
     const animationTimeout = setTimeout(() => {
       if (!isAnimationFinished) {
-        console.warn('⚠️ Animation timeout - forcing finish');
+        console.warn('⚠️ [AppInitializer] Animation timeout - forcing finish');
         setAnimationFinished(true);
       }
-    }, 2000); // 2 second timeout for animation
+    }, 1500); // Reduced to 1.5s to match AnimatedSplashScreen timeout
 
     return () => clearTimeout(animationTimeout);
   }, [isAnimationFinished]);
