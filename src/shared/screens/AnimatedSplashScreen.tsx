@@ -4,6 +4,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { COLORS } from '@/constants/theme';
+import { logSplash } from '@/utils/logger';
+import { addBreadcrumb } from '@/services/monitoring/sentry';
 
 interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
@@ -26,8 +28,12 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
 
   // 3. Define the animation sequence with fail-safe guarantees
   useEffect(() => {
+    logSplash('Splash animation started');
+    addBreadcrumb({ message: 'Splash animation started' });
+    
     // Hard timeout fallback - guarantees callback fires even if animation fails
     const timeoutId = setTimeout(() => {
+      logSplash('Splash animation timeout fallback triggered');
       callFinishOnce();
     }, 1500); // 1.5 seconds max (longer than animation duration)
 
@@ -40,20 +46,23 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
 
     // Wrap animation start in try/catch to handle any failures
     try {
-      animation.start((finished) => {
+      animation.start(finished => {
         // Clear timeout since animation completed
         clearTimeout(timeoutId);
-        
+
         // Call finish callback (idempotent via hasCalledFinishRef)
         if (finished !== false) {
+          logSplash('Splash animation completed successfully');
           callFinishOnce();
         } else {
           // Animation was interrupted - still call finish to unblock app
+          logSplash('Splash animation interrupted - forcing finish');
           callFinishOnce();
         }
       });
     } catch (error) {
       // Animation failed to start - clear timeout and immediately unblock
+      logSplash('Splash animation failed to start', { error: String(error) });
       clearTimeout(timeoutId);
       callFinishOnce();
     }

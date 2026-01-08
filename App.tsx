@@ -62,9 +62,32 @@ import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
+import { logBoot, logWarn, logError } from './src/utils/logger';
+import {
+  initializeSentry,
+  startStartupTransaction,
+  addBreadcrumb,
+  captureEvent,
+  captureError,
+  finishTransaction,
+  startSpan,
+  finishSpan,
+} from './src/services/monitoring/sentry';
 
 // Validate configuration on startup
 validateAndLogConfig();
+
+// Initialize Sentry for remote logging and performance tracing (Layer 2 & 3)
+initializeSentry(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
+
+// Start performance transaction for app startup (Layer 3)
+// This will be finished when NavigationContainer is ready
+const startupTransactionRef = { current: startStartupTransaction() };
+if (startupTransactionRef.current) {
+  addBreadcrumb({ message: 'App module loaded' });
+}
+
+logBoot('App module loaded');
 
 // Disable React Native DevTools overlay for non-technical users
 if (__DEV__) {
@@ -259,7 +282,7 @@ if (__DEV__) {
   }
 }
 
-// Initialize centralized error tracking service
+// Initialize centralized error tracking service (legacy - kept for compatibility)
 errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
 
 // Initialize cache monitoring (only in production)
@@ -489,7 +512,7 @@ const NavigationStateValidator: React.FC<{
     let isCancelled = false;
     let maxTimeoutId: NodeJS.Timeout | null = null;
 
-    console.log('🔍 [NavigationStateValidator] Effect triggered', {
+    logNav('NavigationStateValidator effect triggered', {
       authLoading,
       hasSession: !!session,
       hasUser: !!user,
@@ -497,15 +520,15 @@ const NavigationStateValidator: React.FC<{
     });
 
     const validateNavigationState = async () => {
-      console.log('🚀 [NavigationStateValidator] Starting validation');
+      logNav('Starting navigation state validation');
+      addBreadcrumb({ message: 'Navigation state validation started' });
       // STEP 3 FIX: Consolidated to single master timeout
       // GUARANTEED EXIT: Maximum timeout ensures we always resolve
       // This is the final safety net - app will render after 3 seconds maximum
       maxTimeoutId = setTimeout(() => {
         if (isCancelled) return;
-        console.warn(
-          '⚠️ [NavigationStateValidator] Maximum timeout reached - proceeding with safe fallback',
-        );
+        logWarn('Navigation state validation maximum timeout reached - proceeding with safe fallback');
+        captureEvent('startup_timeout_nav_validation_max', { timeout: 3000 });
         onStateValidated(null);
       }, 3000); // 3 second absolute maximum
 
@@ -522,9 +545,7 @@ const NavigationStateValidator: React.FC<{
             }
 
             const timeoutId = setTimeout(() => {
-              console.warn(
-                '⚠️ [NavigationStateValidator] Auth still loading after timeout - proceeding with current state',
-              );
+              logWarn('Auth still loading after timeout - proceeding with current state');
               authTimedOut = true;
               // FIX: Immediately call onStateValidated when auth times out
               // This prevents the app from getting stuck if there's an initialNavigationState
@@ -576,9 +597,7 @@ const NavigationStateValidator: React.FC<{
             // HARDENING: Check NON_RESTORABLE_ROUTES first - these should NEVER be restored
             // This runs BEFORE getSafeInitialState to catch invalid routes early
             if (currentRoute && isNonRestorableRoute(currentRoute)) {
-              console.log(
-                `🚫 [NavigationStateValidator] Non-restorable route "${currentRoute}" detected in saved state. Discarding to prevent restoration.`,
-              );
+              logNav('Non-restorable route detected - discarding saved state', { route: currentRoute });
               await navigationSyncService.clearState().catch(() => {
                 // Ignore errors - we're clearing state anyway
               });
@@ -593,9 +612,7 @@ const NavigationStateValidator: React.FC<{
               // Only restore OnboardingFlow if onboarding is still incomplete
               const isOnboardingComplete = user?.onboarding_completed ?? false;
               if (isOnboardingComplete) {
-                console.log(
-                  '🚫 [NavigationStateValidator] OnboardingFlow detected but onboarding is complete. Discarding saved state.',
-                );
+                logNav('OnboardingFlow detected but onboarding complete - discarding saved state');
                 await navigationSyncService.clearState().catch(() => {
                   // Ignore errors - we're clearing state anyway
                 });
@@ -616,9 +633,7 @@ const NavigationStateValidator: React.FC<{
                 (subscriptionTier && subscriptionTier !== 'free');
 
               if (hasActiveSubscription) {
-                console.log(
-                  '🚫 [NavigationStateValidator] PaywallScreen detected but subscription is active. Discarding saved state.',
-                );
+                logNav('PaywallScreen detected but subscription active - discarding saved state');
                 await navigationSyncService.clearState().catch(() => {
                   // Ignore errors - we're clearing state anyway
                 });
@@ -636,9 +651,7 @@ const NavigationStateValidator: React.FC<{
               currentRoute &&
               authenticatedRoutes.includes(currentRoute)
             ) {
-              console.log(
-                '🔒 [NavigationStateValidator] User not authenticated, clearing authenticated navigation state',
-              );
+              logNav('User not authenticated - clearing authenticated navigation state');
               await navigationSyncService.clearState().catch(() => {
                 // Ignore errors - we're clearing state anyway
               });
@@ -676,17 +689,14 @@ const NavigationStateValidator: React.FC<{
             if (isCancelled) return;
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
 
-            console.log(
-              `✅ [NavigationStateValidator] Navigation state validated successfully`,
-            );
+            logNav('Navigation state validated successfully');
+            addBreadcrumb({ message: 'Navigation state validated successfully' });
             onStateValidated(safeState);
             return;
           } catch (error) {
             if (isCancelled) return;
-            console.error(
-              '❌ [NavigationStateValidator] Error validating initial state:',
-              error,
-            );
+            logError('Error validating initial navigation state', { error: String(error) });
+            captureError(error, { context: 'nav_state_validation' });
             // Clear state on error to prevent navigation errors
             await navigationSyncService.clearState().catch(() => {
               // Ignore errors during cleanup
@@ -700,32 +710,22 @@ const NavigationStateValidator: React.FC<{
         // No initial state to validate - proceed with default (null = default navigation)
         if (isCancelled) return;
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
-        console.log(
-          '✅ [NavigationStateValidator] No initial state - using default navigation',
-        );
+        logNav('No initial state - using default navigation');
         onStateValidated(null);
       } catch (error) {
         // Final catch-all - ensures we always resolve
         if (isCancelled) return;
-        console.error(
-          '❌ [NavigationStateValidator] Unexpected error during validation:',
-          error,
-        );
+        logError('Unexpected error during navigation state validation', { error: String(error) });
+        captureError(error, { context: 'nav_state_validation_unexpected' });
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
         onStateValidated(null);
       }
     };
 
-    console.log(
-      '📞 [NavigationStateValidator] Calling validateNavigationState',
-    );
     validateNavigationState();
 
     // Cleanup function - prevents state updates if component unmounts
     return () => {
-      console.log(
-        '🧹 [NavigationStateValidator] Cleanup - cancelling validation',
-      );
       isCancelled = true;
       if (maxTimeoutId) clearTimeout(maxTimeoutId);
     };
@@ -857,20 +857,15 @@ const AppWithErrorBoundary: React.FC<{
   useAppStateSync();
 
   const handleStateValidated = useCallback((state: NavigationState | null) => {
-    console.log('✅ [AppWithErrorBoundary] handleStateValidated called', {
-      hasState: !!state,
-      stateType: state ? typeof state : 'null',
-    });
+    logNav('Navigation state validated', { hasState: !!state });
+    addBreadcrumb({ message: 'Navigation state validated' });
     setSafeInitialState(state);
     setIsStateValidated(true);
   }, []);
 
   const handleAppInitializerStateChange = useCallback(
     (state: { appIsReady: boolean; isAnimationFinished: boolean }) => {
-      console.log(
-        '📱 [AppWithErrorBoundary] AppInitializer state changed:',
-        state,
-      );
+      logBoot('AppInitializer state changed', state);
       setAppInitializerState(state);
     },
     [],
@@ -878,11 +873,10 @@ const AppWithErrorBoundary: React.FC<{
 
   const { appIsReady, isAnimationFinished } = appInitializerState;
 
-  // Debug: Track when isStateValidated changes
+  // Track when isStateValidated changes
   useEffect(() => {
-    console.log('🔍 [AppWithErrorBoundary] isStateValidated changed:', {
+    logNav('Navigation state validation status changed', {
       isStateValidated,
-      shouldShowLoading: !isStateValidated,
       appIsReady,
       isAnimationFinished,
     });
@@ -941,19 +935,17 @@ const AppWithErrorBoundary: React.FC<{
 
     if (allConditionsMet && !hasHiddenSplashRef.current) {
       hasHiddenSplashRef.current = true;
-      console.log(
-        '✅ [AppWithErrorBoundary] All conditions met - hiding native splash',
-        {
-          appIsReady,
-          isAnimationFinished,
-          isStateValidated,
-          navigationContainerRendered,
-          navigationContainerMounted,
-        },
-      );
+      logBoot('All conditions met - hiding native splash', {
+        appIsReady,
+        isAnimationFinished,
+        isStateValidated,
+        navigationContainerRendered,
+        navigationContainerMounted,
+      });
+      addBreadcrumb({ message: 'Splash screen hidden' });
       SplashScreen.hideAsync().catch(error => {
-        console.error('❌ Failed to hide splash screen:', error);
-        // Don't throw - app can continue
+        logError('Failed to hide splash screen', { error: String(error) });
+        captureError(error, { context: 'splash_hide' });
       });
     }
   }, [
@@ -968,19 +960,21 @@ const AppWithErrorBoundary: React.FC<{
   useEffect(() => {
     const fallbackSplashTimeout = setTimeout(() => {
       if (!hasHiddenSplashRef.current) {
-        console.warn(
-          '⚠️ [AppWithErrorBoundary] Splash screen fallback timeout - forcing hide',
-          {
-            appIsReady,
-            isAnimationFinished,
-            isStateValidated,
-            shouldShowLoading,
-            navigationContainerMounted,
-          },
-        );
+        logWarn('Splash screen fallback timeout - forcing hide', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          shouldShowLoading,
+          navigationContainerMounted,
+        });
+        captureEvent('startup_timeout_splash_fallback', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+        });
         hasHiddenSplashRef.current = true;
         SplashScreen.hideAsync().catch(error => {
-          console.error('❌ Failed to hide splash screen (fallback):', error);
+          logError('Failed to hide splash screen (fallback)', { error: String(error) });
         });
       }
     }, 6000); // 6 second absolute maximum
@@ -1001,14 +995,15 @@ const AppWithErrorBoundary: React.FC<{
     // This helps debug and ensures the app doesn't stay on white screen
     const immediateFallback = setTimeout(() => {
       if (!isStateValidated) {
-        console.warn(
-          '⚠️ [AppWithErrorBoundary] Immediate fallback triggered (2s) - forcing render to prevent white screen',
-          {
-            appIsReady,
-            isAnimationFinished,
-            shouldShowLoading,
-          },
-        );
+        logWarn('Immediate fallback triggered (2s) - forcing render to prevent white screen', {
+          appIsReady,
+          isAnimationFinished,
+          shouldShowLoading,
+        });
+        captureEvent('startup_timeout_nav_validation_immediate', {
+          appIsReady,
+          isAnimationFinished,
+        });
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
@@ -1017,9 +1012,10 @@ const AppWithErrorBoundary: React.FC<{
     // EXISTING FALLBACK: 5 second final safety net
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
-        console.error(
-          '❌ [AppWithErrorBoundary] Navigation state validation did not complete within expected time - forcing render',
-        );
+        logError('Navigation state validation did not complete within expected time - forcing render');
+        captureEvent('startup_timeout_nav_validation_final', {
+          timeout: 5000,
+        });
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
@@ -1037,32 +1033,43 @@ const AppWithErrorBoundary: React.FC<{
     const hardSafetyTimeout = setTimeout(() => {
       // Force unblock all gates if still blocking after 5 seconds
       if (!hasHiddenSplashRef.current) {
-        console.warn(
-          '⚠️ [AppWithErrorBoundary] Hard safety net triggered - forcing all gates open',
-          {
-            appIsReady,
-            isAnimationFinished,
-            isStateValidated,
-            navigationContainerMounted,
-          },
-        );
-        
+        logWarn('Hard safety net triggered - forcing all gates open', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          navigationContainerMounted,
+        });
+        captureEvent('startup_timeout_hard_safety', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          navigationContainerMounted,
+        });
+
         // Force all conditions to true
         if (!isStateValidated) {
           setIsStateValidated(true);
           setSafeInitialState(null);
         }
-        
+
         // Force hide splash screen
         hasHiddenSplashRef.current = true;
         SplashScreen.hideAsync().catch(error => {
-          console.error('❌ Failed to hide splash screen (hard safety):', error);
+          console.error(
+            '❌ Failed to hide splash screen (hard safety):',
+            error,
+          );
         });
       }
     }, 5000); // 5 second absolute maximum
 
     return () => clearTimeout(hardSafetyTimeout);
-  }, [appIsReady, isAnimationFinished, isStateValidated, navigationContainerMounted]);
+  }, [
+    appIsReady,
+    isAnimationFinished,
+    isStateValidated,
+    navigationContainerMounted,
+  ]);
 
   // Don't render NavigationContainer until navigation state validation is complete
   // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
@@ -1100,6 +1107,16 @@ const AppWithErrorBoundary: React.FC<{
                 onReady={() => {
                   // Mark NavigationContainer as mounted
                   setNavigationContainerMounted(true);
+                  logNav('NavigationContainer ready');
+                  addBreadcrumb({ message: 'NavigationContainer ready' });
+                  
+                  // Finish startup transaction (Layer 3: Performance)
+                  if (startupTransactionRef.current) {
+                    finishTransaction(startupTransactionRef.current);
+                    startupTransactionRef.current = null;
+                    logBoot('First screen rendered - startup complete');
+                    addBreadcrumb({ message: 'First screen rendered - startup complete' });
+                  }
                 }}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
@@ -1143,7 +1160,7 @@ const AppInitializer: React.FC<{
   // Notify parent when state changes
   useEffect(() => {
     if (onStateChange) {
-      console.log('📱 [AppInitializer] State changed, notifying parent:', {
+      logBoot('AppInitializer state changed', {
         appIsReady,
         isAnimationFinished,
       });
@@ -1157,7 +1174,11 @@ const AppInitializer: React.FC<{
     const safetyTimeout = setTimeout(() => {
       // Force unblock if any gate is still blocking after 4 seconds
       if (!appIsReady || !isAnimationFinished) {
-        console.warn('⚠️ [AppInitializer] Safety timeout - forcing app to show', {
+        logWarn('AppInitializer safety timeout - forcing app to show', {
+          appIsReady,
+          isAnimationFinished,
+        });
+        captureEvent('startup_timeout_app_initializer', {
           appIsReady,
           isAnimationFinished,
         });
@@ -1171,6 +1192,12 @@ const AppInitializer: React.FC<{
 
   useEffect(() => {
     const prepare = async () => {
+      logBoot('AppInitializer prepare started');
+      addBreadcrumb({ message: 'AppInitializer prepare started' });
+      
+      // Start auth initialization span (Layer 3: Performance)
+      const authSpan = startupTransactionRef.current ? startSpan(startupTransactionRef.current, 'auth_init', 'app.auth') : null;
+      
       try {
         // Set a minimum display time for splash (500ms) for better UX
         // Reduced from 800ms for faster perceived startup
@@ -1337,14 +1364,16 @@ const AppInitializer: React.FC<{
         // Only wait for minimum splash time - don't wait for sync manager
         // Sync manager will initialize in background and won't block app startup
         await minSplashTime;
+        logBoot('AppInitializer prepare completed');
+        addBreadcrumb({ message: 'AppInitializer prepare completed' });
       } catch (e) {
-        console.error('❌ App initialization error:', e);
-        errorTracking.captureError(e as Error, {
-          tags: { component: 'app', phase: 'initialization' },
-        });
+        logError('App initialization error', { error: String(e) });
+        captureError(e, { context: 'app_initialization' });
         // Don't block app startup - continue with degraded functionality
       } finally {
+        finishSpan(authSpan);
         setAppIsReady(true);
+        logBoot('AppInitializer appIsReady set to true');
       }
     };
 
@@ -1358,7 +1387,7 @@ const AppInitializer: React.FC<{
   useEffect(() => {
     const animationTimeout = setTimeout(() => {
       if (!isAnimationFinished) {
-        console.warn('⚠️ [AppInitializer] Animation timeout - forcing finish');
+        logWarn('Animation timeout - forcing finish');
         setAnimationFinished(true);
       }
     }, 1500); // Reduced to 1.5s to match AnimatedSplashScreen timeout
@@ -1377,6 +1406,8 @@ const AppInitializer: React.FC<{
         <AnimatedSplashScreen
           onAnimationFinish={() => {
             // Mark animation as finished (will be checked when app is ready)
+            logSplash('Splash animation finished');
+            addBreadcrumb({ message: 'Splash animation finished' });
             setAnimationFinished(true);
           }}
         />

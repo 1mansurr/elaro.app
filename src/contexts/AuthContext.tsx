@@ -27,6 +27,8 @@ import {
   resetFailedAttempts,
 } from '@/utils/authLockout';
 import { Platform } from 'react-native';
+import { logAuth, logWarn, logError } from '@/utils/logger';
+import { addBreadcrumb, captureEvent, captureError, startSpan, finishSpan } from '@/services/monitoring/sentry';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 // import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
@@ -367,6 +369,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const initializeAuth = async () => {
+      logAuth('Auth initialization started');
+      addBreadcrumb({ message: 'Auth initialization started' });
+      
       try {
         // FAST PATH: Use direct Supabase client getSession() - no API round-trip
         // This reads from local storage immediately (no network latency)
@@ -376,7 +381,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         } = await supabase.auth.getSession();
 
         if (error) {
-          console.error('❌ Error getting initial session:', error);
+          logError('Error getting initial session', { error: String(error) });
+          captureError(error, { context: 'auth_get_session' });
           setSession(null);
           setUser(null);
           setLoading(false);
@@ -386,6 +392,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         // Set session state immediately - don't wait for anything else
         setSession(session);
+        logAuth('Session retrieved', { hasSession: !!session });
 
         // If session exists, load user profile with proper caching strategy
         if (session?.user) {
@@ -401,9 +408,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               // If cached profile has onboarding_completed: false, it might be stale or a minimal user
               // In that case, ignore it and fetch fresh from server
               if (cachedProfile.onboarding_completed === true) {
-                console.log(
-                  '📱 [AuthContext] Using valid cached user profile (onboarding_completed: true)',
-                );
+                logAuth('Using valid cached user profile', { onboardingCompleted: true });
+                addBreadcrumb({ message: 'Using cached user profile' });
                 // Set cached profile immediately - this prevents loading screen and shows correct UI
                 // STEP 1 FIX: Eliminated background fetch to remove race condition
                 // Using cached user directly, set isInitializing to false only when we have definitive state
@@ -433,16 +439,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           }
 
           // STEP 3: No valid cached profile exists - show loading and fetch from server
-          console.log('🌐 [AuthContext] Fetching user profile from server');
+          logAuth('Fetching user profile from server');
+          addBreadcrumb({ message: 'Fetching user profile from server' });
           // Keep loading=true and isInitializing=true while we fetch (shows loading indicator)
 
           try {
             // CRITICAL: Add timeout to prevent infinite loading on slow networks
             const profileFetchWithTimeout = Promise.race([
               fetchUserProfile(userId),
-              new Promise<null>((resolve) => {
+              new Promise<null>(resolve => {
                 setTimeout(() => {
-                  console.warn('⚠️ [AuthContext] Profile fetch timeout - proceeding unauthenticated');
+                  logWarn('Profile fetch timeout - proceeding unauthenticated');
+                  captureEvent('startup_timeout_auth_profile_fetch', { timeout: 5000 });
                   resolve(null);
                 }, 5000); // 5 second timeout
               }),
@@ -455,12 +463,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               setUser(userProfile);
               setLoading(false);
               setIsInitializing(false); // We have a valid profile from server
-              console.log('✅ [AuthContext] User profile loaded from server');
+              logAuth('User profile loaded from server');
+              addBreadcrumb({ message: 'User profile loaded from server' });
             } else {
               // Profile fetch failed - create safe minimal user as last resort
-              console.warn(
-                '⚠️ [AuthContext] Profile fetch returned null, creating safe minimal user',
-              );
+              logWarn('Profile fetch returned null, creating safe minimal user');
               const minimalUserFromSession = createMinimalUserFromSession(
                 session.user,
               );
@@ -485,10 +492,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               }
             }
           } catch (fetchError) {
-            console.error(
-              '❌ [AuthContext] Error fetching user profile:',
-              fetchError,
-            );
+            logError('Error fetching user profile', { error: String(fetchError) });
+            captureError(fetchError, { context: 'auth_profile_fetch' });
             // Create safe minimal user as fallback
             const minimalUserFromSession = createMinimalUserFromSession(
               session.user,
@@ -513,12 +518,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           }
         } else {
+          logAuth('No session - user set to null');
           setUser(null);
           setLoading(false);
           setIsInitializing(false);
         }
+        logAuth('Auth initialization completed');
+        addBreadcrumb({ message: 'Auth initialization completed' });
       } catch (error) {
-        console.error('❌ Error initializing auth:', error);
+        logError('Error initializing auth', { error: String(error) });
+        captureError(error, { context: 'auth_initialization' });
         // Don't block app - continue with no session
         setSession(null);
         setUser(null);
