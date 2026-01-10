@@ -28,7 +28,13 @@ import {
 } from '@/utils/authLockout';
 import { Platform } from 'react-native';
 import { logAuth, logWarn, logError } from '@/utils/logger';
-import { addBreadcrumb, captureEvent, captureError, startSpan, finishSpan } from '@/services/monitoring/sentry';
+import {
+  addBreadcrumb,
+  captureEvent,
+  captureError,
+  startSpan,
+  finishSpan,
+} from '@/services/monitoring/sentry';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 // import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
@@ -371,7 +377,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     const initializeAuth = async () => {
       logAuth('Auth initialization started');
       addBreadcrumb({ message: 'Auth initialization started' });
-      
+
       try {
         // FAST PATH: Use direct Supabase client getSession() - no API round-trip
         // This reads from local storage immediately (no network latency)
@@ -408,7 +414,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               // If cached profile has onboarding_completed: false, it might be stale or a minimal user
               // In that case, ignore it and fetch fresh from server
               if (cachedProfile.onboarding_completed === true) {
-                logAuth('Using valid cached user profile', { onboardingCompleted: true });
+                logAuth('Using valid cached user profile', {
+                  onboardingCompleted: true,
+                });
                 addBreadcrumb({ message: 'Using cached user profile' });
                 // Set cached profile immediately - this prevents loading screen and shows correct UI
                 // STEP 1 FIX: Eliminated background fetch to remove race condition
@@ -450,7 +458,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               new Promise<null>(resolve => {
                 setTimeout(() => {
                   logWarn('Profile fetch timeout - proceeding unauthenticated');
-                  captureEvent('startup_timeout_auth_profile_fetch', { timeout: 5000 });
+                  captureEvent('startup_timeout_auth_profile_fetch', {
+                    timeout: 5000,
+                  });
                   resolve(null);
                 }, 5000); // 5 second timeout
               }),
@@ -467,7 +477,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               addBreadcrumb({ message: 'User profile loaded from server' });
             } else {
               // Profile fetch failed - create safe minimal user as last resort
-              logWarn('Profile fetch returned null, creating safe minimal user');
+              logWarn(
+                'Profile fetch returned null, creating safe minimal user',
+              );
               const minimalUserFromSession = createMinimalUserFromSession(
                 session.user,
               );
@@ -492,7 +504,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               }
             }
           } catch (fetchError) {
-            logError('Error fetching user profile', { error: String(fetchError) });
+            logError('Error fetching user profile', {
+              error: String(fetchError),
+            });
             captureError(fetchError, { context: 'auth_profile_fetch' });
             // Create safe minimal user as fallback
             const minimalUserFromSession = createMinimalUserFromSession(

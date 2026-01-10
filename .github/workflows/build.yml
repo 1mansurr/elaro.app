@@ -70,8 +70,13 @@ jobs:
         run: |
           # yamllint disable-line rule:context-access
           PROFILE=${{ github.event.inputs.profile || 'production' }}
-          eas build --platform ios --profile $PROFILE --non-interactive
+          # Use GitHub run number as build number to ensure it's always higher than previous builds
+          # This prevents App Store upload errors due to duplicate CFBundleVersion
+          EXPO_PUBLIC_IOS_BUILD_NUMBER=${{ github.run_number }} \
+          eas build --platform ios --profile $PROFILE --non-interactive --env EXPO_PUBLIC_IOS_BUILD_NUMBER=${{ github.run_number }}
         continue-on-error: false
+        env:
+          EXPO_PUBLIC_IOS_BUILD_NUMBER: ${{ github.run_number }}
       
       - name: Build Android
         # yamllint disable-line rule:context-access

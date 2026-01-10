@@ -1,10 +1,10 @@
 /**
  * Layer 2 & 3: Remote structured logging and performance tracing with Sentry
- * 
- * Purpose: 
+ *
+ * Purpose:
  * - Layer 2: Debug device-only and production-only issues
  * - Layer 3: Measure startup performance without polluting logs
- * 
+ *
  * Rules:
  * - Log only: Startup timeouts, Auth failures, Navigation failures, Unexpected recoverable errors
  * - Do NOT log: UI noise, user actions
@@ -27,7 +27,10 @@ type SentryModule = {
     beforeSend?: (event: Event, hint: EventHint) => Event | null;
   }) => void;
   setTag?: (key: string, value: string) => void;
-  captureException?: (error: Error, context?: { extra?: Record<string, unknown>; level?: string }) => void;
+  captureException?: (
+    error: Error,
+    context?: { extra?: Record<string, unknown>; level?: string },
+  ) => void;
   captureMessage?: (message: string, level?: string) => void;
   setUser?: (user: { id: string }) => void;
   addBreadcrumb?: (breadcrumb: {
@@ -140,10 +143,7 @@ export function initializeSentry(dsn?: string): void {
       // Filter out non-critical errors
       if (event.level === 'warning' && event.exception) {
         const error = event.exception.values?.[0];
-        if (
-          error?.type === 'NetworkError' ||
-          error?.type === 'TimeoutError'
-        ) {
+        if (error?.type === 'NetworkError' || error?.type === 'TimeoutError') {
           // These are handled by retry logic, don't need to alert
           return null;
         }
@@ -163,7 +163,10 @@ export function initializeSentry(dsn?: string): void {
 /**
  * Layer 2: Capture structured event (for startup timeouts, auth failures, etc.)
  */
-export function captureEvent(name: string, payload?: Record<string, unknown>): void {
+export function captureEvent(
+  name: string,
+  payload?: Record<string, unknown>,
+): void {
   if (!Sentry?.addBreadcrumb) return;
 
   const redactedPayload = payload ? { ...payload } : undefined;
@@ -182,7 +185,10 @@ export function captureEvent(name: string, payload?: Record<string, unknown>): v
 /**
  * Layer 2: Capture error (for unexpected recoverable errors)
  */
-export function captureError(error: unknown, context?: Record<string, unknown>): void {
+export function captureError(
+  error: unknown,
+  context?: Record<string, unknown>,
+): void {
   if (!Sentry?.captureException) return;
 
   const redactedContext = context ? { ...context } : undefined;
@@ -202,12 +208,14 @@ export function captureError(error: unknown, context?: Record<string, unknown>):
  */
 export function addBreadcrumb(
   messageOrObj: string | { message: string; data?: Record<string, unknown> },
-  data?: Record<string, unknown>
+  data?: Record<string, unknown>,
 ): void {
   if (!Sentry?.addBreadcrumb) return;
 
-  const message = typeof messageOrObj === 'string' ? messageOrObj : messageOrObj.message;
-  const breadcrumbData = typeof messageOrObj === 'string' ? data : messageOrObj.data;
+  const message =
+    typeof messageOrObj === 'string' ? messageOrObj : messageOrObj.message;
+  const breadcrumbData =
+    typeof messageOrObj === 'string' ? data : messageOrObj.data;
 
   const redactedData = breadcrumbData ? { ...breadcrumbData } : undefined;
   if (redactedData) {
@@ -253,7 +261,9 @@ export function startSpan(
 /**
  * Layer 3: Finish span
  */
-export function finishSpan(span: ReturnType<Transaction['startChild']> | null): void {
+export function finishSpan(
+  span: ReturnType<Transaction['startChild']> | null,
+): void {
   if (span) {
     span.finish();
   }
@@ -267,4 +277,3 @@ export function finishTransaction(transaction: Transaction | null): void {
     transaction.finish();
   }
 }
-

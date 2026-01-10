@@ -58,6 +58,40 @@ function bumpVersion(type) {
   return newVersion;
 }
 
+function bumpBuildNumber(platform = 'all') {
+  const appJson = JSON.parse(fs.readFileSync(APP_JSON_PATH, 'utf8'));
+  const changes = [];
+  
+  if (platform === 'all' || platform === 'ios') {
+    if (appJson.expo.ios) {
+      const oldBuildNumber = appJson.expo.ios.buildNumber;
+      appJson.expo.ios.buildNumber = String(
+        Number(appJson.expo.ios.buildNumber) + 1,
+      );
+      changes.push(`iOS: ${oldBuildNumber} → ${appJson.expo.ios.buildNumber}`);
+    }
+  }
+  
+  if (platform === 'all' || platform === 'android') {
+    if (appJson.expo.android) {
+      const oldVersionCode = appJson.expo.android.versionCode;
+      appJson.expo.android.versionCode = appJson.expo.android.versionCode + 1;
+      changes.push(`Android: ${oldVersionCode} → ${appJson.expo.android.versionCode}`);
+    }
+  }
+  
+  fs.writeFileSync(APP_JSON_PATH, JSON.stringify(appJson, null, 2) + '\n');
+  
+  if (changes.length > 0) {
+    console.log('✅ Build numbers incremented:');
+    changes.forEach(change => console.log(`   ${change}`));
+  } else {
+    console.log('⚠️  No build numbers to increment');
+  }
+  
+  return appJson;
+}
+
 function createGitTag(version) {
   const { execSync } = require('child_process');
   try {
@@ -83,11 +117,33 @@ function createGitTag(version) {
 
 // CLI
 const type = process.argv[2];
+const platform = process.argv[3]; // Optional: ios, android, or all (default)
+
 if (!type) {
-  console.log('Usage: node scripts/version-manager.js [major|minor|patch]');
+  console.log('Usage:');
+  console.log('  node scripts/version-manager.js [major|minor|patch]');
+  console.log('  node scripts/version-manager.js build [ios|android|all]  # Increment build number only');
   console.log('\nCurrent version:', getCurrentVersion());
+  
+  // Show current build numbers
+  try {
+    const appJson = JSON.parse(fs.readFileSync(APP_JSON_PATH, 'utf8'));
+    if (appJson.expo.ios?.buildNumber) {
+      console.log('Current iOS build number:', appJson.expo.ios.buildNumber);
+    }
+    if (appJson.expo.android?.versionCode) {
+      console.log('Current Android version code:', appJson.expo.android.versionCode);
+    }
+  } catch (error) {
+    // Ignore errors reading app.json
+  }
+  
   process.exit(1);
 }
 
-const newVersion = bumpVersion(type);
-createGitTag(newVersion);
+if (type === 'build') {
+  bumpBuildNumber(platform || 'all');
+} else {
+  const newVersion = bumpVersion(type);
+  createGitTag(newVersion);
+}

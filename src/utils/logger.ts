@@ -1,15 +1,15 @@
 /**
  * Layer 1: Always-on minimal startup heartbeat logs
- * 
+ *
  * Purpose: Debug startup deadlocks, white screens, and initialization failures on real devices.
- * 
+ *
  * Rules:
  * - Always enabled (even in production)
  * - Minimal
  * - No PII
  * - No secrets
  * - No spam
- * 
+ *
  * To reduce noise after testing: Modify the ENABLED_TAGS array below.
  * No code deletion required - just filter tags here.
  */
@@ -19,7 +19,14 @@ type LogTag = 'BOOT' | 'AUTH' | 'NAV' | 'SYNC' | 'SPLASH' | 'PERF';
 // CRITICAL: To reduce noise after testing, add tags to this array
 // Only logs with tags in ENABLED_TAGS will be output
 // Example: const ENABLED_TAGS: LogTag[] = ['BOOT', 'AUTH']; // Only boot and auth logs
-const ENABLED_TAGS: LogTag[] = ['BOOT', 'AUTH', 'NAV', 'SYNC', 'SPLASH', 'PERF']; // All enabled during testing
+const ENABLED_TAGS: LogTag[] = [
+  'BOOT',
+  'AUTH',
+  'NAV',
+  'SYNC',
+  'SPLASH',
+  'PERF',
+]; // All enabled during testing
 
 interface LogData {
   [key: string]: string | number | boolean | null | undefined;
@@ -139,4 +146,3 @@ export function logPerf(event: string, data?: LogData): void {
   if (!ENABLED_TAGS.includes('PERF')) return;
   console.info(formatMessage('PERF', event, data));
 }
-

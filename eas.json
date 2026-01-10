@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 7.6.0",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -33,11 +33,14 @@
       "developmentClient": false,
       "distribution": "store",
       "channel": "production",
+      "autoIncrement": true,
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-16.4"
+        "image": "macos-sequoia-15.6-xcode-16.4",
+        "autoIncrement": "buildNumber"
       },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "autoIncrement": "versionCode"
       }
     }
   },

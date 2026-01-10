@@ -110,24 +110,23 @@ module.exports = ({ config }) => {
       supportsTablet: true,
       bundleIdentifier: 'com.elaro.app',
       buildNumber:
+        // Priority order:
+        // 1. Explicit env var override (highest priority, for CI/CD)
         process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER ||
+        // 2. EAS-managed build number (set by EAS autoIncrement or build:version:set)
         process.env.EAS_BUILD_NUMBER ||
+        // 3. Value from app.json (fallback for local development)
         (() => {
-          // For production builds, ensure we have a valid build number
-          if (process.env.EAS_BUILD_PROFILE === 'production' || isProduction) {
-            const buildNum =
-              process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER ||
-              process.env.EAS_BUILD_NUMBER ||
-              '1';
-            return buildNum;
-          }
-          // For development/preview builds, try app.json or default to '1'
           try {
             const appJson = require('./app.json');
-            return appJson.expo.ios.buildNumber || '1';
+            if (appJson.expo?.ios?.buildNumber) {
+              return appJson.expo.ios.buildNumber;
+            }
           } catch {
-            return '1';
+            // app.json not found or invalid
           }
+          // Only default to '1' if nothing else is available
+          return '1';
         })(),
       usesAppleSignIn: true, // Enable Apple Sign-In capability
       // iOS-specific configurations

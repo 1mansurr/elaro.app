@@ -30,7 +30,7 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
   useEffect(() => {
     logSplash('Splash animation started');
     addBreadcrumb({ message: 'Splash animation started' });
-    
+
     // Hard timeout fallback - guarantees callback fires even if animation fails
     const timeoutId = setTimeout(() => {
       logSplash('Splash animation timeout fallback triggered');
