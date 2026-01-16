@@ -3,7 +3,7 @@
 /**
  * Verification script to check the effective iOS build number
  * that will be used during EAS Build.
- * 
+ *
  * This helps identify which source (env var, EAS remote, or app.json)
  * will be used for the build number.
  */
@@ -13,7 +13,7 @@ const fs = require('fs');
 const path = require('path');
 
 console.log('🔍 Verifying iOS Build Number Configuration\n');
-console.log('=' .repeat(60));
+console.log('='.repeat(60));
 
 // 1. Check app.json
 try {
@@ -29,7 +29,9 @@ try {
 const expoPublicBuildNumber = process.env.EXPO_PUBLIC_IOS_BUILD_NUMBER;
 const easBuildNumber = process.env.EAS_BUILD_NUMBER;
 
-console.log(`🔧 EXPO_PUBLIC_IOS_BUILD_NUMBER: ${expoPublicBuildNumber || 'NOT SET'}`);
+console.log(
+  `🔧 EXPO_PUBLIC_IOS_BUILD_NUMBER: ${expoPublicBuildNumber || 'NOT SET'}`,
+);
 console.log(`🔧 EAS_BUILD_NUMBER: ${easBuildNumber || 'NOT SET'}`);
 
 // 3. Check eas.json for autoIncrement
@@ -40,16 +42,20 @@ try {
   const autoIncrement = productionProfile?.autoIncrement;
   const iosAutoIncrement = productionProfile?.ios?.autoIncrement;
   const appVersionSource = easJson.cli?.appVersionSource;
-  
+
   console.log(`\n📋 eas.json configuration:`);
   console.log(`   appVersionSource: ${appVersionSource || 'local (default)'}`);
   console.log(`   production.autoIncrement: ${autoIncrement || 'false'}`);
-  console.log(`   production.ios.autoIncrement: ${iosAutoIncrement || 'false'}`);
-  
+  console.log(
+    `   production.ios.autoIncrement: ${iosAutoIncrement || 'false'}`,
+  );
+
   if (appVersionSource === 'remote' && (autoIncrement || iosAutoIncrement)) {
     console.log(`\n✅ EAS will auto-increment build number from remote server`);
     console.log(`   Last submitted build: 2 (from error message)`);
-    console.log(`   Expected next build: 3 or higher (auto-incremented by EAS)`);
+    console.log(
+      `   Expected next build: 3 or higher (auto-incremented by EAS)`,
+    );
   }
 } catch (error) {
   console.log('❌ Could not read eas.json:', error.message);
@@ -62,11 +68,15 @@ try {
     encoding: 'utf8',
     cwd: path.join(__dirname, '..'),
   });
-  
+
   // Extract buildNumber from config output
-  const buildNumberMatch = configOutput.match(/buildNumber:\s*['"]?(\d+)['"]?/i);
+  const buildNumberMatch = configOutput.match(
+    /buildNumber:\s*['"]?(\d+)['"]?/i,
+  );
   if (buildNumberMatch) {
-    console.log(`\n✅ Effective buildNumber (from expo config): ${buildNumberMatch[1]}`);
+    console.log(
+      `\n✅ Effective buildNumber (from expo config): ${buildNumberMatch[1]}`,
+    );
   } else {
     console.log(`\n⚠️  Could not extract buildNumber from expo config`);
     console.log(`   (This is normal if EAS_BUILD_NUMBER is not set yet)`);
@@ -78,11 +88,19 @@ try {
 // 5. Determine what will be used
 console.log(`\n📊 Build Number Resolution Priority:`);
 console.log(`   1. EXPO_PUBLIC_IOS_BUILD_NUMBER (highest - if set)`);
-console.log(`   2. EAS_BUILD_NUMBER (set by EAS autoIncrement or build:version:set)`);
+console.log(
+  `   2. EAS_BUILD_NUMBER (set by EAS autoIncrement or build:version:set)`,
+);
 console.log(`   3. app.json expo.ios.buildNumber (fallback)`);
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(`\n💡 Next Steps:`);
-console.log(`   1. With autoIncrement enabled, EAS will automatically use build number > 2`);
-console.log(`   2. To manually set: eas build:version:set --platform ios --build-number 4`);
-console.log(`   3. To verify before build: Check EAS dashboard or build logs\n`);
+console.log(
+  `   1. With autoIncrement enabled, EAS will automatically use build number > 2`,
+);
+console.log(
+  `   2. To manually set: eas build:version:set --platform ios --build-number 4`,
+);
+console.log(
+  `   3. To verify before build: Check EAS dashboard or build logs\n`,
+);

@@ -1,36 +1,7 @@
 {
-    "git.ignoreLimitWarning": true,
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*.yml"
-    },
-    "yaml.customTags": [
-        "!And",
-        "!If",
-        "!Not",
-        "!Equals",
-        "!Or",
-        "!FindInMap sequence",
-        "!Base64",
-        "!Cidr",
-        "!Ref",
-        "!Sub",
-        "!GetAtt",
-        "!GetAZs",
-        "!ImportValue",
-        "!Select",
-        "!Split",
-        "!Join sequence"
-    ],
-    "yaml.validate": true,
-    "yaml.completion": true,
-    "[yaml]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
-    "files.associations": {
-        "*.yml": "yaml",
-        ".github/workflows/*.yml": "github-actions"
-    },
-    "github-actions.workflows.pinned.workflows": [
-        ".github/workflows/*.yml"
-    ]
+  "java.configuration.enabled": false,
+  "java.import.enabled": false,
+  "files.associations": {
+    "*.java": "plaintext"
+  }
 }
