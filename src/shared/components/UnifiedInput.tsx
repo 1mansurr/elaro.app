@@ -9,6 +9,8 @@ import {
   ViewStyle,
   TextStyle,
   Animated,
+  NativeSyntheticEvent,
+  TextInputFocusEventData,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -100,7 +102,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
     text: theme.text,
   }));
 
-  const handleFocus = (e: React.FocusEvent<TextInput>) => {
+  const handleFocus = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(true);
 
     // Smooth focus animation
@@ -122,7 +124,7 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
     props.onFocus?.(e);
   };
 
-  const handleBlur = (e: React.FocusEvent<TextInput>) => {
+  const handleBlur = (e: NativeSyntheticEvent<TextInputFocusEventData>) => {
     setIsFocused(false);
     setIsFilled(!!props.value);
 
@@ -282,7 +284,6 @@ export const UnifiedInput: React.FC<UnifiedInputProps> = ({
           maxLength={maxLength}
           accessibilityLabel={label || props.accessibilityLabel || 'Text input'}
           accessibilityHint={error || helperText || props.accessibilityHint}
-          accessibilityRole="textbox"
         />
 
         {rightIcon && (

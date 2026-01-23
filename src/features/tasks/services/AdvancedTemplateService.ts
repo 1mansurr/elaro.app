@@ -667,28 +667,28 @@ export class AdvancedTemplateService {
   private mapTemplateFromDB(
     dbTemplate: Record<string, unknown>,
   ): AdvancedTaskTemplate {
-    const templateData = dbTemplate.template_data || {};
+    const templateData = (dbTemplate.template_data as Record<string, unknown>) || {};
 
     return {
-      id: dbTemplate.id,
-      userId: dbTemplate.user_id,
-      templateName: dbTemplate.template_name,
-      description: dbTemplate.description || '',
-      taskType: dbTemplate.task_type,
-      category: dbTemplate.category,
-      fields: templateData.fields || [],
-      defaultValues: templateData.defaultValues || {},
-      validationRules: templateData.validationRules || {},
-      isPublic: dbTemplate.is_public,
-      tags: dbTemplate.tags || [],
-      version: dbTemplate.version,
-      parentTemplateId: dbTemplate.parent_template_id,
-      usageCount: dbTemplate.usage_count,
-      rating: dbTemplate.rating,
-      createdBy: dbTemplate.created_by,
-      lastUsedAt: dbTemplate.last_used_at,
-      createdAt: dbTemplate.created_at,
-      updatedAt: dbTemplate.updated_at,
+      id: dbTemplate.id as string,
+      userId: dbTemplate.user_id as string,
+      templateName: dbTemplate.template_name as string,
+      description: (dbTemplate.description as string) || '',
+      taskType: dbTemplate.task_type as 'assignment' | 'lecture' | 'study_session',
+      category: dbTemplate.category as 'academic' | 'work' | 'personal' | 'study' | 'project' | 'maintenance',
+      fields: (templateData.fields as TemplateField[]) || [],
+      defaultValues: (templateData.defaultValues as Record<string, any>) || {},
+      validationRules: (templateData.validationRules as Record<string, any>) || {},
+      isPublic: (dbTemplate.is_public ?? false) as boolean,
+      tags: (dbTemplate.tags as string[]) || [],
+      version: dbTemplate.version as number,
+      parentTemplateId: dbTemplate.parent_template_id as string | undefined,
+      usageCount: dbTemplate.usage_count as number,
+      rating: dbTemplate.rating as number | undefined,
+      createdBy: dbTemplate.created_by as string | undefined,
+      lastUsedAt: dbTemplate.last_used_at as string | undefined,
+      createdAt: dbTemplate.created_at as string,
+      updatedAt: dbTemplate.updated_at as string,
     };
   }
 
@@ -699,13 +699,13 @@ export class AdvancedTemplateService {
     dbCategory: Record<string, unknown>,
   ): TemplateCategory {
     return {
-      id: dbCategory.id,
-      name: dbCategory.name,
-      description: dbCategory.description,
-      icon: dbCategory.icon,
-      color: dbCategory.color,
-      isSystem: dbCategory.is_system,
-      createdAt: dbCategory.created_at,
+      id: dbCategory.id as string,
+      name: dbCategory.name as string,
+      description: dbCategory.description as string,
+      icon: dbCategory.icon as string,
+      color: dbCategory.color as string,
+      isSystem: (dbCategory.is_system ?? false) as boolean,
+      createdAt: dbCategory.created_at as string,
     };
   }
 
@@ -714,12 +714,12 @@ export class AdvancedTemplateService {
    */
   private mapShareFromDB(dbShare: Record<string, unknown>): TemplateShare {
     return {
-      id: dbShare.id,
-      templateId: dbShare.template_id,
-      sharedWithUserId: dbShare.shared_with_user_id,
-      sharedByUserId: dbShare.shared_by_user_id,
-      permission: dbShare.permission,
-      createdAt: dbShare.created_at,
+      id: dbShare.id as string,
+      templateId: dbShare.template_id as string,
+      sharedWithUserId: dbShare.shared_with_user_id as string,
+      sharedByUserId: dbShare.shared_by_user_id as string,
+      permission: dbShare.permission as 'view' | 'use' | 'edit',
+      createdAt: dbShare.created_at as string,
     };
   }
 
@@ -728,13 +728,13 @@ export class AdvancedTemplateService {
    */
   private mapRatingFromDB(dbRating: Record<string, unknown>): TemplateRating {
     return {
-      id: dbRating.id,
-      templateId: dbRating.template_id,
-      userId: dbRating.user_id,
-      rating: dbRating.rating,
-      reviewText: dbRating.review_text,
-      createdAt: dbRating.created_at,
-      updatedAt: dbRating.updated_at,
+      id: dbRating.id as string,
+      templateId: dbRating.template_id as string,
+      userId: dbRating.user_id as string,
+      rating: dbRating.rating as number,
+      reviewText: dbRating.review_text as string | undefined,
+      createdAt: dbRating.created_at as string,
+      updatedAt: dbRating.updated_at as string,
     };
   }
 
@@ -743,12 +743,12 @@ export class AdvancedTemplateService {
    */
   private mapUsageFromDB(dbUsage: Record<string, unknown>): TemplateUsage {
     return {
-      id: dbUsage.id,
-      templateId: dbUsage.template_id,
-      userId: dbUsage.user_id,
-      taskId: dbUsage.task_id,
-      taskType: dbUsage.task_type,
-      usedAt: dbUsage.used_at,
+      id: dbUsage.id as string,
+      templateId: dbUsage.template_id as string,
+      userId: dbUsage.user_id as string,
+      taskId: dbUsage.task_id as string,
+      taskType: dbUsage.task_type as 'assignment' | 'lecture' | 'study_session',
+      usedAt: dbUsage.used_at as string,
     };
   }
 }

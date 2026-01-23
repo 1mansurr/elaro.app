@@ -1,6 +1,7 @@
 import { versionedApiClient } from '@/services/VersionedApiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppError } from '@/utils/AppError';
+import { supabase } from '@/services/supabase';
 
 // ============================================================================
 // TYPES AND INTERFACES

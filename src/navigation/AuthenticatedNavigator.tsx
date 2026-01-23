@@ -583,7 +583,7 @@ export const AuthenticatedNavigator: React.FC = () => {
           {/* NOTE: PostOnboardingWelcomeScreen is self-managed - it enforces all visibility rules */}
           <Stack.Group
             screenOptions={{
-              presentation: 'fullScreenModal',
+              presentation: 'modal',
               headerShown: false,
             }}>
             <Stack.Screen

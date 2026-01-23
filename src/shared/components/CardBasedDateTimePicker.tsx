@@ -51,7 +51,7 @@ export const CardBasedDateTimePicker: React.FC<
   hasPickedStartTime = false,
   hasPickedEndTime = false,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState<
     'start' | 'end' | 'single' | null
@@ -129,8 +129,8 @@ export const CardBasedDateTimePicker: React.FC<
           style={[
             styles.card,
             {
-              backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-              borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+              backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+              borderColor: isDark ? '#374151' : '#E5E7EB',
             },
           ]}>
           <View style={styles.cardRow}>
@@ -148,7 +148,7 @@ export const CardBasedDateTimePicker: React.FC<
             style={[
               styles.timeSection,
               {
-                backgroundColor: theme.isDark ? '#111827' : '#F8F9FA',
+                backgroundColor: isDark ? '#111827' : '#F8F9FA',
               },
             ]}>
             <View style={styles.timeRow}>
@@ -253,7 +253,7 @@ export const CardBasedDateTimePicker: React.FC<
         <Text
           style={[
             styles.singleLabel,
-            { color: theme.isDark ? '#9CA3AF' : '#374151' },
+            { color: isDark ? '#9CA3AF' : '#374151' },
           ]}>
           {label}
         </Text>
@@ -262,8 +262,8 @@ export const CardBasedDateTimePicker: React.FC<
             style={[
               styles.singleButton,
               {
-                backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                borderColor: isDark ? '#374151' : '#E5E7EB',
               },
             ]}
             onPress={() => setShowDatePicker(true)}>
@@ -289,8 +289,8 @@ export const CardBasedDateTimePicker: React.FC<
               style={[
                 styles.singleButton,
                 {
-                  backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                  borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+                  backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                  borderColor: isDark ? '#374151' : '#E5E7EB',
                 },
               ]}
               onPress={() => setShowTimePicker('single')}>

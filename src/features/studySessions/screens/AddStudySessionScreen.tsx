@@ -18,7 +18,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
-import { RootStackParamList, Course } from '@/types';
+import { RootStackParamList, Course, StudySession } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import {
@@ -75,7 +75,7 @@ const AddStudySessionScreen = () => {
     useMonthlyTaskCount();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const {
     currentReminders,
@@ -193,7 +193,7 @@ const AddStudySessionScreen = () => {
       saveDraft('study_session', {
         title: topic,
         course: selectedCourse,
-        dateTime: sessionDate,
+        dateTime: sessionDate || undefined,
         description,
         hasSpacedRepetition,
         reminders,
@@ -265,7 +265,7 @@ const AddStudySessionScreen = () => {
       const templateData = clearDateFields(template.template_data);
 
       // Set topic
-      if (templateData.topic) {
+      if (templateData.topic && typeof templateData.topic === 'string') {
         setTopic(templateData.topic);
       }
 
@@ -278,17 +278,17 @@ const AddStudySessionScreen = () => {
       }
 
       // Set description
-      if (templateData.description) {
+      if (templateData.description && typeof templateData.description === 'string') {
         setDescription(templateData.description);
       }
 
       // Set spaced repetition
       if (templateData.has_spaced_repetition !== undefined) {
-        setHasSpacedRepetition(templateData.has_spaced_repetition);
+        setHasSpacedRepetition(Boolean(templateData.has_spaced_repetition));
       }
 
       // Set reminders
-      if (templateData.reminders) {
+      if (templateData.reminders && Array.isArray(templateData.reminders)) {
         setReminders(templateData.reminders);
       }
     }
@@ -357,13 +357,14 @@ const AddStudySessionScreen = () => {
     if (isGuest) {
       await savePendingTask(
         {
-          course: selectedCourse,
+          courseId: selectedCourse!.id,
           topic,
-          description,
-          sessionDate,
+          description: description || '',
+          sessionDate: (sessionDate || new Date()).toISOString(),
           hasSpacedRepetition,
-          reminders,
-        },
+          userId: '',
+          createdAt: new Date().toISOString(),
+        } as StudySession,
         'study_session',
       );
       Alert.alert(
@@ -389,7 +390,7 @@ const AddStudySessionScreen = () => {
         course_id: selectedCourse!.id,
         topic: topic.trim(),
         notes: description.trim(),
-        session_date: sessionDate.toISOString(),
+        session_date: sessionDate ? sessionDate.toISOString() : new Date().toISOString(),
         has_spaced_repetition: hasSpacedRepetition,
         reminders,
       };
@@ -423,7 +424,6 @@ const AddStudySessionScreen = () => {
           try {
             await notificationService.cancelItemReminders(
               taskToEdit.id,
-              'study_session',
             );
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
@@ -506,7 +506,7 @@ const AddStudySessionScreen = () => {
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
           paddingTop: insets.top,
         },
       ]}>
@@ -515,8 +515,8 @@ const AddStudySessionScreen = () => {
         style={[
           styles.header,
           {
-            backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
-            borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+            backgroundColor: isDark ? '#101922' : '#F6F7F8',
+            borderBottomColor: isDark ? '#374151' : '#E5E7EB',
           },
         ]}>
         <TouchableOpacity
@@ -528,13 +528,13 @@ const AddStudySessionScreen = () => {
           <Ionicons
             name="close"
             size={24}
-            color={theme.isDark ? '#FFFFFF' : '#111418'}
+            color={isDark ? '#FFFFFF' : '#111418'}
           />
         </TouchableOpacity>
         <Text
           style={[
             styles.headerTitle,
-            { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            { color: isDark ? '#FFFFFF' : '#111418' },
           ]}>
           New Study Session
         </Text>
@@ -552,7 +552,7 @@ const AddStudySessionScreen = () => {
           <Text
             style={[
               styles.sectionTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             Required Information
           </Text>
@@ -562,7 +562,7 @@ const AddStudySessionScreen = () => {
             <Text
               style={[
                 styles.label,
-                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                { color: isDark ? '#FFFFFF' : '#374151' },
               ]}>
               Course
             </Text>
@@ -570,8 +570,8 @@ const AddStudySessionScreen = () => {
               style={[
                 styles.selectButton,
                 {
-                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
+                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: isDark ? '#3B4754' : 'transparent',
                 },
               ]}
               onPress={() => setShowCourseModal(true)}
@@ -581,10 +581,10 @@ const AddStudySessionScreen = () => {
                   styles.selectButtonText,
                   {
                     color: !selectedCourse
-                      ? theme.isDark
+                      ? isDark
                         ? '#9CA3AF'
                         : '#9CA3AF'
-                      : theme.isDark
+                      : isDark
                         ? '#FFFFFF'
                         : '#111418',
                   },
@@ -596,7 +596,7 @@ const AddStudySessionScreen = () => {
               <Ionicons
                 name="chevron-down"
                 size={24}
-                color={theme.isDark ? '#FFFFFF' : '#111418'}
+                color={isDark ? '#FFFFFF' : '#111418'}
               />
             </TouchableOpacity>
           </View>
@@ -607,14 +607,14 @@ const AddStudySessionScreen = () => {
               <Text
                 style={[
                   styles.label,
-                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                  { color: isDark ? '#FFFFFF' : '#374151' },
                 ]}>
                 Topic
               </Text>
               <Text
                 style={[
                   styles.characterCount,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 {topic.length}/35
               </Text>
@@ -643,7 +643,7 @@ const AddStudySessionScreen = () => {
         <View
           style={[
             styles.divider,
-            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+            { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
           ]}
         />
 
@@ -652,7 +652,7 @@ const AddStudySessionScreen = () => {
           <Text
             style={[
               styles.sectionTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             Optional Details
           </Text>
@@ -662,23 +662,23 @@ const AddStudySessionScreen = () => {
             <Text
               style={[
                 styles.label,
-                { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                { color: isDark ? '#FFFFFF' : '#374151' },
               ]}>
               Notes
             </Text>
             <TextInput
               style={[
-                styles.textArea,
+                styles.textAreaModal,
                 {
-                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
-                  color: theme.isDark ? '#FFFFFF' : '#111418',
+                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: isDark ? '#3B4754' : 'transparent',
+                  color: isDark ? '#FFFFFF' : '#111418',
                 },
               ]}
               value={description}
               onChangeText={setDescription}
               placeholder="Add notes, key points, or details..."
-              placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+              placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
               multiline
               numberOfLines={3}
               maxLength={500}
@@ -687,7 +687,7 @@ const AddStudySessionScreen = () => {
               <Text
                 style={[
                   styles.characterCount,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 {description.length}/500
               </Text>
@@ -731,14 +731,14 @@ const AddStudySessionScreen = () => {
               <Text
                 style={[
                   styles.label,
-                  { color: theme.isDark ? '#FFFFFF' : '#374151' },
+                  { color: isDark ? '#FFFFFF' : '#374151' },
                 ]}>
                 Reminders
               </Text>
               <Text
                 style={[
                   styles.maxReminders,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 Max 2
               </Text>
@@ -758,8 +758,8 @@ const AddStudySessionScreen = () => {
               style={[
                 styles.addReminderButton,
                 {
-                  borderColor: theme.isDark ? '#3B4754' : '#D1D5DB',
-                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: isDark ? '#3B4754' : '#D1D5DB',
+                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
                 },
               ]}
               onPress={handleAddReminder}
@@ -769,7 +769,7 @@ const AddStudySessionScreen = () => {
                 size={20}
                 color={
                   reminders.length >= 2
-                    ? theme.isDark
+                    ? isDark
                       ? '#6B7280'
                       : '#9CA3AF'
                     : COLORS.primary
@@ -781,7 +781,7 @@ const AddStudySessionScreen = () => {
                   {
                     color:
                       reminders.length >= 2
-                        ? theme.isDark
+                        ? isDark
                           ? '#6B7280'
                           : '#9CA3AF'
                         : COLORS.primary,
@@ -814,8 +814,8 @@ const AddStudySessionScreen = () => {
         style={[
           styles.footer,
           {
-            backgroundColor: theme.isDark ? '#101922' + 'E6' : '#F6F7F8' + 'E6',
-            borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+            backgroundColor: isDark ? '#101922' + 'E6' : '#F6F7F8' + 'E6',
+            borderTopColor: isDark ? '#374151' : '#E5E7EB',
             paddingBottom: insets.bottom + 16,
           },
         ]}>
@@ -826,7 +826,7 @@ const AddStudySessionScreen = () => {
             {
               backgroundColor:
                 !isFormValid || isSaving
-                  ? theme.isDark
+                  ? isDark
                     ? '#1C252E'
                     : '#D1D5DB'
                   : COLORS.primary,
@@ -857,7 +857,7 @@ const AddStudySessionScreen = () => {
             style={[
               styles.modalContent,
               {
-                backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
               },
             ]}>
             <Text style={[styles.modalTitle, { color: theme.text }]}>
@@ -866,7 +866,7 @@ const AddStudySessionScreen = () => {
             <Text
               style={[
                 styles.modalSubtitle,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               Choose up to 2 reminders
             </Text>
@@ -886,7 +886,7 @@ const AddStudySessionScreen = () => {
                           : 'transparent',
                         borderColor: isSelected
                           ? COLORS.primary + '33'
-                          : theme.isDark
+                          : isDark
                             ? '#374151'
                             : '#E5E7EB',
                       },
@@ -899,7 +899,7 @@ const AddStudySessionScreen = () => {
                         {
                           color: isSelected
                             ? COLORS.primary
-                            : theme.isDark
+                            : isDark
                               ? '#FFFFFF'
                               : '#111418',
                         },
@@ -929,11 +929,11 @@ const AddStudySessionScreen = () => {
         animationType="fade"
         onRequestClose={() => setShowCourseModal(false)}>
         <TouchableOpacity
-          style={styles.modalOverlay}
+          style={styles.courseModalOverlay}
           activeOpacity={1}
           onPress={() => setShowCourseModal(false)}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Course</Text>
+          <View style={styles.courseModalContent}>
+            <Text style={styles.courseModalTitle}>Select Course</Text>
             <ScrollView style={styles.coursesList}>
               {courses.length === 0 ? (
                 <View style={styles.noCourses}>
@@ -1228,7 +1228,7 @@ const styles = StyleSheet.create({
     fontWeight: FONT_WEIGHTS.semibold as any,
     color: COLORS.primary,
   },
-  textArea: {
+  textAreaModal: {
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 12,
@@ -1252,13 +1252,13 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginTop: 4,
   },
-  modalOverlay: {
+  courseModalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
+  courseModalContent: {
     backgroundColor: COLORS.background,
     borderRadius: 16,
     margin: SPACING.xl,
@@ -1270,7 +1270,7 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  modalTitle: {
+  courseModalTitle: {
     fontSize: FONT_SIZES.xl,
     fontWeight: FONT_WEIGHTS.bold as any,
     color: COLORS.text,

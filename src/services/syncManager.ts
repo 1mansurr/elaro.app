@@ -333,7 +333,7 @@ class SyncManager {
     return {
       length: this.queue.length,
       pending: this.queue.filter(item => item.status === 'pending').length,
-      processing: this.queue.filter(item => item.status === 'processing')
+      processing: this.queue.filter(item => item.status === 'syncing')
         .length,
       failed: this.queue.filter(item => item.status === 'failed').length,
     };
@@ -448,7 +448,7 @@ class SyncManager {
           results.push({
             action,
             success: true,
-            data: serverResponse,
+            data: (serverResponse as Record<string, unknown>) ?? undefined,
           });
         } catch (error: unknown) {
           const errorMessage =
@@ -1119,11 +1119,12 @@ class SyncManager {
    * @returns Delay in milliseconds
    */
   private calculateRetryDelay(attemptIndex: number): number {
-    const baseDelay = this.config.retryDelay * Math.pow(2, attemptIndex); // Exponential backoff
+    const retryDelay = this.config.retryDelay ?? 5000;
+    const baseDelay = retryDelay * Math.pow(2, attemptIndex); // Exponential backoff
     const jitter = baseDelay * 0.2 * (Math.random() * 2 - 1); // ±20% jitter
     const delay = baseDelay + jitter;
     // Cap at 30 seconds max delay
-    return Math.min(Math.max(delay, this.config.retryDelay), 30000);
+    return Math.min(Math.max(delay, retryDelay), 30000);
   }
 
   /**

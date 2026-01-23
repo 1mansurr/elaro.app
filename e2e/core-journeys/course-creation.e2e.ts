@@ -4,7 +4,7 @@
  * Tests the complete flow of creating a new course from start to finish.
  */
 
-const { device, element, by, expect, waitFor } = require('detox');
+// Note: device, element, by, expect, waitFor are global from Detox
 
 describe('Course Creation Journey', () => {
   beforeAll(async () => {

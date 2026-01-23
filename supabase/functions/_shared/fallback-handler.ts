@@ -4,6 +4,7 @@
  * Provides graceful degradation when service quotas are exceeded
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { logger } from './logging.ts';
 import { getQuotaStatus } from './quota-monitor.ts';
@@ -87,7 +88,7 @@ export async function processNotificationQueue(
       .limit(maxProcess);
 
     // Filter out notifications that have exceeded max retries
-    const filtered = (pending || []).filter(n => n.retry_count < n.max_retries);
+    const filtered = (pending || []).filter((n: { retry_count?: number; max_retries?: number }) => (n.retry_count || 0) < (n.max_retries || 0));
 
     if (fetchError) {
       await logger.error(
@@ -141,7 +142,7 @@ export async function processNotificationQueue(
           notification.title,
           notification.body,
           notification.data,
-          { priority: notification.priority as 'normal' | 'high' | 'urgent' },
+          { priority: (notification.priority === 'urgent' ? 'high' : notification.priority) as 'normal' | 'high' | 'default' | undefined },
         );
 
         if (result.success && result.sentCount > 0) {

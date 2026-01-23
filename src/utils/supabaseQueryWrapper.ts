@@ -66,6 +66,10 @@ export async function executeSupabaseQuery<T>(
   try {
     const result = await supabaseCircuitBreaker.execute(operationWithRetry);
 
+    if (!result) {
+      throw new Error(`${operationName} returned undefined`);
+    }
+
     if (result.error) {
       throw result.error;
     }
@@ -155,6 +159,10 @@ export async function executeSupabaseQueryNullable<T>(
   // Execute with circuit breaker protection
   try {
     const result = await supabaseCircuitBreaker.execute(operationWithRetry);
+
+    if (!result) {
+      throw new Error(`${operationName} returned undefined`);
+    }
 
     if (result.error) {
       throw result.error;

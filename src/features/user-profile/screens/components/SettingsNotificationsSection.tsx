@@ -6,7 +6,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 export const SettingsNotificationsSection: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.notificationsSection}>
@@ -15,7 +15,7 @@ export const SettingsNotificationsSection: React.FC = () => {
           style={[
             styles.notificationsIconContainer,
             {
-              backgroundColor: theme.isDark
+              backgroundColor: isDark
                 ? 'rgba(249, 115, 22, 0.2)'
                 : '#FED7AA',
             },
@@ -23,21 +23,21 @@ export const SettingsNotificationsSection: React.FC = () => {
           <Ionicons
             name="notifications"
             size={18}
-            color={theme.isDark ? '#FB923C' : '#EA580C'}
+            color={isDark ? '#FB923C' : '#EA580C'}
           />
         </View>
         <View style={styles.notificationsHeaderText}>
           <Text
             style={[
               styles.notificationsTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             Notifications
           </Text>
           <Text
             style={[
               styles.notificationsDescription,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             Manage how you receive alerts for revisions and schedules.
           </Text>

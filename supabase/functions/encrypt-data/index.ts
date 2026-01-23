@@ -1,10 +1,11 @@
 // FILE: supabase/functions/encrypt-data/index.ts
 // Create this new Edge Function to expose the encryption logic.
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
-serve(async req => {
+serve(async (req: Request) => {
   // PASS 1: Crash safety - wrap req.json() in try/catch
   let body: unknown;
   try {
@@ -27,6 +28,7 @@ serve(async req => {
   const bodyObj = body as { text?: unknown };
   const { text } = bodyObj;
 
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const secretKey = Deno.env.get('ENCRYPTION_KEY');
 
   if (!secretKey) {

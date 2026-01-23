@@ -38,7 +38,7 @@ const CourseDetailScreen = () => {
   const { courseId } = route.params;
   const { user } = useAuth();
   const { isOnline } = useNetwork();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
   const {
     data: course,
@@ -382,7 +382,7 @@ const CourseDetailScreen = () => {
                 styles.deleteButton,
                 {
                   backgroundColor:
-                    theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
+                    isDark ? '#991b1b20' : '#fee2e2',
                 },
               ]}
               onPress={handleDelete}
@@ -391,13 +391,13 @@ const CourseDetailScreen = () => {
               <Ionicons
                 name="trash-outline"
                 size={20}
-                color={theme.mode === 'dark' ? '#f87171' : '#dc2626'}
+                color={isDark ? '#f87171' : '#dc2626'}
               />
               <Text
                 style={[
                   styles.deleteButtonText,
                   {
-                    color: theme.mode === 'dark' ? '#f87171' : '#dc2626',
+                    color: isDark ? '#f87171' : '#dc2626',
                   },
                 ]}>
                 {isDeleting ? 'Deleting...' : 'Delete Course'}

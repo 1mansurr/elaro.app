@@ -32,7 +32,7 @@ export const lecturesApiMutations = {
           'lecture',
           {
             type: 'CREATE',
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },
@@ -112,7 +112,7 @@ export const lecturesApiMutations = {
           {
             type: 'UPDATE',
             id: lectureId,
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },

@@ -8,6 +8,7 @@
  * - Bandwidth: 10 GB/month (5 GB cached + 5 GB uncached)
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { logger } from './logging.ts';
 

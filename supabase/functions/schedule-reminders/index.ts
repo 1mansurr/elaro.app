@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -66,7 +67,16 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
     throw handleDbError(profileError);
   }
 
-  const userTier = userProfile?.subscription_tier || 'free';
+  if (!userProfile || typeof userProfile !== 'object' || !('subscription_tier' in userProfile)) {
+    throw new AppError(
+      'Failed to fetch user profile',
+      500,
+      ERROR_CODES.DB_QUERY_ERROR,
+    );
+  }
+
+  const userProfileTyped = userProfile as { subscription_tier: string };
+  const userTier = userProfileTyped.subscription_tier || 'free';
 
   // Check if user has permission to create SRS reminders
   if (!isPremium(userTier)) {
@@ -78,31 +88,32 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
   }
 
   // Step 2: Fetch the appropriate SRS schedule based on user tier
-  const { data: schedule, error: scheduleError } = await supabaseClient
+  const { data: scheduleData, error: scheduleError } = await supabaseClient
     .from('srs_schedules')
     .select('intervals, name')
     .eq('tier_restriction', userTier)
     .single();
 
-  if (scheduleError || !schedule) {
+  let schedule: { intervals: number[]; name: string };
+  if (scheduleError || !scheduleData) {
     await logger.warn(
       'SRS schedule not found, using fallback',
       { user_id: user.id, tier: userTier, error: scheduleError?.message },
       traceContext,
     );
     // As a fallback, use tier-specific hardcoded intervals
-    const fallbackSchedule =
-      userTier === 'free'
-        ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
-        : {
-            intervals: [1, 3, 7, 14, 30, 60, 120, 180],
-            name: 'Oddity Tier (Fallback)',
-          };
-    schedule = fallbackSchedule;
+    schedule = userTier === 'free'
+      ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
+      : {
+          intervals: [1, 3, 7, 14, 30, 60, 120, 180],
+          name: 'Oddity Tier (Fallback)',
+        };
+  } else {
+    schedule = scheduleData as { intervals: number[]; name: string };
   }
 
   const intervals = schedule.intervals;
-  const sessionDate = new Date(session_date);
+  const sessionDate = new Date(session_date as string);
   const JITTER_MINUTES = 30; // We'll add +/- 30 minutes of jitter
 
   // Get optimal hour for reminders based on user patterns
@@ -114,7 +125,7 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
     },
   );
 
-  const preferredHour = optimalHour || 10; // Default to 10 AM if no data
+  const preferredHour = (typeof optimalHour === 'number' ? optimalHour : null) || 10; // Default to 10 AM if no data
 
   // Cancel existing reminders for this session before scheduling new ones
   const { cancelExistingSRSReminders } =
@@ -122,7 +133,7 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
   const cancelledCount = await cancelExistingSRSReminders(
     supabaseClient,
     user.id,
-    session_id,
+    session_id as string,
   );
   if (cancelledCount > 0) {
     await logger.info(
@@ -139,10 +150,10 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
   // Use consolidated scheduling service (deterministic jitter by default)
   const remindersToInsert = await scheduleMultipleSRSReminders(supabaseClient, {
     userId: user.id,
-    sessionId: session_id,
+    sessionId: session_id as string,
     sessionDate,
-    topic,
-    preferredHour,
+    topic: topic as string,
+    preferredHour: preferredHour as number,
     jitterMinutes: JITTER_MINUTES,
     useDeterministicJitter: true, // Deterministic for consistency
     intervals,

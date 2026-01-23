@@ -1,8 +1,12 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAdminHandler,
-  AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
+import {
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
 import {
   hashMasterKey,
   getActiveMasterKeyHash,
@@ -12,11 +16,11 @@ import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
-  AppError,
   ERROR_CODES,
   ERROR_STATUS_CODES,
 } from '../_shared/error-codes.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -46,13 +50,21 @@ async function handleSetupMasterKey(req: AuthenticatedRequest) {
   if (existingKey) {
     throw new AppError(
       'Master key already exists. Use reset function to change it.',
-      ERROR_STATUS_CODES.BAD_REQUEST,
+      ERROR_STATUS_CODES.INVALID_INPUT,
       ERROR_CODES.INVALID_INPUT,
     );
   }
 
   // Hash the master key
-  const keyHash = await hashMasterKey(body.master_key);
+  const masterKey = typeof body.master_key === 'string' ? body.master_key : '';
+  if (!masterKey) {
+    throw new AppError(
+      'Master key is required',
+      ERROR_STATUS_CODES.INVALID_INPUT,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
+  const keyHash = await hashMasterKey(masterKey);
 
   // Store in database
   const { data, error } = await supabaseAdmin

@@ -28,15 +28,15 @@ const StatCard: React.FC<{
   bgColor: string;
   iconColor: string;
 }> = ({ label, count, icon, bgColor, iconColor }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.statCard,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#F3F4F6',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#F3F4F6',
         },
       ]}>
       <View style={styles.statHeader}>
@@ -52,7 +52,7 @@ const StatCard: React.FC<{
         <Text
           style={[
             styles.statLabel,
-            { color: theme.isDark ? '#9CA3AF' : '#637588' },
+            { color: isDark ? '#9CA3AF' : '#637588' },
           ]}>
           {label}
         </Text>

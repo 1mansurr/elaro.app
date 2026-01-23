@@ -1,6 +1,7 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 
-serve(async req => {
+serve(async (req: Request) => {
   try {
     // PASS 1: Crash safety - wrap req.json() in try/catch (already in outer try, but be explicit)
     let body: unknown;
@@ -45,6 +46,7 @@ serve(async req => {
     }
 
     // Use Resend API for email delivery (if configured)
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
 
     if (resendApiKey) {
@@ -55,6 +57,7 @@ serve(async req => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          // @ts-expect-error - Deno.env is available at runtime in Deno
           from: Deno.env.get('ALERT_EMAIL_FROM') || 'alerts@myelaro.com',
           to,
           subject,

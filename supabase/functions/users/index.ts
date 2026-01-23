@@ -13,6 +13,7 @@
  * - GET /users/analytics - Get user analytics
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -25,6 +26,7 @@ import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
 } from '../_shared/event-driven-architecture.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { decrypt } from '../_shared/encryption.ts';
 import { RegisterDeviceSchema } from '../_shared/schemas/user.ts';
@@ -103,6 +105,7 @@ class UserService {
     if (error) throw new AppError(error.message, 500, 'PROFILE_FETCH_ERROR');
 
     // Decrypt sensitive fields (first_name, last_name, university, and program) before returning
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (encryptionKey && profile) {
       const decryptedProfile = { ...profile };
@@ -255,8 +258,10 @@ class UserService {
     await eventEmitter.emitUserCreated({
       userId,
       email: profile.email,
-      firstName: data.first_name,
-      lastName: data.last_name,
+      firstName:
+        typeof data.first_name === 'string' ? data.first_name : undefined,
+      lastName:
+        typeof data.last_name === 'string' ? data.last_name : undefined,
     });
 
     return profile;
@@ -354,7 +359,8 @@ class UserService {
 
     const totalStudyTime =
       studySessions?.reduce(
-        (sum, session) => sum + (session.duration_minutes || 0),
+        (sum: number, session: { duration_minutes?: number | null }) =>
+          sum + (session.duration_minutes || 0),
         0,
       ) || 0;
 

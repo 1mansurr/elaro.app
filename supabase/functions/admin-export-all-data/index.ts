@@ -1,8 +1,11 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAdminHandler,
-  AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
+import {
+  AuthenticatedRequest,
+} from '../_shared/function-handler.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -50,29 +53,29 @@ async function handleAdminExport(req: AuthenticatedRequest) {
   // Construct the final JSON output
   const exportData: FullExport = {
     exportedAt: new Date().toISOString(),
-    users: users.data || [],
-    courses: courses.data || [],
-    assignments: assignments.data || [],
-    lectures: lectures.data || [],
-    studySessions: studySessions.data || [],
-    reminders: reminders.data || [],
+    users: (users.data as unknown[]) || [],
+    courses: (courses.data as unknown[]) || [],
+    assignments: (assignments.data as unknown[]) || [],
+    lectures: (lectures.data as unknown[]) || [],
+    studySessions: (studySessions.data as unknown[]) || [],
+    reminders: (reminders.data as unknown[]) || [],
   };
 
   await logger.info(
     'Admin data export completed',
     {
       admin_id: user.id,
-      user_count: users.data?.length || 0,
-      course_count: courses.data?.length || 0,
-      assignment_count: assignments.data?.length || 0,
-      lecture_count: lectures.data?.length || 0,
-      study_session_count: studySessions.data?.length || 0,
-      reminder_count: reminders.data?.length || 0,
+      user_count: (users.data as unknown[])?.length || 0,
+      course_count: (courses.data as unknown[])?.length || 0,
+      assignment_count: (assignments.data as unknown[])?.length || 0,
+      lecture_count: (lectures.data as unknown[])?.length || 0,
+      study_session_count: (studySessions.data as unknown[])?.length || 0,
+      reminder_count: (reminders.data as unknown[])?.length || 0,
     },
     traceContext,
   );
 
-  return exportData;
+  return exportData as unknown as Record<string, unknown>;
 }
 
 serve(

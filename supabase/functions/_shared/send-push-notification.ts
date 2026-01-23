@@ -1,4 +1,6 @@
+// @ts-expect-error - Deno npm imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { Expo } from 'npm:expo-server-sdk@3.7.0';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { withTimeout, DEFAULT_TIMEOUTS } from './timeout.ts';
 import { retryWithBackoff } from './retry.ts';
@@ -159,16 +161,19 @@ export async function sendPushNotification(
 
       console.log('Sent notification chunk, received tickets:', tickets);
 
-      tickets.forEach((ticket, index) => {
+      const ticketsArray = Array.isArray(tickets) ? tickets : [];
+      ticketsArray.forEach((ticket: { status?: string; id?: string; message?: string; details?: { error?: string } }, index: number) => {
         const originalMessage = chunk[index];
 
         if (ticket.status === 'ok') {
           sentCount++;
-          ticketIds.push(ticket.id);
+          if (ticket.id) {
+            ticketIds.push(ticket.id);
+          }
         } else if (ticket.status === 'error') {
           failureCount++;
           console.error(
-            `Error sending notification to ${originalMessage.to}: ${ticket.message}`,
+            `Error sending notification to ${originalMessage.to}: ${ticket.message || 'Unknown error'}`,
           );
 
           // Check for permanent errors that indicate invalid tokens

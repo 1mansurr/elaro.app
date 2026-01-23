@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -15,6 +16,7 @@ async function handleUpdateStudySession(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const { session_id, ...updates } = body;
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (!encryptionKey)
     throw new AppError(
@@ -50,10 +52,10 @@ async function handleUpdateStudySession(req: AuthenticatedRequest) {
 
   // Encrypt fields if they are being updated
   const encryptedUpdates = { ...updates };
-  if (updates.topic) {
+  if (updates.topic && typeof updates.topic === 'string') {
     encryptedUpdates.topic = await encrypt(updates.topic, encryptionKey);
   }
-  if (updates.notes) {
+  if (updates.notes && typeof updates.notes === 'string') {
     encryptedUpdates.notes = await encrypt(updates.notes, encryptionKey);
   }
 
@@ -74,7 +76,7 @@ async function handleUpdateStudySession(req: AuthenticatedRequest) {
     { user_id: user.id, session_id },
     traceContext,
   );
-  return data;
+  return (data || {}) as Record<string, unknown>;
 }
 
 serve(

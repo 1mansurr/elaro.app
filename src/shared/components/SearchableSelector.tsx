@@ -63,7 +63,7 @@ const SearchableSelector: React.FC<Props> = ({
   const manualInputRef = useRef<TextInput | null>(null);
   const selectorInputRef = useRef<TextInput | null>(null);
   const dropdownRef = useRef<View | null>(null);
-  const inputWrapperRef = useRef<TouchableOpacity | null>(null);
+  const inputWrapperRef = useRef<React.ElementRef<typeof TouchableOpacity> | null>(null);
   const [inputLayout, setInputLayout] = useState({
     x: 0,
     y: 0,
@@ -251,7 +251,7 @@ const SearchableSelector: React.FC<Props> = ({
     if (inputWrapperRef.current) {
       // Use setTimeout to ensure layout is complete before measuring
       setTimeout(() => {
-        inputWrapperRef.current?.measureInWindow((x, y, width, height) => {
+        inputWrapperRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
           setInputLayout({ x, y, width, height });
         });
       }, 0);

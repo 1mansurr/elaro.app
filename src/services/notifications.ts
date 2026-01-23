@@ -69,9 +69,9 @@ function isTimeoutError(error: unknown): boolean {
     };
     return (
       errorObj.code === 'HTTP_504' ||
-      errorObj.error?.toLowerCase().includes('timeout') ||
-      errorObj.message?.toLowerCase().includes('504') ||
-      errorObj.message?.toLowerCase().includes('timeout')
+      (errorObj.error?.toLowerCase().includes('timeout') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('504') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('timeout') ?? false)
     );
   }
   return false;
@@ -97,8 +97,8 @@ function isWorkerError(error: unknown): boolean {
     };
     return (
       errorObj.code === 'WORKER_ERROR' ||
-      errorObj.error?.toLowerCase().includes('function exited') ||
-      errorObj.message?.toLowerCase().includes('function exited')
+      (errorObj.error?.toLowerCase().includes('function exited') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('function exited') ?? false)
     );
   }
   return false;
@@ -243,7 +243,7 @@ async function savePushTokenToSupabase(userId: string, token: string) {
       maxDelay: 10000, // Max 10 seconds between retries
       retryCondition: error => {
         // Don't retry validation errors (not transient)
-        if (error instanceof Error && error.code === 'VALIDATION_ERROR') {
+        if (error instanceof Error && (error as Error & { code?: string }).code === 'VALIDATION_ERROR') {
           return false;
         }
         // Retry on timeout errors (504) or worker errors (may be transient)
@@ -481,9 +481,9 @@ export const notificationService = {
       console.log('Handling notification with deep link:', url);
       try {
         // Check if navigation is ready before navigating
-        if (navigationRef.current?.isReady()) {
+        if (navigationRef && navigationRef.isReady()) {
           // Navigate using the deep link
-          navigationRef.current.navigate(url as never);
+          navigationRef.navigate(url as never);
           console.log('Successfully navigated to:', url);
         } else {
           console.warn(
@@ -492,10 +492,10 @@ export const notificationService = {
           );
           // Queue navigation for when it becomes ready
           const checkInterval = setInterval(() => {
-            if (navigationRef.current?.isReady()) {
+            if (navigationRef && navigationRef.isReady()) {
               clearInterval(checkInterval);
               try {
-                navigationRef.current.navigate(url as never);
+                navigationRef.navigate(url as never);
                 console.log('Successfully navigated to queued deep link:', url);
               } catch (error) {
                 console.error('Error navigating to queued deep link:', error);
@@ -628,8 +628,9 @@ export const notificationService = {
           sound: true,
         },
         trigger: {
+          type: 'date' as const,
           date: triggerDate,
-        },
+        } as Notifications.NotificationTriggerInput,
       });
     } catch (error) {
       console.error('❌ Failed to schedule notification:', error);
@@ -867,22 +868,22 @@ function mapSimpleUpdateToFull(
     update.marketing !== undefined
   ) {
     full.notificationTypes = {
-      reminders: update.reminders ?? undefined,
-      achievements: undefined,
-      updates: undefined,
-      marketing: update.marketing ?? undefined,
-      assignments: update.assignments ?? undefined,
-      lectures: update.lectures ?? undefined,
-      srs: update.studySessions ?? update.reminders,
-      dailySummaries: update.dailySummaries ?? undefined,
+      reminders: update.reminders ?? false,
+      achievements: false,
+      updates: false,
+      marketing: update.marketing ?? false,
+      assignments: update.assignments ?? false,
+      lectures: update.lectures ?? false,
+      srs: update.studySessions ?? update.reminders ?? false,
+      dailySummaries: update.dailySummaries ?? false,
     };
   }
 
   if (update.quietHours) {
     full.quietHours = {
-      enabled: update.quietHours.enabled ?? undefined,
-      start: update.quietHours.start ?? undefined,
-      end: update.quietHours.end ?? undefined,
+      enabled: update.quietHours.enabled ?? false,
+      start: update.quietHours.start ?? '22:00',
+      end: update.quietHours.end ?? '08:00',
     };
   }
 

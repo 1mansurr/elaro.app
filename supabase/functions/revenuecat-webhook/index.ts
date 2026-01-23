@@ -1,5 +1,7 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createWebhookHandler } from '../_shared/function-handler.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { sendPushNotification } from '../_shared/send-push-notification.ts';
 import { getUserNotificationPreferences } from '../_shared/notification-helpers.ts';
@@ -214,7 +216,7 @@ async function handleRevenueCatWebhook(
             .eq('user_id', app_user_id);
 
           if (devices && devices.length > 0) {
-            const tokens = devices.map(d => d.push_token).filter(Boolean);
+            const tokens = devices.map((d: { push_token?: string }) => d.push_token).filter(Boolean);
 
             // Check if notifications are enabled (critical notifications bypass quiet hours but respect master toggle)
             const prefs = await getUserNotificationPreferences(
@@ -232,28 +234,28 @@ async function handleRevenueCatWebhook(
                 },
                 traceContext,
               );
-              continue; // Skip this user
+              // Skip sending notification but continue processing
+            } else {
+              // Dynamic message based on event type
+              const message =
+                eventType === 'BILLING_ISSUE'
+                  ? 'Your subscription payment failed. Become an Oddity to restore access to all features.'
+                  : 'Your Oddity subscription has ended. Become an Oddity to restore access.';
+
+              await sendPushNotification(
+                supabaseAdmin,
+                tokens,
+                'Subscription Ended',
+                message,
+                { type: 'subscription_ended', userId: app_user_id },
+              );
+
+              await logger.info(
+                'Push notification sent about subscription ending',
+                { user_id: app_user_id },
+                traceContext,
+              );
             }
-
-            // Dynamic message based on event type
-            const message =
-              eventType === 'BILLING_ISSUE'
-                ? 'Your subscription payment failed. Become an Oddity to restore access to all features.'
-                : 'Your Oddity subscription has ended. Become an Oddity to restore access.';
-
-            await sendPushNotification(
-              supabaseAdmin,
-              tokens,
-              'Subscription Ended',
-              message,
-              { type: 'subscription_ended', userId: app_user_id },
-            );
-
-            await logger.info(
-              'Push notification sent about subscription ending',
-              { user_id: app_user_id },
-              traceContext,
-            );
           }
         } catch (notificationError: unknown) {
           // Log error but don't fail the webhook
@@ -324,8 +326,19 @@ async function handleRevenueCatWebhook(
 
 // Initialize webhook handler with proper configuration
 serve(
-  createWebhookHandler(handleRevenueCatWebhook, {
-    secretKeyEnvVar: 'REVENUECAT_AUTH_HEADER_SECRET',
-    headerName: 'authorization',
-  }),
+  createWebhookHandler(
+    async (
+      supabaseAdmin: SupabaseClient,
+      payload: Record<string, unknown>,
+      eventType: string,
+    ) => {
+      // Cast payload to RevenueCatWebhookPayload (convert through unknown first)
+      const typedPayload = payload as unknown as RevenueCatWebhookPayload;
+      return await handleRevenueCatWebhook(supabaseAdmin, typedPayload, eventType);
+    },
+    {
+      secretKeyEnvVar: 'REVENUECAT_AUTH_HEADER_SECRET',
+      headerName: 'authorization',
+    },
+  ),
 );

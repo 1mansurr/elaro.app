@@ -43,10 +43,7 @@ export async function checkServiceHealth(): Promise<ServiceHealthStatus> {
   // Check Sentry (errorTracking)
   try {
     // Try to capture a test message - if it works, Sentry is initialized
-    errorTracking.captureMessage('Service health check', {
-      level: 'info',
-      tags: { type: 'health_check' },
-    });
+    errorTracking.captureMessage('Service health check', 'info');
     // If no error thrown, assume it's working
     results.sentry = { status: 'ok' };
   } catch (error) {

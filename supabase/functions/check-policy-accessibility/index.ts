@@ -7,6 +7,7 @@
  * Runs: Daily (via cron or scheduled trigger)
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';

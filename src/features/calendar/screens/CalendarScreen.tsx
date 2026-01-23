@@ -362,8 +362,9 @@ const CalendarScreen = () => {
             ? '#F97316' // Orange
             : '#137FEC'; // Blue for study_session and reviews
 
-      if (marked[dateKey].dots.length < 3) {
-        marked[dateKey].dots.push({ color: dotColor });
+      const dateMarked = marked[dateKey];
+      if (dateMarked && dateMarked.dots && dateMarked.dots.length < 3) {
+        dateMarked.dots.push({ color: dotColor });
       }
     });
 
@@ -391,14 +392,21 @@ const CalendarScreen = () => {
       return;
     }
     try {
+      if (!offerings.current?.availablePackages) {
+        Alert.alert('Error', 'The Oddity plan is not available.');
+        return;
+      }
       const oddityPackage = offerings.current.availablePackages.find(
-        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
+        (pkg: unknown) => {
+          if (!pkg || typeof pkg !== 'object') return false;
+          return 'identifier' in pkg && (pkg as { identifier: string }).identifier === 'oddity_monthly';
+        },
       );
       if (!oddityPackage) {
         Alert.alert('Error', 'The Oddity plan is not available.');
         return;
       }
-      await purchasePackage(oddityPackage);
+      await purchasePackage(oddityPackage as PurchasesPackage);
       Alert.alert(
         'Success!',
         'You have successfully become an Oddity. Your locked content is now accessible.',
@@ -552,7 +560,7 @@ const CalendarScreen = () => {
             <Ionicons
               name="alert-circle-outline"
               size={16}
-              color={COLORS.destructive}
+              color={COLORS.error}
             />
             <Text style={styles.errorBannerText}>
               Failed to refresh calendar. Showing cached data.
@@ -831,7 +839,7 @@ const styles = StyleSheet.create({
   errorBannerText: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.destructive,
+    color: COLORS.error,
     fontWeight: FONT_WEIGHTS.medium,
   },
   retryText: {

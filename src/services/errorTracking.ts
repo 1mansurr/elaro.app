@@ -1,6 +1,6 @@
 // Sentry is temporarily disabled - make it optional
 // Import types even if module might not be available at runtime
-import type { Event, EventHint } from '@sentry/react-native';
+import type { Event } from '@sentry/react-native';
 
 type SentryModule = {
   init?: (options: {
@@ -11,7 +11,7 @@ type SentryModule = {
     tracesSampleRate?: number;
     enableAutoSessionTracking?: boolean;
     sessionTrackingIntervalMillis?: number;
-    beforeSend?: (event: Event, hint: EventHint) => Event | null;
+    beforeSend?: (event: Event) => Event | null;
   }) => void;
   setTag?: (key: string, value: string) => void;
   captureException?: (
@@ -79,15 +79,16 @@ class ErrorTrackingService {
         'unknown';
       const environment = __DEV__ ? 'development' : 'production';
 
-      Sentry.init({
-        dsn,
-        enabled: !__DEV__, // Disable in development
+      if (Sentry.init) {
+        Sentry.init({
+          dsn,
+          enabled: !__DEV__, // Disable in development
         environment,
         release,
         tracesSampleRate: __DEV__ ? 1.0 : 0.1, // 100% in dev, 10% in prod
         enableAutoSessionTracking: true,
         sessionTrackingIntervalMillis: 30000, // 30 seconds
-        beforeSend: (event: Event, hint: EventHint) => {
+        beforeSend: (event: Event) => {
           // Helper function to hash string (same as hashString method)
           const hashString = (str: string): string => {
             let hash = 0;
@@ -132,7 +133,7 @@ class ErrorTrackingService {
           // Redact PII from event
           if (event.user) {
             if (event.user.id) {
-              event.user.id = hashString(event.user.id);
+              event.user.id = hashString(String(event.user.id));
             }
             delete event.user.email;
             delete event.user.username;
@@ -163,6 +164,7 @@ class ErrorTrackingService {
           return event;
         },
       });
+      }
 
       // Set initial context
       if (Sentry?.setTag) {
@@ -222,9 +224,11 @@ class ErrorTrackingService {
 
     if (context) {
       // Set tags if provided
-      if (context.tags && Sentry.setTag) {
+      if (context.tags && Sentry?.setTag) {
         Object.entries(context.tags).forEach(([key, value]) => {
-          Sentry.setTag(key, value);
+          if (Sentry.setTag) {
+            Sentry.setTag(key, String(value));
+          }
         });
       }
 

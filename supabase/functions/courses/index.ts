@@ -12,11 +12,13 @@
  * - GET /courses/:id - Get course details
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AppError,
   isValidUUID,
+  AuthenticatedRequest,
 } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -24,6 +26,10 @@ import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
 } from '../_shared/event-driven-architecture.ts';
+import {
+  type SupabaseClient,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Schemas for validation
 const CreateCourseSchema = z.object({
@@ -43,18 +49,35 @@ class CourseService {
   // Course operations
   async createCourse(data: Record<string, unknown>, userId: string) {
     // Check course limits based on subscription tier
-    const { data: userProfile } = await this.supabaseClient
+    const { data: userProfile, error: profileError } = await this.supabaseClient
       .from('users')
       .select('subscription_tier')
       .eq('id', userId)
       .single();
 
+    if (profileError) {
+      throw new AppError(
+        'Failed to fetch user profile',
+        500,
+        'DB_QUERY_ERROR',
+      );
+    }
+
+    if (!userProfile || typeof userProfile !== 'object' || !('subscription_tier' in userProfile)) {
+      throw new AppError(
+        'Failed to fetch user profile',
+        500,
+        'DB_QUERY_ERROR',
+      );
+    }
+
+    const userProfileTyped = userProfile as { subscription_tier: string };
     const courseLimits = {
       free: 2,
       oddity: 7,
     };
 
-    const userTier = userProfile?.subscription_tier || 'free';
+    const userTier = userProfileTyped.subscription_tier || 'free';
     const courseLimit =
       courseLimits[userTier as keyof typeof courseLimits] || courseLimits.free;
 

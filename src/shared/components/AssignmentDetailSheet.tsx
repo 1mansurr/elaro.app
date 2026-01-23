@@ -45,7 +45,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
   onDelete,
   onToggleTemplate,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [templateEnabled, setTemplateEnabled] = useState(isTemplate);
@@ -79,7 +79,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.isDark ? '#18212B' : '#FFFFFF' },
+        { backgroundColor: isDark ? '#18212B' : '#FFFFFF' },
       ]}>
       {/* Header */}
       <DetailSheetHeader
@@ -104,7 +104,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
         <Text
           style={[
             styles.title,
-            { color: theme.isDark ? '#FFFFFF' : '#111418' },
+            { color: isDark ? '#FFFFFF' : '#111418' },
           ]}>
           {assignment.title}
         </Text>
@@ -115,12 +115,12 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
             <Ionicons
               name="calendar-outline"
               size={20}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
             />
             <Text
               style={[
                 styles.dateText,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               Due {formatDateOnly(dueDate)} at {formatTimeOnly(dueDate)}
             </Text>
@@ -150,7 +150,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
         <View
           style={[
             styles.divider,
-            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+            { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
           ]}
         />
 
@@ -160,14 +160,14 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
             <Text
               style={[
                 styles.sectionTitle,
-                { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                { color: isDark ? '#FFFFFF' : '#111418' },
               ]}>
               Description
             </Text>
             <Text
               style={[
                 styles.descriptionText,
-                { color: theme.isDark ? '#D1D5DB' : '#374151' },
+                { color: isDark ? '#D1D5DB' : '#374151' },
               ]}>
               {displayDescription}
             </Text>
@@ -188,7 +188,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
             <Text
               style={[
                 styles.sectionTitle,
-                { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                { color: isDark ? '#FFFFFF' : '#111418' },
               ]}>
               Submission
             </Text>
@@ -196,8 +196,8 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               style={[
                 styles.submissionCard,
                 {
-                  backgroundColor: theme.isDark ? '#202A36' : '#F9FAFB',
-                  borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+                  backgroundColor: isDark ? '#202A36' : '#F9FAFB',
+                  borderColor: isDark ? '#374151' : '#E5E7EB',
                 },
               ]}>
               <View style={styles.submissionHeader}>
@@ -205,7 +205,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
                   style={[
                     styles.submissionIconContainer,
                     {
-                      backgroundColor: theme.isDark
+                      backgroundColor: isDark
                         ? COLORS.primary + '33'
                         : '#DBEAFE',
                     },
@@ -220,7 +220,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
                   <Text
                     style={[
                       styles.submissionMethod,
-                      { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                      { color: isDark ? '#FFFFFF' : '#111418' },
                     ]}>
                     {assignment.submissionMethod === 'Online'
                       ? 'Online Upload'
@@ -230,7 +230,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
                     <Text
                       style={[
                         styles.submissionPlatform,
-                        { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                        { color: isDark ? '#9CA3AF' : '#6B7280' },
                       ]}>
                       {assignment.submissionLink
                         ? new URL(assignment.submissionLink).hostname
@@ -266,7 +266,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
             <Text
               style={[
                 styles.sectionTitle,
-                { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                { color: isDark ? '#FFFFFF' : '#111418' },
               ]}>
               Reminders
             </Text>
@@ -281,14 +281,14 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               <Text
                 style={[
                   styles.templateTitle,
-                  { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                  { color: isDark ? '#FFFFFF' : '#111418' },
                 ]}>
                 Save as Template
               </Text>
               <Text
                 style={[
                   styles.templateDescription,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 Reuse these settings later
               </Text>
@@ -297,11 +297,11 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
               value={templateEnabled}
               onValueChange={handleToggleTemplate}
               trackColor={{
-                false: theme.isDark ? '#374151' : '#E5E7EB',
+                false: isDark ? '#374151' : '#E5E7EB',
                 true: COLORS.primary,
               }}
               thumbColor="#FFFFFF"
-              ios_backgroundColor={theme.isDark ? '#374151' : '#E5E7EB'}
+              ios_backgroundColor={isDark ? '#374151' : '#E5E7EB'}
             />
           </View>
         )}

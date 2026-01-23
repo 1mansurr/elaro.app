@@ -40,13 +40,15 @@ export function extractTraceContext(
       headers = req.headers;
     } else if (req && typeof req === 'object') {
       // Try to access headers property safely
-      if (req.headers && typeof req.headers.get === 'function') {
-        headers = req.headers;
+      const reqWithHeaders = req as { headers?: Headers | { get?: (key: string) => string | null } };
+      if (reqWithHeaders.headers && typeof reqWithHeaders.headers.get === 'function') {
+        headers = reqWithHeaders.headers as Headers;
       } else if ('headers' in req && req.headers) {
         // Headers might exist but not be a Headers object
         try {
-          if (typeof req.headers.get === 'function') {
-            headers = req.headers;
+          const headersObj = req.headers as { get?: (key: string) => string | null };
+          if (typeof headersObj.get === 'function') {
+            headers = headersObj as Headers;
           }
         } catch {
           // Ignore errors accessing headers

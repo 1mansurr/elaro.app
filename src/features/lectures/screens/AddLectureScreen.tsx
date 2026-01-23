@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Course } from '@/types';
+import { RootStackParamList, Course, Lecture } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -61,7 +61,7 @@ const AddLectureScreen = () => {
     useTotalTaskCount();
   const { checkActivityLimit } = useLimitCheck();
   const { showUsageLimitPaywall } = useUsageLimitPaywall();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const isGuest = !session;
@@ -228,8 +228,8 @@ const AddLectureScreen = () => {
       saveDraft('lecture', {
         title: lectureName,
         course: selectedCourse,
-        dateTime: startTime,
-        endTime,
+        dateTime: startTime || undefined,
+        endTime: endTime || undefined,
         venue,
         recurrence,
         reminders,
@@ -326,13 +326,14 @@ const AddLectureScreen = () => {
     if (isGuest) {
       await savePendingTask(
         {
-          course: selectedCourse,
-          title: lectureName,
-          startTime,
-          endTime,
-          recurrence,
-          reminders,
-        },
+          courseId: selectedCourse.id,
+          lectureName,
+          lectureDate: startTime.toISOString(),
+          description: '',
+          venue,
+          userId: '',
+          createdAt: new Date().toISOString(),
+        } as Lecture,
         'lecture',
       );
       Alert.alert(
@@ -402,7 +403,6 @@ const AddLectureScreen = () => {
           try {
             await notificationService.cancelItemReminders(
               taskToEdit.id,
-              'lecture',
             );
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
@@ -478,7 +478,7 @@ const AddLectureScreen = () => {
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
           paddingTop: insets.top,
         },
       ]}>
@@ -516,7 +516,7 @@ const AddLectureScreen = () => {
         <View
           style={[
             styles.divider,
-            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+            { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
           ]}
         />
 
@@ -555,7 +555,7 @@ const AddLectureScreen = () => {
       </ScrollView>
 
       <TaskFormFooter
-        isValid={isFormValid}
+        isValid={Boolean(isFormValid)}
         onSave={handleSave}
         isSaving={isSaving}
         saveButtonText="Save Lecture"

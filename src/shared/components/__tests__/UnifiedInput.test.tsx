@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
-import { ThemeProvider } from '@/contexts/ThemeContext';
+import { ThemeProvider } from '../../../contexts/ThemeContext';
 import { UnifiedInput } from '../UnifiedInput';
 
 describe('UnifiedInput', () => {

@@ -7,7 +7,9 @@
  * Runs: Daily (via cron or scheduled trigger)
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';
@@ -25,10 +27,11 @@ serve(async (req: Request) => {
   await logger.info('Starting storage quota check', {}, traceContext);
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    // @ts-expect-error - Deno.env is available at runtime in Deno
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    // @ts-expect-error - Deno.env is available at runtime in Deno
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check all storage quotas
     const results = await checkAllStorageQuotas(supabaseAdmin);

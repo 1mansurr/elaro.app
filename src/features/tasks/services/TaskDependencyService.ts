@@ -125,7 +125,7 @@ export class TaskDependencyService {
     taskType: 'assignment' | 'lecture' | 'study_session',
   ): Promise<TaskDependency[]> {
     try {
-      let dependencies: TaskDependency[] = [];
+      let dependencies: Record<string, unknown>[] = [];
 
       switch (taskType) {
         case 'assignment':
@@ -136,7 +136,7 @@ export class TaskDependencyService {
               .eq('task_id', taskId);
 
           if (assignmentError) throw assignmentError;
-          dependencies = assignmentDeps || [];
+          dependencies = (assignmentDeps as Record<string, unknown>[]) || [];
           break;
 
         case 'lecture':
@@ -146,7 +146,7 @@ export class TaskDependencyService {
             .eq('lecture_id', taskId);
 
           if (lectureError) throw lectureError;
-          dependencies = lectureDeps || [];
+          dependencies = (lectureDeps as Record<string, unknown>[]) || [];
           break;
 
         case 'study_session':
@@ -156,18 +156,18 @@ export class TaskDependencyService {
             .eq('study_session_id', taskId);
 
           if (sessionError) throw sessionError;
-          dependencies = sessionDeps || [];
+          dependencies = (sessionDeps as Record<string, unknown>[]) || [];
           break;
       }
 
-      return dependencies.map(dep => ({
-        id: dep.id,
-        taskId: dep.task_id || dep.lecture_id || dep.study_session_id,
-        dependsOnTaskId: dep.depends_on_task_id || dep.depends_on_id,
-        dependencyType: dep.dependency_type,
-        autoComplete: dep.auto_complete,
-        createdAt: dep.created_at,
-        updatedAt: dep.updated_at,
+      return dependencies.map((dep: Record<string, unknown>) => ({
+        id: dep.id as string,
+        taskId: (dep.task_id || dep.lecture_id || dep.study_session_id) as string,
+        dependsOnTaskId: (dep.depends_on_task_id || dep.depends_on_id) as string,
+        dependencyType: dep.dependency_type as 'blocking' | 'suggested' | 'parallel',
+        autoComplete: (dep.auto_complete ?? false) as boolean,
+        createdAt: dep.created_at as string,
+        updatedAt: dep.updated_at as string,
       }));
     } catch (error) {
       console.error('❌ Error getting task dependencies:', error);

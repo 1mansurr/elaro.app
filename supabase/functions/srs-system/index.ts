@@ -12,12 +12,13 @@
  * - GET /srs-system/statistics - Get SRS statistics
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
   extractIdFromUrl,
@@ -28,6 +29,7 @@ import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import {
   type SupabaseClient,
   type User,
@@ -313,7 +315,11 @@ class SRSService {
 
     const totalReviews = stats.length;
     const averageQuality =
-      stats.reduce((sum, s) => sum + (s.quality_rating || 0), 0) / totalReviews;
+      stats.reduce(
+        (sum: number, s: { quality_rating?: number }) =>
+          sum + (s.quality_rating || 0),
+        0,
+      ) / totalReviews;
 
     // Count due reminders
     const now = new Date().toISOString();
@@ -326,7 +332,9 @@ class SRSService {
       .lte('reminder_time', now);
 
     return {
-      total_sessions: new Set(stats.map(s => s.session_id)).size,
+      total_sessions: new Set(
+        stats.map((s: { session_id: string }) => s.session_id),
+      ).size,
       total_reviews: totalReviews,
       average_quality: Math.round(averageQuality * 100) / 100,
       due_for_review: dueCount || 0,
@@ -397,7 +405,7 @@ async function handleGetStatistics(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

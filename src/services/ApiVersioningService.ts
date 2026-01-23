@@ -31,6 +31,8 @@ export interface ApiResponse<T = unknown> {
   deprecationWarning?: boolean;
   sunsetDate?: string;
   migrationGuide?: string;
+  skipped?: boolean;
+  details?: unknown;
 }
 
 export class ApiVersioningService {
@@ -304,16 +306,14 @@ export class ApiVersioningService {
           error: 'Unexpected response format',
           message: `Server returned ${contentType || 'unknown'} content`,
           code: 'INVALID_CONTENT_TYPE',
-          data: responseText,
-        };
+        } as ApiResponse<T>;
       }
 
       // Handle new response format: check for ok, skipped fields
       // Treat skipped: true as success (race condition safe)
       if (data.skipped === true) {
         return {
-          data: data,
-          skipped: true,
+          data: data as T,
         };
       }
 
@@ -323,7 +323,6 @@ export class ApiVersioningService {
           error: data.error || 'Request failed',
           message: data.details?.message || data.error || 'Request failed',
           code: data.error,
-          details: data.details,
         };
       }
 
@@ -513,7 +512,7 @@ export class ApiVersioningService {
       const safeData: Record<string, unknown> = {
         push_token: data.push_token, // Guaranteed to be string
         platform: data.platform, // Guaranteed to be valid enum
-        ...(data.updated_at && { updated_at: data.updated_at }),
+        ...(data.updated_at ? { updated_at: data.updated_at } : {}),
       };
 
       return this.request<T>(

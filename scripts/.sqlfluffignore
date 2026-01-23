@@ -1,0 +1,5 @@
+# SQLFluff ignore file
+# These files are PostgreSQL-specific (for Supabase) and should not be linted with MSSQL rules
+
+audit-database.sql
+validate-migrations.sql

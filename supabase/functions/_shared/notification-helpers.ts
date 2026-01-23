@@ -3,6 +3,7 @@
  * Includes quiet hours checking, deduplication key generation, and preference validation
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 
 export interface QuietHoursConfig {
@@ -175,7 +176,7 @@ export function getNextAvailableTime(
 export function generateDeduplicationKey(
   userId: string,
   notificationType: string,
-  itemId?: string,
+  itemId: string | undefined,
   timeBucketMinutes: number = 1440,
 ): string {
   const now = new Date();

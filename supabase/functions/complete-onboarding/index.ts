@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -81,14 +82,14 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
   );
 
   // Age validation logic
-  const birthDate = new Date(dateOfBirth);
+  const birthDateTyped = typeof dateOfBirth === 'string' ? new Date(dateOfBirth) : new Date(dateOfBirth as string | number | Date);
   const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDiff = today.getMonth() - birthDate.getMonth();
+  let age = today.getFullYear() - birthDateTyped.getFullYear();
+  const monthDiff = today.getMonth() - birthDateTyped.getMonth();
 
   if (
     monthDiff < 0 ||
-    (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    (monthDiff === 0 && today.getDate() < birthDateTyped.getDate())
   ) {
     age--;
   }
@@ -119,8 +120,8 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
 
   // 1. Update the user's profile with onboarding data
   const [encryptedUniversity, encryptedProgram] = await Promise.all([
-    university ? encrypt(university, encryptionKey) : null,
-    program ? encrypt(program, encryptionKey) : null,
+    university && typeof university === 'string' ? encrypt(university, encryptionKey) : null,
+    program && typeof program === 'string' ? encrypt(program, encryptionKey) : null,
   ]);
 
   const { error: userUpdateError } = await supabaseClient
@@ -143,15 +144,16 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
   await logger.info('User profile updated', { user_id: user.id }, traceContext);
 
   // 2. Create the initial courses for the user
-  if (courses && courses.length > 0) {
+  const coursesArray = Array.isArray(courses) ? courses : [];
+  if (coursesArray.length > 0) {
     await logger.info(
       'Creating initial courses',
-      { user_id: user.id, course_count: courses.length },
+      { user_id: user.id, course_count: coursesArray.length },
       traceContext,
     );
 
     const coursesToInsert = await Promise.all(
-      courses.map(
+      coursesArray.map(
         async (course: { course_name: string; course_code?: string }) => ({
           user_id: user.id,
           course_name: await encrypt(course.course_name, encryptionKey),

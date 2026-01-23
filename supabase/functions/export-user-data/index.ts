@@ -1,7 +1,7 @@
 /// <reference path="../global.d.ts" />
-// @ts-ignore - ESM imports are valid in Deno runtime
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-// @ts-ignore - ESM imports are valid in Deno runtime
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { AppError } from '../_shared/function-handler.ts';
@@ -22,27 +22,31 @@ const RATE_LIMIT_DAYS = 7;
 function convertToCSV(data: Record<string, unknown>): string {
   const flatten = (obj: unknown, prefix = ''): Record<string, unknown> => {
     const result: Record<string, unknown> = {};
-    for (const key in obj) {
-      const newKey = prefix ? `${prefix}.${key}` : key;
-      if (
-        obj[key] &&
-        typeof obj[key] === 'object' &&
-        !Array.isArray(obj[key]) &&
-        !(obj[key] instanceof Date)
-      ) {
-        Object.assign(result, flatten(obj[key], newKey));
-      } else {
-        result[newKey] = obj[key];
+    if (obj && typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof Date)) {
+      const objTyped = obj as Record<string, unknown>;
+      for (const key in objTyped) {
+        const newKey = prefix ? `${prefix}.${key}` : key;
+        if (
+          objTyped[key] &&
+          typeof objTyped[key] === 'object' &&
+          !Array.isArray(objTyped[key]) &&
+          !(objTyped[key] instanceof Date)
+        ) {
+          Object.assign(result, flatten(objTyped[key], newKey));
+        } else {
+          result[newKey] = objTyped[key];
+        }
       }
     }
     return result;
   };
 
   const allRows: Record<string, unknown>[] = [];
+  const dataTyped = data.data as Record<string, unknown> | undefined;
 
   // Flatten user data
-  if (data.data && typeof data.data === 'object' && 'user' in data.data) {
-    allRows.push({ type: 'user', ...flatten(data.data.user) });
+  if (dataTyped && typeof dataTyped === 'object' && 'user' in dataTyped) {
+    allRows.push({ type: 'user', ...flatten(dataTyped.user) });
   }
 
   // Flatten arrays
@@ -54,37 +58,51 @@ function convertToCSV(data: Record<string, unknown>): string {
     }
   };
 
-  processArray(data.data.courses, 'course');
-  processArray(data.data.assignments, 'assignment');
-  processArray(data.data.lectures, 'lecture');
-  processArray(data.data.studySessions, 'studySession');
-  processArray(data.data.reminders, 'reminder');
-  processArray(data.data.userDevices, 'userDevice');
+  if (dataTyped) {
+    if (Array.isArray(dataTyped.courses)) {
+      processArray(dataTyped.courses, 'course');
+    }
+    if (Array.isArray(dataTyped.assignments)) {
+      processArray(dataTyped.assignments, 'assignment');
+    }
+    if (Array.isArray(dataTyped.lectures)) {
+      processArray(dataTyped.lectures, 'lecture');
+    }
+    if (Array.isArray(dataTyped.studySessions)) {
+      processArray(dataTyped.studySessions, 'studySession');
+    }
+    if (Array.isArray(dataTyped.reminders)) {
+      processArray(dataTyped.reminders, 'reminder');
+    }
+    if (Array.isArray(dataTyped.userDevices)) {
+      processArray(dataTyped.userDevices, 'userDevice');
+    }
 
-  if (data.data.notificationPreferences) {
-    allRows.push({
-      type: 'notificationPreferences',
-      ...flatten(data.data.notificationPreferences),
-    });
-  }
+    if (dataTyped.notificationPreferences) {
+      allRows.push({
+        type: 'notificationPreferences',
+        ...flatten(dataTyped.notificationPreferences),
+      });
+    }
 
-  if (data.data.streaks) {
-    allRows.push({ type: 'streaks', ...flatten(data.data.streaks) });
-  }
+    if (dataTyped.streaks) {
+      allRows.push({ type: 'streaks', ...flatten(dataTyped.streaks) });
+    }
 
-  if (data.data.userEvents && Array.isArray(data.data.userEvents)) {
-    processArray(data.data.userEvents, 'userEvent');
-  }
+    if (dataTyped.userEvents && Array.isArray(dataTyped.userEvents)) {
+      processArray(dataTyped.userEvents, 'userEvent');
+    }
 
-  if (
-    data.data.notificationDeliveries &&
-    Array.isArray(data.data.notificationDeliveries)
-  ) {
-    processArray(data.data.notificationDeliveries, 'notificationDelivery');
-  }
+    if (
+      dataTyped.notificationDeliveries &&
+      Array.isArray(dataTyped.notificationDeliveries)
+    ) {
+      processArray(dataTyped.notificationDeliveries, 'notificationDelivery');
+    }
 
-  if (data.data.adminActions && Array.isArray(data.data.adminActions)) {
-    processArray(data.data.adminActions, 'adminAction');
+    if (dataTyped.adminActions && Array.isArray(dataTyped.adminActions)) {
+      processArray(dataTyped.adminActions, 'adminAction');
+    }
   }
 
   if (allRows.length === 0) {

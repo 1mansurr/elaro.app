@@ -36,7 +36,7 @@ type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 export function SettingsScreen() {
   const { user, session, signOut } = useAuth();
   const navigation = useNavigation<SettingsScreenNavigationProp>();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
@@ -244,13 +244,13 @@ export function SettingsScreen() {
             onPress={handleChangePassword}
             icon="key"
             iconColor={COLORS.primary}
-            iconBgColor={theme.isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
+            iconBgColor={isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
             showChevron
           />
           <View
             style={[
               styles.divider,
-              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
           <SettingsItem
@@ -258,7 +258,7 @@ export function SettingsScreen() {
             onPress={handleEnableMfa}
             icon="lock-closed"
             iconColor={COLORS.primary}
-            iconBgColor={theme.isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
+            iconBgColor={isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
             showChevron
           />
         </SettingsCategoryCard>
@@ -270,7 +270,7 @@ export function SettingsScreen() {
           <View
             style={[
               styles.divider,
-              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
 
@@ -282,7 +282,7 @@ export function SettingsScreen() {
                   style={[
                     styles.privacyIconContainer,
                     {
-                      backgroundColor: theme.isDark
+                      backgroundColor: isDark
                         ? 'rgba(168, 85, 247, 0.2)'
                         : '#F3E8FF',
                     },
@@ -290,7 +290,7 @@ export function SettingsScreen() {
                   <Ionicons
                     name="bar-chart"
                     size={22}
-                    color={theme.isDark ? '#A855F7' : '#9333EA'}
+                    color={isDark ? '#A855F7' : '#9333EA'}
                   />
                 </View>
                 <Text style={[styles.privacyTitle, { color: theme.text }]}>
@@ -301,7 +301,7 @@ export function SettingsScreen() {
             <Text
               style={[
                 styles.privacyDescription,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               Help us improve the app by sharing anonymous usage data. No
               personal information is collected.
@@ -310,10 +310,10 @@ export function SettingsScreen() {
               style={[
                 styles.analyticsToggleContainer,
                 {
-                  backgroundColor: theme.isDark
+                  backgroundColor: isDark
                     ? 'rgba(0, 0, 0, 0.2)'
                     : '#F9FAFB',
-                  borderColor: theme.isDark
+                  borderColor: isDark
                     ? 'rgba(255, 255, 255, 0.05)'
                     : '#E5E7EB',
                 },
@@ -329,7 +329,7 @@ export function SettingsScreen() {
           <View
             style={[
               styles.divider,
-              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
 
@@ -338,8 +338,8 @@ export function SettingsScreen() {
             label="Clear Cache"
             onPress={handleClearCache}
             icon="trash-outline"
-            iconColor={theme.isDark ? '#9CA3AF' : '#4B5563'}
-            iconBgColor={theme.isDark ? '#374151' : '#F3F4F6'}
+            iconColor={isDark ? '#9CA3AF' : '#4B5563'}
+            iconBgColor={isDark ? '#374151' : '#F3F4F6'}
             disabled={isClearingCache}
             rightContent={
               isClearingCache ? (
@@ -352,7 +352,7 @@ export function SettingsScreen() {
           <View
             style={[
               styles.divider,
-              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
 
@@ -362,7 +362,7 @@ export function SettingsScreen() {
             onPress={handleResetSettings}
             icon="refresh"
             iconColor="#EF4444"
-            iconBgColor={theme.isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'}
+            iconBgColor={isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2'}
             isDestructive
             disabled={isResettingSettings}
             showChevron={false}
@@ -375,14 +375,14 @@ export function SettingsScreen() {
             label="Recycle Bin"
             onPress={() => navigation.navigate('RecycleBin')}
             icon="trash-outline"
-            iconColor={theme.isDark ? '#9CA3AF' : '#4B5563'}
-            iconBgColor={theme.isDark ? '#374151' : '#F3F4F6'}
+            iconColor={isDark ? '#9CA3AF' : '#4B5563'}
+            iconBgColor={isDark ? '#374151' : '#F3F4F6'}
             showChevron
           />
           <View
             style={[
               styles.divider,
-              { backgroundColor: theme.isDark ? '#374151' : '#F3F4F6' },
+              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
             ]}
           />
           <SettingsItem
@@ -390,7 +390,7 @@ export function SettingsScreen() {
             onPress={handleGlobalSignOut}
             icon="phone-portrait-outline"
             iconColor="#EF4444"
-            iconBgColor={theme.isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEE2E2'}
+            iconBgColor={isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEE2E2'}
             isDestructive
             showChevron={false}
           />

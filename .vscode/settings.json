@@ -1,7 +1,52 @@
 {
-  "java.configuration.enabled": false,
-  "java.import.enabled": false,
   "files.associations": {
-    "*.java": "plaintext"
-  }
+    "*.sql": "sql",
+    "**/node_modules/**/package.json": "jsonc",
+    "**/node_modules/**/.eslintrc": "jsonc",
+    "**/node_modules/**/.eslintrc.*": "jsonc",
+    "**/node_modules/**/tsconfig.json": "jsonc"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": null,
+    "mssql.validate": false,
+    "mssql.intelliSense.enableErrorChecking": false
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": null
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "files.exclude": {
+    "**/node_modules/zod/src": true,
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/zod/src": true,
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "json.schemas": [],
+  "json.validate.enable": true
 }

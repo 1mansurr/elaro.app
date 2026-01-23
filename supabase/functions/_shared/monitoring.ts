@@ -5,6 +5,7 @@
  * for all Edge Functions and database operations.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 export interface PerformanceMetrics {
@@ -78,7 +79,7 @@ export class MonitoringService {
         error_message: metrics.errorMessage,
         timestamp: metrics.timestamp,
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error('Failed to store performance metrics:', error);
       });
   }
@@ -101,7 +102,7 @@ export class MonitoringService {
         error_message: metrics.errorMessage,
         timestamp: metrics.timestamp,
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error('Failed to store database metrics:', error);
       });
   }
@@ -122,7 +123,7 @@ export class MonitoringService {
         metadata: metrics.metadata,
         timestamp: metrics.timestamp,
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error('Failed to store business metrics:', error);
       });
   }
@@ -211,9 +212,9 @@ export class MonitoringService {
 
       const totalRequests = recentMetrics?.length || 0;
       const successfulRequests =
-        recentMetrics?.filter(m => m.success).length || 0;
+        recentMetrics?.filter((m: { success?: boolean }) => m.success).length || 0;
       const avgResponseTime =
-        recentMetrics?.reduce((sum, m) => sum + m.execution_time, 0) /
+        recentMetrics?.reduce((sum: number, m: { execution_time?: number }) => sum + (m.execution_time || 0), 0) /
           totalRequests || 0;
       const errorRate =
         totalRequests > 0
@@ -278,9 +279,9 @@ export class MonitoringService {
         .gte('timestamp', startTime.toISOString());
 
       const totalRequests = metrics?.length || 0;
-      const successfulRequests = metrics?.filter(m => m.success).length || 0;
+      const successfulRequests = metrics?.filter((m: { success?: boolean }) => m.success).length || 0;
       const averageResponseTime =
-        metrics?.reduce((sum, m) => sum + m.execution_time, 0) /
+        metrics?.reduce((sum: number, m: { execution_time?: number }) => sum + (m.execution_time || 0), 0) /
           totalRequests || 0;
       const errorRate =
         totalRequests > 0
@@ -290,18 +291,20 @@ export class MonitoringService {
       // Top slow functions
       const functionTimes =
         metrics?.reduce(
-          (acc, m) => {
-            if (!acc[m.function_name]) {
-              acc[m.function_name] = { total: 0, count: 0 };
+          (acc: Record<string, { total: number; count: number }>, m: { function_name?: string; execution_time?: number }) => {
+            if (m.function_name) {
+              if (!acc[m.function_name]) {
+                acc[m.function_name] = { total: 0, count: 0 };
+              }
+              acc[m.function_name].total += (m.execution_time || 0);
+              acc[m.function_name].count += 1;
             }
-            acc[m.function_name].total += m.execution_time;
-            acc[m.function_name].count += 1;
             return acc;
           },
           {} as Record<string, { total: number; count: number }>,
         ) || {};
 
-      const topSlowFunctions = Object.entries(functionTimes)
+      const topSlowFunctions = (Object.entries(functionTimes) as [string, { total: number; count: number }][])
         .map(([name, data]) => ({
           functionName: name,
           avgTime: data.total / data.count,
@@ -312,7 +315,7 @@ export class MonitoringService {
       // User activity
       const userActivity =
         metrics?.reduce(
-          (acc, m) => {
+          (acc: Record<string, number>, m: { user_id?: string }) => {
             if (m.user_id) {
               acc[m.user_id] = (acc[m.user_id] || 0) + 1;
             }
@@ -322,8 +325,8 @@ export class MonitoringService {
         ) || {};
 
       const userActivityArray = Object.entries(userActivity)
-        .map(([userId, requestCount]) => ({ userId, requestCount }))
-        .sort((a, b) => b.requestCount - a.requestCount)
+        .map(([userId, requestCount]) => ({ userId, requestCount: requestCount as number }))
+        .sort((a, b) => (b.requestCount as number) - (a.requestCount as number))
         .slice(0, 20);
 
       return {
@@ -370,8 +373,10 @@ export class MonitoringService {
       const totalEvents = events?.length || 0;
       const eventsByType =
         events?.reduce(
-          (acc, e) => {
-            acc[e.event_type] = (acc[e.event_type] || 0) + e.event_count;
+          (acc: Record<string, number>, e: { event_type?: string; event_count?: number }) => {
+            if (e.event_type) {
+              acc[e.event_type] = (acc[e.event_type] || 0) + (e.event_count || 0);
+            }
             return acc;
           },
           {} as Record<string, number>,
@@ -379,9 +384,9 @@ export class MonitoringService {
 
       const userEngagement =
         events?.reduce(
-          (acc, e) => {
+          (acc: Record<string, number>, e: { user_id?: string; event_count?: number }) => {
             if (e.user_id) {
-              acc[e.user_id] = (acc[e.user_id] || 0) + e.event_count;
+              acc[e.user_id] = (acc[e.user_id] || 0) + (e.event_count || 0);
             }
             return acc;
           },
@@ -389,8 +394,8 @@ export class MonitoringService {
         ) || {};
 
       const userEngagementArray = Object.entries(userEngagement)
-        .map(([userId, eventCount]) => ({ userId, eventCount }))
-        .sort((a, b) => b.eventCount - a.eventCount)
+        .map(([userId, eventCount]) => ({ userId, eventCount: eventCount as number }))
+        .sort((a, b) => (b.eventCount as number) - (a.eventCount as number))
         .slice(0, 20);
 
       // Growth metrics (simplified)
@@ -527,7 +532,7 @@ export function monitorPerformance(
           memoryUsage,
           cpuUsage: 0, // Not available in Deno
           timestamp: new Date().toISOString(),
-          userId: args[0]?.user?.id,
+          userId: (args[0] as { user?: { id?: string } })?.user?.id as string | undefined,
           success,
           errorMessage,
         });

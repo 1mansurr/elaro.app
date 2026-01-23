@@ -17,8 +17,8 @@ const MONITORING_INTERVAL = 30000; // 30 seconds
  * Hook to enable comprehensive production monitoring
  */
 export function useProductionMonitoring(enabled: boolean = __DEV__) {
-  const { frameTime, slowFrameCount } = useJSThreadMonitor({ enabled });
-  const { memoryUsage, warningCount } = useMemoryMonitor({ enabled });
+  const jsThreadMetrics = useJSThreadMonitor({ enabled });
+  useMemoryMonitor(enabled);
 
   useEffect(() => {
     if (!enabled) return;
@@ -32,8 +32,8 @@ export function useProductionMonitoring(enabled: boolean = __DEV__) {
 
       // Track all metrics
       productionMonitoring.trackMetrics({
-        jsThreadTime: frameTime,
-        memoryUsage,
+        jsThreadTime: jsThreadMetrics.averageFrameTime,
+        memoryUsage: 0, // Memory monitoring is handled separately
         networkLatency: networkMetrics.averageLatency,
         errorRate,
       });
@@ -50,7 +50,7 @@ export function useProductionMonitoring(enabled: boolean = __DEV__) {
     }, MONITORING_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [enabled, frameTime, memoryUsage]);
+  }, [enabled, jsThreadMetrics.averageFrameTime]);
 
   return {
     health: productionMonitoring.reportHealth(),

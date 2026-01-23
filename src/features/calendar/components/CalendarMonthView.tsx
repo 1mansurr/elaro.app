@@ -23,7 +23,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
   onMonthChange,
   renderTaskItem,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.monthViewContainer}>
@@ -34,15 +34,15 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
         markedDates={markedDates}
         markingType="multi-dot"
         theme={{
-          backgroundColor: theme.isDark ? '#101922' : COLORS.background,
-          calendarBackground: theme.isDark ? '#101922' : COLORS.background,
-          textSectionTitleColor: theme.isDark ? '#9CA3AF' : COLORS.gray,
+          backgroundColor: isDark ? '#101922' : COLORS.background,
+          calendarBackground: isDark ? '#101922' : COLORS.background,
+          textSectionTitleColor: isDark ? '#9CA3AF' : COLORS.gray,
           selectedDayBackgroundColor: COLORS.primary,
           selectedDayTextColor: COLORS.background,
           todayTextColor: COLORS.primary,
-          dayTextColor: theme.isDark ? '#FFFFFF' : COLORS.text,
-          textDisabledColor: theme.isDark ? '#6B7280' : COLORS.lightGray,
-          monthTextColor: theme.isDark ? '#FFFFFF' : COLORS.text,
+          dayTextColor: isDark ? '#FFFFFF' : COLORS.text,
+          textDisabledColor: isDark ? '#6B7280' : COLORS.lightGray,
+          monthTextColor: isDark ? '#FFFFFF' : COLORS.text,
           textMonthFontWeight: 'bold',
           textDayFontSize: FONT_SIZES.md,
           textMonthFontSize: FONT_SIZES.lg,
@@ -55,7 +55,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
         <Text
           style={[
             styles.selectedDateTitle,
-            { color: theme.isDark ? '#FFFFFF' : COLORS.text },
+            { color: isDark ? '#FFFFFF' : COLORS.text },
           ]}>
           {format(selectedDate, 'EEEE, MMMM d')}
         </Text>
@@ -64,7 +64,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
             <Text
               style={[
                 styles.noTasksText,
-                { color: theme.isDark ? '#9CA3AF' : COLORS.textSecondary },
+                { color: isDark ? '#9CA3AF' : COLORS.textSecondary },
               ]}>
               No tasks for this day
             </Text>

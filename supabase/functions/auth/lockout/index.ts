@@ -1,14 +1,18 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
-import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
+import { AppError } from '../../_shared/function-handler.ts';
+import { ERROR_CODES } from '../../_shared/error-codes.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
 import {
   checkRateLimit,
   extractIPAddress,
 } from '../../_shared/rate-limiter.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const MAX_ATTEMPTS = 5;
@@ -55,7 +59,7 @@ serve(async (req: Request) => {
 
   try {
     // Rate limiting (by IP for public endpoints)
-    await checkRateLimit('auth-lockout', ipAddress);
+    await checkRateLimit('auth-lockout', ipAddress, 'lockout');
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -68,14 +72,15 @@ serve(async (req: Request) => {
     const method = req.method;
 
     // Route to appropriate handler
+    const traceContextTyped = traceContext as unknown as Record<string, unknown>;
     if (method === 'GET' && path.endsWith('/check-lockout')) {
-      return await handleCheckLockout(req, supabaseAdmin, traceContext, origin);
+      return await handleCheckLockout(req, supabaseAdmin, traceContextTyped, origin);
     } else if (method === 'POST' && path.endsWith('/record-failed-attempt')) {
       return await handleRecordFailedAttempt(
         req,
         supabaseAdmin,
         ipAddress,
-        traceContext,
+        traceContextTyped,
         origin,
       );
     } else if (method === 'POST' && path.endsWith('/record-successful-login')) {
@@ -83,14 +88,14 @@ serve(async (req: Request) => {
         req,
         supabaseAdmin,
         ipAddress,
-        traceContext,
+        traceContextTyped,
         origin,
       );
     } else if (method === 'POST' && path.endsWith('/reset-attempts')) {
       return await handleResetAttempts(
         req,
         supabaseAdmin,
-        traceContext,
+        traceContextTyped,
         origin,
       );
     } else {

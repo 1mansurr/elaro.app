@@ -1,18 +1,22 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAdminHandler,
-  AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
+import {
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
 import { decrypt } from '../_shared/encryption.ts';
 import { verifyMasterKey, isTopLevelAdmin } from '../_shared/master-key.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
-  AppError,
   ERROR_CODES,
   ERROR_STATUS_CODES,
 } from '../_shared/error-codes.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -70,7 +74,14 @@ async function handleDecrypt(req: AuthenticatedRequest) {
   }
 
   // Verify master key
-  const masterKey = body.master_key;
+  const masterKey = typeof body.master_key === 'string' ? body.master_key : '';
+  if (!masterKey) {
+    throw new AppError(
+      'Master key is required',
+      ERROR_STATUS_CODES.INVALID_INPUT,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
   const isValidKey = await verifyMasterKey(masterKey);
   if (!isValidKey) {
     // Log failed attempt
@@ -91,18 +102,19 @@ async function handleDecrypt(req: AuthenticatedRequest) {
   }
 
   // Handle single field decryption
-  if (body.encrypted_text) {
-    const decrypted = await decrypt(body.encrypted_text, masterKey);
+  const encryptedText = typeof body.encrypted_text === 'string' ? body.encrypted_text : undefined;
+  if (encryptedText) {
+    const decrypted = await decrypt(encryptedText, masterKey);
 
     await logDecryptionAttempt(
       supabaseAdmin,
       user.id,
       null,
       'decrypt_user_data',
-      body.reason || 'Single field decryption',
+      (typeof body.reason === 'string' ? body.reason : undefined) || 'Single field decryption',
       {
         attempt_type: 'single_field',
-        field_length: body.encrypted_text.length,
+        field_length: encryptedText.length,
       },
     );
 
@@ -116,16 +128,18 @@ async function handleDecrypt(req: AuthenticatedRequest) {
   }
 
   // Handle bulk decryption
-  if (body.record_type && body.record_id && body.fields) {
-    const { record_type, record_id, fields } = body;
-
+  const recordType = typeof body.record_type === 'string' ? body.record_type : undefined;
+  const recordId = typeof body.record_id === 'string' ? body.record_id : undefined;
+  const fields = Array.isArray(body.fields) ? body.fields.filter((f): f is string => typeof f === 'string') : undefined;
+  
+  if (recordType && recordId && fields) {
     // Get the record
     const tableName =
-      record_type === 'study_session' ? 'study_sessions' : `${record_type}s`;
+      recordType === 'study_session' ? 'study_sessions' : `${recordType}s`;
     const { data: record, error } = await supabaseAdmin
       .from(tableName)
       .select('*')
-      .eq('id', record_id)
+      .eq('id', recordId)
       .single();
 
     if (error || !record) {
@@ -139,9 +153,10 @@ async function handleDecrypt(req: AuthenticatedRequest) {
     // Decrypt requested fields
     const decryptedRecord: Record<string, unknown> = { ...record };
     for (const field of fields) {
-      if (record[field] && typeof record[field] === 'string') {
+      const fieldValue = record[field];
+      if (fieldValue && typeof fieldValue === 'string') {
         try {
-          decryptedRecord[field] = await decrypt(record[field], masterKey);
+          decryptedRecord[field] = await decrypt(fieldValue, masterKey);
         } catch (error) {
           // Field might not be encrypted, keep original
           console.warn(`Failed to decrypt field ${field}:`, error);
@@ -152,13 +167,13 @@ async function handleDecrypt(req: AuthenticatedRequest) {
     await logDecryptionAttempt(
       supabaseAdmin,
       user.id,
-      record.user_id,
+      record.user_id as string | null,
       'decrypt_user_data',
-      body.reason || 'Bulk field decryption',
+      (typeof body.reason === 'string' ? body.reason : undefined) || 'Bulk field decryption',
       {
         attempt_type: 'bulk',
-        record_type,
-        record_id,
+        record_type: recordType,
+        record_id: recordId,
         fields_decrypted: fields,
       },
     );
@@ -167,8 +182,8 @@ async function handleDecrypt(req: AuthenticatedRequest) {
       'User data decrypted (bulk)',
       {
         admin_id: user.id,
-        record_type,
-        record_id,
+        record_type: recordType,
+        record_id: recordId,
         target_user_id: record.user_id,
       },
       traceContext,
@@ -179,7 +194,7 @@ async function handleDecrypt(req: AuthenticatedRequest) {
 
   throw new AppError(
     'Invalid request format',
-    ERROR_STATUS_CODES.BAD_REQUEST,
+    ERROR_STATUS_CODES.INVALID_INPUT,
     ERROR_CODES.INVALID_INPUT,
   );
 }

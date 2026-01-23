@@ -21,7 +21,7 @@ import { formatDistanceToNow } from 'date-fns';
 const RecycleBinScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const {
     data: items,
     isLoading,
@@ -148,7 +148,7 @@ const RecycleBinScreen = () => {
               styles.iconContainer,
               {
                 backgroundColor:
-                  theme.mode === 'dark'
+                  isDark
                     ? `${iconColor.dark}20`
                     : `${iconColor.light}15`,
               },
@@ -156,7 +156,7 @@ const RecycleBinScreen = () => {
             <Ionicons
               name={getItemIcon(item.type) as any}
               size={24}
-              color={theme.mode === 'dark' ? iconColor.dark : iconColor.light}
+              color={isDark ? iconColor.dark : iconColor.light}
             />
           </View>
           <View style={styles.itemInfo}>
@@ -180,7 +180,7 @@ const RecycleBinScreen = () => {
             styles.restoreButton,
             {
               backgroundColor:
-                theme.mode === 'dark' ? '#135bec30' : '#135bec15',
+                isDark ? '#135bec30' : '#135bec15',
             },
             isRestoring && styles.restoreButtonDisabled,
           ]}
@@ -191,7 +191,7 @@ const RecycleBinScreen = () => {
             style={[
               styles.restoreButtonText,
               {
-                color: theme.mode === 'dark' ? '#60a5fa' : '#135bec',
+                color: isDark ? '#60a5fa' : '#135bec',
               },
             ]}>
             {isRestoring ? 'Restoring...' : 'Restore'}
@@ -228,20 +228,20 @@ const RecycleBinScreen = () => {
               styles.infoBanner,
               {
                 backgroundColor:
-                  theme.mode === 'dark' ? '#f59e0b20' : '#fef3c7',
-                borderColor: theme.mode === 'dark' ? '#f59e0b30' : '#fde68a',
+                  isDark ? '#f59e0b20' : '#fef3c7',
+                borderColor: isDark ? '#f59e0b30' : '#fde68a',
               },
             ]}>
             <Ionicons
               name="information-circle"
               size={20}
-              color={theme.mode === 'dark' ? '#fbbf24' : '#d97706'}
+              color={isDark ? '#fbbf24' : '#d97706'}
             />
             <Text
               style={[
                 styles.infoText,
                 {
-                  color: theme.mode === 'dark' ? '#fbbf24' : '#92400e',
+                  color: isDark ? '#fbbf24' : '#92400e',
                 },
               ]}>
               Items are permanently removed after 30 days. Restore courses to

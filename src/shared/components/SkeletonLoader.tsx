@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
-import { View, StyleSheet, Animated, ViewStyle } from 'react-native';
+import { View, StyleSheet, Animated, ViewStyle, DimensionValue } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/contexts/ThemeContext';
 
 interface SkeletonLoaderProps {
-  width?: number | string;
+  width?: DimensionValue;
   height?: number;
   borderRadius?: number;
   style?: ViewStyle;
@@ -71,7 +71,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
     <View
       style={[
         {
-          width: typeof width === 'string' ? width : width,
+          width,
           height,
           borderRadius,
           backgroundColor: baseColor,

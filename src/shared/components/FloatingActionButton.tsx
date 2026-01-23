@@ -46,7 +46,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
   const DOUBLE_TAP_DELAY = 300; // 300ms between taps
 
   // Dev-only warning if onStateChange exists but isOpen is missing (TypeScript should catch this, but runtime check for safety)
-  if (__DEV__ && onStateChange && isOpen === undefined) {
+  if (__DEV__ && onStateChange !== undefined && isOpen === undefined) {
     console.warn(
       'FloatingActionButton: onStateChange provided but isOpen is missing. ' +
         'FloatingActionButton is now a controlled component and requires isOpen prop.',

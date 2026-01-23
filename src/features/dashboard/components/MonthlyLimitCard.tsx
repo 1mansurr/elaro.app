@@ -19,7 +19,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
   monthlyTaskCount,
   limit,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const percentage = Math.min((monthlyTaskCount / limit) * 100, 100);
 
   return (
@@ -27,8 +27,8 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
       style={[
         styles.card,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#F3F4F6',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#F3F4F6',
         },
       ]}>
       <View style={styles.header}>
@@ -36,7 +36,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
           <Text
             style={[
               styles.label,
-              { color: theme.isDark ? '#9CA3AF' : '#637588' },
+              { color: isDark ? '#9CA3AF' : '#637588' },
             ]}>
             MONTHLY LIMIT
           </Text>
@@ -47,7 +47,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
             <Text
               style={[
                 styles.limitText,
-                { color: theme.isDark ? '#9CA3AF' : '#9CA3AF' },
+                { color: isDark ? '#9CA3AF' : '#9CA3AF' },
               ]}>
               {' '}
               / {limit} tasks used
@@ -70,7 +70,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
         style={[
           styles.progressBarContainer,
           {
-            backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
+            backgroundColor: isDark ? '#374151' : '#F3F4F6',
           },
         ]}>
         <View

@@ -45,21 +45,21 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   navigation,
 }) => {
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   // HARDENING: Get root active route name immediately and check multiple ways
   let rootActiveRouteName: string | null = null;
   try {
-    // Check if getRootState method exists before calling it
-    if (typeof navigation.getRootState === 'function') {
-      const rootState = navigation.getRootState();
+    // Check if getState method exists before calling it
+    if (typeof navigation.getState === 'function') {
+      const rootState = navigation.getState();
       rootActiveRouteName = getRootActiveRouteName(rootState);
     } else {
-      // getRootState not available - this can happen during initial render
+      // getState not available - this can happen during initial render
       // Fall back to using tab navigator state
       if (__DEV__) {
         console.log(
-          'CustomTabBar: getRootState not available, using tab navigator state',
+          'CustomTabBar: getState not available, using tab navigator state',
         );
       }
     }
@@ -121,19 +121,24 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
         style={[
           styles.capsuleNavBar,
           {
-            backgroundColor: theme.isDark ? '#000000' : '#FFFFFF',
-            borderColor: theme.isDark ? '#1F2937' : '#F3F4F6',
+            backgroundColor: isDark ? '#000000' : '#FFFFFF',
+            borderColor: isDark ? '#1F2937' : '#F3F4F6',
             ...SHADOWS.lg,
           },
         ]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          const label =
+          const labelValue =
             options.tabBarLabel !== undefined
               ? options.tabBarLabel
               : options.title !== undefined
                 ? options.title
                 : route.name;
+          
+          // Extract label text - handle both string and function cases
+          const label = typeof labelValue === 'function'
+            ? labelValue({ focused: state.index === index, color: '', position: 'below-icon' as any, children: route.name })
+            : labelValue;
 
           const isFocused = state.index === index;
 
@@ -159,7 +164,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
           const iconName = getIconName(route.name, isFocused);
           const iconColor = isFocused
             ? COLORS.primary
-            : theme.isDark
+            : isDark
               ? '#6B7280'
               : '#9CA3AF';
 
@@ -176,7 +181,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                 isFocused ? styles.activeTab : styles.inactiveTab,
                 {
                   backgroundColor: isFocused
-                    ? theme.isDark
+                    ? isDark
                       ? '#1F2937'
                       : `${COLORS.primary}1A`
                     : 'transparent',
@@ -187,7 +192,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                 size={isFocused ? 24 : 28}
                 color={
                   isFocused
-                    ? theme.isDark
+                    ? isDark
                       ? '#FFFFFF'
                       : COLORS.primary
                     : iconColor
@@ -198,7 +203,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                   style={[
                     styles.label,
                     {
-                      color: theme.isDark ? '#FFFFFF' : COLORS.primary,
+                      color: isDark ? '#FFFFFF' : COLORS.primary,
                     },
                   ]}>
                   {label}

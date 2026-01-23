@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -21,13 +22,37 @@ const RecordSRSPerformanceSchema = z.object({
 async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
+  
+  // Type guard for body
+  if (!body || typeof body !== 'object') {
+    throw new AppError(
+      'Invalid request body',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
+
   const {
     session_id,
     reminder_id,
     quality_rating,
     response_time_seconds,
     schedule_next,
-  } = body;
+  } = body as {
+    session_id?: string;
+    reminder_id?: string;
+    quality_rating?: number;
+    response_time_seconds?: number;
+    schedule_next?: boolean;
+  };
+
+  if (!session_id || typeof quality_rating !== 'number') {
+    throw new AppError(
+      'session_id and quality_rating are required',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
 
   await logger.info(
     'Recording SRS performance',
@@ -89,42 +114,45 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
     .maybeSingle();
 
   // Validate and sanitize parameters from last performance
-  let currentInterval = lastPerformance?.next_interval_days || 1;
-  let currentEaseFactor = lastPerformance?.ease_factor || 2.5;
-  let repetitionNumber = (lastPerformance?.repetition_number || 0) + 1;
+  const lastPerformanceTyped = lastPerformance as {
+    next_interval_days?: number;
+    ease_factor?: number;
+    repetition_number?: number;
+  } | null;
+
+  let currentInterval = lastPerformanceTyped?.next_interval_days || 1;
+  let currentEaseFactor = lastPerformanceTyped?.ease_factor || 2.5;
+  let repetitionNumber = (lastPerformanceTyped?.repetition_number || 0) + 1;
 
   // Parameter validation and bounds checking
-  if (lastPerformance) {
+  if (lastPerformanceTyped) {
     // Validate ease factor (should be 1.3 to 3.0)
-    if (
-      lastPerformance.ease_factor < 1.3 ||
-      lastPerformance.ease_factor > 3.0
-    ) {
+    const easeFactor = lastPerformanceTyped.ease_factor;
+    if (easeFactor !== undefined && (easeFactor < 1.3 || easeFactor > 3.0)) {
       console.warn(
-        `Invalid ease factor ${lastPerformance.ease_factor} for session ${session_id}, resetting to 2.5`,
+        `Invalid ease factor ${easeFactor} for session ${session_id}, resetting to 2.5`,
       );
       currentEaseFactor = 2.5;
     }
 
     // Validate interval (should be 1 to 365 days)
-    if (
-      lastPerformance.next_interval_days < 1 ||
-      lastPerformance.next_interval_days > 365
-    ) {
+    const interval = lastPerformanceTyped.next_interval_days;
+    if (interval !== undefined && (interval < 1 || interval > 365)) {
       console.warn(
-        `Invalid interval ${lastPerformance.next_interval_days} for session ${session_id}, resetting to 1`,
+        `Invalid interval ${interval} for session ${session_id}, resetting to 1`,
       );
       currentInterval = 1;
     }
 
     // Validate repetition number (should be positive)
-    if (lastPerformance.repetition_number < 0) {
+    const repNum = lastPerformanceTyped.repetition_number;
+    if (repNum !== undefined && repNum < 0) {
       console.warn(
-        `Invalid repetition number ${lastPerformance.repetition_number} for session ${session_id}, resetting to 0`,
+        `Invalid repetition number ${repNum} for session ${session_id}, resetting to 0`,
       );
       repetitionNumber = 1;
-    } else {
-      repetitionNumber = lastPerformance.repetition_number + 1;
+    } else if (repNum !== undefined) {
+      repetitionNumber = repNum + 1;
     }
   }
 
@@ -135,7 +163,7 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
     p_hours_window: 24,
   });
 
-  const isCramming = crammingData?.[0]?.is_cramming || false;
+  const isCramming = (crammingData as Array<{ is_cramming?: boolean }>)?.[0]?.is_cramming || false;
 
   // Adjust ease factor if cramming detected (be more conservative)
   let adjustedEaseFactor = currentEaseFactor;
@@ -163,8 +191,13 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
     throw handleDbError(calcError);
   }
 
-  const nextInterval = calculation[0]?.next_interval || 1;
-  const newEaseFactor = calculation[0]?.new_ease_factor || 2.5;
+  const calculationTyped = calculation as Array<{
+    next_interval?: number;
+    new_ease_factor?: number;
+  }> | null;
+
+  const nextInterval = calculationTyped?.[0]?.next_interval || 1;
+  const newEaseFactor = calculationTyped?.[0]?.new_ease_factor || 2.5;
 
   // 4. Record performance
   const { data: performance, error: performanceError } = await supabaseClient
@@ -244,7 +277,7 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
         },
       );
 
-      const preferredHour = optimalHour || 10;
+      const preferredHour = (optimalHour as number) || 10;
 
       // Use timezone-aware scheduling
       const { data: nextReminderTime } = await supabaseClient.rpc(
@@ -261,10 +294,13 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
       const { addDeterministicJitter } =
         await import('../_shared/deterministic-jitter.ts');
       const baseTime = nextReminderTime
-        ? new Date(nextReminderTime)
+        ? new Date(nextReminderTime as string)
         : new Date();
       const jitterSeed = `${session_id}-${nextInterval}`;
       const jitteredTime = addDeterministicJitter(baseTime, 30, jitterSeed); // 30 minutes jitter
+
+      const sessionTyped = session as { topic?: string };
+      const sessionTopic = sessionTyped.topic || 'Study Session';
 
       // Insert next reminder
       const { data: newReminder, error: reminderError } = await supabaseClient
@@ -274,8 +310,8 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
           session_id: session_id,
           reminder_time: jitteredTime.toISOString(),
           reminder_type: 'spaced_repetition',
-          title: `Review: ${session.topic}`,
-          body: `Time to review "${session.topic}" to strengthen your memory`,
+          title: `Review: ${sessionTopic}`,
+          body: `Time to review "${sessionTopic}" to strengthen your memory`,
           completed: false,
           priority: quality_rating <= 2 ? 'high' : 'medium', // Higher priority for difficult topics
         })

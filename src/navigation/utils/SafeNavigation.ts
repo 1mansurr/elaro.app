@@ -104,7 +104,6 @@ export class SafeNavigation {
         // @ts-expect-error - React Navigation's type system requires this pattern for optional params
         this.navigation.replace(screen);
       } else {
-        // @ts-expect-error - React Navigation's strict overload types require this assertion
         this.navigation.replace(screen, params);
       }
     } catch (error) {
@@ -136,7 +135,6 @@ export class SafeNavigation {
         // @ts-expect-error - React Navigation's type system requires this pattern for optional params
         this.navigation.push(screen);
       } else {
-        // @ts-expect-error - React Navigation's strict overload types require this assertion
         this.navigation.push(screen, params);
       }
     } catch (error) {
@@ -398,8 +396,9 @@ export const NavigationValidation = {
       return (
         params === undefined ||
         (typeof params === 'object' &&
-          (params.initialData === undefined ||
-            typeof params.initialData === 'object'))
+          params !== null &&
+          ((params as { initialData?: unknown }).initialData === undefined ||
+            typeof (params as { initialData?: unknown }).initialData === 'object'))
       );
     }
     // Basic validation for other routes

@@ -35,7 +35,7 @@ export const studySessionsApiMutations = {
           'study_session',
           {
             type: 'CREATE',
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },
@@ -119,7 +119,7 @@ export const studySessionsApiMutations = {
           {
             type: 'UPDATE',
             id: sessionId,
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },

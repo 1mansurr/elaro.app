@@ -381,17 +381,17 @@ export class RecurringTaskService {
     dbPattern: Record<string, unknown>,
   ): RecurringPattern {
     return {
-      id: dbPattern.id,
-      name: dbPattern.name,
-      frequency: dbPattern.frequency,
-      intervalValue: dbPattern.interval_value,
-      daysOfWeek: dbPattern.days_of_week,
-      dayOfMonth: dbPattern.day_of_month,
-      endDate: dbPattern.end_date,
-      maxOccurrences: dbPattern.max_occurrences,
-      timezone: dbPattern.timezone,
-      createdAt: dbPattern.created_at,
-      updatedAt: dbPattern.updated_at,
+      id: dbPattern.id as string,
+      name: dbPattern.name as string,
+      frequency: dbPattern.frequency as 'daily' | 'weekly' | 'monthly' | 'custom',
+      intervalValue: dbPattern.interval_value as number,
+      daysOfWeek: dbPattern.days_of_week as number[] | undefined,
+      dayOfMonth: dbPattern.day_of_month as number | undefined,
+      endDate: dbPattern.end_date as string | undefined,
+      maxOccurrences: dbPattern.max_occurrences as number | undefined,
+      timezone: dbPattern.timezone as string,
+      createdAt: dbPattern.created_at as string,
+      updatedAt: dbPattern.updated_at as string,
     };
   }
 
@@ -402,18 +402,18 @@ export class RecurringTaskService {
     dbTask: Record<string, unknown>,
   ): RecurringTask {
     return {
-      id: dbTask.id,
-      userId: dbTask.user_id,
-      patternId: dbTask.pattern_id,
-      pattern: this.mapPatternFromDB(dbTask.recurring_patterns),
-      taskType: dbTask.task_type,
-      templateData: dbTask.template_data,
-      isActive: dbTask.is_active,
-      nextGenerationDate: dbTask.next_generation_date,
-      lastGeneratedAt: dbTask.last_generated_at,
-      totalGenerated: dbTask.total_generated,
-      createdAt: dbTask.created_at,
-      updatedAt: dbTask.updated_at,
+      id: dbTask.id as string,
+      userId: dbTask.user_id as string,
+      patternId: dbTask.pattern_id as string,
+      pattern: this.mapPatternFromDB(dbTask.recurring_patterns as Record<string, unknown>),
+      taskType: dbTask.task_type as 'assignment' | 'lecture' | 'study_session',
+      templateData: dbTask.template_data as Record<string, unknown>,
+      isActive: (dbTask.is_active ?? false) as boolean,
+      nextGenerationDate: dbTask.next_generation_date as string,
+      lastGeneratedAt: dbTask.last_generated_at as string | undefined,
+      totalGenerated: dbTask.total_generated as number,
+      createdAt: dbTask.created_at as string,
+      updatedAt: dbTask.updated_at as string,
     };
   }
 
@@ -424,15 +424,15 @@ export class RecurringTaskService {
     dbTask: Record<string, unknown>,
   ): GeneratedTask {
     return {
-      id: dbTask.id,
-      recurringTaskId: dbTask.recurring_task_id,
-      taskId: dbTask.task_id,
-      taskType: dbTask.task_type,
-      generationDate: dbTask.generation_date,
-      scheduledDate: dbTask.scheduled_date,
-      isCompleted: dbTask.is_completed,
-      completedAt: dbTask.completed_at,
-      createdAt: dbTask.created_at,
+      id: dbTask.id as string,
+      recurringTaskId: dbTask.recurring_task_id as string,
+      taskId: dbTask.task_id as string,
+      taskType: dbTask.task_type as 'assignment' | 'lecture' | 'study_session',
+      generationDate: dbTask.generation_date as string,
+      scheduledDate: dbTask.scheduled_date as string,
+      isCompleted: (dbTask.is_completed ?? false) as boolean,
+      completedAt: dbTask.completed_at as string | undefined,
+      createdAt: dbTask.created_at as string,
     };
   }
 

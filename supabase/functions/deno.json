@@ -9,9 +9,7 @@
     "rules": {
       "tags": ["recommended", "cargo"],
       "include": ["ban-untagged-todo", "no-console"],
-      "exclude": [
-        "no-console" // Allow console for logging (we use structured logging but console is still needed)
-      ]
+      "exclude": ["no-console"]
     }
   },
   "fmt": {

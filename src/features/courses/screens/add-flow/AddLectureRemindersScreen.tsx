@@ -26,6 +26,7 @@ import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 import { generateUUID } from '@/utils/uuid';
+import { Course } from '@/types';
 
 const ReminderOptions = [
   { label: '10 minutes before', value: 10 },
@@ -60,6 +61,15 @@ const AddLectureRemindersScreen = () => {
       if (!pendingTask || pendingTask.taskType !== 'course') return;
 
       const { taskData } = pendingTask;
+
+      // Type guard: ensure taskData is Course when taskType is 'course'
+      if (pendingTask.taskType !== 'course' || !('courseName' in taskData)) {
+        Alert.alert(
+          'Error',
+          'Invalid task data for the saved course.',
+        );
+        return;
+      }
 
       if (!taskData.courseName?.trim()) {
         Alert.alert(
@@ -117,15 +127,15 @@ const AddLectureRemindersScreen = () => {
     setIsLoading(true);
     updateCourseData({ reminders: selectedReminders });
 
-    const finalPayload = {
+    // Create Course object for savePendingTask
+    const finalPayload: Course = {
+      id: '', // Will be generated on server
       courseName: courseData.courseName,
       courseCode: courseData.courseCode,
-      courseDescription: courseData.courseDescription,
-      startTime: courseData.startTime?.toISOString(),
-      endTime: courseData.endTime?.toISOString(),
-      recurrence: courseData.recurrence,
-      venue: courseData.venue,
-      reminders: selectedReminders,
+      aboutCourse: courseData.courseDescription,
+      userId: user?.id || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (isGuest) {

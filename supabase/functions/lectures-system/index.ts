@@ -14,12 +14,13 @@
  * - GET /lectures-system/get/:id - Get specific lecture
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
   CreateLectureSchema,
@@ -35,6 +36,7 @@ import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Lecture service class
@@ -64,6 +66,15 @@ class LectureService {
       reminders,
     } = data;
 
+    // Type guards
+    if (typeof lecture_name !== 'string' || typeof course_id !== 'string') {
+      throw new AppError(
+        'lecture_name and course_id are required',
+        400,
+        ERROR_CODES.INVALID_INPUT,
+      );
+    }
+
     // SECURITY: Verify the user owns the course they are adding a lecture to.
     const { data: course, error: courseError } = await this.supabaseClient
       .from('courses')
@@ -82,7 +93,7 @@ class LectureService {
 
     const [encryptedLectureName, encryptedDescription] = await Promise.all([
       encrypt(lecture_name, encryptionKey),
-      description ? encrypt(description, encryptionKey) : null,
+      description && typeof description === 'string' ? encrypt(description, encryptionKey) : null,
     ]);
 
     const { data: newLecture, error: insertError } = await this.supabaseClient
@@ -105,13 +116,14 @@ class LectureService {
     }
 
     // Create reminders if provided
-    if (newLecture && reminders && reminders.length > 0) {
-      const startTime = new Date(start_time);
-      const remindersToInsert = reminders.map((mins: number) => ({
+    const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+    if (newLecture && remindersArray.length > 0) {
+      const startTimeTyped = typeof start_time === 'string' ? new Date(start_time) : new Date(start_time as string | number | Date);
+      const remindersToInsert = remindersArray.map((mins: number) => ({
         user_id: this.user.id,
         lecture_id: newLecture.id,
         reminder_time: new Date(
-          startTime.getTime() - mins * 60000,
+          startTimeTyped.getTime() - mins * 60000,
         ).toISOString(),
         reminder_type: 'lecture',
         day_number: Math.ceil(mins / (24 * 60)),
@@ -157,13 +169,13 @@ class LectureService {
 
     // Encrypt fields if they are being updated
     const encryptedUpdates = { ...updates };
-    if (updates.lecture_name) {
+    if (updates.lecture_name && typeof updates.lecture_name === 'string') {
       encryptedUpdates.lecture_name = await encrypt(
         updates.lecture_name,
         encryptionKey,
       );
     }
-    if (updates.description) {
+    if (updates.description && typeof updates.description === 'string') {
       encryptedUpdates.description = await encrypt(
         updates.description,
         encryptionKey,
@@ -404,8 +416,8 @@ async function handleListLectures(req: AuthenticatedRequest) {
 
 async function handleGetLecture(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const lectureId = body?.lecture_id || extractIdFromUrl(req.url);
-  if (!lectureId) {
+  const lectureId = (body?.lecture_id as string) || extractIdFromUrl(req.url);
+  if (!lectureId || typeof lectureId !== 'string') {
     throw new AppError(
       'Lecture ID is required',
       400,
@@ -417,7 +429,7 @@ async function handleGetLecture(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

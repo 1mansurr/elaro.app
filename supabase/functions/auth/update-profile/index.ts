@@ -1,9 +1,12 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
 import { UpdateProfileSchema } from '../../_shared/schemas/auth.ts';
-import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
+import { AppError } from '../../_shared/function-handler.ts';
+import { ERROR_CODES } from '../../_shared/error-codes.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
 
@@ -105,7 +108,7 @@ serve(async (req: Request) => {
     if (Object.keys(updateData).length > 0) {
       updatePayload.data = updateData;
     }
-    if (password) {
+    if (password && typeof password === 'string') {
       updatePayload.password = password;
     }
 
@@ -123,7 +126,7 @@ serve(async (req: Request) => {
       throw new AppError(
         error.message || 'Failed to update profile',
         error.status || 400,
-        ERROR_CODES.AUTH_ERROR || 'AUTH_ERROR',
+        ERROR_CODES.INVALID_TOKEN,
       );
     }
 

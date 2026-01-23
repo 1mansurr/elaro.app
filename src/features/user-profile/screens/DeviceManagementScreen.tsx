@@ -48,7 +48,7 @@ interface Device {
 export function DeviceManagementScreen() {
   const navigation = useNavigation();
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [devices, setDevices] = useState<Device[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,7 +201,7 @@ export function DeviceManagementScreen() {
   };
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -210,7 +210,7 @@ export function DeviceManagementScreen() {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -248,11 +248,11 @@ export function DeviceManagementScreen() {
   };
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const formatDateRelative = (dateString: string) => {
     const date = new Date(dateString);
@@ -283,7 +283,7 @@ export function DeviceManagementScreen() {
           style={[
             styles.deviceIconContainer,
             {
-              backgroundColor: COLORS.primary + (theme.isDark ? '30' : '20'),
+              backgroundColor: COLORS.primary + (isDark ? '30' : '20'),
             },
           ]}>
           <Ionicons
@@ -302,7 +302,7 @@ export function DeviceManagementScreen() {
                 style={[
                   styles.currentBadge,
                   {
-                    backgroundColor: '#10B981' + (theme.isDark ? '30' : '20'),
+                    backgroundColor: '#10B981' + (isDark ? '30' : '20'),
                   },
                 ]}>
                 <Text style={styles.currentText}>Current</Text>
@@ -371,7 +371,7 @@ export function DeviceManagementScreen() {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+            <Ionicons name="arrow-back" size={20} color={textColor} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: textColor }]}>
             Device Management

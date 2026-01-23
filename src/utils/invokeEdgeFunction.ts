@@ -1,5 +1,5 @@
 import { getFreshAccessToken } from './getFreshAccessToken';
-import { FunctionsInvokeOptions } from '@supabase/supabase-js';
+import { FunctionInvokeOptions } from '@supabase/supabase-js';
 import { parseJsonSafely } from './safeJsonParser';
 
 // Get Supabase URL and anon key from environment variables
@@ -35,7 +35,7 @@ const supabaseAnonKey =
  */
 export async function invokeEdgeFunctionWithAuth<T = any>(
   functionName: string,
-  options: Omit<FunctionsInvokeOptions, 'headers'> & {
+  options: Omit<FunctionInvokeOptions, 'headers'> & {
     headers?: Record<string, string>;
   } = {},
 ): Promise<{ data: T | null; error: any }> {

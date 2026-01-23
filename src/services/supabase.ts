@@ -179,7 +179,6 @@ export const authService = {
           (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
         subscription_status:
           (data.subscription_status as
-            | 'trialing'
             | 'active'
             | 'past_due'
             | 'canceled'
@@ -285,12 +284,13 @@ export const authService = {
           subscription_tier:
             (data.subscription_tier as 'free' | 'oddity' | null) ?? null,
           subscription_status:
-            (data.subscription_status as
-              | 'trialing'
-              | 'active'
-              | 'past_due'
-              | 'canceled'
-              | null) ?? null,
+            (data.subscription_status === 'trialing'
+              ? 'active'
+              : (data.subscription_status as
+                  | 'active'
+                  | 'past_due'
+                  | 'canceled'
+                  | null)) ?? null,
           subscription_expires_at: data.subscription_expires_at ?? null,
           account_status:
             (data.account_status as 'active' | 'deleted' | 'suspended') ??
@@ -333,7 +333,12 @@ export const authService = {
   async updateUserProfile(userId: string, updates: Partial<User>) {
     // Use API layer instead of direct Supabase
     const { versionedApiClient } = await import('./VersionedApiClient');
-    const response = await versionedApiClient.updateUserProfile(updates);
+    // Convert null to undefined for subscription_tier to match API expectations
+    const apiUpdates = {
+      ...updates,
+      subscription_tier: updates.subscription_tier ?? undefined,
+    };
+    const response = await versionedApiClient.updateUserProfile(apiUpdates);
 
     if (response.error) {
       throw new Error(

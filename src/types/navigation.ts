@@ -77,7 +77,9 @@ export type RootStackParamList = {
       | 'restore'
       | 'promo'
       | 'granted'
-      | 'plan-change';
+      | 'plan-change'
+      | 'trial-early'
+      | 'trial-expired';
   };
   StudyResult: { sessionId: string };
   StudySessionReview: { sessionId: string };

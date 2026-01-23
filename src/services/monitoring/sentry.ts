@@ -13,7 +13,15 @@
 
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
-import type { Event, EventHint, Transaction } from '@sentry/react-native';
+import type { Event } from '@sentry/react-native';
+
+// Define Transaction type locally since it's not exported from @sentry/react-native
+interface Transaction {
+  startChild: (options: { description: string; op: string }) => {
+    finish: () => void;
+  };
+  finish: () => void;
+}
 
 type SentryModule = {
   init?: (options: {
@@ -24,7 +32,7 @@ type SentryModule = {
     tracesSampleRate?: number;
     enableAutoSessionTracking?: boolean;
     sessionTrackingIntervalMillis?: number;
-    beforeSend?: (event: Event, hint: EventHint) => Event | null;
+    beforeSend?: (event: Event) => Event | null;
   }) => void;
   setTag?: (key: string, value: string) => void;
   captureException?: (
@@ -112,6 +120,10 @@ export function initializeSentry(dsn?: string): void {
     'unknown';
   const environment = __DEV__ ? 'development' : 'production';
 
+  if (!Sentry.init) {
+    return;
+  }
+
   Sentry.init({
     dsn,
     enabled: !__DEV__, // Disable in development (use console logs instead)
@@ -120,11 +132,11 @@ export function initializeSentry(dsn?: string): void {
     tracesSampleRate: __DEV__ ? 1.0 : 0.1, // 100% in dev, 10% in prod
     enableAutoSessionTracking: true,
     sessionTrackingIntervalMillis: 30000,
-    beforeSend: (event: Event, hint: EventHint) => {
+    beforeSend: (event: Event) => {
       // Redact PII from event
       if (event.user) {
         if (event.user.id) {
-          event.user.id = `hashed_${hashString(event.user.id)}`;
+          event.user.id = `hashed_${hashString(String(event.user.id))}`;
         }
         delete event.user.email;
         delete event.user.username;

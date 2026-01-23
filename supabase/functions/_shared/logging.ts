@@ -5,6 +5,7 @@
  * Supports different retention policies: 30 days for errors, 7 days for general logs.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { redactPII } from './pii-redaction.ts';
 
@@ -27,6 +28,7 @@ interface LogEntry {
 }
 
 // Supabase Storage bucket name for logs
+// @ts-expect-error - Deno.env is available at runtime in Deno
 const LOG_BUCKET = Deno.env.get('LOG_STORAGE_BUCKET') || 'logs';
 
 // Initialize Supabase admin client for storage
@@ -38,7 +40,9 @@ function getSupabaseAdmin() {
   }
 
   supabaseAdmin = createClient(
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     Deno.env.get('SUPABASE_URL') ?? '',
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
   );
 
@@ -80,8 +84,8 @@ async function appendLogToStorage(logEntry: LogEntry): Promise<void> {
         const text = await data.text();
         existingLogs = text
           .split('\n')
-          .filter(line => line.trim())
-          .map(line => JSON.parse(line));
+          .filter((line: string) => line.trim())
+          .map((line: string) => JSON.parse(line));
       }
     } catch (_error) {
       // File doesn't exist yet, start with empty array
@@ -154,7 +158,7 @@ export function sendLog(
   const logEntry: LogEntry = {
     level,
     message,
-    function: metadata.function,
+    function: (metadata.function as string | undefined),
     userId: metadata.userId
       ? (redactPII(metadata.userId, { hashIds: true }) as string)
       : undefined,
@@ -164,9 +168,9 @@ export function sendLog(
     timestamp: new Date().toISOString(),
     error: metadata.error
       ? {
-          message: metadata.error.message || String(metadata.error),
-          stack: metadata.error.stack,
-          code: metadata.error.code,
+          message: (metadata.error as Error).message || String(metadata.error),
+          stack: (metadata.error as Error).stack,
+          code: (metadata.error as Error & { code?: string }).code,
         }
       : undefined,
   };

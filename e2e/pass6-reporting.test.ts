@@ -23,7 +23,19 @@ describe('Pass 6: Reporting', () => {
     expect(report.overall).toHaveProperty('totalTests');
 
     // Save report
-    const reportPath = await testReporter.saveReport('e2e-report.json');
+    const reportResult = await testReporter.saveReport('e2e-report.json');
+    
+    // Construct the full path to the reports directory
+    const reportsDir = path.join(__dirname, '../reports');
+    const reportPath = path.join(reportsDir, reportResult.filename);
+    
+    // Ensure reports directory exists
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
+    
+    // Write the report file
+    fs.writeFileSync(reportPath, reportResult.data, 'utf-8');
 
     // Verify file exists
     expect(fs.existsSync(reportPath)).toBe(true);

@@ -26,7 +26,7 @@ export const DeleteCourseModal: React.FC<DeleteCourseModalProps> = ({
   courseName,
   isLoading = false,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [scaleAnim] = React.useState(new Animated.Value(0.95));
   const [opacityAnim] = React.useState(new Animated.Value(0));
 
@@ -79,22 +79,22 @@ export const DeleteCourseModal: React.FC<DeleteCourseModalProps> = ({
                 styles.iconContainer,
                 {
                   backgroundColor:
-                    theme.mode === 'dark' ? '#dc262620' : '#fee2e2',
+                    isDark ? '#dc262620' : '#fee2e2',
                 },
               ]}>
               <View
                 style={[
                   styles.iconRing,
                   {
-                    backgroundColor:
-                      theme.mode === 'dark' ? '#dc262610' : '#fee2e280',
+                  backgroundColor:
+                    isDark ? '#dc262610' : '#fee2e280',
                   },
                 ]}
               />
               <Ionicons
                 name="trash"
                 size={32}
-                color={theme.mode === 'dark' ? '#f87171' : '#dc2626'}
+                color={isDark ? '#f87171' : '#dc2626'}
               />
             </View>
 
@@ -131,7 +131,7 @@ export const DeleteCourseModal: React.FC<DeleteCourseModalProps> = ({
                   styles.cancelButton,
                   {
                     backgroundColor:
-                      theme.mode === 'dark' ? '#ffffff10' : '#f0f2f4',
+                      isDark ? '#ffffff10' : '#f0f2f4',
                   },
                 ]}
                 onPress={onClose}

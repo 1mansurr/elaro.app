@@ -51,8 +51,12 @@ export const useCalendarTasksWithLockState = (
       const tasksOfType = allTasks
         .filter(t => t.type === type)
         .sort(
-          (a, b) =>
-            new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+          (a, b) => {
+            // Task type doesn't have created_at, use date instead for sorting
+            const dateA = a.date ? new Date(a.date).getTime() : 0;
+            const dateB = b.date ? new Date(b.date).getTime() : 0;
+            return dateA - dateB;
+          },
         );
       tasksByType.set(type, tasksOfType);
     });

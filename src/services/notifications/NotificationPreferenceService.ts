@@ -253,54 +253,55 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
     const masterToggle = data.master_toggle ?? data.reminders_enabled ?? true;
 
     return {
-      masterToggle,
-      doNotDisturb: data.do_not_disturb ?? false,
+      masterToggle: (masterToggle as boolean) ?? true,
+      doNotDisturb: (data.do_not_disturb as boolean | undefined) ?? false,
 
       quietHours: {
         enabled:
-          data.quiet_hours_enabled ??
-          (data.quiet_hours_start != null && data.quiet_hours_end != null),
-        start: data.quiet_hours_start ?? '22:00',
-        end: data.quiet_hours_end ?? '08:00',
+          ((data.quiet_hours_enabled as boolean | undefined) ??
+          (data.quiet_hours_start != null && data.quiet_hours_end != null) ??
+          false) as boolean,
+        start: ((data.quiet_hours_start as string | undefined) ?? '22:00') as string,
+        end: ((data.quiet_hours_end as string | undefined) ?? '08:00') as string,
       },
 
       preferredTimes: {
-        morning: data.preferred_morning_time ?? data.morning_time ?? '09:00',
-        evening: data.preferred_evening_time ?? data.evening_time ?? '18:00',
-        weekend: data.weekend_notifications_enabled ?? true,
+        morning: ((data.preferred_morning_time ?? data.morning_time ?? '09:00') as string) ?? '09:00',
+        evening: ((data.preferred_evening_time ?? data.evening_time ?? '18:00') as string) ?? '18:00',
+        weekend: ((data.weekend_notifications_enabled ?? true) as boolean) ?? true,
       },
 
       notificationTypes: {
-        reminders: data.reminders_enabled ?? true,
-        achievements: data.achievements_enabled ?? false, // Not in DB, default false
-        updates: data.updates_enabled ?? false, // Not in DB, default false
-        marketing: data.marketing_notifications ?? false,
-        assignments: data.assignment_reminders_enabled ?? true,
-        lectures: data.lecture_reminders_enabled ?? true,
-        srs: data.srs_reminders_enabled ?? true,
-        dailySummaries: data.morning_summary_enabled ?? true,
+        reminders: ((data.reminders_enabled ?? true) as boolean) ?? true,
+        achievements: ((data.achievements_enabled ?? false) as boolean) ?? false,
+        updates: ((data.updates_enabled ?? false) as boolean) ?? false,
+        marketing: ((data.marketing_notifications ?? false) as boolean) ?? false,
+        assignments: ((data.assignment_reminders_enabled ?? true) as boolean) ?? true,
+        lectures: ((data.lecture_reminders_enabled ?? true) as boolean) ?? true,
+        srs: ((data.srs_reminders_enabled ?? true) as boolean) ?? true,
+        dailySummaries: ((data.morning_summary_enabled ?? true) as boolean) ?? true,
       },
 
       frequency: {
-        reminders: data.reminder_frequency ?? 'immediate',
-        summaries: data.summary_frequency ?? 'daily',
-        updates: data.update_frequency ?? 'immediate',
-        maxPerDay: data.max_per_day ?? 10,
-        cooldownPeriod: data.cooldown_period ?? 30,
+        reminders: ((data.reminder_frequency ?? 'immediate') as 'immediate' | 'daily' | 'weekly') ?? 'immediate',
+        summaries: ((data.summary_frequency ?? 'daily') as 'daily' | 'weekly' | 'disabled') ?? 'daily',
+        updates: ((data.update_frequency ?? 'immediate') as 'immediate' | 'daily' | 'disabled') ?? 'immediate',
+        maxPerDay: ((data.max_per_day ?? 10) as number) ?? 10,
+        cooldownPeriod: ((data.cooldown_period ?? 30) as number) ?? 30,
       },
 
       advanced: {
-        vibration: data.vibration_enabled ?? true,
-        sound: data.sound_enabled ?? true,
-        badges: data.badges_enabled ?? true,
-        preview: data.preview_enabled ?? true,
-        locationAware: data.location_aware ?? false,
-        activityAware: data.activity_aware ?? false,
+        vibration: ((data.vibration_enabled ?? true) as boolean) ?? true,
+        sound: ((data.sound_enabled ?? true) as boolean) ?? true,
+        badges: ((data.badges_enabled ?? true) as boolean) ?? true,
+        preview: ((data.preview_enabled ?? true) as boolean) ?? true,
+        locationAware: ((data.location_aware ?? false) as boolean) ?? false,
+        activityAware: ((data.activity_aware ?? false) as boolean) ?? false,
       },
 
-      userId: data.user_id,
-      createdAt: data.created_at ? new Date(data.created_at) : new Date(),
-      updatedAt: new Date(data.updated_at ?? Date.now()),
+      userId: (data.user_id as string) ?? '',
+      createdAt: data.created_at ? new Date(data.created_at as string | number | Date) : new Date(),
+      updatedAt: new Date((data.updated_at as string | number | Date) ?? Date.now()),
     };
   }
 

@@ -102,3 +102,8 @@ export const TestHelpers = {
     await new Promise(resolve => setTimeout(resolve, ms));
   },
 };
+
+/**
+ * Standalone export for loginWithTestUser for convenience
+ */
+export const loginWithTestUser = () => TestHelpers.loginWithTestUser();

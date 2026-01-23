@@ -51,9 +51,6 @@ export const MainTabNavigator: React.FC = () => {
         },
         // Ensure nothing is drawn behind the floating capsule nav bar
         tabBarBackground: () => null,
-        sceneContainerStyle: {
-          backgroundColor: 'transparent',
-        },
       }}>
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen

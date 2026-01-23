@@ -4,7 +4,7 @@
  * Tests the complete lifecycle: Create → Edit → Complete → Delete
  */
 
-const { device, element, by, expect, waitFor } = require('detox');
+// Note: device, element, by, expect, waitFor are global from Detox
 
 describe('Assignment Lifecycle Journey', () => {
   beforeAll(async () => {

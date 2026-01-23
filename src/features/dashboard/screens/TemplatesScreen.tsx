@@ -23,7 +23,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { RootStackParamList } from '@/types';
+import { RootStackParamList, FlowInitialData, Course } from '@/types';
 import {
   useTemplates,
   useDeleteTemplate,
@@ -80,7 +80,7 @@ const getTemplateTypeInfo = (taskType: string) => {
 
 const TemplatesScreen = () => {
   const navigation = useNavigation<TemplatesScreenNavigationProp>();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const {
     data: templates,
@@ -109,22 +109,44 @@ const TemplatesScreen = () => {
   };
 
   const handleUseTemplate = (template: TaskTemplate) => {
-    // Create initial data from template
-    const initialData = {
-      course: template.template_data.course || null,
-      title: template.template_data.title || '',
-      dateTime: template.template_data.dateTime || new Date(),
-      description: template.template_data.description || '',
+    // Create initial data from template with proper type guards
+    const courseData = template.template_data.course;
+    const course: Course | undefined = 
+      courseData && 
+      typeof courseData === 'object' && 
+      'id' in courseData && 
+      'courseName' in courseData
+        ? (courseData as Course)
+        : undefined;
+
+    const titleData = template.template_data.title;
+    const title: string = typeof titleData === 'string' ? titleData : '';
+
+    const dateTimeData = template.template_data.dateTime;
+    const dateTime: Date | string | undefined = 
+      dateTimeData instanceof Date
+        ? dateTimeData
+        : typeof dateTimeData === 'string'
+          ? dateTimeData
+          : dateTimeData
+            ? new Date()
+            : undefined;
+
+    const initialData: FlowInitialData = {
+      course,
+      title,
+      dateTime,
+      description: typeof template.template_data.description === 'string' ? template.template_data.description : '',
       // Assignment-specific
       submissionMethod: template.template_data.submissionMethod || null,
-      submissionLink: template.template_data.submissionLink || '',
+      submissionLink: typeof template.template_data.submissionLink === 'string' ? template.template_data.submissionLink : '',
       // Lecture-specific
       endTime: template.template_data.endTime || null,
-      recurrence: template.template_data.recurrence || 'none',
+      recurrence: typeof template.template_data.recurrence === 'string' ? template.template_data.recurrence : 'none',
       // Study Session-specific
-      hasSpacedRepetition: template.template_data.hasSpacedRepetition || false,
+      hasSpacedRepetition: Boolean(template.template_data.hasSpacedRepetition),
       // Common
-      reminders: template.template_data.reminders || [120],
+      reminders: Array.isArray(template.template_data.reminders) ? template.template_data.reminders : [120],
     };
 
     // Navigate to appropriate modal based on task type
@@ -193,7 +215,8 @@ const TemplatesScreen = () => {
 
   // Handle swipe from right edge to go back
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX, x } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
+    const x = event.nativeEvent.x as number;
     // Check if swipe starts from right edge (within 20px of right edge)
     if (x > screenWidth - 20 && translationX < 0) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
@@ -204,7 +227,7 @@ const TemplatesScreen = () => {
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
     if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
+      const translationX = event.nativeEvent.translationX as number;
       if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
         // Animate out and go back
         Animated.parallel([
@@ -250,8 +273,8 @@ const TemplatesScreen = () => {
         style={[
           styles.templateCard,
           {
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-            borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#374151' : '#E5E7EB',
           },
         ]}>
         <View style={styles.templateHeader}>
@@ -268,14 +291,14 @@ const TemplatesScreen = () => {
               <Text
                 style={[
                   styles.templateTypeLabel,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 {typeInfo.label}
               </Text>
               <Text
                 style={[
                   styles.templateName,
-                  { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                  { color: isDark ? '#FFFFFF' : '#111418' },
                 ]}
                 numberOfLines={2}>
                 {item.template_name}
@@ -289,7 +312,7 @@ const TemplatesScreen = () => {
             <Ionicons
               name="ellipsis-vertical"
               size={20}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
             />
           </TouchableOpacity>
         </View>
@@ -307,19 +330,19 @@ const TemplatesScreen = () => {
       <Ionicons
         name="library-outline"
         size={64}
-        color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+        color={isDark ? '#9CA3AF' : '#6B7280'}
       />
       <Text
         style={[
           styles.emptyTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          { color: isDark ? '#FFFFFF' : '#111418' },
         ]}>
         No Templates
       </Text>
       <Text
         style={[
           styles.emptyMessage,
-          { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+          { color: isDark ? '#9CA3AF' : '#6B7280' },
         ]}>
         Create templates from your tasks to save time on repetitive work.
         Templates remember your course, reminders, and other settings.
@@ -328,11 +351,11 @@ const TemplatesScreen = () => {
   );
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   if (isError) {
     return (

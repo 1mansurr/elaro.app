@@ -1,5 +1,8 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { Resend } from 'https://esm.sh/resend@2.0.0';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -278,12 +281,20 @@ async function verifyHmacSignature(
   // SECURITY: Validate HMAC secret strength before use
   // This ensures secret meets minimum cryptographic requirements (32 bytes)
   const hmacSecret = Deno.env.get('INTERNAL_HMAC_SECRET');
-  await validateHmacSecret(hmacSecret, traceContext);
+  await validateHmacSecret(hmacSecret, traceContext as unknown as Record<string, unknown>);
 
   // SECURITY: Compute expected signature using canonical string format
   // Format: `${timestamp}.${nonce}.${raw_request_body}`
   // This ensures timestamp, nonce, and body are all included in signature
   const canonicalString = `${timestamp}.${nonce}.${rawBody}`;
+
+  if (!hmacSecret) {
+    throw new AppError(
+      'HMAC secret not configured',
+      ERROR_STATUS_CODES.CONFIG_ERROR,
+      ERROR_CODES.CONFIG_ERROR,
+    );
+  }
 
   const expectedSignature = await createHmacSha256(hmacSecret, canonicalString);
 
@@ -340,7 +351,7 @@ async function verifyHmacSignature(
   );
 }
 
-serve(async req => {
+serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(origin);
 
@@ -366,7 +377,7 @@ serve(async req => {
     // SECURITY: Runtime guard - verify used_nonces table exists
     // This prevents silent replay-protection failure if migration was not run
     // Fails CLOSED (500) if table is missing to prevent security degradation
-    await verifyNonceTableExists(supabaseAdmin, traceContext);
+    await verifyNonceTableExists(supabaseAdmin, traceContext as unknown as Record<string, unknown>);
 
     // SECURITY: Verify HMAC signature FIRST
     // This protects against replay attacks and request tampering

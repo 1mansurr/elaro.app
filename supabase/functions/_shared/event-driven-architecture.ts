@@ -5,6 +5,7 @@
  * business logic that was previously embedded in database triggers.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 export interface BaseEvent {
@@ -342,7 +343,7 @@ export class BusinessLogicHandlers {
     });
 
     // Send welcome email (async, don't wait)
-    this.sendWelcomeEmail(event.data).catch(error => {
+    this.sendWelcomeEmail(event.data).catch((error: unknown) => {
       console.error('Failed to send welcome email:', error);
     });
 
@@ -403,12 +404,12 @@ export class BusinessLogicHandlers {
   /**
    * Send welcome email (placeholder)
    */
-  private sendWelcomeEmail(userData: {
+  private async sendWelcomeEmail(userData: {
     userId: string;
     email: string;
     firstName?: string;
     lastName?: string;
-  }): void {
+  }): Promise<void> {
     // This would integrate with your email service
     console.log('Sending welcome email to:', userData.email);
   }
@@ -458,7 +459,7 @@ export function initializeEventDrivenArchitecture(
   // Register event handlers
   globalEventProcessor.registerHandler({
     eventType: 'user_created',
-    handler: businessHandlers.handleUserCreated.bind(businessHandlers),
+    handler: (event: AppEvent) => businessHandlers.handleUserCreated(event as UserCreatedEvent),
     priority: 1,
     retryCount: 3,
     timeout: 30000,
@@ -466,7 +467,7 @@ export function initializeEventDrivenArchitecture(
 
   globalEventProcessor.registerHandler({
     eventType: 'course_deleted',
-    handler: businessHandlers.handleCourseDeleted.bind(businessHandlers),
+    handler: (event: AppEvent) => businessHandlers.handleCourseDeleted(event as CourseDeletedEvent),
     priority: 2,
     retryCount: 2,
     timeout: 15000,
@@ -474,7 +475,7 @@ export function initializeEventDrivenArchitecture(
 
   globalEventProcessor.registerHandler({
     eventType: 'task_completed',
-    handler: businessHandlers.handleTaskCompleted.bind(businessHandlers),
+    handler: (event: AppEvent) => businessHandlers.handleTaskCompleted(event as TaskCompletedEvent),
     priority: 3,
     retryCount: 1,
     timeout: 10000,
@@ -510,12 +511,16 @@ export const EventUtils = {
    * Validate event structure
    */
   validateEvent(event: unknown): event is AppEvent {
+    if (event == null) {
+      return false;
+    }
+    const eventTyped = event as { id?: string; type?: string; timestamp?: string; data?: unknown };
     return (
-      event &&
-      typeof event.id === 'string' &&
-      typeof event.type === 'string' &&
-      typeof event.timestamp === 'string' &&
-      typeof event.data === 'object'
+      typeof eventTyped.id === 'string' &&
+      typeof eventTyped.type === 'string' &&
+      typeof eventTyped.timestamp === 'string' &&
+      typeof eventTyped.data === 'object' &&
+      eventTyped.data !== null
     );
   },
 
@@ -538,8 +543,10 @@ export const EventUtils = {
     const totalEvents = events?.length || 0;
     const eventsByType =
       events?.reduce(
-        (acc, event) => {
-          acc[event.event_type] = (acc[event.event_type] || 0) + 1;
+        (acc: Record<string, number>, event: { event_type?: string }) => {
+          if (event.event_type) {
+            acc[event.event_type] = (acc[event.event_type] || 0) + 1;
+          }
           return acc;
         },
         {} as Record<string, number>,

@@ -52,7 +52,7 @@ const getCategoryConfig = (taskType: string) => {
 };
 
 export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const timeRemaining = useMemo(() => {
     if (!task?.date) return null;
@@ -81,14 +81,14 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
         style={[
           styles.card,
           {
-            backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-            borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+            backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+            borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
           },
         ]}>
         <Text
           style={[
             styles.emptyText,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}>
           You're all clear for now. Enjoy the break!
         </Text>
@@ -106,8 +106,8 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
       style={[
         styles.card,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
         },
       ]}>
       <View style={styles.content}>
@@ -158,7 +158,7 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
           <Text
             style={[
               styles.taskSubtitle,
-              { color: theme.isDark ? '#9CA3AF' : '#637588' },
+              { color: isDark ? '#9CA3AF' : '#637588' },
             ]}>
             {task.courses.courseName}
           </Text>

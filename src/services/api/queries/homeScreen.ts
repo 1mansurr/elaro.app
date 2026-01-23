@@ -16,7 +16,12 @@ export const homeScreenApi = {
       }
 
       // Ensure we never return undefined - convert to null if needed
-      return (response.data as HomeScreenData) || null;
+      if (!response.data) {
+        return null;
+      }
+
+      // Convert through unknown first for safer type assertion
+      return (response.data as unknown as HomeScreenData) || null;
     } catch (error) {
       throw handleApiError(error);
     }

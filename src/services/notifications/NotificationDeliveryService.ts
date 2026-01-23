@@ -278,7 +278,6 @@ export class NotificationDeliveryService implements INotificationDeliveryService
           title: notif.content.title || '',
           body: notif.content.body || '',
           scheduledFor: triggerDate,
-          category: notif.content.categoryIdentifier,
           data: notif.content.data as Record<string, unknown> | undefined,
         });
       });
@@ -320,9 +319,9 @@ export class NotificationDeliveryService implements INotificationDeliveryService
   ): Notifications.NotificationTriggerInput {
     switch (trigger.type) {
       case 'date':
-        return { date: trigger.date };
+        return { type: 'date' as const, date: trigger.date ?? new Date() } as Notifications.NotificationTriggerInput;
       case 'interval':
-        return { seconds: trigger.seconds };
+        return { type: 'timeInterval' as const, seconds: trigger.seconds ?? 0, repeats: false } as Notifications.NotificationTriggerInput;
       case 'location':
         // Location triggers are not supported in Expo Notifications
         console.warn(

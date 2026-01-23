@@ -79,8 +79,9 @@ export async function persistQueryCache(
         fetchStatus: query.state.fetchStatus,
       },
       options: {
-        staleTime: query.options.staleTime,
-        gcTime: query.options.gcTime || query.options.cacheTime, // gcTime is new name, cacheTime is legacy
+        staleTime: (query.options as { staleTime?: number }).staleTime,
+        gcTime: (query.options as { gcTime?: number; cacheTime?: number }).gcTime || 
+                (query.options as { gcTime?: number; cacheTime?: number }).cacheTime, // gcTime is new name, cacheTime is legacy
       },
     }));
 

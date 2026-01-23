@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -44,7 +45,7 @@ async function handleGetHomeScreenData(req: AuthenticatedRequest) {
   );
 
   // The RPC function returns the data in the exact JSON format we need.
-  return data;
+  return (data || {}) as Record<string, unknown>;
 }
 
 // Wrap the business logic with our secure, generic handler

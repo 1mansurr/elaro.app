@@ -174,7 +174,8 @@ class AuthSyncService {
       }
 
       // Check expiration (if token expired, clear cache)
-      if (state.expiresAt && Date.now() / 1000 > state.expiresAt) {
+      const expiresAt = state.session?.expires_at;
+      if (expiresAt && Date.now() / 1000 > expiresAt) {
         console.log('⏰ AuthSync: Cached token expired, clearing');
         await this.clearAuthState();
         return null;

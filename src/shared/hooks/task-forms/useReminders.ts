@@ -10,7 +10,7 @@ export interface UseRemindersReturn {
   maxReminders: number;
 }
 
-interface UseRemindersOptions {
+export interface UseRemindersOptions {
   maxReminders?: number;
   initialReminders?: number[];
   onRemindersChange?: (reminders: number[]) => void;

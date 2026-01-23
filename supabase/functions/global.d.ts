@@ -1,4 +1,5 @@
-/// <reference lib="deno.ns" />
+// Deno types are provided by deno.d.ts
+// This file provides additional global type augmentations if needed
 
 declare global {
   const Deno: {

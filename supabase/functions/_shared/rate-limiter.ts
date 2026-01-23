@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { logger } from './logging.ts';
 
@@ -333,7 +334,7 @@ export async function checkRateLimit(
       limit: Math.min(userLimit.limit, ipLimit.limit),
       remaining: Math.min(userLimit.remaining, ipLimit.remaining),
       reset: Math.max(userLimit.reset, ipLimit.reset),
-      degraded: userLimit.degraded || ipLimit.degraded,
+      degraded: (userLimit as { degraded?: boolean }).degraded || (ipLimit as { degraded?: boolean }).degraded || false,
     };
   } catch (error: unknown) {
     if (error instanceof RateLimitError) {

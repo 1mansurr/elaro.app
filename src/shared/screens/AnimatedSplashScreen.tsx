@@ -51,7 +51,8 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
         clearTimeout(timeoutId);
 
         // Call finish callback (idempotent via hasCalledFinishRef)
-        if (finished !== false) {
+        // finished is of type { finished: boolean }, not a boolean
+        if (finished?.finished !== false) {
           logSplash('Splash animation completed successfully');
           callFinishOnce();
         } else {

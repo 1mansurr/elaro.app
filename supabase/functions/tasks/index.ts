@@ -17,12 +17,17 @@
  * - POST /tasks/batch - Batch operations
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AppError,
   isValidUUID,
+  AuthenticatedRequest,
 } from '../_shared/function-handler.ts';
+import {
+  type SupabaseClient,
+} from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
 import {
@@ -95,16 +100,20 @@ class TaskService {
     if (error)
       throw new AppError(error.message, 500, 'ASSIGNMENT_CREATE_ERROR');
 
+    if (!assignment) {
+      throw new AppError('Failed to create assignment', 500, 'ASSIGNMENT_CREATE_ERROR');
+    }
+
     // Emit event
     const eventEmitter = new DatabaseEventEmitter(this.supabaseClient);
     await eventEmitter.emitTaskCompleted({
-      taskId: assignment.id,
+      taskId: (assignment as { id: string }).id,
       taskType: 'assignment',
       userId,
       completedAt: new Date().toISOString(),
     });
 
-    return assignment;
+    return assignment as Record<string, unknown>;
   }
 
   async updateAssignment(
@@ -156,16 +165,20 @@ class TaskService {
 
     if (error) throw new AppError(error.message, 500, 'LECTURE_CREATE_ERROR');
 
+    if (!lecture) {
+      throw new AppError('Failed to create lecture', 500, 'LECTURE_CREATE_ERROR');
+    }
+
     // Emit event
     const eventEmitter = new DatabaseEventEmitter(this.supabaseClient);
     await eventEmitter.emitTaskCompleted({
-      taskId: lecture.id,
+      taskId: (lecture as { id: string }).id,
       taskType: 'lecture',
       userId,
       completedAt: new Date().toISOString(),
     });
 
-    return lecture;
+    return lecture as Record<string, unknown>;
   }
 
   async updateLecture(
@@ -215,16 +228,20 @@ class TaskService {
     if (error)
       throw new AppError(error.message, 500, 'STUDY_SESSION_CREATE_ERROR');
 
+    if (!session) {
+      throw new AppError('Failed to create study session', 500, 'STUDY_SESSION_CREATE_ERROR');
+    }
+
     // Emit event
     const eventEmitter = new DatabaseEventEmitter(this.supabaseClient);
     await eventEmitter.emitTaskCompleted({
-      taskId: session.id,
+      taskId: (session as { id: string }).id,
       taskType: 'study_session',
       userId,
       completedAt: new Date().toISOString(),
     });
 
-    return session;
+    return session as Record<string, unknown>;
   }
 
   async updateStudySession(
@@ -261,7 +278,12 @@ class TaskService {
   }
 
   // Batch operations
-  async batchOperations(operations: Record<string, unknown>[], userId: string) {
+  async batchOperations(operations: Array<{
+    type: 'create' | 'update' | 'delete';
+    table: 'assignments' | 'lectures' | 'study_sessions';
+    data: Record<string, unknown>;
+    id?: string;
+  }>, userId: string) {
     const results = [];
 
     for (const operation of operations) {
@@ -280,21 +302,24 @@ class TaskService {
             break;
 
           case 'update':
+            if (!operation.id) {
+              throw new AppError('ID is required for update operations', 400, 'VALIDATION_ERROR');
+            }
             if (operation.table === 'assignments') {
               result = await this.updateAssignment(
-                operation.id!,
+                operation.id,
                 operation.data,
                 userId,
               );
             } else if (operation.table === 'lectures') {
               result = await this.updateLecture(
-                operation.id!,
+                operation.id,
                 operation.data,
                 userId,
               );
             } else if (operation.table === 'study_sessions') {
               result = await this.updateStudySession(
-                operation.id!,
+                operation.id,
                 operation.data,
                 userId,
               );
@@ -302,19 +327,24 @@ class TaskService {
             break;
 
           case 'delete':
+            if (!operation.id) {
+              throw new AppError('ID is required for delete operations', 400, 'VALIDATION_ERROR');
+            }
             if (operation.table === 'assignments') {
-              result = await this.deleteAssignment(operation.id!, userId);
+              result = await this.deleteAssignment(operation.id, userId);
             } else if (operation.table === 'lectures') {
-              result = await this.deleteLecture(operation.id!, userId);
+              result = await this.deleteLecture(operation.id, userId);
             } else if (operation.table === 'study_sessions') {
-              result = await this.deleteStudySession(operation.id!, userId);
+              result = await this.deleteStudySession(operation.id, userId);
             }
             break;
         }
 
         results.push({ success: true, operation, result });
-      } catch (error) {
-        results.push({ success: false, operation, error: error.message });
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        results.push({ success: false, operation, error: errorMessage });
       }
     }
 
@@ -549,7 +579,12 @@ async function handleTasksRequest({
       }
       const validatedData = validationResult.data;
       return await taskService.batchOperations(
-        validatedData.operations,
+        validatedData.operations as Array<{
+          type: 'create' | 'update' | 'delete';
+          table: 'assignments' | 'lectures' | 'study_sessions';
+          data: Record<string, unknown>;
+          id?: string;
+        }>,
         user.id,
       );
     }
@@ -558,9 +593,17 @@ async function handleTasksRequest({
   throw new AppError('Invalid route or method', 404, ERROR_CODES.NOT_FOUND);
 }
 
+// Type assertion helper to ensure return type matches expected signature
+async function handleTasksRequestTyped(
+  req: AuthenticatedRequest & { url: string },
+): Promise<Record<string, unknown> | Response> {
+  const result = await handleTasksRequest(req);
+  return result as Record<string, unknown> | Response;
+}
+
 // Serve the function
 serve(
-  createAuthenticatedHandler(handleTasksRequest, {
+  createAuthenticatedHandler(handleTasksRequestTyped, {
     rateLimitName: 'tasks',
     checkTaskLimit: true,
     requireIdempotency: true,

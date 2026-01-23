@@ -91,6 +91,32 @@ function isValidUsername(str: string): boolean {
   return /^[a-zA-Z0-9_]+$/.test(str) && str.length >= 3 && str.length <= 30;
 }
 
+/**
+ * Transform backend response to client User type
+ * Converts null values to undefined to match client-side type expectations
+ */
+function transformBackendToClient(
+  backend: BackendUserResponse,
+): Partial<User> {
+  return {
+    id: backend.id,
+    email: backend.email,
+    first_name: backend.first_name ?? undefined,
+    last_name: backend.last_name ?? undefined,
+    username: backend.username ?? undefined,
+    university: backend.university ?? undefined,
+    program: backend.program ?? undefined,
+    timezone: backend.timezone ?? undefined,
+    country: backend.country ?? undefined,
+    role: backend.role,
+    onboarding_completed: backend.onboarding_completed,
+    subscription_tier: backend.subscription_tier,
+    account_status: backend.account_status,
+    created_at: backend.created_at,
+    updated_at: backend.updated_at,
+  };
+}
+
 describe('User Profile Contract Tests', () => {
   describe('UpdateProfileRequest', () => {
     it('should transform valid client request to server format', () => {
@@ -220,7 +246,7 @@ describe('User Profile Contract Tests', () => {
       expect(parsed.success).toBe(true);
 
       if (parsed.success) {
-        const user: Partial<User> = parsed.data;
+        const user = transformBackendToClient(parsed.data);
         expect(user.id).toBe(serverResponse.id);
         expect(user.email).toBe(serverResponse.email);
         expect(user.role).toBe('user');

@@ -42,8 +42,8 @@ export function isNetworkError(error: unknown): boolean {
     code === 'timeout' ||
     code === 'econnreset' ||
     code === 'enotfound' ||
-    error.name === 'NetworkError' ||
-    error.name === 'TimeoutError'
+    (error && typeof error === 'object' && 'name' in error && 
+     (error.name === 'NetworkError' || error.name === 'TimeoutError'))
   );
 }
 
@@ -181,14 +181,18 @@ export async function networkAwareFetch(
 
   // Create abort controller for timeout
   const controller = new AbortController();
+  const timeout = (options as RequestInit & { timeout?: number }).timeout || 30000;
   const timeoutId = setTimeout(
     () => controller.abort(),
-    options.timeout || 30000,
+    timeout,
   );
+
+  // Extract timeout from options to avoid passing it to fetch
+  const { timeout: _, ...fetchOptions } = options as RequestInit & { timeout?: number };
 
   try {
     const response = await fetch(url, {
-      ...options,
+      ...fetchOptions,
       signal: controller.signal,
     });
 

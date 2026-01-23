@@ -1,4 +1,5 @@
 // FILE: supabase/functions/batch-action/index.ts
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -110,8 +111,9 @@ serve(
               if (error) throw handleDbError(error);
 
               // Track successful operations
-              const restoredIds = data?.map(item => item.id) || [];
-              restoredIds.forEach(id => {
+              const dataArray = Array.isArray(data) ? data : [];
+              const restoredIds = dataArray.map((item: { id: string }) => item.id);
+              restoredIds.forEach((id: string) => {
                 results.success.push({ id, type });
               });
 
@@ -136,11 +138,13 @@ serve(
               );
             } else if (action === 'DELETE_PERMANENTLY') {
               // Permanently delete items
-              const { error, count } = await supabaseClient
+              const deleteResult = await supabaseClient
                 .from(tableName)
                 .delete()
                 .in('id', ids)
-                .eq('user_id', user.id);
+                .eq('user_id', user.id) as unknown as { error: unknown; count: number | null };
+              
+              const { error, count } = deleteResult;
 
               if (error) throw handleDbError(error);
 

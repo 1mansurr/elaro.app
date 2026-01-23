@@ -12,7 +12,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
-import TrialBanner from '@/features/dashboard/components/TrialBanner';
+// TrialBanner component not found - import removed
 import NextTaskCard from '@/features/dashboard/components/NextTaskCard';
 import TodayOverviewCard from '@/features/dashboard/components/TodayOverviewCard';
 import { SwipeableTaskCard } from '@/features/dashboard/components/SwipeableTaskCard';

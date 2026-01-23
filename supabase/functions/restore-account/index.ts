@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -28,7 +29,17 @@ async function handleRestoreAccount(req: AuthenticatedRequest) {
 
   if (fetchError) throw handleDbError(fetchError);
 
-  if (userData.account_status !== 'deleted') {
+  if (!userData) {
+    throw new AppError(
+      'User not found',
+      404,
+      ERROR_CODES.DB_NOT_FOUND,
+    );
+  }
+
+  const userDataTyped = userData as { account_status: string; deletion_scheduled_at: string | null };
+
+  if (userDataTyped.account_status !== 'deleted') {
     throw new AppError(
       'Account is not in deleted status',
       400,
@@ -37,8 +48,8 @@ async function handleRestoreAccount(req: AuthenticatedRequest) {
   }
 
   // Check if 7 days have passed
-  if (userData.deletion_scheduled_at) {
-    const deletionDate = new Date(userData.deletion_scheduled_at);
+  if (userDataTyped.deletion_scheduled_at) {
+    const deletionDate = new Date(userDataTyped.deletion_scheduled_at);
     const now = new Date();
 
     if (now > deletionDate) {

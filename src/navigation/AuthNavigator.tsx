@@ -18,10 +18,7 @@ import {
 type ScreenConfig<
   K extends keyof RootStackParamList = keyof RootStackParamList,
 > = {
-  component: React.ComponentType<{
-    route: { params: RootStackParamList[K] };
-    navigation: unknown;
-  }>;
+  component: React.ComponentType<any>;
   options?: StackNavigationOptions;
 };
 

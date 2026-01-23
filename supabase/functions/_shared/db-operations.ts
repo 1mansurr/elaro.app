@@ -6,8 +6,8 @@
  */
 
 import { retryWithBackoff } from './retry.ts';
+import { AppError } from './function-handler.ts';
 import {
-  AppError,
   ERROR_CODES,
   ERROR_STATUS_CODES,
   ERROR_MESSAGES,
@@ -16,7 +16,7 @@ import { mapDatabaseError } from './error-codes.ts';
 import {
   createClient,
   type SupabaseClient,
-} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
+} from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 /**
  * Execute database operation with automatic retry for transient errors
@@ -41,12 +41,13 @@ export async function executeDbOperation<T>(
         const mappedError = mapDatabaseError(result.error);
 
         // Don't retry constraint violations, not found, or validation errors
+        const errorTyped = result.error as { code?: string; message?: string };
         if (
-          result.error.code === '23505' || // Unique violation
-          result.error.code === '23503' || // Foreign key violation
-          result.error.code === '23514' || // Check constraint
-          result.error.code === '23502' || // Not null violation
-          result.error.code === 'PGRST116' || // Not found
+          errorTyped.code === '23505' || // Unique violation
+          errorTyped.code === '23503' || // Foreign key violation
+          errorTyped.code === '23514' || // Check constraint
+          errorTyped.code === '23502' || // Not null violation
+          errorTyped.code === 'PGRST116' || // Not found
           mappedError.statusCode < 500 // 4xx errors shouldn't retry
         ) {
           throw new AppError(
@@ -57,7 +58,7 @@ export async function executeDbOperation<T>(
         }
 
         // Retry other database errors (connection issues, timeouts, etc.)
-        throw new Error(`Database error: ${result.error.message}`);
+        throw new Error(`Database error: ${errorTyped.message || 'Unknown error'}`);
       }
 
       if (!result.data) {
@@ -89,8 +90,11 @@ export async function dbInsert<T>(
   table: string,
   data: Record<string, unknown>,
 ): Promise<T> {
-  return await executeDbOperation(
-    () => supabaseClient.from(table).insert(data).select().single(),
+  return await executeDbOperation<T>(
+    async () => {
+      const result = await supabaseClient.from(table).insert(data).select().single();
+      return { data: result.data as T | null, error: result.error };
+    },
     { operationName: `insert_${table}` },
   );
 }
@@ -110,9 +114,11 @@ export async function dbUpdate<T>(
   id: string,
   updates: Record<string, unknown>,
 ): Promise<T> {
-  return await executeDbOperation(
-    () =>
-      supabaseClient.from(table).update(updates).eq('id', id).select().single(),
+  return await executeDbOperation<T>(
+    async () => {
+      const result = await supabaseClient.from(table).update(updates).eq('id', id).select().single();
+      return { data: result.data as T | null, error: result.error };
+    },
     { operationName: `update_${table}` },
   );
 }
@@ -132,7 +138,7 @@ export async function dbDelete(
   return await executeDbOperation(
     async () => {
       const { error } = await supabaseClient.from(table).delete().eq('id', id);
-      return { data: null, error };
+      return { data: undefined, error };
     },
     { operationName: `delete_${table}` },
   );
@@ -151,8 +157,11 @@ export async function dbGetById<T>(
   table: string,
   id: string,
 ): Promise<T> {
-  return await executeDbOperation(
-    () => supabaseClient.from(table).select('*').eq('id', id).single(),
+  return await executeDbOperation<T>(
+    async () => {
+      const result = await supabaseClient.from(table).select('*').eq('id', id).single();
+      return { data: result.data as T | null, error: result.error };
+    },
     { operationName: `get_${table}_by_id` },
   );
 }
@@ -162,22 +171,22 @@ export async function dbGetById<T>(
  *
  * @param supabaseClient - Supabase client instance
  * @param table - Table name
- * @param filters - Query builder filters (chain these before calling)
+ * @param queryBuilder - Function that builds the query
  * @returns Query result
  */
 export async function dbQuery<T>(
   supabaseClient: ReturnType<typeof createClient>,
   table: string,
   queryBuilder: (
-    query: ReturnType<typeof createClient>['from'],
-  ) => ReturnType<typeof createClient>['from'],
+    query: ReturnType<ReturnType<typeof createClient>['from']>,
+  ) => ReturnType<ReturnType<typeof createClient>['from']>,
 ): Promise<T[]> {
-  return await executeDbOperation(
+  return await executeDbOperation<T[]>(
     async () => {
       const query = supabaseClient.from(table).select('*');
       const builtQuery = queryBuilder(query);
       const result = await builtQuery;
-      return result;
+      return { data: result.data as T[] | null, error: result.error };
     },
     { operationName: `query_${table}` },
   );

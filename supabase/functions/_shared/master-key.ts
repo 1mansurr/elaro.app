@@ -1,5 +1,7 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { AppError, ERROR_CODES, ERROR_STATUS_CODES } from './error-codes.ts';
+import { AppError } from './function-handler.ts';
+import { ERROR_CODES, ERROR_STATUS_CODES } from './error-codes.ts';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';

@@ -24,7 +24,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
   onLockedTaskPress,
   onScroll,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <>
@@ -32,8 +32,8 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
         style={[
           styles.weekStripContainer,
           {
-            borderBottomColor: theme.isDark ? '#374151' : COLORS.border,
-            backgroundColor: theme.isDark ? '#101922' : COLORS.background,
+            borderBottomColor: isDark ? '#374151' : COLORS.border,
+            backgroundColor: isDark ? '#101922' : COLORS.background,
           },
         ]}>
         <WeekStrip selectedDate={selectedDate} onDateSelect={onDateSelect} />
@@ -49,7 +49,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
             <Text
               style={[
                 styles.emptyAgendaText,
-                { color: theme.isDark ? '#9CA3AF' : COLORS.textSecondary },
+                { color: isDark ? '#9CA3AF' : COLORS.textSecondary },
               ]}>
               No tasks scheduled for this day
             </Text>
@@ -69,7 +69,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
                   <Text
                     style={[
                       styles.timeText,
-                      { color: theme.isDark ? '#FFFFFF' : COLORS.textPrimary },
+                      { color: isDark ? '#FFFFFF' : COLORS.textPrimary },
                     ]}>
                     {timeStr}
                   </Text>
@@ -78,7 +78,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
                       style={[
                         styles.endTimeText,
                         {
-                          color: theme.isDark
+                          color: isDark
                             ? '#9CA3AF'
                             : COLORS.textSecondary,
                         },

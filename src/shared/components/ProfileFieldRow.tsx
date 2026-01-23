@@ -23,14 +23,14 @@ export const ProfileFieldRow: React.FC<ProfileFieldRowProps> = ({
   onPress,
   showBorder = true,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const content = (
     <View
       style={[
         styles.container,
         showBorder && {
-          borderBottomColor: theme.isDark ? '#374151' : '#F3F4F6',
+          borderBottomColor: isDark ? '#374151' : '#F3F4F6',
         },
       ]}>
       <View style={[styles.iconContainer, { backgroundColor: iconBgColor }]}>
@@ -40,7 +40,7 @@ export const ProfileFieldRow: React.FC<ProfileFieldRowProps> = ({
         <Text
           style={[
             styles.label,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}>
           {label}
         </Text>

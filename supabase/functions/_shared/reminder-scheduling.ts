@@ -6,6 +6,7 @@
  * produce identical reminder times for the same inputs.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { addDeterministicJitter } from './deterministic-jitter.ts';
 

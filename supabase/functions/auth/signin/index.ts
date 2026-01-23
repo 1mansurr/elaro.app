@@ -1,9 +1,12 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
 import { SignInSchema } from '../../_shared/schemas/auth.ts';
-import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
+import { AppError } from '../../_shared/function-handler.ts';
+import { ERROR_CODES } from '../../_shared/error-codes.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
 import {
@@ -23,7 +26,7 @@ serve(async (req: Request) => {
   try {
     // Rate limiting (by IP for public endpoints)
     const ipAddress = extractIPAddress(req);
-    await checkRateLimit('auth-signin', ipAddress);
+    await checkRateLimit('auth-signin', ipAddress, 'signin');
 
     // Parse and validate request body (PASS 1: Crash safety)
     let body: unknown;
@@ -83,7 +86,7 @@ serve(async (req: Request) => {
       throw new AppError(
         error.message || 'Invalid email or password',
         error.status || 401,
-        ERROR_CODES.AUTH_ERROR || 'AUTH_ERROR',
+        ERROR_CODES.UNAUTHORIZED,
       );
     }
 

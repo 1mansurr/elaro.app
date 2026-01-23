@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -44,9 +45,18 @@ serve(
       }
 
       // 3. Core Business Logic
-      const encryptedTitle = await encrypt(title, encryptionKey);
-      const encryptedDescription = description
-        ? await encrypt(description, encryptionKey)
+      // Type guards
+      if (typeof title !== 'string') {
+        throw new AppError(
+          'title is required and must be a string',
+          400,
+          ERROR_CODES.INVALID_INPUT,
+        );
+      }
+
+      const encryptedTitle = await encrypt(title, encryptionKey!);
+      const encryptedDescription = description && typeof description === 'string'
+        ? await encrypt(description, encryptionKey!)
         : null;
 
       const { data: newAssignment, error: insertError } = await supabaseClient
@@ -67,14 +77,17 @@ serve(
         throw handleDbError(insertError);
       }
 
+      const newAssignmentTyped = newAssignment as { id: string };
+
       // 4. Reminder creation logic
-      if (newAssignment && reminders && reminders.length > 0) {
-        const dueDate = new Date(due_date);
-        const remindersToInsert = reminders.map((mins: number) => ({
+      const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+      if (newAssignmentTyped && remindersArray.length > 0) {
+        const dueDateTyped = typeof due_date === 'string' ? new Date(due_date) : new Date(due_date as string | number | Date);
+        const remindersToInsert = remindersArray.map((mins: number) => ({
           user_id: user.id,
-          assignment_id: newAssignment.id,
+          assignment_id: newAssignmentTyped.id,
           reminder_time: new Date(
-            dueDate.getTime() - mins * 60000,
+            dueDateTyped.getTime() - mins * 60000,
           ).toISOString(),
           reminder_type: 'assignment',
           day_number: Math.ceil(mins / (24 * 60)),
@@ -86,7 +99,7 @@ serve(
           .insert(remindersToInsert);
         if (reminderError) {
           await logger.error('Failed to create reminders for assignment', {
-            assignment_id: newAssignment.id,
+            assignment_id: newAssignmentTyped.id,
             error: reminderError.message,
           });
           // Non-critical error, so we don't throw. The assignment was still created.
@@ -94,7 +107,7 @@ serve(
       }
 
       // 5. Return the result
-      return newAssignment;
+      return newAssignmentTyped as Record<string, unknown>;
     },
     {
       rateLimitName: 'create-assignment',

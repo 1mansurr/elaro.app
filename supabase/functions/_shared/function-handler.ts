@@ -99,11 +99,16 @@ export function validatePathUUID(
 }
 
 // Define the shape of an authenticated request
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest {
   user: User;
   supabaseClient: SupabaseClient;
   body: Record<string, unknown>;
   traceContext?: TraceContext;
+  // Request properties
+  url: string;
+  method: string;
+  headers: Headers;
+  [key: string]: unknown;
 }
 
 // Centralized error handler with PII redaction and error sanitization
@@ -642,7 +647,7 @@ export function createAuthenticatedHandler(
           if (prop === 'body') return body;
           if (prop === 'traceContext') return traceContext;
           // Delegate everything else to the original request
-          const value = (target as Record<string, unknown>)[prop as string];
+          const value = (target as unknown as Record<string, unknown>)[prop as string];
           // If it's a function, bind it to the target to preserve 'this' context
           return typeof value === 'function' ? value.bind(target) : value;
         },
@@ -675,7 +680,7 @@ export function createAuthenticatedHandler(
           }
           return Reflect.getOwnPropertyDescriptor(target, prop);
         },
-      }) as AuthenticatedRequest;
+      }) as unknown as AuthenticatedRequest;
       const result = await handler(authenticatedReq);
 
       // 7. Cache response for idempotency if key was provided

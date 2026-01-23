@@ -11,7 +11,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
-import TrialBanner from '../../components/TrialBanner';
 import NextTaskCard from '../../components/NextTaskCard';
 import TodayOverviewCard from '../../components/TodayOverviewCard';
 import { SwipeableTaskCard } from '../../components/SwipeableTaskCard';
@@ -104,13 +103,6 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
-        {shouldShowBanner && trialDaysRemaining !== null && (
-          <TrialBanner
-            daysRemaining={trialDaysRemaining}
-            onPressSubscribe={onSubscribePress}
-            onDismiss={onDismissBanner}
-          />
-        )}
 
         <SwipeableTaskCard
           onSwipeComplete={onSwipeComplete}

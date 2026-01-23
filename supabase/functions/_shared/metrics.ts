@@ -1,11 +1,7 @@
 // Metrics collection using StatsD
 // Uses lazy loading to prevent boot failures if StatsD module is unavailable
 
-type StatsDConstructor = new (options: {
-  host: string;
-  port: number;
-  prefix?: string;
-}) => {
+type StatsDInstance = {
   increment: (metric: string, tags?: Record<string, string>) => void;
   timing: (
     metric: string,
@@ -15,6 +11,12 @@ type StatsDConstructor = new (options: {
   gauge: (metric: string, value: number, tags?: Record<string, string>) => void;
   close: () => void;
 };
+
+type StatsDConstructor = new (options: {
+  host: string;
+  port: number;
+  prefix?: string;
+}) => StatsDInstance;
 
 // Lazy-load StatsD module to prevent boot failures
 let StatsDModulePromise: Promise<unknown> | null = null;
@@ -27,7 +29,8 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
 
   if (!StatsDModulePromise) {
     StatsDModulePromise =
-      import('https://deno.land/x/statsd@0.2.0/mod.ts').catch(error => {
+      // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+      import('https://deno.land/x/statsd@0.2.0/mod.ts').catch((error: unknown) => {
         console.warn('StatsD module not available, metrics disabled:', error);
         return null;
       });
@@ -41,13 +44,14 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
     }
 
     // Try multiple export patterns
+    const moduleTyped = StatsDModule as { default?: StatsDConstructor; StatsD?: StatsDConstructor };
     StatsDConstructor =
-      StatsDModule.default ||
-      StatsDModule.StatsD ||
-      (typeof StatsDModule === 'function' ? StatsDModule : undefined);
+      moduleTyped.default ||
+      moduleTyped.StatsD ||
+      (typeof StatsDModule === 'function' ? (StatsDModule as unknown as StatsDConstructor) : undefined);
 
     return StatsDConstructor;
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Failed to load StatsD module:', error);
     StatsDConstructor = undefined;
     return undefined;
@@ -55,14 +59,16 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
 }
 
 // Initialize StatsD client
-let statsdClient: ReturnType<StatsDConstructor> | null = null;
+let statsdClient: StatsDInstance | null = null;
 
-export async function getStatsDClient(): Promise<ReturnType<StatsDConstructor> | null> {
+export async function getStatsDClient(): Promise<StatsDInstance | null> {
   if (statsdClient) {
     return statsdClient;
   }
 
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const metricsHost = Deno.env.get('METRICS_HOST');
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const metricsPort = Deno.env.get('METRICS_PORT');
 
   if (!metricsHost || !metricsPort) {
@@ -86,10 +92,10 @@ export async function getStatsDClient(): Promise<ReturnType<StatsDConstructor> |
       host: metricsHost,
       port: parseInt(metricsPort),
       prefix: 'elaro.',
-    });
+    }) as StatsDInstance;
     console.log(`StatsD client initialized: ${metricsHost}:${metricsPort}`);
     return statsdClient;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Failed to initialize StatsD client:', error);
     return null;
   }
@@ -97,15 +103,14 @@ export async function getStatsDClient(): Promise<ReturnType<StatsDConstructor> |
 
 // Metric collection utilities
 export class MetricsCollector {
-  private client: ReturnType<StatsDConstructor> | null = null;
-  private clientPromise: Promise<ReturnType<StatsDConstructor> | null> | null =
-    null;
+  private client: StatsDInstance | null = null;
+  private clientPromise: Promise<StatsDInstance | null> | null = null;
   private startTime: number;
   private functionName: string;
 
   constructor(functionName: string) {
     // Start loading client asynchronously
-    this.clientPromise = getStatsDClient().then(client => {
+    this.clientPromise = getStatsDClient().then((client: StatsDInstance | null) => {
       this.client = client;
       return client;
     });
@@ -113,7 +118,7 @@ export class MetricsCollector {
     this.functionName = functionName;
   }
 
-  private async ensureClient(): Promise<ReturnType<StatsDConstructor> | null> {
+  private async ensureClient(): Promise<StatsDInstance | null> {
     if (this.client) return this.client;
     if (this.clientPromise) {
       await this.clientPromise;

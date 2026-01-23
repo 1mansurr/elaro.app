@@ -21,7 +21,7 @@ export const ExpandableDetails: React.FC<ExpandableDetailsProps> = ({
   children,
   defaultOpen = false,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [isOpen, setIsOpen] = useState(defaultOpen);
   const [rotateAnim] = useState(new Animated.Value(defaultOpen ? 1 : 0));
 
@@ -56,7 +56,7 @@ export const ExpandableDetails: React.FC<ExpandableDetailsProps> = ({
           <Ionicons
             name="chevron-forward"
             size={20}
-            color={theme.isDark ? '#6B7280' : '#9CA3AF'}
+            color={isDark ? '#6B7280' : '#9CA3AF'}
           />
         </Animated.View>
       </TouchableOpacity>

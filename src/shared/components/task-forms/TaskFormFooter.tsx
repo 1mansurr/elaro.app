@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,7 +18,7 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
   isSaving,
   saveButtonText = 'Save',
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -26,8 +26,8 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
       style={[
         styles.footer,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
-          borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
+          borderTopColor: isDark ? '#374151' : '#E5E7EB',
           paddingBottom: insets.bottom + SPACING.md,
         },
       ]}>
@@ -37,10 +37,10 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
         disabled={!isValid || isSaving}
         loading={isSaving}
         variant="primary"
-        style={[
+        style={StyleSheet.flatten([
           styles.saveButton,
           (!isValid || isSaving) && styles.saveButtonDisabled,
-        ]}
+        ])}
       />
     </View>
   );

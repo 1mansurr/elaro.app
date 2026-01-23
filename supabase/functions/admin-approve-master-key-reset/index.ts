@@ -1,18 +1,22 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAdminHandler,
-  AuthenticatedRequest,
 } from '../_shared/admin-handler.ts';
+import {
+  AuthenticatedRequest,
+  AppError,
+} from '../_shared/function-handler.ts';
 import { isTopLevelAdmin } from '../_shared/master-key.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
-  AppError,
   ERROR_CODES,
   ERROR_STATUS_CODES,
 } from '../_shared/error-codes.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
@@ -57,7 +61,7 @@ async function handleApproveReset(req: AuthenticatedRequest) {
   if (resetRequest.status !== 'pending') {
     throw new AppError(
       `Reset request is already ${resetRequest.status}`,
-      ERROR_STATUS_CODES.BAD_REQUEST,
+      ERROR_STATUS_CODES.INVALID_INPUT,
       ERROR_CODES.INVALID_INPUT,
     );
   }
@@ -72,7 +76,7 @@ async function handleApproveReset(req: AuthenticatedRequest) {
 
     throw new AppError(
       'Reset request has expired',
-      ERROR_STATUS_CODES.BAD_REQUEST,
+      ERROR_STATUS_CODES.INVALID_INPUT,
       ERROR_CODES.INVALID_INPUT,
     );
   }
@@ -81,7 +85,7 @@ async function handleApproveReset(req: AuthenticatedRequest) {
   if (resetRequest.initiated_by_admin_id === user.id) {
     throw new AppError(
       'Cannot approve your own reset request',
-      ERROR_STATUS_CODES.BAD_REQUEST,
+      ERROR_STATUS_CODES.INVALID_INPUT,
       ERROR_CODES.INVALID_INPUT,
     );
   }

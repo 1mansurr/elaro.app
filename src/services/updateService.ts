@@ -34,11 +34,7 @@ class UpdateService {
 
         if (result.isNew) {
           // Log update availability
-          errorTracking.captureMessage('Update downloaded and ready', 'info', {
-            updateId: result.manifest?.id,
-            createdAt: result.manifest?.createdAt,
-            channel: Updates.channel,
-          });
+          errorTracking.captureMessage('Update downloaded and ready', 'info');
 
           // Auto-apply update (as per your preference)
           await Updates.reloadAsync();

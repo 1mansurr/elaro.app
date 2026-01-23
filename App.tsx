@@ -58,11 +58,10 @@ import {
   persistQueryCache,
 } from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
-import { Subscription } from 'expo-modules-core';
 import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
-import { logBoot, logWarn, logError } from './src/utils/logger';
+import { logBoot, logWarn, logError, logNav, logSplash } from './src/utils/logger';
 import {
   initializeSentry,
   startStartupTransaction,
@@ -398,7 +397,7 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
     }
 
     let cacheCleanup: (() => void) | null = null;
-    let appStateSubscription: Subscription | null = null;
+    let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
 
     try {
       // CRITICAL: Wrap setup in try-catch to catch any errors from React Query
@@ -891,6 +890,10 @@ const AppWithErrorBoundary: React.FC<{
 
   const { appIsReady, isAnimationFinished } = appInitializerState;
 
+  // Don't render NavigationContainer until navigation state validation is complete
+  // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
+  const shouldShowLoading = !isStateValidated;
+
   // Track when isStateValidated changes
   useEffect(() => {
     logNav('Navigation state validation status changed', {
@@ -1095,10 +1098,6 @@ const AppWithErrorBoundary: React.FC<{
     isStateValidated,
     navigationContainerMounted,
   ]);
-
-  // Don't render NavigationContainer until navigation state validation is complete
-  // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
-  const shouldShowLoading = !isStateValidated;
 
   return (
     <ErrorBoundary onReset={reset}>

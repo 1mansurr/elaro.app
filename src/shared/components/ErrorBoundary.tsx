@@ -27,8 +27,10 @@ class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     // Use centralized error tracking service
     errorTracking.captureError(error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
+      extra: {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true,
+      },
     });
   }
 

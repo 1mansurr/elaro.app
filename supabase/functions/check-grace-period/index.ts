@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createScheduledHandler } from '../_shared/function-handler.ts';
 import { sendPushNotification } from '../_shared/send-push-notification.ts';
@@ -7,6 +8,7 @@ import { circuitBreakers } from '../_shared/circuit-breaker.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 async function handleGracePeriodCheck(supabaseAdmin: SupabaseClient) {
@@ -63,7 +65,7 @@ async function handleGracePeriodCheck(supabaseAdmin: SupabaseClient) {
             .select('push_token')
             .eq('user_id', user.id);
           if (devices && devices.length > 0) {
-            const tokens = devices.map(d => d.push_token).filter(Boolean);
+            const tokens = devices.map((d: { push_token?: string }) => d.push_token).filter(Boolean);
 
             // Check if notifications are enabled (critical notifications bypass quiet hours but respect master toggle)
             const prefs = await getUserNotificationPreferences(

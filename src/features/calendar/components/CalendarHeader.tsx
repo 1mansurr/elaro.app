@@ -11,20 +11,20 @@ interface CalendarHeaderProps {
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onNotificationPress,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.header,
         {
-          backgroundColor: theme.isDark ? '#101922' : COLORS.background,
+          backgroundColor: isDark ? '#101922' : COLORS.background,
         },
       ]}>
       <Text
         style={[
           styles.headerTitle,
-          { color: theme.isDark ? '#FFFFFF' : COLORS.textPrimary },
+          { color: isDark ? '#FFFFFF' : COLORS.textPrimary },
         ]}>
         Schedule
       </Text>

@@ -18,7 +18,7 @@ export const DetailSheetFooter: React.FC<DetailSheetFooterProps> = ({
   disabled = false,
   icon,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -26,8 +26,8 @@ export const DetailSheetFooter: React.FC<DetailSheetFooterProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#18212B' : '#FFFFFF',
-          borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#18212B' : '#FFFFFF',
+          borderTopColor: isDark ? '#374151' : '#E5E7EB',
           paddingBottom: insets.bottom + SPACING.md,
         },
       ]}>
@@ -36,7 +36,7 @@ export const DetailSheetFooter: React.FC<DetailSheetFooterProps> = ({
         style={[
           styles.gradientMask,
           {
-            backgroundColor: theme.isDark ? '#18212B' : '#FFFFFF',
+            backgroundColor: isDark ? '#18212B' : '#FFFFFF',
           },
         ]}
       />
@@ -45,7 +45,7 @@ export const DetailSheetFooter: React.FC<DetailSheetFooterProps> = ({
           styles.button,
           {
             backgroundColor: disabled
-              ? theme.isDark
+              ? isDark
                 ? '#1C252E'
                 : '#D1D5DB'
               : COLORS.primary,

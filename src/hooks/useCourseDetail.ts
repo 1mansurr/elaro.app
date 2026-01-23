@@ -33,7 +33,18 @@ export const useCourseDetail = (courseId: string) => {
           throw new Error('Course not found');
         }
 
-        return response.data;
+        // Transform VersionedApiClient.Course to entities.Course
+        const apiCourse = response.data;
+        return {
+          id: apiCourse.id,
+          courseName: apiCourse.course_name,
+          courseCode: apiCourse.course_code,
+          aboutCourse: apiCourse.about_course,
+          userId: user?.id || '', // VersionedApiClient.Course doesn't have userId, use from context
+          createdAt: apiCourse.created_at,
+          updatedAt: apiCourse.updated_at,
+          deletedAt: apiCourse.deleted_at,
+        } as Course;
       } catch (error) {
         // Fallback to direct Supabase query if Edge Function fails
         const errorMessage =

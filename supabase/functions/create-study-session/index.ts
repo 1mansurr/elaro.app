@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -57,9 +58,18 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
       ERROR_CODES.CONFIG_ERROR,
     );
 
+  // Type guards for encryption
+  if (typeof topic !== 'string') {
+    throw new AppError(
+      'topic is required and must be a string',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
+
   const [encryptedTopic, encryptedNotes] = await Promise.all([
     encrypt(topic, encryptionKey),
-    notes ? encrypt(notes, encryptionKey) : null,
+    notes && typeof notes === 'string' ? encrypt(notes, encryptionKey) : null,
   ]);
 
   const { data: newSession, error: insertError } = await supabaseClient
@@ -76,9 +86,12 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     .single();
 
   if (insertError) throw handleDbError(insertError);
+  
+  const newSessionTyped = newSession as { id: string; topic: string; session_date: string };
+  
   await logger.info(
     'Successfully created study session',
-    { user_id: user.id, session_id: newSession.id },
+    { user_id: user.id, session_id: newSessionTyped.id },
     traceContext,
   );
 
@@ -86,54 +99,63 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
   if (has_spaced_repetition) {
     await logger.info(
       'Scheduling spaced repetition reminders',
-      { user_id: user.id, session_id: newSession.id },
+      { user_id: user.id, session_id: newSessionTyped.id },
       traceContext,
     );
-    const { error: reminderError } = await supabaseClient.functions.invoke(
-      'schedule-reminders',
-      {
-        body: {
-          session_id: newSession.id,
-          session_date: newSession.session_date,
+    
+    // Call the schedule-reminders function via HTTP instead of functions.invoke
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    
+    if (supabaseUrl && supabaseAnonKey) {
+      const scheduleRemindersUrl = `${supabaseUrl}/functions/v1/schedule-reminders`;
+      const scheduleResponse = await fetch(scheduleRemindersUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify({
+          session_id: newSessionTyped.id,
+          session_date: newSessionTyped.session_date,
           topic: topic, // Pass the original, unencrypted topic
-        },
-      },
-    );
+        }),
+      });
 
-    if (reminderError) {
-      // Log the error but don't fail the whole request, as the session was still created
-      await logger.error(
-        'Failed to schedule reminders',
-        {
-          user_id: user.id,
-          session_id: newSession.id,
-          error:
-            reminderError instanceof Error
-              ? reminderError.message
-              : String(reminderError),
-        },
-        traceContext,
-      );
+      if (!scheduleResponse.ok) {
+        // Log the error but don't fail the whole request, as the session was still created
+        await logger.error(
+          'Failed to schedule reminders',
+          {
+            user_id: user.id,
+            session_id: newSessionTyped.id,
+            error: `HTTP ${scheduleResponse.status}: ${await scheduleResponse.text()}`,
+          },
+          traceContext,
+        );
+      }
     }
   }
 
   // Immediate Reminder Logic
-  if (reminders && reminders.length > 0) {
+  const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+  if (remindersArray.length > 0) {
     await logger.info(
       'Creating immediate reminders',
       {
         user_id: user.id,
-        session_id: newSession.id,
-        reminder_count: reminders.length,
+        session_id: newSessionTyped.id,
+        reminder_count: remindersArray.length,
       },
       traceContext,
     );
-    const sessionDate = new Date(session_date);
-    const remindersToInsert = reminders.map((mins: number) => {
-      const reminderTime = new Date(sessionDate.getTime() - mins * 60000);
+    
+    const sessionDateTyped = typeof session_date === 'string' ? new Date(session_date) : new Date(session_date as string | number | Date);
+    const remindersToInsert = remindersArray.map((mins: number) => {
+      const reminderTime = new Date(sessionDateTyped.getTime() - mins * 60000);
       return {
         user_id: user.id,
-        session_id: newSession.id,
+        session_id: newSessionTyped.id,
         reminder_time: reminderTime.toISOString(),
         reminder_type: 'study_session',
         day_number: Math.ceil(mins / (24 * 60)),
@@ -149,7 +171,7 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
         'Failed to create immediate reminders',
         {
           user_id: user.id,
-          session_id: newSession.id,
+          session_id: newSessionTyped.id,
           error: reminderError.message,
         },
         traceContext,
@@ -157,13 +179,13 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     } else {
       await logger.info(
         'Successfully created immediate reminders',
-        { user_id: user.id, session_id: newSession.id },
+        { user_id: user.id, session_id: newSessionTyped.id },
         traceContext,
       );
     }
   }
 
-  return newSession;
+  return newSessionTyped as Record<string, unknown>;
 }
 
 // Wrap the business logic with our secure, generic handler

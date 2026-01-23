@@ -32,7 +32,7 @@ export const StudySessionDetailSheet: React.FC<
   onClose,
   onDelete,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const sessionDate = studySession.sessionDate
@@ -47,7 +47,7 @@ export const StudySessionDetailSheet: React.FC<
     <View
       style={[
         styles.container,
-        { backgroundColor: theme.isDark ? '#18212B' : '#FFFFFF' },
+        { backgroundColor: isDark ? '#18212B' : '#FFFFFF' },
       ]}>
       {/* Header */}
       <DetailSheetHeader
@@ -73,14 +73,14 @@ export const StudySessionDetailSheet: React.FC<
           <Text
             style={[
               styles.courseTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             {studySession.course?.courseName || 'Unknown Course'}
           </Text>
           <Text
             style={[
               styles.topicTitle,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             {studySession.topic || 'Untitled Session'}
           </Text>
@@ -92,15 +92,15 @@ export const StudySessionDetailSheet: React.FC<
             style={[
               styles.timingCard,
               {
-                backgroundColor: theme.isDark ? '#151C24' : '#F9FAFB',
-                borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+                backgroundColor: isDark ? '#151C24' : '#F9FAFB',
+                borderColor: isDark ? '#374151' : '#E5E7EB',
               },
             ]}>
             <View
               style={[
                 styles.timingIconContainer,
                 {
-                  backgroundColor: theme.isDark
+                  backgroundColor: isDark
                     ? COLORS.primary + '33'
                     : COLORS.primary + '1A',
                 },
@@ -115,14 +115,14 @@ export const StudySessionDetailSheet: React.FC<
               <Text
                 style={[
                   styles.timingLabel,
-                  { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                  { color: isDark ? '#9CA3AF' : '#6B7280' },
                 ]}>
                 SCHEDULED FOR
               </Text>
               <Text
                 style={[
                   styles.timingValue,
-                  { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                  { color: isDark ? '#FFFFFF' : '#111418' },
                 ]}>
                 {scheduledTime}
               </Text>
@@ -136,7 +136,7 @@ export const StudySessionDetailSheet: React.FC<
             <Text
               style={[
                 styles.sectionLabel,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               NOTES
             </Text>
@@ -144,14 +144,14 @@ export const StudySessionDetailSheet: React.FC<
               style={[
                 styles.notesCard,
                 {
-                  backgroundColor: theme.isDark ? '#151C24' : '#F9FAFB',
-                  borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+                  backgroundColor: isDark ? '#151C24' : '#F9FAFB',
+                  borderColor: isDark ? '#374151' : '#E5E7EB',
                 },
               ]}>
               <Text
                 style={[
                   styles.notesText,
-                  { color: theme.isDark ? '#D1D5DB' : '#374151' },
+                  { color: isDark ? '#D1D5DB' : '#374151' },
                 ]}>
                 {studySession.description}
               </Text>
@@ -164,7 +164,7 @@ export const StudySessionDetailSheet: React.FC<
           <Text
             style={[
               styles.sectionLabel,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             SETTINGS
           </Text>
@@ -174,26 +174,26 @@ export const StudySessionDetailSheet: React.FC<
               style={[
                 styles.settingItem,
                 {
-                  backgroundColor: theme.isDark ? 'transparent' : 'transparent',
+                  backgroundColor: isDark ? 'transparent' : 'transparent',
                 },
               ]}>
               <View
                 style={[
                   styles.settingIconContainer,
                   {
-                    backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
+                    backgroundColor: isDark ? '#374151' : '#F3F4F6',
                   },
                 ]}>
                 <Ionicons
                   name="bulb-outline"
                   size={20}
-                  color={theme.isDark ? '#D1D5DB' : '#6B7280'}
+                  color={isDark ? '#D1D5DB' : '#6B7280'}
                 />
               </View>
               <Text
                 style={[
                   styles.settingLabel,
-                  { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                  { color: isDark ? '#FFFFFF' : '#111418' },
                 ]}>
                 Spaced Repetition
               </Text>
@@ -204,7 +204,7 @@ export const StudySessionDetailSheet: React.FC<
                     {
                       color: studySession.hasSpacedRepetition
                         ? COLORS.primary
-                        : theme.isDark
+                        : isDark
                           ? '#9CA3AF'
                           : '#6B7280',
                     },
@@ -217,7 +217,7 @@ export const StudySessionDetailSheet: React.FC<
                     {
                       backgroundColor: studySession.hasSpacedRepetition
                         ? COLORS.primary
-                        : theme.isDark
+                        : isDark
                           ? '#374151'
                           : '#E5E7EB',
                     },
@@ -246,7 +246,7 @@ export const StudySessionDetailSheet: React.FC<
                 style={[
                   styles.settingItem,
                   {
-                    backgroundColor: theme.isDark
+                    backgroundColor: isDark
                       ? 'transparent'
                       : 'transparent',
                   },
@@ -255,19 +255,19 @@ export const StudySessionDetailSheet: React.FC<
                   style={[
                     styles.settingIconContainer,
                     {
-                      backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
+                      backgroundColor: isDark ? '#374151' : '#F3F4F6',
                     },
                   ]}>
                   <Ionicons
                     name="notifications-outline"
                     size={20}
-                    color={theme.isDark ? '#D1D5DB' : '#6B7280'}
+                    color={isDark ? '#D1D5DB' : '#6B7280'}
                   />
                 </View>
                 <Text
                   style={[
                     styles.settingLabel,
-                    { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                    { color: isDark ? '#FFFFFF' : '#111418' },
                   ]}>
                   Reminders
                 </Text>
@@ -275,14 +275,14 @@ export const StudySessionDetailSheet: React.FC<
                   <Text
                     style={[
                       styles.settingValue,
-                      { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                      { color: isDark ? '#9CA3AF' : '#6B7280' },
                     ]}>
                     {reminders[0]?.label || 'None'}
                   </Text>
                   <Ionicons
                     name="chevron-forward"
                     size={18}
-                    color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+                    color={isDark ? '#9CA3AF' : '#6B7280'}
                   />
                 </View>
               </View>
@@ -293,26 +293,26 @@ export const StudySessionDetailSheet: React.FC<
               style={[
                 styles.settingItem,
                 {
-                  backgroundColor: theme.isDark ? 'transparent' : 'transparent',
+                  backgroundColor: isDark ? 'transparent' : 'transparent',
                 },
               ]}>
               <View
                 style={[
                   styles.settingIconContainer,
                   {
-                    backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
+                    backgroundColor: isDark ? '#374151' : '#F3F4F6',
                   },
                 ]}>
                 <Ionicons
                   name="bookmark-outline"
                   size={20}
-                  color={theme.isDark ? '#D1D5DB' : '#6B7280'}
+                  color={isDark ? '#D1D5DB' : '#6B7280'}
                 />
               </View>
               <Text
                 style={[
                   styles.settingLabel,
-                  { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                  { color: isDark ? '#FFFFFF' : '#111418' },
                 ]}>
                 Saved as Template
               </Text>
@@ -320,7 +320,7 @@ export const StudySessionDetailSheet: React.FC<
                 <Text
                   style={[
                     styles.settingValue,
-                    { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
                   ]}>
                   {isTemplate ? 'Yes' : 'No'}
                 </Text>

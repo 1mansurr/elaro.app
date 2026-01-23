@@ -43,7 +43,7 @@ export const useDeletedItemsQuery = () => {
           );
         }
 
-        return (response.data || []) as DeletedItem[];
+        return (response.data || []) as unknown as DeletedItem[];
       } catch (error) {
         // If edge function doesn't exist or fails, return empty array
         const errorMessage =

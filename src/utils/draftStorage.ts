@@ -15,6 +15,7 @@ export interface DraftData {
   // Lecture-specific
   endTime?: Date | string;
   recurrence?: 'none' | 'weekly' | 'bi-weekly';
+  venue?: string;
   // Study Session-specific
   hasSpacedRepetition?: boolean;
   // Common

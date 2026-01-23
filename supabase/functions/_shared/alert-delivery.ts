@@ -4,6 +4,7 @@
  * Delivers quota and budget alerts via multiple channels
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { logger } from './logging.ts';
 
@@ -23,10 +24,13 @@ interface Alert {
 async function sendEmailAlert(alert: Alert): Promise<boolean> {
   try {
     // Get admin email from environment or database
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@myelaro.com';
 
     // Use Supabase Edge Function to send email
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
     if (supabaseUrl && supabaseAnonKey) {
@@ -90,6 +94,7 @@ async function sendEmailAlert(alert: Alert): Promise<boolean> {
  */
 async function sendSlackAlert(alert: Alert): Promise<boolean> {
   try {
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const webhookUrl = Deno.env.get('SLACK_WEBHOOK_URL');
     if (!webhookUrl) {
       return false; // Slack not configured

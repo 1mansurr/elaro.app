@@ -35,7 +35,17 @@ export const coursesApi = {
         );
       }
 
-      let courses = (response.data || []) as Course[];
+      // Map VersionedApiClient.Course to entities.Course
+      let courses: Course[] = (response.data || []).map((apiCourse) => ({
+        id: apiCourse.id,
+        courseName: apiCourse.course_name,
+        courseCode: apiCourse.course_code,
+        aboutCourse: apiCourse.about_course,
+        userId: '', // VersionedApiClient.Course doesn't have user_id, will be set by the hook
+        createdAt: apiCourse.created_at,
+        updatedAt: apiCourse.updated_at,
+        deletedAt: apiCourse.deleted_at,
+      }));
 
       // Apply client-side filtering and sorting (can be moved to API later)
       const {

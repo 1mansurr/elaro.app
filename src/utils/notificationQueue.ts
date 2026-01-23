@@ -56,9 +56,9 @@ export async function queueNotification(
   try {
     // Generate deduplication key
     const itemId =
-      notification.data?.itemId ||
-      notification.data?.assignment_id ||
-      notification.data?.lecture_id;
+      (notification.data?.itemId as string | undefined) ||
+      (notification.data?.assignment_id as string | undefined) ||
+      (notification.data?.lecture_id as string | undefined);
     const dedupKey = generateDeduplicationKey(
       notification.user_id,
       notification.notification_type,
@@ -67,15 +67,17 @@ export async function queueNotification(
     );
 
     // Use notification-system API to add to queue
+    const scheduledFor = notification.scheduled_for instanceof Date 
+      ? notification.scheduled_for.toISOString() 
+      : notification.scheduled_for || new Date().toISOString();
+    
     const response = await versionedApiClient.addToNotificationQueue({
       notification_type: notification.notification_type,
       title: notification.title,
       body: notification.body,
       data: notification.data || {},
       priority: notification.priority || 5,
-      scheduled_for: (notification.scheduled_for || new Date()).toISOString(),
-      max_retries: notification.max_retries || 3,
-      deduplication_key: dedupKey,
+      scheduled_for: scheduledFor,
     });
 
     if (response.error) {
@@ -123,16 +125,22 @@ export async function queueNotificationBatch(
   try {
     // Generate deduplication keys and filter duplicates
     const notificationsToInsert: Array<
-      Omit<QueuedNotification, 'user_id'> & { user_id: string }
+      Omit<QueuedNotification, 'user_id' | 'scheduled_for'> & { 
+        user_id: string;
+        scheduled_for: string;
+        status?: string;
+        max_retries?: number;
+        deduplication_key?: string;
+      }
     > = [];
     const dedupKeys = new Set<string>();
     let duplicates = 0;
 
     for (const notif of notifications) {
       const itemId =
-        notif.data?.itemId ||
-        notif.data?.assignment_id ||
-        notif.data?.lecture_id;
+        (notif.data?.itemId as string | undefined) ||
+        (notif.data?.assignment_id as string | undefined) ||
+        (notif.data?.lecture_id as string | undefined);
       const dedupKey = generateDeduplicationKey(
         notif.user_id,
         notif.notification_type,
@@ -147,6 +155,10 @@ export async function queueNotificationBatch(
       }
 
       dedupKeys.add(dedupKey);
+      const scheduledFor = notif.scheduled_for instanceof Date 
+        ? notif.scheduled_for.toISOString() 
+        : notif.scheduled_for || new Date().toISOString();
+      
       notificationsToInsert.push({
         user_id: notif.user_id,
         notification_type: notif.notification_type,
@@ -154,7 +166,7 @@ export async function queueNotificationBatch(
         body: notif.body,
         data: notif.data || {},
         priority: notif.priority || 5,
-        scheduled_for: (notif.scheduled_for || new Date()).toISOString(),
+        scheduled_for: scheduledFor,
         max_retries: notif.max_retries || 3,
         status: 'pending',
         deduplication_key: dedupKey,
@@ -170,15 +182,16 @@ export async function queueNotificationBatch(
     let failedCount = 0;
 
     for (const notif of notificationsToInsert) {
+      // scheduled_for is already guaranteed to be a string in notificationsToInsert
+      const scheduledFor = notif.scheduled_for || new Date().toISOString();
+      
       const response = await versionedApiClient.addToNotificationQueue({
         notification_type: notif.notification_type,
         title: notif.title,
         body: notif.body,
         data: notif.data || {},
         priority: notif.priority || 5,
-        scheduled_for: notif.scheduled_for || new Date().toISOString(),
-        max_retries: notif.max_retries || 3,
-        deduplication_key: notif.deduplication_key,
+        scheduled_for: scheduledFor,
       });
 
       if (response.error) {

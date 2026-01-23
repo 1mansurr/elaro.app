@@ -30,15 +30,15 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
   iconColor = COLORS.primary,
   iconBgColor = '#E5E7EB',
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       <View style={styles.content}>
@@ -46,13 +46,13 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           style={[
             styles.iconContainer,
             {
-              backgroundColor: theme.isDark ? '#374151' : iconBgColor,
+              backgroundColor: isDark ? '#374151' : iconBgColor,
             },
           ]}>
           <Ionicons
             name={icon}
             size={20}
-            color={theme.isDark ? '#9CA3AF' : iconColor}
+            color={isDark ? '#9CA3AF' : iconColor}
           />
         </View>
         <View style={styles.textContainer}>
@@ -60,7 +60,7 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
           <Text
             style={[
               styles.description,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             {description}
           </Text>
@@ -70,11 +70,11 @@ export const TemplateCard: React.FC<TemplateCardProps> = ({
         value={value}
         onValueChange={onValueChange}
         trackColor={{
-          false: theme.isDark ? '#374151' : '#E5E7EB',
+          false: isDark ? '#374151' : '#E5E7EB',
           true: COLORS.primary,
         }}
         thumbColor="#FFFFFF"
-        ios_backgroundColor={theme.isDark ? '#374151' : '#E5E7EB'}
+        ios_backgroundColor={isDark ? '#374151' : '#E5E7EB'}
       />
     </View>
   );

@@ -34,7 +34,7 @@ const ProfileScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
   const { user, refreshUser, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [isEditMode, setIsEditMode] = useState(false);
@@ -187,7 +187,7 @@ const ProfileScreen = () => {
       <View style={styles.header}>
         <BlurView
           intensity={80}
-          tint={theme.isDark ? 'dark' : 'light'}
+          tint={isDark ? 'dark' : 'light'}
           style={StyleSheet.absoluteFill}
         />
         <View style={styles.headerContent}>
@@ -200,7 +200,7 @@ const ProfileScreen = () => {
                 <Ionicons
                   name="arrow-back"
                   size={24}
-                  color={theme.isDark ? '#FFFFFF' : '#111318'}
+                  color={isDark ? '#FFFFFF' : '#111318'}
                 />
               </TouchableOpacity>
               <Text style={[styles.headerTitle, { color: theme.text }]}>
@@ -218,13 +218,13 @@ const ProfileScreen = () => {
                 <Ionicons
                   name="arrow-back"
                   size={24}
-                  color={theme.isDark ? '#FFFFFF' : '#111318'}
+                  color={isDark ? '#FFFFFF' : '#111318'}
                 />
               </TouchableOpacity>
               <Text
                 style={[
                   styles.headerTitle,
-                  { color: theme.isDark ? '#FFFFFF' : '#111318' },
+                  { color: isDark ? '#FFFFFF' : '#111318' },
                 ]}>
                 Profile
               </Text>
@@ -317,7 +317,7 @@ const ProfileScreen = () => {
             <View
               style={[
                 styles.divider,
-                { backgroundColor: theme.isDark ? '#374151' : '#DBDFE6' },
+                { backgroundColor: isDark ? '#374151' : '#DBDFE6' },
               ]}
             />
 
@@ -358,7 +358,7 @@ const ProfileScreen = () => {
                 <Text
                   style={[
                     styles.memberSince,
-                    { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
                   ]}>
                   Member since {memberSinceYear}
                 </Text>
@@ -369,8 +369,8 @@ const ProfileScreen = () => {
               style={[
                 styles.detailsCard,
                 {
-                  backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                  borderColor: theme.isDark
+                  backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                  borderColor: isDark
                     ? 'rgba(255, 255, 255, 0.1)'
                     : 'rgba(0, 0, 0, 0.05)',
                 },
@@ -380,9 +380,9 @@ const ProfileScreen = () => {
                   label="First Name"
                   value={firstName}
                   icon="person-outline"
-                  iconColor={theme.isDark ? '#60A5FA' : '#2563EB'}
+                  iconColor={isDark ? '#60A5FA' : '#2563EB'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
+                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
                   }
                   showBorder
                 />
@@ -392,9 +392,9 @@ const ProfileScreen = () => {
                   label="Last Name"
                   value={lastName}
                   icon="person-outline"
-                  iconColor={theme.isDark ? '#60A5FA' : '#2563EB'}
+                  iconColor={isDark ? '#60A5FA' : '#2563EB'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
+                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
                   }
                   showBorder
                 />
@@ -404,9 +404,9 @@ const ProfileScreen = () => {
                   label="Username"
                   value={`@${username}`}
                   icon="at-outline"
-                  iconColor={theme.isDark ? '#A78BFA' : '#9333EA'}
+                  iconColor={isDark ? '#A78BFA' : '#9333EA'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
+                    isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
                   }
                   showBorder
                 />
@@ -416,9 +416,9 @@ const ProfileScreen = () => {
                   label="Country"
                   value={country}
                   icon="globe-outline"
-                  iconColor={theme.isDark ? '#60A5FA' : '#2563EB'}
+                  iconColor={isDark ? '#60A5FA' : '#2563EB'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
+                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
                   }
                   showBorder
                 />
@@ -428,9 +428,9 @@ const ProfileScreen = () => {
                   label="University"
                   value={university}
                   icon="school-outline"
-                  iconColor={theme.isDark ? '#A78BFA' : '#9333EA'}
+                  iconColor={isDark ? '#A78BFA' : '#9333EA'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
+                    isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
                   }
                   showBorder
                 />
@@ -440,9 +440,9 @@ const ProfileScreen = () => {
                   label="Program of Study"
                   value={program}
                   icon="book-outline"
-                  iconColor={theme.isDark ? '#34D399' : '#059669'}
+                  iconColor={isDark ? '#34D399' : '#059669'}
                   iconBgColor={
-                    theme.isDark ? 'rgba(5, 150, 105, 0.2)' : '#D1FAE5'
+                    isDark ? 'rgba(5, 150, 105, 0.2)' : '#D1FAE5'
                   }
                   showBorder={false}
                 />
@@ -453,7 +453,7 @@ const ProfileScreen = () => {
               <Text
                 style={[
                   styles.footerText,
-                  { color: theme.isDark ? '#6B7280' : '#9CA3AF' },
+                  { color: isDark ? '#6B7280' : '#9CA3AF' },
                 ]}>
                 Review your academic details carefully. To update your
                 university or program, please contact student support or use the

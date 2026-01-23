@@ -558,7 +558,23 @@ export const authService = {
 
   // Method to update password (convenience method)
   updatePassword: async (password: string) => {
-    return this.updateProfile({ password });
+    const response = await versionedApiClient.updateProfile({ password });
+
+    if (response.error) {
+      throw new AppError(
+        response.message || response.error || 'Failed to update password',
+        response.code === 'VALIDATION_ERROR' ? 400 : 500,
+        response.code || 'AUTH_ERROR',
+      );
+    }
+
+    // Refresh local user data
+    if (response.data?.user) {
+      // The session will be updated automatically by Supabase client
+      await supabase.auth.refreshSession();
+    }
+
+    return response.data?.user || null;
   },
 
   // Method to verify email

@@ -261,7 +261,7 @@ class NavigationSyncService {
               'routes' in route.state &&
               Array.isArray(route.state.routes)
             ) {
-              return route.state.routes.every(nestedRoute =>
+              return (route.state as PartialState<NavigationState>).routes.every(nestedRoute =>
                 validateRoute(nestedRoute, route.name),
               );
             }
@@ -286,7 +286,7 @@ class NavigationSyncService {
           'routes' in route.state &&
           Array.isArray(route.state.routes)
         ) {
-          return route.state.routes.every(nestedRoute =>
+          return (route.state as PartialState<NavigationState>).routes.every(nestedRoute =>
             validateRoute(nestedRoute, route.name),
           );
         }
@@ -294,7 +294,9 @@ class NavigationSyncService {
         return true;
       };
 
-      const allRoutesValid = state.routes.every(route => validateRoute(route));
+      const allRoutesValid = state.routes.every(route => 
+        validateRoute(route as PartialState<NavigationState>['routes'][number])
+      );
       if (!allRoutesValid) {
         console.warn(
           '⚠️ NavigationSync: Invalid routes detected. Clearing state.',
@@ -557,14 +559,26 @@ class NavigationSyncService {
         savedStateString === 'undefined' ||
         savedStateString === 'null'
       ) {
-        return null;
+        return {
+          hasState: false,
+          version: null,
+          savedAt: null,
+          routeCount: 0,
+          currentRoute: null,
+        };
       }
 
       let snapshot: NavigationSnapshot;
       try {
         snapshot = JSON.parse(savedStateString);
       } catch {
-        return null;
+        return {
+          hasState: false,
+          version: null,
+          savedAt: null,
+          routeCount: 0,
+          currentRoute: null,
+        };
       }
       const routeCount = snapshot.state?.routes?.length || 0;
       const currentRoute = snapshot.state

@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -6,6 +7,7 @@ import {
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // ============================================================================
@@ -206,8 +208,18 @@ serve(
     async ({ body, supabaseClient, user }) => {
       const { operations } = body;
 
+      // Type guard for operations
+      if (!Array.isArray(operations)) {
+        throw new AppError(
+          'operations must be an array',
+          400,
+          ERROR_CODES.INVALID_INPUT,
+        );
+      }
+
       // Validate each operation
-      for (const operation of operations) {
+      const operationsTyped = operations as z.infer<typeof BatchOperationSchema>['operations'];
+      for (const operation of operationsTyped) {
         validateOperationData(operation);
 
         // Ensure user can only operate on their own data
@@ -223,12 +235,12 @@ serve(
 
       // Process operations in batch
       const results = await processBatchOperations(
-        operations,
+        operationsTyped,
         supabaseClient,
         user.id,
       );
 
-      return results;
+      return { results } as Record<string, unknown>;
     },
     {
       rateLimitName: 'batch-operations',

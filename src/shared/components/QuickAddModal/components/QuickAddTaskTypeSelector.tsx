@@ -14,7 +14,7 @@ interface QuickAddTaskTypeSelectorProps {
 export const QuickAddTaskTypeSelector: React.FC<
   QuickAddTaskTypeSelectorProps
 > = ({ taskType, onTaskTypeChange }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const taskTypes: Array<{ type: TaskType; icon: string; label: string }> = [
     { type: 'assignment', icon: 'document-text-outline', label: 'Assignment' },
@@ -35,12 +35,12 @@ export const QuickAddTaskTypeSelector: React.FC<
               {
                 backgroundColor: isActive
                   ? COLORS.primary + '1A'
-                  : theme.isDark
+                  : isDark
                     ? '#1C252E'
                     : '#F9FAFB',
                 borderColor: isActive
                   ? COLORS.primary
-                  : theme.isDark
+                  : isDark
                     ? '#3B4754'
                     : '#E5E7EB',
               },
@@ -50,7 +50,7 @@ export const QuickAddTaskTypeSelector: React.FC<
               name={icon as any}
               size={20}
               color={
-                isActive ? COLORS.primary : theme.isDark ? '#9CA3AF' : '#6B7280'
+                isActive ? COLORS.primary : isDark ? '#9CA3AF' : '#6B7280'
               }
             />
             <Text
@@ -60,7 +60,7 @@ export const QuickAddTaskTypeSelector: React.FC<
                 {
                   color: isActive
                     ? COLORS.primary
-                    : theme.isDark
+                    : isDark
                       ? '#FFFFFF'
                       : '#111418',
                 },

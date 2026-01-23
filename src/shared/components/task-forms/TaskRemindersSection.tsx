@@ -21,7 +21,7 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
   label = 'Reminders',
   onAddReminder,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const handleRemoveReminder = (minutes: number) => {
     onRemindersChange(reminders.filter(r => r !== minutes));
@@ -33,14 +33,14 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
         <Text
           style={[
             styles.label,
-            { color: theme.isDark ? '#FFFFFF' : '#374151' },
+            { color: isDark ? '#FFFFFF' : '#374151' },
           ]}>
           {label}
         </Text>
         <Text
           style={[
             styles.maxReminders,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}>
           Max {maxReminders}
         </Text>
@@ -60,8 +60,8 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
         style={[
           styles.addReminderButton,
           {
-            borderColor: theme.isDark ? '#3B4754' : '#D1D5DB',
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#3B4754' : '#D1D5DB',
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
           },
         ]}
         onPress={onAddReminder}
@@ -71,10 +71,10 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
           size={20}
           color={
             reminders.length >= maxReminders
-              ? theme.isDark
+              ? isDark
                 ? '#6B7280'
                 : '#9CA3AF'
-              : theme.isDark
+              : isDark
                 ? '#FFFFFF'
                 : '#111418'
           }
@@ -85,10 +85,10 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
             {
               color:
                 reminders.length >= maxReminders
-                  ? theme.isDark
+                  ? isDark
                     ? '#6B7280'
                     : '#9CA3AF'
-                  : theme.isDark
+                  : isDark
                     ? '#FFFFFF'
                     : '#111418',
             },

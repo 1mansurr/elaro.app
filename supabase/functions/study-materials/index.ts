@@ -14,6 +14,7 @@
  * - POST /study-materials/share - Share study materials
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
@@ -30,6 +31,7 @@ import {
   ApplyTemplateSchema,
   ShareMaterialsSchema,
 } from '../_shared/schemas/studyMaterials.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import {
   type SupabaseClient,
   type User,
@@ -203,6 +205,7 @@ class StudyMaterialsService {
 
     // Apply template data with customizations
     const templateData = { ...template.template_data, ...customizations };
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
       throw new AppError(
@@ -362,7 +365,10 @@ class StudyMaterialsService {
     }
 
     // Create sharing records
-    const sharingRecords = share_with_users.map((userId: string) => ({
+    const shareWithUsersTyped = Array.isArray(share_with_users)
+      ? share_with_users.filter((u): u is string => typeof u === 'string')
+      : [];
+    const sharingRecords = shareWithUsersTyped.map((userId: string) => ({
       material_id,
       shared_by: this.user.id,
       shared_with: userId,
@@ -402,8 +408,14 @@ async function handleListTemplates(req: AuthenticatedRequest) {
 
 async function handleUpdateTemplate(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const templateId = body?.template_id || extractIdFromUrl(req.url);
-  if (!templateId) {
+  const bodyTemplateId =
+    body && typeof body === 'object' && 'template_id' in body
+      ? typeof body.template_id === 'string'
+        ? body.template_id
+        : null
+      : null;
+  const templateId = bodyTemplateId || extractIdFromUrl(req.url);
+  if (!templateId || typeof templateId !== 'string') {
     throw new AppError(
       'Template ID is required',
       400,
@@ -411,13 +423,19 @@ async function handleUpdateTemplate(req: AuthenticatedRequest) {
     );
   }
   const service = new StudyMaterialsService(supabaseClient, user);
-  return await service.updateTemplate(templateId, body);
+  return await service.updateTemplate(templateId as string, body);
 }
 
 async function handleDeleteTemplate(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const templateId = body?.template_id || extractIdFromUrl(req.url);
-  if (!templateId) {
+  const bodyTemplateId =
+    body && typeof body === 'object' && 'template_id' in body
+      ? typeof body.template_id === 'string'
+        ? body.template_id
+        : null
+      : null;
+  const templateId = bodyTemplateId || extractIdFromUrl(req.url);
+  if (!templateId || typeof templateId !== 'string') {
     throw new AppError(
       'Template ID is required',
       400,
@@ -425,7 +443,7 @@ async function handleDeleteTemplate(req: AuthenticatedRequest) {
     );
   }
   const service = new StudyMaterialsService(supabaseClient, user);
-  return await service.deleteTemplate(templateId);
+  return await service.deleteTemplate(templateId as string);
 }
 
 async function handleApplyTemplate(req: AuthenticatedRequest) {
@@ -514,7 +532,7 @@ function getHandler(
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request): Promise<Response> => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

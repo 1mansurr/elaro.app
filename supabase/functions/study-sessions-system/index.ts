@@ -14,12 +14,13 @@
  * - GET /study-sessions-system/get/:id - Get specific study session
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
   CreateStudySessionSchema,
@@ -35,6 +36,7 @@ import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Study Session service class
@@ -62,6 +64,17 @@ class StudySessionService {
       reminders,
     } = data;
 
+    // Type guards
+    if (typeof course_id !== 'string') {
+      throw new AppError('course_id must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+    if (typeof topic !== 'string') {
+      throw new AppError('topic must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+    if (typeof session_date !== 'string') {
+      throw new AppError('session_date must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+    }
+
     // SECURITY: Verify course ownership
     const { data: course, error: courseError } = await this.supabaseClient
       .from('courses')
@@ -80,7 +93,7 @@ class StudySessionService {
 
     const [encryptedTopic, encryptedNotes] = await Promise.all([
       encrypt(topic, encryptionKey),
-      notes ? encrypt(notes, encryptionKey) : null,
+      notes && typeof notes === 'string' ? encrypt(notes, encryptionKey) : null,
     ]);
 
     const { data: newSession, error: insertError } = await this.supabaseClient
@@ -101,9 +114,9 @@ class StudySessionService {
     }
 
     // Create reminders if provided
-    if (newSession && reminders && reminders.length > 0) {
+    if (newSession && reminders && Array.isArray(reminders) && reminders.length > 0) {
       const sessionDate = new Date(session_date);
-      const remindersToInsert = reminders.map((mins: number) => ({
+      const remindersToInsert = (reminders as number[]).map((mins: number) => ({
         user_id: this.user.id,
         study_session_id: newSession.id,
         reminder_time: new Date(
@@ -153,10 +166,10 @@ class StudySessionService {
 
     // Encrypt fields if they are being updated
     const encryptedUpdates = { ...updates };
-    if (updates.topic) {
+    if (updates.topic && typeof updates.topic === 'string') {
       encryptedUpdates.topic = await encrypt(updates.topic, encryptionKey);
     }
-    if (updates.notes) {
+    if (updates.notes && typeof updates.notes === 'string') {
       encryptedUpdates.notes = await encrypt(updates.notes, encryptionKey);
     }
 
@@ -385,8 +398,11 @@ async function handleListStudySessions(req: AuthenticatedRequest) {
 
 async function handleGetStudySession(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const studySessionId = body?.study_session_id || extractIdFromUrl(req.url);
-  if (!studySessionId) {
+  const bodySessionId = body && typeof body === 'object' && 'study_session_id' in body
+    ? (typeof body.study_session_id === 'string' ? body.study_session_id : null)
+    : null;
+  const studySessionId = bodySessionId || extractIdFromUrl(req.url);
+  if (!studySessionId || typeof studySessionId !== 'string') {
     throw new AppError(
       'Study session ID is required',
       400,
@@ -398,7 +414,7 @@ async function handleGetStudySession(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

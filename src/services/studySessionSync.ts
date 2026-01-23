@@ -16,6 +16,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { versionedApiClient } from '@/services/VersionedApiClient';
 import { syncManager } from '@/services/syncManager';
+import { supabase } from '@/services/supabase';
 import { SRSPerformance } from '@/types/entities';
 
 // Storage keys
@@ -246,9 +247,6 @@ class StudySessionSyncService {
           sessionId,
           {
             duration_minutes: finalData.timeSpentMinutes,
-            notes: finalData.notes || null,
-            difficulty_rating: finalData.difficultyRating || null,
-            confidence_level: finalData.confidenceLevel || null,
           },
         );
 
@@ -316,14 +314,14 @@ class StudySessionSyncService {
 
       // Guard: Only parse if stored is valid
       if (!stored.trim() || stored === 'undefined' || stored === 'null') {
-        return null;
+        return;
       }
 
       let session: ActiveSession;
       try {
         session = JSON.parse(stored);
       } catch {
-        return null;
+        return;
       }
 
       // Check if session is too old (more than 24 hours)

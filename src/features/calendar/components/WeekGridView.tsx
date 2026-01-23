@@ -49,7 +49,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
   onLockedTaskPress,
   onDateSelect,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   // Refs for scroll synchronization
   const headerScrollRef = useRef<ScrollView>(null);
   const gridScrollRef = useRef<ScrollView>(null);
@@ -290,8 +290,8 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                 style={[
                   styles.dayHeader,
                   {
-                    backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                    borderColor: theme.isDark
+                    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                    borderColor: isDark
                       ? 'rgba(255, 255, 255, 0.1)'
                       : '#E5E7EB',
                   },
@@ -311,7 +311,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                         ? '#FFFFFF'
                         : isToday
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#9CA3AF'
                             : '#6B7280',
                     },
@@ -326,7 +326,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                         ? '#FFFFFF'
                         : isToday
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#FFFFFF'
                             : '#111418',
                     },

@@ -54,13 +54,15 @@ async function handleRescheduleReminder(
     throw new AppError('Reminder not found', 404, ERROR_CODES.NOT_FOUND);
   }
 
+  const reminderTyped = reminder as { notification_id?: string };
+
   // 2. Update reminder
   const { error: updateError } = await supabaseClient
     .from('reminders')
     .update({
       reminder_time: new_scheduled_time,
       scheduled_at: new Date().toISOString(),
-      notification_id: notification_id || reminder.notification_id,
+      notification_id: notification_id || reminderTyped.notification_id,
     })
     .eq('id', reminder_id);
 

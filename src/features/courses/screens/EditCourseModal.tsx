@@ -42,7 +42,7 @@ const EditCourseModal = () => {
   const { user } = useAuth();
   const { isOnline } = useNetwork();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
 
   // Fetch course details
@@ -608,9 +608,9 @@ const EditCourseModal = () => {
               styles.deleteButton,
               {
                 backgroundColor:
-                  theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
+                  isDark ? '#991b1b20' : '#fee2e2',
                 borderColor:
-                  theme.mode === 'dark' ? '#991b1b30' : 'transparent',
+                  isDark ? '#991b1b30' : 'transparent',
               },
             ]}
             onPress={handleDelete}
@@ -618,13 +618,13 @@ const EditCourseModal = () => {
             <Ionicons
               name="trash-outline"
               size={20}
-              color={theme.mode === 'dark' ? '#f87171' : '#dc2626'}
+              color={isDark ? '#f87171' : '#dc2626'}
             />
             <Text
               style={[
                 styles.deleteButtonText,
                 {
-                  color: theme.mode === 'dark' ? '#f87171' : '#dc2626',
+                  color: isDark ? '#f87171' : '#dc2626',
                 },
               ]}>
               Delete Course

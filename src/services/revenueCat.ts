@@ -81,7 +81,7 @@ export const revenueCatService = {
 
       // Add timeout to prevent hanging in dev mode
       const timeout = __DEV__ ? 2000 : 5000;
-      const configurePromise = Purchases.configure({ apiKey });
+      const configurePromise = Purchases.configure(apiKey);
       const timeoutPromise = new Promise<boolean>((_, reject) => {
         setTimeout(
           () => reject(new Error('RevenueCat configure timeout')),
@@ -252,7 +252,7 @@ export const revenueCatService = {
       }
 
       console.log('Purchase successful:', retryResult.result);
-      return retryResult.result;
+      return (retryResult.result as CustomerInfo) ?? null;
     } catch (error: unknown) {
       if (error instanceof RateLimitError) {
         throw new Error(`Rate limit exceeded. ${error.message}`);
@@ -309,7 +309,7 @@ export const revenueCatService = {
       }
 
       console.log('Purchases restored successfully');
-      return retryResult.result;
+      return (retryResult.result as CustomerInfo) ?? null;
     } catch (error) {
       console.error('Error restoring purchases:', error);
       throw error;
@@ -358,7 +358,7 @@ export const revenueCatService = {
         throw retryResult.error;
       }
 
-      return retryResult.result;
+      return (retryResult.result as CustomerInfo) ?? null;
     } catch (error) {
       if (!__DEV__) {
         console.error('Error getting customer info:', error);
@@ -370,15 +370,19 @@ export const revenueCatService = {
   /**
    * Check if user has any active subscription
    */
-  hasActiveSubscription: (customerInfo: CustomerInfo): boolean => {
-    return Object.keys(customerInfo.entitlements.active).length > 0;
+  hasActiveSubscription: (customerInfo: CustomerInfo | null): boolean => {
+    if (!customerInfo) return false;
+    const active = customerInfo.entitlements?.active as Record<string, unknown> | undefined;
+    return active ? Object.keys(active).length > 0 : false;
   },
 
   /**
    * Get subscription tier based on active entitlements
    */
-  getSubscriptionTier: (customerInfo: CustomerInfo): string => {
-    if (customerInfo.entitlements.active['oddity']) {
+  getSubscriptionTier: (customerInfo: CustomerInfo | null): string => {
+    if (!customerInfo) return 'free';
+    const active = customerInfo.entitlements?.active as Record<string, unknown> | undefined;
+    if (active && active['oddity']) {
       return 'oddity';
     }
     return 'free';
@@ -387,10 +391,12 @@ export const revenueCatService = {
   /**
    * Get subscription expiration date
    */
-  getSubscriptionExpiration: (customerInfo: CustomerInfo): string | null => {
-    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+  getSubscriptionExpiration: (customerInfo: CustomerInfo | null): string | null => {
+    if (!customerInfo) return null;
+    const active = customerInfo.entitlements?.active as Record<string, { expirationDate?: string }> | undefined;
+    const oddityEntitlement = active?.['oddity'];
     if (oddityEntitlement) {
-      return oddityEntitlement.expirationDate;
+      return oddityEntitlement.expirationDate ?? null;
     }
     return null;
   },
@@ -398,8 +404,10 @@ export const revenueCatService = {
   /**
    * Check if user is in trial period
    */
-  isInTrial: (customerInfo: CustomerInfo): boolean => {
-    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+  isInTrial: (customerInfo: CustomerInfo | null): boolean => {
+    if (!customerInfo) return false;
+    const active = customerInfo.entitlements?.active as Record<string, { isInIntroOfferPeriod?: boolean }> | undefined;
+    const oddityEntitlement = active?.['oddity'];
     // Check if the property exists before accessing it
     // RevenueCat EntitlementInfo may have isInIntroOfferPeriod property
     if (oddityEntitlement && 'isInIntroOfferPeriod' in oddityEntitlement) {
@@ -428,7 +436,7 @@ export const revenueCatService = {
             resetTimeout: 30000,
           }).execute(async () => {
             return await withTimeout(
-              Purchases.logIn(userId),
+              (Purchases.logIn as (userId: string) => Promise<unknown>)(userId),
               REVENUECAT_TIMEOUT,
               'RevenueCat logIn timed out',
             );
@@ -469,7 +477,7 @@ export const revenueCatService = {
             resetTimeout: 30000,
           }).execute(async () => {
             return await withTimeout(
-              Purchases.logOut(),
+              (Purchases.logOut as () => Promise<unknown>)(),
               REVENUECAT_TIMEOUT,
               'RevenueCat logOut timed out',
             );
@@ -488,7 +496,7 @@ export const revenueCatService = {
       }
 
       console.log('RevenueCat user logged out');
-      return retryResult.result;
+      return (retryResult.result as CustomerInfo) ?? null;
     } catch (error) {
       console.error('Error logging out RevenueCat user:', error);
       throw error;
@@ -498,8 +506,10 @@ export const revenueCatService = {
   /**
    * Check if user is in grace period (payment failed but still has access)
    */
-  isInGracePeriod: (customerInfo: CustomerInfo): boolean => {
-    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+  isInGracePeriod: (customerInfo: CustomerInfo | null): boolean => {
+    if (!customerInfo) return false;
+    const active = customerInfo.entitlements?.active as Record<string, { isInGracePeriod?: boolean }> | undefined;
+    const oddityEntitlement = active?.['oddity'];
     if (!oddityEntitlement) return false;
     // RevenueCat EntitlementInfo may have isInGracePeriod property
     if ('isInGracePeriod' in oddityEntitlement) {
@@ -513,18 +523,22 @@ export const revenueCatService = {
   /**
    * Check if subscription will renew
    */
-  willRenew: (customerInfo: CustomerInfo): boolean => {
-    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+  willRenew: (customerInfo: CustomerInfo | null): boolean => {
+    if (!customerInfo) return false;
+    const active = customerInfo.entitlements?.active as Record<string, { willRenew?: boolean }> | undefined;
+    const oddityEntitlement = active?.['oddity'];
     return oddityEntitlement?.willRenew ?? true;
   },
 
   /**
    * Get grace period expiration date
    */
-  getGracePeriodExpiration: (customerInfo: CustomerInfo): string | null => {
-    const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+  getGracePeriodExpiration: (customerInfo: CustomerInfo | null): string | null => {
+    if (!customerInfo) return null;
+    const active = customerInfo.entitlements?.active as Record<string, { expirationDate?: string }> | undefined;
+    const oddityEntitlement = active?.['oddity'];
     if (!oddityEntitlement) return null;
-    return oddityEntitlement.expirationDate;
+    return oddityEntitlement.expirationDate ?? null;
   },
 };
 

@@ -11,19 +11,26 @@
  * - POST /email-system/schedule - Schedule email
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { Resend } from 'https://esm.sh/resend@2.0.0';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
+import {
+  type SupabaseClient,
+  type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const WelcomeEmailSchema = z.object({
   userEmail: z.string().email(),
@@ -279,7 +286,7 @@ async function handleScheduleEmail(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

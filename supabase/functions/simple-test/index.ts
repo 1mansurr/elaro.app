@@ -1,7 +1,8 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
-serve(req => {
+serve(async (req: Request) => {
   console.log('Simple test function called');
   const origin = req.headers.get('Origin');
 

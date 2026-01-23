@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -34,7 +35,17 @@ async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
 
   if (fetchError) throw handleDbError(fetchError);
 
-  if (currentUser.account_status === 'deleted') {
+  if (!currentUser || typeof currentUser !== 'object' || !('account_status' in currentUser)) {
+    throw new AppError(
+      'Failed to fetch user account',
+      500,
+      ERROR_CODES.DB_QUERY_ERROR,
+    );
+  }
+
+  const currentUserTyped = currentUser as { account_status: string };
+
+  if (currentUserTyped.account_status === 'deleted') {
     throw new AppError(
       'Account is already deleted',
       400,
@@ -42,7 +53,7 @@ async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
     );
   }
 
-  if (currentUser.account_status === 'suspended') {
+  if (currentUserTyped.account_status === 'suspended') {
     throw new AppError(
       'Cannot delete a suspended account',
       400,
@@ -70,9 +81,7 @@ async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
   if (updateError) throw handleDbError(updateError);
 
   // Sign out the user from all sessions
-  const { error: signOutError } = await supabaseClient.auth.signOut({
-    scope: 'global',
-  });
+  const { error: signOutError } = await supabaseClient.auth.signOut();
   if (signOutError) {
     await logger.error(
       'Error signing out user',

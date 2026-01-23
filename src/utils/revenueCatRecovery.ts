@@ -172,7 +172,7 @@ export async function getCustomerInfoWithRecovery(): Promise<
   }
 
   const strategy: RecoveryStrategy<
-    ReturnType<typeof revenueCatService.getCustomerInfo>
+    Awaited<ReturnType<typeof revenueCatService.getCustomerInfo>>
   > = {
     primary: async () => {
       return await revenueCatService.getCustomerInfo();

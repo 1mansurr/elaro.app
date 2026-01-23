@@ -312,13 +312,13 @@ const CoursesScreen = () => {
           <Ionicons
             name="information-circle"
             size={20}
-            color={theme.warningText || '#92400E'}
+            color={theme.warning || '#92400E'}
             style={styles.limitBannerIcon}
           />
           <Text
             style={[
               styles.limitBannerText,
-              { color: theme.warningText || '#92400E' },
+              { color: theme.warning || '#92400E' },
             ]}>
             You're on the free plan with a limit of 2 courses. Upgrade to add
             and view unlimited courses.
@@ -379,7 +379,10 @@ const CoursesScreen = () => {
   // padding: 20*2 = 40, marginBottom: 16, text height: ~32 = ~88px total
   const ITEM_HEIGHT = 88;
   const getItemLayout = useCallback(
-    (_data: Course[] | null | undefined, index: number) => ({
+    (
+      _data: ArrayLike<Course> | null | undefined,
+      index: number,
+    ): { length: number; offset: number; index: number } => ({
       length: ITEM_HEIGHT,
       offset: ITEM_HEIGHT * index,
       index,

@@ -2,6 +2,7 @@
  * Get Calendar Data for Week
  * Returns all tasks (lectures, study sessions, assignments) for a given week
  */
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -31,7 +32,7 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
 
   try {
     const { date } = body;
-    if (!date) {
+    if (!date || typeof date !== 'string') {
       throw new AppError(
         'Date parameter is required.',
         400,
@@ -39,7 +40,7 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
       );
     }
 
-    const targetDate = new Date(date);
+    const targetDate = new Date(date as string);
 
     // Calculate start of the week (Sunday)
     const dayOfWeek = targetDate.getUTCDay(); // 0 = Sunday
@@ -102,18 +103,22 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
     }
 
     // --- Process and normalize results (without setting conflicting name fields) ---
+    const lecturesArray = Array.isArray(lectures) ? lectures : [];
+    const studySessionsArray = Array.isArray(studySessions) ? studySessions : [];
+    const assignmentsArray = Array.isArray(assignments) ? assignments : [];
+    
     const allTasks = [
-      ...(lectures || []).map(t => ({
+      ...lecturesArray.map((t: { lecture_date: string; [key: string]: unknown }) => ({
         ...t,
         type: 'lecture',
         date: t.lecture_date,
       })),
-      ...(studySessions || []).map(t => ({
+      ...studySessionsArray.map((t: { session_date: string; [key: string]: unknown }) => ({
         ...t,
         type: 'study_session',
         date: t.session_date,
       })),
-      ...(assignments || []).map(t => ({
+      ...assignmentsArray.map((t: { due_date: string; [key: string]: unknown }) => ({
         ...t,
         type: 'assignment',
         date: t.due_date,
@@ -125,7 +130,7 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
       lecture_name?: string;
       title?: string;
       topic?: string;
-      description?: string;
+      description?: string | null;
       notes?: string;
       date: string;
       [key: string]: unknown;
@@ -170,8 +175,9 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
 
     // Sort tasks within each day
     for (const day in groupedByDay) {
-      groupedByDay[day].sort(
-        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+      const tasks = groupedByDay[day];
+      tasks.sort(
+        (a: Task, b: Task) => new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
     }
 

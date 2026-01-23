@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -59,9 +60,18 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
       ERROR_CODES.CONFIG_ERROR,
     );
 
+  // Type guards for encryption
+  if (typeof lecture_name !== 'string') {
+    throw new AppError(
+      'lecture_name is required and must be a string',
+      400,
+      ERROR_CODES.INVALID_INPUT,
+    );
+  }
+
   const [encryptedLectureName, encryptedDescription] = await Promise.all([
     encrypt(lecture_name, encryptionKey),
-    description ? encrypt(description, encryptionKey) : null,
+    description && typeof description === 'string' ? encrypt(description, encryptionKey) : null,
   ]);
 
   const { data: newLecture, error: insertError } = await supabaseClient
@@ -81,20 +91,24 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
     .single();
 
   if (insertError) throw handleDbError(insertError);
+  
+  const newLectureTyped = newLecture as { id: string };
+  
   await logger.info(
     'Successfully created lecture',
-    { user_id: user.id, lecture_id: newLecture.id },
+    { user_id: user.id, lecture_id: newLectureTyped.id },
     traceContext,
   );
 
   // Reminder creation logic
-  if (reminders && reminders.length > 0) {
-    const lectureStartTime = new Date(start_time);
-    const remindersToInsert = reminders.map((mins: number) => ({
+  const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+  if (remindersArray.length > 0) {
+    const startTimeTyped = typeof start_time === 'string' ? new Date(start_time) : new Date(start_time as string | number | Date);
+    const remindersToInsert = remindersArray.map((mins: number) => ({
       user_id: user.id,
-      lecture_id: newLecture.id,
+      lecture_id: newLectureTyped.id,
       reminder_time: new Date(
-        lectureStartTime.getTime() - mins * 60000,
+        startTimeTyped.getTime() - mins * 60000,
       ).toISOString(),
       reminder_type: 'lecture',
     }));
@@ -107,7 +121,7 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
         'Failed to create reminders for lecture',
         {
           user_id: user.id,
-          lecture_id: newLecture.id,
+          lecture_id: newLectureTyped.id,
           error: reminderError.message,
         },
         traceContext,
@@ -117,15 +131,15 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
         'Successfully created reminders',
         {
           user_id: user.id,
-          lecture_id: newLecture.id,
-          reminder_count: reminders.length,
+          lecture_id: newLectureTyped.id,
+          reminder_count: remindersArray.length,
         },
         traceContext,
       );
     }
   }
 
-  return newLecture;
+  return newLectureTyped as Record<string, unknown>;
 }
 
 // Wrap the business logic with our secure, generic handler

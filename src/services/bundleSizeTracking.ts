@@ -28,7 +28,7 @@ interface BundleSizeHistory {
  * Track bundle size metrics
  * Called during app initialization to track current bundle size
  */
-export async function trackBundleSize(): Promise<void> {
+export async function trackBundleSize(): Promise<BundleSizeHistory> {
   try {
     // Get app version
     const version = require('../../app.json').version || '1.0.0';
@@ -108,8 +108,11 @@ export async function trackBundleSize(): Promise<void> {
         });
       }
     }
+
+    return history;
   } catch (error) {
     console.error('Failed to track bundle size:', error);
+    return { entries: [], lastUpdated: Date.now() };
   }
 }
 

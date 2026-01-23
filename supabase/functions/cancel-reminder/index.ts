@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -47,8 +48,10 @@ async function handleCancelReminder(req: AuthenticatedRequest) {
     );
   }
 
+  const reminderTyped = reminder as { completed: boolean; reminder_type: string; reminder_time: string; sent_at: string | null };
+
   // 2. Check if reminder is already completed
-  if (reminder.completed) {
+  if (reminderTyped.completed) {
     return {
       success: true,
       message: 'Reminder was already completed',
@@ -78,9 +81,9 @@ async function handleCancelReminder(req: AuthenticatedRequest) {
     await supabaseClient.from('reminder_analytics').insert({
       user_id: user.id,
       reminder_id: reminder_id,
-      reminder_type: reminder.reminder_type,
-      scheduled_time: reminder.reminder_time,
-      sent_time: reminder.sent_at,
+      reminder_type: reminderTyped.reminder_type,
+      scheduled_time: reminderTyped.reminder_time,
+      sent_time: reminderTyped.sent_at,
       opened: false,
       action_taken: 'cancelled',
       effectiveness_score: 0,

@@ -7,6 +7,7 @@
  */
 
 // @deno-types="https://deno.land/x/sentry/types/index.d.ts"
+// @ts-expect-error - Sentry module is available at runtime in Deno
 import * as sentryModule from 'sentry';
 
 type SentryModule = typeof sentryModule & {
@@ -15,8 +16,11 @@ type SentryModule = typeof sentryModule & {
 
 const sentry = sentryModule as SentryModule;
 
+// @ts-expect-error - Deno.env is available at runtime in Deno
 const SENTRY_DSN = Deno.env.get('SENTRY_DSN');
+// @ts-expect-error - Deno.env is available at runtime in Deno
 const ENVIRONMENT = Deno.env.get('ENVIRONMENT') || 'production';
+// @ts-expect-error - Deno.env is available at runtime in Deno
 const RELEASE_VERSION = Deno.env.get('RELEASE_VERSION') || 'unknown';
 
 const hasInit = typeof sentry.init === 'function';
@@ -35,28 +39,30 @@ if (SENTRY_SUPPORTED && !sentry.getCurrentHub().getClient()) {
     dsn: SENTRY_DSN,
     environment: ENVIRONMENT,
     tracesSampleRate: parseFloat(
+      // @ts-expect-error - Deno.env is available at runtime in Deno
       Deno.env.get('SENTRY_TRACES_SAMPLE_RATE') || '0.1',
     ),
     release: RELEASE_VERSION,
-    beforeSend(event, _hint) {
+    beforeSend(event: unknown, _hint: unknown) {
       // Redact PII from event before sending
-      if (event.user) {
+      const eventTyped = event as { user?: { id?: string; email?: string; username?: string }; tags?: { email?: string; phone?: string } };
+      if (eventTyped.user) {
         // Hash user ID instead of sending directly
-        if (event.user.id) {
-          event.user.id = `hashed_${hashString(event.user.id)}`;
+        if (eventTyped.user.id) {
+          eventTyped.user.id = `hashed_${hashString(eventTyped.user.id)}`;
         }
         // Remove email
-        delete event.user.email;
-        delete event.user.username;
+        delete eventTyped.user.email;
+        delete eventTyped.user.username;
       }
 
       // Remove sensitive data from tags
-      if (event.tags) {
-        delete event.tags.email;
-        delete event.tags.phone;
+      if (eventTyped.tags) {
+        delete eventTyped.tags.email;
+        delete eventTyped.tags.phone;
       }
 
-      return event;
+      return eventTyped as unknown;
     },
   });
 } else if (!SENTRY_SUPPORTED && SENTRY_DSN) {

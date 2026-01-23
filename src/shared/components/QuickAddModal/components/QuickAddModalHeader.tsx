@@ -11,19 +11,19 @@ interface QuickAddModalHeaderProps {
 export const QuickAddModalHeader: React.FC<QuickAddModalHeaderProps> = ({
   onClose,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.header,
         {
-          backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-          borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+          borderBottomColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       <Text
-        style={[styles.title, { color: theme.isDark ? '#FFFFFF' : '#111418' }]}>
+        style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
         Quick Add
       </Text>
       <TouchableOpacity
@@ -33,7 +33,7 @@ export const QuickAddModalHeader: React.FC<QuickAddModalHeaderProps> = ({
         <Ionicons
           name="close"
           size={24}
-          color={theme.isDark ? '#FFFFFF' : '#111418'}
+          color={isDark ? '#FFFFFF' : '#111418'}
         />
       </TouchableOpacity>
     </View>

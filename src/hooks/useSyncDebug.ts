@@ -19,6 +19,7 @@ import { authSyncService } from '@/services/authSync';
 import { navigationSyncService } from '@/services/navigationSync';
 import { studySessionSyncService } from '@/services/studySessionSync';
 import { settingsSyncService } from '@/services/settingsSync';
+import { syncManager } from '@/services/syncManager';
 import { useAuth } from '@/contexts/AuthContext';
 
 export interface SyncDebugInfo {

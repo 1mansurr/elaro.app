@@ -24,7 +24,7 @@ const LaunchScreen = () => {
       // For authenticated users, AppNavigator will handle onboarding check
       if (!session) {
         // Unauthenticated user - navigate to Auth
-        navigation.replace('Auth');
+        navigation.replace('Auth', {});
       }
       // Authenticated users: AppNavigator will automatically show
       // OnboardingNavigator or Main based on onboarding_completed status

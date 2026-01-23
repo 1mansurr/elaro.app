@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -27,7 +28,7 @@ async function handleGrantPremium(req: AuthenticatedRequest) {
   );
 
   // Use provided expiration date or default to 100 years from now
-  const expirationDate = body.expirationDate
+  const expirationDate = body.expirationDate && typeof body.expirationDate === 'string'
     ? new Date(body.expirationDate).toISOString()
     : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
 

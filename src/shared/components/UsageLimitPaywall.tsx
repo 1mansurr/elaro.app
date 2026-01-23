@@ -52,7 +52,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
 }) => {
   const { purchasePackage, isLoading } = useSubscription();
   const { user } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const [errorCount, setErrorCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -119,8 +119,12 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
       }
 
       const oddityPackage = offerings.availablePackages.find(
-        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
-      );
+        (pkg): pkg is PurchasesPackage => {
+          if (pkg === null || typeof pkg !== 'object') return false;
+          if (!('identifier' in pkg)) return false;
+          return (pkg as PurchasesPackage).identifier === 'oddity_monthly';
+        }
+      ) as PurchasesPackage | undefined;
 
       if (!oddityPackage) {
         throw new Error('The Oddity plan is not available.');
@@ -215,7 +219,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
             style={[
               styles.usageCard,
               {
-                backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
                 borderColor: theme.border,
               },
             ]}>
@@ -226,7 +230,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
               style={[
                 styles.usageBar,
                 {
-                  backgroundColor: theme.isDark ? '#374151' : '#F3F4F6',
+                  backgroundColor: isDark ? '#374151' : '#F3F4F6',
                 },
               ]}>
               <View
@@ -256,7 +260,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
                   style={[
                     styles.benefitItem,
                     {
-                      backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+                      backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
                       borderColor: theme.border,
                     },
                   ]}>
@@ -320,7 +324,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
           style={[
             styles.footer,
             {
-              backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+              backgroundColor: isDark ? '#101922' : '#F6F7F8',
               borderTopColor: theme.border,
             },
           ]}>

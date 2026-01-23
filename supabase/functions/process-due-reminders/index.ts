@@ -1,8 +1,8 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  createScheduledHandler,
-  SupabaseClient,
-} from '../_shared/function-handler.ts';
+import { createScheduledHandler } from '../_shared/function-handler.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
@@ -19,6 +19,7 @@ interface DueReminder {
   title: string;
   body: string;
   reminder_type: string;
+  reminder_time?: string;
   session_id?: string;
   assignment_id?: string;
   lecture_id?: string;
@@ -77,6 +78,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
     errors: [] as string[],
     status: 'success' as 'success' | 'failure' | 'partial',
     metadata: {} as Record<string, unknown>,
+    execution_time_ms: 0,
   };
 
   // Step 1: Clean up stale locks first (older than 10 minutes)
@@ -139,7 +141,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
   );
 
   // Step 3: Fetch full reminder data with user preferences and devices
-  const reminderIds = lockedReminders.map(r => r.id);
+  const reminderIds = lockedReminders.map((r: { id: string }) => r.id);
   const { data: dueReminders, error: fetchError } = await supabaseAdmin
     .from('reminders')
     .select(
@@ -233,7 +235,7 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
 
   const nowTime = new Date(now).getTime();
   const categorizedReminders: CategorizedReminder[] = dueReminders.map(
-    reminder => {
+    (reminder: DueReminder) => {
       const reminderDate = new Date(reminder.reminder_time || now);
       const hoursOverdue =
         (nowTime - reminderDate.getTime()) / (1000 * 60 * 60);
@@ -608,8 +610,8 @@ async function handleProcessDueReminders(supabaseAdmin: SupabaseClient) {
   // Step 5: Clear locks for reminders that failed to process (but don't mark complete)
   // This prevents them from being stuck locked forever
   const failedReminderIds = dueReminders
-    .map(r => r.id)
-    .filter(id => !remindersToMarkComplete.includes(id));
+    .map((r: DueReminder) => r.id)
+    .filter((id: string) => !remindersToMarkComplete.includes(id));
 
   if (failedReminderIds.length > 0) {
     const { error: unlockError } = await supabaseAdmin

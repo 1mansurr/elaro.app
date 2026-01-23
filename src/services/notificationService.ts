@@ -171,59 +171,59 @@ const notificationService = {
       return; // EXIT: Never call API with incomplete payload
     }
 
+    // Helper to check if error is a timeout
+    const isTimeoutError = (error: unknown): boolean => {
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        return (
+          message.includes('504') ||
+          message.includes('gateway timeout') ||
+          message.includes('timeout') ||
+          message.includes('http_504')
+        );
+      }
+      if (typeof error === 'object' && error !== null) {
+        const errorObj = error as {
+          code?: string;
+          error?: string;
+          message?: string;
+        };
+        return (
+          errorObj.code === 'HTTP_504' ||
+          (errorObj.error?.toLowerCase().includes('timeout') ?? false) ||
+          (errorObj.message?.toLowerCase().includes('504') ?? false) ||
+          (errorObj.message?.toLowerCase().includes('timeout') ?? false)
+        );
+      }
+      return false;
+    };
+
+    // Helper to check if error is a worker/function error that might be retryable
+    const isWorkerError = (error: unknown): boolean => {
+      if (error instanceof Error) {
+        const message = error.message.toLowerCase();
+        return (
+          message.includes('worker_error') ||
+          message.includes('function exited') ||
+          message.includes('please check logs')
+        );
+      }
+      if (typeof error === 'object' && error !== null) {
+        const errorObj = error as {
+          code?: string;
+          error?: string;
+          message?: string;
+        };
+        return (
+          errorObj.code === 'WORKER_ERROR' ||
+          (errorObj.error?.toLowerCase().includes('function exited') ?? false) ||
+          (errorObj.message?.toLowerCase().includes('function exited') ?? false)
+        );
+      }
+      return false;
+    };
+
     try {
-      // Helper to check if error is a timeout
-      const isTimeoutError = (error: unknown): boolean => {
-        if (error instanceof Error) {
-          const message = error.message.toLowerCase();
-          return (
-            message.includes('504') ||
-            message.includes('gateway timeout') ||
-            message.includes('timeout') ||
-            message.includes('http_504')
-          );
-        }
-        if (typeof error === 'object' && error !== null) {
-          const errorObj = error as {
-            code?: string;
-            error?: string;
-            message?: string;
-          };
-          return (
-            errorObj.code === 'HTTP_504' ||
-            errorObj.error?.toLowerCase().includes('timeout') ||
-            errorObj.message?.toLowerCase().includes('504') ||
-            errorObj.message?.toLowerCase().includes('timeout')
-          );
-        }
-        return false;
-      };
-
-      // Helper to check if error is a worker/function error that might be retryable
-      const isWorkerError = (error: unknown): boolean => {
-        if (error instanceof Error) {
-          const message = error.message.toLowerCase();
-          return (
-            message.includes('worker_error') ||
-            message.includes('function exited') ||
-            message.includes('please check logs')
-          );
-        }
-        if (typeof error === 'object' && error !== null) {
-          const errorObj = error as {
-            code?: string;
-            error?: string;
-            message?: string;
-          };
-          return (
-            errorObj.code === 'WORKER_ERROR' ||
-            errorObj.error?.toLowerCase().includes('function exited') ||
-            errorObj.message?.toLowerCase().includes('function exited')
-          );
-        }
-        return false;
-      };
-
       // Import retry utility
       const { retryWithBackoff } = await import('@/utils/errorRecovery');
 
@@ -300,7 +300,7 @@ const notificationService = {
         maxDelay: 10000, // Max 10 seconds between retries
         retryCondition: error => {
           // Don't retry validation errors (not transient)
-          if (error instanceof Error && error.code === 'VALIDATION_ERROR') {
+          if (error instanceof Error && (error as Error & { code?: string }).code === 'VALIDATION_ERROR') {
             return false;
           }
           // Retry on timeout errors (504) or worker errors (may be transient)

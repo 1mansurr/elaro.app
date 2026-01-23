@@ -22,7 +22,7 @@ interface ReminderChipsListProps {
 export const ReminderChipsList: React.FC<ReminderChipsListProps> = ({
   reminders,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   if (reminders.length === 0) {
     return null;
@@ -36,19 +36,19 @@ export const ReminderChipsList: React.FC<ReminderChipsListProps> = ({
           style={[
             styles.chip,
             {
-              backgroundColor: theme.isDark ? '#1A2632' : '#F3F4F6',
-              borderColor: theme.isDark ? '#3B4754' : '#E5E7EB',
+              backgroundColor: isDark ? '#1A2632' : '#F3F4F6',
+              borderColor: isDark ? '#3B4754' : '#E5E7EB',
             },
           ]}>
           <Ionicons
             name="notifications-outline"
             size={18}
-            color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+            color={isDark ? '#9CA3AF' : '#6B7280'}
           />
           <Text
             style={[
               styles.chipText,
-              { color: theme.isDark ? '#D1D5DB' : '#374151' },
+              { color: isDark ? '#D1D5DB' : '#374151' },
             ]}>
             {reminder.label}
           </Text>

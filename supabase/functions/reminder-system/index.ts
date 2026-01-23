@@ -13,12 +13,13 @@
  * - PUT /reminder-system/update/:id - Update reminder
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
   extractIdFromUrl,
@@ -34,6 +35,7 @@ import { scheduleMultipleSRSReminders } from '../_shared/reminder-scheduling.ts'
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const CancelReminderSchema = z.object({
@@ -61,6 +63,15 @@ class ReminderService {
 
   async scheduleReminders(data: Record<string, unknown>) {
     const { session_id, session_date, topic } = data;
+
+    // Type guards
+    if (typeof session_id !== 'string' || typeof session_date !== 'string' || typeof topic !== 'string') {
+      throw new AppError(
+        'Invalid request data: session_id, session_date, and topic are required',
+        400,
+        ERROR_CODES.INVALID_INPUT,
+      );
+    }
 
     // SECURITY: Verify the user owns the study session
     const { error: checkError } = await this.supabaseClient
@@ -104,21 +115,23 @@ class ReminderService {
       .eq('tier_restriction', userTier)
       .single();
 
+    let scheduleData: { intervals: number[]; name: string };
     if (scheduleError || !schedule) {
       // Fallback to tier-specific hardcoded intervals if schedule not found
-      const fallbackSchedule =
+      scheduleData =
         userTier === 'free'
           ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
           : {
               intervals: [1, 3, 7, 14, 30, 60, 120, 180],
               name: 'Oddity Tier (Fallback)',
             };
-      schedule = fallbackSchedule;
+    } else {
+      scheduleData = schedule as { intervals: number[]; name: string };
     }
 
     const maxReminders = isPremiumUser ? 10 : 3;
-    const srsIntervals = schedule.intervals.slice(0, maxReminders); // Limit based on tier
-    const sessionDate = new Date(session_date);
+    const srsIntervals = scheduleData.intervals.slice(0, maxReminders); // Limit based on tier
+    const sessionDate = new Date(session_date as string);
 
     // Cancel existing reminders for this session before scheduling new ones
     const { cancelExistingSRSReminders } =
@@ -126,7 +139,7 @@ class ReminderService {
     const cancelledCount = await cancelExistingSRSReminders(
       this.supabaseClient,
       this.user.id,
-      session_id,
+      session_id as string,
     );
     if (cancelledCount > 0) {
       console.log(
@@ -139,9 +152,9 @@ class ReminderService {
       this.supabaseClient,
       {
         userId: this.user.id,
-        sessionId: session_id,
+        sessionId: session_id as string,
         sessionDate,
-        topic,
+        topic: topic as string,
         preferredHour: 10, // Default hour
         jitterMinutes: 30,
         useDeterministicJitter: true, // Deterministic for consistency
@@ -421,8 +434,8 @@ async function handleProcessDueReminders(req: AuthenticatedRequest) {
 
 async function handleUpdateReminder(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const reminderId = body?.reminder_id || extractIdFromUrl(req.url);
-  if (!reminderId) {
+  const reminderId = (body?.reminder_id as string) || extractIdFromUrl(req.url);
+  if (!reminderId || typeof reminderId !== 'string') {
     throw new AppError(
       'Reminder ID is required',
       400,
@@ -434,7 +447,7 @@ async function handleUpdateReminder(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
   const origin = req.headers.get('Origin');
 
   // Handle CORS

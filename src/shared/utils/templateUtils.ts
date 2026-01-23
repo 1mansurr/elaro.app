@@ -47,7 +47,8 @@ export const validateTemplateData = (
   // Check if title exists
   const titleField = taskType === 'lecture' ? 'lecture_name' : 'title';
 
-  if (!templateData[titleField] || templateData[titleField].trim() === '') {
+  const titleValue = templateData[titleField];
+  if (!titleValue || (typeof titleValue === 'string' && titleValue.trim() === '')) {
     return {
       isValid: false,
       error: 'Title is required',

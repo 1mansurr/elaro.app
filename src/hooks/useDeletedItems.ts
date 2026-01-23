@@ -19,7 +19,7 @@ export const useDeletedItems = () => {
         );
       }
 
-      setItems(response.data || []);
+      setItems((response.data || []) as unknown as (Course | Assignment | Lecture | StudySession)[]);
     } catch (error) {
       console.error('Error fetching deleted items:', error);
     } finally {

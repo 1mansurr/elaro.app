@@ -109,6 +109,4 @@ declare module 'https://esm.sh/@supabase/supabase-js@2.39.3' {
     supabaseKey: string,
     options?: SupabaseClientOptions,
   ): SupabaseClient;
-
-  export type { SupabaseClient, User };
 }

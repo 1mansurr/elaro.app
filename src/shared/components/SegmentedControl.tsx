@@ -21,14 +21,14 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   selectedValue,
   onValueChange,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
         },
       ]}>
       {options.map((option, index) => {
@@ -49,7 +49,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
                 name={option.icon}
                 size={18}
                 color={
-                  isSelected ? '#FFFFFF' : theme.isDark ? '#9CA3AF' : '#6B7280'
+                  isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'
                 }
               />
             )}
@@ -59,7 +59,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
                 {
                   color: isSelected
                     ? '#FFFFFF'
-                    : theme.isDark
+                    : isDark
                       ? '#9CA3AF'
                       : '#6B7280',
                 },

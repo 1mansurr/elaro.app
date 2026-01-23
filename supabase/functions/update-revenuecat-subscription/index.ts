@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -97,10 +98,14 @@ async function handleUpdateSubscription(req: AuthenticatedRequest) {
     let subscriptionTier = 'free';
     let expirationDate: string | null = null;
 
-    // Check if user has oddity entitlement
-    if (customerInfo.entitlements.active['oddity']) {
+    // Type guard for CustomerInfo structure
+    const customerInfoTyped = customerInfo as CustomerInfo;
+    if (
+      customerInfoTyped?.entitlements?.active?.['oddity']
+    ) {
       subscriptionTier = 'oddity';
-      const oddityEntitlement = customerInfo.entitlements.active['oddity'];
+      const oddityEntitlement =
+        customerInfoTyped.entitlements.active['oddity'];
       expirationDate = oddityEntitlement.expirationDate;
     }
 

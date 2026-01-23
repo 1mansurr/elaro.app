@@ -45,7 +45,7 @@ const EDGE_SWIPE_THRESHOLD = 50;
 const DeleteAccountScreen = () => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [confirmationText, setConfirmationText] = useState('');
@@ -58,7 +58,7 @@ const DeleteAccountScreen = () => {
   const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -67,7 +67,7 @@ const DeleteAccountScreen = () => {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -105,11 +105,11 @@ const DeleteAccountScreen = () => {
   };
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const isConfirmationValid =
     confirmationText.trim().toUpperCase() === 'DELETE';
@@ -216,7 +216,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.warningHeader,
               {
-                backgroundColor: theme.isDark
+                backgroundColor: isDark
                   ? 'rgba(239, 68, 68, 0.1)'
                   : '#FFF5F5',
               },
@@ -277,7 +277,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.gracePeriodInfo,
               {
-                backgroundColor: theme.isDark
+                backgroundColor: isDark
                   ? 'rgba(59, 130, 246, 0.1)'
                   : '#F0F5FF',
               },
@@ -287,7 +287,7 @@ const DeleteAccountScreen = () => {
               <Text
                 style={[
                   styles.gracePeriodTitle,
-                  { color: theme.isDark ? '#93C5FD' : COLORS.primary },
+                  { color: isDark ? '#93C5FD' : COLORS.primary },
                 ]}>
                 7-Day Grace Period
               </Text>
@@ -336,7 +336,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.checkboxContainer,
               {
-                backgroundColor: theme.isDark
+                backgroundColor: isDark
                   ? 'rgba(239, 68, 68, 0.1)'
                   : '#FFF5F5',
                 borderColor: borderColor,
@@ -379,7 +379,7 @@ const DeleteAccountScreen = () => {
                   color: textColor,
                 },
                 isConfirmationValid && {
-                  backgroundColor: theme.isDark
+                  backgroundColor: isDark
                     ? 'rgba(16, 185, 129, 0.1)'
                     : '#F0FFF4',
                 },
@@ -410,12 +410,12 @@ const DeleteAccountScreen = () => {
               onPress={handleDeleteAccount}
               disabled={!canDelete || isDeleting}
               loading={isDeleting}
-              style={[
+              style={StyleSheet.flatten([
                 styles.deleteButton,
                 {
                   backgroundColor: canDelete ? '#EF4444' : textSecondaryColor,
                 },
-              ]}
+              ])}
             />
           </View>
 
