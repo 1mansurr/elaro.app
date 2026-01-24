@@ -129,9 +129,6 @@ class AuthSyncService {
    */
   async getCurrentSession(): Promise<Session | null> {
     try {
-      const {
-        data: { session },
-        error,
       const supabaseClient = getSupabaseClient();
       const {
         data: { session },
