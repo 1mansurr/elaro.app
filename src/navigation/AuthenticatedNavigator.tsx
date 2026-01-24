@@ -524,6 +524,25 @@ export const AuthenticatedNavigator: React.FC = () => {
     return <LoadingFallback />;
   }
 
+  // CRITICAL FIX: Guard against null user - AuthenticatedNavigator requires a valid user
+  // This prevents blank screen when session exists but user profile fetch failed
+  // After OTA updates, profile fetch may fail/timeout, leaving session but no user
+  if (!user) {
+    if (__DEV__) {
+      console.warn(
+        '⚠️ [AuthenticatedNavigator] No user profile - showing loading fallback',
+        { hasSession: !!session, isInitializing },
+      );
+    } else {
+      // Production logging for debugging blank screen issues
+      console.log('[AuthenticatedNavigator] No user profile detected', {
+        hasSession: !!session,
+        isInitializing,
+      });
+    }
+    return <LoadingFallback />;
+  }
+
   // Show onboarding if user hasn't completed it
   // NOTE: This check only runs after isInitializing is false, ensuring we have a valid profile
   if (user && !user.onboarding_completed) {
