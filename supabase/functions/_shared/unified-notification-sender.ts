@@ -111,7 +111,10 @@ export async function sendUnifiedNotification(
         .select('push_token')
         .eq('user_id', userId);
 
-      const pushTokens = devices?.map((d: { push_token?: string }) => d.push_token).filter(Boolean) || [];
+      const pushTokens =
+        devices
+          ?.map((d: { push_token?: string }) => d.push_token)
+          .filter(Boolean) || [];
 
       if (pushTokens.length > 0) {
         const pushResult = await sendPushNotification(

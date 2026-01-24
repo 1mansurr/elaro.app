@@ -15,9 +15,7 @@ export const SettingsNotificationsSection: React.FC = () => {
           style={[
             styles.notificationsIconContainer,
             {
-              backgroundColor: isDark
-                ? 'rgba(249, 115, 22, 0.2)'
-                : '#FED7AA',
+              backgroundColor: isDark ? 'rgba(249, 115, 22, 0.2)' : '#FED7AA',
             },
           ]}>
           <Ionicons

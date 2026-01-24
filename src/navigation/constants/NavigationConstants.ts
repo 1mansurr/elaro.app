@@ -35,7 +35,13 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: ({ current, layouts }: { current: { progress: any }; layouts: { screen: { width: number } } }) => {
+    cardStyleInterpolator: ({
+      current,
+      layouts,
+    }: {
+      current: { progress: any };
+      layouts: { screen: { width: number } };
+    }) => {
       return {
         cardStyle: {
           transform: [
@@ -70,7 +76,13 @@ export const TRANSITIONS = {
         },
       },
     },
-    cardStyleInterpolator: ({ current, layouts }: { current: { progress: any }; layouts: { screen: { height: number } } }) => {
+    cardStyleInterpolator: ({
+      current,
+      layouts,
+    }: {
+      current: { progress: any };
+      layouts: { screen: { height: number } };
+    }) => {
       return {
         cardStyle: {
           transform: [

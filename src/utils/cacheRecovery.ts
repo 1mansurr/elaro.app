@@ -106,7 +106,10 @@ export async function restoreQueryCacheWithRecovery(
           // Restore valid queries
           validQueries.forEach(
             (query: { queryKey: unknown; state: { data: unknown } }) => {
-              queryClient.setQueryData(query.queryKey as readonly unknown[], query.state.data);
+              queryClient.setQueryData(
+                query.queryKey as readonly unknown[],
+                query.state.data,
+              );
             },
           );
 

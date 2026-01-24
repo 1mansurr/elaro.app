@@ -216,9 +216,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.warningHeader,
               {
-                backgroundColor: isDark
-                  ? 'rgba(239, 68, 68, 0.1)'
-                  : '#FFF5F5',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FFF5F5',
               },
             ]}>
             <Ionicons name="warning" size={64} color="#EF4444" />
@@ -277,9 +275,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.gracePeriodInfo,
               {
-                backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.1)'
-                  : '#F0F5FF',
+                backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#F0F5FF',
               },
             ]}>
             <Ionicons name="time-outline" size={24} color={COLORS.primary} />
@@ -336,9 +332,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.checkboxContainer,
               {
-                backgroundColor: isDark
-                  ? 'rgba(239, 68, 68, 0.1)'
-                  : '#FFF5F5',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FFF5F5',
                 borderColor: borderColor,
               },
             ]}

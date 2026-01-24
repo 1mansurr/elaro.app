@@ -1,5 +1,4 @@
-import { supabase } from '@/services/supabase';
-import { dbUtils } from '@/services/supabase';
+import { getSupabaseClient, dbUtils } from '@/services/supabase';
 import { Session, User, Factor } from '@supabase/supabase-js';
 import { versionedApiClient } from './VersionedApiClient';
 
@@ -104,7 +103,8 @@ export const authService = {
 
         try {
           const { data: sessionData, error: sessionError } =
-            await supabase.auth.setSession({
+            const supabaseClient = getSupabaseClient();
+            await supabaseClient.auth.setSession({
               access_token: response.data.session.access_token,
               refresh_token: response.data.session.refresh_token,
             });
@@ -168,7 +168,8 @@ export const authService = {
     // FALLBACK: Use direct Supabase auth if edge function is not available
     try {
       const { data: directSignUpData, error: directSignUpError } =
-        await supabase.auth.signUp({
+        const supabaseClient = getSupabaseClient();
+        await supabaseClient.auth.signUp({
           email,
           password,
           options: {
@@ -276,7 +277,8 @@ export const authService = {
 
         try {
           const { data: sessionData, error: sessionError } =
-            await supabase.auth.setSession({
+            const supabaseClient = getSupabaseClient();
+            await supabaseClient.auth.setSession({
               access_token: response.data.session.access_token,
               refresh_token: response.data.session.refresh_token,
             });
@@ -336,7 +338,8 @@ export const authService = {
     try {
       // Fallback: Use Supabase directly
       const { data: directAuthData, error: directAuthError } =
-        await supabase.auth.signInWithPassword({
+        const supabaseClient = getSupabaseClient();
+        await supabaseClient.auth.signInWithPassword({
           email,
           password,
         });
@@ -425,7 +428,8 @@ export const authService = {
             '⚠️ Sign out edge function not available, using direct Supabase sign out',
           );
           // Fallback to direct Supabase sign out
-          await supabase.auth.signOut();
+          const supabaseClient = getSupabaseClient();
+          await supabaseClient.auth.signOut();
           return;
         }
 
@@ -438,12 +442,14 @@ export const authService = {
             code: response.code,
           },
         );
-        await supabase.auth.signOut();
+        const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.signOut();
         return;
       }
 
       // Edge function succeeded - also sign out from Supabase client to clear local session
-      await supabase.auth.signOut();
+      const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.signOut();
     } catch (error) {
       // If edge function doesn't exist or fails, use direct Supabase sign out
       console.warn(
@@ -452,7 +458,8 @@ export const authService = {
       );
       // Always try to sign out from Supabase client, even if edge function fails
       try {
-        await supabase.auth.signOut();
+        const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.signOut();
       } catch (supabaseError) {
         // If even Supabase sign out fails, log but don't throw - user should still be able to continue
         console.error(
@@ -469,10 +476,11 @@ export const authService = {
   getSession: async () => {
     // Get session directly from Supabase client - don't use API layer here
     // The API layer's getSession endpoint requires auth, which creates a circular dependency
+    const supabaseClient = getSupabaseClient();
     const {
       data: { session },
       error,
-    } = await supabase.auth.getSession();
+    } = await supabaseClient.auth.getSession();
 
     if (error) {
       throw new AppError(
@@ -491,9 +499,10 @@ export const authService = {
   onAuthChange: (
     callback: (event: string, session: Session | null) => void,
   ) => {
+    const supabaseClient = getSupabaseClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(callback);
+    } = supabaseClient.auth.onAuthStateChange(callback);
     return subscription;
   },
 
@@ -550,7 +559,8 @@ export const authService = {
     // Refresh local user data
     if (response.data?.user) {
       // The session will be updated automatically by Supabase client
-      await supabase.auth.refreshSession();
+      const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.refreshSession();
     }
 
     return response.data?.user || null;
@@ -571,7 +581,8 @@ export const authService = {
     // Refresh local user data
     if (response.data?.user) {
       // The session will be updated automatically by Supabase client
-      await supabase.auth.refreshSession();
+      const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.refreshSession();
     }
 
     return response.data?.user || null;
@@ -636,14 +647,16 @@ export const authService = {
   // Note: This still uses direct Supabase as it's a special operation
   // Can be migrated to Edge Function later if needed
   signOutFromAllDevices: async () => {
-    const { error } = await supabase.auth.signOut({ scope: 'global' });
+    const supabaseClient = getSupabaseClient();
+    const { error } = await supabaseClient.auth.signOut({ scope: 'global' });
     if (error) throw new AppError(error.message, 500, 'GLOBAL_SIGNOUT_ERROR');
   },
 
   // Method to delete the current user's account (soft delete with 7-day retention)
   deleteAccount: async (reason?: string): Promise<void> => {
     try {
-      const { data, error } = await supabase.functions.invoke(
+      const supabaseClient = getSupabaseClient();
+      const { data, error } = await supabaseClient.functions.invoke(
         'soft-delete-account',
         {
           body: { reason: reason || 'User requested account deletion' },
@@ -653,7 +666,8 @@ export const authService = {
       if (error) throw new AppError(error.message, 500, 'SOFT_DELETE_ERROR');
 
       // Sign out locally after successful soft delete
-      await supabase.auth.signOut();
+      const supabaseClient = getSupabaseClient();
+      await supabaseClient.auth.signOut();
     } catch (error) {
       console.error('Error in authService.deleteAccount:', error);
       throw error;
@@ -664,7 +678,8 @@ export const authService = {
   restoreAccount: async (): Promise<any> => {
     try {
       const { data, error } =
-        await supabase.functions.invoke('restore-account');
+        const supabaseClient = getSupabaseClient();
+        await supabaseClient.functions.invoke('restore-account');
 
       if (error) throw new AppError(error.message, 500, 'RESTORE_ERROR');
 
@@ -682,7 +697,8 @@ export const authService = {
      * @returns {Promise<{qrCode: string, secret: string, factorId: string}>} An object containing the QR code URI, secret key, and factor ID.
      */
     enroll: async () => {
-      const { data, error } = await supabase.auth.mfa.enroll({
+      const supabaseClient = getSupabaseClient();
+      const { data, error } = await supabaseClient.auth.mfa.enroll({
         factorType: 'totp',
       });
       if (error) throw new AppError(error.message, 400, 'MFA_ENROLL_ERROR');
@@ -710,7 +726,8 @@ export const authService = {
      * @returns {Promise<{challengeId: string}>} The ID of the challenge.
      */
     challenge: async (factorId: string) => {
-      const { data, error } = await supabase.auth.mfa.challenge({ factorId });
+      const supabaseClient = getSupabaseClient();
+      const { data, error } = await supabaseClient.auth.mfa.challenge({ factorId });
       if (error) throw new AppError(error.message, 400, 'MFA_CHALLENGE_ERROR');
       if (!data?.id)
         throw new AppError(
@@ -738,7 +755,8 @@ export const authService = {
       challengeId: string;
       code: string;
     }) => {
-      const { error } = await supabase.auth.mfa.verify({
+      const supabaseClient = getSupabaseClient();
+      const { error } = await supabaseClient.auth.mfa.verify({
         factorId,
         challengeId,
         code,
@@ -752,7 +770,8 @@ export const authService = {
      * @returns {Promise<void>}
      */
     unenroll: async (factorId: string) => {
-      const { error } = await supabase.auth.mfa.unenroll({ factorId });
+      const supabaseClient = getSupabaseClient();
+      const { error } = await supabaseClient.auth.mfa.unenroll({ factorId });
       if (error) throw new AppError(error.message, 400, 'MFA_UNENROLL_ERROR');
     },
 
@@ -763,7 +782,8 @@ export const authService = {
      */
     getAuthenticatorAssuranceLevel: async () => {
       const { data, error } =
-        await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        const supabaseClient = getSupabaseClient();
+        await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
       if (error) throw new AppError(error.message, 500, 'MFA_AAL_ERROR');
       return {
         currentLevel: data?.currentLevel || null,
@@ -776,7 +796,8 @@ export const authService = {
      * @returns {Promise<{isEnabled: boolean, factors: Factor[], hasUnverifiedFactors: boolean}>}
      */
     getStatus: async () => {
-      const { data, error } = await supabase.auth.mfa.listFactors();
+      const supabaseClient = getSupabaseClient();
+      const { data, error } = await supabaseClient.auth.mfa.listFactors();
       if (error) throw new AppError(error.message, 500, 'MFA_STATUS_ERROR');
 
       const factors = data?.totp || [];

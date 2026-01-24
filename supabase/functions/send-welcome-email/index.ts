@@ -281,7 +281,10 @@ async function verifyHmacSignature(
   // SECURITY: Validate HMAC secret strength before use
   // This ensures secret meets minimum cryptographic requirements (32 bytes)
   const hmacSecret = Deno.env.get('INTERNAL_HMAC_SECRET');
-  await validateHmacSecret(hmacSecret, traceContext as unknown as Record<string, unknown>);
+  await validateHmacSecret(
+    hmacSecret,
+    traceContext as unknown as Record<string, unknown>,
+  );
 
   // SECURITY: Compute expected signature using canonical string format
   // Format: `${timestamp}.${nonce}.${raw_request_body}`
@@ -377,7 +380,10 @@ serve(async (req: Request) => {
     // SECURITY: Runtime guard - verify used_nonces table exists
     // This prevents silent replay-protection failure if migration was not run
     // Fails CLOSED (500) if table is missing to prevent security degradation
-    await verifyNonceTableExists(supabaseAdmin, traceContext as unknown as Record<string, unknown>);
+    await verifyNonceTableExists(
+      supabaseAdmin,
+      traceContext as unknown as Record<string, unknown>,
+    );
 
     // SECURITY: Verify HMAC signature FIRST
     // This protects against replay attacks and request tampering

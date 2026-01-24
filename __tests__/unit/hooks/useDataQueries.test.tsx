@@ -106,7 +106,7 @@ describe('useDataQueries', () => {
     it('should use correct query options', () => {
       const { useInfiniteQuery } = require('@tanstack/react-query');
       const { result } = renderHook(
-        () => useAssignments({ sortBy: 'title', sortAscending: false }),
+        () => useAssignments({ sortBy: 'created_at', sortAscending: false }),
         { wrapper },
       );
 
@@ -114,7 +114,7 @@ describe('useDataQueries', () => {
       // Verify useInfiniteQuery was called with correct query key
       expect(useInfiniteQuery).toHaveBeenCalledWith(
         expect.objectContaining({
-          queryKey: ['assignments', 'title', false],
+          queryKey: ['assignments', 'created_at', false],
         }),
       );
     });

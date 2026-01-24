@@ -62,8 +62,7 @@ const mockTask: Task = {
   type: 'lecture',
   date: new Date().toISOString(),
   status: 'pending',
-  course_id: 'course-1',
-  user_id: 'user-1',
+  courses: { courseName: 'Test Course' },
 };
 
 const mockPosition = {

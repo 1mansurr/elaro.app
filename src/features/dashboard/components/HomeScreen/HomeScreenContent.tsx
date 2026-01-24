@@ -103,7 +103,6 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
           ) : undefined
         }
         scrollEnabled={!isFabOpen}>
-
         <SwipeableTaskCard
           onSwipeComplete={onSwipeComplete}
           enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}>

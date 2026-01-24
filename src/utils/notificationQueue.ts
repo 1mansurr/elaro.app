@@ -67,10 +67,11 @@ export async function queueNotification(
     );
 
     // Use notification-system API to add to queue
-    const scheduledFor = notification.scheduled_for instanceof Date 
-      ? notification.scheduled_for.toISOString() 
-      : notification.scheduled_for || new Date().toISOString();
-    
+    const scheduledFor =
+      notification.scheduled_for instanceof Date
+        ? notification.scheduled_for.toISOString()
+        : notification.scheduled_for || new Date().toISOString();
+
     const response = await versionedApiClient.addToNotificationQueue({
       notification_type: notification.notification_type,
       title: notification.title,
@@ -125,7 +126,7 @@ export async function queueNotificationBatch(
   try {
     // Generate deduplication keys and filter duplicates
     const notificationsToInsert: Array<
-      Omit<QueuedNotification, 'user_id' | 'scheduled_for'> & { 
+      Omit<QueuedNotification, 'user_id' | 'scheduled_for'> & {
         user_id: string;
         scheduled_for: string;
         status?: string;
@@ -155,10 +156,11 @@ export async function queueNotificationBatch(
       }
 
       dedupKeys.add(dedupKey);
-      const scheduledFor = notif.scheduled_for instanceof Date 
-        ? notif.scheduled_for.toISOString() 
-        : notif.scheduled_for || new Date().toISOString();
-      
+      const scheduledFor =
+        notif.scheduled_for instanceof Date
+          ? notif.scheduled_for.toISOString()
+          : notif.scheduled_for || new Date().toISOString();
+
       notificationsToInsert.push({
         user_id: notif.user_id,
         notification_type: notif.notification_type,
@@ -184,7 +186,7 @@ export async function queueNotificationBatch(
     for (const notif of notificationsToInsert) {
       // scheduled_for is already guaranteed to be a string in notificationsToInsert
       const scheduledFor = notif.scheduled_for || new Date().toISOString();
-      
+
       const response = await versionedApiClient.addToNotificationQueue({
         notification_type: notif.notification_type,
         title: notif.title,

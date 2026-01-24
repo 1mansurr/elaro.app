@@ -16,7 +16,8 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const { username } = body;
-  const usernameTyped = typeof username === 'string' ? username : String(username);
+  const usernameTyped =
+    typeof username === 'string' ? username : String(username);
   const origin = (req as unknown as Request).headers.get('Origin');
   const responseHeaders = {
     ...getCorsHeaders(origin),

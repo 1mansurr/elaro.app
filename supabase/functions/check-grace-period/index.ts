@@ -65,7 +65,9 @@ async function handleGracePeriodCheck(supabaseAdmin: SupabaseClient) {
             .select('push_token')
             .eq('user_id', user.id);
           if (devices && devices.length > 0) {
-            const tokens = devices.map((d: { push_token?: string }) => d.push_token).filter(Boolean);
+            const tokens = devices
+              .map((d: { push_token?: string }) => d.push_token)
+              .filter(Boolean);
 
             // Check if notifications are enabled (critical notifications bypass quiet hours but respect master toggle)
             const prefs = await getUserNotificationPreferences(

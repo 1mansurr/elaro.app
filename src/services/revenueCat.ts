@@ -372,7 +372,9 @@ export const revenueCatService = {
    */
   hasActiveSubscription: (customerInfo: CustomerInfo | null): boolean => {
     if (!customerInfo) return false;
-    const active = customerInfo.entitlements?.active as Record<string, unknown> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, unknown>
+      | undefined;
     return active ? Object.keys(active).length > 0 : false;
   },
 
@@ -381,7 +383,9 @@ export const revenueCatService = {
    */
   getSubscriptionTier: (customerInfo: CustomerInfo | null): string => {
     if (!customerInfo) return 'free';
-    const active = customerInfo.entitlements?.active as Record<string, unknown> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, unknown>
+      | undefined;
     if (active && active['oddity']) {
       return 'oddity';
     }
@@ -391,9 +395,13 @@ export const revenueCatService = {
   /**
    * Get subscription expiration date
    */
-  getSubscriptionExpiration: (customerInfo: CustomerInfo | null): string | null => {
+  getSubscriptionExpiration: (
+    customerInfo: CustomerInfo | null,
+  ): string | null => {
     if (!customerInfo) return null;
-    const active = customerInfo.entitlements?.active as Record<string, { expirationDate?: string }> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, { expirationDate?: string }>
+      | undefined;
     const oddityEntitlement = active?.['oddity'];
     if (oddityEntitlement) {
       return oddityEntitlement.expirationDate ?? null;
@@ -406,7 +414,9 @@ export const revenueCatService = {
    */
   isInTrial: (customerInfo: CustomerInfo | null): boolean => {
     if (!customerInfo) return false;
-    const active = customerInfo.entitlements?.active as Record<string, { isInIntroOfferPeriod?: boolean }> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, { isInIntroOfferPeriod?: boolean }>
+      | undefined;
     const oddityEntitlement = active?.['oddity'];
     // Check if the property exists before accessing it
     // RevenueCat EntitlementInfo may have isInIntroOfferPeriod property
@@ -508,7 +518,9 @@ export const revenueCatService = {
    */
   isInGracePeriod: (customerInfo: CustomerInfo | null): boolean => {
     if (!customerInfo) return false;
-    const active = customerInfo.entitlements?.active as Record<string, { isInGracePeriod?: boolean }> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, { isInGracePeriod?: boolean }>
+      | undefined;
     const oddityEntitlement = active?.['oddity'];
     if (!oddityEntitlement) return false;
     // RevenueCat EntitlementInfo may have isInGracePeriod property
@@ -525,7 +537,9 @@ export const revenueCatService = {
    */
   willRenew: (customerInfo: CustomerInfo | null): boolean => {
     if (!customerInfo) return false;
-    const active = customerInfo.entitlements?.active as Record<string, { willRenew?: boolean }> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, { willRenew?: boolean }>
+      | undefined;
     const oddityEntitlement = active?.['oddity'];
     return oddityEntitlement?.willRenew ?? true;
   },
@@ -533,9 +547,13 @@ export const revenueCatService = {
   /**
    * Get grace period expiration date
    */
-  getGracePeriodExpiration: (customerInfo: CustomerInfo | null): string | null => {
+  getGracePeriodExpiration: (
+    customerInfo: CustomerInfo | null,
+  ): string | null => {
     if (!customerInfo) return null;
-    const active = customerInfo.entitlements?.active as Record<string, { expirationDate?: string }> | undefined;
+    const active = customerInfo.entitlements?.active as
+      | Record<string, { expirationDate?: string }>
+      | undefined;
     const oddityEntitlement = active?.['oddity'];
     if (!oddityEntitlement) return null;
     return oddityEntitlement.expirationDate ?? null;

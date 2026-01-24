@@ -112,7 +112,9 @@ serve(
 
               // Track successful operations
               const dataArray = Array.isArray(data) ? data : [];
-              const restoredIds = dataArray.map((item: { id: string }) => item.id);
+              const restoredIds = dataArray.map(
+                (item: { id: string }) => item.id,
+              );
               restoredIds.forEach((id: string) => {
                 results.success.push({ id, type });
               });
@@ -138,12 +140,15 @@ serve(
               );
             } else if (action === 'DELETE_PERMANENTLY') {
               // Permanently delete items
-              const deleteResult = await supabaseClient
+              const deleteResult = (await supabaseClient
                 .from(tableName)
                 .delete()
                 .in('id', ids)
-                .eq('user_id', user.id) as unknown as { error: unknown; count: number | null };
-              
+                .eq('user_id', user.id)) as unknown as {
+                error: unknown;
+                count: number | null;
+              };
+
               const { error, count } = deleteResult;
 
               if (error) throw handleDbError(error);

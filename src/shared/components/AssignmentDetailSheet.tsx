@@ -101,11 +101,7 @@ export const AssignmentDetailSheet: React.FC<AssignmentDetailSheetProps> = ({
         ]}
         showsVerticalScrollIndicator={false}>
         {/* Title */}
-        <Text
-          style={[
-            styles.title,
-            { color: isDark ? '#FFFFFF' : '#111418' },
-          ]}>
+        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
           {assignment.title}
         </Text>
 

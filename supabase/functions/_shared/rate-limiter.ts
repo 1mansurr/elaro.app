@@ -334,7 +334,10 @@ export async function checkRateLimit(
       limit: Math.min(userLimit.limit, ipLimit.limit),
       remaining: Math.min(userLimit.remaining, ipLimit.remaining),
       reset: Math.max(userLimit.reset, ipLimit.reset),
-      degraded: (userLimit as { degraded?: boolean }).degraded || (ipLimit as { degraded?: boolean }).degraded || false,
+      degraded:
+        (userLimit as { degraded?: boolean }).degraded ||
+        (ipLimit as { degraded?: boolean }).degraded ||
+        false,
     };
   } catch (error: unknown) {
     if (error instanceof RateLimitError) {

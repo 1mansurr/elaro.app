@@ -16,10 +16,7 @@
 
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
@@ -66,13 +63,25 @@ class StudySessionService {
 
     // Type guards
     if (typeof course_id !== 'string') {
-      throw new AppError('course_id must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError(
+        'course_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
     }
     if (typeof topic !== 'string') {
-      throw new AppError('topic must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError(
+        'topic must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
     }
     if (typeof session_date !== 'string') {
-      throw new AppError('session_date must be a string', 400, ERROR_CODES.VALIDATION_ERROR);
+      throw new AppError(
+        'session_date must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      );
     }
 
     // SECURITY: Verify course ownership
@@ -114,7 +123,12 @@ class StudySessionService {
     }
 
     // Create reminders if provided
-    if (newSession && reminders && Array.isArray(reminders) && reminders.length > 0) {
+    if (
+      newSession &&
+      reminders &&
+      Array.isArray(reminders) &&
+      reminders.length > 0
+    ) {
       const sessionDate = new Date(session_date);
       const remindersToInsert = (reminders as number[]).map((mins: number) => ({
         user_id: this.user.id,
@@ -398,9 +412,12 @@ async function handleListStudySessions(req: AuthenticatedRequest) {
 
 async function handleGetStudySession(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const bodySessionId = body && typeof body === 'object' && 'study_session_id' in body
-    ? (typeof body.study_session_id === 'string' ? body.study_session_id : null)
-    : null;
+  const bodySessionId =
+    body && typeof body === 'object' && 'study_session_id' in body
+      ? typeof body.study_session_id === 'string'
+        ? body.study_session_id
+        : null
+      : null;
   const studySessionId = bodySessionId || extractIdFromUrl(req.url);
   if (!studySessionId || typeof studySessionId !== 'string') {
     throw new AppError(

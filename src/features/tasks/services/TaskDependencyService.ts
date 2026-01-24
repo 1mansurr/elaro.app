@@ -162,9 +162,15 @@ export class TaskDependencyService {
 
       return dependencies.map((dep: Record<string, unknown>) => ({
         id: dep.id as string,
-        taskId: (dep.task_id || dep.lecture_id || dep.study_session_id) as string,
-        dependsOnTaskId: (dep.depends_on_task_id || dep.depends_on_id) as string,
-        dependencyType: dep.dependency_type as 'blocking' | 'suggested' | 'parallel',
+        taskId: (dep.task_id ||
+          dep.lecture_id ||
+          dep.study_session_id) as string,
+        dependsOnTaskId: (dep.depends_on_task_id ||
+          dep.depends_on_id) as string,
+        dependencyType: dep.dependency_type as
+          | 'blocking'
+          | 'suggested'
+          | 'parallel',
         autoComplete: (dep.auto_complete ?? false) as boolean,
         createdAt: dep.created_at as string,
         updatedAt: dep.updated_at as string,

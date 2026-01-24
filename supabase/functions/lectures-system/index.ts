@@ -16,10 +16,7 @@
 
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
@@ -93,7 +90,9 @@ class LectureService {
 
     const [encryptedLectureName, encryptedDescription] = await Promise.all([
       encrypt(lecture_name, encryptionKey),
-      description && typeof description === 'string' ? encrypt(description, encryptionKey) : null,
+      description && typeof description === 'string'
+        ? encrypt(description, encryptionKey)
+        : null,
     ]);
 
     const { data: newLecture, error: insertError } = await this.supabaseClient
@@ -116,9 +115,14 @@ class LectureService {
     }
 
     // Create reminders if provided
-    const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+    const remindersArray = Array.isArray(reminders)
+      ? reminders.filter((r): r is number => typeof r === 'number')
+      : [];
     if (newLecture && remindersArray.length > 0) {
-      const startTimeTyped = typeof start_time === 'string' ? new Date(start_time) : new Date(start_time as string | number | Date);
+      const startTimeTyped =
+        typeof start_time === 'string'
+          ? new Date(start_time)
+          : new Date(start_time as string | number | Date);
       const remindersToInsert = remindersArray.map((mins: number) => ({
         user_id: this.user.id,
         lecture_id: newLecture.id,

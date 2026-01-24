@@ -7,7 +7,7 @@ import {
   createMockUser,
   createMockPremiumUser,
   createMockAdminUser,
-} from '@tests/utils/testUtils';
+} from '../../utils/testUtils';
 
 describe('PermissionService', () => {
   let permissionService: PermissionService;
@@ -251,7 +251,7 @@ describe('PermissionService', () => {
 
       expect(limits).toHaveLength(5);
 
-      const assignmentsLimit = limits.find(l => l.type === 'assignments');
+      const assignmentsLimit = limits.find((l: any) => l.type === 'assignments');
       expect(assignmentsLimit).toBeDefined();
       expect(assignmentsLimit?.limit).toBe(15);
     });
@@ -262,7 +262,7 @@ describe('PermissionService', () => {
 
       expect(limits).toHaveLength(5);
 
-      const assignmentsLimit = limits.find(l => l.type === 'assignments');
+      const assignmentsLimit = limits.find((l: any) => l.type === 'assignments');
       expect(assignmentsLimit).toBeDefined();
       expect(assignmentsLimit?.limit).toBeGreaterThan(15);
     });
@@ -273,7 +273,7 @@ describe('PermissionService', () => {
 
       expect(limits).toHaveLength(5);
 
-      const unlimitedLimits = limits.filter(l => l.limit === -1);
+      const unlimitedLimits = limits.filter((l: any) => l.limit === -1);
       expect(unlimitedLimits).toHaveLength(5); // Admin users have unlimited access
     });
   });
@@ -448,7 +448,7 @@ describe('PermissionService', () => {
         subscription_tier: null,
       });
       const userWithInvalidSubscription = createMockUser({
-        subscription_tier: 'invalid',
+        subscription_tier: 'invalid' as any,
       });
 
       expect(await permissionService.isPremium(userWithNullSubscription)).toBe(

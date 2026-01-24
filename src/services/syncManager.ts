@@ -333,8 +333,7 @@ class SyncManager {
     return {
       length: this.queue.length,
       pending: this.queue.filter(item => item.status === 'pending').length,
-      processing: this.queue.filter(item => item.status === 'syncing')
-        .length,
+      processing: this.queue.filter(item => item.status === 'syncing').length,
       failed: this.queue.filter(item => item.status === 'failed').length,
     };
   }

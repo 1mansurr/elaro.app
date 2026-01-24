@@ -71,7 +71,9 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
 
   const [encryptedLectureName, encryptedDescription] = await Promise.all([
     encrypt(lecture_name, encryptionKey),
-    description && typeof description === 'string' ? encrypt(description, encryptionKey) : null,
+    description && typeof description === 'string'
+      ? encrypt(description, encryptionKey)
+      : null,
   ]);
 
   const { data: newLecture, error: insertError } = await supabaseClient
@@ -91,9 +93,9 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
     .single();
 
   if (insertError) throw handleDbError(insertError);
-  
+
   const newLectureTyped = newLecture as { id: string };
-  
+
   await logger.info(
     'Successfully created lecture',
     { user_id: user.id, lecture_id: newLectureTyped.id },
@@ -101,9 +103,14 @@ async function handleCreateLecture(req: AuthenticatedRequest) {
   );
 
   // Reminder creation logic
-  const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+  const remindersArray = Array.isArray(reminders)
+    ? reminders.filter((r): r is number => typeof r === 'number')
+    : [];
   if (remindersArray.length > 0) {
-    const startTimeTyped = typeof start_time === 'string' ? new Date(start_time) : new Date(start_time as string | number | Date);
+    const startTimeTyped =
+      typeof start_time === 'string'
+        ? new Date(start_time)
+        : new Date(start_time as string | number | Date);
     const remindersToInsert = remindersArray.map((mins: number) => ({
       user_id: user.id,
       lecture_id: newLectureTyped.id,

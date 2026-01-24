@@ -28,9 +28,10 @@ async function handleGrantPremium(req: AuthenticatedRequest) {
   );
 
   // Use provided expiration date or default to 100 years from now
-  const expirationDate = body.expirationDate && typeof body.expirationDate === 'string'
-    ? new Date(body.expirationDate).toISOString()
-    : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
+  const expirationDate =
+    body.expirationDate && typeof body.expirationDate === 'string'
+      ? new Date(body.expirationDate).toISOString()
+      : new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString();
 
   const { data, error: updateError } = await supabaseClient
     .from('users')

@@ -58,7 +58,9 @@ export async function executeDbOperation<T>(
         }
 
         // Retry other database errors (connection issues, timeouts, etc.)
-        throw new Error(`Database error: ${errorTyped.message || 'Unknown error'}`);
+        throw new Error(
+          `Database error: ${errorTyped.message || 'Unknown error'}`,
+        );
       }
 
       if (!result.data) {
@@ -92,7 +94,11 @@ export async function dbInsert<T>(
 ): Promise<T> {
   return await executeDbOperation<T>(
     async () => {
-      const result = await supabaseClient.from(table).insert(data).select().single();
+      const result = await supabaseClient
+        .from(table)
+        .insert(data)
+        .select()
+        .single();
       return { data: result.data as T | null, error: result.error };
     },
     { operationName: `insert_${table}` },
@@ -116,7 +122,12 @@ export async function dbUpdate<T>(
 ): Promise<T> {
   return await executeDbOperation<T>(
     async () => {
-      const result = await supabaseClient.from(table).update(updates).eq('id', id).select().single();
+      const result = await supabaseClient
+        .from(table)
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
       return { data: result.data as T | null, error: result.error };
     },
     { operationName: `update_${table}` },
@@ -159,7 +170,11 @@ export async function dbGetById<T>(
 ): Promise<T> {
   return await executeDbOperation<T>(
     async () => {
-      const result = await supabaseClient.from(table).select('*').eq('id', id).single();
+      const result = await supabaseClient
+        .from(table)
+        .select('*')
+        .eq('id', id)
+        .single();
       return { data: result.data as T | null, error: result.error };
     },
     { operationName: `get_${table}_by_id` },

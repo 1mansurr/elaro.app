@@ -1,13 +1,13 @@
 import { NotificationService } from '@/services/notifications/NotificationService';
+import { NotificationPreferences } from '@/services/notifications/interfaces/INotificationPreferenceService';
 import {
   createMockUser,
   createMockNotification,
   createMockSupabaseClient,
-} from '@tests/utils/testUtils';
+} from '../../utils/testUtils';
 
 // Mock the individual services
 const mockDeliveryService = {
-  scheduleNotification: jest.fn(),
   sendPushNotification: jest.fn(),
   scheduleLocalNotification: jest.fn(),
   cancelNotification: jest.fn(),
@@ -20,13 +20,18 @@ const mockDeliveryService = {
 
 const mockPreferenceService = {
   getUserPreferences: jest.fn(),
-  updateUserPreferences: jest.fn(),
+  updatePreferences: jest.fn(),
+  validatePreferences: jest.fn(),
+  getDefaultPreferences: jest.fn(),
   areNotificationsEnabled: jest.fn(),
 };
 
 const mockSchedulingService = {
-  scheduleNotification: jest.fn(),
-  cancelNotification: jest.fn(),
+  scheduleWithSmartTiming: jest.fn(),
+  findOptimalTime: jest.fn(),
+  batchNotifications: jest.fn(),
+  handleRescheduling: jest.fn(),
+  isWithinQuietHours: jest.fn(),
   getOptimalTimes: jest.fn(),
 };
 
@@ -124,16 +129,14 @@ describe('NotificationService', () => {
       const mockNotification = createMockNotification();
       const mockUser = createMockUser();
 
-      const mockSchedule = jest.fn().mockResolvedValue({ success: true });
-      notificationService.delivery.scheduleNotification = mockSchedule;
+      const mockSchedule = jest.fn().mockResolvedValue(undefined);
+      notificationService.delivery.scheduleLocalNotification = mockSchedule;
 
-      const result = await notificationService.delivery.scheduleNotification(
-        mockUser,
+      await notificationService.delivery.scheduleLocalNotification(
         mockNotification,
       );
 
-      expect(mockSchedule).toHaveBeenCalledWith(mockUser, mockNotification);
-      expect(result.success).toBe(true);
+      expect(mockSchedule).toHaveBeenCalledWith(mockNotification);
     });
 
     it('should send push notification through delivery service', async () => {
@@ -148,11 +151,11 @@ describe('NotificationService', () => {
       notificationService.delivery.sendPushNotification = mockSendPush;
 
       const result = await notificationService.delivery.sendPushNotification(
-        mockUser,
+        mockUser.id,
         notificationData,
       );
 
-      expect(mockSendPush).toHaveBeenCalledWith(mockUser, notificationData);
+      expect(mockSendPush).toHaveBeenCalledWith(mockUser.id, notificationData);
       expect(result.success).toBe(true);
     });
   });
@@ -174,36 +177,34 @@ describe('NotificationService', () => {
       notificationService.preferences.getUserPreferences = mockGetPreferences;
 
       const result =
-        await notificationService.preferences.getUserPreferences(mockUser);
+        await notificationService.preferences.getUserPreferences(mockUser.id);
 
-      expect(mockGetPreferences).toHaveBeenCalledWith(mockUser);
+      expect(mockGetPreferences).toHaveBeenCalledWith(mockUser.id);
       expect(result).toEqual(mockPreferences);
     });
 
     it('should update user preferences', async () => {
       const mockUser = createMockUser();
-      const newPreferences = {
-        enabled: false,
-        quiet_hours: { start: '23:00', end: '07:00' },
+      const newPreferences: Partial<NotificationPreferences> = {
+        masterToggle: false,
+        quietHours: { enabled: true, start: '23:00', end: '07:00' },
       };
 
       const mockUpdatePreferences = jest
         .fn()
-        .mockResolvedValue({ success: true });
-      notificationService.preferences.updateUserPreferences =
+        .mockResolvedValue(undefined);
+      notificationService.preferences.updatePreferences =
         mockUpdatePreferences;
 
-      const result =
-        await notificationService.preferences.updateUserPreferences(
-          mockUser,
-          newPreferences,
-        );
-
-      expect(mockUpdatePreferences).toHaveBeenCalledWith(
-        mockUser,
+      await notificationService.preferences.updatePreferences(
+        mockUser.id,
         newPreferences,
       );
-      expect(result.success).toBe(true);
+
+      expect(mockUpdatePreferences).toHaveBeenCalledWith(
+        mockUser.id,
+        newPreferences,
+      );
     });
   });
 
@@ -220,35 +221,47 @@ describe('NotificationService', () => {
         scheduled_for: new Date(Date.now() + 3600000).toISOString(),
       };
 
-      const mockScheduleReminder = jest
+      const mockScheduleWithSmartTiming = jest
         .fn()
-        .mockResolvedValue({ success: true, id: 'reminder-1' });
-      notificationService.scheduling.scheduleReminder = mockScheduleReminder;
+        .mockResolvedValue(undefined);
+      notificationService.scheduling.scheduleWithSmartTiming = mockScheduleWithSmartTiming;
 
-      const result = await notificationService.scheduling.scheduleReminder(
-        mockUser,
-        reminderData,
+      const notification = {
+        id: 'reminder-1',
+        title: reminderData.title,
+        body: reminderData.body,
+        type: 'reminder' as const,
+        priority: 'normal' as const,
+        userId: mockUser.id,
+        scheduledFor: new Date(reminderData.scheduled_for),
+      };
+
+      await notificationService.scheduling.scheduleWithSmartTiming(
+        notification,
+        {
+          smartTiming: { enabled: true, learningPattern: 'mixed', optimalHours: [], avoidHours: [] },
+          frequency: { type: 'immediate', batchWindow: 0, maxPerDay: 10, cooldownPeriod: 0 },
+          context: { locationAware: false, activityAware: false, timezoneAware: true, weekendBehavior: 'same' },
+          rescheduling: { autoReschedule: false, maxReschedules: 0, rescheduleDelay: 0 },
+        },
       );
 
-      expect(mockScheduleReminder).toHaveBeenCalledWith(mockUser, reminderData);
-      expect(result.success).toBe(true);
-      expect(result.id).toBe('reminder-1');
+      expect(mockScheduleWithSmartTiming).toHaveBeenCalled();
     });
 
     it('should cancel scheduled reminder', async () => {
       const mockUser = createMockUser();
       const reminderId = 'reminder-1';
 
-      const mockCancelReminder = jest.fn().mockResolvedValue({ success: true });
-      notificationService.scheduling.cancelReminder = mockCancelReminder;
+      const mockHandleRescheduling = jest.fn().mockResolvedValue(undefined);
+      notificationService.scheduling.handleRescheduling = mockHandleRescheduling;
 
-      const result = await notificationService.scheduling.cancelReminder(
-        mockUser,
+      await notificationService.scheduling.handleRescheduling(
         reminderId,
+        'cancelled',
       );
 
-      expect(mockCancelReminder).toHaveBeenCalledWith(mockUser, reminderId);
-      expect(result.success).toBe(true);
+      expect(mockHandleRescheduling).toHaveBeenCalledWith(reminderId, 'cancelled');
     });
   });
 
@@ -274,13 +287,17 @@ describe('NotificationService', () => {
       const mockSchedule = jest
         .fn()
         .mockRejectedValue(new Error('Delivery failed'));
-      notificationService.delivery.scheduleNotification = mockSchedule;
+      notificationService.delivery.scheduleLocalNotification = mockSchedule;
+
+      const localNotification = {
+        id: mockNotification.id,
+        title: mockNotification.title,
+        body: mockNotification.body,
+        trigger: { type: 'date' as const, date: new Date(mockNotification.scheduled_for) },
+      };
 
       await expect(
-        notificationService.delivery.scheduleNotification(
-          mockUser,
-          mockNotification,
-        ),
+        notificationService.delivery.scheduleLocalNotification(localNotification),
       ).rejects.toThrow('Delivery failed');
     });
 
@@ -293,7 +310,7 @@ describe('NotificationService', () => {
       notificationService.preferences.getUserPreferences = mockGetPreferences;
 
       await expect(
-        notificationService.preferences.getUserPreferences(mockUser),
+        notificationService.preferences.getUserPreferences(mockUser.id),
       ).rejects.toThrow('Preferences failed');
     });
 
@@ -304,13 +321,28 @@ describe('NotificationService', () => {
         scheduled_for: new Date().toISOString(),
       };
 
-      const mockScheduleReminder = jest
+      const mockScheduleWithSmartTiming = jest
         .fn()
         .mockRejectedValue(new Error('Scheduling failed'));
-      notificationService.scheduling.scheduleReminder = mockScheduleReminder;
+      notificationService.scheduling.scheduleWithSmartTiming = mockScheduleWithSmartTiming;
+
+      const notification = {
+        id: 'test-id',
+        title: reminderData.title,
+        body: '',
+        type: 'reminder' as const,
+        priority: 'normal' as const,
+        userId: mockUser.id,
+        scheduledFor: new Date(reminderData.scheduled_for),
+      };
 
       await expect(
-        notificationService.scheduling.scheduleReminder(mockUser, reminderData),
+        notificationService.scheduling.scheduleWithSmartTiming(notification, {
+          smartTiming: { enabled: true, learningPattern: 'mixed', optimalHours: [], avoidHours: [] },
+          frequency: { type: 'immediate', batchWindow: 0, maxPerDay: 10, cooldownPeriod: 0 },
+          context: { locationAware: false, activityAware: false, timezoneAware: true, weekendBehavior: 'same' },
+          rescheduling: { autoReschedule: false, maxReschedules: 0, rescheduleDelay: 0 },
+        }),
       ).rejects.toThrow('Scheduling failed');
     });
 
@@ -330,24 +362,25 @@ describe('NotificationService', () => {
       // Mock successful delivery
       const mockSchedule = jest
         .fn()
-        .mockResolvedValue({ success: true, id: 'notification-1' });
-      notificationService.delivery.scheduleNotification = mockSchedule;
+        .mockResolvedValue(undefined);
+      notificationService.delivery.scheduleLocalNotification = mockSchedule;
 
       // Mock scheduling
-      const mockScheduleReminder = jest
+      const mockScheduleWithSmartTiming = jest
         .fn()
-        .mockResolvedValue({ success: true });
-      notificationService.scheduling.scheduleReminder = mockScheduleReminder;
+        .mockResolvedValue(undefined);
+      notificationService.scheduling.scheduleWithSmartTiming = mockScheduleWithSmartTiming;
 
       // Simulate the flow
-      const deliveryResult =
-        await notificationService.delivery.scheduleNotification(
-          mockUser,
-          mockNotification,
-        );
+      const localNotification = {
+        id: mockNotification.id,
+        title: mockNotification.title,
+        body: mockNotification.body,
+        trigger: { type: 'date' as const, date: new Date(mockNotification.scheduled_for) },
+      };
+      await notificationService.delivery.scheduleLocalNotification(localNotification);
 
-      expect(mockSchedule).toHaveBeenCalledWith(mockUser, mockNotification);
-      expect(deliveryResult.success).toBe(true);
+      expect(mockSchedule).toHaveBeenCalledWith(localNotification);
     });
   });
 });

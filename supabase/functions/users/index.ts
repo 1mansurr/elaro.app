@@ -260,8 +260,7 @@ class UserService {
       email: profile.email,
       firstName:
         typeof data.first_name === 'string' ? data.first_name : undefined,
-      lastName:
-        typeof data.last_name === 'string' ? data.last_name : undefined,
+      lastName: typeof data.last_name === 'string' ? data.last_name : undefined,
     });
 
     return profile;

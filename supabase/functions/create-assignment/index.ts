@@ -55,9 +55,10 @@ serve(
       }
 
       const encryptedTitle = await encrypt(title, encryptionKey!);
-      const encryptedDescription = description && typeof description === 'string'
-        ? await encrypt(description, encryptionKey!)
-        : null;
+      const encryptedDescription =
+        description && typeof description === 'string'
+          ? await encrypt(description, encryptionKey!)
+          : null;
 
       const { data: newAssignment, error: insertError } = await supabaseClient
         .from('assignments')
@@ -80,9 +81,14 @@ serve(
       const newAssignmentTyped = newAssignment as { id: string };
 
       // 4. Reminder creation logic
-      const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+      const remindersArray = Array.isArray(reminders)
+        ? reminders.filter((r): r is number => typeof r === 'number')
+        : [];
       if (newAssignmentTyped && remindersArray.length > 0) {
-        const dueDateTyped = typeof due_date === 'string' ? new Date(due_date) : new Date(due_date as string | number | Date);
+        const dueDateTyped =
+          typeof due_date === 'string'
+            ? new Date(due_date)
+            : new Date(due_date as string | number | Date);
         const remindersToInsert = remindersArray.map((mins: number) => ({
           user_id: user.id,
           assignment_id: newAssignmentTyped.id,

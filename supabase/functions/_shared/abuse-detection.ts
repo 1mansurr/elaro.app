@@ -74,26 +74,33 @@ export async function checkAbuseStatus(
 
     // Aggregate violations across all records for this user/IP
     const totalViolations = records.reduce(
-      (sum: number, record: { violation_count?: number }) => sum + (record.violation_count || 0),
+      (sum: number, record: { violation_count?: number }) =>
+        sum + (record.violation_count || 0),
       0,
     );
-    const mostSevereStatus = records.reduce((current: AbuseStatus, record: { status?: string }) => {
-      const severity: Record<AbuseStatus, number> = {
-        normal: 0,
-        warning: 1,
-        throttled: 2,
-        blocked: 3,
-      };
-      return severity[record.status as AbuseStatus] >
-        severity[current as AbuseStatus]
-        ? (record.status as AbuseStatus)
-        : current;
-    }, 'normal' as AbuseStatus);
+    const mostSevereStatus = records.reduce(
+      (current: AbuseStatus, record: { status?: string }) => {
+        const severity: Record<AbuseStatus, number> = {
+          normal: 0,
+          warning: 1,
+          throttled: 2,
+          blocked: 3,
+        };
+        return severity[record.status as AbuseStatus] >
+          severity[current as AbuseStatus]
+          ? (record.status as AbuseStatus)
+          : current;
+      },
+      'normal' as AbuseStatus,
+    );
 
-    const lastViolation = records.reduce((latest: Date, record: { last_violation?: string }) => {
-      const recordDate = new Date(record.last_violation || '');
-      return recordDate > latest ? recordDate : latest;
-    }, new Date(0));
+    const lastViolation = records.reduce(
+      (latest: Date, record: { last_violation?: string }) => {
+        const recordDate = new Date(record.last_violation || '');
+        return recordDate > latest ? recordDate : latest;
+      },
+      new Date(0),
+    );
 
     return {
       userId: userId || undefined,

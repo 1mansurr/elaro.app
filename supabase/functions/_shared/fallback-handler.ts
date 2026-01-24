@@ -88,7 +88,10 @@ export async function processNotificationQueue(
       .limit(maxProcess);
 
     // Filter out notifications that have exceeded max retries
-    const filtered = (pending || []).filter((n: { retry_count?: number; max_retries?: number }) => (n.retry_count || 0) < (n.max_retries || 0));
+    const filtered = (pending || []).filter(
+      (n: { retry_count?: number; max_retries?: number }) =>
+        (n.retry_count || 0) < (n.max_retries || 0),
+    );
 
     if (fetchError) {
       await logger.error(
@@ -142,7 +145,15 @@ export async function processNotificationQueue(
           notification.title,
           notification.body,
           notification.data,
-          { priority: (notification.priority === 'urgent' ? 'high' : notification.priority) as 'normal' | 'high' | 'default' | undefined },
+          {
+            priority: (notification.priority === 'urgent'
+              ? 'high'
+              : notification.priority) as
+              | 'normal'
+              | 'high'
+              | 'default'
+              | undefined,
+          },
         );
 
         if (result.success && result.sentCount > 0) {

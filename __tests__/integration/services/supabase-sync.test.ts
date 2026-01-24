@@ -61,19 +61,20 @@ describe('Supabase + SyncManager Integration', () => {
       const isOffline = true;
 
       if (isOffline) {
-        await syncManager.addToQueue({
-          type: 'CREATE',
-          entity: 'assignment',
-          payload: assignmentData,
-        });
+        await syncManager.addToQueue(
+          'CREATE',
+          'assignment',
+          { type: 'CREATE', data: assignmentData },
+          'user-1',
+        );
       }
 
       const queue = syncManager.getQueue();
       expect(queue.length).toBeGreaterThan(0);
       expect(queue[0]).toMatchObject({
-        type: 'CREATE',
-        entity: 'assignment',
-        payload: assignmentData,
+        operation: 'CREATE',
+        resourceType: 'assignment',
+        payload: { type: 'CREATE', data: assignmentData },
       });
     });
 
@@ -86,15 +87,16 @@ describe('Supabase + SyncManager Integration', () => {
       const isOffline = true;
 
       if (isOffline) {
-        await syncManager.addToQueue({
-          type: 'UPDATE',
-          entity: 'assignment',
-          payload: updateData,
-        });
+        await syncManager.addToQueue(
+          'UPDATE',
+          'assignment',
+          { type: 'UPDATE', id: updateData.id, data: updateData },
+          'user-1',
+        );
       }
 
       const queue = syncManager.getQueue();
-      expect(queue.some(item => item.type === 'UPDATE')).toBe(true);
+      expect(queue.some(item => item.operation === 'UPDATE')).toBe(true);
     });
 
     it('should queue DELETE mutation when offline', async () => {
@@ -105,15 +107,16 @@ describe('Supabase + SyncManager Integration', () => {
       const isOffline = true;
 
       if (isOffline) {
-        await syncManager.addToQueue({
-          type: 'DELETE',
-          entity: 'assignment',
-          payload: deleteData,
-        });
+        await syncManager.addToQueue(
+          'DELETE',
+          'assignment',
+          { type: 'DELETE', resourceId: deleteData.id },
+          'user-1',
+        );
       }
 
       const queue = syncManager.getQueue();
-      expect(queue.some(item => item.type === 'DELETE')).toBe(true);
+      expect(queue.some(item => item.operation === 'DELETE')).toBe(true);
     });
   });
 
@@ -130,10 +133,10 @@ describe('Supabase + SyncManager Integration', () => {
       });
 
       // Simulate online sync
-      const result = await syncManager.executeServerMutation({
+      const result = await (syncManager as any).executeServerMutation({
         type: 'CREATE',
         entity: 'assignment',
-        payload: assignmentData,
+        payload: assignmentData as any,
       });
 
       expect(supabase.functions.invoke).toHaveBeenCalledWith(
@@ -158,10 +161,10 @@ describe('Supabase + SyncManager Integration', () => {
       });
 
       try {
-        await syncManager.executeServerMutation({
+        await (syncManager as any).executeServerMutation({
           type: 'CREATE',
           entity: 'assignment',
-          payload: assignmentData,
+          payload: assignmentData as any,
         });
       } catch (e) {
         expect(e).toBeDefined();
@@ -191,9 +194,24 @@ describe('Supabase + SyncManager Integration', () => {
       });
 
       // Add all to queue
-      for (const mutation of mutations) {
-        await syncManager.addToQueue(mutation);
-      }
+      await syncManager.addToQueue(
+        'CREATE',
+        'assignment',
+        { type: 'CREATE', data: { title: 'Assignment 1' } },
+        'user-1',
+      );
+      await syncManager.addToQueue(
+        'CREATE',
+        'lecture',
+        { type: 'CREATE', data: { title: 'Lecture 1' } },
+        'user-1',
+      );
+      await syncManager.addToQueue(
+        'UPDATE',
+        'assignment',
+        { type: 'UPDATE', id: 'assignment-1', data: { title: 'Updated' } },
+        'user-1',
+      );
 
       const queue = syncManager.getQueue();
       expect(queue.length).toBe(mutations.length);
@@ -224,7 +242,7 @@ describe('Supabase + SyncManager Integration', () => {
       });
 
       try {
-        await syncManager.executeServerMutation({
+        await (syncManager as any).executeServerMutation({
           type: 'UPDATE',
           entity: 'assignment',
           payload: updateData,
@@ -249,15 +267,15 @@ describe('Supabase + SyncManager Integration', () => {
           error: { code: 'CONFLICT' },
         })
         .mockResolvedValueOnce({
-          data: { id: 'assignment-1', ...updateData },
+          data: { ...updateData, id: 'assignment-1' },
           error: null,
         });
 
       // Retry after resolving conflict
-      const result = await syncManager.executeServerMutation({
+      const result = await (syncManager as any).executeServerMutation({
         type: 'UPDATE',
         entity: 'assignment',
-        payload: updateData,
+        payload: { type: 'UPDATE', id: updateData.id, data: updateData } as any,
       });
 
       expect(result).toBeDefined();
@@ -280,10 +298,10 @@ describe('Supabase + SyncManager Integration', () => {
         error: null,
       });
 
-      const result = await syncManager.executeServerMutation({
+      const result = await (syncManager as any).executeServerMutation({
         type: 'CREATE',
         entity: 'assignment',
-        payload: createData,
+        payload: { type: 'CREATE', data: createData } as any,
       });
 
       expect(result).toBeDefined();
@@ -317,10 +335,10 @@ describe('Supabase + SyncManager Integration', () => {
         error: null,
       });
 
-      await syncManager.executeServerMutation({
+      await (syncManager as any).executeServerMutation({
         type: 'UPDATE',
         entity: 'assignment',
-        payload: processedData,
+        payload: { type: 'UPDATE', data: processedData } as any,
       });
 
       expect(supabase.functions.invoke).toHaveBeenCalledWith(

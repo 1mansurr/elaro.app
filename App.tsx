@@ -61,7 +61,13 @@ import { AppState } from 'react-native';
 import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
-import { logBoot, logWarn, logError, logNav, logSplash } from './src/utils/logger';
+import {
+  logBoot,
+  logWarn,
+  logError,
+  logNav,
+  logSplash,
+} from './src/utils/logger';
 import {
   initializeSentry,
   startStartupTransaction,
@@ -397,7 +403,9 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
     }
 
     let cacheCleanup: (() => void) | null = null;
-    let appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null;
+    let appStateSubscription: ReturnType<
+      typeof AppState.addEventListener
+    > | null = null;
 
     try {
       // CRITICAL: Wrap setup in try-catch to catch any errors from React Query

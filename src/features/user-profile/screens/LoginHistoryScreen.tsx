@@ -345,9 +345,7 @@ export function LoginHistoryScreen() {
           style={[
             styles.infoBanner,
             {
-              backgroundColor: isDark
-                ? 'rgba(59, 130, 246, 0.1)'
-                : '#F0F5FF',
+              backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#F0F5FF',
             },
           ]}>
           <Ionicons

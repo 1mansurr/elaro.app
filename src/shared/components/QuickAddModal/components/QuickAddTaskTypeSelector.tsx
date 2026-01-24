@@ -49,9 +49,7 @@ export const QuickAddTaskTypeSelector: React.FC<
             <Ionicons
               name={icon as any}
               size={20}
-              color={
-                isActive ? COLORS.primary : isDark ? '#9CA3AF' : '#6B7280'
-              }
+              color={isActive ? COLORS.primary : isDark ? '#9CA3AF' : '#6B7280'}
             />
             <Text
               style={[

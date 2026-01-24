@@ -50,11 +50,7 @@ export const DetailRow: React.FC<DetailRowProps> = ({
         />
       </View>
       <View style={styles.textContainer}>
-        <Text
-          style={[
-            styles.title,
-            { color: isDark ? '#FFFFFF' : '#111418' },
-          ]}>
+        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
           {title}
         </Text>
         {subtitle && (

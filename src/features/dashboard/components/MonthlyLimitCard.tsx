@@ -34,10 +34,7 @@ export const MonthlyLimitCard: React.FC<MonthlyLimitCardProps> = ({
       <View style={styles.header}>
         <View>
           <Text
-            style={[
-              styles.label,
-              { color: isDark ? '#9CA3AF' : '#637588' },
-            ]}>
+            style={[styles.label, { color: isDark ? '#9CA3AF' : '#637588' }]}>
             MONTHLY LIMIT
           </Text>
           <Text style={[styles.countText, { color: theme.text }]}>

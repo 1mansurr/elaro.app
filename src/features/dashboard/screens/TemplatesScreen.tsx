@@ -111,10 +111,10 @@ const TemplatesScreen = () => {
   const handleUseTemplate = (template: TaskTemplate) => {
     // Create initial data from template with proper type guards
     const courseData = template.template_data.course;
-    const course: Course | undefined = 
-      courseData && 
-      typeof courseData === 'object' && 
-      'id' in courseData && 
+    const course: Course | undefined =
+      courseData &&
+      typeof courseData === 'object' &&
+      'id' in courseData &&
       'courseName' in courseData
         ? (courseData as Course)
         : undefined;
@@ -123,7 +123,7 @@ const TemplatesScreen = () => {
     const title: string = typeof titleData === 'string' ? titleData : '';
 
     const dateTimeData = template.template_data.dateTime;
-    const dateTime: Date | string | undefined = 
+    const dateTime: Date | string | undefined =
       dateTimeData instanceof Date
         ? dateTimeData
         : typeof dateTimeData === 'string'
@@ -136,17 +136,28 @@ const TemplatesScreen = () => {
       course,
       title,
       dateTime,
-      description: typeof template.template_data.description === 'string' ? template.template_data.description : '',
+      description:
+        typeof template.template_data.description === 'string'
+          ? template.template_data.description
+          : '',
       // Assignment-specific
       submissionMethod: template.template_data.submissionMethod || null,
-      submissionLink: typeof template.template_data.submissionLink === 'string' ? template.template_data.submissionLink : '',
+      submissionLink:
+        typeof template.template_data.submissionLink === 'string'
+          ? template.template_data.submissionLink
+          : '',
       // Lecture-specific
       endTime: template.template_data.endTime || null,
-      recurrence: typeof template.template_data.recurrence === 'string' ? template.template_data.recurrence : 'none',
+      recurrence:
+        typeof template.template_data.recurrence === 'string'
+          ? template.template_data.recurrence
+          : 'none',
       // Study Session-specific
       hasSpacedRepetition: Boolean(template.template_data.hasSpacedRepetition),
       // Common
-      reminders: Array.isArray(template.template_data.reminders) ? template.template_data.reminders : [120],
+      reminders: Array.isArray(template.template_data.reminders)
+        ? template.template_data.reminders
+        : [120],
     };
 
     // Navigate to appropriate modal based on task type
@@ -333,10 +344,7 @@ const TemplatesScreen = () => {
         color={isDark ? '#9CA3AF' : '#6B7280'}
       />
       <Text
-        style={[
-          styles.emptyTitle,
-          { color: isDark ? '#FFFFFF' : '#111418' },
-        ]}>
+        style={[styles.emptyTitle, { color: isDark ? '#FFFFFF' : '#111418' }]}>
         No Templates
       </Text>
       <Text

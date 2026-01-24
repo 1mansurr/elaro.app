@@ -1,3 +1,4 @@
+import React from 'react';
 import { renderHook, act } from '@testing-library/react-native';
 import {
   useExpensiveMemo,
@@ -33,10 +34,10 @@ describe('useMemoization', () => {
 
     it('should use custom equality function when provided', () => {
       const expensiveFn = jest.fn(() => 'value');
-      const customEquality = (a: number[], b: number[]) => {
-        return (
-          a.reduce((sum, n) => sum + n, 0) === b.reduce((sum, n) => sum + n, 0)
-        );
+      const customEquality = (a: React.DependencyList, b: React.DependencyList) => {
+        const aSum = (a as number[]).reduce((sum, n) => sum + n, 0);
+        const bSum = (b as number[]).reduce((sum, n) => sum + n, 0);
+        return aSum === bSum;
       };
 
       const { result, rerender } = renderHook(
@@ -81,11 +82,15 @@ describe('useMemoization', () => {
       const callback = jest.fn((a: number, b: string) => a + b);
 
       const { result } = renderHook(
-        ({ deps }) => useStableCallback(callback, deps),
+        ({ deps }) =>
+          useStableCallback(
+            callback as (...args: unknown[]) => unknown,
+            deps,
+          ),
         { initialProps: { deps: [1] } },
       );
 
-      result.current(5, 'test');
+      (result.current as (a: number, b: string) => string)(5, 'test');
       expect(callback).toHaveBeenCalledWith(5, 'test');
       expect(callback).toHaveBeenCalledTimes(1);
     });
@@ -193,10 +198,12 @@ describe('useMemoization', () => {
   describe('useCustomMemo', () => {
     it('should use custom equality function', () => {
       const factory = jest.fn(() => 'result');
-      const equalityFn = (prev: number[], next: number[]) => {
+      const equalityFn = (prev: React.DependencyList, next: React.DependencyList) => {
+        const prevArr = prev as number[];
+        const nextArr = next as number[];
         return (
-          prev.length === next.length &&
-          prev.every((val, idx) => val === next[idx])
+          prevArr.length === nextArr.length &&
+          prevArr.every((val, idx) => val === nextArr[idx])
         );
       };
 

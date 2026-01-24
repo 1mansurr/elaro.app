@@ -310,12 +310,8 @@ export function SettingsScreen() {
               style={[
                 styles.analyticsToggleContainer,
                 {
-                  backgroundColor: isDark
-                    ? 'rgba(0, 0, 0, 0.2)'
-                    : '#F9FAFB',
-                  borderColor: isDark
-                    ? 'rgba(255, 255, 255, 0.05)'
-                    : '#E5E7EB',
+                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F9FAFB',
+                  borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB',
                 },
               ]}>
               <Text

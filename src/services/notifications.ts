@@ -243,7 +243,10 @@ async function savePushTokenToSupabase(userId: string, token: string) {
       maxDelay: 10000, // Max 10 seconds between retries
       retryCondition: error => {
         // Don't retry validation errors (not transient)
-        if (error instanceof Error && (error as Error & { code?: string }).code === 'VALIDATION_ERROR') {
+        if (
+          error instanceof Error &&
+          (error as Error & { code?: string }).code === 'VALIDATION_ERROR'
+        ) {
           return false;
         }
         // Retry on timeout errors (504) or worker errors (may be transient)

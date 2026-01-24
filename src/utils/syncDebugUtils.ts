@@ -90,7 +90,9 @@ export async function getSyncStateSummary(): Promise<SyncStateSummary> {
       auth: {
         cached: !!authCached,
         userId: authCached?.userId || null,
-        lastSynced: authCached?.lastSyncedAt ? new Date(authCached.lastSyncedAt).toISOString() : null,
+        lastSynced: authCached?.lastSyncedAt
+          ? new Date(authCached.lastSyncedAt).toISOString()
+          : null,
       },
       navigation: {
         hasState: navStats.hasState,

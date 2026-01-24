@@ -17,15 +17,11 @@ serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
     // @ts-expect-error - Deno global is available at runtime
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-    const supabase = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
-        },
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: req.headers.get('Authorization')! },
       },
-    );
+    });
 
     console.log('Getting user');
     const {
@@ -65,8 +61,7 @@ serve(async (req: Request) => {
     });
   } catch (error: unknown) {
     console.error('Error in test no-db function:', error);
-    const errorMessage =
-      error instanceof Error ? error.message : String(error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     const errorDetails =
       error instanceof Error ? error.toString() : String(error);
     return new Response(

@@ -100,12 +100,9 @@ async function handleUpdateSubscription(req: AuthenticatedRequest) {
 
     // Type guard for CustomerInfo structure
     const customerInfoTyped = customerInfo as CustomerInfo;
-    if (
-      customerInfoTyped?.entitlements?.active?.['oddity']
-    ) {
+    if (customerInfoTyped?.entitlements?.active?.['oddity']) {
       subscriptionTier = 'oddity';
-      const oddityEntitlement =
-        customerInfoTyped.entitlements.active['oddity'];
+      const oddityEntitlement = customerInfoTyped.entitlements.active['oddity'];
       expirationDate = oddityEntitlement.expirationDate;
     }
 

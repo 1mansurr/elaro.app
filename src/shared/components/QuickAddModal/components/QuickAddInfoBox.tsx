@@ -21,10 +21,7 @@ export const QuickAddInfoBox: React.FC = () => {
         color={COLORS.primary}
       />
       <Text
-        style={[
-          styles.infoText,
-          { color: isDark ? '#E0E7FF' : COLORS.gray },
-        ]}>
+        style={[styles.infoText, { color: isDark ? '#E0E7FF' : COLORS.gray }]}>
         Quick add creates a task with default settings. Tap "Add More Details"
         to customize reminders, descriptions, and more.
       </Text>

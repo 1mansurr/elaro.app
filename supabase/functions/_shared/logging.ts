@@ -158,7 +158,7 @@ export function sendLog(
   const logEntry: LogEntry = {
     level,
     message,
-    function: (metadata.function as string | undefined),
+    function: metadata.function as string | undefined,
     userId: metadata.userId
       ? (redactPII(metadata.userId, { hashIds: true }) as string)
       : undefined,

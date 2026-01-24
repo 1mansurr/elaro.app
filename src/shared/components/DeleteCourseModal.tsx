@@ -78,16 +78,14 @@ export const DeleteCourseModal: React.FC<DeleteCourseModalProps> = ({
               style={[
                 styles.iconContainer,
                 {
-                  backgroundColor:
-                    isDark ? '#dc262620' : '#fee2e2',
+                  backgroundColor: isDark ? '#dc262620' : '#fee2e2',
                 },
               ]}>
               <View
                 style={[
                   styles.iconRing,
                   {
-                  backgroundColor:
-                    isDark ? '#dc262610' : '#fee2e280',
+                    backgroundColor: isDark ? '#dc262610' : '#fee2e280',
                   },
                 ]}
               />
@@ -130,8 +128,7 @@ export const DeleteCourseModal: React.FC<DeleteCourseModalProps> = ({
                 style={[
                   styles.cancelButton,
                   {
-                    backgroundColor:
-                      isDark ? '#ffffff10' : '#f0f2f4',
+                    backgroundColor: isDark ? '#ffffff10' : '#f0f2f4',
                   },
                 ]}
                 onPress={onClose}

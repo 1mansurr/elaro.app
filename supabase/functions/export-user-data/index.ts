@@ -22,7 +22,12 @@ const RATE_LIMIT_DAYS = 7;
 function convertToCSV(data: Record<string, unknown>): string {
   const flatten = (obj: unknown, prefix = ''): Record<string, unknown> => {
     const result: Record<string, unknown> = {};
-    if (obj && typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof Date)) {
+    if (
+      obj &&
+      typeof obj === 'object' &&
+      !Array.isArray(obj) &&
+      !(obj instanceof Date)
+    ) {
       const objTyped = obj as Record<string, unknown>;
       for (const key in objTyped) {
         const newKey = prefix ? `${prefix}.${key}` : key;

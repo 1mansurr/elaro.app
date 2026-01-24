@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
-import { AddAssignmentScreen } from '@/features/assignments/screens/AddAssignmentScreen';
+import AddAssignmentScreen from '@/features/assignments/screens/AddAssignmentScreen';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -243,6 +243,7 @@ describe('AddAssignmentScreen', () => {
       session: { user: { id: 'user-123' } } as any,
       user: { id: 'user-123', email: 'test@example.com' } as any,
       loading: false,
+      isInitializing: false,
       isGuest: false,
       signIn: jest.fn(),
       signUp: jest.fn(),
@@ -253,7 +254,10 @@ describe('AddAssignmentScreen', () => {
     mockUseNetwork.mockReturnValue({
       isOnline: true,
       isOffline: false,
-      isInternetReachable: true,
+      networkType: 'wifi' as any,
+      isLoading: false,
+      netInfoState: null,
+      refresh: jest.fn().mockResolvedValue(undefined),
     });
 
     mockUseQueryClient.mockReturnValue(mockQueryClient as any);
@@ -300,6 +304,7 @@ describe('AddAssignmentScreen', () => {
         session: null,
         user: null,
         loading: false,
+        isInitializing: false,
         isGuest: true,
         signIn: jest.fn(),
         signUp: jest.fn(),
@@ -426,7 +431,10 @@ describe('AddAssignmentScreen', () => {
       mockUseNetwork.mockReturnValue({
         isOnline: false,
         isOffline: true,
-        isInternetReachable: false,
+        networkType: 'none' as any,
+        isLoading: false,
+        netInfoState: null,
+        refresh: jest.fn().mockResolvedValue(undefined),
       });
 
       const { getByPlaceholderText, getByText } = render(

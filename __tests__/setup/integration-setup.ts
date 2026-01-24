@@ -140,7 +140,7 @@ afterAll(() => {
 });
 
 // Global test utilities for integration tests
-global.mockUser = {
+(global as any).mockUser = {
   id: 'test-user-1',
   email: 'test@example.com',
   first_name: 'Test',

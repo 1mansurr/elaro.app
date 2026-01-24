@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { User } from '@/types';
@@ -8,25 +8,27 @@ import {
   executeSupabaseMutation,
 } from '@/utils/supabaseQueryWrapper';
 
-// Get environment variables from Constants (Expo's way) with fallback to process.env
-const supabaseUrl =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
-  process.env.EXPO_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey =
-  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
-  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+/**
+ * Get Supabase configuration from Constants (Expo's way).
+ * Does NOT access process.env at runtime (not available in Release builds).
+ *
+ * @returns Configuration object with url and anonKey, or null if missing
+ */
+function getSupabaseConfig(): { url: string; anonKey: string } | null {
+  // Only use Constants.expoConfig - process.env is not available in Release builds
+  const extra = Constants.expoConfig?.extra;
+  if (!extra) {
+    return null;
+  }
 
-// Validate that required variables are present
-if (!supabaseUrl || !supabaseAnonKey) {
-  const missing = [];
-  if (!supabaseUrl) missing.push('EXPO_PUBLIC_SUPABASE_URL');
-  if (!supabaseAnonKey) missing.push('EXPO_PUBLIC_SUPABASE_ANON_KEY');
-  console.error(
-    `❌ Missing required Supabase configuration: ${missing.join(', ')}`,
-  );
-  console.error(
-    '💡 Make sure these are set in your .env file and restart Metro bundler',
-  );
+  const url = extra.EXPO_PUBLIC_SUPABASE_URL;
+  const anonKey = extra.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) {
+    return null;
+  }
+
+  return { url, anonKey };
 }
 
 /**
@@ -79,15 +81,120 @@ const fetchWithTimeout = async (
   }
 };
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-  global: {
-    fetch: fetchWithTimeout as unknown as typeof fetch,
+// Cached Supabase client instance (singleton pattern)
+let supabaseClientInstance: SupabaseClient | null = null;
+let initializationError: Error | null = null;
+
+/**
+ * Get or initialize the Supabase client (lazy initialization).
+ * 
+ * This function:
+ * - Validates configuration at runtime (not at import time)
+ * - Throws a controlled JS Error if config is missing (does NOT crash native)
+ * - Caches the client instance for subsequent calls
+ * - Only initializes once (singleton pattern)
+ * 
+ * @returns Supabase client instance
+ * @throws Error if Supabase configuration is missing
+ */
+export function getSupabaseClient(): SupabaseClient {
+  // Return cached instance if available
+  if (supabaseClientInstance) {
+    return supabaseClientInstance;
+  }
+
+  // Return cached error if initialization previously failed
+  if (initializationError) {
+    throw initializationError;
+  }
+
+  // Get configuration at runtime (not at import time)
+  const config = getSupabaseConfig();
+
+  if (!config) {
+    const missing: string[] = [];
+    const extra = Constants.expoConfig?.extra;
+    
+    if (!extra) {
+      missing.push('Constants.expoConfig.extra is undefined');
+    } else {
+      if (!extra.EXPO_PUBLIC_SUPABASE_URL) {
+        missing.push('EXPO_PUBLIC_SUPABASE_URL');
+      }
+      if (!extra.EXPO_PUBLIC_SUPABASE_ANON_KEY) {
+        missing.push('EXPO_PUBLIC_SUPABASE_ANON_KEY');
+      }
+    }
+
+    const errorMessage = `Supabase configuration is missing: ${missing.join(', ')}. ` +
+      `Make sure these are set as EAS secrets or in app.config.js extra section.`;
+    
+    console.error(`❌ ${errorMessage}`);
+    
+    // Store error to prevent repeated initialization attempts
+    initializationError = new Error(errorMessage);
+    throw initializationError;
+  }
+
+  // Validate that values are not empty strings
+  if (!config.url || !config.anonKey || config.url.trim() === '' || config.anonKey.trim() === '') {
+    const errorMessage = 'Supabase configuration values are empty. ' +
+      `URL: ${config.url ? 'present' : 'missing'}, Key: ${config.anonKey ? 'present' : 'missing'}`;
+    
+    console.error(`❌ ${errorMessage}`);
+    
+    initializationError = new Error(errorMessage);
+    throw initializationError;
+  }
+
+  try {
+    // Initialize Supabase client with validated configuration
+    supabaseClientInstance = createClient(config.url, config.anonKey, {
+      auth: {
+        storage: AsyncStorage,
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false,
+      },
+      global: {
+        fetch: fetchWithTimeout as unknown as typeof fetch,
+      },
+    });
+
+    return supabaseClientInstance;
+  } catch (error) {
+    const errorMessage = error instanceof Error 
+      ? error.message 
+      : 'Failed to initialize Supabase client';
+    
+    console.error(`❌ Supabase client initialization failed: ${errorMessage}`);
+    
+    initializationError = new Error(`Supabase initialization error: ${errorMessage}`);
+    throw initializationError;
+  }
+}
+
+/**
+ * Backward-compatible export: supabase
+ * 
+ * This is a lazy getter that calls getSupabaseClient().
+ * It does NOT initialize at import time - only when first accessed.
+ * 
+ * WARNING: If you import this at module level and use it at module level,
+ * it will still initialize synchronously. Prefer using getSupabaseClient()
+ * inside functions/effects for better control.
+ */
+export const supabase = new Proxy({} as SupabaseClient, {
+  get(_target, prop) {
+    const client = getSupabaseClient();
+    const value = (client as any)[prop];
+    
+    // If it's a function, bind it to the client
+    if (typeof value === 'function') {
+      return value.bind(client);
+    }
+    
+    return value;
   },
 });
 
@@ -221,7 +328,8 @@ export const authService = {
 
       try {
         // Direct Supabase query as fallback
-        const { data, error } = await supabase
+        const supabaseClient = getSupabaseClient();
+        const { data, error } = await supabaseClient
           .from('users')
           .select('*')
           .eq('id', userId)

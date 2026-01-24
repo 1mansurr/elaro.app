@@ -64,10 +64,7 @@ const AddLectureRemindersScreen = () => {
 
       // Type guard: ensure taskData is Course when taskType is 'course'
       if (pendingTask.taskType !== 'course' || !('courseName' in taskData)) {
-        Alert.alert(
-          'Error',
-          'Invalid task data for the saved course.',
-        );
+        Alert.alert('Error', 'Invalid task data for the saved course.');
         return;
       }
 

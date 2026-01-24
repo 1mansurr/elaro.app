@@ -383,7 +383,11 @@ export class RecurringTaskService {
     return {
       id: dbPattern.id as string,
       name: dbPattern.name as string,
-      frequency: dbPattern.frequency as 'daily' | 'weekly' | 'monthly' | 'custom',
+      frequency: dbPattern.frequency as
+        | 'daily'
+        | 'weekly'
+        | 'monthly'
+        | 'custom',
       intervalValue: dbPattern.interval_value as number,
       daysOfWeek: dbPattern.days_of_week as number[] | undefined,
       dayOfMonth: dbPattern.day_of_month as number | undefined,
@@ -405,7 +409,9 @@ export class RecurringTaskService {
       id: dbTask.id as string,
       userId: dbTask.user_id as string,
       patternId: dbTask.pattern_id as string,
-      pattern: this.mapPatternFromDB(dbTask.recurring_patterns as Record<string, unknown>),
+      pattern: this.mapPatternFromDB(
+        dbTask.recurring_patterns as Record<string, unknown>,
+      ),
       taskType: dbTask.task_type as 'assignment' | 'lecture' | 'study_session',
       templateData: dbTask.template_data as Record<string, unknown>,
       isActive: (dbTask.is_active ?? false) as boolean,

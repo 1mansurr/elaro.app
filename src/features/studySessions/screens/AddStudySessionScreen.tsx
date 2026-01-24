@@ -278,7 +278,10 @@ const AddStudySessionScreen = () => {
       }
 
       // Set description
-      if (templateData.description && typeof templateData.description === 'string') {
+      if (
+        templateData.description &&
+        typeof templateData.description === 'string'
+      ) {
         setDescription(templateData.description);
       }
 
@@ -390,7 +393,9 @@ const AddStudySessionScreen = () => {
         course_id: selectedCourse!.id,
         topic: topic.trim(),
         notes: description.trim(),
-        session_date: sessionDate ? sessionDate.toISOString() : new Date().toISOString(),
+        session_date: sessionDate
+          ? sessionDate.toISOString()
+          : new Date().toISOString(),
         has_spaced_repetition: hasSpacedRepetition,
         reminders,
       };
@@ -422,9 +427,7 @@ const AddStudySessionScreen = () => {
         // Cancel old notifications before updating
         if (taskToEdit.id) {
           try {
-            await notificationService.cancelItemReminders(
-              taskToEdit.id,
-            );
+            await notificationService.cancelItemReminders(taskToEdit.id);
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
             // Continue with update even if notification cancellation fails
@@ -560,10 +563,7 @@ const AddStudySessionScreen = () => {
           {/* Course Selector */}
           <View style={styles.field}>
             <Text
-              style={[
-                styles.label,
-                { color: isDark ? '#FFFFFF' : '#374151' },
-              ]}>
+              style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
               Course
             </Text>
             <TouchableOpacity
@@ -660,10 +660,7 @@ const AddStudySessionScreen = () => {
           {/* Description */}
           <View style={styles.field}>
             <Text
-              style={[
-                styles.label,
-                { color: isDark ? '#FFFFFF' : '#374151' },
-              ]}>
+              style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
               Notes
             </Text>
             <TextInput
@@ -866,7 +863,7 @@ const AddStudySessionScreen = () => {
             <Text
               style={[
                 styles.modalSubtitle,
-                  { color: isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               Choose up to 2 reminders
             </Text>

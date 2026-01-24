@@ -50,10 +50,7 @@ const StatCard: React.FC<{
           <Ionicons name={icon} size={18} color={iconColor} />
         </View>
         <Text
-          style={[
-            styles.statLabel,
-            { color: isDark ? '#9CA3AF' : '#637588' },
-          ]}>
+          style={[styles.statLabel, { color: isDark ? '#9CA3AF' : '#637588' }]}>
           {label}
         </Text>
       </View>

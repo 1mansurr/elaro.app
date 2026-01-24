@@ -46,9 +46,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
             backgroundColor: isDark
               ? COLORS.primary + '33'
               : COLORS.primary + '1A',
-            borderColor: isDark
-              ? COLORS.primary + '33'
-              : COLORS.primary + '1A',
+            borderColor: isDark ? COLORS.primary + '33' : COLORS.primary + '1A',
           },
         ]}>
         <Text

@@ -53,7 +53,12 @@ export function createAdminHandler(
         );
       }
 
-      if (!userData || !isAdmin((userData as { subscription_tier?: string }).subscription_tier || '')) {
+      if (
+        !userData ||
+        !isAdmin(
+          (userData as { subscription_tier?: string }).subscription_tier || '',
+        )
+      ) {
         throw new AppError(
           'Admin access required',
           ERROR_STATUS_CODES.FORBIDDEN,

@@ -36,7 +36,7 @@ export const coursesApi = {
       }
 
       // Map VersionedApiClient.Course to entities.Course
-      let courses: Course[] = (response.data || []).map((apiCourse) => ({
+      let courses: Course[] = (response.data || []).map(apiCourse => ({
         id: apiCourse.id,
         courseName: apiCourse.course_name,
         courseCode: apiCourse.course_code,

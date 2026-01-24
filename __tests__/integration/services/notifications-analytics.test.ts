@@ -42,13 +42,13 @@ describe('Notifications + Analytics Integration', () => {
         type: 'reminder' as const,
       };
 
-      (notificationService.scheduleNotification as jest.Mock).mockResolvedValue(
+      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue(
         {
           success: true,
         },
       );
 
-      await notificationService.scheduleNotification(notificationData);
+      await notificationService.scheduleReminder(notificationData);
 
       // Analytics should track notification sent event
       expect(mixpanelService.trackEvent).toHaveBeenCalledWith(
@@ -70,13 +70,13 @@ describe('Notifications + Analytics Integration', () => {
         data: { assignmentId: 'assignment-1' },
       };
 
-      (notificationService.scheduleNotification as jest.Mock).mockResolvedValue(
+      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue(
         {
           success: true,
         },
       );
 
-      await notificationService.scheduleNotification(notificationData);
+      await notificationService.scheduleReminder(notificationData);
 
       expect(mixpanelService.trackEvent).toHaveBeenCalledWith(
         'notification_sent',

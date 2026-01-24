@@ -104,25 +104,33 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
 
     // --- Process and normalize results (without setting conflicting name fields) ---
     const lecturesArray = Array.isArray(lectures) ? lectures : [];
-    const studySessionsArray = Array.isArray(studySessions) ? studySessions : [];
+    const studySessionsArray = Array.isArray(studySessions)
+      ? studySessions
+      : [];
     const assignmentsArray = Array.isArray(assignments) ? assignments : [];
-    
+
     const allTasks = [
-      ...lecturesArray.map((t: { lecture_date: string; [key: string]: unknown }) => ({
-        ...t,
-        type: 'lecture',
-        date: t.lecture_date,
-      })),
-      ...studySessionsArray.map((t: { session_date: string; [key: string]: unknown }) => ({
-        ...t,
-        type: 'study_session',
-        date: t.session_date,
-      })),
-      ...assignmentsArray.map((t: { due_date: string; [key: string]: unknown }) => ({
-        ...t,
-        type: 'assignment',
-        date: t.due_date,
-      })),
+      ...lecturesArray.map(
+        (t: { lecture_date: string; [key: string]: unknown }) => ({
+          ...t,
+          type: 'lecture',
+          date: t.lecture_date,
+        }),
+      ),
+      ...studySessionsArray.map(
+        (t: { session_date: string; [key: string]: unknown }) => ({
+          ...t,
+          type: 'study_session',
+          date: t.session_date,
+        }),
+      ),
+      ...assignmentsArray.map(
+        (t: { due_date: string; [key: string]: unknown }) => ({
+          ...t,
+          type: 'assignment',
+          date: t.due_date,
+        }),
+      ),
     ];
 
     // Decrypt sensitive fields and standardize to { name, description }
@@ -177,7 +185,8 @@ async function handleGetCalendarData(req: AuthenticatedRequest) {
     for (const day in groupedByDay) {
       const tasks = groupedByDay[day];
       tasks.sort(
-        (a: Task, b: Task) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+        (a: Task, b: Task) =>
+          new Date(a.date).getTime() - new Date(b.date).getTime(),
       );
     }
 

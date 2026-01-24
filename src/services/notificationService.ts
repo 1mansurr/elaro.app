@@ -216,7 +216,8 @@ const notificationService = {
         };
         return (
           errorObj.code === 'WORKER_ERROR' ||
-          (errorObj.error?.toLowerCase().includes('function exited') ?? false) ||
+          (errorObj.error?.toLowerCase().includes('function exited') ??
+            false) ||
           (errorObj.message?.toLowerCase().includes('function exited') ?? false)
         );
       }
@@ -300,7 +301,10 @@ const notificationService = {
         maxDelay: 10000, // Max 10 seconds between retries
         retryCondition: error => {
           // Don't retry validation errors (not transient)
-          if (error instanceof Error && (error as Error & { code?: string }).code === 'VALIDATION_ERROR') {
+          if (
+            error instanceof Error &&
+            (error as Error & { code?: string }).code === 'VALIDATION_ERROR'
+          ) {
             return false;
           }
           // Retry on timeout errors (504) or worker errors (may be transient)

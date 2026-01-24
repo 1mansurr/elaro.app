@@ -399,7 +399,10 @@ const CalendarScreen = () => {
       const oddityPackage = offerings.current.availablePackages.find(
         (pkg: unknown) => {
           if (!pkg || typeof pkg !== 'object') return false;
-          return 'identifier' in pkg && (pkg as { identifier: string }).identifier === 'oddity_monthly';
+          return (
+            'identifier' in pkg &&
+            (pkg as { identifier: string }).identifier === 'oddity_monthly'
+          );
         },
       );
       if (!oddityPackage) {

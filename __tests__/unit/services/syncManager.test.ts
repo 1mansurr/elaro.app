@@ -25,9 +25,7 @@ jest.mock('@/utils/cache', () => ({
 const mockAsyncStorage = AsyncStorage as jest.Mocked<typeof AsyncStorage>;
 const mockNetInfo = NetInfo as jest.Mocked<typeof NetInfo>;
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
-const mockCircuitBreaker = CircuitBreaker as jest.MockedClass<
-  typeof CircuitBreaker
->;
+const mockCircuitBreaker = CircuitBreaker as any;
 
 describe('SyncManager', () => {
   // Store for AsyncStorage mock
@@ -65,7 +63,9 @@ describe('SyncManager', () => {
     } as any);
 
     // Mock NetInfo.addEventListener to return unsubscribe function
-    mockNetInfo.addEventListener = jest.fn(() => jest.fn());
+    mockNetInfo.addEventListener = jest.fn(
+      (_listener: (state: any) => void) => jest.fn(),
+    ) as any;
 
     // Mock Circuit Breaker - default instance
     const defaultMockCircuitBreakerInstance = {
@@ -255,7 +255,7 @@ describe('SyncManager', () => {
 
       // Verify retry delay is set
       const queue = syncManager.getQueue();
-      const queuedAction = queue.find(a => a.id === action.id);
+      const queuedAction = queue.find((a: any) => a.id === action.id);
       expect(queuedAction).toBeDefined();
       expect((queuedAction as any).nextRetryAt).toBeDefined();
       expect((queuedAction as any).nextRetryAt).toBeGreaterThan(Date.now());
@@ -318,7 +318,7 @@ describe('SyncManager', () => {
 
       // Verify action is still pending (not retried)
       const queue = syncManager.getQueue();
-      const queuedAction = queue.find(a => a.id === action.id);
+      const queuedAction = queue.find((a: any) => a.id === action.id);
       expect(queuedAction?.status).toBe('pending');
       expect(queuedAction?.retryCount).toBe(0); // Should not increment for circuit breaker errors
     });

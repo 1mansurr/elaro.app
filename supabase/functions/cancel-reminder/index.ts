@@ -48,7 +48,12 @@ async function handleCancelReminder(req: AuthenticatedRequest) {
     );
   }
 
-  const reminderTyped = reminder as { completed: boolean; reminder_type: string; reminder_time: string; sent_at: string | null };
+  const reminderTyped = reminder as {
+    completed: boolean;
+    reminder_type: string;
+    reminder_time: string;
+    sent_at: string | null;
+  };
 
   // 2. Check if reminder is already completed
   if (reminderTyped.completed) {

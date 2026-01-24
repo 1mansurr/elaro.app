@@ -607,10 +607,8 @@ const EditCourseModal = () => {
             style={[
               styles.deleteButton,
               {
-                backgroundColor:
-                  isDark ? '#991b1b20' : '#fee2e2',
-                borderColor:
-                  isDark ? '#991b1b30' : 'transparent',
+                backgroundColor: isDark ? '#991b1b20' : '#fee2e2',
+                borderColor: isDark ? '#991b1b30' : 'transparent',
               },
             ]}
             onPress={handleDelete}

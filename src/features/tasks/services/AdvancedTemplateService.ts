@@ -667,18 +667,29 @@ export class AdvancedTemplateService {
   private mapTemplateFromDB(
     dbTemplate: Record<string, unknown>,
   ): AdvancedTaskTemplate {
-    const templateData = (dbTemplate.template_data as Record<string, unknown>) || {};
+    const templateData =
+      (dbTemplate.template_data as Record<string, unknown>) || {};
 
     return {
       id: dbTemplate.id as string,
       userId: dbTemplate.user_id as string,
       templateName: dbTemplate.template_name as string,
       description: (dbTemplate.description as string) || '',
-      taskType: dbTemplate.task_type as 'assignment' | 'lecture' | 'study_session',
-      category: dbTemplate.category as 'academic' | 'work' | 'personal' | 'study' | 'project' | 'maintenance',
+      taskType: dbTemplate.task_type as
+        | 'assignment'
+        | 'lecture'
+        | 'study_session',
+      category: dbTemplate.category as
+        | 'academic'
+        | 'work'
+        | 'personal'
+        | 'study'
+        | 'project'
+        | 'maintenance',
       fields: (templateData.fields as TemplateField[]) || [],
       defaultValues: (templateData.defaultValues as Record<string, any>) || {},
-      validationRules: (templateData.validationRules as Record<string, any>) || {},
+      validationRules:
+        (templateData.validationRules as Record<string, any>) || {},
       isPublic: (dbTemplate.is_public ?? false) as boolean,
       tags: (dbTemplate.tags as string[]) || [],
       version: dbTemplate.version as number,

@@ -162,36 +162,46 @@ export async function sendPushNotification(
       console.log('Sent notification chunk, received tickets:', tickets);
 
       const ticketsArray = Array.isArray(tickets) ? tickets : [];
-      ticketsArray.forEach((ticket: { status?: string; id?: string; message?: string; details?: { error?: string } }, index: number) => {
-        const originalMessage = chunk[index];
+      ticketsArray.forEach(
+        (
+          ticket: {
+            status?: string;
+            id?: string;
+            message?: string;
+            details?: { error?: string };
+          },
+          index: number,
+        ) => {
+          const originalMessage = chunk[index];
 
-        if (ticket.status === 'ok') {
-          sentCount++;
-          if (ticket.id) {
-            ticketIds.push(ticket.id);
+          if (ticket.status === 'ok') {
+            sentCount++;
+            if (ticket.id) {
+              ticketIds.push(ticket.id);
+            }
+          } else if (ticket.status === 'error') {
+            failureCount++;
+            console.error(
+              `Error sending notification to ${originalMessage.to}: ${ticket.message || 'Unknown error'}`,
+            );
+
+            // Check for permanent errors that indicate invalid tokens
+            const errorCode = ticket.details?.error;
+            const permanentErrors = [
+              'DeviceNotRegistered',
+              'InvalidCredentials',
+              'InvalidRegistration',
+              'MismatchSenderId',
+              'MessageTooBig',
+            ];
+
+            if (errorCode && permanentErrors.includes(errorCode)) {
+              // This token is permanently invalid and should be removed
+              invalidTokens.push(originalMessage.to as string);
+            }
           }
-        } else if (ticket.status === 'error') {
-          failureCount++;
-          console.error(
-            `Error sending notification to ${originalMessage.to}: ${ticket.message || 'Unknown error'}`,
-          );
-
-          // Check for permanent errors that indicate invalid tokens
-          const errorCode = ticket.details?.error;
-          const permanentErrors = [
-            'DeviceNotRegistered',
-            'InvalidCredentials',
-            'InvalidRegistration',
-            'MismatchSenderId',
-            'MessageTooBig',
-          ];
-
-          if (errorCode && permanentErrors.includes(errorCode)) {
-            // This token is permanently invalid and should be removed
-            invalidTokens.push(originalMessage.to as string);
-          }
-        }
-      });
+        },
+      );
     }
   } catch (error) {
     const err = error as { message?: string };

@@ -95,9 +95,7 @@ function isValidUsername(str: string): boolean {
  * Transform backend response to client User type
  * Converts null values to undefined to match client-side type expectations
  */
-function transformBackendToClient(
-  backend: BackendUserResponse,
-): Partial<User> {
+function transformBackendToClient(backend: BackendUserResponse): Partial<User> {
   return {
     id: backend.id,
     email: backend.email,

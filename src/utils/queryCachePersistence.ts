@@ -80,8 +80,9 @@ export async function persistQueryCache(
       },
       options: {
         staleTime: (query.options as { staleTime?: number }).staleTime,
-        gcTime: (query.options as { gcTime?: number; cacheTime?: number }).gcTime || 
-                (query.options as { gcTime?: number; cacheTime?: number }).cacheTime, // gcTime is new name, cacheTime is legacy
+        gcTime:
+          (query.options as { gcTime?: number; cacheTime?: number }).gcTime ||
+          (query.options as { gcTime?: number; cacheTime?: number }).cacheTime, // gcTime is new name, cacheTime is legacy
       },
     }));
 

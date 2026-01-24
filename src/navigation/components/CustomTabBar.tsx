@@ -134,11 +134,17 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
               : options.title !== undefined
                 ? options.title
                 : route.name;
-          
+
           // Extract label text - handle both string and function cases
-          const label = typeof labelValue === 'function'
-            ? labelValue({ focused: state.index === index, color: '', position: 'below-icon' as any, children: route.name })
-            : labelValue;
+          const label =
+            typeof labelValue === 'function'
+              ? labelValue({
+                  focused: state.index === index,
+                  color: '',
+                  position: 'below-icon' as any,
+                  children: route.name,
+                })
+              : labelValue;
 
           const isFocused = state.index === index;
 
@@ -191,11 +197,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
                 name={iconName}
                 size={isFocused ? 24 : 28}
                 color={
-                  isFocused
-                    ? isDark
-                      ? '#FFFFFF'
-                      : COLORS.primary
-                    : iconColor
+                  isFocused ? (isDark ? '#FFFFFF' : COLORS.primary) : iconColor
                 }
               />
               {isFocused && (

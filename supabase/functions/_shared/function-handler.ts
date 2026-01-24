@@ -647,7 +647,9 @@ export function createAuthenticatedHandler(
           if (prop === 'body') return body;
           if (prop === 'traceContext') return traceContext;
           // Delegate everything else to the original request
-          const value = (target as unknown as Record<string, unknown>)[prop as string];
+          const value = (target as unknown as Record<string, unknown>)[
+            prop as string
+          ];
           // If it's a function, bind it to the target to preserve 'this' context
           return typeof value === 'function' ? value.bind(target) : value;
         },

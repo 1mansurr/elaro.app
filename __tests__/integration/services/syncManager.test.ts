@@ -1,5 +1,5 @@
 import { syncManager } from '@/services/syncManager';
-import NetInfo from '@react-native-community/netinfo';
+import NetInfo, { NetInfoState } from '@react-native-community/netinfo';
 import { supabase } from '@/services/supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -228,12 +228,14 @@ describe('SyncManager Integration Tests', () => {
       );
 
       // Mock network listener callback
-      let networkListener: ((state: any) => void) | null = null;
+      let networkListener: ((state: NetInfoState) => void) | null = null;
 
-      (NetInfo.addEventListener as jest.Mock).mockImplementation(callback => {
-        networkListener = callback;
-        return () => {};
-      });
+      (NetInfo.addEventListener as jest.Mock).mockImplementation(
+        (callback: (state: NetInfoState) => void) => {
+          networkListener = callback;
+          return () => {};
+        },
+      );
 
       await syncManager.start();
 
@@ -243,11 +245,24 @@ describe('SyncManager Integration Tests', () => {
         error: null,
       });
 
-      if (networkListener) {
-        networkListener({
+      if (networkListener !== null) {
+        (networkListener as (state: NetInfoState) => void)({
           isConnected: true,
           isInternetReachable: true,
-        });
+          type: 'wifi',
+          details: {
+            ssid: null,
+            bssid: null,
+            strength: null,
+            ipAddress: null,
+            subnet: null,
+            frequency: null,
+            linkSpeed: null,
+            rxLinkSpeed: null,
+            txLinkSpeed: null,
+          },
+          isWifiEnabled: true,
+        } as unknown as NetInfoState);
       }
 
       // Wait for async processing

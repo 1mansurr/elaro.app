@@ -34,8 +34,7 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
 
   return (
     <View style={styles.field}>
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {label} {required && '*'}
       </Text>
       <TouchableOpacity

@@ -216,7 +216,9 @@ async function handleRevenueCatWebhook(
             .eq('user_id', app_user_id);
 
           if (devices && devices.length > 0) {
-            const tokens = devices.map((d: { push_token?: string }) => d.push_token).filter(Boolean);
+            const tokens = devices
+              .map((d: { push_token?: string }) => d.push_token)
+              .filter(Boolean);
 
             // Check if notifications are enabled (critical notifications bypass quiet hours but respect master toggle)
             const prefs = await getUserNotificationPreferences(
@@ -334,7 +336,11 @@ serve(
     ) => {
       // Cast payload to RevenueCatWebhookPayload (convert through unknown first)
       const typedPayload = payload as unknown as RevenueCatWebhookPayload;
-      return await handleRevenueCatWebhook(supabaseAdmin, typedPayload, eventType);
+      return await handleRevenueCatWebhook(
+        supabaseAdmin,
+        typedPayload,
+        eventType,
+      );
     },
     {
       secretKeyEnvVar: 'REVENUECAT_AUTH_HEADER_SECRET',

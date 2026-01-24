@@ -22,14 +22,10 @@ const RecordSRSPerformanceSchema = z.object({
 async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
-  
+
   // Type guard for body
   if (!body || typeof body !== 'object') {
-    throw new AppError(
-      'Invalid request body',
-      400,
-      ERROR_CODES.INVALID_INPUT,
-    );
+    throw new AppError('Invalid request body', 400, ERROR_CODES.INVALID_INPUT);
   }
 
   const {
@@ -163,7 +159,9 @@ async function handleRecordSRSPerformance(req: AuthenticatedRequest) {
     p_hours_window: 24,
   });
 
-  const isCramming = (crammingData as Array<{ is_cramming?: boolean }>)?.[0]?.is_cramming || false;
+  const isCramming =
+    (crammingData as Array<{ is_cramming?: boolean }>)?.[0]?.is_cramming ||
+    false;
 
   // Adjust ease factor if cramming detected (be more conservative)
   let adjustedEaseFactor = currentEaseFactor;

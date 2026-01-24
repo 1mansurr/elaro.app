@@ -459,7 +459,8 @@ export function initializeEventDrivenArchitecture(
   // Register event handlers
   globalEventProcessor.registerHandler({
     eventType: 'user_created',
-    handler: (event: AppEvent) => businessHandlers.handleUserCreated(event as UserCreatedEvent),
+    handler: (event: AppEvent) =>
+      businessHandlers.handleUserCreated(event as UserCreatedEvent),
     priority: 1,
     retryCount: 3,
     timeout: 30000,
@@ -467,7 +468,8 @@ export function initializeEventDrivenArchitecture(
 
   globalEventProcessor.registerHandler({
     eventType: 'course_deleted',
-    handler: (event: AppEvent) => businessHandlers.handleCourseDeleted(event as CourseDeletedEvent),
+    handler: (event: AppEvent) =>
+      businessHandlers.handleCourseDeleted(event as CourseDeletedEvent),
     priority: 2,
     retryCount: 2,
     timeout: 15000,
@@ -475,7 +477,8 @@ export function initializeEventDrivenArchitecture(
 
   globalEventProcessor.registerHandler({
     eventType: 'task_completed',
-    handler: (event: AppEvent) => businessHandlers.handleTaskCompleted(event as TaskCompletedEvent),
+    handler: (event: AppEvent) =>
+      businessHandlers.handleTaskCompleted(event as TaskCompletedEvent),
     priority: 3,
     retryCount: 1,
     timeout: 10000,
@@ -514,7 +517,12 @@ export const EventUtils = {
     if (event == null) {
       return false;
     }
-    const eventTyped = event as { id?: string; type?: string; timestamp?: string; data?: unknown };
+    const eventTyped = event as {
+      id?: string;
+      type?: string;
+      timestamp?: string;
+      data?: unknown;
+    };
     return (
       typeof eventTyped.id === 'string' &&
       typeof eventTyped.type === 'string' &&

@@ -398,7 +398,8 @@ export const NavigationValidation = {
         (typeof params === 'object' &&
           params !== null &&
           ((params as { initialData?: unknown }).initialData === undefined ||
-            typeof (params as { initialData?: unknown }).initialData === 'object'))
+            typeof (params as { initialData?: unknown }).initialData ===
+              'object'))
       );
     }
     // Basic validation for other routes

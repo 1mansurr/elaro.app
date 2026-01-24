@@ -246,9 +246,7 @@ export const StudySessionDetailSheet: React.FC<
                 style={[
                   styles.settingItem,
                   {
-                    backgroundColor: isDark
-                      ? 'transparent'
-                      : 'transparent',
+                    backgroundColor: isDark ? 'transparent' : 'transparent',
                   },
                 ]}>
                 <View

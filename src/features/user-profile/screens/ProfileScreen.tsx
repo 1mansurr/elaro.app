@@ -381,9 +381,7 @@ const ProfileScreen = () => {
                   value={firstName}
                   icon="person-outline"
                   iconColor={isDark ? '#60A5FA' : '#2563EB'}
-                  iconBgColor={
-                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
-                  }
+                  iconBgColor={isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'}
                   showBorder
                 />
               )}
@@ -393,9 +391,7 @@ const ProfileScreen = () => {
                   value={lastName}
                   icon="person-outline"
                   iconColor={isDark ? '#60A5FA' : '#2563EB'}
-                  iconBgColor={
-                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
-                  }
+                  iconBgColor={isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'}
                   showBorder
                 />
               )}
@@ -405,9 +401,7 @@ const ProfileScreen = () => {
                   value={`@${username}`}
                   icon="at-outline"
                   iconColor={isDark ? '#A78BFA' : '#9333EA'}
-                  iconBgColor={
-                    isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
-                  }
+                  iconBgColor={isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'}
                   showBorder
                 />
               )}
@@ -417,9 +411,7 @@ const ProfileScreen = () => {
                   value={country}
                   icon="globe-outline"
                   iconColor={isDark ? '#60A5FA' : '#2563EB'}
-                  iconBgColor={
-                    isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'
-                  }
+                  iconBgColor={isDark ? 'rgba(37, 99, 235, 0.2)' : '#EFF6FF'}
                   showBorder
                 />
               )}
@@ -429,9 +421,7 @@ const ProfileScreen = () => {
                   value={university}
                   icon="school-outline"
                   iconColor={isDark ? '#A78BFA' : '#9333EA'}
-                  iconBgColor={
-                    isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'
-                  }
+                  iconBgColor={isDark ? 'rgba(147, 51, 234, 0.2)' : '#F3E8FF'}
                   showBorder
                 />
               )}
@@ -441,9 +431,7 @@ const ProfileScreen = () => {
                   value={program}
                   icon="book-outline"
                   iconColor={isDark ? '#34D399' : '#059669'}
-                  iconBgColor={
-                    isDark ? 'rgba(5, 150, 105, 0.2)' : '#D1FAE5'
-                  }
+                  iconBgColor={isDark ? 'rgba(5, 150, 105, 0.2)' : '#D1FAE5'}
                   showBorder={false}
                 />
               )}

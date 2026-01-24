@@ -67,7 +67,11 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
     throw handleDbError(profileError);
   }
 
-  if (!userProfile || typeof userProfile !== 'object' || !('subscription_tier' in userProfile)) {
+  if (
+    !userProfile ||
+    typeof userProfile !== 'object' ||
+    !('subscription_tier' in userProfile)
+  ) {
     throw new AppError(
       'Failed to fetch user profile',
       500,
@@ -102,12 +106,13 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
       traceContext,
     );
     // As a fallback, use tier-specific hardcoded intervals
-    schedule = userTier === 'free'
-      ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
-      : {
-          intervals: [1, 3, 7, 14, 30, 60, 120, 180],
-          name: 'Oddity Tier (Fallback)',
-        };
+    schedule =
+      userTier === 'free'
+        ? { intervals: [1, 3, 7], name: 'Free Tier (Fallback)' }
+        : {
+            intervals: [1, 3, 7, 14, 30, 60, 120, 180],
+            name: 'Oddity Tier (Fallback)',
+          };
   } else {
     schedule = scheduleData as { intervals: number[]; name: string };
   }
@@ -125,7 +130,8 @@ async function handleScheduleReminders(req: AuthenticatedRequest) {
     },
   );
 
-  const preferredHour = (typeof optimalHour === 'number' ? optimalHour : null) || 10; // Default to 10 AM if no data
+  const preferredHour =
+    (typeof optimalHour === 'number' ? optimalHour : null) || 10; // Default to 10 AM if no data
 
   // Cancel existing reminders for this session before scheduling new ones
   const { cancelExistingSRSReminders } =

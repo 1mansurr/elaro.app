@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User as SupabaseUser, Factor } from '@supabase/supabase-js';
 import { Alert, AppState } from 'react-native';
 import {
-  supabase,
+  getSupabaseClient,
   authService as supabaseAuthService,
 } from '@/services/supabase';
 import { authService } from '@/services/authService';
@@ -216,9 +216,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           );
 
           try {
+            const supabaseClient = getSupabaseClient();
             const {
               data: { session: currentSession },
-            } = await supabase.auth.getSession();
+            } = await supabaseClient.auth.getSession();
             if (currentSession?.user) {
               // Create safe minimal user from session data
               const minimalUser = createMinimalUserFromSession(
@@ -381,10 +382,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       try {
         // FAST PATH: Use direct Supabase client getSession() - no API round-trip
         // This reads from local storage immediately (no network latency)
+        const supabaseClient = getSupabaseClient();
         const {
           data: { session },
           error,
-        } = await supabase.auth.getSession();
+        } = await supabaseClient.auth.getSession();
 
         if (error) {
           logError('Error getting initial session', { error: String(error) });
@@ -560,9 +562,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
     // Set up auth state change listener (single source of truth)
     // This handles session changes from Supabase automatically
+    const supabaseClient = getSupabaseClient();
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
       if (__DEV__) {
         console.log(`🔄 Auth event: ${event}`);
       }
@@ -1057,9 +1060,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         try {
           // Try getting session from Supabase client directly first (faster)
+          const supabaseClient = getSupabaseClient();
           const {
             data: { session: directSession },
-          } = await supabase.auth.getSession();
+          } = await supabaseClient.auth.getSession();
 
           if (directSession) {
             console.log(

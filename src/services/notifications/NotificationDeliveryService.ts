@@ -319,9 +319,16 @@ export class NotificationDeliveryService implements INotificationDeliveryService
   ): Notifications.NotificationTriggerInput {
     switch (trigger.type) {
       case 'date':
-        return { type: 'date' as const, date: trigger.date ?? new Date() } as Notifications.NotificationTriggerInput;
+        return {
+          type: 'date' as const,
+          date: trigger.date ?? new Date(),
+        } as Notifications.NotificationTriggerInput;
       case 'interval':
-        return { type: 'timeInterval' as const, seconds: trigger.seconds ?? 0, repeats: false } as Notifications.NotificationTriggerInput;
+        return {
+          type: 'timeInterval' as const,
+          seconds: trigger.seconds ?? 0,
+          repeats: false,
+        } as Notifications.NotificationTriggerInput;
       case 'location':
         // Location triggers are not supported in Expo Notifications
         console.warn(

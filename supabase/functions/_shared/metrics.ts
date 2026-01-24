@@ -30,10 +30,12 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
   if (!StatsDModulePromise) {
     StatsDModulePromise =
       // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
-      import('https://deno.land/x/statsd@0.2.0/mod.ts').catch((error: unknown) => {
-        console.warn('StatsD module not available, metrics disabled:', error);
-        return null;
-      });
+      import('https://deno.land/x/statsd@0.2.0/mod.ts').catch(
+        (error: unknown) => {
+          console.warn('StatsD module not available, metrics disabled:', error);
+          return null;
+        },
+      );
   }
 
   try {
@@ -44,11 +46,16 @@ async function loadStatsDModule(): Promise<StatsDConstructor | undefined> {
     }
 
     // Try multiple export patterns
-    const moduleTyped = StatsDModule as { default?: StatsDConstructor; StatsD?: StatsDConstructor };
+    const moduleTyped = StatsDModule as {
+      default?: StatsDConstructor;
+      StatsD?: StatsDConstructor;
+    };
     StatsDConstructor =
       moduleTyped.default ||
       moduleTyped.StatsD ||
-      (typeof StatsDModule === 'function' ? (StatsDModule as unknown as StatsDConstructor) : undefined);
+      (typeof StatsDModule === 'function'
+        ? (StatsDModule as unknown as StatsDConstructor)
+        : undefined);
 
     return StatsDConstructor;
   } catch (error: unknown) {
@@ -110,10 +117,12 @@ export class MetricsCollector {
 
   constructor(functionName: string) {
     // Start loading client asynchronously
-    this.clientPromise = getStatsDClient().then((client: StatsDInstance | null) => {
-      this.client = client;
-      return client;
-    });
+    this.clientPromise = getStatsDClient().then(
+      (client: StatsDInstance | null) => {
+        this.client = client;
+        return client;
+      },
+    );
     this.startTime = Date.now();
     this.functionName = functionName;
   }

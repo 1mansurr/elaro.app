@@ -147,10 +147,9 @@ const RecycleBinScreen = () => {
             style={[
               styles.iconContainer,
               {
-                backgroundColor:
-                  isDark
-                    ? `${iconColor.dark}20`
-                    : `${iconColor.light}15`,
+                backgroundColor: isDark
+                  ? `${iconColor.dark}20`
+                  : `${iconColor.light}15`,
               },
             ]}>
             <Ionicons
@@ -179,8 +178,7 @@ const RecycleBinScreen = () => {
           style={[
             styles.restoreButton,
             {
-              backgroundColor:
-                isDark ? '#135bec30' : '#135bec15',
+              backgroundColor: isDark ? '#135bec30' : '#135bec15',
             },
             isRestoring && styles.restoreButtonDisabled,
           ]}
@@ -227,8 +225,7 @@ const RecycleBinScreen = () => {
             style={[
               styles.infoBanner,
               {
-                backgroundColor:
-                  isDark ? '#f59e0b20' : '#fef3c7',
+                backgroundColor: isDark ? '#f59e0b20' : '#fef3c7',
                 borderColor: isDark ? '#f59e0b30' : '#fde68a',
               },
             ]}>

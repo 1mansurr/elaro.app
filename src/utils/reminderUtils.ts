@@ -36,7 +36,7 @@ export async function snoozeReminder(
 ): Promise<void> {
   const { supabase } = await import('@/services/supabase');
   const newTime = new Date(Date.now() + minutes * 60 * 1000);
-  
+
   await supabase
     .from('reminders')
     .update({ reminder_time: newTime.toISOString(), completed: false })
@@ -51,7 +51,7 @@ export async function cancelReminder(
   reason?: string,
 ): Promise<void> {
   const { supabase } = await import('@/services/supabase');
-  
+
   await supabase
     .from('reminders')
     .update({ completed: true })
@@ -74,7 +74,7 @@ export async function recordSRSPerformance(
   message?: string;
 }> {
   const { supabase } = await import('@/services/supabase');
-  
+
   try {
     const result = await supabase.functions.invoke('record-srs-performance', {
       body: {
@@ -84,11 +84,11 @@ export async function recordSRSPerformance(
         response_time_seconds: responseTimeSeconds,
       },
     });
-    
+
     if (result.error) {
       return { success: false, error: result.error.message };
     }
-    
+
     return {
       success: true,
       nextIntervalDays: result.data?.next_interval_days,
@@ -106,9 +106,7 @@ export async function recordSRSPerformance(
 /**
  * Get SRS statistics for a user
  */
-export async function getSRSStatistics(
-  userId: string,
-): Promise<{
+export async function getSRSStatistics(userId: string): Promise<{
   total_reviews: number;
   average_quality: number;
   retention_rate: number;
@@ -128,17 +126,17 @@ export async function getSRSStatistics(
   }>;
 } | null> {
   const { supabase } = await import('@/services/supabase');
-  
+
   try {
     const result = await supabase.rpc('get_srs_statistics', {
       p_user_id: userId,
     });
-    
+
     if (result.error) {
       console.error('Error getting SRS statistics:', result.error);
       return null;
     }
-    
+
     return result.data?.[0] || null;
   } catch (error) {
     console.error('Error getting SRS statistics:', error);

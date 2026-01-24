@@ -56,19 +56,15 @@ class CourseService {
       .single();
 
     if (profileError) {
-      throw new AppError(
-        'Failed to fetch user profile',
-        500,
-        'DB_QUERY_ERROR',
-      );
+      throw new AppError('Failed to fetch user profile', 500, 'DB_QUERY_ERROR');
     }
 
-    if (!userProfile || typeof userProfile !== 'object' || !('subscription_tier' in userProfile)) {
-      throw new AppError(
-        'Failed to fetch user profile',
-        500,
-        'DB_QUERY_ERROR',
-      );
+    if (
+      !userProfile ||
+      typeof userProfile !== 'object' ||
+      !('subscription_tier' in userProfile)
+    ) {
+      throw new AppError('Failed to fetch user profile', 500, 'DB_QUERY_ERROR');
     }
 
     const userProfileTyped = userProfile as { subscription_tier: string };

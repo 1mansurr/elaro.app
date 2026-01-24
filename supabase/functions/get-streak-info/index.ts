@@ -24,14 +24,20 @@ async function handleGetStreakInfo(req: AuthenticatedRequest) {
     // If no row was found (PGRST116), user hasn't started a streak yet - return default values
     const errorTyped = streakError as { code?: string };
     if (errorTyped.code === 'PGRST116') {
-      return { current_streak: 0, longest_streak: 0 } as Record<string, unknown>;
+      return { current_streak: 0, longest_streak: 0 } as Record<
+        string,
+        unknown
+      >;
     }
     // For any other error, use standard error handling
     throw handleDbError(streakError);
   }
 
   // If data is null but there was no error, default to 0
-  return (streakData || { current_streak: 0, longest_streak: 0 }) as Record<string, unknown>;
+  return (streakData || { current_streak: 0, longest_streak: 0 }) as Record<
+    string,
+    unknown
+  >;
 }
 
 serve(

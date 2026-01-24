@@ -2,10 +2,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { createAdminHandler } from '../_shared/admin-handler.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
@@ -255,7 +252,12 @@ async function handleExportData({ body }: AuthenticatedRequest) {
 
 async function handleCleanupData({ body }: AuthenticatedRequest) {
   const { type, older_than_days: olderThanDays } = body;
-  const older_than_days = typeof olderThanDays === 'number' ? olderThanDays : (typeof olderThanDays === 'string' ? parseInt(olderThanDays, 10) : 30);
+  const older_than_days =
+    typeof olderThanDays === 'number'
+      ? olderThanDays
+      : typeof olderThanDays === 'string'
+        ? parseInt(olderThanDays, 10)
+        : 30;
   const supabaseAdmin = getAdminClient();
 
   const cutoffDate = new Date(

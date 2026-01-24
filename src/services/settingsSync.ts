@@ -125,7 +125,8 @@ class SettingsSyncService {
       const settings: SettingsCache = {
         userId,
         profile: profile as Partial<User>,
-        notificationPreferences: (notificationPrefs as Partial<NotificationPreferences>) ?? {},
+        notificationPreferences:
+          (notificationPrefs as Partial<NotificationPreferences>) ?? {},
         srsPreferences,
         lastSyncedAt: Date.now(),
         version: SETTINGS_VERSION,
@@ -170,7 +171,8 @@ class SettingsSyncService {
         if (!settings.notificationPreferences) {
           settings.notificationPreferences = {};
         }
-        (settings.notificationPreferences as Record<string, unknown>)[field] = value;
+        (settings.notificationPreferences as Record<string, unknown>)[field] =
+          value;
       } else if (type === 'srs_preferences') {
         settings.srsPreferences[field] = value;
       }

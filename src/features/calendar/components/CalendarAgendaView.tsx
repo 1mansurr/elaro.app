@@ -78,9 +78,7 @@ export const CalendarAgendaView: React.FC<CalendarAgendaViewProps> = ({
                       style={[
                         styles.endTimeText,
                         {
-                          color: isDark
-                            ? '#9CA3AF'
-                            : COLORS.textSecondary,
+                          color: isDark ? '#9CA3AF' : COLORS.textSecondary,
                         },
                       ]}>
                       {endTimeStr}

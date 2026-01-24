@@ -30,14 +30,13 @@ async function handleRestoreAccount(req: AuthenticatedRequest) {
   if (fetchError) throw handleDbError(fetchError);
 
   if (!userData) {
-    throw new AppError(
-      'User not found',
-      404,
-      ERROR_CODES.DB_NOT_FOUND,
-    );
+    throw new AppError('User not found', 404, ERROR_CODES.DB_NOT_FOUND);
   }
 
-  const userDataTyped = userData as { account_status: string; deletion_scheduled_at: string | null };
+  const userDataTyped = userData as {
+    account_status: string;
+    deletion_scheduled_at: string | null;
+  };
 
   if (userDataTyped.account_status !== 'deleted') {
     throw new AppError(

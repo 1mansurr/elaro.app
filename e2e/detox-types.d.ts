@@ -11,7 +11,7 @@ declare module 'detox' {
      * @param otherElement Another element matcher
      */
     or(otherElement: IndexableNativeElement): IndexableNativeElement;
-    
+
     /**
      * Check if element is visible
      */
@@ -23,7 +23,9 @@ declare module 'detox' {
      * Set network condition for testing offline scenarios
      * @param condition Network condition: 'none' | 'slow2g' | '2g' | '3g' | '4g' | 'wifi'
      */
-    setNetworkCondition(condition: 'none' | 'slow2g' | '2g' | '3g' | '4g' | 'wifi'): Promise<void>;
+    setNetworkCondition(
+      condition: 'none' | 'slow2g' | '2g' | '3g' | '4g' | 'wifi',
+    ): Promise<void>;
   }
 }
 

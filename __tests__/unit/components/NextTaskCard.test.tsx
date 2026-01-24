@@ -24,11 +24,10 @@ const TestNavigator = ({ children }: { children: React.ReactNode }) => (
 const mockTask = {
   id: '1',
   name: 'Test Assignment',
-  type: 'assignment',
+  type: 'assignment' as const,
   date: new Date().toISOString(),
-  status: 'pending',
-  course_id: 'course-1',
-  user_id: 'user-1',
+  status: 'pending' as const,
+  courses: { courseName: 'Test Course' },
 };
 
 describe('NextTaskCard', () => {

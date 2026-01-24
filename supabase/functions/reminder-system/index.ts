@@ -15,10 +15,7 @@
 
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
@@ -65,7 +62,11 @@ class ReminderService {
     const { session_id, session_date, topic } = data;
 
     // Type guards
-    if (typeof session_id !== 'string' || typeof session_date !== 'string' || typeof topic !== 'string') {
+    if (
+      typeof session_id !== 'string' ||
+      typeof session_date !== 'string' ||
+      typeof topic !== 'string'
+    ) {
       throw new AppError(
         'Invalid request data: session_id, session_date, and topic are required',
         400,

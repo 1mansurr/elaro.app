@@ -86,10 +86,7 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
           },
         ]}>
         <Text
-          style={[
-            styles.emptyText,
-            { color: isDark ? '#9CA3AF' : '#6B7280' },
-          ]}>
+          style={[styles.emptyText, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
           You're all clear for now. Enjoy the break!
         </Text>
       </View>

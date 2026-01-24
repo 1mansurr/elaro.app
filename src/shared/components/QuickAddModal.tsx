@@ -186,7 +186,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       try {
         if (taskType === 'assignment') {
           await savePendingTask(
-            { ...base, description: '', dueDate: dateTime.toISOString(), reminders: [120] } as any,
+            {
+              ...base,
+              description: '',
+              dueDate: dateTime.toISOString(),
+              reminders: [120],
+            } as any,
             'assignment',
           );
         } else if (taskType === 'lecture') {

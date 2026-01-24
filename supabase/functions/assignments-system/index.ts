@@ -16,10 +16,7 @@
 
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
@@ -92,9 +89,10 @@ class AssignmentService {
     }
 
     const encryptedTitle = await encrypt(title, encryptionKey);
-    const encryptedDescription = description && typeof description === 'string'
-      ? await encrypt(description, encryptionKey)
-      : null;
+    const encryptedDescription =
+      description && typeof description === 'string'
+        ? await encrypt(description, encryptionKey)
+        : null;
 
     const { data: newAssignment, error: insertError } =
       await this.supabaseClient
@@ -117,13 +115,20 @@ class AssignmentService {
 
     // 3. Reminder creation logic
     const newAssignmentTyped = newAssignment as { id: string };
-    const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+    const remindersArray = Array.isArray(reminders)
+      ? reminders.filter((r): r is number => typeof r === 'number')
+      : [];
     if (newAssignmentTyped && remindersArray.length > 0) {
-      const dueDateTyped = typeof due_date === 'string' ? new Date(due_date) : new Date(due_date as string | number | Date);
+      const dueDateTyped =
+        typeof due_date === 'string'
+          ? new Date(due_date)
+          : new Date(due_date as string | number | Date);
       const remindersToInsert = remindersArray.map((mins: number) => ({
         user_id: this.user.id,
         assignment_id: newAssignmentTyped.id,
-        reminder_time: new Date(dueDateTyped.getTime() - mins * 60000).toISOString(),
+        reminder_time: new Date(
+          dueDateTyped.getTime() - mins * 60000,
+        ).toISOString(),
         reminder_type: 'assignment',
         day_number: Math.ceil(mins / (24 * 60)),
         completed: false,
@@ -410,7 +415,8 @@ async function handleListAssignments(req: AuthenticatedRequest) {
 async function handleGetAssignment(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   // ID can be in body or URL path
-  const assignmentId = (body?.assignment_id as string) || extractIdFromUrl(req.url);
+  const assignmentId =
+    (body?.assignment_id as string) || extractIdFromUrl(req.url);
   if (!assignmentId || typeof assignmentId !== 'string') {
     throw new AppError(
       'Assignment ID is required',

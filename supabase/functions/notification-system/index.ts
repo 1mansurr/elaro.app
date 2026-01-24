@@ -297,18 +297,30 @@ async function handleSendNotification({
   const { title, body: notificationBody, type, data } = body;
 
   // Generate deduplication key and check for duplicates
-  const dataTyped = data as { itemId?: string; assignment_id?: string; lecture_id?: string } | undefined;
+  const dataTyped = data as
+    | { itemId?: string; assignment_id?: string; lecture_id?: string }
+    | undefined;
   let itemIdString: string = '';
   if (dataTyped?.itemId && typeof dataTyped.itemId === 'string') {
     itemIdString = dataTyped.itemId;
-  } else if (dataTyped?.assignment_id && typeof dataTyped.assignment_id === 'string') {
+  } else if (
+    dataTyped?.assignment_id &&
+    typeof dataTyped.assignment_id === 'string'
+  ) {
     itemIdString = dataTyped.assignment_id;
-  } else if (dataTyped?.lecture_id && typeof dataTyped.lecture_id === 'string') {
+  } else if (
+    dataTyped?.lecture_id &&
+    typeof dataTyped.lecture_id === 'string'
+  ) {
     itemIdString = dataTyped.lecture_id;
   }
   // Pass undefined if empty string, or the actual string value
   const notificationType = typeof type === 'string' ? type : 'custom';
-  const _dedupKey = generateDeduplicationKey(user_id, notificationType, itemIdString || undefined);
+  const _dedupKey = generateDeduplicationKey(
+    user_id,
+    notificationType,
+    itemIdString || undefined,
+  );
 
   // Check if notification was recently sent (within last hour)
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -368,7 +380,11 @@ async function handleSendNotification({
 
   const notificationTyped = notification as { id: string } | null;
   if (!notificationTyped) {
-    throw new AppError('Failed to create notification', 500, ERROR_CODES.INTERNAL_ERROR);
+    throw new AppError(
+      'Failed to create notification',
+      500,
+      ERROR_CODES.INTERNAL_ERROR,
+    );
   }
 
   // Check preferences before sending
@@ -882,7 +898,10 @@ async function handleWelcomeNotification({
     .select('push_token')
     .eq('user_id', targetUserId);
 
-  const pushTokens = ((devices as Array<{ push_token?: string }> | null)?.map((d: { push_token?: string }) => d.push_token).filter((token): token is string => typeof token === 'string') || []) as string[];
+  const pushTokens = ((devices as Array<{ push_token?: string }> | null)
+    ?.map((d: { push_token?: string }) => d.push_token)
+    .filter((token): token is string => typeof token === 'string') ||
+    []) as string[];
 
   if (pushTokens.length > 0) {
     await sendExpoPushNotification(
@@ -1144,7 +1163,10 @@ async function handleHistory({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const urlParams = (body as Record<string, unknown>)?.urlParams as Record<string, unknown> | undefined || {};
+  const urlParams =
+    ((body as Record<string, unknown>)?.urlParams as
+      | Record<string, unknown>
+      | undefined) || {};
   const limit = parseInt((urlParams.limit as string | undefined) || '50');
   const offset = parseInt((urlParams.offset as string | undefined) || '0');
   const filter = (urlParams.filter as string | undefined) || 'all';
@@ -1193,10 +1215,13 @@ async function handleUnreadCount({
     .from('notification_deliveries')
     .select('*')
     .eq('user_id', user.id)
-    .is('opened_at', null) as unknown as Promise<{ count: number | null; error: unknown }>;
-  
+    .is('opened_at', null) as unknown as Promise<{
+    count: number | null;
+    error: unknown;
+  }>;
+
   const result = await query;
-  
+
   const { count, error } = result;
 
   if (error) handleDbError(error as Error);
@@ -1255,8 +1280,12 @@ async function handleQueue({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const method = ((body as Record<string, unknown>)?.method as string | undefined) || 'GET';
-  const urlParams = ((body as Record<string, unknown>)?.urlParams as Record<string, unknown> | undefined) || {};
+  const method =
+    ((body as Record<string, unknown>)?.method as string | undefined) || 'GET';
+  const urlParams =
+    ((body as Record<string, unknown>)?.urlParams as
+      | Record<string, unknown>
+      | undefined) || {};
 
   if (method === 'GET' || method === 'get') {
     // Get queue items

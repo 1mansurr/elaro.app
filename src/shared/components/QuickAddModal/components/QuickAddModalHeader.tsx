@@ -22,8 +22,7 @@ export const QuickAddModalHeader: React.FC<QuickAddModalHeaderProps> = ({
           borderBottomColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
-      <Text
-        style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
+      <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
         Quick Add
       </Text>
       <TouchableOpacity

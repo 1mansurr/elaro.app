@@ -381,8 +381,7 @@ const CourseDetailScreen = () => {
               style={[
                 styles.deleteButton,
                 {
-                  backgroundColor:
-                    isDark ? '#991b1b20' : '#fee2e2',
+                  backgroundColor: isDark ? '#991b1b20' : '#fee2e2',
                 },
               ]}
               onPress={handleDelete}

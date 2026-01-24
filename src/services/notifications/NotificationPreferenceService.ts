@@ -257,35 +257,59 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
       doNotDisturb: (data.do_not_disturb as boolean | undefined) ?? false,
 
       quietHours: {
-        enabled:
-          ((data.quiet_hours_enabled as boolean | undefined) ??
+        enabled: ((data.quiet_hours_enabled as boolean | undefined) ??
           (data.quiet_hours_start != null && data.quiet_hours_end != null) ??
           false) as boolean,
-        start: ((data.quiet_hours_start as string | undefined) ?? '22:00') as string,
-        end: ((data.quiet_hours_end as string | undefined) ?? '08:00') as string,
+        start: ((data.quiet_hours_start as string | undefined) ??
+          '22:00') as string,
+        end: ((data.quiet_hours_end as string | undefined) ??
+          '08:00') as string,
       },
 
       preferredTimes: {
-        morning: ((data.preferred_morning_time ?? data.morning_time ?? '09:00') as string) ?? '09:00',
-        evening: ((data.preferred_evening_time ?? data.evening_time ?? '18:00') as string) ?? '18:00',
-        weekend: ((data.weekend_notifications_enabled ?? true) as boolean) ?? true,
+        morning:
+          ((data.preferred_morning_time ??
+            data.morning_time ??
+            '09:00') as string) ?? '09:00',
+        evening:
+          ((data.preferred_evening_time ??
+            data.evening_time ??
+            '18:00') as string) ?? '18:00',
+        weekend:
+          ((data.weekend_notifications_enabled ?? true) as boolean) ?? true,
       },
 
       notificationTypes: {
         reminders: ((data.reminders_enabled ?? true) as boolean) ?? true,
-        achievements: ((data.achievements_enabled ?? false) as boolean) ?? false,
+        achievements:
+          ((data.achievements_enabled ?? false) as boolean) ?? false,
         updates: ((data.updates_enabled ?? false) as boolean) ?? false,
-        marketing: ((data.marketing_notifications ?? false) as boolean) ?? false,
-        assignments: ((data.assignment_reminders_enabled ?? true) as boolean) ?? true,
+        marketing:
+          ((data.marketing_notifications ?? false) as boolean) ?? false,
+        assignments:
+          ((data.assignment_reminders_enabled ?? true) as boolean) ?? true,
         lectures: ((data.lecture_reminders_enabled ?? true) as boolean) ?? true,
         srs: ((data.srs_reminders_enabled ?? true) as boolean) ?? true,
-        dailySummaries: ((data.morning_summary_enabled ?? true) as boolean) ?? true,
+        dailySummaries:
+          ((data.morning_summary_enabled ?? true) as boolean) ?? true,
       },
 
       frequency: {
-        reminders: ((data.reminder_frequency ?? 'immediate') as 'immediate' | 'daily' | 'weekly') ?? 'immediate',
-        summaries: ((data.summary_frequency ?? 'daily') as 'daily' | 'weekly' | 'disabled') ?? 'daily',
-        updates: ((data.update_frequency ?? 'immediate') as 'immediate' | 'daily' | 'disabled') ?? 'immediate',
+        reminders:
+          ((data.reminder_frequency ?? 'immediate') as
+            | 'immediate'
+            | 'daily'
+            | 'weekly') ?? 'immediate',
+        summaries:
+          ((data.summary_frequency ?? 'daily') as
+            | 'daily'
+            | 'weekly'
+            | 'disabled') ?? 'daily',
+        updates:
+          ((data.update_frequency ?? 'immediate') as
+            | 'immediate'
+            | 'daily'
+            | 'disabled') ?? 'immediate',
         maxPerDay: ((data.max_per_day ?? 10) as number) ?? 10,
         cooldownPeriod: ((data.cooldown_period ?? 30) as number) ?? 30,
       },
@@ -300,8 +324,12 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
       },
 
       userId: (data.user_id as string) ?? '',
-      createdAt: data.created_at ? new Date(data.created_at as string | number | Date) : new Date(),
-      updatedAt: new Date((data.updated_at as string | number | Date) ?? Date.now()),
+      createdAt: data.created_at
+        ? new Date(data.created_at as string | number | Date)
+        : new Date(),
+      updatedAt: new Date(
+        (data.updated_at as string | number | Date) ?? Date.now(),
+      ),
     };
   }
 

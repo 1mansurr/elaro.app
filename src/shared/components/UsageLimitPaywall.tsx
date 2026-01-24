@@ -123,7 +123,7 @@ export const UsageLimitPaywall: React.FC<UsageLimitPaywallProps> = ({
           if (pkg === null || typeof pkg !== 'object') return false;
           if (!('identifier' in pkg)) return false;
           return (pkg as PurchasesPackage).identifier === 'oddity_monthly';
-        }
+        },
       ) as PurchasesPackage | undefined;
 
       if (!oddityPackage) {

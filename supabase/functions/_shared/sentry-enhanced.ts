@@ -45,7 +45,10 @@ if (SENTRY_SUPPORTED && !sentry.getCurrentHub().getClient()) {
     release: RELEASE_VERSION,
     beforeSend(event: unknown, _hint: unknown) {
       // Redact PII from event before sending
-      const eventTyped = event as { user?: { id?: string; email?: string; username?: string }; tags?: { email?: string; phone?: string } };
+      const eventTyped = event as {
+        user?: { id?: string; email?: string; username?: string };
+        tags?: { email?: string; phone?: string };
+      };
       if (eventTyped.user) {
         // Hash user ID instead of sending directly
         if (eventTyped.user.id) {

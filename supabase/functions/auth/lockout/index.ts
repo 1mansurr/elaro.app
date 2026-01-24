@@ -72,9 +72,17 @@ serve(async (req: Request) => {
     const method = req.method;
 
     // Route to appropriate handler
-    const traceContextTyped = traceContext as unknown as Record<string, unknown>;
+    const traceContextTyped = traceContext as unknown as Record<
+      string,
+      unknown
+    >;
     if (method === 'GET' && path.endsWith('/check-lockout')) {
-      return await handleCheckLockout(req, supabaseAdmin, traceContextTyped, origin);
+      return await handleCheckLockout(
+        req,
+        supabaseAdmin,
+        traceContextTyped,
+        origin,
+      );
     } else if (method === 'POST' && path.endsWith('/record-failed-attempt')) {
       return await handleRecordFailedAttempt(
         req,

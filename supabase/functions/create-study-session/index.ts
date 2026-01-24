@@ -86,9 +86,13 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
     .single();
 
   if (insertError) throw handleDbError(insertError);
-  
-  const newSessionTyped = newSession as { id: string; topic: string; session_date: string };
-  
+
+  const newSessionTyped = newSession as {
+    id: string;
+    topic: string;
+    session_date: string;
+  };
+
   await logger.info(
     'Successfully created study session',
     { user_id: user.id, session_id: newSessionTyped.id },
@@ -102,18 +106,18 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
       { user_id: user.id, session_id: newSessionTyped.id },
       traceContext,
     );
-    
+
     // Call the schedule-reminders function via HTTP instead of functions.invoke
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    
+
     if (supabaseUrl && supabaseAnonKey) {
       const scheduleRemindersUrl = `${supabaseUrl}/functions/v1/schedule-reminders`;
       const scheduleResponse = await fetch(scheduleRemindersUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAnonKey}`,
+          Authorization: `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           session_id: newSessionTyped.id,
@@ -138,7 +142,9 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
   }
 
   // Immediate Reminder Logic
-  const remindersArray = Array.isArray(reminders) ? reminders.filter((r): r is number => typeof r === 'number') : [];
+  const remindersArray = Array.isArray(reminders)
+    ? reminders.filter((r): r is number => typeof r === 'number')
+    : [];
   if (remindersArray.length > 0) {
     await logger.info(
       'Creating immediate reminders',
@@ -149,8 +155,11 @@ async function handleCreateStudySession(req: AuthenticatedRequest) {
       },
       traceContext,
     );
-    
-    const sessionDateTyped = typeof session_date === 'string' ? new Date(session_date) : new Date(session_date as string | number | Date);
+
+    const sessionDateTyped =
+      typeof session_date === 'string'
+        ? new Date(session_date)
+        : new Date(session_date as string | number | Date);
     const remindersToInsert = remindersArray.map((mins: number) => {
       const reminderTime = new Date(sessionDateTyped.getTime() - mins * 60000);
       return {

@@ -36,10 +36,7 @@ export const TaskFormHeader: React.FC<TaskFormHeaderProps> = ({
         />
       </TouchableOpacity>
       <Text
-        style={[
-          styles.headerTitle,
-          { color: isDark ? '#FFFFFF' : '#111418' },
-        ]}>
+        style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : '#111418' }]}>
         {title}
       </Text>
       {showTemplateButton ? (

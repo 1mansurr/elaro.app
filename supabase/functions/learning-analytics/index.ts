@@ -68,7 +68,9 @@ class LearningAnalyticsService {
 
     // Calculate current streak (consecutive days from today backwards)
     const checkDate = new Date(today);
-    while (sessionDates.some((d: Date) => d.getTime() === checkDate.getTime())) {
+    while (
+      sessionDates.some((d: Date) => d.getTime() === checkDate.getTime())
+    ) {
       currentStreak++;
       checkDate.setDate(checkDate.getDate() - 1);
     }
@@ -120,12 +122,21 @@ class LearningAnalyticsService {
 
     // Calculate metrics
     const totalSessions = sessions.length;
-    const srsSessions = sessions.filter((s: { has_spaced_repetition?: boolean }) => s.has_spaced_repetition).length;
+    const srsSessions = sessions.filter(
+      (s: { has_spaced_repetition?: boolean }) => s.has_spaced_repetition,
+    ).length;
     const averageQuality =
       srsData.length > 0
-        ? srsData.reduce((sum: number, s: { quality_rating: number }) => sum + s.quality_rating, 0) / srsData.length
+        ? srsData.reduce(
+            (sum: number, s: { quality_rating: number }) =>
+              sum + s.quality_rating,
+            0,
+          ) / srsData.length
         : 0;
-    const totalReviews = srsData.reduce((sum: number, s: { review_count: number }) => sum + s.review_count, 0);
+    const totalReviews = srsData.reduce(
+      (sum: number, s: { review_count: number }) => sum + s.review_count,
+      0,
+    );
 
     return {
       total_sessions: totalSessions,
@@ -166,35 +177,52 @@ class LearningAnalyticsService {
       throw handleDbError(courseError);
     }
 
-    const courseProgress = courses.map((course: { id: string; course_name: string; course_code: string; assignments: Array<{ deleted_at?: string | null; due_date: string }>; study_sessions: Array<{ deleted_at?: string | null; session_date: string }> }) => {
-      const activeAssignments = course.assignments.filter((a: { deleted_at?: string | null }) => !a.deleted_at);
-      const activeSessions = course.study_sessions.filter((s: { deleted_at?: string | null }) => !s.deleted_at);
+    const courseProgress = courses.map(
+      (course: {
+        id: string;
+        course_name: string;
+        course_code: string;
+        assignments: Array<{ deleted_at?: string | null; due_date: string }>;
+        study_sessions: Array<{
+          deleted_at?: string | null;
+          session_date: string;
+        }>;
+      }) => {
+        const activeAssignments = course.assignments.filter(
+          (a: { deleted_at?: string | null }) => !a.deleted_at,
+        );
+        const activeSessions = course.study_sessions.filter(
+          (s: { deleted_at?: string | null }) => !s.deleted_at,
+        );
 
-      const upcomingAssignments = activeAssignments.filter(
-        (a: { due_date: string }) => new Date(a.due_date) > new Date(),
-      ).length;
+        const upcomingAssignments = activeAssignments.filter(
+          (a: { due_date: string }) => new Date(a.due_date) > new Date(),
+        ).length;
 
-      const recentSessions = activeSessions.filter((s: { session_date: string }) => {
-        const sessionDate = new Date(s.session_date);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return sessionDate >= sevenDaysAgo;
-      }).length;
+        const recentSessions = activeSessions.filter(
+          (s: { session_date: string }) => {
+            const sessionDate = new Date(s.session_date);
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            return sessionDate >= sevenDaysAgo;
+          },
+        ).length;
 
-      return {
-        course_id: course.id,
-        course_name: course.course_name,
-        course_code: course.course_code,
-        total_assignments: activeAssignments.length,
-        upcoming_assignments: upcomingAssignments,
-        total_sessions: activeSessions.length,
-        recent_sessions: recentSessions,
-        activity_score: this.calculateActivityScore(
-          activeSessions,
-          activeAssignments,
-        ),
-      };
-    });
+        return {
+          course_id: course.id,
+          course_name: course.course_name,
+          course_code: course.course_code,
+          total_assignments: activeAssignments.length,
+          upcoming_assignments: upcomingAssignments,
+          total_sessions: activeSessions.length,
+          recent_sessions: recentSessions,
+          activity_score: this.calculateActivityScore(
+            activeSessions,
+            activeAssignments,
+          ),
+        };
+      },
+    );
 
     return courseProgress;
   }
@@ -258,8 +286,12 @@ class LearningAnalyticsService {
 
     // Calculate retention metrics
     const totalItems = srsData.length;
-    const masteredItems = srsData.filter((s: { quality_rating: number }) => s.quality_rating >= 4).length;
-    const strugglingItems = srsData.filter((s: { quality_rating: number }) => s.quality_rating <= 2).length;
+    const masteredItems = srsData.filter(
+      (s: { quality_rating: number }) => s.quality_rating >= 4,
+    ).length;
+    const strugglingItems = srsData.filter(
+      (s: { quality_rating: number }) => s.quality_rating <= 2,
+    ).length;
 
     const now = new Date();
     const dueForReview = srsData.filter(
@@ -268,7 +300,10 @@ class LearningAnalyticsService {
 
     const averageReviewCount =
       totalItems > 0
-        ? srsData.reduce((sum: number, s: { review_count: number }) => sum + s.review_count, 0) / totalItems
+        ? srsData.reduce(
+            (sum: number, s: { review_count: number }) => sum + s.review_count,
+            0,
+          ) / totalItems
         : 0;
 
     return {

@@ -48,9 +48,7 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
               <Ionicons
                 name={option.icon}
                 size={18}
-                color={
-                  isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'
-                }
+                color={isSelected ? '#FFFFFF' : isDark ? '#9CA3AF' : '#6B7280'}
               />
             )}
             <Text

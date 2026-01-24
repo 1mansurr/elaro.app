@@ -137,7 +137,7 @@ describe('RevenueCat + Error Tracking Integration', () => {
 
       const state = mockCircuitBreaker.getState();
 
-      if (state === 'OPEN') {
+      if (state === 'open') {
         errorTracking.captureMessage(
           'RevenueCat circuit breaker opened due to repeated failures',
           'warning',
@@ -160,7 +160,7 @@ describe('RevenueCat + Error Tracking Integration', () => {
 
       const state = mockCircuitBreaker.getState();
 
-      if (state === 'CLOSED') {
+      if (state === 'closed') {
         errorTracking.captureMessage(
           'RevenueCat circuit breaker closed - service recovered',
           'info',

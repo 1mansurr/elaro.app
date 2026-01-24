@@ -218,7 +218,9 @@ serve(
       }
 
       // Validate each operation
-      const operationsTyped = operations as z.infer<typeof BatchOperationSchema>['operations'];
+      const operationsTyped = operations as z.infer<
+        typeof BatchOperationSchema
+      >['operations'];
       for (const operation of operationsTyped) {
         validateOperationData(operation);
 

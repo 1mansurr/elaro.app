@@ -28,10 +28,7 @@ export const TaskTitleField: React.FC<TaskTitleFieldProps> = ({
       {label && (
         <View style={styles.labelRow}>
           <Text
-            style={[
-              styles.label,
-              { color: isDark ? '#FFFFFF' : '#374151' },
-            ]}>
+            style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
             {label}
           </Text>
           {showCharacterCount && (

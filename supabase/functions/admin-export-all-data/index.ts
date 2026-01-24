@@ -1,11 +1,7 @@
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  createAdminHandler,
-} from '../_shared/admin-handler.ts';
-import {
-  AuthenticatedRequest,
-} from '../_shared/function-handler.ts';
+import { createAdminHandler } from '../_shared/admin-handler.ts';
+import { AuthenticatedRequest } from '../_shared/function-handler.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';

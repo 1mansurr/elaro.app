@@ -261,7 +261,9 @@ class NavigationSyncService {
               'routes' in route.state &&
               Array.isArray(route.state.routes)
             ) {
-              return (route.state as PartialState<NavigationState>).routes.every(nestedRoute =>
+              return (
+                route.state as PartialState<NavigationState>
+              ).routes.every(nestedRoute =>
                 validateRoute(nestedRoute, route.name),
               );
             }
@@ -286,16 +288,16 @@ class NavigationSyncService {
           'routes' in route.state &&
           Array.isArray(route.state.routes)
         ) {
-          return (route.state as PartialState<NavigationState>).routes.every(nestedRoute =>
-            validateRoute(nestedRoute, route.name),
+          return (route.state as PartialState<NavigationState>).routes.every(
+            nestedRoute => validateRoute(nestedRoute, route.name),
           );
         }
 
         return true;
       };
 
-      const allRoutesValid = state.routes.every(route => 
-        validateRoute(route as PartialState<NavigationState>['routes'][number])
+      const allRoutesValid = state.routes.every(route =>
+        validateRoute(route as PartialState<NavigationState>['routes'][number]),
       );
       if (!allRoutesValid) {
         console.warn(

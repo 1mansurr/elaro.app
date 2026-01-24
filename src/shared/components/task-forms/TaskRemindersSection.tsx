@@ -30,11 +30,7 @@ export const TaskRemindersSection: React.FC<TaskRemindersSectionProps> = ({
   return (
     <View style={styles.field}>
       <View style={styles.reminderHeader}>
-        <Text
-          style={[
-            styles.label,
-            { color: isDark ? '#FFFFFF' : '#374151' },
-          ]}>
+        <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
           {label}
         </Text>
         <Text

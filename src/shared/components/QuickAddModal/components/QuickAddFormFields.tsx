@@ -52,8 +52,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
   return (
     <View style={styles.container}>
       {/* Title Input */}
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {titleLabel}
       </Text>
       <TextInput
@@ -81,8 +80,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
       </Text>
 
       {/* Course Selector */}
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Course *
       </Text>
       <TouchableOpacity
@@ -121,8 +119,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
       </TouchableOpacity>
 
       {/* Date & Time */}
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {dateTimeLabel}
       </Text>
       <View style={styles.dateTimeRow}>

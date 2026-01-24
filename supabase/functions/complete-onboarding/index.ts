@@ -82,7 +82,10 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
   );
 
   // Age validation logic
-  const birthDateTyped = typeof dateOfBirth === 'string' ? new Date(dateOfBirth) : new Date(dateOfBirth as string | number | Date);
+  const birthDateTyped =
+    typeof dateOfBirth === 'string'
+      ? new Date(dateOfBirth)
+      : new Date(dateOfBirth as string | number | Date);
   const today = new Date();
   let age = today.getFullYear() - birthDateTyped.getFullYear();
   const monthDiff = today.getMonth() - birthDateTyped.getMonth();
@@ -120,8 +123,12 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
 
   // 1. Update the user's profile with onboarding data
   const [encryptedUniversity, encryptedProgram] = await Promise.all([
-    university && typeof university === 'string' ? encrypt(university, encryptionKey) : null,
-    program && typeof program === 'string' ? encrypt(program, encryptionKey) : null,
+    university && typeof university === 'string'
+      ? encrypt(university, encryptionKey)
+      : null,
+    program && typeof program === 'string'
+      ? encrypt(program, encryptionKey)
+      : null,
   ]);
 
   const { error: userUpdateError } = await supabaseClient

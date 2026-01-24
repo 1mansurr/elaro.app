@@ -35,7 +35,11 @@ async function handleSoftDeleteAccount(req: AuthenticatedRequest) {
 
   if (fetchError) throw handleDbError(fetchError);
 
-  if (!currentUser || typeof currentUser !== 'object' || !('account_status' in currentUser)) {
+  if (
+    !currentUser ||
+    typeof currentUser !== 'object' ||
+    !('account_status' in currentUser)
+  ) {
     throw new AppError(
       'Failed to fetch user account',
       500,

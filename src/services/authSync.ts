@@ -14,7 +14,7 @@
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 
 // Storage keys
@@ -53,7 +53,11 @@ class AuthSyncService {
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession();
+      const supabaseClient = getSupabaseClient();
+      const {
+        data: { session },
+        error,
+      } = await supabaseClient.auth.getSession();
 
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
@@ -131,7 +135,11 @@ class AuthSyncService {
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession();
+      const supabaseClient = getSupabaseClient();
+      const {
+        data: { session },
+        error,
+      } = await supabaseClient.auth.getSession();
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
         return null;

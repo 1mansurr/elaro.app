@@ -37,11 +37,7 @@ export const ProfileFieldRow: React.FC<ProfileFieldRowProps> = ({
         <Ionicons name={icon} size={20} color={iconColor} />
       </View>
       <View style={styles.textContainer}>
-        <Text
-          style={[
-            styles.label,
-            { color: isDark ? '#9CA3AF' : '#6B7280' },
-          ]}>
+        <Text style={[styles.label, { color: isDark ? '#9CA3AF' : '#6B7280' }]}>
           {label}
         </Text>
         <Text style={[styles.value, { color: theme.text }]}>{value}</Text>

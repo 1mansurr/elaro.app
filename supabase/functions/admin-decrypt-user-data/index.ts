@@ -1,20 +1,12 @@
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  createAdminHandler,
-} from '../_shared/admin-handler.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { createAdminHandler } from '../_shared/admin-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { decrypt } from '../_shared/encryption.ts';
 import { verifyMasterKey, isTopLevelAdmin } from '../_shared/master-key.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import {
-  ERROR_CODES,
-  ERROR_STATUS_CODES,
-} from '../_shared/error-codes.ts';
+import { ERROR_CODES, ERROR_STATUS_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -102,7 +94,8 @@ async function handleDecrypt(req: AuthenticatedRequest) {
   }
 
   // Handle single field decryption
-  const encryptedText = typeof body.encrypted_text === 'string' ? body.encrypted_text : undefined;
+  const encryptedText =
+    typeof body.encrypted_text === 'string' ? body.encrypted_text : undefined;
   if (encryptedText) {
     const decrypted = await decrypt(encryptedText, masterKey);
 
@@ -111,7 +104,8 @@ async function handleDecrypt(req: AuthenticatedRequest) {
       user.id,
       null,
       'decrypt_user_data',
-      (typeof body.reason === 'string' ? body.reason : undefined) || 'Single field decryption',
+      (typeof body.reason === 'string' ? body.reason : undefined) ||
+        'Single field decryption',
       {
         attempt_type: 'single_field',
         field_length: encryptedText.length,
@@ -128,10 +122,14 @@ async function handleDecrypt(req: AuthenticatedRequest) {
   }
 
   // Handle bulk decryption
-  const recordType = typeof body.record_type === 'string' ? body.record_type : undefined;
-  const recordId = typeof body.record_id === 'string' ? body.record_id : undefined;
-  const fields = Array.isArray(body.fields) ? body.fields.filter((f): f is string => typeof f === 'string') : undefined;
-  
+  const recordType =
+    typeof body.record_type === 'string' ? body.record_type : undefined;
+  const recordId =
+    typeof body.record_id === 'string' ? body.record_id : undefined;
+  const fields = Array.isArray(body.fields)
+    ? body.fields.filter((f): f is string => typeof f === 'string')
+    : undefined;
+
   if (recordType && recordId && fields) {
     // Get the record
     const tableName =
@@ -169,7 +167,8 @@ async function handleDecrypt(req: AuthenticatedRequest) {
       user.id,
       record.user_id as string | null,
       'decrypt_user_data',
-      (typeof body.reason === 'string' ? body.reason : undefined) || 'Bulk field decryption',
+      (typeof body.reason === 'string' ? body.reason : undefined) ||
+        'Bulk field decryption',
       {
         attempt_type: 'bulk',
         record_type: recordType,

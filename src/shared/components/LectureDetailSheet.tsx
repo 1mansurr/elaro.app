@@ -57,13 +57,9 @@ export const LectureDetailSheet: React.FC<LectureDetailSheetProps> = ({
   const startTime = null; // Not available on Lecture type
   const endTime = null; // Not available on Lecture type
 
-  const timeRange = lectureDate
-    ? formatTimeOnly(lectureDate)
-    : 'Time TBD';
+  const timeRange = lectureDate ? formatTimeOnly(lectureDate) : 'Time TBD';
 
-  const dateTimeSubtitle = lectureDate
-    ? formatDateOnly(lectureDate)
-    : '';
+  const dateTimeSubtitle = lectureDate ? formatDateOnly(lectureDate) : '';
 
   const recurrenceLabel = formatRecurrenceLabel(
     lecture.isRecurring || false,
@@ -101,11 +97,7 @@ export const LectureDetailSheet: React.FC<LectureDetailSheetProps> = ({
         ]}
         showsVerticalScrollIndicator={false}>
         {/* Title */}
-        <Text
-          style={[
-            styles.title,
-            { color: isDark ? '#FFFFFF' : '#111418' },
-          ]}>
+        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
           {lecture.lectureName || 'Untitled Lecture'}
         </Text>
 

@@ -55,18 +55,24 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { title: 'Test Assignment' },
       };
 
-      (syncManager.executeServerMutation as jest.Mock).mockResolvedValue({
-        success: true,
-      });
+      ((syncManager as any).executeServerMutation as jest.Mock).mockResolvedValue(
+        {
+          success: true,
+        },
+      );
 
-      networkMonitoring.trackRequest('sync', 'POST', '/api/assignments');
+      const requestId = networkMonitoring.trackRequest(
+        '/api/assignments',
+        'POST',
+        100,
+      );
 
-      await syncManager.executeServerMutation(mutation);
+      await (syncManager as any).executeServerMutation(mutation);
 
       expect(networkMonitoring.trackRequest).toHaveBeenCalledWith(
-        'sync',
-        'POST',
         '/api/assignments',
+        'POST',
+        100,
       );
     });
 
@@ -77,17 +83,21 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { title: 'Test Assignment' },
       };
 
-      (syncManager.executeServerMutation as jest.Mock).mockResolvedValue({
-        success: true,
-        data: { id: 'assignment-1' },
-      });
+      ((syncManager as any).executeServerMutation as jest.Mock).mockResolvedValue(
+        {
+          success: true,
+          data: { id: 'assignment-1' },
+        },
+      );
 
-      await syncManager.executeServerMutation(mutation);
+      const requestId = 'test-request-id';
+      await (syncManager as any).executeServerMutation(mutation);
 
-      networkMonitoring.trackResponse('sync', 200, 150);
+      networkMonitoring.trackResponse(requestId, '/api/assignments', 200, 150);
 
       expect(networkMonitoring.trackResponse).toHaveBeenCalledWith(
-        'sync',
+        requestId,
+        '/api/assignments',
         200,
         150,
       );
@@ -102,20 +112,26 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { id: 'assignment-1', title: 'Updated' },
       };
 
-      (syncManager.executeServerMutation as jest.Mock).mockImplementation(
+      ((syncManager as any).executeServerMutation as jest.Mock).mockImplementation(
         async () => {
           await new Promise(resolve => setTimeout(resolve, 100));
           return { success: true };
         },
       );
 
-      await syncManager.executeServerMutation(mutation);
+      const requestId = networkMonitoring.trackRequest(
+        '/api/assignments',
+        'UPDATE',
+        100,
+      );
+      await (syncManager as any).executeServerMutation(mutation);
 
       const latency = Date.now() - startTime;
-      networkMonitoring.trackResponse('sync', 200, latency);
+      networkMonitoring.trackResponse(requestId, '/api/assignments', 200, latency);
 
       expect(networkMonitoring.trackResponse).toHaveBeenCalledWith(
-        'sync',
+        requestId,
+        '/api/assignments',
         200,
         expect.any(Number),
       );
@@ -131,19 +147,26 @@ describe('SyncManager + Network Monitoring Integration', () => {
       };
 
       const error = new Error('Network error');
-      (syncManager.executeServerMutation as jest.Mock).mockRejectedValue(error);
+      ((syncManager as any).executeServerMutation as jest.Mock).mockRejectedValue(
+        error,
+      );
+
+      const requestId = networkMonitoring.trackRequest(
+        '/api/assignments',
+        'POST',
+        100,
+      );
 
       try {
-        await syncManager.executeServerMutation(mutation);
+        await (syncManager as any).executeServerMutation(mutation);
       } catch (e) {
-        networkMonitoring.trackError('sync', error, 'POST', '/api/assignments');
+        networkMonitoring.trackError(requestId, '/api/assignments', error);
       }
 
       expect(networkMonitoring.trackError).toHaveBeenCalledWith(
-        'sync',
-        error,
-        'POST',
+        requestId,
         '/api/assignments',
+        error,
       );
     });
 
@@ -155,7 +178,7 @@ describe('SyncManager + Network Monitoring Integration', () => {
       };
 
       let attemptCount = 0;
-      (syncManager.executeServerMutation as jest.Mock).mockImplementation(
+      ((syncManager as any).executeServerMutation as jest.Mock).mockImplementation(
         async () => {
           attemptCount++;
           if (attemptCount < 3) {
@@ -165,17 +188,22 @@ describe('SyncManager + Network Monitoring Integration', () => {
         },
       );
 
+      const requestId = networkMonitoring.trackRequest(
+        '/api/assignments',
+        'POST',
+        100,
+      );
+
       // Simulate retry logic
       for (let i = 0; i < 3; i++) {
         try {
-          await syncManager.executeServerMutation(mutation);
+          await (syncManager as any).executeServerMutation(mutation);
           break;
         } catch (error) {
           networkMonitoring.trackError(
-            'sync',
-            error as Error,
-            'POST',
+            requestId,
             '/api/assignments',
+            error as Error,
           );
           if (i === 2) throw error;
         }
@@ -190,18 +218,21 @@ describe('SyncManager + Network Monitoring Integration', () => {
       // Simulate circuit breaker opening
       const circuitBreakerState = 'OPEN';
 
-      networkMonitoring.trackError(
-        'sync',
-        new Error('Circuit breaker open'),
-        'POST',
+      const requestId = networkMonitoring.trackRequest(
         '/api/assignments',
+        'POST',
+        100,
+      );
+      networkMonitoring.trackError(
+        requestId,
+        '/api/assignments',
+        new Error('Circuit breaker open'),
       );
 
       expect(networkMonitoring.trackError).toHaveBeenCalledWith(
-        'sync',
-        expect.any(Error),
-        'POST',
+        requestId,
         '/api/assignments',
+        expect.any(Error),
       );
     });
 
@@ -217,11 +248,19 @@ describe('SyncManager + Network Monitoring Integration', () => {
   describe('Network Metrics Aggregation', () => {
     it('should aggregate sync operation metrics', () => {
       // Simulate multiple sync operations
-      networkMonitoring.trackRequest('sync', 'POST', '/api/assignments');
-      networkMonitoring.trackResponse('sync', 200, 100);
+      const reqId1 = networkMonitoring.trackRequest(
+        '/api/assignments',
+        'POST',
+        100,
+      );
+      networkMonitoring.trackResponse(reqId1, '/api/assignments', 200, 100);
 
-      networkMonitoring.trackRequest('sync', 'POST', '/api/lectures');
-      networkMonitoring.trackResponse('sync', 200, 150);
+      const reqId2 = networkMonitoring.trackRequest(
+        '/api/lectures',
+        'POST',
+        150,
+      );
+      networkMonitoring.trackResponse(reqId2, '/api/lectures', 200, 150);
 
       const metrics = networkMonitoring.getMetrics();
 
@@ -230,9 +269,12 @@ describe('SyncManager + Network Monitoring Integration', () => {
     });
 
     it('should calculate average latency for sync operations', () => {
-      networkMonitoring.trackResponse('sync', 200, 100);
-      networkMonitoring.trackResponse('sync', 200, 200);
-      networkMonitoring.trackResponse('sync', 200, 150);
+      const reqId1 = networkMonitoring.trackRequest('/api/test1', 'POST', 100);
+      const reqId2 = networkMonitoring.trackRequest('/api/test2', 'POST', 200);
+      const reqId3 = networkMonitoring.trackRequest('/api/test3', 'POST', 150);
+      networkMonitoring.trackResponse(reqId1, '/api/test1', 200, 100);
+      networkMonitoring.trackResponse(reqId2, '/api/test2', 200, 200);
+      networkMonitoring.trackResponse(reqId3, '/api/test3', 200, 150);
 
       const metrics = networkMonitoring.getMetrics();
 

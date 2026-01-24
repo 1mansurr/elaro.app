@@ -25,9 +25,7 @@ import {
   isValidUUID,
   AuthenticatedRequest,
 } from '../_shared/function-handler.ts';
-import {
-  type SupabaseClient,
-} from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
 import {
@@ -101,7 +99,11 @@ class TaskService {
       throw new AppError(error.message, 500, 'ASSIGNMENT_CREATE_ERROR');
 
     if (!assignment) {
-      throw new AppError('Failed to create assignment', 500, 'ASSIGNMENT_CREATE_ERROR');
+      throw new AppError(
+        'Failed to create assignment',
+        500,
+        'ASSIGNMENT_CREATE_ERROR',
+      );
     }
 
     // Emit event
@@ -166,7 +168,11 @@ class TaskService {
     if (error) throw new AppError(error.message, 500, 'LECTURE_CREATE_ERROR');
 
     if (!lecture) {
-      throw new AppError('Failed to create lecture', 500, 'LECTURE_CREATE_ERROR');
+      throw new AppError(
+        'Failed to create lecture',
+        500,
+        'LECTURE_CREATE_ERROR',
+      );
     }
 
     // Emit event
@@ -229,7 +235,11 @@ class TaskService {
       throw new AppError(error.message, 500, 'STUDY_SESSION_CREATE_ERROR');
 
     if (!session) {
-      throw new AppError('Failed to create study session', 500, 'STUDY_SESSION_CREATE_ERROR');
+      throw new AppError(
+        'Failed to create study session',
+        500,
+        'STUDY_SESSION_CREATE_ERROR',
+      );
     }
 
     // Emit event
@@ -278,12 +288,15 @@ class TaskService {
   }
 
   // Batch operations
-  async batchOperations(operations: Array<{
-    type: 'create' | 'update' | 'delete';
-    table: 'assignments' | 'lectures' | 'study_sessions';
-    data: Record<string, unknown>;
-    id?: string;
-  }>, userId: string) {
+  async batchOperations(
+    operations: Array<{
+      type: 'create' | 'update' | 'delete';
+      table: 'assignments' | 'lectures' | 'study_sessions';
+      data: Record<string, unknown>;
+      id?: string;
+    }>,
+    userId: string,
+  ) {
     const results = [];
 
     for (const operation of operations) {
@@ -303,7 +316,11 @@ class TaskService {
 
           case 'update':
             if (!operation.id) {
-              throw new AppError('ID is required for update operations', 400, 'VALIDATION_ERROR');
+              throw new AppError(
+                'ID is required for update operations',
+                400,
+                'VALIDATION_ERROR',
+              );
             }
             if (operation.table === 'assignments') {
               result = await this.updateAssignment(
@@ -328,7 +345,11 @@ class TaskService {
 
           case 'delete':
             if (!operation.id) {
-              throw new AppError('ID is required for delete operations', 400, 'VALIDATION_ERROR');
+              throw new AppError(
+                'ID is required for delete operations',
+                400,
+                'VALIDATION_ERROR',
+              );
             }
             if (operation.table === 'assignments') {
               result = await this.deleteAssignment(operation.id, userId);

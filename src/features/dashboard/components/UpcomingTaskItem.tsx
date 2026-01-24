@@ -85,9 +85,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         styles.container,
         {
           backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: isDark
-            ? 'rgba(255, 255, 255, 0.1)'
-            : 'transparent',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
         },
       ]}>
       <View
@@ -105,10 +103,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         </Text>
         {subtitle && (
           <Text
-            style={[
-              styles.subtitle,
-              { color: isDark ? '#9CA3AF' : '#637588' },
-            ]}
+            style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#637588' }]}
             numberOfLines={1}>
             {subtitle}
           </Text>
@@ -116,11 +111,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
       </View>
       <View style={styles.timeContainer}>
         <Text style={[styles.time, { color: theme.text }]}>{timeStr}</Text>
-        <Text
-          style={[
-            styles.date,
-            { color: isDark ? '#9CA3AF' : '#637588' },
-          ]}>
+        <Text style={[styles.date, { color: isDark ? '#9CA3AF' : '#637588' }]}>
           {dateLabel}
         </Text>
       </View>
