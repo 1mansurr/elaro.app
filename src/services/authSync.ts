@@ -50,9 +50,6 @@ class AuthSyncService {
 
     try {
       // 1. Get session from Supabase (primary source of truth)
-      const {
-        data: { session },
-        error,
       const supabaseClient = getSupabaseClient();
       const {
         data: { session },
