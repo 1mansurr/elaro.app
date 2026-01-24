@@ -167,8 +167,8 @@ export const authService = {
 
     // FALLBACK: Use direct Supabase auth if edge function is not available
     try {
+      const supabaseClient = getSupabaseClient();
       const { data: directSignUpData, error: directSignUpError } =
-        const supabaseClient = getSupabaseClient();
         await supabaseClient.auth.signUp({
           email,
           password,
@@ -337,8 +337,8 @@ export const authService = {
     // FALLBACK: Use direct Supabase auth if edge function is not available
     try {
       // Fallback: Use Supabase directly
+      const supabaseClient = getSupabaseClient();
       const { data: directAuthData, error: directAuthError } =
-        const supabaseClient = getSupabaseClient();
         await supabaseClient.auth.signInWithPassword({
           email,
           password,
@@ -415,6 +415,7 @@ export const authService = {
     try {
       // Try edge function first
       const response = await versionedApiClient.signOut();
+      const supabaseClient = getSupabaseClient();
 
       if (response.error) {
         // Check if it's a "function not found" error - fallback to direct Supabase sign out
@@ -428,7 +429,6 @@ export const authService = {
             '⚠️ Sign out edge function not available, using direct Supabase sign out',
           );
           // Fallback to direct Supabase sign out
-          const supabaseClient = getSupabaseClient();
           await supabaseClient.auth.signOut();
           return;
         }
@@ -442,13 +442,11 @@ export const authService = {
             code: response.code,
           },
         );
-        const supabaseClient = getSupabaseClient();
-      await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut();
         return;
       }
 
       // Edge function succeeded - also sign out from Supabase client to clear local session
-      const supabaseClient = getSupabaseClient();
       await supabaseClient.auth.signOut();
     } catch (error) {
       // If edge function doesn't exist or fails, use direct Supabase sign out
@@ -459,7 +457,7 @@ export const authService = {
       // Always try to sign out from Supabase client, even if edge function fails
       try {
         const supabaseClient = getSupabaseClient();
-      await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut();
       } catch (supabaseError) {
         // If even Supabase sign out fails, log but don't throw - user should still be able to continue
         console.error(
@@ -666,7 +664,6 @@ export const authService = {
       if (error) throw new AppError(error.message, 500, 'SOFT_DELETE_ERROR');
 
       // Sign out locally after successful soft delete
-      const supabaseClient = getSupabaseClient();
       await supabaseClient.auth.signOut();
     } catch (error) {
       console.error('Error in authService.deleteAccount:', error);
@@ -677,8 +674,8 @@ export const authService = {
   // Method to restore a soft-deleted account
   restoreAccount: async (): Promise<any> => {
     try {
+      const supabaseClient = getSupabaseClient();
       const { data, error } =
-        const supabaseClient = getSupabaseClient();
         await supabaseClient.functions.invoke('restore-account');
 
       if (error) throw new AppError(error.message, 500, 'RESTORE_ERROR');
@@ -727,7 +724,9 @@ export const authService = {
      */
     challenge: async (factorId: string) => {
       const supabaseClient = getSupabaseClient();
-      const { data, error } = await supabaseClient.auth.mfa.challenge({ factorId });
+      const { data, error } = await supabaseClient.auth.mfa.challenge({
+        factorId,
+      });
       if (error) throw new AppError(error.message, 400, 'MFA_CHALLENGE_ERROR');
       if (!data?.id)
         throw new AppError(
@@ -781,8 +780,8 @@ export const authService = {
      * @returns {Promise<{currentLevel: string | null, nextLevel: string | null}>}
      */
     getAuthenticatorAssuranceLevel: async () => {
+      const supabaseClient = getSupabaseClient();
       const { data, error } =
-        const supabaseClient = getSupabaseClient();
         await supabaseClient.auth.mfa.getAuthenticatorAssuranceLevel();
       if (error) throw new AppError(error.message, 500, 'MFA_AAL_ERROR');
       return {

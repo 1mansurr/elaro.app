@@ -41,6 +41,11 @@
       "android": {
         "buildType": "app-bundle",
         "autoIncrement": "versionCode"
+      },
+      "env": {
+        "SENTRY_ORG": "elaro-7p",
+        "SENTRY_PROJECT": "react-native",
+        "SENTRY_AUTH_TOKEN": "@sentry_auth_token"
       }
     }
   },

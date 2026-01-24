@@ -2,18 +2,18 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getCorsHeaders } from '../../_shared/cors.ts';
-import { successResponse, errorResponse } from '../../_shared/response.ts';
-import { SignUpSchema } from '../../_shared/schemas/auth.ts';
-import { AppError } from '../../_shared/function-handler.ts';
-import { ERROR_CODES } from '../../_shared/error-codes.ts';
-import { logger } from '../../_shared/logging.ts';
-import { extractTraceContext } from '../../_shared/tracing.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { successResponse, errorResponse } from '../_shared/response.ts';
+import { SignUpSchema } from '../_shared/schemas/auth.ts';
+import { AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
+import { logger } from '../_shared/logging.ts';
+import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   checkRateLimit,
   extractIPAddress,
-} from '../../_shared/rate-limiter.ts';
-import { encrypt } from '../../_shared/encryption.ts';
+} from '../_shared/rate-limiter.ts';
+import { encrypt } from '../_shared/encryption.ts';
 
 serve(async (req: Request) => {
   const origin = req.headers.get('Origin');

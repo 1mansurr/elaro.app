@@ -14,7 +14,7 @@ import { UsageLimitPaywallProvider } from '@/contexts/UsageLimitPaywallContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '@/hooks/useSmartPreloading';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import {
   SCREEN_CONFIGS,
   TRANSITIONS,
@@ -468,6 +468,7 @@ export const AuthenticatedNavigator: React.FC = () => {
     const checkWelcomeScreens = async () => {
       if (!user.onboarding_completed) {
         setIsCheckingWelcome(false);
+        setCourseCount(0); // Ensure courseCount is set
         return;
       }
 
@@ -481,24 +482,40 @@ export const AuthenticatedNavigator: React.FC = () => {
         setHasSeenAddCourseFirst(hasSeen);
 
         // Check course count (used for other logic, not PostOnboardingWelcome)
-        const { count, error } = await supabase
-          .from('courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .is('deleted_at', null);
+        // CRITICAL FIX: Safely get Supabase client - handle initialization failures
+        let courseCountResult = 0;
+        try {
+          const supabaseClient = getSupabaseClient();
+          const { count, error } = await supabaseClient
+            .from('courses')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .is('deleted_at', null);
 
-        if (error) {
-          console.error('Error checking course count:', error);
-          setCourseCount(0); // Default to 0 on error
-        } else {
-          setCourseCount(count || 0);
+          if (error) {
+            console.error('Error checking course count:', error);
+            courseCountResult = 0; // Default to 0 on error
+          } else {
+            courseCountResult = count || 0;
+          }
+        } catch (supabaseError) {
+          // Handle Supabase client initialization failure (e.g., missing config after OTA)
+          console.error(
+            '❌ [AuthenticatedNavigator] Supabase client initialization failed:',
+            supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+          );
+          // Default to 0 courses - app can still function
+          courseCountResult = 0;
         }
+        setCourseCount(courseCountResult);
       } catch (error) {
         console.error('Error checking welcome screen status:', error);
         // Default to NOT showing AddCourseFirst on error (assume already seen)
         setHasSeenAddCourseFirst(true);
         setCourseCount(0);
       } finally {
+        // CRITICAL: Always set isCheckingWelcome to false, even if errors occur
+        // This prevents infinite loading screen
         setIsCheckingWelcome(false);
       }
     };
@@ -520,6 +537,25 @@ export const AuthenticatedNavigator: React.FC = () => {
       console.log(
         '⏳ [AuthenticatedNavigator] Waiting for auth initialization...',
       );
+    }
+    return <LoadingFallback />;
+  }
+
+  // CRITICAL FIX: Guard against null user - AuthenticatedNavigator requires a valid user
+  // This prevents blank screen when session exists but user profile fetch failed
+  // After OTA updates, profile fetch may fail/timeout, leaving session but no user
+  if (!user) {
+    if (__DEV__) {
+      console.warn(
+        '⚠️ [AuthenticatedNavigator] No user profile - showing loading fallback',
+        { hasSession: !!session, isInitializing },
+      );
+    } else {
+      // Production logging for debugging blank screen issues
+      console.log('[AuthenticatedNavigator] No user profile detected', {
+        hasSession: !!session,
+        isInitializing,
+      });
     }
     return <LoadingFallback />;
   }

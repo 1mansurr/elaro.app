@@ -42,11 +42,9 @@ describe('Notifications + Analytics Integration', () => {
         type: 'reminder' as const,
       };
 
-      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue(
-        {
-          success: true,
-        },
-      );
+      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue({
+        success: true,
+      });
 
       await notificationService.scheduleReminder(notificationData);
 
@@ -70,11 +68,9 @@ describe('Notifications + Analytics Integration', () => {
         data: { assignmentId: 'assignment-1' },
       };
 
-      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue(
-        {
-          success: true,
-        },
-      );
+      (notificationService.scheduleReminder as jest.Mock).mockResolvedValue({
+        success: true,
+      });
 
       await notificationService.scheduleReminder(notificationData);
 

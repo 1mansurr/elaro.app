@@ -34,7 +34,10 @@ describe('useMemoization', () => {
 
     it('should use custom equality function when provided', () => {
       const expensiveFn = jest.fn(() => 'value');
-      const customEquality = (a: React.DependencyList, b: React.DependencyList) => {
+      const customEquality = (
+        a: React.DependencyList,
+        b: React.DependencyList,
+      ) => {
         const aSum = (a as number[]).reduce((sum, n) => sum + n, 0);
         const bSum = (b as number[]).reduce((sum, n) => sum + n, 0);
         return aSum === bSum;
@@ -83,10 +86,7 @@ describe('useMemoization', () => {
 
       const { result } = renderHook(
         ({ deps }) =>
-          useStableCallback(
-            callback as (...args: unknown[]) => unknown,
-            deps,
-          ),
+          useStableCallback(callback as (...args: unknown[]) => unknown, deps),
         { initialProps: { deps: [1] } },
       );
 
@@ -198,7 +198,10 @@ describe('useMemoization', () => {
   describe('useCustomMemo', () => {
     it('should use custom equality function', () => {
       const factory = jest.fn(() => 'result');
-      const equalityFn = (prev: React.DependencyList, next: React.DependencyList) => {
+      const equalityFn = (
+        prev: React.DependencyList,
+        next: React.DependencyList,
+      ) => {
         const prevArr = prev as number[];
         const nextArr = next as number[];
         return (

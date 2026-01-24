@@ -6,8 +6,8 @@ import { validateApiVersion } from '../_shared/versioning.ts';
 import {
   AuthenticatedRequest,
   AppError,
-  ERROR_CODES,
 } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
   handleDbError,
@@ -911,6 +911,61 @@ async function handleGetStudySession(req: AuthenticatedRequest) {
   return data;
 }
 
+/**
+ * Check if a string appears to be base64-encoded encrypted data
+ * Encrypted data from our system is base64-encoded and typically > 20 characters
+ * Base64 strings contain only A-Z, a-z, 0-9, +, /, and = (padding)
+ */
+function isBase64Encrypted(str: string): boolean {
+  if (!str || typeof str !== 'string' || str.length <= 20) {
+    return false;
+  }
+
+  // Base64 regex: allows A-Z, a-z, 0-9, +, /, and = (for padding)
+  const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+  
+  // Check if string matches base64 pattern and has reasonable length
+  // Encrypted data with IV (12 bytes) + encrypted content will be at least 20+ chars
+  return base64Regex.test(str) && str.length >= 20;
+}
+
+/**
+ * Safely decrypt a field value
+ * Returns empty string if decryption fails (instead of returning encrypted string)
+ */
+async function safeDecryptField(
+  value: string | null | undefined,
+  fieldName: string,
+  encryptionKey: string,
+  userId: string,
+): Promise<string> {
+  // Return empty string if value is null, undefined, or not a string
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  // If it doesn't look like encrypted data, return as-is (plaintext)
+  if (!isBase64Encrypted(value)) {
+    return value;
+  }
+
+  // Attempt decryption
+  try {
+    const decrypted = await decrypt(value, encryptionKey);
+    return decrypted;
+  } catch (decryptError) {
+    // Log the error with field name for debugging
+    console.error(
+      `❌ Failed to decrypt ${fieldName} for user ${userId}:`,
+      decryptError instanceof Error ? decryptError.message : String(decryptError),
+    );
+    
+    // Return empty string instead of encrypted string
+    // This prevents encrypted base64 from being displayed to users
+    return '';
+  }
+}
+
 // User handlers - Migrated
 async function handleUserProfile({
   user,
@@ -924,103 +979,48 @@ async function handleUserProfile({
 
   if (error) handleDbError(error);
 
-  // Decrypt sensitive fields (first_name, last_name, university, and program) before returning
+  // Decrypt sensitive fields before returning
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (encryptionKey && data) {
     const decryptedData = { ...data };
 
-    // Decrypt first_name if it exists and appears to be encrypted
-    if (
-      decryptedData.first_name &&
-      typeof decryptedData.first_name === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.first_name.length > 20) {
-          decryptedData.first_name = await decrypt(
-            decryptedData.first_name,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt first_name for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    // Decrypt all sensitive fields using the safe decryption helper
+    // This ensures we never return encrypted strings to the frontend
+    decryptedData.first_name = await safeDecryptField(
+      decryptedData.first_name,
+      'first_name',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt last_name if it exists and appears to be encrypted
-    if (
-      decryptedData.last_name &&
-      typeof decryptedData.last_name === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.last_name.length > 20) {
-          decryptedData.last_name = await decrypt(
-            decryptedData.last_name,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt last_name for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.last_name = await safeDecryptField(
+      decryptedData.last_name,
+      'last_name',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt university if it exists and appears to be encrypted
-    if (
-      decryptedData.university &&
-      typeof decryptedData.university === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.university.length > 20) {
-          decryptedData.university = await decrypt(
-            decryptedData.university,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt university for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.university = await safeDecryptField(
+      decryptedData.university,
+      'university',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt program if it exists and appears to be encrypted
-    if (decryptedData.program && typeof decryptedData.program === 'string') {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.program.length > 20) {
-          decryptedData.program = await decrypt(
-            decryptedData.program,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt program for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.program = await safeDecryptField(
+      decryptedData.program,
+      'program',
+      encryptionKey,
+      user.id,
+    );
+
+    // Add country field decryption (was missing before)
+    decryptedData.country = await safeDecryptField(
+      decryptedData.country,
+      'country',
+      encryptionKey,
+      user.id,
+    );
 
     return decryptedData;
   }

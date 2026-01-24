@@ -24,14 +24,15 @@ const LoadingFallback = () => (
 
 // Main App Navigator component
 export const AppNavigator: React.FC = () => {
-  const { session, loading } = useAuth();
+  // FIX 3: Include isInitializing to prevent navigation during auth transitions
+  const { session, loading, isInitializing, user } = useAuth();
 
   // Enable automatic screen tracking
   useScreenTracking();
 
-  // STEP 3 FIX: Removed forceShow timeout - rely on master timeout in AppWithErrorBoundary
-  // Show loading screen while determining auth state
-  if (loading) {
+  // FIX 3: Wait until auth initialization is complete before deciding which navigator to show
+  // This prevents switching navigators during transient auth states
+  if (loading || isInitializing) {
     return <LoadingFallback />;
   }
 
@@ -39,12 +40,31 @@ export const AppNavigator: React.FC = () => {
   if (__DEV__) {
     console.log('🔍 [AppNavigator] Session state:', {
       hasSession: !!session,
+      hasUser: !!user,
+      isInitializing,
       sessionId: session?.access_token
         ? session.access_token.substring(0, 10) + '...'
         : 'none',
     });
   }
 
+  // FIX 3: Only show AuthenticatedNavigator when we have both session AND user
+  // This ensures navigation doesn't happen with session but no user profile
+  // FIX 5: Ensure session → user relationship is consistent
+  const isAuthenticated = !!session && !!user;
+
+  // CRITICAL FIX: Add production logging for auth state transitions
+  // This helps diagnose blank screen issues in production after OTA updates
+  if (!__DEV__) {
+    console.log('[AppNavigator] Auth state:', {
+      hasSession: !!session,
+      hasUser: !!user,
+      isAuthenticated,
+      isInitializing,
+      loading,
+    });
+  }
+
   // Return appropriate navigator based on authentication state
-  return session ? <AuthenticatedNavigator /> : <AuthNavigator />;
+  return isAuthenticated ? <AuthenticatedNavigator /> : <AuthNavigator />;
 };

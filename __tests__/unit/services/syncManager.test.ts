@@ -63,8 +63,8 @@ describe('SyncManager', () => {
     } as any);
 
     // Mock NetInfo.addEventListener to return unsubscribe function
-    mockNetInfo.addEventListener = jest.fn(
-      (_listener: (state: any) => void) => jest.fn(),
+    mockNetInfo.addEventListener = jest.fn((_listener: (state: any) => void) =>
+      jest.fn(),
     ) as any;
 
     // Mock Circuit Breaker - default instance

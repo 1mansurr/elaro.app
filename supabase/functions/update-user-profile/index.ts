@@ -32,7 +32,7 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
     traceContext,
   );
 
-  // Encrypt fields if they are being updated
+  // Encrypt sensitive fields if they are being updated
   const encryptedUpdates: Record<string, string> = {};
   if (updates.first_name && typeof updates.first_name === 'string') {
     encryptedUpdates.first_name = await encrypt(
@@ -55,6 +55,10 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
   if (updates.program && typeof updates.program === 'string') {
     encryptedUpdates.program = await encrypt(updates.program, encryptionKey);
   }
+  // Encrypt country field (was missing before)
+  if (updates.country && typeof updates.country === 'string') {
+    encryptedUpdates.country = await encrypt(updates.country, encryptionKey);
+  }
 
   // Fields that don't need encryption can be passed through directly
   // Ensure username is included if provided (it shouldn't be encrypted)
@@ -63,8 +67,7 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
     ...encryptedUpdates,
     // Explicitly include username if provided (not encrypted)
     username: updates.username || undefined,
-    // Explicitly include country if provided (not encrypted)
-    country: updates.country || undefined,
+    // Country is now encrypted above, so remove the plaintext version
     updated_at: new Date().toISOString(),
   };
 

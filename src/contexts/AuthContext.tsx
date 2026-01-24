@@ -573,10 +573,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       // Update session state (single update point)
       setSession(session);
 
-      // IMPORTANT: Set loading to false when we receive auth state change
-      // This ensures AppNavigator doesn't show white screen during sign-out
-      // and allows AuthNavigator to render immediately when session becomes null
-      setLoading(false);
+      // FIX 4: Do NOT set loading to false on every auth event
+      // Loading should only be false when initialization is complete
+      // For INITIAL_SESSION, loading is already handled by initializeAuth
+      // For other events, we'll set loading after user resolution
+      if (event !== 'INITIAL_SESSION') {
+        // Only set loading to false for non-initial events after user resolution
+        // This prevents premature navigation during auth transitions
+      }
 
       // Sync to authSyncService for local cache (non-blocking)
       if (session) {
@@ -598,32 +602,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         if (!session) {
           setUser(null);
           setIsInitializing(false);
+          // FIX 4: Only set loading to false when initialization is definitively complete
+          setLoading(false);
         }
-        // If session exists, initializeAuth will handle profile fetch
+        // If session exists, initializeAuth will handle profile fetch and set loading
         return;
       }
 
-      // For other events (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED), fetch profile
+      // FIX 4: For other events, set loading to false only after user resolution completes
+      // FIX 5: Ensure user is set before allowing navigation
       if (session?.user) {
         fetchUserProfile(session.user.id)
           .then(userProfile => {
             if (userProfile) {
               setUser(userProfile);
-              // Only set isInitializing to false if we have a definitive user state
               setIsInitializing(false);
+              // FIX 4: Set loading to false only after user profile is resolved
+              setLoading(false);
             } else {
               // Profile fetch returned null (timeout or error)
-              // FIX: Set isInitializing to false to prevent white screen
               // Try to create minimal user as fallback
               const minimalUser = createMinimalUserFromSession(session.user);
               if (minimalUser) {
                 setUser(minimalUser);
                 setIsInitializing(false);
+                // FIX 4: Set loading to false after user resolution (even if minimal)
+                setLoading(false);
                 console.warn(
                   '⚠️ [AuthContext] Using minimal user after profile fetch failed in onAuthStateChange',
                 );
               } else {
-                setIsInitializing(false); // Still set to false to prevent white screen
+                setIsInitializing(false);
+                // FIX 4: Set loading to false even if we can't create minimal user
+                setLoading(false);
                 console.warn(
                   '⚠️ [AuthContext] Profile fetch failed, setting isInitializing to false to prevent white screen',
                 );
@@ -631,25 +642,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             }
           })
           .catch(() => {
-            // FIX: Set isInitializing to false even on error to prevent white screen
             // Try to create minimal user as fallback
             const minimalUser = createMinimalUserFromSession(session.user);
             if (minimalUser) {
               setUser(minimalUser);
               setIsInitializing(false);
+              // FIX 4: Set loading to false after user resolution (even if minimal)
+              setLoading(false);
               console.warn(
                 '⚠️ [AuthContext] Using minimal user after profile fetch error in onAuthStateChange',
               );
             } else {
-              setIsInitializing(false); // Still set to false to prevent white screen
+              setIsInitializing(false);
+              // FIX 4: Set loading to false even on error
+              setLoading(false);
               console.warn(
                 '⚠️ [AuthContext] Profile fetch error, setting isInitializing to false to prevent white screen',
               );
             }
           });
       } else {
+        // No session - user is definitively null
         setUser(null);
         setIsInitializing(false);
+        // FIX 4: Set loading to false when we know there's no session
+        setLoading(false);
       }
     });
 
@@ -1012,32 +1029,82 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         console.log('MFA check failed or timed out:', mfaError);
       }
 
-      // Set session from login result FIRST (most reliable source)
-      // This ensures AppNavigator immediately detects the session change
+      // FIX 5: Set session and user together to ensure consistent state
+      // This prevents navigation with session but no user
       if (result?.session) {
         console.log('✅ [AuthContext] Setting session from login result');
-        setSession(result.session);
 
         // Save auth state (non-blocking)
         authSyncService.saveAuthState(result.session).catch(err => {
           console.warn('⚠️ Failed to save auth state (non-blocking):', err);
         });
 
-        // Fetch user profile (non-blocking)
+        // FIX 5: Fetch user profile BEFORE setting session, or set both together
+        // This ensures AppNavigator doesn't navigate with session but no user
         if (result.user) {
-          fetchUserProfile(result.user.id)
-            .then(userProfile => {
-              if (userProfile) {
-                setUser(userProfile);
-                setIsInitializing(false); // Profile loaded after sign in
+          try {
+            // Wait for user profile before allowing navigation
+            const userProfile = await fetchUserProfile(result.user.id);
+            if (userProfile) {
+              // Set both session and user together
+              setSession(result.session);
+              setUser(userProfile);
+              setIsInitializing(false);
+              // FIX 4: Ensure loading is false after user resolution
+              setLoading(false);
+            } else {
+              // Profile fetch failed - create minimal user
+              const minimalUser = createMinimalUserFromSession(result.user);
+              if (minimalUser) {
+                setSession(result.session);
+                setUser(minimalUser);
+                setIsInitializing(false);
+                setLoading(false);
+                console.warn(
+                  '⚠️ [AuthContext] Using minimal user after sign in profile fetch failed',
+                );
+              } else {
+                // Can't create minimal user - don't set session to prevent navigation
+                console.error(
+                  '❌ [AuthContext] Cannot create user after sign in - not setting session',
+                );
+                return {
+                  error: new Error(
+                    'Login succeeded but user profile could not be loaded. Please try again.',
+                  ),
+                };
               }
-            })
-            .catch(err => {
-              console.warn(
-                '⚠️ Failed to fetch user profile (non-blocking):',
-                err,
-              );
-            });
+            }
+          } catch (err) {
+            console.error(
+              '❌ [AuthContext] Error fetching user profile after sign in:',
+              err,
+            );
+            // Try minimal user as fallback
+            const minimalUser = createMinimalUserFromSession(result.user);
+            if (minimalUser) {
+              setSession(result.session);
+              setUser(minimalUser);
+              setIsInitializing(false);
+              setLoading(false);
+            } else {
+              return {
+                error: new Error(
+                  'Login succeeded but user profile could not be loaded. Please try again.',
+                ),
+              };
+            }
+          }
+        } else {
+          // No user in result - this shouldn't happen, but handle it
+          console.error(
+            '❌ [AuthContext] Login result has session but no user',
+          );
+          return {
+            error: new Error(
+              'Login succeeded but user information is missing. Please try again.',
+            ),
+          };
         }
 
         // REMOVED: Don't call getSession() after login - it was causing duplicate setSession()
@@ -1069,25 +1136,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             console.log(
               '✅ [AuthContext] Setting session from Supabase client (direct)',
             );
-            setSession(directSession);
 
             // Save auth state (non-blocking)
             authSyncService.saveAuthState(directSession).catch(err => {
               console.warn('⚠️ Failed to save auth state (non-blocking):', err);
             });
 
-            // Fetch user profile (non-blocking)
+            // FIX 5: Fetch user profile before setting session to ensure consistent state
             if (directSession.user) {
-              fetchUserProfile(directSession.user.id)
-                .then(userProfile => {
-                  if (userProfile) setUser(userProfile);
-                })
-                .catch(err => {
-                  console.warn(
-                    '⚠️ Failed to fetch user profile (non-blocking):',
-                    err,
+              try {
+                const userProfile = await fetchUserProfile(
+                  directSession.user.id,
+                );
+                if (userProfile) {
+                  setSession(directSession);
+                  setUser(userProfile);
+                  setIsInitializing(false);
+                  setLoading(false);
+                } else {
+                  const minimalUser = createMinimalUserFromSession(
+                    directSession.user,
                   );
-                });
+                  if (minimalUser) {
+                    setSession(directSession);
+                    setUser(minimalUser);
+                    setIsInitializing(false);
+                    setLoading(false);
+                  } else {
+                    console.error(
+                      '❌ [AuthContext] Cannot create user from direct session',
+                    );
+                    return {
+                      error: new Error(
+                        'Login succeeded but user profile could not be loaded. Please try again.',
+                      ),
+                    };
+                  }
+                }
+              } catch (err) {
+                console.error(
+                  '❌ [AuthContext] Error fetching user profile from direct session:',
+                  err,
+                );
+                const minimalUser = createMinimalUserFromSession(
+                  directSession.user,
+                );
+                if (minimalUser) {
+                  setSession(directSession);
+                  setUser(minimalUser);
+                  setIsInitializing(false);
+                  setLoading(false);
+                } else {
+                  return {
+                    error: new Error(
+                      'Login succeeded but user profile could not be loaded. Please try again.',
+                    ),
+                  };
+                }
+              }
+            } else {
+              console.error('❌ [AuthContext] Direct session has no user');
+              return {
+                error: new Error(
+                  'Login succeeded but user information is missing. Please try again.',
+                ),
+              };
             }
           } else {
             // Try via authService.getSession as fallback
@@ -1101,7 +1214,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               console.log(
                 '✅ [AuthContext] Setting session from Supabase client (via API)',
               );
-              setSession(currentSession);
 
               // Save auth state (non-blocking)
               authSyncService.saveAuthState(currentSession).catch(err => {
@@ -1111,18 +1223,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 );
               });
 
-              // Fetch user profile (non-blocking)
+              // FIX 5: Fetch user profile before setting session to ensure consistent state
               if (currentSession.user) {
-                fetchUserProfile(currentSession.user.id)
-                  .then(userProfile => {
-                    if (userProfile) setUser(userProfile);
-                  })
-                  .catch(err => {
-                    console.warn(
-                      '⚠️ Failed to fetch user profile (non-blocking):',
-                      err,
+                try {
+                  const userProfile = await fetchUserProfile(
+                    currentSession.user.id,
+                  );
+                  if (userProfile) {
+                    setSession(currentSession);
+                    setUser(userProfile);
+                    setIsInitializing(false);
+                    setLoading(false);
+                  } else {
+                    const minimalUser = createMinimalUserFromSession(
+                      currentSession.user,
                     );
-                  });
+                    if (minimalUser) {
+                      setSession(currentSession);
+                      setUser(minimalUser);
+                      setIsInitializing(false);
+                      setLoading(false);
+                    } else {
+                      console.error(
+                        '❌ [AuthContext] Cannot create user from API session',
+                      );
+                      return {
+                        error: new Error(
+                          'Login succeeded but user profile could not be loaded. Please try again.',
+                        ),
+                      };
+                    }
+                  }
+                } catch (err) {
+                  console.error(
+                    '❌ [AuthContext] Error fetching user profile from API session:',
+                    err,
+                  );
+                  const minimalUser = createMinimalUserFromSession(
+                    currentSession.user,
+                  );
+                  if (minimalUser) {
+                    setSession(currentSession);
+                    setUser(minimalUser);
+                    setIsInitializing(false);
+                    setLoading(false);
+                  } else {
+                    return {
+                      error: new Error(
+                        'Login succeeded but user profile could not be loaded. Please try again.',
+                      ),
+                    };
+                  }
+                }
+              } else {
+                console.error('❌ [AuthContext] API session has no user');
+                return {
+                  error: new Error(
+                    'Login succeeded but user information is missing. Please try again.',
+                  ),
+                };
               }
             } else {
               // CRITICAL: No session found after login - this is an error
@@ -1301,6 +1460,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   // Removed Google and Apple sign-in methods
+
+  // Debug logging for auth state (using console.error so it works in production)
+  useEffect(() => {
+    console.error('🔍 [DEBUG] Auth State Changed:', {
+      loading,
+      isInitializing,
+      hasSession: !!session,
+      hasUser: !!user,
+      userId: user?.id,
+    });
+  }, [loading, isInitializing, session, user]);
 
   const value = {
     session,

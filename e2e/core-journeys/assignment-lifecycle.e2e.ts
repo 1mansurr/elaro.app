@@ -4,26 +4,64 @@
  * Tests the complete lifecycle: Create → Edit → Complete → Delete
  */
 
+import { loginWithTestUser, TestHelpers } from '../utils/testHelpers';
+
 // Note: device, element, by, expect, waitFor are global from Detox
 
 describe('Assignment Lifecycle Journey', () => {
   beforeAll(async () => {
     await device.launchApp();
+    // Login if not already logged in
+    try {
+      await loginWithTestUser();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch {
+      // Login might fail if already logged in or auth not available
+      // Continue anyway
+    }
   });
 
   beforeEach(async () => {
     await device.reloadReactNative();
+    // Re-login after reload (reload resets auth state)
+    try {
+      await loginWithTestUser();
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    } catch {
+      // Login might fail if already logged in or auth not available
+      // Continue anyway
+    }
   });
 
   describe('Assignment Creation', () => {
     it('should create a new assignment', async () => {
       // Navigate to home
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(10000);
+      await TestHelpers.waitForHomeScreen(10000);
 
-      // Open FAB menu
-      await element(by.id('fab-button')).tap();
+      // Ensure user is logged in before trying to access FAB
+      const loggedIn = await TestHelpers.isLoggedIn();
+      if (!loggedIn) {
+        await loginWithTestUser();
+        await TestHelpers.wait(2000);
+        await TestHelpers.waitForHomeScreen(10000);
+      }
+
+      // Open FAB menu - try multiple possible IDs
+      let fabButton;
+      try {
+        fabButton = element(by.id('fab-button'));
+        await waitFor(fabButton).toBeVisible().withTimeout(5000);
+        await fabButton.tap();
+      } catch {
+        try {
+          fabButton = element(by.id('add-task-fab'));
+          await waitFor(fabButton).toBeVisible().withTimeout(5000);
+          await fabButton.tap();
+        } catch {
+          console.log('⚠️ FAB button not found - user may not be logged in or FAB has different testID');
+          throw new Error('FAB button not found - cannot create assignment');
+        }
+      }
 
       // Select "Add Assignment"
       await element(by.text('Add Assignment')).tap();
@@ -47,18 +85,14 @@ describe('Assignment Lifecycle Journey', () => {
       await element(by.id('save-assignment-button')).tap();
 
       // Verify assignment created (check for success or modal close)
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(5000);
+      await TestHelpers.waitForHomeScreen(5000);
     });
   });
 
   describe('Assignment Editing', () => {
     it('should edit an existing assignment', async () => {
       // Navigate to assignments list or find assignment card
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(10000);
+      await TestHelpers.waitForHomeScreen(10000);
 
       // Find an assignment card (may need to scroll)
       try {
@@ -94,9 +128,7 @@ describe('Assignment Lifecycle Journey', () => {
 
   describe('Assignment Completion', () => {
     it('should mark assignment as completed', async () => {
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(10000);
+      await TestHelpers.waitForHomeScreen(10000);
 
       try {
         // Find assignment card
@@ -111,9 +143,7 @@ describe('Assignment Lifecycle Journey', () => {
         await element(by.id('complete-assignment-button')).tap();
 
         // Verify completion (assignment should disappear from upcoming or show as completed)
-        await waitFor(element(by.id('home-screen')))
-          .toBeVisible()
-          .withTimeout(3000);
+        await TestHelpers.waitForHomeScreen(3000);
       } catch (error) {
         console.log('No assignments found, skipping completion test');
       }
@@ -122,9 +152,7 @@ describe('Assignment Lifecycle Journey', () => {
 
   describe('Assignment Deletion', () => {
     it('should delete an assignment', async () => {
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(10000);
+      await TestHelpers.waitForHomeScreen(10000);
 
       try {
         // Find assignment
@@ -141,9 +169,7 @@ describe('Assignment Lifecycle Journey', () => {
         await element(by.id('confirm-delete-button')).tap();
 
         // Verify deletion (assignment should be removed)
-        await waitFor(element(by.id('home-screen')))
-          .toBeVisible()
-          .withTimeout(3000);
+        await TestHelpers.waitForHomeScreen(3000);
       } catch (error) {
         console.log('No assignments found, skipping deletion test');
       }
@@ -153,12 +179,32 @@ describe('Assignment Lifecycle Journey', () => {
   describe('Complete Lifecycle', () => {
     it('should complete full assignment lifecycle: Create → Edit → Complete → Delete', async () => {
       // This test combines all steps into one flow
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(10000);
+      await TestHelpers.waitForHomeScreen(10000);
+
+      // Ensure user is logged in
+      const loggedIn = await TestHelpers.isLoggedIn();
+      if (!loggedIn) {
+        await loginWithTestUser();
+        await TestHelpers.wait(2000);
+        await TestHelpers.waitForHomeScreen(10000);
+      }
 
       // Step 1: Create
-      await element(by.id('fab-button')).tap();
+      let fabButton;
+      try {
+        fabButton = element(by.id('fab-button'));
+        await waitFor(fabButton).toBeVisible().withTimeout(5000);
+        await fabButton.tap();
+      } catch {
+        try {
+          fabButton = element(by.id('add-task-fab'));
+          await waitFor(fabButton).toBeVisible().withTimeout(5000);
+          await fabButton.tap();
+        } catch {
+          console.log('⚠️ FAB button not found - user may not be logged in');
+          throw new Error('FAB button not found - cannot create assignment');
+        }
+      }
       await element(by.text('Add Assignment')).tap();
       await element(by.id('assignment-title-input')).typeText(
         'Lifecycle Test Assignment',
@@ -198,9 +244,7 @@ describe('Assignment Lifecycle Journey', () => {
       }
 
       // Verify we're back at home
-      await waitFor(element(by.id('home-screen')))
-        .toBeVisible()
-        .withTimeout(5000);
+      await TestHelpers.waitForHomeScreen(5000);
     });
   });
 });

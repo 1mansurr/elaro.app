@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import {
   NavigationContainer,
   NavigationContainerRef,
@@ -58,7 +58,8 @@ import {
   persistQueryCache,
 } from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
-import { Task } from '@/types';
+import { Task, User } from '@/types';
+import { Session } from '@supabase/supabase-js';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
 import {
@@ -467,7 +468,8 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
 // Made defensive to handle cases where AuthProvider might not be ready yet
 const NavigationStateHandler: React.FC = () => {
   // Safely access auth context
-  let user, session;
+  let user: User | null;
+  let session: Session | null;
   try {
     const auth = useAuth();
     user = auth.user;
@@ -860,6 +862,119 @@ const DeepLinkHandler: React.FC = () => {
   return null;
 };
 
+// Debug Log Viewer Component - Shows console logs on screen (enabled for debugging)
+const DebugLogViewer: React.FC = () => {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [isVisible, setIsVisible] = useState(true); // Enable for debugging
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  useEffect(() => {
+    // Capture console logs
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    const addLog = (prefix: string, args: any[]) => {
+      const logMessage = args
+        .map(arg => {
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        })
+        .join(' ');
+
+      setLogs(prev => {
+        const newLogs = [...prev.slice(-99), `${prefix} ${logMessage}`];
+        return newLogs;
+      });
+    };
+
+    console.log = (...args: any[]) => {
+      addLog('[LOG]', args);
+      originalLog(...args);
+    };
+
+    console.error = (...args: any[]) => {
+      addLog('[ERROR]', args);
+      originalError(...args);
+    };
+
+    console.warn = (...args: any[]) => {
+      addLog('[WARN]', args);
+      originalWarn(...args);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, []);
+
+  if (!isVisible) {
+    return (
+      <TouchableOpacity
+        style={styles.debugToggleButton}
+        onPress={() => setIsVisible(true)}>
+        <Text style={styles.debugToggleText}>Show Logs</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.debugContainer,
+        isMinimized && styles.debugContainerMinimized,
+      ]}>
+      <View style={styles.debugHeader}>
+        <Text style={styles.debugHeaderText}>
+          Debug Logs ({logs.length})
+        </Text>
+        <View style={styles.debugButtons}>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setIsMinimized(!isMinimized)}>
+            <Text style={styles.debugButtonText}>
+              {isMinimized ? 'Expand' : 'Minimize'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setLogs([])}>
+            <Text style={styles.debugButtonText}>Clear</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setIsVisible(false)}>
+            <Text style={styles.debugButtonText}>Hide</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {!isMinimized && (
+        <ScrollView
+          style={styles.debugScrollView}
+          contentContainerStyle={styles.debugScrollContent}>
+          {logs.length === 0 ? (
+            <Text style={styles.debugEmptyText}>No logs yet...</Text>
+          ) : (
+            logs.map((log, i) => (
+              <Text key={i} style={styles.debugLogText}>
+                {log}
+              </Text>
+            ))
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
 // Component to integrate React Query with Error Boundary
 const AppWithErrorBoundary: React.FC<{
   initialNavigationState?: NavigationState;
@@ -909,7 +1024,15 @@ const AppWithErrorBoundary: React.FC<{
       appIsReady,
       isAnimationFinished,
     });
-  }, [isStateValidated, appIsReady, isAnimationFinished]);
+    // Debug logging for blank screen diagnosis (using console.error so it works in production)
+    console.error('🔍 [DEBUG] App State Changed:', {
+      appIsReady,
+      isAnimationFinished,
+      isStateValidated,
+      shouldShowLoading,
+      navigationContainerMounted,
+    });
+  }, [isStateValidated, appIsReady, isAnimationFinished, shouldShowLoading, navigationContainerMounted]);
 
   // Hide native splash screen ONLY when ALL conditions are met:
   // 1. appIsReady === true
@@ -1111,6 +1234,7 @@ const AppWithErrorBoundary: React.FC<{
     <ErrorBoundary onReset={reset}>
       <AppProviders queryClient={queryClient}>
         {!__DEV__ && <QueryCacheSetup queryClient={queryClient} />}
+        <DebugLogViewer />
         <AppInitializer onStateChange={handleAppInitializerStateChange}>
           {shouldShowLoading ? (
             <View
@@ -1500,7 +1624,7 @@ const ThemedStatusBar = () => {
 function AuthEffects() {
   // Safely access auth context - don't throw if not ready
   // Made defensive to handle cases where AuthProvider might not be ready yet
-  let user;
+  let user: User | null;
   try {
     const auth = useAuth();
     user = auth.user;
@@ -1782,3 +1906,88 @@ function App() {
 }
 
 export default App;
+
+// Styles for Debug Log Viewer
+const styles = StyleSheet.create({
+  debugContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    right: 10,
+    maxHeight: 400,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    zIndex: 99999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  debugContainerMinimized: {
+    maxHeight: 50,
+  },
+  debugHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  debugHeaderText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  debugButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  debugButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#333',
+    borderRadius: 4,
+  },
+  debugButtonText: {
+    color: '#FFF',
+    fontSize: 10,
+  },
+  debugScrollView: {
+    maxHeight: 350,
+  },
+  debugScrollContent: {
+    padding: 10,
+  },
+  debugLogText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontFamily: 'monospace',
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  debugEmptyText: {
+    color: '#999',
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 20,
+  },
+  debugToggleButton: {
+    position: 'absolute',
+    top: 50,
+    right: 10,
+    backgroundColor: 'rgba(255, 107, 107, 0.8)',
+    padding: 8,
+    borderRadius: 4,
+    zIndex: 99999,
+  },
+  debugToggleText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+});

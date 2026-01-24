@@ -251,7 +251,9 @@ describe('PermissionService', () => {
 
       expect(limits).toHaveLength(5);
 
-      const assignmentsLimit = limits.find((l: any) => l.type === 'assignments');
+      const assignmentsLimit = limits.find(
+        (l: any) => l.type === 'assignments',
+      );
       expect(assignmentsLimit).toBeDefined();
       expect(assignmentsLimit?.limit).toBe(15);
     });
@@ -262,7 +264,9 @@ describe('PermissionService', () => {
 
       expect(limits).toHaveLength(5);
 
-      const assignmentsLimit = limits.find((l: any) => l.type === 'assignments');
+      const assignmentsLimit = limits.find(
+        (l: any) => l.type === 'assignments',
+      );
       expect(assignmentsLimit).toBeDefined();
       expect(assignmentsLimit?.limit).toBeGreaterThan(15);
     });

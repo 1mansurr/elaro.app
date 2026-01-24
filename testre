@@ -1,0 +1,1390 @@
+new@Air-Mansur ELARO-app % npm run e2e:test:priority
+
+> elaro@1.0.0 e2e:test:priority
+> detox test --configuration ios.debug e2e/priority-test-runner.e2e.ts
+
+09:17:53.117 detox[9344] B jest --config e2e/jest.config.js ----maxWorkers 2 e2e/priority-test-runner.e2e.ts
+09:18:06.187 detox[9345] i priority-test-runner.e2e.ts is assigned to 33433559-A130-49A0-811B-15B33C06CF20 (iPhone 16)
+09:18:18.536 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:18:37.066 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:18:50.117 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:18:53.762 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Launch → Login → Dashboard Flow: should navigate from launch to login to dashboard
+09:19:26.350 detox[9345] i ⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.
+09:19:57.212 detox[9345] i ⚠️ Auth screen not found. App might be in unexpected state. Continuing anyway.
+09:20:22.819 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:20:22.819 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:20:25.822 detox[9345] i ✅ Login flow completed - user should be on dashboard
+09:20:25.828 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Launch → Login → Dashboard Flow: should navigate from launch to login to dashboard [OK]
+09:20:25.834 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Launch → Signup → Dashboard Flow: should navigate from launch to signup to dashboard
+09:21:03.316 detox[9345] i ⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.
+09:21:34.057 detox[9345] i ⚠️ Auth screen not found. App might be in unexpected state. Continuing anyway.
+09:21:36.271 detox[9345] i ⚠️ Toggle auth mode button not found - may already be in signup mode
+09:21:38.441 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Launch → Signup → Dashboard Flow: should navigate from launch to signup to dashboard [FAIL]
+09:21:38.442 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Logout → Guest State Flow: should navigate from dashboard to guest state on logout
+09:22:10.072 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:22:10.072 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:22:28.951 detox[9345] i ⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.
+09:22:43.051 detox[9345] i ⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.
+09:22:43.051 detox[9345] i ✅ Logout flow completed - user returned to guest state
+09:22:43.053 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Logout → Guest State Flow: should navigate from dashboard to guest state on logout [OK]
+09:22:43.055 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Auth State Persistence: should maintain session across app reloads
+09:23:14.617 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:23:14.618 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:23:20.623 detox[9345] i ⚠️ Session not found after login - login may have failed
+09:23:20.628 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Auth State Persistence: should maintain session across app reloads [OK]
+09:23:20.633 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Auth Mode Toggle: should toggle between signup and signin modes
+09:23:46.259 detox[9345] i ⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.
+09:24:16.995 detox[9345] i ⚠️ Auth screen not found. App might be in unexpected state. Continuing anyway.
+09:24:18.215 detox[9345] i ⚠️ Toggle auth mode button not found - may not be available
+09:24:18.219 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Pass 2: Auth Flow Validation > Auth Mode Toggle: should toggle between signup and signin modes [FAIL]
+09:24:29.634 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:24:38.617 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should complete full onboarding journey
+09:25:25.731 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:25:30.844 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should complete full onboarding journey [OK]
+09:25:30.845 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should handle onboarding with skip courses
+09:25:43.988 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should handle onboarding with skip courses [OK]
+09:25:43.990 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should handle back navigation during onboarding
+09:26:02.574 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should handle back navigation during onboarding [OK]
+09:26:02.575 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should validate required fields
+09:26:21.161 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Complete Onboarding Journey: should validate required fields [OK]
+09:26:21.163 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Progress Indicators: should show correct progress indicator
+09:26:39.695 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Progress Indicators: should show correct progress indicator [OK]
+09:26:39.696 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Progress Indicators: should show progress bar correctly
+09:27:06.246 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Progress Indicators: should show progress bar correctly [OK]
+09:27:06.250 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Data Persistence: should persist data between steps
+09:27:35.988 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Data Persistence: should persist data between steps [OK]
+09:27:35.989 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Data Persistence: should handle app backgrounding during onboarding
+09:28:05.606 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Data Persistence: should handle app backgrounding during onboarding [OK]
+09:28:05.609 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Error Handling: should handle network errors gracefully
+09:28:35.238 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Error Handling: should handle network errors gracefully [OK]
+09:28:35.240 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Accessibility: should support screen reader navigation
+09:29:04.625 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Accessibility: should support screen reader navigation [OK]
+09:29:04.626 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Accessibility: should have proper focus management
+09:29:31.005 detox[9345] i ELARO Priority Test Suite > Priority 1: Authentication & Onboarding > Complete Onboarding Flow > Onboarding Accessibility: should have proper focus management [OK]
+09:29:42.107 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:29:53.199 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• The event "Network Request" is taking place with object: "URL: “https://exp.host/--/api/v2/development-sessions?deviceId=E48523A5-6001-4F11-BDD6-682D85A73B2E”".
+09:30:03.208 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• The event "Network Request" is taking place with object: "URL: “https://exp.host/--/api/v2/development-sessions?deviceId=E48523A5-6001-4F11-BDD6-682D85A73B2E”".
+09:30:13.212 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• The event "Network Request" is taking place with object: "URL: “https://exp.host/--/api/v2/development-sessions?deviceId=E48523A5-6001-4F11-BDD6-682D85A73B2E”".
+09:30:23.219 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• The event "Network Request" is taking place with object: "URL: “https://exp.host/--/api/v2/development-sessions?deviceId=E48523A5-6001-4F11-BDD6-682D85A73B2E”".
+09:30:31.027 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should create a new course end-to-end
+09:30:31.032 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should create a new course end-to-end [FAIL]
+09:30:31.050 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should handle course creation with only required fields
+09:30:31.050 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should handle course creation with only required fields [FAIL]
+09:30:31.051 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should validate required fields before submission
+09:30:31.052 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should validate required fields before submission [FAIL]
+09:30:31.052 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should cancel course creation and return to home
+09:30:31.053 detox[9345] i ELARO Priority Test Suite > Priority 2: Course Creation > Course Creation Journey > Complete Course Creation Flow: should cancel course creation and return to home [FAIL]
+09:30:35.120 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:31:04.247 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:31:04.248 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:31:07.253 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should create a lecture successfully from FAB
+09:31:20.049 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+09:31:40.611 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:31:56.042 detox[9345] i ⚠️ FAB button not found - skipping test
+09:31:56.044 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should create a lecture successfully from FAB [OK]
+09:31:56.045 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should validate required fields before saving
+09:32:08.374 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+09:32:28.999 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:32:44.589 detox[9345] i ⚠️ FAB button not found - skipping test
+09:32:44.591 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should validate required fields before saving [OK]
+09:32:44.592 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should handle lecture creation cancellation
+09:32:56.896 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+09:33:17.511 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:33:33.001 detox[9345] i ⚠️ FAB button not found - skipping test
+09:33:33.003 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Complete Lecture Creation: should handle lecture creation cancellation [OK]
+09:33:33.005 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Lecture Creation via Quick Add: should create lecture from Quick Add modal
+09:33:45.318 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+09:34:05.771 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:34:41.709 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:34:41.710 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:35:03.941 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:35:19.429 detox[9345] i ⚠️ FAB button not found for quick add
+09:35:19.449 detox[9345] i ELARO Priority Test Suite > Priority 3: Lecture Creation > Lecture Creation Flow > Lecture Creation via Quick Add: should create lecture from Quick Add modal [FAIL]
+09:35:19.949 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:35:45.631 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:35:45.631 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:35:47.635 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Creation: should create a new assignment
+09:36:17.248 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:36:17.248 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:36:39.578 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:37:15.334 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:37:15.335 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:37:37.697 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:37:53.167 detox[9345] i ⚠️ FAB button not found - user may not be logged in or FAB has different testID
+09:37:53.181 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Creation: should create a new assignment [FAIL]
+09:37:53.182 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Editing: should edit an existing assignment
+09:38:28.262 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:38:28.263 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:38:50.294 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:39:00.605 detox[9345] i No assignments found, skipping edit test
+09:39:00.610 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Editing: should edit an existing assignment [OK]
+09:39:00.612 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Completion: should mark assignment as completed
+09:39:41.434 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:39:41.434 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:40:03.754 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:40:14.069 detox[9345] i No assignments found, skipping completion test
+09:40:14.071 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Completion: should mark assignment as completed [OK]
+09:40:14.072 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Deletion: should delete an assignment
+09:40:54.645 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:40:54.645 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:41:17.118 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:41:27.466 detox[9345] i No assignments found, skipping deletion test
+09:41:27.468 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Assignment Deletion: should delete an assignment [OK]
+09:41:27.470 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Complete Lifecycle: should complete full assignment lifecycle: Create → Edit → Complete → Delete
+09:42:08.240 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:42:08.240 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:42:30.572 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:43:06.696 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:43:06.697 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:43:29.024 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:43:44.394 detox[9345] i ⚠️ FAB button not found - user may not be logged in
+09:43:44.398 detox[9345] i ELARO Priority Test Suite > Priority 4: Assignment Creation > Assignment Lifecycle Journey > Complete Lifecycle: should complete full assignment lifecycle: Create → Edit → Complete → Delete [FAIL]
+09:43:44.986 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:44:10.558 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:44:10.559 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:44:13.563 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display home screen with tasks
+09:44:36.219 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:44:45.585 detox[9345] i ⚠️ FAB button not found
+09:44:51.946 detox[9345] i ✅ Home screen loaded
+09:44:51.947 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display home screen with tasks [OK]
+09:44:51.947 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display upcoming assignments
+09:45:14.548 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:45:22.739 detox[9345] i ℹ️ Upcoming assignments - may not be visible if empty
+09:45:27.091 detox[9345] i ℹ️ No assignment cards - expected if no assignments
+09:45:27.092 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display upcoming assignments [OK]
+09:45:27.093 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display study sessions
+09:45:49.374 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:46:02.008 detox[9345] i ℹ️ No study session cards - expected if no sessions
+09:46:02.010 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should display study sessions [OK]
+09:46:02.011 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should show add task button
+09:46:24.825 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:46:36.372 detox[9345] i ⚠️ Add task button not found
+09:46:36.374 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should show add task button [OK]
+09:46:36.374 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should open add task modal
+09:46:59.089 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:47:10.541 detox[9345] i ⚠️ FAB button not found - skipping test
+09:47:10.543 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should open add task modal [OK]
+09:47:10.544 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should pull to refresh tasks
+09:47:38.708 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:47:44.099 detox[9345] i ⚠️ Could not perform pull to refresh - element may not support swipe
+09:47:46.101 detox[9345] i ✅ Pull to refresh works
+09:47:46.103 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Home Screen Display: should pull to refresh tasks [OK]
+09:47:46.106 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Detail Sheet: should open task detail sheet when task is tapped
+09:48:08.788 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+09:48:17.164 detox[9345] i No tasks available to test detail sheet
+09:48:17.166 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Detail Sheet: should open task detail sheet when task is tapped [OK]
+09:48:17.167 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Detail Sheet: should close task detail sheet
+09:48:19.546 detox[9345] i No tasks available to test
+09:48:19.548 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Detail Sheet: should close task detail sheet [OK]
+09:48:19.550 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Actions: should complete a task from detail sheet
+09:48:21.937 detox[9345] i No tasks available to test
+09:48:21.939 detox[9345] i ELARO Priority Test Suite > Priority 5: Home Screen & Task Display > Home Screen & Task Display > Task Actions: should complete a task from detail sheet [OK]
+09:48:22.502 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+09:48:48.266 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+09:48:48.267 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+09:48:51.270 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should navigate to calendar tab
+09:49:13.827 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:04:35.183 detox[9345] i The app has not responded to the network requests below:
+  (id = 685) invoke: {"type":"expectation","predicate":{"type":"id","value":"calendar-tab","isRegex":false},"expectation":"toBeVisible","timeout":5000}
+  (id = 686) currentStatus: {}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 6: Calendar View Calendar View should navigate to calendar tab" has timed out.
+
+10:04:35.186 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should navigate to calendar tab [FAIL]
+10:04:35.193 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should display calendar with tasks
+10:04:52.404 detox[9345] i ⚠️ Calendar tab not found - skipping test
+10:04:52.405 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should display calendar with tasks [OK]
+10:04:52.411 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should navigate between months
+10:05:09.009 detox[9345] i ⚠️ Calendar tab not found - skipping test
+10:05:09.011 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should navigate between months [OK]
+10:05:09.012 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should display calendar header
+10:09:05.207 detox[9345] i The app has not responded to the network requests below:
+  (id = 692) invoke: {"type":"expectation","predicate":{"type":"text","value":"Calendar","isRegex":false},"expectation":"toBeVisible","timeout":5000}
+  (id = 693) currentStatus: {}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 6: Calendar View Calendar View should display calendar header" has timed out.
+
+10:09:05.207 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should display calendar header [FAIL]
+10:09:05.212 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should show events on calendar
+10:09:09.520 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should show events on calendar [FAIL]
+10:09:09.520 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should handle date selection
+10:09:09.524 detox[9345] i ELARO Priority Test Suite > Priority 6: Calendar View > Calendar View: should handle date selection [FAIL]
+10:09:20.538 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:10:34.594 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:10:35.242 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:10:35.242 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:10:38.247 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow: should complete full study session journey
+10:10:44.589 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 200.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:10:48.254 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:10:55.881 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:10:58.261 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:11:08.038 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:11:16.294 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:11:16.685 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:06.122 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:06.122 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:16.127 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:16.128 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:25.827 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:26.133 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:35.347 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:35.830 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:39.999 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:12:39.999 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:12:44.628 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:12:45.811 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:13:43.289 detox[9345] i The app has not responded to the network requests below:
+  (id = 771) invoke: {"type":"expectation","predicate":{"type":"id","value":"main-tab","isRegex":false},"expectation":"toBeVisible","timeout":2000}
+  (id = 772) currentStatus: {}
+  (id = 773) currentStatus: {}
+  (id = 774) currentStatus: {}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 7: Study Sessions Complete Study Session Flow should complete full study session journey" has timed out.
+
+10:13:43.289 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow: should complete full study session journey [FAIL]
+10:13:43.296 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow: should handle pause and resume study session
+10:13:59.782 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:14:32.385 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:14:32.385 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:15:19.255 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:15:29.259 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:15:35.300 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:15:37.800 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:15:43.704 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow: should handle pause and resume study session [OK]
+10:15:43.704 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Dashboard → TaskCard → StudySession Flow: should navigate from dashboard to study session review
+10:15:47.309 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 104.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:15:53.747 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:18:16.897 detox[9345] i The app has not responded to the network requests below:
+  (id = 812) invoke: {"type":"expectation","predicate":{"type":"id","value":"home-screen","isRegex":false},"expectation":"toBeVisible","timeout":10000}
+  (id = 814) currentStatus: {}
+  (id = 815) currentStatus: {}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 7: Study Sessions Complete Study Session Flow Dashboard → TaskCard → StudySession Flow should navigate from dashboard to study session review" has timed out.
+
+10:18:16.898 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Dashboard → TaskCard → StudySession Flow: should navigate from dashboard to study session review [FAIL]
+10:18:16.907 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > StudySession → Result Flow: should navigate from study session to result screen
+10:18:33.472 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:18:38.740 detox[9345] i ℹ️ No study session available - skipping result flow test
+10:18:38.747 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > StudySession → Result Flow: should navigate from study session to result screen [OK]
+10:18:38.754 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Study Result → Dashboard Flow: should navigate from study result back to dashboard
+10:18:55.665 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:18:55.773 detox[9345] i ℹ️ Study result navigation test - requires completed session
+10:18:55.773 detox[9345] i ℹ️ Verify manually: Complete session → Result → Done → Dashboard
+10:18:55.775 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Study Result → Dashboard Flow: should navigate from study result back to dashboard [OK]
+10:18:55.777 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Navigation Parameter Passing: should pass sessionId correctly through navigation
+10:19:12.359 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:19:17.634 detox[9345] i ℹ️ No study session available - cannot verify parameter passing
+10:19:17.637 detox[9345] i ELARO Priority Test Suite > Priority 7: Study Sessions > Complete Study Session Flow > Navigation Parameter Passing: should pass sessionId correctly through navigation [OK]
+10:19:18.313 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:19:43.611 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:19:43.613 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:19:46.617 detox[9345] i ELARO Priority Test Suite > Priority 8: Templates > Templates Flow: should save task as template
+10:20:13.423 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:20:49.438 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:20:49.438 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:21:11.550 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:21:27.138 detox[9345] i ⚠️ FAB button not found - user may not be logged in
+10:21:27.148 detox[9345] i ELARO Priority Test Suite > Priority 8: Templates > Templates Flow: should save task as template [FAIL]
+10:21:27.149 detox[9345] i ELARO Priority Test Suite > Priority 8: Templates > Templates Flow: should browse and select template
+10:21:53.772 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:22:29.647 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:22:29.647 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:22:51.847 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:23:07.273 detox[9345] i ⚠️ FAB button not found - user may not be logged in
+10:23:07.287 detox[9345] i ELARO Priority Test Suite > Priority 8: Templates > Templates Flow: should browse and select template [FAIL]
+10:23:07.982 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:23:33.648 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:23:33.648 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:23:33.649 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should sync queued actions when coming back online
+10:24:00.575 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:24:36.412 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:24:36.413 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:24:58.730 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:25:03.781 detox[9345] i ⚠️ setNetworkCondition not available on iOS - skipping offline simulation
+10:25:13.953 detox[9345] i ⚠️ FAB button not found - user may not be logged in
+10:25:13.964 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should sync queued actions when coming back online [FAIL]
+10:25:13.964 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should handle sync errors gracefully
+10:25:20.692 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:25:47.646 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:25:47.647 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:26:07.894 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:26:43.978 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:26:43.979 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:27:06.276 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:27:11.503 detox[9345] i ⚠️ setNetworkCondition not available - skipping offline simulation
+10:27:20.285 detox[9345] i The app has not responded to the network requests below:
+  (id = 1076) invoke: {"type":"expectation","predicate":{"type":"id","value":"add-task-fab","isRegex":false},"expectation":"toBeVisible","timeout":5000}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 9: Offline Functionality Offline Recovery Flow should handle sync errors gracefully" has timed out.
+
+10:27:20.286 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should handle sync errors gracefully [FAIL]
+10:27:20.293 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should show sync progress indicator
+10:27:26.634 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 200.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:27:28.492 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:27:30.303 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:27:40.310 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:27:50.132 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:27:55.562 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:27:56.157 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:27:56.157 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:28:05.547 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:14.746 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:16.742 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:28:23.739 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:33.125 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:42.618 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 3 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:52.062 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:28:52.408 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:28:52.409 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:29:01.845 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:10.643 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 3 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:14.418 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:29:19.552 detox[9345] i ⚠️ setNetworkCondition not available - skipping offline simulation
+10:29:20.230 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:28.103 detox[9345] i The app has not responded to the network requests below:
+  (id = 1158) invoke: {"type":"expectation","predicate":{"type":"id","value":"add-task-fab","isRegex":false},"expectation":"toBeVisible","timeout":5000}
+
+That might be the reason why the test "ELARO Priority Test Suite Priority 9: Offline Functionality Offline Recovery Flow should show sync progress indicator" has timed out.
+
+10:29:28.104 detox[9345] i ELARO Priority Test Suite > Priority 9: Offline Functionality > Offline Recovery Flow: should show sync progress indicator [FAIL]
+10:29:28.760 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:29:29.555 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:34.701 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:38.791 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:44.394 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:47.100 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:53.974 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:54.587 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:29:54.903 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:29:54.903 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:29:54.904 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification tap and navigation
+10:30:03.111 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:04.298 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:13.129 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:13.503 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:22.009 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:30:22.266 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:23.136 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:30.379 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification tap and navigation [OK]
+10:30:30.380 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification dismissal
+10:30:32.283 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 104.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:33.143 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 136.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:37.353 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:30:40.432 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:42.289 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:49.375 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:51.588 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:30:58.966 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:01.254 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:04.158 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:04.527 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:31:04.527 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:31:10.486 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:13.916 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:18.623 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:23.015 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:24.760 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:31:27.383 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:29.953 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification dismissal [OK]
+10:31:29.955 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification settings
+10:31:32.997 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• 1 enqueued native timers:
+  - Timer #1:
+    + Fire date: none.
+    + Time until fire: 0.000.
+    + Repeat interval: 0.
+    + Is recurring: YES.
+• 1 enqueued JavaScript timers:
+  - Timer #1:
+    + JS timer ID: 136.
+    + Duration: 1.
+    + Is recurring: NO.
+
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:36.653 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:31:36.765 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:39.962 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:46.770 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:49.749 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:55.989 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:31:59.381 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:03.365 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:03.959 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:32:03.959 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:32:08.564 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:13.255 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:18.067 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:22.417 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 1 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:24.269 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:32:26.691 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:31.249 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:36.279 detox[9345] i The app is busy with the following tasks:
+• Run loop "Main Run Loop" is awake.
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+10:32:38.943 detox[9345] i ⚠️ Profile tab not found - skipping test
+10:32:38.946 detox[9345] i ELARO Priority Test Suite > Priority 10: Notifications > Notification Flow: should handle notification settings [OK]
+10:32:39.492 detox[9345] i Detox can't seem to connect to the test app(s)!
+
+HINT: 
+
+Have you forgotten to call 'device.launchApp()' in the beginning of your test?
+Refer to our troubleshooting guide, for full details: https://wix.github.io/Detox/docs/troubleshooting/running-tests#tests-execution-hangs
+
+---
+The following package could not be delivered:
+
+{
+  type: 'currentStatus',
+  params: {},
+  messageId: 1299
+}
+10:32:45.737 detox[9345] i Detox can't seem to connect to the test app(s)!
+
+HINT: 
+
+Have you forgotten to call 'device.launchApp()' in the beginning of your test?
+Refer to our troubleshooting guide, for full details: https://wix.github.io/Detox/docs/troubleshooting/running-tests#tests-execution-hangs
+
+---
+The following package could not be delivered:
+
+{
+  type: 'currentStatus',
+  params: {},
+  messageId: 1300
+}
+10:32:51.084 detox[9345] i com.elaro.app launched. To watch simulator logs, run:
+        /usr/bin/xcrun simctl spawn 33433559-A130-49A0-811B-15B33C06CF20 log stream --level debug --style compact --predicate 'process == "Elaro"'
+10:33:24.156 detox[9345] i ⚠️ Could not complete login - email input not found and user not logged in
+10:33:24.159 detox[9345] i ⚠️ Test will continue - may need to handle unauthenticated state
+10:33:27.168 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Dashboard → Profile → Settings Flow: should navigate from dashboard to profile to settings
+10:33:44.094 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:34:04.441 detox[9345] i ⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.
+10:34:13.763 detox[9345] i ℹ️ Account tab navigation - may need manual verification
+10:34:20.068 detox[9345] i ⚠️ Account/Profile screen not found
+10:34:31.833 detox[9345] i ℹ️ Settings navigation - screen structure may vary
+10:34:31.839 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Dashboard → Profile → Settings Flow: should navigate from dashboard to profile to settings [OK]
+10:34:31.842 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Dashboard → Profile → Settings Flow: should navigate to settings and verify navigation structure
+10:34:44.357 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:34:46.528 detox[9345] i ℹ️ Settings navigation requires manual verification
+10:34:46.530 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Dashboard → Profile → Settings Flow: should navigate to settings and verify navigation structure [OK]
+10:34:46.531 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Back Navigation: should restore correct stack when navigating back
+10:35:02.904 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:35:04.145 detox[9345] i ℹ️ Back navigation - manual verification recommended
+10:35:04.147 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Back Navigation: should restore correct stack when navigating back [OK]
+10:35:04.150 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Profile Edit Flow: should navigate to profile edit screen
+10:35:20.445 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:35:22.633 detox[9345] i ℹ️ Profile edit flow requires manual verification
+10:35:22.636 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Profile Edit Flow: should navigate to profile edit screen [OK]
+10:35:22.638 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Profile Edit Flow: should display user information
+10:35:38.990 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:35:43.460 detox[9345] i ⚠️ Account tab not found - skipping test
+10:35:43.461 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Profile Edit Flow: should display user information [OK]
+10:35:43.463 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should navigate to DeviceManagement from Settings
+10:35:59.778 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:36:00.971 detox[9345] i ℹ️ Settings sub-navigation requires manual verification
+10:36:00.974 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should navigate to DeviceManagement from Settings [OK]
+10:36:00.975 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should navigate to LoginHistory from Settings
+10:36:17.359 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:36:18.539 detox[9345] i ℹ️ Login History navigation requires manual verification
+10:36:18.541 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should navigate to LoginHistory from Settings [OK]
+10:36:18.542 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should show subscription status
+10:36:34.910 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:36:39.358 detox[9345] i ⚠️ Account tab not found - skipping test
+10:36:39.360 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Sub-navigation: should show subscription status [OK]
+10:36:39.364 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Options: should show settings options
+10:36:55.739 detox[9345] i The app is busy with the following tasks:
+• There are 2 work items pending on the dispatch queue: "Main Queue (<OS_dispatch_queue_main: com.apple.main-thread>)".
+• Run loop "Main Run Loop" is awake.
+10:37:00.127 detox[9345] i ⚠️ Account tab not found - skipping test
+10:37:00.129 detox[9345] i ELARO Priority Test Suite > Priority 11: Profile & Settings > Profile & Settings Flow > Settings Options: should show settings options [OK]
+
+ FAIL  e2e/priority-test-runner.e2e.ts (4746.24 s)
+  ELARO Priority Test Suite
+    Priority 1: Authentication & Onboarding
+      Pass 2: Auth Flow Validation
+        Launch → Login → Dashboard Flow
+          ✓ should navigate from launch to login to dashboard (92064 ms)
+        Launch → Signup → Dashboard Flow
+          ✕ should navigate from launch to signup to dashboard (72605 ms)
+        Logout → Guest State Flow
+          ✓ should navigate from dashboard to guest state on logout (64610 ms)
+        Auth State Persistence
+          ✓ should maintain session across app reloads (37571 ms)
+        Auth Mode Toggle
+          ✕ should toggle between signup and signin modes (57586 ms)
+      Complete Onboarding Flow
+        Complete Onboarding Journey
+          ✓ should complete full onboarding journey (52226 ms)
+          ✓ should handle onboarding with skip courses (13142 ms)
+          ✓ should handle back navigation during onboarding (18584 ms)
+          ✓ should validate required fields (18585 ms)
+        Onboarding Progress Indicators
+          ✓ should show correct progress indicator (18530 ms)
+          ✓ should show progress bar correctly (26548 ms)
+        Onboarding Data Persistence
+          ✓ should persist data between steps (29738 ms)
+          ✓ should handle app backgrounding during onboarding (29616 ms)
+        Onboarding Error Handling
+          ✓ should handle network errors gracefully (29629 ms)
+        Onboarding Accessibility
+          ✓ should support screen reader navigation (29384 ms)
+          ✓ should have proper focus management (26377 ms)
+    Priority 2: Course Creation
+      Course Creation Journey
+        Complete Course Creation Flow
+          ✕ should create a new course end-to-end (5 ms)
+          ✕ should handle course creation with only required fields (1 ms)
+          ✕ should validate required fields before submission (1 ms)
+          ✕ should cancel course creation and return to home (1 ms)
+    Priority 3: Lecture Creation
+      Lecture Creation Flow
+        Complete Lecture Creation
+          ✓ should create a lecture successfully from FAB (48791 ms)
+          ✓ should validate required fields before saving (48545 ms)
+          ✓ should handle lecture creation cancellation (48411 ms)
+        Lecture Creation via Quick Add
+          ✕ should create lecture from Quick Add modal (106443 ms)
+    Priority 4: Assignment Creation
+      Assignment Lifecycle Journey
+        Assignment Creation
+          ✕ should create a new assignment (125545 ms)
+        Assignment Editing
+          ✓ should edit an existing assignment (67425 ms)
+        Assignment Completion
+          ✓ should mark assignment as completed (73458 ms)
+        Assignment Deletion
+          ✓ should delete an assignment (73395 ms)
+        Complete Lifecycle
+          ✕ should complete full assignment lifecycle: Create → Edit → Complete → Delete (136928 ms)
+    Priority 5: Home Screen & Task Display
+      Home Screen & Task Display
+        Home Screen Display
+          ✓ should display home screen with tasks (38383 ms)
+          ✓ should display upcoming assignments (35145 ms)
+          ✓ should display study sessions (34916 ms)
+          ✓ should show add task button (34363 ms)
+          ✓ should open add task modal (34168 ms)
+          ✓ should pull to refresh tasks (35559 ms)
+        Task Detail Sheet
+          ✓ should open task detail sheet when task is tapped (31059 ms)
+          ✓ should close task detail sheet (2380 ms)
+        Task Actions
+          ✓ should complete a task from detail sheet (2388 ms)
+    Priority 6: Calendar View
+      Calendar View
+        ✕ should navigate to calendar tab (943900 ms)
+        ✓ should display calendar with tasks (17211 ms)
+        ✓ should navigate between months (16604 ms)
+        ✕ should display calendar header (236194 ms)
+        ✕ should show events on calendar (4308 ms)
+        ✕ should handle date selection (3 ms)
+    Priority 7: Study Sessions
+      Complete Study Session Flow
+        ✕ should complete full study session journey (185040 ms)
+        ✓ should handle pause and resume study session (120407 ms)
+        Dashboard → TaskCard → StudySession Flow
+          ✕ should navigate from dashboard to study session review (153192 ms)
+        StudySession → Result Flow
+          ✓ should navigate from study session to result screen (21836 ms)
+        Study Result → Dashboard Flow
+          ✓ should navigate from study result back to dashboard (17019 ms)
+        Navigation Parameter Passing
+          ✓ should pass sessionId correctly through navigation (21858 ms)
+    Priority 8: Templates
+      Templates Flow
+        ✕ should save task as template (100528 ms)
+        ✕ should browse and select template (100135 ms)
+    Priority 9: Offline Functionality
+      Offline Recovery Flow
+        ✕ should sync queued actions when coming back online (100313 ms)
+        ✕ should handle sync errors gracefully (126320 ms)
+        ✕ should show sync progress indicator (127808 ms)
+    Priority 10: Notifications
+      Notification Flow
+        ✓ should handle notification tap and navigation (35475 ms)
+        ✓ should handle notification dismissal (59571 ms)
+        ✓ should handle notification settings (68990 ms)
+    Priority 11: Profile & Settings
+      Profile & Settings Flow
+        Dashboard → Profile → Settings Flow
+          ✓ should navigate from dashboard to profile to settings (64668 ms)
+          ✓ should navigate to settings and verify navigation structure (14688 ms)
+        Back Navigation
+          ✓ should restore correct stack when navigating back (17615 ms)
+        Profile Edit Flow
+          ✓ should navigate to profile edit screen (18485 ms)
+          ✓ should display user information (20822 ms)
+        Settings Sub-navigation
+          ✓ should navigate to DeviceManagement from Settings (17509 ms)
+          ✓ should navigate to LoginHistory from Settings (17565 ms)
+          ✓ should show subscription status (20817 ms)
+        Settings Options
+          ✓ should show settings options (20765 ms)
+
+  ● ELARO Priority Test Suite › Priority 1: Authentication & Onboarding › Pass 2: Auth Flow Validation › Launch → Signup → Dashboard Flow › should navigate from launch to signup to dashboard
+
+    Could not switch to signup mode - first-name-input not found
+
+      142 |             isInSignupMode = true;
+      143 |           } catch {
+    > 144 |             throw new Error('Could not switch to signup mode - first-name-input not found');
+          |                   ^
+      145 |           }
+      146 |         }
+      147 |       }
+
+      at Object.<anonymous> (e2e/pass2-auth-flow-validation.test.ts:144:19)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 1: Authentication & Onboarding › Pass 2: Auth Flow Validation › Auth Mode Toggle › should toggle between signup and signin modes
+
+    Cannot toggle auth mode - toggle button not found
+
+      256 |         console.log('⚠️ Toggle auth mode button not found - may not be available');
+      257 |         // If we can't toggle, test can't proceed
+    > 258 |         throw new Error('Cannot toggle auth mode - toggle button not found');
+          |               ^
+      259 |       }
+      260 |
+      261 |       // Verify mode changed
+
+      at Object.<anonymous> (e2e/pass2-auth-flow-validation.test.ts:258:15)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 2: Course Creation › Course Creation Journey › Complete Course Creation Flow › should create a new course end-to-end
+
+    thrown: "Exceeded timeout of 60000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      10 |
+      11 | describe('Course Creation Journey', () => {
+    > 12 |   beforeAll(async () => {
+         |   ^
+      13 |     await device.launchApp({
+      14 |       newInstance: true,
+      15 |       permissions: {
+
+      at beforeAll (e2e/core-journeys/course-creation.e2e.ts:12:3)
+      at Object.describe (e2e/core-journeys/course-creation.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:41:5)
+      at describe (e2e/priority-test-runner.e2e.ts:40:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 2: Course Creation › Course Creation Journey › Complete Course Creation Flow › should handle course creation with only required fields
+
+    thrown: "Exceeded timeout of 60000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      10 |
+      11 | describe('Course Creation Journey', () => {
+    > 12 |   beforeAll(async () => {
+         |   ^
+      13 |     await device.launchApp({
+      14 |       newInstance: true,
+      15 |       permissions: {
+
+      at beforeAll (e2e/core-journeys/course-creation.e2e.ts:12:3)
+      at Object.describe (e2e/core-journeys/course-creation.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:41:5)
+      at describe (e2e/priority-test-runner.e2e.ts:40:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 2: Course Creation › Course Creation Journey › Complete Course Creation Flow › should validate required fields before submission
+
+    thrown: "Exceeded timeout of 60000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      10 |
+      11 | describe('Course Creation Journey', () => {
+    > 12 |   beforeAll(async () => {
+         |   ^
+      13 |     await device.launchApp({
+      14 |       newInstance: true,
+      15 |       permissions: {
+
+      at beforeAll (e2e/core-journeys/course-creation.e2e.ts:12:3)
+      at Object.describe (e2e/core-journeys/course-creation.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:41:5)
+      at describe (e2e/priority-test-runner.e2e.ts:40:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 2: Course Creation › Course Creation Journey › Complete Course Creation Flow › should cancel course creation and return to home
+
+    thrown: "Exceeded timeout of 60000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      10 |
+      11 | describe('Course Creation Journey', () => {
+    > 12 |   beforeAll(async () => {
+         |   ^
+      13 |     await device.launchApp({
+      14 |       newInstance: true,
+      15 |       permissions: {
+
+      at beforeAll (e2e/core-journeys/course-creation.e2e.ts:12:3)
+      at Object.describe (e2e/core-journeys/course-creation.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:41:5)
+      at describe (e2e/priority-test-runner.e2e.ts:40:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 3: Lecture Creation › Lecture Creation Flow › Lecture Creation via Quick Add › should create lecture from Quick Add modal
+
+    FAB button not found - cannot test quick add
+
+      359 |           } catch {
+      360 |             console.log('⚠️ FAB button not found for quick add');
+    > 361 |             throw new Error('FAB button not found - cannot test quick add');
+          |                   ^
+      362 |           }
+      363 |         }
+      364 |       }
+
+      at Object.<anonymous> (e2e/core-journeys/lecture-creation.e2e.ts:361:19)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 4: Assignment Creation › Assignment Lifecycle Journey › Assignment Creation › should create a new assignment
+
+    FAB button not found - cannot create assignment
+
+      60 |         } catch {
+      61 |           console.log('⚠️ FAB button not found - user may not be logged in or FAB has different testID');
+    > 62 |           throw new Error('FAB button not found - cannot create assignment');
+         |                 ^
+      63 |         }
+      64 |       }
+      65 |
+
+      at Object.<anonymous> (e2e/core-journeys/assignment-lifecycle.e2e.ts:62:17)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 4: Assignment Creation › Assignment Lifecycle Journey › Complete Lifecycle › should complete full assignment lifecycle: Create → Edit → Complete → Delete
+
+    FAB button not found - cannot create assignment
+
+      203 |         } catch {
+      204 |           console.log('⚠️ FAB button not found - user may not be logged in');
+    > 205 |           throw new Error('FAB button not found - cannot create assignment');
+          |                 ^
+      206 |         }
+      207 |       }
+      208 |       await element(by.text('Add Assignment')).tap();
+
+      at Object.<anonymous> (e2e/core-journeys/assignment-lifecycle.e2e.ts:205:17)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 6: Calendar View › Calendar View › should navigate to calendar tab
+
+    thrown: "Exceeded timeout of 120000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      15 |   });
+      16 |
+    > 17 |   it('should navigate to calendar tab', async () => {
+         |   ^
+      18 |     await TestHelpers.waitForHomeScreen(10000);
+      19 |
+      20 |     // Navigate to calendar tab
+
+      at it (e2e/core-journeys/calendar-view.e2e.ts:17:3)
+      at Object.describe (e2e/core-journeys/calendar-view.e2e.ts:10:1)
+      at require (e2e/priority-test-runner.e2e.ts:61:5)
+      at describe (e2e/priority-test-runner.e2e.ts:60:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 6: Calendar View › Calendar View › should display calendar header
+
+    thrown: "Exceeded timeout of 120000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      112 |   });
+      113 |
+    > 114 |   it('should display calendar header', async () => {
+          |   ^
+      115 |     let calendarTab;
+      116 |     try {
+      117 |       calendarTab = element(by.id('calendar-tab'));
+
+      at it (e2e/core-journeys/calendar-view.e2e.ts:114:3)
+      at Object.describe (e2e/core-journeys/calendar-view.e2e.ts:10:1)
+      at require (e2e/priority-test-runner.e2e.ts:61:5)
+      at describe (e2e/priority-test-runner.e2e.ts:60:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 6: Calendar View › Calendar View › should show events on calendar
+
+    The pending request #-1000 ("reactNativeReload") has been rejected due to the following error:
+
+    The app has crashed, see the details below:
+
+    NSInternalInconsistencyException
+    This method must not be called before the JS thread is created
+    (
+    	0   CoreFoundation                      0x00000001804c97c8 __exceptionPreprocess + 160
+    	1   libobjc.A.dylib                     0x00000001800937cc objc_exception_throw + 72
+    	2   Foundation                          0x0000000180e54f4c -[NSMutableDictionary(NSMutableDictionary) classForCoder] + 0
+    	3   Elaro.debug.dylib                   0x0000000109140074 -[RCTCxxBridge ensureOnJavaScriptThread:] + 236
+    	4   Elaro.debug.dylib                   0x0000000109149810 -[RCTCxxBridge dispatchBlock:queue:] + 104
+    	5   Elaro.debug.dylib                   0x0000000108823ba4 -[RCTEventDispatcher sendEvent:] + 1604
+    	6   Elaro.debug.dylib                   0x0000000108fcbbd4 -[RCTEventDispatcher(Reanimated) reanimated_sendEvent:] + 408
+    	7   Elaro.debug.dylib                   0x00000001091e6c6c -[RCTScrollView sendScrollEventWithName:scrollView:userData:] + 672
+    	8   Elaro.debug.dylib                   0x00000001091e3fa8 -[RCTScrollView didMoveToWindow] + 260
+    	9   UIKitCore                           0x00000001861c853c -[UIView(Internal) _didMoveFromWindow:toWindow:] + 1844
+    	10  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	11  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	12  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	13  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	14  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	15  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	16  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	17  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	18  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	19  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	20  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	21  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	22  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	23  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	24  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	25  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	26  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	27  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	28  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	29  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	30  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	31  UIKitCore                           0x00000001861bdd10 __45-[UIView(Hierarchy) _postMovedFromSuperview:]_block_invoke + 120
+    	32  UIKitCore                           0x00000001861bdc28 -[UIView _postMovedFromSuperview:] + 436
+    	33  UIKitCore                           0x00000001861bc014 __UIViewWasRemovedFromSuperview + 132
+    	34  UIKitCore                           0x00000001861bbb3c -[UIView(Hierarchy) removeFromSuperview] + 240
+    	35  Elaro.debug.dylib                   0x00000001091dc390 -[RCTRootView contentViewInvalidated] + 48
+    	36  Elaro.debug.dylib                   0x00000001091d96b4 -[RCTRootContentView invalidate] + 108
+    	37  Elaro.debug.dylib                   0x00000001091f9420 __26-[RCTUIManager invalidate]_block_invoke + 516
+    	38  Elaro.debug.dylib                   0x000000010920c0bc __RCTExecuteOnMainQueue_block_invoke + 40
+    	39  DetoxSync                           0x000000010306479c ____detox_sync_dispatch_wrapper_block_invoke + 44
+    	40  libdispatch.dylib                   0x000000018017c788 _dispatch_call_block_and_release + 24
+    	41  libdispatch.dylib                   0x0000000180197278 _dispatch_client_callout + 12
+    	42  libdispatch.dylib                   0x00000001801b300c _dispatch_main_queue_drain.cold.7 + 24
+    	43  libdispatch.dylib                   0x000000018018c1c4 _dispatch_main_queue_drain + 1184
+    	44  libdispatch.dylib                   0x000000018018bd14 _dispatch_main_queue_callback_4CF + 40
+    	45  CoreFoundation                      0x0000000180428e9c __CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__ + 12
+    	46  CoreFoundation                      0x00000001804238a8 __CFRunLoopRun + 1920
+    	47  CoreFoundation                      0x0000000180422cec CFRunLoopRunSpecific + 536
+    	48  GraphicsServices                    0x0000000191004d00 GSEventRunModal + 164
+    	49  UIKitCore                           0x0000000185c597d4 -[UIApplication _run] + 796
+    	50  DetoxSync                           0x000000010306ad14 __detox_sync_UIApplication_run + 80
+    	51  UIKitCore                           0x0000000185c5dba0 UIApplicationMain + 124
+    	52  Elaro.debug.dylib                   0x00000001087ef744 __debug_main_executable_dylib_entry_point + 96
+    	53  dyld                                0x0000000102cb93d4 start_sim + 20
+    	54  ???                                 0x0000000102d98d54 0x0 + 4342779220
+    )
+
+      27 |
+      28 |   // Reload app to ensure clean state
+    > 29 |   await device.reloadReactNative();
+         |                ^
+      30 |
+      31 |   // Give app time to initialize
+      32 |   await new Promise(resolve => setTimeout(resolve, 500));
+
+      at Object.reloadReactNative (e2e/setup.ts:29:16)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at Object.<anonymous> (node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12)
+
+  ● ELARO Priority Test Suite › Priority 6: Calendar View › Calendar View › should handle date selection
+
+    The app has crashed, see the details below:
+
+    NSInternalInconsistencyException
+    This method must not be called before the JS thread is created
+    (
+    	0   CoreFoundation                      0x00000001804c97c8 __exceptionPreprocess + 160
+    	1   libobjc.A.dylib                     0x00000001800937cc objc_exception_throw + 72
+    	2   Foundation                          0x0000000180e54f4c -[NSMutableDictionary(NSMutableDictionary) classForCoder] + 0
+    	3   Elaro.debug.dylib                   0x0000000109140074 -[RCTCxxBridge ensureOnJavaScriptThread:] + 236
+    	4   Elaro.debug.dylib                   0x0000000109149810 -[RCTCxxBridge dispatchBlock:queue:] + 104
+    	5   Elaro.debug.dylib                   0x0000000108823ba4 -[RCTEventDispatcher sendEvent:] + 1604
+    	6   Elaro.debug.dylib                   0x0000000108fcbbd4 -[RCTEventDispatcher(Reanimated) reanimated_sendEvent:] + 408
+    	7   Elaro.debug.dylib                   0x00000001091e6c6c -[RCTScrollView sendScrollEventWithName:scrollView:userData:] + 672
+    	8   Elaro.debug.dylib                   0x00000001091e3fa8 -[RCTScrollView didMoveToWindow] + 260
+    	9   UIKitCore                           0x00000001861c853c -[UIView(Internal) _didMoveFromWindow:toWindow:] + 1844
+    	10  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	11  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	12  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	13  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	14  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	15  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	16  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	17  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	18  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	19  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	20  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	21  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	22  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	23  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	24  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	25  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	26  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	27  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	28  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	29  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	30  UIKitCore                           0x00000001861c80b4 -[UIView(Internal) _didMoveFromWindow:toWindow:] + 684
+    	31  UIKitCore                           0x00000001861bdd10 __45-[UIView(Hierarchy) _postMovedFromSuperview:]_block_invoke + 120
+    	32  UIKitCore                           0x00000001861bdc28 -[UIView _postMovedFromSuperview:] + 436
+    	33  UIKitCore                           0x00000001861bc014 __UIViewWasRemovedFromSuperview + 132
+    	34  UIKitCore                           0x00000001861bbb3c -[UIView(Hierarchy) removeFromSuperview] + 240
+    	35  Elaro.debug.dylib                   0x00000001091dc390 -[RCTRootView contentViewInvalidated] + 48
+    	36  Elaro.debug.dylib                   0x00000001091d96b4 -[RCTRootContentView invalidate] + 108
+    	37  Elaro.debug.dylib                   0x00000001091f9420 __26-[RCTUIManager invalidate]_block_invoke + 516
+    	38  Elaro.debug.dylib                   0x000000010920c0bc __RCTExecuteOnMainQueue_block_invoke + 40
+    	39  DetoxSync                           0x000000010306479c ____detox_sync_dispatch_wrapper_block_invoke + 44
+    	40  libdispatch.dylib                   0x000000018017c788 _dispatch_call_block_and_release + 24
+    	41  libdispatch.dylib                   0x0000000180197278 _dispatch_client_callout + 12
+    	42  libdispatch.dylib                   0x00000001801b300c _dispatch_main_queue_drain.cold.7 + 24
+    	43  libdispatch.dylib                   0x000000018018c1c4 _dispatch_main_queue_drain + 1184
+    	44  libdispatch.dylib                   0x000000018018bd14 _dispatch_main_queue_callback_4CF + 40
+    	45  CoreFoundation                      0x0000000180428e9c __CFRUNLOOP_IS_SERVICING_THE_MAIN_DISPATCH_QUEUE__ + 12
+    	46  CoreFoundation                      0x00000001804238a8 __CFRunLoopRun + 1920
+    	47  CoreFoundation                      0x0000000180422cec CFRunLoopRunSpecific + 536
+    	48  GraphicsServices                    0x0000000191004d00 GSEventRunModal + 164
+    	49  UIKitCore                           0x0000000185c597d4 -[UIApplication _run] + 796
+    	50  DetoxSync                           0x000000010306ad14 __detox_sync_UIApplication_run + 80
+    	51  UIKitCore                           0x0000000185c5dba0 UIApplicationMain + 124
+    	52  Elaro.debug.dylib                   0x00000001087ef744 __debug_main_executable_dylib_entry_point + 96
+    	53  dyld                                0x0000000102cb93d4 start_sim + 20
+    	54  ???                                 0x0000000102d98d54 0x0 + 4342779220
+    )
+
+      27 |
+      28 |   // Reload app to ensure clean state
+    > 29 |   await device.reloadReactNative();
+         |                ^
+      30 |
+      31 |   // Give app time to initialize
+      32 |   await new Promise(resolve => setTimeout(resolve, 500));
+
+      at Object.reloadReactNative (e2e/setup.ts:29:16)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _next (node_modules/@babel/runtime/helpers/asyncToGenerator.js:17:9)
+      at node_modules/@babel/runtime/helpers/asyncToGenerator.js:22:7
+      at Object.<anonymous> (node_modules/@babel/runtime/helpers/asyncToGenerator.js:14:12)
+
+  ● ELARO Priority Test Suite › Priority 7: Study Sessions › Complete Study Session Flow › should complete full study session journey
+
+    thrown: "Exceeded timeout of 120000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      33 |   });
+      34 |
+    > 35 |   it('should complete full study session journey', async () => {
+         |   ^
+      36 |     // Step 1: Navigate to dashboard
+      37 |     await TestHelpers.waitForHomeScreen(5000);
+      38 |
+
+      at it (e2e/core-journeys/study-session-complete.e2e.ts:35:3)
+      at Object.describe (e2e/core-journeys/study-session-complete.e2e.ts:16:1)
+      at require (e2e/priority-test-runner.e2e.ts:66:5)
+      at describe (e2e/priority-test-runner.e2e.ts:65:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 7: Study Sessions › Complete Study Session Flow › Dashboard → TaskCard → StudySession Flow › should navigate from dashboard to study session review
+
+    thrown: "Exceeded timeout of 120000 ms for a hook.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      26 |   });
+      27 |
+    > 28 |   beforeEach(async () => {
+         |   ^
+      29 |     // Ensure we're on home screen before each test
+      30 |     await TestHelpers.waitForElement('home-screen', 10000).catch(() => {
+      31 |       // If not on home, navigate there
+
+      at beforeEach (e2e/core-journeys/study-session-complete.e2e.ts:28:3)
+      at Object.describe (e2e/core-journeys/study-session-complete.e2e.ts:16:1)
+      at require (e2e/priority-test-runner.e2e.ts:66:5)
+      at describe (e2e/priority-test-runner.e2e.ts:65:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 8: Templates › Templates Flow › should save task as template
+
+    FAB button not found - cannot create lecture
+
+      39 |       } catch {
+      40 |         console.log('⚠️ FAB button not found - user may not be logged in');
+    > 41 |         throw new Error('FAB button not found - cannot create lecture');
+         |               ^
+      42 |       }
+      43 |     }
+      44 |     await element(by.id('fab-add-lecture')).tap();
+
+      at Object.<anonymous> (e2e/core-journeys/templates.e2e.ts:41:15)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 8: Templates › Templates Flow › should browse and select template
+
+    FAB button not found - cannot create lecture
+
+      88 |       } catch {
+      89 |         console.log('⚠️ FAB button not found - user may not be logged in');
+    > 90 |         throw new Error('FAB button not found - cannot create lecture');
+         |               ^
+      91 |       }
+      92 |     }
+      93 |     await element(by.id('fab-add-lecture')).tap();
+
+      at Object.<anonymous> (e2e/core-journeys/templates.e2e.ts:90:15)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 9: Offline Functionality › Offline Recovery Flow › should sync queued actions when coming back online
+
+    FAB button not found - cannot create assignment
+
+      61 |       } catch {
+      62 |         console.log('⚠️ FAB button not found - user may not be logged in');
+    > 63 |         throw new Error('FAB button not found - cannot create assignment');
+         |               ^
+      64 |       }
+      65 |     }
+      66 |
+
+      at Object.<anonymous> (e2e/core-journeys/offline-recovery.e2e.ts:63:15)
+          at Generator.throw (<anonymous>)
+      at asyncGeneratorStep (node_modules/@babel/runtime/helpers/asyncToGenerator.js:3:17)
+      at _throw (node_modules/@babel/runtime/helpers/asyncToGenerator.js:20:9)
+
+  ● ELARO Priority Test Suite › Priority 9: Offline Functionality › Offline Recovery Flow › should handle sync errors gracefully
+
+    thrown: "Exceeded timeout of 120000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      111 |   });
+      112 |
+    > 113 |   it('should handle sync errors gracefully', async () => {
+          |   ^
+      114 |     // Use safer method to avoid crashes
+      115 |     try {
+      116 |       await device.launchApp({newInstance: false});
+
+      at it (e2e/core-journeys/offline-recovery.e2e.ts:113:3)
+      at Object.describe (e2e/core-journeys/offline-recovery.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:76:5)
+      at describe (e2e/priority-test-runner.e2e.ts:75:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+  ● ELARO Priority Test Suite › Priority 9: Offline Functionality › Offline Recovery Flow › should show sync progress indicator
+
+    thrown: "Exceeded timeout of 120000 ms for a test.
+    Add a timeout value to this test to increase the timeout, if this is a long-running test. See https://jestjs.io/docs/api#testname-fn-timeout."
+
+      188 |   });
+      189 |
+    > 190 |   it('should show sync progress indicator', async () => {
+          |   ^
+      191 |     // Use safer method to avoid crashes
+      192 |     try {
+      193 |       await device.launchApp({newInstance: false});
+
+      at it (e2e/core-journeys/offline-recovery.e2e.ts:190:3)
+      at Object.describe (e2e/core-journeys/offline-recovery.e2e.ts:11:1)
+      at require (e2e/priority-test-runner.e2e.ts:76:5)
+      at describe (e2e/priority-test-runner.e2e.ts:75:3)
+      at Object.describe (e2e/priority-test-runner.e2e.ts:21:1)
+
+Test Suites: 1 failed, 1 total
+Tests:       20 failed, 47 passed, 67 total
+Snapshots:   0 total
+Time:        4746.347 s
+Ran all test suites matching /e2e\/priority-test-runner.e2e.ts/i.
+10:37:00.352 detox[9344] E Command failed with exit code = 1:
+jest --config e2e/jest.config.js ----maxWorkers 2 e2e/priority-test-runner.e2e.ts
+new@Air-Mansur ELARO-app %   

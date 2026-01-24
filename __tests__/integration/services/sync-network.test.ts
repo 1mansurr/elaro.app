@@ -55,11 +55,11 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { title: 'Test Assignment' },
       };
 
-      ((syncManager as any).executeServerMutation as jest.Mock).mockResolvedValue(
-        {
-          success: true,
-        },
-      );
+      (
+        (syncManager as any).executeServerMutation as jest.Mock
+      ).mockResolvedValue({
+        success: true,
+      });
 
       const requestId = networkMonitoring.trackRequest(
         '/api/assignments',
@@ -83,12 +83,12 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { title: 'Test Assignment' },
       };
 
-      ((syncManager as any).executeServerMutation as jest.Mock).mockResolvedValue(
-        {
-          success: true,
-          data: { id: 'assignment-1' },
-        },
-      );
+      (
+        (syncManager as any).executeServerMutation as jest.Mock
+      ).mockResolvedValue({
+        success: true,
+        data: { id: 'assignment-1' },
+      });
 
       const requestId = 'test-request-id';
       await (syncManager as any).executeServerMutation(mutation);
@@ -112,12 +112,12 @@ describe('SyncManager + Network Monitoring Integration', () => {
         payload: { id: 'assignment-1', title: 'Updated' },
       };
 
-      ((syncManager as any).executeServerMutation as jest.Mock).mockImplementation(
-        async () => {
-          await new Promise(resolve => setTimeout(resolve, 100));
-          return { success: true };
-        },
-      );
+      (
+        (syncManager as any).executeServerMutation as jest.Mock
+      ).mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return { success: true };
+      });
 
       const requestId = networkMonitoring.trackRequest(
         '/api/assignments',
@@ -127,7 +127,12 @@ describe('SyncManager + Network Monitoring Integration', () => {
       await (syncManager as any).executeServerMutation(mutation);
 
       const latency = Date.now() - startTime;
-      networkMonitoring.trackResponse(requestId, '/api/assignments', 200, latency);
+      networkMonitoring.trackResponse(
+        requestId,
+        '/api/assignments',
+        200,
+        latency,
+      );
 
       expect(networkMonitoring.trackResponse).toHaveBeenCalledWith(
         requestId,
@@ -147,9 +152,9 @@ describe('SyncManager + Network Monitoring Integration', () => {
       };
 
       const error = new Error('Network error');
-      ((syncManager as any).executeServerMutation as jest.Mock).mockRejectedValue(
-        error,
-      );
+      (
+        (syncManager as any).executeServerMutation as jest.Mock
+      ).mockRejectedValue(error);
 
       const requestId = networkMonitoring.trackRequest(
         '/api/assignments',
@@ -178,15 +183,15 @@ describe('SyncManager + Network Monitoring Integration', () => {
       };
 
       let attemptCount = 0;
-      ((syncManager as any).executeServerMutation as jest.Mock).mockImplementation(
-        async () => {
-          attemptCount++;
-          if (attemptCount < 3) {
-            throw new Error('Network error');
-          }
-          return { success: true };
-        },
-      );
+      (
+        (syncManager as any).executeServerMutation as jest.Mock
+      ).mockImplementation(async () => {
+        attemptCount++;
+        if (attemptCount < 3) {
+          throw new Error('Network error');
+        }
+        return { success: true };
+      });
 
       const requestId = networkMonitoring.trackRequest(
         '/api/assignments',

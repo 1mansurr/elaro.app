@@ -122,14 +122,19 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
   );
 
   // 1. Update the user's profile with onboarding data
-  const [encryptedUniversity, encryptedProgram] = await Promise.all([
-    university && typeof university === 'string'
-      ? encrypt(university, encryptionKey)
-      : null,
-    program && typeof program === 'string'
-      ? encrypt(program, encryptionKey)
-      : null,
-  ]);
+  // Encrypt all sensitive fields: university, program, and country
+  const [encryptedUniversity, encryptedProgram, encryptedCountry] =
+    await Promise.all([
+      university && typeof university === 'string'
+        ? encrypt(university, encryptionKey)
+        : null,
+      program && typeof program === 'string'
+        ? encrypt(program, encryptionKey)
+        : null,
+      country && typeof country === 'string'
+        ? encrypt(country, encryptionKey)
+        : null,
+    ]);
 
   const { error: userUpdateError } = await supabaseClient
     .from('users')
@@ -137,7 +142,7 @@ async function handleCompleteOnboarding(req: AuthenticatedRequest) {
       username,
       university: encryptedUniversity,
       program: encryptedProgram,
-      country,
+      country: encryptedCountry,
       date_of_birth: dateOfBirth,
       marketing_opt_in: marketingOptIn,
       onboarding_completed: true,

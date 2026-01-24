@@ -87,13 +87,13 @@ let initializationError: Error | null = null;
 
 /**
  * Get or initialize the Supabase client (lazy initialization).
- * 
+ *
  * This function:
  * - Validates configuration at runtime (not at import time)
  * - Throws a controlled JS Error if config is missing (does NOT crash native)
  * - Caches the client instance for subsequent calls
  * - Only initializes once (singleton pattern)
- * 
+ *
  * @returns Supabase client instance
  * @throws Error if Supabase configuration is missing
  */
@@ -114,7 +114,7 @@ export function getSupabaseClient(): SupabaseClient {
   if (!config) {
     const missing: string[] = [];
     const extra = Constants.expoConfig?.extra;
-    
+
     if (!extra) {
       missing.push('Constants.expoConfig.extra is undefined');
     } else {
@@ -126,23 +126,30 @@ export function getSupabaseClient(): SupabaseClient {
       }
     }
 
-    const errorMessage = `Supabase configuration is missing: ${missing.join(', ')}. ` +
+    const errorMessage =
+      `Supabase configuration is missing: ${missing.join(', ')}. ` +
       `Make sure these are set as EAS secrets or in app.config.js extra section.`;
-    
+
     console.error(`❌ ${errorMessage}`);
-    
+
     // Store error to prevent repeated initialization attempts
     initializationError = new Error(errorMessage);
     throw initializationError;
   }
 
   // Validate that values are not empty strings
-  if (!config.url || !config.anonKey || config.url.trim() === '' || config.anonKey.trim() === '') {
-    const errorMessage = 'Supabase configuration values are empty. ' +
+  if (
+    !config.url ||
+    !config.anonKey ||
+    config.url.trim() === '' ||
+    config.anonKey.trim() === ''
+  ) {
+    const errorMessage =
+      'Supabase configuration values are empty. ' +
       `URL: ${config.url ? 'present' : 'missing'}, Key: ${config.anonKey ? 'present' : 'missing'}`;
-    
+
     console.error(`❌ ${errorMessage}`);
-    
+
     initializationError = new Error(errorMessage);
     throw initializationError;
   }
@@ -163,23 +170,26 @@ export function getSupabaseClient(): SupabaseClient {
 
     return supabaseClientInstance;
   } catch (error) {
-    const errorMessage = error instanceof Error 
-      ? error.message 
-      : 'Failed to initialize Supabase client';
-    
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Failed to initialize Supabase client';
+
     console.error(`❌ Supabase client initialization failed: ${errorMessage}`);
-    
-    initializationError = new Error(`Supabase initialization error: ${errorMessage}`);
+
+    initializationError = new Error(
+      `Supabase initialization error: ${errorMessage}`,
+    );
     throw initializationError;
   }
 }
 
 /**
  * Backward-compatible export: supabase
- * 
+ *
  * This is a lazy getter that calls getSupabaseClient().
  * It does NOT initialize at import time - only when first accessed.
- * 
+ *
  * WARNING: If you import this at module level and use it at module level,
  * it will still initialize synchronously. Prefer using getSupabaseClient()
  * inside functions/effects for better control.
@@ -188,12 +198,12 @@ export const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop) {
     const client = getSupabaseClient();
     const value = (client as any)[prop];
-    
+
     // If it's a function, bind it to the client
     if (typeof value === 'function') {
       return value.bind(client);
     }
-    
+
     return value;
   },
 });
