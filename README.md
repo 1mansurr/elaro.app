@@ -242,12 +242,7 @@ To maintain consistency and modularity, please follow these guidelines when addi
 - Progress tracking and analytics
 - Premium extended intervals
 
-### AI-Powered Study Guide
 
-- Personalized learning techniques
-- Memory improvement strategies
-- Study method recommendations
-- Progress-based guidance
 
 ### Multi-Factor Authentication (MFA)
 
