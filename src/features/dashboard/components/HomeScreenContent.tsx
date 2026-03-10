@@ -6,7 +6,6 @@ import { useQueryClient } from '@tanstack/react-query';
 
 import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/shared/hooks/usePermissions';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { COLORS, SPACING } from '@/constants/theme';
@@ -32,7 +31,6 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
 }) => {
   const navigation = useNavigation<HomeScreenContentNavigationProp>();
   const { session, user } = useAuth();
-  const { isPremium } = usePermissions(user);
   const isGuest = !session;
   const {
     data: homeData,

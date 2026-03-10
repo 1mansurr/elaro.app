@@ -24,18 +24,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCourses } from '@/hooks/useDataQueries';
 import { useDebounce } from '@/hooks/useDebounce';
 import { RootStackParamList, Course } from '@/types';
-import { LockedItemsBanner } from '@/shared/components/LockedItemsBanner';
-import { useSubscription } from '@/hooks/useSubscription';
 import { QueryStateWrapper } from '@/shared/components';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING } from '@/constants/theme';
+import { SPACING } from '@/constants/theme';
 import { CourseSortOption } from '@/features/courses/services/queries';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 import { BlurView } from 'expo-blur';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/services/supabase';
 
 // Define the navigation prop type for this screen
 type CoursesScreenNavigationProp =
@@ -81,14 +78,9 @@ CourseItem.displayName = 'CourseItem';
 
 const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
-  const { purchasePackage } = useSubscription();
-  const offerings = { current: null as any };
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-
-  // State for total course count (to check if user has hit the limit)
-  const [totalCourseCount, setTotalCourseCount] = useState<number | null>(null);
 
   // JS Thread monitoring (dev only)
   // Increased threshold to 25ms to reduce false positives (25ms = 40fps, acceptable for list screens)
@@ -144,36 +136,6 @@ const CoursesScreen = () => {
   // Flatten all pages into a single array
   const courses = data?.pages.flatMap(page => page.courses) ?? [];
 
-  // Fetch total course count to check if user has hit the free tier limit
-  React.useEffect(() => {
-    const fetchTotalCourseCount = async () => {
-      if (!user?.id) {
-        setTotalCourseCount(null);
-        return;
-      }
-
-      try {
-        const { count, error } = await supabase
-          .from('courses')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .is('deleted_at', null);
-
-        if (error) {
-          console.error('Error fetching total course count:', error);
-          setTotalCourseCount(null);
-        } else {
-          setTotalCourseCount(count || 0);
-        }
-      } catch (error) {
-        console.error('Error fetching total course count:', error);
-        setTotalCourseCount(null);
-      }
-    };
-
-    fetchTotalCourseCount();
-  }, [user?.id]);
-
   // Refetch courses when screen comes into focus, but only if:
   // 1. We don't have any data yet, OR
   // 2. The data is stale (older than 30 seconds)
@@ -200,24 +162,6 @@ const CoursesScreen = () => {
       }
     }, [refetch, isLoading, isRefetching, courses.length]),
   );
-
-  // Handle upgrade to unlock locked courses
-  const handleUpgrade = useCallback(async () => {
-    if (
-      !offerings?.current?.availablePackages ||
-      offerings.current.availablePackages.length === 0
-    ) {
-      navigation.navigate('Main', { screen: 'Account' } as any);
-      return;
-    }
-
-    try {
-      const packageToPurchase = offerings.current.availablePackages[0];
-      await purchasePackage(packageToPurchase);
-    } catch (error) {
-      console.error('Purchase error:', error);
-    }
-  }, [offerings, purchasePackage, navigation]);
 
   // Remove header buttons - we'll use custom header
   useLayoutEffect(() => {
@@ -286,57 +230,6 @@ const CoursesScreen = () => {
     );
   }, [isFetchingNextPage, theme]);
 
-  // Check if user should see the course limit banner
-  const subscriptionTier = user?.subscription_tier || 'free';
-  const shouldShowLimitBanner =
-    subscriptionTier === 'free' &&
-    totalCourseCount !== null &&
-    totalCourseCount >= 2;
-
-  // Course limit banner component
-  const renderCourseLimitBanner = useCallback(() => {
-    if (!shouldShowLimitBanner) {
-      return null;
-    }
-
-    return (
-      <View
-        style={[
-          styles.limitBanner,
-          {
-            backgroundColor: theme.warningBackground || '#FEF3C7',
-            borderColor: theme.border || '#FCD34D',
-          },
-        ]}>
-        <View style={styles.limitBannerContent}>
-          <Ionicons
-            name="information-circle"
-            size={20}
-            color={theme.warning || '#92400E'}
-            style={styles.limitBannerIcon}
-          />
-          <Text
-            style={[
-              styles.limitBannerText,
-              { color: theme.warning || '#92400E' },
-            ]}>
-            You're on the free plan with a limit of 2 courses. Upgrade to add
-            and view unlimited courses.
-          </Text>
-        </View>
-        <TouchableOpacity
-          style={[
-            styles.limitBannerButton,
-            { backgroundColor: COLORS.primary },
-          ]}
-          onPress={handleUpgrade}
-          activeOpacity={0.8}>
-          <Text style={styles.limitBannerButtonText}>Upgrade</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }, [shouldShowLimitBanner, theme, handleUpgrade]);
-
   // Empty state - memoized to prevent re-renders
   const renderEmptyState = useCallback(
     () => (
@@ -365,15 +258,7 @@ const CoursesScreen = () => {
   );
 
   // Memoized header component to prevent re-renders
-  const renderHeader = useCallback(
-    () => (
-      <>
-        {renderCourseLimitBanner()}
-        <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
-      </>
-    ),
-    [renderCourseLimitBanner, handleUpgrade],
-  );
+  const renderHeader = useCallback(() => null, []);
 
   // getItemLayout for better FlatList performance (estimated item height: 88px)
   // padding: 20*2 = 40, marginBottom: 16, text height: ~32 = ~88px total

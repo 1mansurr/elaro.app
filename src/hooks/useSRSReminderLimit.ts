@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { versionedApiClient } from '@/services/VersionedApiClient';
-import { PermissionService } from '@/features/auth/permissions/PermissionService';
 
 interface SRSReminderLimitResult {
   currentReminders: number;
@@ -18,7 +17,7 @@ interface SRSReminderLimitResult {
 export const useSRSReminderLimit = (): SRSReminderLimitResult => {
   const { user } = useAuth();
   const [currentReminders, setCurrentReminders] = useState(0);
-  const [maxLimit, setMaxLimit] = useState(15); // Default free plan limit
+  const [maxLimit] = useState(Infinity);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,17 +31,6 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
     setError(null);
 
     try {
-      // Get the limit for the user's subscription tier
-      const permissionService = PermissionService.getInstance();
-      const limits = await permissionService.getTaskLimits(user);
-      const reminderLimit = limits.find(l => l.type === 'srs_reminders');
-
-      if (reminderLimit) {
-        setMaxLimit(
-          reminderLimit.limit === -1 ? Infinity : reminderLimit.limit,
-        );
-      }
-
       // Count SRS reminders created this month
       const oneMonthAgo = new Date();
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);

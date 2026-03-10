@@ -38,8 +38,6 @@ export { EmptyState } from './EmptyState';
 export { ErrorFallback } from './ErrorFallback';
 export { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
 export { SkeletonLoader } from './SkeletonLoader';
-export { OfflineBanner } from './OfflineBanner';
-export { SyncIndicator } from './SyncIndicator';
 export { UndoToast } from './UndoToast';
 export { ProgressHeader } from './ProgressHeader';
 export { QuickAddModal } from './QuickAddModal';
@@ -61,7 +59,6 @@ export { ReminderChipsList } from './ReminderChipsList';
 export { AssignmentDetailSheet } from './AssignmentDetailSheet';
 export { LectureDetailSheet } from './LectureDetailSheet';
 export { StudySessionDetailSheet } from './StudySessionDetailSheet';
-export { UpgradeSuccessModal } from './UpgradeSuccessModal';
 
 // Task form components
 export * from './task-forms';

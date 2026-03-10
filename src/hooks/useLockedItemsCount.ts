@@ -1,15 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/shared/hooks/usePermissions';
 import { supabase } from '@/services/supabase';
 
-const FREE_TIER_LIMITS = {
-  courses: 2,
-  assignments: 15,
-  lectures: 15,
-  study_sessions: 15,
-};
 
 type ItemType = 'courses' | 'assignments' | 'lectures' | 'study_sessions';
 
@@ -77,7 +70,6 @@ const fetchTotalItemCount = async (itemType: ItemType, userId: string) => {
 
 export const useLockedItemsCount = (itemType: ItemType) => {
   const { user } = useAuth();
-  const { isPremium } = usePermissions(user);
 
   return useQuery({
     queryKey: ['totalItemCount', itemType, user?.id],
@@ -85,16 +77,8 @@ export const useLockedItemsCount = (itemType: ItemType) => {
       if (!user?.id) {
         throw new Error('User ID is required');
       }
-
       const totalCount = await fetchTotalItemCount(itemType, user.id);
-      const premium = await isPremium();
-      if (premium) {
-        return { totalCount, lockedCount: 0 }; // No locked items for premium users
-      }
-
-      const limit = FREE_TIER_LIMITS[itemType];
-      const lockedCount = Math.max(0, totalCount - limit);
-      return { totalCount, lockedCount };
+      return { totalCount, lockedCount: 0 };
     },
     enabled: !!user,
     retry: 2, // Reduce retries since we have fallback

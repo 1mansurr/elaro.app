@@ -1,11 +1,9 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePermissions } from '@/shared/hooks/usePermissions';
 
 export const useHomeScreenState = () => {
   const { session, user } = useAuth();
-  const { isPremium } = usePermissions(user);
   const isGuest = !session;
 
   // State management
@@ -48,9 +46,8 @@ export const useHomeScreenState = () => {
 
   // Check if should show trial banner
   const shouldShowBanner = useCallback(async () => {
-    if (isGuest || isBannerDismissed) return false;
-    return await isPremium();
-  }, [isGuest, isBannerDismissed, isPremium]);
+    return false;
+  }, []);
 
   // Calculate trial days remaining
   const getTrialDaysRemaining = useCallback(() => {
