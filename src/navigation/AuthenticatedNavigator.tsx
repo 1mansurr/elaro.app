@@ -9,8 +9,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
-import { OnboardingProvider } from '@/contexts/OnboardingContext';
-import { UsageLimitPaywallProvider } from '@/contexts/UsageLimitPaywallContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '@/hooks/useSmartPreloading';
@@ -215,9 +213,7 @@ const AddStudySessionFlow = () => (
 
 const OnboardingFlow = () => (
   <Suspense fallback={<LoadingFallback />}>
-    <OnboardingProvider>
-      <OnboardingNavigator />
-    </OnboardingProvider>
+    <OnboardingNavigator />
   </Suspense>
 );
 
@@ -531,9 +527,7 @@ export const AuthenticatedNavigator: React.FC = () => {
   if (user && !user.onboarding_completed) {
     return (
       <Suspense fallback={<LoadingFallback />}>
-        <OnboardingProvider>
-          <OnboardingNavigator />
-        </OnboardingProvider>
+        <OnboardingNavigator />
       </Suspense>
     );
   }
@@ -571,8 +565,7 @@ export const AuthenticatedNavigator: React.FC = () => {
   const navigatorKey = `main-nav-${hasSeenAddCourseFirst ?? 'loading'}`;
 
   return (
-    <UsageLimitPaywallProvider>
-      <Suspense fallback={<LoadingFallback />}>
+    <Suspense fallback={<LoadingFallback />}>
         <Stack.Navigator
           key={navigatorKey}
           screenOptions={sharedScreenOptions}
@@ -644,6 +637,5 @@ export const AuthenticatedNavigator: React.FC = () => {
           </Stack.Group>
         </Stack.Navigator>
       </Suspense>
-    </UsageLimitPaywallProvider>
   );
 };

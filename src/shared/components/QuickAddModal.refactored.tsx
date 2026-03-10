@@ -23,8 +23,6 @@ import { notificationService } from '@/services/notifications';
 import { useTotalTaskCount } from '@/hooks';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { savePendingTask } from '@/utils/taskPersistence';
-import { useLimitCheck } from '@/hooks/useLimitCheck';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
 import { EmptyStateModal } from '@/features/templates/components/EmptyStateModal';
 import {
@@ -58,9 +56,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const queryClient = useQueryClient();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
-  const { checkActivityLimit } = useLimitCheck();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
-
   // Course selector
   const { courses, isLoading: isLoadingCourses } = useCourseSelector();
 
@@ -229,19 +224,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         console.error('Error saving pending task:', error);
         Alert.alert('Error', 'Failed to save your progress. Please try again.');
       }
-      return;
-    }
-
-    // Check activity limit
-    const limitCheck = await checkActivityLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        null,
-      );
       return;
     }
 

@@ -21,8 +21,6 @@ import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { FloatingLabelInput, ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
-import { useLimitCheck } from '@/hooks/useLimitCheck';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 
 type AddCourseInfoScreenNavigationProp = StackNavigationProp<
   AddCourseStackParamList,
@@ -68,25 +66,9 @@ const AddCourseInfoScreen = () => {
     checkCourseCount();
   }, [user?.id]);
 
-  const { checkCourseLimit } = useLimitCheck();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
-
   const handleNext = async () => {
     if (!courseName.trim()) {
       Alert.alert('Course name is required.');
-      return;
-    }
-
-    // Check course limit before proceeding
-    const limitCheck = await checkCourseLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        null, // No pending action - user can retry after upgrade
-      );
       return;
     }
 

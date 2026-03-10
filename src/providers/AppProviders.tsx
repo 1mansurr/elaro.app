@@ -6,12 +6,11 @@
  *
  * Provider Order (outermost to innermost):
  * 1. QueryClientProvider - React Query for server state
- * 2. NetworkProvider - Network connectivity state
+ * 2. NetworkProvider - Network connectivity state (MVP stub)
  * 3. ThemeProvider - Theme and dark mode support
  * 4. AuthProvider - Authentication state
- * 5. SoftLaunchProvider - Soft launch feature flags
- * 6. NotificationProvider - Notification state
- * 7. ToastProvider - Toast notifications
+ * 5. NotificationProvider - Notification state
+ * 6. ToastProvider - Toast notifications
  *
  * Note: ErrorBoundary and NavigationContainer remain in App.tsx as they
  * require special handling with error reset and navigation refs.
@@ -23,7 +22,6 @@ import { NetworkProvider } from '@/contexts/NetworkContext';
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import { AuthProvider } from '@/contexts/AuthContext';
-import { SoftLaunchProvider } from '@/contexts/SoftLaunchContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 
@@ -51,11 +49,9 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
           <LocaleProvider>
             <ThemeProvider>
               <AuthProvider>
-                <SoftLaunchProvider>
-                  <NotificationProvider>
-                    <ToastProvider>{children}</ToastProvider>
-                  </NotificationProvider>
-                </SoftLaunchProvider>
+                <NotificationProvider>
+                  <ToastProvider>{children}</ToastProvider>
+                </NotificationProvider>
               </AuthProvider>
             </ThemeProvider>
           </LocaleProvider>
@@ -90,11 +86,7 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
  *    - Provides authentication state (user, session)
  *    - Used throughout the app for auth checks
  *
- * 6. SoftLaunchProvider
- *    - Provides soft launch feature flags
- *    - Used for gradual feature rollouts
- *
- * 7. NotificationProvider
+ * 6. NotificationProvider
  *    - Provides notification state and handlers
  *    - Used for in-app notifications
  *

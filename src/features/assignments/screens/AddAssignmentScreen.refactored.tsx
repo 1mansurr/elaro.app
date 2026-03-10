@@ -22,8 +22,6 @@ import {
 } from '@/shared/utils/templateUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useLimitCheck } from '@/hooks/useLimitCheck';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 import { api } from '@/services/api';
 import {
   CourseModal,
@@ -56,8 +54,6 @@ const AddAssignmentScreen = () => {
   const queryClient = useQueryClient();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
-  const { checkActivityLimit } = useLimitCheck();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -293,18 +289,6 @@ const AddAssignmentScreen = () => {
           }
         },
       } as any);
-      return;
-    }
-
-    const limitCheck = await checkActivityLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        null,
-      );
       return;
     }
 

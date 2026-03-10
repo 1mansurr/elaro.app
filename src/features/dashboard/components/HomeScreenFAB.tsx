@@ -13,9 +13,6 @@ import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { getDraftCount } from '@/utils/draftStorage';
 import { COLORS } from '@/constants/theme';
-import { useLimitCheck } from '@/hooks/useLimitCheck';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
-
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 
 type HomeScreenFABNavigationProp = StackNavigationProp<
@@ -38,9 +35,6 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const { checkCourseLimit, checkActivityLimit } = useLimitCheck();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
-
   // Load draft count on mount
   useEffect(() => {
     const loadDraftCount = async () => {
@@ -74,35 +68,13 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
     // Note: QuickAddModal is not a navigation route - it's a state-controlled component
   };
 
-  const handleAddCourse = async () => {
-    const limitCheck = await checkCourseLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        { route: 'AddCourseFlow', params: undefined },
-      );
-      return;
-    }
+  const handleAddCourse = () => {
     navigation.navigate('AddCourseFlow');
   };
 
-  const handleAddActivity = async (
+  const handleAddActivity = (
     flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
   ) => {
-    const limitCheck = await checkActivityLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        { route: flowName, params: undefined },
-      );
-      return;
-    }
     navigation.navigate(flowName);
   };
 

@@ -12,7 +12,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import ConfettiCannon from 'react-native-confetti-cannon';
 import { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
-import { useOnboarding } from '@/contexts/OnboardingContext';
 import { Button } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { formatDate } from '@/i18n';
@@ -24,7 +23,8 @@ type ScreenNavigationProp = StackNavigationProp<
 
 const WelcomeScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
-  const { onboardingData, updateOnboardingData } = useOnboarding();
+  const onboardingData: Record<string, any> = {};
+  const updateOnboardingData = (_data: Record<string, any>) => {};
 
   const [dateOfBirth, setDateOfBirth] = useState<Date | null>(
     onboardingData.dateOfBirth ? new Date(onboardingData.dateOfBirth) : null,

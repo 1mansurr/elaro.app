@@ -12,7 +12,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { useOnboarding } from '@/contexts/OnboardingContext';
 import { OnboardingStackParamList } from '@/navigation/OnboardingNavigator';
 import { Button, InfoModal } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
@@ -31,8 +30,9 @@ type ScreenNavigationProp = StackNavigationProp<
 
 const ProfileSetupScreen = () => {
   const navigation = useNavigation<ScreenNavigationProp>();
-  const { onboardingData, updateOnboardingData } = useOnboarding();
   const { refreshUser } = useAuth();
+  const onboardingData: Record<string, any> = {};
+  const updateOnboardingData = (_data: Record<string, any>) => {};
 
   // Username management via custom hook
   const {

@@ -31,8 +31,6 @@ import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
-import { useLimitCheck } from '@/hooks/useLimitCheck';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
 import { Button, QueryStateWrapper, QuickAddModal } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
@@ -154,42 +152,17 @@ const HomeScreen = () => {
     navigation.navigate('Auth', { mode: 'signup' });
   }, [navigation]);
 
-  const { checkCourseLimit, checkActivityLimit } = useLimitCheck();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
-
-  const handleAddCourse = useCallback(async () => {
-    const limitCheck = await checkCourseLimit();
-    if (!limitCheck.allowed && limitCheck.limitType) {
-      showUsageLimitPaywall(
-        limitCheck.limitType,
-        limitCheck.currentUsage!,
-        limitCheck.maxLimit!,
-        limitCheck.actionLabel!,
-        { route: 'AddCourseFlow', params: undefined },
-      );
-      return;
-    }
+  const handleAddCourse = useCallback(() => {
     navigation.navigate('AddCourseFlow');
-  }, [checkCourseLimit, showUsageLimitPaywall, navigation]);
+  }, [navigation]);
 
   const handleAddActivity = useCallback(
-    async (
+    (
       flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
     ) => {
-      const limitCheck = await checkActivityLimit();
-      if (!limitCheck.allowed && limitCheck.limitType) {
-        showUsageLimitPaywall(
-          limitCheck.limitType,
-          limitCheck.currentUsage!,
-          limitCheck.maxLimit!,
-          limitCheck.actionLabel!,
-          { route: flowName, params: undefined },
-        );
-        return;
-      }
       navigation.navigate(flowName);
     },
-    [checkActivityLimit, showUsageLimitPaywall, navigation],
+    [navigation],
   );
 
   const fabActions = useMemo(

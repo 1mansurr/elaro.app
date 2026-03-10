@@ -55,8 +55,6 @@ import { formatReminderLabel, REMINDER_OPTIONS } from '@/utils/reminderUtils';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSRSReminderLimit } from '@/hooks/useSRSReminderLimit';
-import { useUsageLimitPaywall } from '@/contexts/UsageLimitPaywallContext';
-import { formatActionLabel } from '@/utils/limitChecking';
 
 type AddStudySessionScreenNavigationProp =
   StackNavigationProp<RootStackParamList>;
@@ -82,7 +80,6 @@ const AddStudySessionScreen = () => {
     maxLimit: srsMaxLimit,
     isAtLimit: isSRSAtLimit,
   } = useSRSReminderLimit();
-  const { showUsageLimitPaywall } = useUsageLimitPaywall();
 
   const isGuest = !session;
 
@@ -698,22 +695,6 @@ const AddStudySessionScreen = () => {
               description="Get reminders to review at optimal intervals"
               value={hasSpacedRepetition}
               onValueChange={value => {
-                // Check limit when user tries to toggle SRS on
-                if (value && !hasSpacedRepetition) {
-                  // Check if adding one more would exceed limit
-                  if (currentReminders + 1 > srsMaxLimit) {
-                    // Show paywall
-                    const nextCount = currentReminders + 1;
-                    showUsageLimitPaywall(
-                      'reminder',
-                      currentReminders,
-                      srsMaxLimit,
-                      formatActionLabel('reminder', nextCount),
-                      null, // No pending action - they can retry after upgrade
-                    );
-                    return; // Don't toggle on
-                  }
-                }
                 setHasSpacedRepetition(value);
               }}
               icon="repeat-outline"

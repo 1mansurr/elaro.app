@@ -61,7 +61,6 @@ export { ReminderChipsList } from './ReminderChipsList';
 export { AssignmentDetailSheet } from './AssignmentDetailSheet';
 export { LectureDetailSheet } from './LectureDetailSheet';
 export { StudySessionDetailSheet } from './StudySessionDetailSheet';
-export { UsageLimitPaywall } from './UsageLimitPaywall';
 export { UpgradeSuccessModal } from './UpgradeSuccessModal';
 
 // Task form components
