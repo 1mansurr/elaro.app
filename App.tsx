@@ -74,7 +74,6 @@ import {
 // Validate configuration on startup
 validateAndLogConfig();
 
-
 logBoot('App module loaded');
 
 // Disable React Native DevTools overlay for non-technical users

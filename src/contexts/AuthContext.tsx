@@ -837,7 +837,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           console.log('Pending task completion skipped:', importError);
         }
       }
-
     };
 
     handleUserProfileReady();

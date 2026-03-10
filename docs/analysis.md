@@ -6,8 +6,7 @@ ELARO → Offline-First MVP: Simplification Plan
 
 ---
 
-1. Dependency Audit  
-
+1. Dependency Audit
 
 dependencies in package.json
 
@@ -621,9 +620,9 @@ in JS on-device:
 
 // Pure function — no network needed
 function calculateNextInterval(item: SRSItem, qualityRating: 1|2|3|4|5): SRSItem {
-// rating < 3: reset to interval=1, keep ease_factor
-// rating >= 3: interval = prev_interval _ ease_factor
-// ease_factor += 0.1 - (5 - rating) _ (0.08 + (5 - rating) _ 0.02)
+// rating < 3: reset to interval=1, keep ease*factor
+// rating >= 3: interval = prev_interval * ease*factor
+// ease_factor += 0.1 - (5 - rating) * (0.08 + (5 - rating) _ 0.02)
 // ease_factor = max(1.3, ease_factor)
 const newItem = { ...item };
 if (qualityRating < 3) {
@@ -633,9 +632,9 @@ newItem.interval_days = 1;
 newItem.repetitions += 1;
 newItem.interval_days = newItem.repetitions === 1 ? 1
 : newItem.repetitions === 2 ? 6
-: Math.round(newItem.interval_days _ newItem.ease_factor);
+: Math.round(newItem.interval_days _ newItem.ease*factor);
 newItem.ease_factor = Math.max(1.3,
-newItem.ease_factor + 0.1 - (5 - qualityRating) _ (0.08 + (5 - qualityRating) _ 0.02)
+newItem.ease_factor + 0.1 - (5 - qualityRating) * (0.08 + (5 - qualityRating) \_ 0.02)
 );
 }
 newItem.last_quality_rating = qualityRating;
@@ -875,8 +874,6 @@ Phase 9 — Replace AuthContext
 41. Delete src/contexts/AuthContext.tsx
 42. Delete src/features/auth/services/UserProfileService.ts
 43. Grep for every useAuth() call in the codebase. For each:
-
-
     - If it only uses user.id → replace with useDeviceId() hook
     - If it checks session or isLoading → remove the guard entirely
     - If it calls signOut() → remove the sign-out button/flow
