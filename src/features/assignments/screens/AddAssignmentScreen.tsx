@@ -337,9 +337,7 @@ const AddAssignmentScreen = () => {
 
         if (taskToEdit.id) {
           try {
-            await notificationService.cancelItemReminders(
-              taskToEdit.id,
-            );
+            await notificationService.cancelItemReminders(taskToEdit.id);
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
           }

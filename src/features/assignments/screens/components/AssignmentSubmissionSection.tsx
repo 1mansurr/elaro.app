@@ -35,8 +35,7 @@ export const AssignmentSubmissionSection: React.FC<
 
   return (
     <View style={styles.field}>
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Submission Method
       </Text>
       <View style={styles.submissionGrid}>
@@ -140,10 +139,7 @@ export const AssignmentSubmissionSection: React.FC<
       {submissionMethod === 'Online' && (
         <View style={styles.linkField}>
           <Text
-            style={[
-              styles.label,
-              { color: isDark ? '#FFFFFF' : '#374151' },
-            ]}>
+            style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
             Submission Link
           </Text>
           <View style={styles.linkInputContainer}>
@@ -177,10 +173,7 @@ export const AssignmentSubmissionSection: React.FC<
       {submissionMethod === 'In-person' && onSubmissionVenueChange && (
         <View style={styles.linkField}>
           <Text
-            style={[
-              styles.label,
-              { color: isDark ? '#FFFFFF' : '#374151' },
-            ]}>
+            style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
             Submission Venue
           </Text>
           <View style={styles.linkInputContainer}>
