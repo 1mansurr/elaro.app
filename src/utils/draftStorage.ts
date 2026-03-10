@@ -12,6 +12,7 @@ export interface DraftData {
   // Assignment-specific
   submissionMethod?: 'Online' | 'In-person' | null;
   submissionLink?: string;
+  submissionVenue?: string;
   // Lecture-specific
   endTime?: Date | string;
   recurrence?: 'none' | 'weekly' | 'bi-weekly';

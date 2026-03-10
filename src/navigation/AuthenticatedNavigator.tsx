@@ -1,10 +1,9 @@
-import React, { Suspense, lazy, useState, useEffect } from 'react';
+import React, { Suspense, lazy } from 'react';
 import {
   createStackNavigator,
   StackNavigationOptions,
 } from '@react-navigation/stack';
 import { View, ActivityIndicator, Text } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { RootStackParamList } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,7 +11,6 @@ import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext'
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
 import { useSmartPreloading } from '@/hooks/useSmartPreloading';
-import { getSupabaseClient } from '@/services/supabase';
 import {
   SCREEN_CONFIGS,
   TRANSITIONS,
@@ -25,7 +23,6 @@ import { AuthScreen } from '@/features/auth/screens/AuthScreen';
 import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScreen';
 import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
-import { AccountScreen } from '@/features/user-profile/screens/AccountScreen';
 import DraftsScreen from '@/features/dashboard/screens/DraftsScreen';
 import TemplatesScreen from '@/features/dashboard/screens/TemplatesScreen';
 
@@ -41,19 +38,6 @@ const ProfileScreen = lazy(
 const SettingsScreen = lazy(() =>
   import('@/features/user-profile/screens').then(module => ({
     default: module.SettingsScreen,
-  })),
-);
-const DeleteAccountScreen = lazy(
-  () => import('@/features/user-profile/screens/DeleteAccountScreen'),
-);
-const DeviceManagementScreen = lazy(() =>
-  import('@/features/user-profile/screens/DeviceManagementScreen').then(
-    module => ({ default: module.DeviceManagementScreen }),
-  ),
-);
-const LoginHistoryScreen = lazy(() =>
-  import('@/features/user-profile/screens/LoginHistoryScreen').then(module => ({
-    default: module.LoginHistoryScreen,
   })),
 );
 const NotificationManagementScreen = lazy(() =>
@@ -104,24 +88,7 @@ const StudySessionReviewScreen = lazy(
 );
 
 // Lazy-loaded navigators
-const OnboardingNavigator = lazy(() => import('./OnboardingNavigator'));
 const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
-
-// Lazy-loaded post-onboarding welcome screen
-const PostOnboardingWelcomeScreen = lazy(() =>
-  import('@/features/onboarding/screens/PostOnboardingWelcomeScreen').then(
-    module => ({
-      default: module.PostOnboardingWelcomeScreen,
-    }),
-  ),
-);
-
-// Lazy-loaded add course first screen
-const AddCourseFirstScreen = lazy(() =>
-  import('@/features/onboarding/screens/AddCourseFirstScreen').then(module => ({
-    default: module.AddCourseFirstScreen,
-  })),
-);
 
 // Lazy-loaded single screens for simplified flows
 const AddAssignmentScreen = lazy(
@@ -208,12 +175,6 @@ const AddStudySessionFlow = () => (
     <FeatureErrorBoundary featureName="the Study Session Creation flow">
       <AddStudySessionScreen />
     </FeatureErrorBoundary>
-  </Suspense>
-);
-
-const OnboardingFlow = () => (
-  <Suspense fallback={<LoadingFallback />}>
-    <OnboardingNavigator />
   </Suspense>
 );
 
@@ -336,39 +297,11 @@ const mainScreens = {
       headerTitle: 'Settings',
     },
   },
-  DeleteAccountScreen: {
-    component: DeleteAccountScreen,
-    options: {
-      ...SCREEN_CONFIGS.DeleteAccountScreen,
-      headerTitle: 'Delete Account',
-    },
-  },
-  DeviceManagement: {
-    component: DeviceManagementScreen,
-    options: {
-      ...SCREEN_CONFIGS.DeviceManagement,
-      headerTitle: 'Device Management',
-    },
-  },
-  LoginHistory: {
-    component: LoginHistoryScreen,
-    options: {
-      ...SCREEN_CONFIGS.LoginHistory,
-      headerTitle: 'Login History',
-    },
-  },
   NotificationManagement: {
     component: NotificationManagementScreen,
     options: {
       ...SCREEN_CONFIGS.NotificationManagement,
       headerTitle: 'Notifications',
-    },
-  },
-  OnboardingFlow: { component: OnboardingFlow },
-  AddCourseFirst: {
-    component: AddCourseFirstScreen,
-    options: {
-      headerShown: false,
     },
   },
   StudyResult: {
@@ -387,111 +320,14 @@ const mainScreens = {
   },
 };
 
-const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
-
 export const AuthenticatedNavigator: React.FC = () => {
   const { user, isInitializing, session } = useAuth();
-  const [hasSeenAddCourseFirst, setHasSeenAddCourseFirst] = useState<
-    boolean | null
-  >(null);
-  const [courseCount, setCourseCount] = useState<number | null>(null);
-  const [isCheckingWelcome, setIsCheckingWelcome] = useState(true);
 
   // Enable smart preloading for better performance
   useSmartPreloading();
 
-  // Check AddCourseFirst screen status and course count
-  // NOTE: PostOnboardingWelcomeScreen manages its own visibility - we don't check it here
-  // IMPORTANT: This useEffect must be called BEFORE any early returns to follow Rules of Hooks
-  // All hooks must be called in the same order on every render
-  useEffect(() => {
-    // STEP 2 FIX: Add user guard to prevent crashes if user is null or minimal user without ID
-    if (!user?.id) {
-      setIsCheckingWelcome(false);
-      setHasSeenAddCourseFirst(true); // Default to true (skip screen) if no user
-      setCourseCount(0);
-      return;
-    }
-
-    // Add timeout to prevent infinite loading
-    const timeoutId = setTimeout(() => {
-      if (isCheckingWelcome) {
-        console.warn(
-          '⚠️ [AuthenticatedNavigator] Welcome check timeout - proceeding with defaults',
-        );
-        setIsCheckingWelcome(false);
-        setHasSeenAddCourseFirst(true);
-        setCourseCount(0);
-      }
-    }, 5000); // 5 second timeout
-
-    const checkWelcomeScreens = async () => {
-      if (!user.onboarding_completed) {
-        setIsCheckingWelcome(false);
-        setCourseCount(0); // Ensure courseCount is set
-        return;
-      }
-
-      try {
-        // Only check AddCourseFirst - PostOnboardingWelcomeScreen is self-managed
-        const hasSeenAddCourse =
-          await AsyncStorage.getItem(ADD_COURSE_FIRST_KEY);
-        // Explicitly handle null/undefined - if not 'true', treat as false (user hasn't seen it)
-        // This ensures new users who complete onboarding will see AddCourseFirst
-        const hasSeen = hasSeenAddCourse === 'true';
-        setHasSeenAddCourseFirst(hasSeen);
-
-        // Check course count (used for other logic, not PostOnboardingWelcome)
-        // CRITICAL FIX: Safely get Supabase client - handle initialization failures
-        let courseCountResult = 0;
-        try {
-          const supabaseClient = getSupabaseClient();
-          const { count, error } = await supabaseClient
-            .from('courses')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', user.id)
-            .is('deleted_at', null);
-
-          if (error) {
-            console.error('Error checking course count:', error);
-            courseCountResult = 0; // Default to 0 on error
-          } else {
-            courseCountResult = count || 0;
-          }
-        } catch (supabaseError) {
-          // Handle Supabase client initialization failure (e.g., missing config after OTA)
-          console.error(
-            '❌ [AuthenticatedNavigator] Supabase client initialization failed:',
-            supabaseError instanceof Error
-              ? supabaseError.message
-              : String(supabaseError),
-          );
-          // Default to 0 courses - app can still function
-          courseCountResult = 0;
-        }
-        setCourseCount(courseCountResult);
-      } catch (error) {
-        console.error('Error checking welcome screen status:', error);
-        // Default to NOT showing AddCourseFirst on error (assume already seen)
-        setHasSeenAddCourseFirst(true);
-        setCourseCount(0);
-      } finally {
-        // CRITICAL: Always set isCheckingWelcome to false, even if errors occur
-        // This prevents infinite loading screen
-        setIsCheckingWelcome(false);
-      }
-    };
-
-    checkWelcomeScreens();
-
-    return () => {
-      clearTimeout(timeoutId);
-    };
-  }, [user]);
-
   // GUARD: Show loading screen while AuthContext is initializing
-  // This prevents race conditions where onboarding is shown before we have a valid profile
-  // NOTE: All hooks must be called BEFORE this early return to follow Rules of Hooks
+  // This prevents race conditions where we have a session but no valid profile
   // OPTIMIZATION: Only wait for initialization if we don't have a session
   // If we have a session, show the app immediately (profile will load in background)
   if (isInitializing && !session) {
@@ -522,47 +358,9 @@ export const AuthenticatedNavigator: React.FC = () => {
     return <LoadingFallback />;
   }
 
-  // Show onboarding if user hasn't completed it
-  // NOTE: This check only runs after isInitializing is false, ensuring we have a valid profile
-  if (user && !user.onboarding_completed) {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <OnboardingNavigator />
-      </Suspense>
-    );
-  }
+  const initialRouteName: keyof RootStackParamList = 'Main';
 
-  // Show loading while checking welcome screen status
-  if (isCheckingWelcome || courseCount === null) {
-    return <LoadingFallback />;
-  }
-
-  // Determine initial route based on AddCourseFirst screen status
-  let initialRouteName: keyof RootStackParamList = 'Main';
-
-  // Show AddCourseFirst if user hasn't seen it yet (regardless of course count)
-  // After onboarding, users will always see this first
-  if (hasSeenAddCourseFirst === false) {
-    initialRouteName = 'AddCourseFirst';
-  }
-  // HARDENING: PostOnboardingWelcome is self-managed by PostOnboardingWelcomeScreen component
-  // It is NEVER set as initialRouteName - it's only navigated to programmatically
-  // The screen itself enforces all visibility rules and will redirect if already seen
-  // This ensures the screen never appears on app startup or navigation state restoration
-
-  if (__DEV__) {
-    console.log('🔍 [AuthenticatedNavigator] Initial route determined:', {
-      initialRouteName,
-      hasSeenAddCourseFirst,
-      courseCount,
-    });
-  }
-
-  // Show main app if onboarding is completed
-  // Use a key that includes hasSeenAddCourseFirst to force remount when it changes
-  // This ensures the navigator starts with the correct initialRouteName
-  // When hasSeenAddCourseFirst changes from null -> false, the navigator remounts with AddCourseFirst as initial route
-  const navigatorKey = `main-nav-${hasSeenAddCourseFirst ?? 'loading'}`;
+  const navigatorKey = 'main-nav';
 
   return (
     <Suspense fallback={<LoadingFallback />}>
@@ -573,25 +371,6 @@ export const AuthenticatedNavigator: React.FC = () => {
         {/* Launch screen removed - AppNavigator handles initial routing */}
         {/* Main app screens */}
         {renderScreens(mainScreens)}
-
-        {/* PostOnboardingWelcome - full screen modal in its own group to hide tab bar */}
-        {/* NOTE: PostOnboardingWelcomeScreen is self-managed - it enforces all visibility rules */}
-        <Stack.Group
-          screenOptions={{
-            presentation: 'modal',
-            headerShown: false,
-          }}>
-          <Stack.Screen
-            name="PostOnboardingWelcome"
-            component={PostOnboardingWelcomeScreen}
-            options={{
-              gestureEnabled: false,
-              // HARDENING: Screen component itself handles redirect if already seen
-              // This screen is NEVER used as initialRouteName (enforced by logic above)
-              // Screen is in MODAL_FLOW_ROUTES so it won't be restored on app restart
-            }}
-          />
-        </Stack.Group>
 
         {/* Modal flows */}
         <Stack.Group>

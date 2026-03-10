@@ -22,9 +22,6 @@ export const AUTHENTICATED_ROUTES = [
   'AddStudySessionFlow',
   'EditCourseModal',
   'TaskDetailModal',
-  'DeviceManagement',
-  'LoginHistory',
-  'DeleteAccountScreen',
   'MFAEnrollmentScreen',
   'MFAVerificationScreen',
   'AnalyticsAdmin',
@@ -37,8 +34,8 @@ export const AUTHENTICATED_ROUTES = [
 // Routes accessible to both authenticated and unauthenticated users
 export const PUBLIC_ROUTES = ['Launch', 'Auth'] as const;
 
-// Routes accessible during onboarding (authenticated but onboarding incomplete)
-export const ONBOARDING_ROUTES = ['OnboardingFlow'] as const;
+// Routes accessible during onboarding (no onboarding flow in MVP)
+export const ONBOARDING_ROUTES = [] as const;
 
 // Routes that should hide the tab bar (onboarding and post-onboarding fullscreen modals)
 // These routes are presented as fullscreen modals and should not show the bottom tab bar
@@ -76,8 +73,6 @@ export const NON_RESTORABLE_ROUTES = [
   'ResetPassword',
   'MFAEnrollmentScreen',
   'MFAVerificationScreen',
-  // Account management (sensitive, should not persist)
-  'DeleteAccountScreen',
 ] as const;
 
 /**

@@ -38,14 +38,14 @@ export const AssignmentRequiredFields: React.FC<
   onDateChange,
   onTimeChange,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.section}>
       <Text
         style={[
           styles.sectionTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          { color: isDark ? '#FFFFFF' : '#111418' },
         ]}>
         Required Information
       </Text>

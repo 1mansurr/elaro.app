@@ -35,7 +35,6 @@ const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'Launch',
   'Auth',
   'Main',
-  'OnboardingFlow',
   'Courses',
   'Drafts',
   'Templates',
@@ -44,9 +43,6 @@ const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'RecycleBin',
   'Profile',
   'Settings',
-  'DeleteAccountScreen',
-  'DeviceManagement',
-  'LoginHistory',
   'MFAEnrollmentScreen',
   'MFAVerificationScreen',
   'AddCourseFlow',
@@ -448,23 +444,6 @@ class NavigationSyncService {
     }
 
     // Handle conditional routes that may be restored only under specific conditions
-    if (currentRoute === 'OnboardingFlow') {
-      // Only restore OnboardingFlow if onboarding is still incomplete
-      const isOnboardingComplete = userInfo?.onboarding_completed ?? false;
-      if (isOnboardingComplete) {
-        console.log(
-          '🚫 NavigationSync: OnboardingFlow detected but onboarding is complete. Discarding saved state.',
-        );
-        await this.clearState();
-        return null;
-      }
-      // Onboarding incomplete - allow restoration
-      console.log(
-        '✅ NavigationSync: OnboardingFlow detected and onboarding incomplete. Allowing restoration.',
-      );
-      return savedState;
-    }
-
     if (currentRoute === 'PaywallScreen') {
       // Only restore PaywallScreen if subscription is inactive
       const subscriptionStatus = userInfo?.subscription_status;

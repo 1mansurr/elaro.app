@@ -408,25 +408,6 @@ export const SCREEN_CONFIGS = {
     ...GESTURES.horizontal,
   },
 
-  // Account management screens
-  DeleteAccountScreen: {
-    ...SCREEN_OPTIONS.standard,
-    ...TRANSITIONS.slideFromRight,
-    ...GESTURES.horizontal,
-  },
-
-  DeviceManagement: {
-    ...SCREEN_OPTIONS.standard,
-    ...TRANSITIONS.slideFromRight,
-    ...GESTURES.horizontal,
-  },
-
-  LoginHistory: {
-    ...SCREEN_OPTIONS.standard,
-    ...TRANSITIONS.slideFromRight,
-    ...GESTURES.horizontal,
-  },
-
   NotificationManagement: {
     ...SCREEN_OPTIONS.standard,
     ...TRANSITIONS.slideFromRight,

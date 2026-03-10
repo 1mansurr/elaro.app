@@ -31,12 +31,12 @@ export const AssignmentSubmissionSection: React.FC<
   onSubmissionLinkChange,
   onSubmissionVenueChange,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.field}>
       <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Submission Method
       </Text>
       <View style={styles.submissionGrid}>
@@ -48,13 +48,13 @@ export const AssignmentSubmissionSection: React.FC<
               backgroundColor:
                 submissionMethod === 'Online'
                   ? COLORS.primary + '1A'
-                  : theme.isDark
+                  : isDark
                     ? '#1C252E'
                     : '#FFFFFF',
               borderColor:
                 submissionMethod === 'Online'
                   ? COLORS.primary + '33'
-                  : theme.isDark
+                  : isDark
                     ? '#3B4754'
                     : '#E5E7EB',
             },
@@ -66,7 +66,7 @@ export const AssignmentSubmissionSection: React.FC<
             color={
               submissionMethod === 'Online'
                 ? COLORS.primary
-                : theme.isDark
+                : isDark
                   ? '#FFFFFF'
                   : '#111418'
             }
@@ -78,7 +78,7 @@ export const AssignmentSubmissionSection: React.FC<
                 color:
                   submissionMethod === 'Online'
                     ? COLORS.primary
-                    : theme.isDark
+                    : isDark
                       ? '#FFFFFF'
                       : '#111418',
                 fontWeight: submissionMethod === 'Online' ? '600' : '500',
@@ -96,13 +96,13 @@ export const AssignmentSubmissionSection: React.FC<
               backgroundColor:
                 submissionMethod === 'In-person'
                   ? COLORS.primary + '1A'
-                  : theme.isDark
+                  : isDark
                     ? '#1C252E'
                     : '#FFFFFF',
               borderColor:
                 submissionMethod === 'In-person'
                   ? COLORS.primary + '33'
-                  : theme.isDark
+                  : isDark
                     ? '#3B4754'
                     : '#E5E7EB',
             },
@@ -114,7 +114,7 @@ export const AssignmentSubmissionSection: React.FC<
             color={
               submissionMethod === 'In-person'
                 ? COLORS.primary
-                : theme.isDark
+                : isDark
                   ? '#FFFFFF'
                   : '#111418'
             }
@@ -126,7 +126,7 @@ export const AssignmentSubmissionSection: React.FC<
                 color:
                   submissionMethod === 'In-person'
                     ? COLORS.primary
-                    : theme.isDark
+                    : isDark
                       ? '#FFFFFF'
                       : '#111418',
                 fontWeight: submissionMethod === 'In-person' ? '600' : '500',
@@ -142,7 +142,7 @@ export const AssignmentSubmissionSection: React.FC<
           <Text
             style={[
               styles.label,
-              { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              { color: isDark ? '#FFFFFF' : '#374151' },
             ]}>
             Submission Link
           </Text>
@@ -150,22 +150,22 @@ export const AssignmentSubmissionSection: React.FC<
             <Ionicons
               name="link-outline"
               size={20}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
               style={styles.linkIcon}
             />
             <TextInput
               style={[
                 styles.linkInput,
                 {
-                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
-                  color: theme.isDark ? '#FFFFFF' : '#111418',
+                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: isDark ? '#3B4754' : 'transparent',
+                  color: isDark ? '#FFFFFF' : '#111418',
                 },
               ]}
               value={submissionLink}
               onChangeText={onSubmissionLinkChange}
               placeholder="https://..."
-              placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+              placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
@@ -179,7 +179,7 @@ export const AssignmentSubmissionSection: React.FC<
           <Text
             style={[
               styles.label,
-              { color: theme.isDark ? '#FFFFFF' : '#374151' },
+              { color: isDark ? '#FFFFFF' : '#374151' },
             ]}>
             Submission Venue
           </Text>
@@ -187,22 +187,22 @@ export const AssignmentSubmissionSection: React.FC<
             <Ionicons
               name="location-outline"
               size={20}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
               style={styles.linkIcon}
             />
             <TextInput
               style={[
                 styles.linkInput,
                 {
-                  backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-                  borderColor: theme.isDark ? '#3B4754' : 'transparent',
-                  color: theme.isDark ? '#FFFFFF' : '#111418',
+                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+                  borderColor: isDark ? '#3B4754' : 'transparent',
+                  color: isDark ? '#FFFFFF' : '#111418',
                 },
               ]}
               value={submissionVenue}
               onChangeText={onSubmissionVenueChange}
               placeholder="e.g., Room 101, Building A"
-              placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+              placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
               autoCapitalize="words"
             />
           </View>

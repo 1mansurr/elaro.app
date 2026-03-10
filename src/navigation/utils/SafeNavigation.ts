@@ -212,14 +212,6 @@ export const NavigationPatterns = {
   },
 
   /**
-   * Navigate to onboarding flow
-   */
-  navigateToOnboarding: (navigation: AppNavigationProp) => {
-    const safeNav = new SafeNavigation(navigation);
-    safeNav.navigate('OnboardingFlow');
-  },
-
-  /**
    * Navigate to auth modal
    */
   navigateToAuth: (
@@ -349,7 +341,6 @@ export const NavigationValidation = {
       'Launch',
       'Auth',
       'Main',
-      'OnboardingFlow',
       'Courses',
       'Drafts',
       'Templates',
@@ -358,9 +349,6 @@ export const NavigationValidation = {
       'RecycleBin',
       'Profile',
       'Settings',
-      'DeleteAccountScreen',
-      'DeviceManagement',
-      'LoginHistory',
       'AddCourseFlow',
       'AddLectureFlow',
       'AddAssignmentFlow',

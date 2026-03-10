@@ -54,7 +54,7 @@ const AddAssignmentScreen = () => {
   const queryClient = useQueryClient();
   const { isFirstTask, isLoading: isTotalTaskCountLoading } =
     useTotalTaskCount();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const isGuest = !session;
@@ -280,7 +280,7 @@ const AddAssignmentScreen = () => {
           submissionLink,
           submissionVenue,
           reminders,
-        },
+        } as any,
         'assignment',
       );
       Alert.alert(
@@ -339,7 +339,6 @@ const AddAssignmentScreen = () => {
           try {
             await notificationService.cancelItemReminders(
               taskToEdit.id,
-              'assignment',
             );
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
@@ -419,7 +418,7 @@ const AddAssignmentScreen = () => {
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
           paddingTop: insets.top,
         },
       ]}>
@@ -453,7 +452,7 @@ const AddAssignmentScreen = () => {
         <View
           style={[
             styles.divider,
-            { backgroundColor: theme.isDark ? '#374151' : '#E5E7EB' },
+            { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
           ]}
         />
 
@@ -497,7 +496,7 @@ const AddAssignmentScreen = () => {
       </ScrollView>
 
       <TaskFormFooter
-        isValid={isFormValid}
+        isValid={!!isFormValid}
         onSave={handleSave}
         isSaving={isSaving}
         saveButtonText="Save Assignment"

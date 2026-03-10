@@ -39,14 +39,14 @@ export const AssignmentOptionalFields: React.FC<
   onRemindersChange,
   onAddReminder,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.section}>
       <Text
         style={[
           styles.sectionTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          { color: isDark ? '#FFFFFF' : '#111418' },
         ]}>
         Optional Details
       </Text>

@@ -82,7 +82,7 @@ const RemindersScreen = () => {
       const pendingTask = await getPendingTask();
       if (!pendingTask || pendingTask.taskType !== 'assignment') return;
 
-      const { taskData } = pendingTask;
+      const taskData = pendingTask.taskData as any;
 
       if (!taskData.course || !taskData.title.trim() || !taskData.dueDate) {
         Alert.alert(
@@ -147,7 +147,7 @@ const RemindersScreen = () => {
         {
           ...assignmentData,
           reminders,
-        },
+        } as any,
         'assignment',
       );
       // Navigate to Auth screen

@@ -11,27 +11,27 @@ interface AssignmentDescriptionFieldProps {
 export const AssignmentDescriptionField: React.FC<
   AssignmentDescriptionFieldProps
 > = ({ description, onDescriptionChange }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.field}>
       <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Description
       </Text>
       <TextInput
         style={[
           styles.textArea,
           {
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-            borderColor: theme.isDark ? '#3B4754' : 'transparent',
-            color: theme.isDark ? '#FFFFFF' : '#111418',
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#3B4754' : 'transparent',
+            color: isDark ? '#FFFFFF' : '#111418',
           },
         ]}
         value={description}
         onChangeText={onDescriptionChange}
         placeholder="Add any additional details..."
-        placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+        placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
         multiline
         numberOfLines={4}
         textAlignVertical="top"

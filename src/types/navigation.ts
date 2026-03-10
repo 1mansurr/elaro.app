@@ -22,7 +22,6 @@ export type RootStackParamList = {
     mode?: 'signup' | 'signin';
   };
   Main: undefined;
-  OnboardingFlow: undefined;
   PostOnboardingWelcome: undefined;
   AddCourseFirst: undefined;
 
@@ -36,11 +35,6 @@ export type RootStackParamList = {
   Profile: undefined;
   Settings: undefined;
   NotificationManagement: undefined;
-
-  // Account management screens (names match navigator registrations)
-  DeleteAccountScreen: undefined;
-  DeviceManagement: undefined;
-  LoginHistory: undefined;
 
   // Auth-related screens
   MFAEnrollmentScreen: undefined;
