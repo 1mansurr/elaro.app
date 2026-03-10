@@ -566,76 +566,76 @@ export const AuthenticatedNavigator: React.FC = () => {
 
   return (
     <Suspense fallback={<LoadingFallback />}>
-        <Stack.Navigator
-          key={navigatorKey}
-          screenOptions={sharedScreenOptions}
-          initialRouteName={initialRouteName}>
-          {/* Launch screen removed - AppNavigator handles initial routing */}
-          {/* Main app screens */}
-          {renderScreens(mainScreens)}
+      <Stack.Navigator
+        key={navigatorKey}
+        screenOptions={sharedScreenOptions}
+        initialRouteName={initialRouteName}>
+        {/* Launch screen removed - AppNavigator handles initial routing */}
+        {/* Main app screens */}
+        {renderScreens(mainScreens)}
 
-          {/* PostOnboardingWelcome - full screen modal in its own group to hide tab bar */}
-          {/* NOTE: PostOnboardingWelcomeScreen is self-managed - it enforces all visibility rules */}
-          <Stack.Group
-            screenOptions={{
-              presentation: 'modal',
+        {/* PostOnboardingWelcome - full screen modal in its own group to hide tab bar */}
+        {/* NOTE: PostOnboardingWelcomeScreen is self-managed - it enforces all visibility rules */}
+        <Stack.Group
+          screenOptions={{
+            presentation: 'modal',
+            headerShown: false,
+          }}>
+          <Stack.Screen
+            name="PostOnboardingWelcome"
+            component={PostOnboardingWelcomeScreen}
+            options={{
+              gestureEnabled: false,
+              // HARDENING: Screen component itself handles redirect if already seen
+              // This screen is NEVER used as initialRouteName (enforced by logic above)
+              // Screen is in MODAL_FLOW_ROUTES so it won't be restored on app restart
+            }}
+          />
+        </Stack.Group>
+
+        {/* Modal flows */}
+        <Stack.Group>
+          {/* Auth screen - available for switching accounts */}
+          <Stack.Screen
+            name="Auth"
+            component={AuthScreen}
+            options={SCREEN_CONFIGS.Auth}
+          />
+
+          {/* Forgot Password screen */}
+          <Stack.Screen
+            name="ForgotPassword"
+            component={ForgotPasswordScreen}
+            options={{
+              presentation: 'modal' as const,
               headerShown: false,
-            }}>
-            <Stack.Screen
-              name="PostOnboardingWelcome"
-              component={PostOnboardingWelcomeScreen}
-              options={{
-                gestureEnabled: false,
-                // HARDENING: Screen component itself handles redirect if already seen
-                // This screen is NEVER used as initialRouteName (enforced by logic above)
-                // Screen is in MODAL_FLOW_ROUTES so it won't be restored on app restart
-              }}
-            />
-          </Stack.Group>
+            }}
+          />
 
-          {/* Modal flows */}
-          <Stack.Group>
-            {/* Auth screen - available for switching accounts */}
-            <Stack.Screen
-              name="Auth"
-              component={AuthScreen}
-              options={SCREEN_CONFIGS.Auth}
-            />
+          {/* Reset Password screen */}
+          <Stack.Screen
+            name="ResetPassword"
+            component={ResetPasswordScreen}
+            options={{
+              presentation: 'modal' as const,
+              headerShown: false,
+            }}
+          />
 
-            {/* Forgot Password screen */}
-            <Stack.Screen
-              name="ForgotPassword"
-              component={ForgotPasswordScreen}
-              options={{
-                presentation: 'modal' as const,
-                headerShown: false,
-              }}
-            />
-
-            {/* Reset Password screen */}
-            <Stack.Screen
-              name="ResetPassword"
-              component={ResetPasswordScreen}
-              options={{
-                presentation: 'modal' as const,
-                headerShown: false,
-              }}
-            />
-
-            {Object.entries(modalFlows).map(([name, config]) => {
-              // Type narrowing: ensure name is a valid route
-              const routeName = name as keyof RootStackParamList;
-              return (
-                <Stack.Screen
-                  key={name}
-                  name={routeName}
-                  component={config.component}
-                  options={config.options}
-                />
-              );
-            })}
-          </Stack.Group>
-        </Stack.Navigator>
-      </Suspense>
+          {Object.entries(modalFlows).map(([name, config]) => {
+            // Type narrowing: ensure name is a valid route
+            const routeName = name as keyof RootStackParamList;
+            return (
+              <Stack.Screen
+                key={name}
+                name={routeName}
+                component={config.component}
+                options={config.options}
+              />
+            );
+          })}
+        </Stack.Group>
+      </Stack.Navigator>
+    </Suspense>
   );
 };

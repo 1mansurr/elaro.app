@@ -17,10 +17,10 @@ const always: NetworkState = {
 
 const NetworkContext = createContext<NetworkState>(always);
 
-export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <NetworkContext.Provider value={always}>
-    {children}
-  </NetworkContext.Provider>
+export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <NetworkContext.Provider value={always}>{children}</NetworkContext.Provider>
 );
 
 export const useNetwork = () => useContext(NetworkContext);
