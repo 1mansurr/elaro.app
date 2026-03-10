@@ -19,7 +19,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { authService } from '@/services/authService';
 import { supabase } from '@/services/supabase';
 import { ExpandableDetails } from '@/shared/components';
-import { AnalyticsToggle } from '@/shared/components/AnalyticsToggle';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/utils/showToast';
 import { cache } from '@/utils/cache';
@@ -306,20 +305,6 @@ export function SettingsScreen() {
               Help us improve the app by sharing anonymous usage data. No
               personal information is collected.
             </Text>
-            <View
-              style={[
-                styles.analyticsToggleContainer,
-                {
-                  backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F9FAFB',
-                  borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB',
-                },
-              ]}>
-              <Text
-                style={[styles.analyticsToggleLabel, { color: theme.text }]}>
-                Share Data
-              </Text>
-              <AnalyticsToggle />
-            </View>
           </ExpandableDetails>
 
           <View

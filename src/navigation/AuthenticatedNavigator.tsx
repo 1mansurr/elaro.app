@@ -83,9 +83,6 @@ const CourseDetailScreen = lazy(() =>
 const TaskDetailModal = lazy(
   () => import('@/shared/components/TaskDetailModal'),
 );
-const RecycleBinScreen = lazy(
-  () => import('@/features/data-management/screens/RecycleBinScreen'),
-);
 const MFAEnrollmentScreen = lazy(() =>
   import('@/navigation/bundles/AuthBundle').then(module => ({
     default: module.MFAEnrollmentScreen,
@@ -101,22 +98,11 @@ const InAppBrowserScreen = lazy(() =>
     default: module.InAppBrowserScreen,
   })),
 );
-const AnalyticsAdminScreen = lazy(
-  () => import('@/features/admin/components/AnalyticsAdminDashboard'),
-);
 const StudyResultScreen = lazy(
   () => import('@/features/studySessions/screens/StudyResultScreen'),
 );
 const StudySessionReviewScreen = lazy(
   () => import('@/features/studySessions/screens/StudySessionReviewScreen'),
-);
-const PaywallScreen = lazy(() =>
-  import('@/features/subscription/screens/PaywallScreen').then(module => ({
-    default: module.PaywallScreen,
-  })),
-);
-const OddityWelcomeScreen = lazy(
-  () => import('@/features/subscription/screens/OddityWelcomeScreen'),
 );
 
 // Lazy-loaded navigators
@@ -265,14 +251,6 @@ const modalFlows = {
     component: InAppBrowserScreen,
     options: SCREEN_CONFIGS.InAppBrowserScreen,
   },
-  PaywallScreen: {
-    component: PaywallScreen,
-    options: SCREEN_CONFIGS.PaywallScreen,
-  },
-  OddityWelcomeScreen: {
-    component: OddityWelcomeScreen,
-    options: SCREEN_CONFIGS.OddityWelcomeScreen,
-  },
 };
 
 // Helper function to render screens with type safety
@@ -332,13 +310,6 @@ const mainScreens = {
     options: {
       ...SCREEN_CONFIGS.Calendar,
       headerTitle: 'Calendar',
-    },
-  },
-  RecycleBin: {
-    component: RecycleBinScreen,
-    options: {
-      ...SCREEN_CONFIGS.RecycleBin,
-      headerTitle: 'Recycle Bin',
     },
   },
   MFAEnrollmentScreen: {
@@ -402,13 +373,6 @@ const mainScreens = {
     component: AddCourseFirstScreen,
     options: {
       headerShown: false,
-    },
-  },
-  AnalyticsAdmin: {
-    component: AnalyticsAdminScreen,
-    options: {
-      ...SCREEN_CONFIGS.AnalyticsAdmin,
-      headerTitle: 'Analytics Admin',
     },
   },
   StudyResult: {

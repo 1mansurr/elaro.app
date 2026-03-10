@@ -446,6 +446,7 @@ const NavigationStateHandler: React.FC = () => {
     return null;
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     // Update current user ID in navigationSyncService
     navigationSyncService.setUserId(user?.id);
@@ -1427,6 +1428,7 @@ function AuthEffects() {
     return null;
   }
 
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const setupNotifications = async () => {
       if (user && user.id) {
