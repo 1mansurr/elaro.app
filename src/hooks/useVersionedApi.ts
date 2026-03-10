@@ -64,8 +64,12 @@ export function useVersionedApi<T = unknown>(
         setError(response.error);
         onError?.(response.error);
       } else {
-        setData(response.data || null);
-        onSuccess?.(response.data);
+        if (response.data !== undefined) {
+          setData(response.data);
+          onSuccess?.(response.data);
+        } else {
+          setData(null);
+        }
       }
 
       // Handle version warnings

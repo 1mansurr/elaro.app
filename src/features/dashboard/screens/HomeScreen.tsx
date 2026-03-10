@@ -665,6 +665,7 @@ const HomeScreen = () => {
 
         <FloatingActionButton
           actions={fabActions}
+          isOpen={isFabOpen}
           onStateChange={handleFabStateChange}
           onDoubleTap={handleQuickAddDoubleTap}
           draftCount={draftCount}

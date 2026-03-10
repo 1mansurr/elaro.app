@@ -14,7 +14,7 @@ import { SimpleNotificationPreferences } from '@/services/notifications/interfac
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 export const InlineNotificationSettings: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const [preferences, setPreferences] =
     useState<SimpleNotificationPreferences | null>(null);
@@ -98,8 +98,8 @@ export const InlineNotificationSettings: React.FC = () => {
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? 'rgba(0, 0, 0, 0.2)' : '#F9FAFB',
-          borderColor: theme.isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB',
+          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F9FAFB',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB',
         },
       ]}>
       <ScrollView
@@ -186,7 +186,7 @@ export const InlineNotificationSettings: React.FC = () => {
             <Text
               style={[
                 styles.quietHoursTime,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               {preferences.quietHours.start} - {preferences.quietHours.end}
             </Text>

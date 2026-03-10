@@ -109,7 +109,7 @@ export function mergeTaskUpdates(
     ...updates,
     updated_at: new Date().toISOString(),
     _offline: true, // Mark as offline-updated
-  } as Assignment | Lecture | StudySession;
+  } as unknown as Assignment | Lecture | StudySession;
 }
 
 /**

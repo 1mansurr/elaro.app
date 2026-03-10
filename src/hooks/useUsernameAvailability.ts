@@ -47,9 +47,10 @@ export const useUsernameAvailability = (
   // Debounced username checking function
   const { debounced: checkUsernameDebounced, cancel: cancelUsernameDebounce } =
     useMemo(() => {
-      const { debounced, cancel } = debounce(async (newUsername: string) => {
+      const { debounced, cancel } = debounce(async (newUsername: unknown) => {
+        const username = newUsername as string;
         setIsChecking(true);
-        if (newUsername.length < 4) {
+        if (username.length < 4) {
           setIsAvailable(null);
           setUsernameError(null);
           setIsChecking(false);
@@ -57,7 +58,7 @@ export const useUsernameAvailability = (
           abortControllerRef.current = null;
           return;
         }
-        if (lastCheckedUsername === newUsername) {
+        if (lastCheckedUsername === username) {
           setIsChecking(false);
           return;
         }
@@ -83,9 +84,8 @@ export const useUsernameAvailability = (
           // Get fresh access token from Supabase session (not from context which may be stale)
           // This ensures we have the latest valid token and the Edge Function receives the JWT for RLS context
           // Get fresh access token to ensure it's valid and not expired
-          const { getFreshAccessToken } = await import(
-            '@/utils/getFreshAccessToken'
-          );
+          const { getFreshAccessToken } =
+            await import('@/utils/getFreshAccessToken');
           const accessToken = await getFreshAccessToken();
 
           // Debug logging to see the actual request
@@ -96,7 +96,7 @@ export const useUsernameAvailability = (
 
           // Normalize username to lowercase before sending to server
           // Server schema only accepts lowercase: /^[a-z0-9_.]+$/
-          const normalizedUsername = newUsername.toLowerCase();
+          const normalizedUsername = username.toLowerCase();
 
           const { data, error } = await supabase.functions.invoke(
             'check-username-availability',
@@ -122,7 +122,7 @@ export const useUsernameAvailability = (
               setIsAvailable(false);
               setUsernameError(data.message || 'Username is already taken.');
             }
-            setLastCheckedUsername(newUsername);
+            setLastCheckedUsername(username);
           } else {
             setIsAvailable(null);
             setUsernameError('Unexpected response. Please try again.');

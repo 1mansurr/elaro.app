@@ -7,6 +7,7 @@ import { NavigationContainerRef } from '@react-navigation/native';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
 import { supabase } from './supabase';
 import { NotificationPreferenceService } from '@/services/notifications/NotificationPreferenceService';
+import { parseResponseJsonSafely } from '@/utils/safeJsonParser';
 import {
   SimpleNotificationPreferences,
   SimpleNotificationPreferencesUpdate,
@@ -68,9 +69,9 @@ function isTimeoutError(error: unknown): boolean {
     };
     return (
       errorObj.code === 'HTTP_504' ||
-      errorObj.error?.toLowerCase().includes('timeout') ||
-      errorObj.message?.toLowerCase().includes('504') ||
-      errorObj.message?.toLowerCase().includes('timeout')
+      (errorObj.error?.toLowerCase().includes('timeout') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('504') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('timeout') ?? false)
     );
   }
   return false;
@@ -96,8 +97,8 @@ function isWorkerError(error: unknown): boolean {
     };
     return (
       errorObj.code === 'WORKER_ERROR' ||
-      errorObj.error?.toLowerCase().includes('function exited') ||
-      errorObj.message?.toLowerCase().includes('function exited')
+      (errorObj.error?.toLowerCase().includes('function exited') ?? false) ||
+      (errorObj.message?.toLowerCase().includes('function exited') ?? false)
     );
   }
   return false;
@@ -109,22 +110,112 @@ function isWorkerError(error: unknown): boolean {
  * @param token string
  */
 async function savePushTokenToSupabase(userId: string, token: string) {
-  const platform = Platform.OS;
-  const updated_at = new Date().toISOString();
+  // ============================================================================
+  // VALIDATION PHASE: Validate ALL inputs BEFORE any retry logic or API calls
+  // ============================================================================
+
+  // Guard: Do not call API if token is undefined/null/empty
+  if (!token || typeof token !== 'string' || token.trim().length === 0) {
+    console.warn(
+      '⚠️ Cannot save push token to Supabase: token is invalid or missing',
+      {
+        token: token ? 'present but invalid' : 'missing',
+        userId,
+      },
+    );
+    return; // EXIT: Never call API with invalid token
+  }
+
+  // Derive platform ONCE before retry logic
+  const platformOS = Platform.OS;
+  const platform =
+    platformOS === 'ios' ? 'ios' : platformOS === 'android' ? 'android' : null;
+
+  // Guard: Do not call API if platform is invalid
+  if (!platform || (platform !== 'ios' && platform !== 'android')) {
+    console.warn('⚠️ Cannot save push token: unsupported platform', {
+      platformOS,
+      userId,
+    });
+    return; // EXIT: Never call API with invalid platform
+  }
+
+  // ============================================================================
+  // PAYLOAD CONSTRUCTION: Build payload ONCE with validated values
+  // ============================================================================
+
+  // Construct payload ONCE with validated values (before retry logic)
+  const deviceData = {
+    push_token: token, // Already validated above
+    platform: platform, // Already validated above
+    updated_at: new Date().toISOString(),
+  };
+
+  // Final validation: Ensure payload is complete (defense in depth)
+  // This should never fail if above guards work, but provides extra safety
+  if (!deviceData.push_token || !deviceData.platform) {
+    console.error(
+      '❌ CRITICAL: Payload validation failed - this should never happen',
+      {
+        push_token: deviceData.push_token ? 'present' : 'missing',
+        platform: deviceData.platform ? 'present' : 'missing',
+        userId,
+      },
+    );
+    return; // EXIT: Never call API with incomplete payload
+  }
+
+  // ============================================================================
+  // RETRY LOGIC: Retry function receives payload as parameter (no closure capture)
+  // ============================================================================
 
   // Import retry utility
   const { retryWithBackoff } = await import('@/utils/errorRecovery');
 
-  const saveToken = async () => {
-    const { versionedApiClient } = await import(
-      '@/services/VersionedApiClient'
-    );
-    const response = await versionedApiClient.registerDevice({
-      push_token: token,
-      platform,
-      updated_at,
-    });
+  // Retry function receives validated payload as parameter (NOT from closure)
+  const saveToken = async (payload: typeof deviceData) => {
+    // Payload is passed as parameter - no closure capture of outer variables
+    // All values are guaranteed to exist because validation happened before this function
 
+    const { versionedApiClient } =
+      await import('@/services/VersionedApiClient');
+
+    const response = await versionedApiClient.registerDevice(payload);
+
+    // Handle new response format: check for ok, skipped, error fields
+    if (response.data && typeof response.data === 'object') {
+      const data = response.data as {
+        ok?: boolean;
+        skipped?: boolean;
+        reason?: string;
+        error?: string;
+        details?: unknown;
+      };
+
+      // Treat skipped as success (race condition safe)
+      if (data.skipped === true) {
+        console.log(
+          '✅ Push token registration skipped (token not ready):',
+          data.reason,
+        );
+        return response; // Return as success
+      }
+
+      // Check for error in new format
+      if (data.ok === false) {
+        const error = new Error(
+          data.error || 'Registration failed',
+        ) as Error & {
+          code?: string;
+          response?: typeof response;
+        };
+        error.code = data.error || 'REGISTRATION_ERROR';
+        error.response = response;
+        throw error;
+      }
+    }
+
+    // Legacy error handling
     if (response.error) {
       // Create error object that can be checked by retry logic
       const error = new Error(response.message || response.error) as Error & {
@@ -139,13 +230,25 @@ async function savePushTokenToSupabase(userId: string, token: string) {
     return response;
   };
 
+  // ============================================================================
+  // EXECUTE: Call retry function with validated payload
+  // ============================================================================
+
   try {
     // Retry with exponential backoff for timeout errors (504) and worker errors
-    const result = await retryWithBackoff(saveToken, {
+    // Pass validated payload as parameter (not from closure)
+    const result = await retryWithBackoff(() => saveToken(deviceData), {
       maxRetries: 3,
       baseDelay: 1000, // Start with 1 second
       maxDelay: 10000, // Max 10 seconds between retries
       retryCondition: error => {
+        // Don't retry validation errors (not transient)
+        if (
+          error instanceof Error &&
+          (error as Error & { code?: string }).code === 'VALIDATION_ERROR'
+        ) {
+          return false;
+        }
         // Retry on timeout errors (504) or worker errors (may be transient)
         return isTimeoutError(error) || isWorkerError(error);
       },
@@ -158,7 +261,7 @@ async function savePushTokenToSupabase(userId: string, token: string) {
         code: error.code,
         attempts: result.attempts,
         userId,
-        platform,
+        platform: Platform.OS, // Log current platform for debugging
       });
       throw error;
     }
@@ -175,7 +278,7 @@ async function savePushTokenToSupabase(userId: string, token: string) {
         isTimeout,
         isWorkerError: isWorkerErr,
         userId,
-        platform,
+        platform: Platform.OS, // Log current platform for debugging
       },
     );
     // Re-throw to allow caller to handle
@@ -226,12 +329,34 @@ export async function sendTestPushNotification(
       },
       body: JSON.stringify(message),
     });
-    const data = await response.json();
-    if (data.data && data.data.status === 'ok') {
+
+    // Guard: Only parse JSON if response is ok and has JSON content-type
+    let data: any = null;
+    if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        try {
+          // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+          data = await parseResponseJsonSafely(response);
+          if (data === null) {
+            // Empty response is valid - return success
+            return { success: true };
+          }
+        } catch (error) {
+          console.error(
+            '❌ Failed to parse push notification response as JSON:',
+            error instanceof Error ? error.message : String(error),
+          );
+          return { error: 'Invalid response format' };
+        }
+      }
+    }
+
+    if (data && data.data && data.data.status === 'ok') {
     } else {
       console.error('❌ Failed to send test push notification:', data);
     }
-    return data;
+    return data || { error: 'No response data' };
   } catch (error) {
     console.error('❌ Error sending test push notification:', error);
     throw error;
@@ -295,12 +420,19 @@ export const notificationService = {
     }
 
     try {
-      token = (await Notifications.getExpoPushTokenAsync()).data;
+      const tokenData = await Notifications.getExpoPushTokenAsync();
+      // Ensure we extract the string token, not the full object
+      token = tokenData?.data;
+
+      if (!token || typeof token !== 'string') {
+        console.warn('❌ Invalid push token received:', tokenData);
+        return null;
+      }
 
       // Store token for future use
       await AsyncStorage.setItem('pushToken', token);
 
-      // Save token to Supabase
+      // Save token to Supabase (guard already in savePushTokenToSupabase)
       if (userId && token) {
         await savePushTokenToSupabase(userId, token);
       }
@@ -352,9 +484,9 @@ export const notificationService = {
       console.log('Handling notification with deep link:', url);
       try {
         // Check if navigation is ready before navigating
-        if (navigationRef.current?.isReady()) {
+        if (navigationRef && navigationRef.isReady()) {
           // Navigate using the deep link
-          navigationRef.current.navigate(url as never);
+          navigationRef.navigate(url as never);
           console.log('Successfully navigated to:', url);
         } else {
           console.warn(
@@ -363,10 +495,10 @@ export const notificationService = {
           );
           // Queue navigation for when it becomes ready
           const checkInterval = setInterval(() => {
-            if (navigationRef.current?.isReady()) {
+            if (navigationRef && navigationRef.isReady()) {
               clearInterval(checkInterval);
               try {
-                navigationRef.current.navigate(url as never);
+                navigationRef.navigate(url as never);
                 console.log('Successfully navigated to queued deep link:', url);
               } catch (error) {
                 console.error('Error navigating to queued deep link:', error);
@@ -440,8 +572,17 @@ export const notificationService = {
     const settings = await AsyncStorage.getItem('notificationSettings');
     if (!settings) return true;
 
-    const parsed = JSON.parse(settings);
-    return parsed.enabled !== false;
+    // Guard: Only parse if settings is valid
+    if (settings.trim() && settings !== 'undefined' && settings !== 'null') {
+      try {
+        const parsed = JSON.parse(settings);
+        return parsed.enabled !== false;
+      } catch {
+        // If parse fails, default to enabled
+        return true;
+      }
+    }
+    return true;
   },
 
   /**
@@ -490,8 +631,9 @@ export const notificationService = {
           sound: true,
         },
         trigger: {
+          type: 'date' as const,
           date: triggerDate,
-        },
+        } as Notifications.NotificationTriggerInput,
       });
     } catch (error) {
       console.error('❌ Failed to schedule notification:', error);
@@ -729,22 +871,22 @@ function mapSimpleUpdateToFull(
     update.marketing !== undefined
   ) {
     full.notificationTypes = {
-      reminders: update.reminders ?? undefined,
-      achievements: undefined,
-      updates: undefined,
-      marketing: update.marketing ?? undefined,
-      assignments: update.assignments ?? undefined,
-      lectures: update.lectures ?? undefined,
-      srs: update.studySessions ?? update.reminders,
-      dailySummaries: update.dailySummaries ?? undefined,
+      reminders: update.reminders ?? false,
+      achievements: false,
+      updates: false,
+      marketing: update.marketing ?? false,
+      assignments: update.assignments ?? false,
+      lectures: update.lectures ?? false,
+      srs: update.studySessions ?? update.reminders ?? false,
+      dailySummaries: update.dailySummaries ?? false,
     };
   }
 
   if (update.quietHours) {
     full.quietHours = {
-      enabled: update.quietHours.enabled ?? undefined,
-      start: update.quietHours.start ?? undefined,
-      end: update.quietHours.end ?? undefined,
+      enabled: update.quietHours.enabled ?? false,
+      start: update.quietHours.start ?? '22:00',
+      end: update.quietHours.end ?? '08:00',
     };
   }
 

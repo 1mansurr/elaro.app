@@ -61,7 +61,7 @@ const getFilterIcon = (type: string): keyof typeof Ionicons.glyphMap => {
 export const NotificationHistoryModal: React.FC<
   NotificationHistoryModalProps
 > = ({ isVisible, onClose }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<NotificationHistoryItem[]>(
@@ -234,7 +234,8 @@ export const NotificationHistoryModal: React.FC<
 
   // Handle swipe from right edge to go back
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX, x } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
+    const x = event.nativeEvent.x as number;
     // Check if swipe starts from right edge (within 20px of right edge)
     if (x > screenWidth - 20 && translationX < 0) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
@@ -245,7 +246,7 @@ export const NotificationHistoryModal: React.FC<
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
     if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
+      const translationX = event.nativeEvent.translationX as number;
       if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
         // Animate out and close
         Animated.parallel([
@@ -286,11 +287,11 @@ export const NotificationHistoryModal: React.FC<
   if (!isVisible) return null;
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? 'rgba(30, 41, 59, 0.5)' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? 'rgba(30, 41, 59, 0.5)' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   return (
     <Modal
@@ -326,7 +327,7 @@ export const NotificationHistoryModal: React.FC<
               style={[
                 styles.closeButton,
                 {
-                  backgroundColor: theme.isDark
+                  backgroundColor: isDark
                     ? 'rgba(255, 255, 255, 0.1)'
                     : 'transparent',
                 },
@@ -356,7 +357,7 @@ export const NotificationHistoryModal: React.FC<
                     {
                       backgroundColor: isActive
                         ? COLORS.primary
-                        : theme.isDark
+                        : isDark
                           ? '#1F2937'
                           : '#E5E7EB',
                     },
@@ -480,7 +481,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const handleSwipe = (event: GestureHandlerGestureEvent) => {
     if (!isTask) return;
 
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (translationX < 0) {
       // Right to left swipe
       const progress = Math.min(1, Math.abs(translationX) / SWIPE_THRESHOLD);
@@ -491,7 +492,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
   const handleSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
     if (event.nativeEvent.state === State.END) {
-      const { translationX } = event.nativeEvent;
+      const translationX = event.nativeEvent.translationX as number;
       if (Math.abs(translationX) > SWIPE_THRESHOLD && isTask) {
         // Complete task
         setIsCompleting(true);

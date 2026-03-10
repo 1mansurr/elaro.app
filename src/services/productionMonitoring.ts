@@ -195,9 +195,10 @@ class ProductionMonitoringService {
    */
   reportHealth(): {
     status: 'healthy' | 'degraded' | 'unhealthy';
-    metrics: ReturnType<typeof this.getMetricsSummary>;
+    metrics: ReturnType<ProductionMonitoringService['getMetricsSummary']>;
     issues: string[];
   } {
+    const self = this;
     const metrics = this.getMetricsSummary();
     const issues: string[] = [];
 

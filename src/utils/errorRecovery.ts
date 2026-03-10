@@ -242,7 +242,7 @@ export function debounceAsync<
         timeoutId = null;
         try {
           const result = await fn(...args);
-          resolve(result);
+          resolve(result as ReturnType<T>);
         } catch (error) {
           reject(error);
         }

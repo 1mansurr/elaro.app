@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -28,7 +29,10 @@ async function handleUnsuspendAccount(req: AuthenticatedRequest) {
     .eq('id', user.id)
     .single();
 
-  if (adminError || adminUser?.role !== 'admin') {
+  if (adminError) throw handleDbError(adminError);
+
+  const adminUserTyped = adminUser as { role?: string } | null;
+  if (!adminUserTyped || adminUserTyped.role !== 'admin') {
     throw new AppError(
       'Unauthorized: Admin access required',
       403,
@@ -45,7 +49,18 @@ async function handleUnsuspendAccount(req: AuthenticatedRequest) {
 
   if (targetError) throw handleDbError(targetError);
 
-  if (targetUser.account_status !== 'suspended') {
+  const targetUserTyped = targetUser as {
+    id: string;
+    email: string;
+    account_status: string;
+    suspension_end_date: string | null;
+  } | null;
+
+  if (!targetUserTyped) {
+    throw new AppError('User not found', 404, ERROR_CODES.DB_NOT_FOUND);
+  }
+
+  if (targetUserTyped.account_status !== 'suspended') {
     throw new AppError(
       'Account is not suspended',
       400,
@@ -55,7 +70,7 @@ async function handleUnsuspendAccount(req: AuthenticatedRequest) {
 
   await logger.info(
     'Admin unsuspending account',
-    { admin_id: user.id, target_user_id: userId, email: targetUser.email },
+    { admin_id: user.id, target_user_id: userId, email: targetUserTyped.email },
     traceContext,
   );
 
@@ -83,8 +98,8 @@ async function handleUnsuspendAccount(req: AuthenticatedRequest) {
       reason,
       admin_notes: adminNotes,
       metadata: {
-        target_user_email: targetUser.email,
-        previous_suspension_end_date: targetUser.suspension_end_date,
+        target_user_email: targetUserTyped.email,
+        previous_suspension_end_date: targetUserTyped.suspension_end_date,
       },
     });
 

@@ -12,10 +12,13 @@
  * - GET /courses/:id - Get course details
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
   AppError,
+  isValidUUID,
+  AuthenticatedRequest,
 } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { z } from 'zod';
@@ -23,6 +26,10 @@ import {
   initializeEventDrivenArchitecture,
   DatabaseEventEmitter,
 } from '../_shared/event-driven-architecture.ts';
+import {
+  type SupabaseClient,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Schemas for validation
 const CreateCourseSchema = z.object({
@@ -42,18 +49,31 @@ class CourseService {
   // Course operations
   async createCourse(data: Record<string, unknown>, userId: string) {
     // Check course limits based on subscription tier
-    const { data: userProfile } = await this.supabaseClient
+    const { data: userProfile, error: profileError } = await this.supabaseClient
       .from('users')
       .select('subscription_tier')
       .eq('id', userId)
       .single();
 
+    if (profileError) {
+      throw new AppError('Failed to fetch user profile', 500, 'DB_QUERY_ERROR');
+    }
+
+    if (
+      !userProfile ||
+      typeof userProfile !== 'object' ||
+      !('subscription_tier' in userProfile)
+    ) {
+      throw new AppError('Failed to fetch user profile', 500, 'DB_QUERY_ERROR');
+    }
+
+    const userProfileTyped = userProfile as { subscription_tier: string };
     const courseLimits = {
       free: 2,
       oddity: 7,
     };
 
-    const userTier = userProfile?.subscription_tier || 'free';
+    const userTier = userProfileTyped.subscription_tier || 'free';
     const courseLimit =
       courseLimits[userTier as keyof typeof courseLimits] || courseLimits.free;
 
@@ -214,29 +234,91 @@ async function handleCoursesRequest({
 
   // Route handling
   if (method === 'POST' && path.endsWith('/courses')) {
-    const validatedData = CreateCourseSchema.parse(body);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CreateCourseSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     return await courseService.createCourse(validatedData, user.id);
   }
 
   if (method === 'PUT' && path.includes('/courses/')) {
+    // PASS 2: Validate path parameter (UUID format, non-empty)
     const id = path.split('/').pop();
-    const validatedData = UpdateCourseSchema.parse(body);
+    if (!id || !isValidUUID(id)) {
+      throw new AppError(
+        'Invalid course ID format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'id', message: 'Course ID must be a valid UUID' },
+      );
+    }
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = UpdateCourseSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
+    const validatedData = validationResult.data;
     return await courseService.updateCourse(id, validatedData, user.id);
   }
 
   if (method === 'DELETE' && path.includes('/courses/')) {
+    // PASS 2: Validate path parameter (UUID format, non-empty)
     const id = path.split('/').pop();
+    if (!id || !isValidUUID(id)) {
+      throw new AppError(
+        'Invalid course ID format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'id', message: 'Course ID must be a valid UUID' },
+      );
+    }
     return await courseService.deleteCourse(id, user.id);
   }
 
   if (method === 'GET' && path.endsWith('/courses')) {
-    const includeDeleted =
-      new URL(url).searchParams.get('include_deleted') === 'true';
+    // PASS 2: Validate query parameter
+    const includeDeletedParam = new URL(url).searchParams.get(
+      'include_deleted',
+    );
+    const includeDeleted = includeDeletedParam === 'true'; // Only accept 'true', everything else is false
     return await courseService.getCourses(user.id, includeDeleted);
   }
 
   if (method === 'GET' && path.includes('/courses/')) {
+    // PASS 2: Validate path parameter (UUID format, non-empty)
     const id = path.split('/').pop();
+    if (!id || !isValidUUID(id)) {
+      throw new AppError(
+        'Invalid course ID format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'id', message: 'Course ID must be a valid UUID' },
+      );
+    }
     return await courseService.getCourseDetails(id, user.id);
   }
 
@@ -245,7 +327,16 @@ async function handleCoursesRequest({
     path.includes('/courses/') &&
     path.includes('/restore')
   ) {
+    // PASS 2: Validate path parameter (UUID format, non-empty)
     const id = path.split('/')[path.split('/').length - 2]; // Get ID before 'restore'
+    if (!id || !isValidUUID(id)) {
+      throw new AppError(
+        'Invalid course ID format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'id', message: 'Course ID must be a valid UUID' },
+      );
+    }
     return await courseService.restoreCourse(id, user.id);
   }
 

@@ -5,14 +5,14 @@
  * Used to replace `any` types in service files.
  */
 
-import { SupabaseError } from '@supabase/supabase-js';
+import type { PostgrestError } from '@supabase/supabase-js';
 
 /**
  * Standard Supabase response wrapper
  */
 export interface SupabaseResponse<T> {
   data: T | null;
-  error: SupabaseError | null;
+  error: PostgrestError | null;
 }
 
 /**

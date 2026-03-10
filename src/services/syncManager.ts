@@ -333,8 +333,7 @@ class SyncManager {
     return {
       length: this.queue.length,
       pending: this.queue.filter(item => item.status === 'pending').length,
-      processing: this.queue.filter(item => item.status === 'processing')
-        .length,
+      processing: this.queue.filter(item => item.status === 'syncing').length,
       failed: this.queue.filter(item => item.status === 'failed').length,
     };
   }
@@ -448,7 +447,7 @@ class SyncManager {
           results.push({
             action,
             success: true,
-            data: serverResponse,
+            data: (serverResponse as Record<string, unknown>) ?? undefined,
           });
         } catch (error: unknown) {
           const errorMessage =
@@ -616,11 +615,28 @@ class SyncManager {
   private async loadQueue(): Promise<void> {
     try {
       const stored = await AsyncStorage.getItem(OFFLINE_QUEUE_KEY);
-      if (stored) {
-        this.queue = JSON.parse(stored);
-        console.log(
-          `📂 SyncManager: Loaded ${this.queue.length} actions from storage`,
-        );
+      if (
+        stored &&
+        stored.trim() &&
+        stored !== 'undefined' &&
+        stored !== 'null'
+      ) {
+        try {
+          this.queue = JSON.parse(stored);
+          console.log(
+            `📂 SyncManager: Loaded ${this.queue.length} actions from storage`,
+          );
+        } catch (parseError) {
+          console.error(
+            '❌ SyncManager: Failed to parse queue from storage, clearing:',
+            parseError,
+          );
+          // Auto-clear corrupted queue
+          await AsyncStorage.removeItem(OFFLINE_QUEUE_KEY);
+          this.queue = [];
+        }
+      } else {
+        this.queue = [];
       }
     } catch (error) {
       console.error(
@@ -648,15 +664,30 @@ class SyncManager {
   private async loadConfig(): Promise<void> {
     try {
       const stored = await AsyncStorage.getItem(SYNC_CONFIG_KEY);
-      if (stored) {
-        this.config = { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
-        console.log('📂 SyncManager: Loaded configuration from storage');
+      if (
+        stored &&
+        stored.trim() &&
+        stored !== 'undefined' &&
+        stored !== 'null'
+      ) {
+        try {
+          this.config = { ...DEFAULT_CONFIG, ...JSON.parse(stored) };
+          console.log('📂 SyncManager: Loaded configuration from storage');
+        } catch (parseError) {
+          console.error(
+            '❌ SyncManager: Failed to parse config from storage, using defaults:',
+            parseError,
+          );
+          // Use default config on parse error
+          this.config = DEFAULT_CONFIG;
+        }
       }
     } catch (error) {
       console.error(
         '❌ SyncManager: Failed to load config from storage:',
         error,
       );
+      this.config = DEFAULT_CONFIG;
     }
   }
 
@@ -1039,12 +1070,29 @@ class SyncManager {
   private async loadIdMapping(): Promise<void> {
     try {
       const stored = await AsyncStorage.getItem(ID_MAPPING_KEY);
-      if (stored) {
-        const mappingArray: [string, string][] = JSON.parse(stored);
-        this.idMapping = new Map(mappingArray);
-        console.log(
-          `📂 SyncManager: Loaded ${this.idMapping.size} ID mappings`,
-        );
+      if (
+        stored &&
+        stored.trim() &&
+        stored !== 'undefined' &&
+        stored !== 'null'
+      ) {
+        try {
+          const mappingArray: [string, string][] = JSON.parse(stored);
+          this.idMapping = new Map(mappingArray);
+          console.log(
+            `📂 SyncManager: Loaded ${this.idMapping.size} ID mappings`,
+          );
+        } catch (parseError) {
+          console.error(
+            '❌ SyncManager: Failed to parse ID mapping from storage, clearing:',
+            parseError,
+          );
+          // Auto-clear corrupted mapping
+          await AsyncStorage.removeItem(ID_MAPPING_KEY);
+          this.idMapping = new Map();
+        }
+      } else {
+        this.idMapping = new Map();
       }
     } catch (error) {
       console.error('❌ SyncManager: Failed to load ID mapping:', error);
@@ -1070,11 +1118,12 @@ class SyncManager {
    * @returns Delay in milliseconds
    */
   private calculateRetryDelay(attemptIndex: number): number {
-    const baseDelay = this.config.retryDelay * Math.pow(2, attemptIndex); // Exponential backoff
+    const retryDelay = this.config.retryDelay ?? 5000;
+    const baseDelay = retryDelay * Math.pow(2, attemptIndex); // Exponential backoff
     const jitter = baseDelay * 0.2 * (Math.random() * 2 - 1); // ±20% jitter
     const delay = baseDelay + jitter;
     // Cap at 30 seconds max delay
-    return Math.min(Math.max(delay, this.config.retryDelay), 30000);
+    return Math.min(Math.max(delay, retryDelay), 30000);
   }
 
   /**

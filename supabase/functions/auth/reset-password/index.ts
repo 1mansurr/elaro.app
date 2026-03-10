@@ -1,9 +1,12 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../../_shared/cors.ts';
+import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
 import { ResetPasswordSchema } from '../../_shared/schemas/auth.ts';
-import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
+import { AppError } from '../../_shared/function-handler.ts';
+import { ERROR_CODES } from '../../_shared/error-codes.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
 import {
@@ -12,8 +15,10 @@ import {
 } from '../../_shared/rate-limiter.ts';
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
@@ -21,11 +26,41 @@ serve(async (req: Request) => {
   try {
     // Rate limiting (by IP for public endpoints)
     const ipAddress = extractIPAddress(req);
-    await checkRateLimit('auth-reset-password', ipAddress);
+    await checkRateLimit('auth-reset-password', ipAddress, 'reset-password');
 
-    // Parse and validate request body
-    const body = await req.json();
-    const validatedData = ResetPasswordSchema.parse(body);
+    // Parse and validate request body (PASS 1: Crash safety)
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (error) {
+      return errorResponse(
+        new AppError(
+          'Invalid or missing JSON body',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+        ),
+        400,
+        {},
+        origin,
+      );
+    }
+
+    // Use safeParse to prevent ZodError from crashing worker
+    const validationResult = ResetPasswordSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      return errorResponse(
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        }),
+        400,
+        {},
+        origin,
+      );
+    }
+    const validatedData = validationResult.data;
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -53,7 +88,7 @@ serve(async (req: Request) => {
       throw new AppError(
         error.message || 'Failed to send password reset email',
         error.status || 400,
-        ERROR_CODES.AUTH_ERROR || 'AUTH_ERROR',
+        ERROR_CODES.VALIDATION_ERROR,
       );
     }
 
@@ -65,9 +100,13 @@ serve(async (req: Request) => {
       traceContext,
     );
 
-    return successResponse({
-      message: 'Password reset email sent',
-    });
+    return successResponse(
+      {
+        message: 'Password reset email sent',
+      },
+      {},
+      origin,
+    );
   } catch (error) {
     await logger.error(
       'Password reset error',
@@ -78,19 +117,25 @@ serve(async (req: Request) => {
     );
 
     if (error instanceof AppError) {
-      return errorResponse(error, error.statusCode);
+      return errorResponse(error, error.statusCode, {}, origin);
     }
 
+    // ZodError should never reach here (caught by safeParse above)
+    // But keep as fallback for safety
     if (error instanceof Error && error.name === 'ZodError') {
       return errorResponse(
-        new AppError('Invalid input data', 400, 'VALIDATION_ERROR'),
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR),
         400,
+        {},
+        origin,
       );
     }
 
     return errorResponse(
       new AppError('Internal server error', 500, ERROR_CODES.INTERNAL_ERROR),
       500,
+      {},
+      origin,
     );
   }
 });

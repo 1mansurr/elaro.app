@@ -79,6 +79,7 @@ google-services.json
 GoogleService-Info.plist
 AuthKey_*.p8
 **/AuthKey*.p8
+sentry.properties
 
 # Logs
 logs/

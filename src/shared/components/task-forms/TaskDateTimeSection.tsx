@@ -5,18 +5,20 @@ import { SPACING } from '@/constants/theme';
 
 interface TaskDateTimeSectionProps {
   // For single date/time (assignments)
-  date?: Date;
+  date?: Date | null;
   onDateChange?: (date: Date) => void;
   onTimeChange?: (time: Date) => void;
 
   // For range (lectures)
-  startTime?: Date;
-  endTime?: Date;
+  startTime?: Date | null;
+  endTime?: Date | null;
   onStartTimeChange?: (time: Date) => void;
   onEndTimeChange?: (time: Date) => void;
 
   mode: 'single' | 'range';
   label?: string;
+  hasPickedStartTime?: boolean;
+  hasPickedEndTime?: boolean;
 }
 
 export const TaskDateTimeSection: React.FC<TaskDateTimeSectionProps> = ({
@@ -29,22 +31,21 @@ export const TaskDateTimeSection: React.FC<TaskDateTimeSectionProps> = ({
   onEndTimeChange,
   mode,
   label,
+  hasPickedStartTime = false,
+  hasPickedEndTime = false,
 }) => {
   if (mode === 'range') {
-    if (
-      !startTime ||
-      !endTime ||
-      !onStartTimeChange ||
-      !onEndTimeChange ||
-      !onDateChange
-    ) {
+    if (!onStartTimeChange || !onEndTimeChange || !onDateChange) {
       return null;
     }
+
+    // Use a default date for the picker when time is null
+    const pickerDate = startTime || new Date();
 
     return (
       <View style={styles.field}>
         <CardBasedDateTimePicker
-          date={startTime}
+          date={pickerDate}
           startTime={startTime}
           endTime={endTime}
           onDateChange={onDateChange}
@@ -53,6 +54,8 @@ export const TaskDateTimeSection: React.FC<TaskDateTimeSectionProps> = ({
           label={label || 'Date & Time'}
           mode="range"
           showDuration={true}
+          hasPickedStartTime={hasPickedStartTime}
+          hasPickedEndTime={hasPickedEndTime}
         />
       </View>
     );

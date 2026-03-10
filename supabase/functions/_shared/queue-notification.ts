@@ -2,6 +2,7 @@
  * Helper function to queue notifications with deduplication
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { generateDeduplicationKey } from './notification-helpers.ts';
 

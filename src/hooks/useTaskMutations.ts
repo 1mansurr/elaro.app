@@ -159,9 +159,8 @@ export const useCompleteTask = () => {
     onSettled: async () => {
       // Only invalidate when online - offline changes are in the queue
       if (isOnline) {
-        const { invalidateTaskQueries } = await import(
-          '@/utils/queryInvalidation'
-        );
+        const { invalidateTaskQueries } =
+          await import('@/utils/queryInvalidation');
         await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
       }
     },
@@ -184,9 +183,8 @@ export const useCompleteTask = () => {
       // Cancel local notifications for this task (skip for recurring lectures)
       if (!skipNotificationCancellation) {
         try {
-          const { notificationService } = await import(
-            '@/services/notifications'
-          );
+          const { notificationService } =
+            await import('@/services/notifications');
           await notificationService.cancelItemReminders(taskId);
         } catch (error) {
           console.error(
@@ -317,9 +315,8 @@ export const useDeleteTask = () => {
     onSettled: async () => {
       // Only invalidate when online - offline changes are in the queue
       if (isOnline) {
-        const { invalidateTaskQueries } = await import(
-          '@/utils/queryInvalidation'
-        );
+        const { invalidateTaskQueries } =
+          await import('@/utils/queryInvalidation');
         await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
       }
     },
@@ -338,9 +335,8 @@ export const useDeleteTask = () => {
 
       // Cancel local notifications for this task
       try {
-        const { notificationService } = await import(
-          '@/services/notifications'
-        );
+        const { notificationService } =
+          await import('@/services/notifications');
         await notificationService.cancelItemReminders(taskId);
       } catch (error) {
         console.error(

@@ -1,5 +1,6 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 interface CrashRateBaseline {
   averageCrashRate: number;
@@ -23,8 +24,11 @@ interface CrashRateAlert {
  * You'll need to set SENTRY_ORG, SENTRY_PROJECT, and SENTRY_API_TOKEN in Supabase secrets.
  */
 async function calculateBaseline(): Promise<CrashRateBaseline> {
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const SENTRY_ORG = Deno.env.get('SENTRY_ORG');
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const SENTRY_PROJECT = Deno.env.get('SENTRY_PROJECT') || 'elaro';
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const SENTRY_API_TOKEN = Deno.env.get('SENTRY_API_TOKEN');
 
   if (!SENTRY_ORG || !SENTRY_API_TOKEN) {
@@ -129,9 +133,11 @@ function checkCrashRate(
   };
 }
 
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -151,7 +157,10 @@ serve(async req => {
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
       },
     );
   } catch (error) {
@@ -162,7 +171,10 @@ serve(async req => {
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
       },
     );
   }

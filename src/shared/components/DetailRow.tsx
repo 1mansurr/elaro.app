@@ -23,9 +23,9 @@ export const DetailRow: React.FC<DetailRowProps> = ({
   onPress,
   rightElement,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
-  const defaultIconBg = theme.isDark ? '#283039' : '#EFF6FF';
+  const defaultIconBg = isDark ? '#283039' : '#EFF6FF';
   const finalIconBg = iconBgColor || defaultIconBg;
 
   const content = (
@@ -33,7 +33,7 @@ export const DetailRow: React.FC<DetailRowProps> = ({
       style={[
         styles.container,
         onPress && {
-          backgroundColor: theme.isDark ? 'transparent' : 'transparent',
+          backgroundColor: isDark ? 'transparent' : 'transparent',
         },
       ]}>
       <View
@@ -46,22 +46,18 @@ export const DetailRow: React.FC<DetailRowProps> = ({
         <Ionicons
           name={icon}
           size={24}
-          color={theme.isDark && !iconColor ? '#FFFFFF' : iconColor}
+          color={isDark && !iconColor ? '#FFFFFF' : iconColor}
         />
       </View>
       <View style={styles.textContainer}>
-        <Text
-          style={[
-            styles.title,
-            { color: theme.isDark ? '#FFFFFF' : '#111418' },
-          ]}>
+        <Text style={[styles.title, { color: isDark ? '#FFFFFF' : '#111418' }]}>
           {title}
         </Text>
         {subtitle && (
           <Text
             style={[
               styles.subtitle,
-              { color: theme.isDark ? '#9DABB9' : '#6B7280' },
+              { color: isDark ? '#9DABB9' : '#6B7280' },
             ]}>
             {subtitle}
           </Text>
@@ -79,7 +75,7 @@ export const DetailRow: React.FC<DetailRowProps> = ({
         style={[
           styles.touchable,
           {
-            backgroundColor: theme.isDark ? 'transparent' : 'transparent',
+            backgroundColor: isDark ? 'transparent' : 'transparent',
           },
         ]}>
         {content}

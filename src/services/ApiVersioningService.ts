@@ -5,6 +5,12 @@
  * for client applications using the ELARO API.
  */
 
+import Constants from 'expo-constants';
+import {
+  parseJsonSafely,
+  parseResponseJsonSafely,
+} from '@/utils/safeJsonParser';
+
 export interface VersionInfo {
   version: string;
   isSupported: boolean;
@@ -25,6 +31,8 @@ export interface ApiResponse<T = unknown> {
   deprecationWarning?: boolean;
   sunsetDate?: string;
   migrationGuide?: string;
+  skipped?: boolean;
+  details?: unknown;
 }
 
 export class ApiVersioningService {
@@ -34,7 +42,10 @@ export class ApiVersioningService {
   private baseUrl: string;
 
   private constructor() {
-    this.baseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    this.baseUrl =
+      Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
+      process.env.EXPO_PUBLIC_SUPABASE_URL ||
+      '';
   }
 
   static getInstance(): ApiVersioningService {
@@ -77,13 +88,29 @@ export class ApiVersioningService {
       );
 
       if (response.ok) {
-        const data = await response.json();
-        return data.supportedVersions || this.supportedVersions;
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          try {
+            // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+            const data = await parseResponseJsonSafely(response);
+            // NULL SAFETY: If data is null (empty response), fall back to default versions
+            if (
+              data &&
+              typeof data === 'object' &&
+              'supportedVersions' in data
+            ) {
+              return data.supportedVersions || this.supportedVersions;
+            }
+          } catch (error) {
+            console.warn('Failed to parse version response as JSON:', error);
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to fetch supported versions:', error);
     }
 
+    // NULL SAFETY: Always return fallback versions if parsing fails or returns null
     return this.supportedVersions;
   }
 
@@ -109,7 +136,16 @@ export class ApiVersioningService {
       );
 
       if (response.ok) {
-        return await response.json();
+        const contentType = response.headers.get('content-type');
+        if (contentType?.includes('application/json')) {
+          try {
+            // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+            return await parseResponseJsonSafely(response);
+          } catch (error) {
+            console.warn('Failed to parse version info as JSON:', error);
+            return null;
+          }
+        }
       }
     } catch (error) {
       console.warn('Failed to fetch version info:', error);
@@ -195,18 +231,35 @@ export class ApiVersioningService {
             'Gateway Timeout: The server did not respond in time. Please try again.';
         }
 
-        if (hasJsonContent && responseText && responseText.trim()) {
+        if (hasJsonContent && responseText) {
           try {
-            const parsed = JSON.parse(responseText);
-            errorMessage =
-              parsed.message ||
-              parsed.error?.message ||
-              parsed.error ||
-              errorMessage;
-            errorCode = parsed.code || parsed.error?.code;
+            // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+            const parsed = parseJsonSafely(
+              responseText,
+              endpoint,
+              response.status,
+            );
+            if (parsed) {
+              // Handle new error format: { ok: false, error: "...", details: {...} }
+              if (parsed.ok === false) {
+                errorMessage = parsed.error || parsed.message || errorMessage;
+                errorCode = parsed.error || parsed.code;
+              } else {
+                errorMessage =
+                  parsed.message ||
+                  parsed.error?.message ||
+                  parsed.error ||
+                  errorMessage;
+                errorCode = parsed.code || parsed.error?.code;
+              }
+            }
           } catch (parseError) {
             // If we can't parse error, use status text or default message
-            console.warn('Failed to parse error response:', parseError);
+            const errorMsg =
+              parseError instanceof Error
+                ? parseError.message
+                : 'Failed to parse error response';
+            console.warn('Failed to parse error response:', errorMsg);
             if (isTimeout && errorMessage.includes('Unknown error')) {
               errorMessage =
                 'Gateway Timeout: The server did not respond in time. Please try again.';
@@ -225,26 +278,51 @@ export class ApiVersioningService {
       let data: any = {};
 
       if (hasJsonContent) {
-        if (responseText && responseText.trim()) {
-          try {
-            data = JSON.parse(responseText);
-          } catch (parseError) {
-            console.warn('Failed to parse response as JSON:', parseError);
-            return {
-              error: 'Invalid response format',
-              message: 'Server returned invalid JSON',
-            };
-          }
-        } else {
-          // Empty JSON response is valid
-          data = {};
+        try {
+          // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+          const parsed = parseJsonSafely(
+            responseText,
+            endpoint,
+            response.status,
+          );
+          // If parsing returns null (empty response), use empty object
+          data = parsed ?? {};
+        } catch (parseError) {
+          // If parsing fails, return error response
+          const errorMessage =
+            parseError instanceof Error
+              ? parseError.message
+              : 'Server returned invalid JSON';
+          console.warn('Failed to parse response as JSON:', errorMessage);
+          return {
+            error: 'Invalid response format',
+            message: errorMessage,
+            code: 'PARSE_ERROR',
+          };
         }
       } else if (responseText) {
         // Non-JSON response with content
         return {
           error: 'Unexpected response format',
           message: `Server returned ${contentType || 'unknown'} content`,
-          data: responseText,
+          code: 'INVALID_CONTENT_TYPE',
+        } as ApiResponse<T>;
+      }
+
+      // Handle new response format: check for ok, skipped fields
+      // Treat skipped: true as success (race condition safe)
+      if (data.skipped === true) {
+        return {
+          data: data as T,
+        };
+      }
+
+      // Check for error in new format (ok: false)
+      if (data.ok === false) {
+        return {
+          error: data.error || 'Request failed',
+          message: data.details?.message || data.error || 'Request failed',
+          code: data.error,
         };
       }
 
@@ -259,6 +337,43 @@ export class ApiVersioningService {
           sunsetDate,
           migrationGuide,
         });
+      }
+
+      // Handle new response format: check for ok, skipped fields (before other formats)
+      if (data.ok !== undefined) {
+        // New format: { ok: true/false, skipped: true, error: "...", details: {...} }
+        if (data.skipped === true) {
+          // Treat skipped as success (race condition safe)
+          return {
+            data: data,
+            skipped: true,
+            deprecationWarning: isDeprecated,
+            sunsetDate: sunsetDate || undefined,
+            migrationGuide: migrationGuide || undefined,
+          };
+        }
+        if (data.ok === false) {
+          return {
+            error: data.error || 'Request failed',
+            message:
+              (data.details as { message?: string })?.message ||
+              data.error ||
+              'Request failed',
+            code: data.error,
+            details: data.details,
+            deprecationWarning: isDeprecated,
+            sunsetDate: sunsetDate || undefined,
+            migrationGuide: migrationGuide || undefined,
+          };
+        }
+        // ok: true - return data as success
+        return {
+          data: data,
+          ...data,
+          deprecationWarning: isDeprecated,
+          sunsetDate: sunsetDate || undefined,
+          migrationGuide: migrationGuide || undefined,
+        };
       }
 
       // Handle both standard response format and legacy format
@@ -343,6 +458,74 @@ export class ApiVersioningService {
     data?: Record<string, unknown>,
     requireAuth: boolean = true,
   ): Promise<ApiResponse<T>> {
+    // ============================================================================
+    // DEFENSIVE CHECK: Throw synchronous error if data is undefined for device endpoints
+    // ============================================================================
+
+    if (endpoint.includes('devices') || endpoint.includes('users/devices')) {
+      // CRITICAL: Throw synchronous error BEFORE any async operations or fetch calls
+      if (data === undefined || data === null) {
+        throw new Error(
+          'CRITICAL: registerDevice called with undefined/null data. This should never happen - validation must occur before API call.',
+        );
+      }
+
+      // Validate push_token exists and is valid
+      if (data.push_token === undefined || data.push_token === null) {
+        throw new Error(
+          'CRITICAL: push_token is undefined/null in registerDevice payload. Validation must occur before API call.',
+        );
+      }
+
+      if (
+        typeof data.push_token !== 'string' ||
+        data.push_token.trim().length === 0
+      ) {
+        return {
+          error: 'Validation error',
+          message: 'push_token is required and must be a non-empty string',
+          code: 'VALIDATION_ERROR',
+        };
+      }
+
+      // Validate platform exists and is valid
+      if (data.platform === undefined || data.platform === null) {
+        throw new Error(
+          'CRITICAL: platform is undefined/null in registerDevice payload. Validation must occur before API call.',
+        );
+      }
+
+      if (
+        data.platform !== 'ios' &&
+        data.platform !== 'android' &&
+        data.platform !== 'web'
+      ) {
+        return {
+          error: 'Validation error',
+          message: 'platform must be ios, android, or web',
+          code: 'VALIDATION_ERROR',
+        };
+      }
+
+      // Ensure JSON.stringify will never receive undefined values
+      // This is a final safety check before stringification
+      const safeData: Record<string, unknown> = {
+        push_token: data.push_token, // Guaranteed to be string
+        platform: data.platform, // Guaranteed to be valid enum
+        ...(data.updated_at ? { updated_at: data.updated_at } : {}),
+      };
+
+      return this.request<T>(
+        endpoint,
+        {
+          method: 'POST',
+          body: JSON.stringify(safeData), // Safe: no undefined values
+        },
+        requireAuth,
+      );
+    }
+
+    // For non-device endpoints, use standard handling
     return this.request<T>(
       endpoint,
       {

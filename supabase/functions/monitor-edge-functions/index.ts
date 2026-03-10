@@ -7,9 +7,11 @@
  * Runs: Daily (via cron or scheduled trigger)
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
@@ -18,18 +20,21 @@ import {
 } from '../_shared/function-invocation-tracker.ts';
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
   await logger.info('Starting edge function monitoring', {}, traceContext);
 
   try {
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-    );
+    // @ts-expect-error - Deno.env is available at runtime in Deno
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    // @ts-expect-error - Deno.env is available at runtime in Deno
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
     // Check high-frequency functions
     const highFrequency = await checkHighFrequencyFunctions(supabaseAdmin);
@@ -126,7 +131,10 @@ serve(async (req: Request) => {
     );
 
     return new Response(JSON.stringify(summary), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...getCorsHeaders(origin),
+        'Content-Type': 'application/json',
+      },
       status: 200,
     });
   } catch (error) {
@@ -144,7 +152,10 @@ serve(async (req: Request) => {
         message: error instanceof Error ? error.message : String(error),
       }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
         status: 500,
       },
     );

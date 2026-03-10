@@ -87,12 +87,13 @@ const AddAssignmentScreen = () => {
   const [submissionMethod, setSubmissionMethod] =
     useState<SubmissionMethod>(null);
   const [submissionLink, setSubmissionLink] = useState('');
+  const [submissionVenue, setSubmissionVenue] = useState('');
 
-  // Reminders hook
+  // Reminders hook - no preselected reminders
   const { reminders, addReminder, removeReminder, setReminders } = useReminders(
     {
       maxReminders: 2,
-      initialReminders: [120],
+      initialReminders: [],
     },
   );
 
@@ -190,6 +191,9 @@ const AddAssignmentScreen = () => {
         if (draft.submissionLink) {
           setSubmissionLink(draft.submissionLink);
         }
+        if (draft.submissionVenue) {
+          setSubmissionVenue(draft.submissionVenue);
+        }
         if (draft.reminders) {
           setReminders(draft.reminders);
         }
@@ -211,6 +215,7 @@ const AddAssignmentScreen = () => {
         description,
         submissionMethod,
         submissionLink,
+        submissionVenue,
         reminders,
       });
     }, 1000);
@@ -227,6 +232,7 @@ const AddAssignmentScreen = () => {
     description,
     submissionMethod,
     submissionLink,
+    submissionVenue,
     reminders,
   ]);
 
@@ -276,6 +282,7 @@ const AddAssignmentScreen = () => {
           dueDate,
           submissionMethod,
           submissionLink,
+          submissionVenue,
           reminders,
         },
         'assignment',
@@ -318,6 +325,8 @@ const AddAssignmentScreen = () => {
         submission_method: submissionMethod || undefined,
         submission_link:
           submissionMethod === 'Online' ? submissionLink.trim() : undefined,
+        submission_venue:
+          submissionMethod === 'In-person' ? submissionVenue.trim() : undefined,
         due_date: dueDate.toISOString(),
         reminders,
       };
@@ -384,9 +393,8 @@ const AddAssignmentScreen = () => {
         }
       }
 
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'assignment');
 
       await clearDraft('assignment');
@@ -470,8 +478,10 @@ const AddAssignmentScreen = () => {
           onDescriptionChange={setDescription}
           submissionMethod={submissionMethod}
           submissionLink={submissionLink}
+          submissionVenue={submissionVenue}
           onSubmissionMethodChange={setSubmissionMethod}
           onSubmissionLinkChange={setSubmissionLink}
+          onSubmissionVenueChange={setSubmissionVenue}
           reminders={reminders}
           onRemindersChange={setReminders}
           onAddReminder={handleAddReminder}
@@ -489,6 +499,7 @@ const AddAssignmentScreen = () => {
               description,
               submission_method: submissionMethod,
               submission_link: submissionLink,
+              submission_venue: submissionVenue,
               reminders,
             },
             'assignment',

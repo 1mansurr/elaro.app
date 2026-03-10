@@ -151,7 +151,7 @@ describe('ErrorFallback', () => {
     it('should show loading state during retry', async () => {
       const error = new Error('Test error');
       const retry = jest.fn(
-        () => new Promise(resolve => setTimeout(resolve, 100)),
+        () => new Promise<void>(resolve => setTimeout(() => resolve(), 100)),
       );
 
       render(<ErrorFallback error={error} retry={retry} />);

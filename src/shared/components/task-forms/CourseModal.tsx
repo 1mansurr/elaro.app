@@ -32,7 +32,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
   onSelect,
   onClose,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const navigation = useNavigation<NavigationProp>();
 
   const handleAddCourse = () => {
@@ -54,14 +54,14 @@ export const CourseModal: React.FC<CourseModalProps> = ({
           style={[
             styles.modalContent,
             {
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
             },
           ]}
           onStartShouldSetResponder={() => true}>
           <Text
             style={[
               styles.modalTitle,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             Select Course
           </Text>
@@ -71,7 +71,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                 <Text
                   style={[
                     styles.noCoursesText,
-                    { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                    { color: isDark ? '#FFFFFF' : '#111418' },
                   ]}>
                   No courses yet
                 </Text>
@@ -97,7 +97,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                       borderColor:
                         selectedCourse?.id === course.id
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#374151'
                             : '#E5E7EB',
                     },
@@ -113,7 +113,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                         color:
                           selectedCourse?.id === course.id
                             ? COLORS.primary
-                            : theme.isDark
+                            : isDark
                               ? '#FFFFFF'
                               : '#111418',
                         fontWeight:
@@ -129,7 +129,7 @@ export const CourseModal: React.FC<CourseModalProps> = ({
                       style={[
                         styles.courseOptionCode,
                         {
-                          color: theme.isDark ? '#9CA3AF' : '#6B7280',
+                          color: isDark ? '#9CA3AF' : '#6B7280',
                         },
                       ]}>
                       {course.courseCode}

@@ -4,6 +4,8 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { COLORS } from '@/constants/theme';
+import { logSplash } from '@/utils/logger';
+import { addBreadcrumb } from '@/services/monitoring/sentry';
 
 interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
@@ -14,25 +16,64 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
 }) => {
   // 1. Set up the animated value - start at 0.7 opacity for immediate visibility with smooth fade-in
   const fadeAnim = useRef(new Animated.Value(0.7)).current;
+  const hasCalledFinishRef = useRef(false);
 
-  // 2. Define the animation sequence
+  // 2. Guarantee onAnimationFinish is called exactly once, even if animation fails
+  const callFinishOnce = () => {
+    if (!hasCalledFinishRef.current && onAnimationFinish) {
+      hasCalledFinishRef.current = true;
+      onAnimationFinish();
+    }
+  };
+
+  // 3. Define the animation sequence with fail-safe guarantees
   useEffect(() => {
+    logSplash('Splash animation started');
+    addBreadcrumb({ message: 'Splash animation started' });
+
+    // Hard timeout fallback - guarantees callback fires even if animation fails
+    const timeoutId = setTimeout(() => {
+      logSplash('Splash animation timeout fallback triggered');
+      callFinishOnce();
+    }, 1500); // 1.5 seconds max (longer than animation duration)
+
+    // Define animation with useNativeDriver: false to avoid device-specific failures
     const animation = Animated.timing(fadeAnim, {
       toValue: 1, // Animate to full opacity
-      duration: 1000, // Slightly faster since we're starting from visible state
-      useNativeDriver: true, // Use native driver for better performance
+      duration: 1000,
+      useNativeDriver: false, // CRITICAL: Disable native driver to prevent device-specific failures
     });
 
-    animation.start(() => {
-      // Call the callback function once the animation is complete
-      if (onAnimationFinish) {
-        onAnimationFinish();
-      }
-    });
+    // Wrap animation start in try/catch to handle any failures
+    try {
+      animation.start(finished => {
+        // Clear timeout since animation completed
+        clearTimeout(timeoutId);
+
+        // Call finish callback (idempotent via hasCalledFinishRef)
+        // finished is of type { finished: boolean }, not a boolean
+        if (finished?.finished !== false) {
+          logSplash('Splash animation completed successfully');
+          callFinishOnce();
+        } else {
+          // Animation was interrupted - still call finish to unblock app
+          logSplash('Splash animation interrupted - forcing finish');
+          callFinishOnce();
+        }
+      });
+    } catch (error) {
+      // Animation failed to start - clear timeout and immediately unblock
+      logSplash('Splash animation failed to start', { error: String(error) });
+      clearTimeout(timeoutId);
+      callFinishOnce();
+    }
 
     // Cleanup: stop animation if component unmounts
     return () => {
+      clearTimeout(timeoutId);
       animation.stop();
+      // Ensure callback fires on unmount if not already called
+      callFinishOnce();
     };
   }, [fadeAnim, onAnimationFinish]);
 

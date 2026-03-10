@@ -11,21 +11,23 @@
  * - POST /email-system/schedule - Schedule email
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { Resend } from 'https://esm.sh/resend@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-  ERROR_CODES,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
-
-const resend = new Resend(Deno.env.get('RESEND_API_KEY'));
+import {
+  type SupabaseClient,
+  type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+} from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 const WelcomeEmailSchema = z.object({
   userEmail: z.string().email(),
@@ -47,12 +49,31 @@ class EmailService {
     private user: User,
   ) {}
 
+  private getResendClient(): Resend {
+    const apiKey = Deno.env.get('RESEND_API_KEY');
+    if (!apiKey) {
+      throw new AppError(
+        'RESEND_API_KEY is not configured',
+        500,
+        ERROR_CODES.CONFIG_ERROR,
+      );
+    }
+    return new Resend(apiKey);
+  }
+
   async sendWelcomeEmail(data: Record<string, unknown>) {
-    const {
-      userEmail,
-      userFirstName,
-      userId: _userId,
-    } = WelcomeEmailSchema.parse(data);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = WelcomeEmailSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
+    const { userEmail, userFirstName, userId: _userId } = validationResult.data;
 
     const emailContent = `
       <!DOCTYPE html>
@@ -105,6 +126,7 @@ class EmailService {
       </html>
     `;
 
+    const resend = this.getResendClient();
     const { data: emailData, error } = await resend.emails.send({
       from: 'ELARO <noreply@myelaro.com>',
       to: [userEmail],
@@ -133,7 +155,20 @@ class EmailService {
       subject,
       template,
       data: templateData,
-    } = CustomEmailSchema.parse(data);
+    } = (() => {
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = CustomEmailSchema.safeParse(data);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        });
+      }
+      return validationResult.data;
+    })();
 
     // Get email template
     const { data: emailTemplate, error: templateError } =
@@ -160,6 +195,7 @@ class EmailService {
       );
     });
 
+    const resend = this.getResendClient();
     const { data: emailData, error } = await resend.emails.send({
       from: 'ELARO <noreply@myelaro.com>',
       to: [to],
@@ -247,10 +283,12 @@ async function handleScheduleEmail(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

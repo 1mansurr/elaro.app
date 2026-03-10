@@ -57,7 +57,7 @@ export const NotificationHistoryModal: React.FC<
   const swipeOpacity = useRef(new Animated.Value(1)).current;
 
   const handleSwipeGesture = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     // Only handle swipes from the left edge (positive translationX = right swipe)
     if (translationX > 0) {
       const progress = Math.min(1, translationX / screenWidth);
@@ -67,7 +67,8 @@ export const NotificationHistoryModal: React.FC<
   };
 
   const handleSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX, velocityX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
+    const velocityX = event.nativeEvent.velocityX as number;
     const shouldClose = translationX > screenWidth * 0.3 || velocityX > 500;
 
     if (shouldClose) {
@@ -556,9 +557,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     <PanGestureHandler
       onGestureEvent={(event: GestureHandlerGestureEvent) => {
         if (isTask) {
+          const translationX = event.nativeEvent.translationX as number;
           const progress = Math.max(
             0,
-            Math.min(1, event.nativeEvent.translationX / (screenWidth * 0.3)),
+            Math.min(1, translationX / (screenWidth * 0.3)),
           );
           handleSwipeRight(progress);
         }

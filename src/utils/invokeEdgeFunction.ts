@@ -1,9 +1,16 @@
 import { getFreshAccessToken } from './getFreshAccessToken';
-import { FunctionsInvokeOptions } from '@supabase/supabase-js';
+import { FunctionInvokeOptions } from '@supabase/supabase-js';
+import { parseJsonSafely } from './safeJsonParser';
 
 // Get Supabase URL and anon key from environment variables
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
+import Constants from 'expo-constants';
+
+const supabaseUrl =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_URL ||
+  process.env.EXPO_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey =
+  Constants.expoConfig?.extra?.EXPO_PUBLIC_SUPABASE_ANON_KEY ||
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 /**
  * Invokes a Supabase Edge Function with automatic fresh token authentication.
@@ -28,7 +35,7 @@ const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
  */
 export async function invokeEdgeFunctionWithAuth<T = any>(
   functionName: string,
-  options: Omit<FunctionsInvokeOptions, 'headers'> & {
+  options: Omit<FunctionInvokeOptions, 'headers'> & {
     headers?: Record<string, string>;
   } = {},
 ): Promise<{ data: T | null; error: any }> {
@@ -63,43 +70,88 @@ export async function invokeEdgeFunctionWithAuth<T = any>(
     if (!response.ok) {
       // Try to parse error response
       try {
-        const errorData = JSON.parse(responseText);
+        // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+        const errorData = parseJsonSafely(
+          responseText,
+          response.url,
+          response.status,
+        );
+        if (errorData) {
+          error = {
+            message:
+              errorData.message ||
+              `Edge Function returned a non-2xx status code`,
+            context: {
+              status: response.status,
+              statusText: response.statusText,
+              ...errorData,
+            },
+          };
+        } else {
+          // No valid JSON body, create error from status
+          error = {
+            message: `Edge Function returned a non-2xx status code`,
+            context: {
+              status: response.status,
+              statusText: response.statusText,
+              body: responseText || null,
+            },
+          };
+        }
+      } catch (parseError) {
+        // If parsing fails, create error from status
         error = {
           message:
-            errorData.message || `Edge Function returned a non-2xx status code`,
+            parseError instanceof Error
+              ? parseError.message
+              : `Edge Function returned a non-2xx status code`,
           context: {
             status: response.status,
             statusText: response.statusText,
-            ...errorData,
-          },
-        };
-      } catch {
-        error = {
-          message: `Edge Function returned a non-2xx status code`,
-          context: {
-            status: response.status,
-            statusText: response.statusText,
-            body: responseText,
+            body: responseText || null,
           },
         };
       }
     } else {
       // Parse success response
       try {
-        data = responseText ? JSON.parse(responseText) : null;
-      } catch {
-        // If response is not JSON, return as text
-        data = responseText as any;
+        // FIX: Use safe JSON parser to prevent crashes from empty/undefined responses
+        data = parseJsonSafely<T>(responseText, response.url, response.status);
+      } catch (parseError) {
+        // If response is not JSON, return null
+        console.warn(
+          `Failed to parse Edge Function response from ${response.url}:`,
+          parseError instanceof Error ? parseError.message : String(parseError),
+        );
+        data = null;
       }
     }
 
     return { data, error };
   } catch (error) {
     // If token refresh fails or request fails, return error
-    console.error(`❌ Failed to invoke ${functionName}:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Only log errors in development to reduce production noise
+    // Edge function deployment issues are expected during development
+    if (__DEV__) {
+      console.error(`❌ Failed to invoke ${functionName}:`, error);
+    }
+
+    // Create a user-friendly error message
+    let friendlyError: Error;
+    if (
+      errorMessage.includes('Function failed to start') ||
+      errorMessage.includes('please check logs')
+    ) {
+      friendlyError = new Error('Function failed to start (please check logs)');
+    } else {
+      friendlyError = error instanceof Error ? error : new Error(errorMessage);
+    }
+
     return {
       data: null,
-      error: error instanceof Error ? error : new Error(String(error)),
+      error: friendlyError,
     };
   }
 }

@@ -30,7 +30,7 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
   onPress,
   isLocked = false,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const taskTime = format(new Date(task.date), 'h:mm a');
   const isExample =
     'is_example' in task &&
@@ -42,8 +42,8 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
         styles.taskItem,
         isLocked && styles.taskItemLocked,
         {
-          backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-          borderColor: theme.isDark ? '#3B4754' : '#E5E7EB',
+          backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+          borderColor: isDark ? '#3B4754' : '#E5E7EB',
         },
       ]}
       onPress={onPress}
@@ -71,7 +71,7 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
               style={[
                 styles.taskItemTitle,
                 isLocked && styles.taskItemTitleLocked,
-                { color: theme.isDark ? '#FFFFFF' : '#111418' },
+                { color: isDark ? '#FFFFFF' : '#111418' },
               ]}
               numberOfLines={2}>
               {task.name || task.title}
@@ -85,7 +85,7 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
           <Text
             style={[
               styles.taskItemTime,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             {taskTime}
           </Text>
@@ -93,7 +93,7 @@ export const CalendarTaskItem: React.FC<CalendarTaskItemProps> = ({
             <Text
               style={[
                 styles.taskItemCourse,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}
               numberOfLines={1}>
               {task.courses.courseName}

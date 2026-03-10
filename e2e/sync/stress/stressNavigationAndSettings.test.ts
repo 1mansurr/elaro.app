@@ -9,7 +9,7 @@
  */
 
 import { device, element, by, waitFor } from 'detox';
-import { mockSupabaseAuth } from '../../../mocks/mockSupabaseAuth';
+import { mockSupabaseAuth } from '../../mocks/mockSupabaseAuth';
 import { auth } from '../utils/auth';
 import { network } from '../utils/network';
 import { syncHelpers } from '../utils/syncHelpers';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,8 +12,9 @@ import {
   Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Input, PrimaryButton } from '@/shared/components';
@@ -31,6 +32,7 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { LEGAL_URLS } from '@/constants/legal';
 
 type AuthScreenNavProp = StackNavigationProp<RootStackParamList, 'Auth'>;
+type AuthScreenRouteProp = RouteProp<RootStackParamList, 'Auth'>;
 
 interface AuthScreenProps {
   onClose?: () => void;
@@ -39,14 +41,68 @@ interface AuthScreenProps {
 }
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
+const AUTH_MODE_STORAGE_KEY = 'authScreen_lastMode';
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({
   onClose,
   onAuthSuccess,
-  mode: initialMode = 'signup',
+  mode: propMode,
 }) => {
   const navigation = useNavigation<AuthScreenNavProp>();
-  const [mode, setMode] = useState(initialMode);
+  const route = useRoute<AuthScreenRouteProp>();
+
+  // FIX 1: Read mode from route params first, then props, then persisted state, never default to 'signup'
+  const [mode, setMode] = useState<'signup' | 'signin'>('signin'); // Safe default to signin
+  const [modeInitialized, setModeInitialized] = useState(false);
+
+  // Initialize mode from route params, props, or persisted state
+  useEffect(() => {
+    const initializeMode = async () => {
+      if (modeInitialized) return;
+
+      // Priority 1: Route params (explicit navigation)
+      const routeMode = route.params?.mode;
+      if (routeMode) {
+        setMode(routeMode);
+        await AsyncStorage.setItem(AUTH_MODE_STORAGE_KEY, routeMode);
+        setModeInitialized(true);
+        return;
+      }
+
+      // Priority 2: Props (when used as component)
+      if (propMode) {
+        setMode(propMode);
+        await AsyncStorage.setItem(AUTH_MODE_STORAGE_KEY, propMode);
+        setModeInitialized(true);
+        return;
+      }
+
+      // Priority 3: Persisted state (last known mode)
+      try {
+        const persistedMode = await AsyncStorage.getItem(AUTH_MODE_STORAGE_KEY);
+        if (persistedMode === 'signup' || persistedMode === 'signin') {
+          setMode(persistedMode);
+          setModeInitialized(true);
+          return;
+        }
+      } catch (error) {
+        console.warn('Failed to read persisted auth mode:', error);
+      }
+
+      // Priority 4: Default to signin (never silently default to signup)
+      setMode('signin');
+      setModeInitialized(true);
+    };
+
+    initializeMode();
+  }, [route.params?.mode, propMode, modeInitialized]);
+
+  // Persist mode changes
+  useEffect(() => {
+    if (modeInitialized) {
+      AsyncStorage.setItem(AUTH_MODE_STORAGE_KEY, mode).catch(() => {});
+    }
+  }, [mode, modeInitialized]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');

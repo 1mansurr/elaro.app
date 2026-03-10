@@ -19,6 +19,7 @@ import {
   GestureHandlerStateChangeEvent,
 } from 'react-native-gesture-handler';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -27,6 +28,8 @@ import { PrimaryButton, SecondaryButton } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { AppError } from '@/utils/AppError';
 import { showToast } from '@/utils/showToast';
+import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
+import { RootStackParamList } from '@/types/navigation';
 import {
   COLORS,
   FONT_SIZES,
@@ -40,9 +43,9 @@ const { width: screenWidth } = Dimensions.get('window');
 const EDGE_SWIPE_THRESHOLD = 50;
 
 const DeleteAccountScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { user, signOut } = useAuth();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   const [confirmationText, setConfirmationText] = useState('');
@@ -55,7 +58,7 @@ const DeleteAccountScreen = () => {
   const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -64,7 +67,7 @@ const DeleteAccountScreen = () => {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -102,11 +105,11 @@ const DeleteAccountScreen = () => {
   };
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const isConfirmationValid =
     confirmationText.trim().toUpperCase() === 'DELETE';
@@ -126,6 +129,10 @@ const DeleteAccountScreen = () => {
           onPress: async () => {
             setIsDeleting(true);
             try {
+              // Call the deletion function
+              // The backend will sign out the user (see soft-delete-account function),
+              // which will trigger onAuthStateChange and AppNavigator will
+              // automatically switch from AuthenticatedNavigator to AuthNavigator
               const { data, error } = await supabase.functions.invoke(
                 'soft-delete-account',
                 {
@@ -135,31 +142,48 @@ const DeleteAccountScreen = () => {
                 },
               );
 
-              if (error) throw new AppError('Failed to delete account.');
+              if (error) {
+                // Log the full error details for debugging
+                console.error('Account deletion error details:', {
+                  error,
+                  message: error.message,
+                  context: error.context,
+                  code: error.code,
+                });
 
+                // Use error mapping utilities to show user-friendly error message
+                const errorTitle = getErrorTitle(error);
+                const errorMessage = mapErrorCodeToMessage(error);
+
+                setIsDeleting(false);
+                Alert.alert(errorTitle, errorMessage);
+                return;
+              }
+
+              // Show success message - backend will sign out automatically
+              // The alert will be shown before the component unmounts
               Alert.alert(
                 'Account Scheduled for Deletion',
                 'Your account has been scheduled for deletion. You have 7 days to change your mind. Simply log in again within 7 days to cancel the deletion.',
                 [
                   {
                     text: 'OK',
-                    onPress: async () => {
-                      await signOut();
+                    onPress: () => {
+                      // Backend sign-out will handle navigation automatically
+                      // AppNavigator will switch to AuthNavigator when session becomes null
                     },
                   },
                 ],
               );
             } catch (error) {
               console.error('Error deleting account:', error);
-              showToast({
-                type: 'error',
-                message:
-                  error instanceof Error
-                    ? error.message
-                    : 'Failed to delete account',
-              });
-            } finally {
               setIsDeleting(false);
+
+              // Use error mapping utilities for better error messages
+              const errorTitle = getErrorTitle(error);
+              const errorMessage = mapErrorCodeToMessage(error);
+
+              Alert.alert(errorTitle, errorMessage);
             }
           },
         },
@@ -187,36 +211,12 @@ const DeleteAccountScreen = () => {
           style={styles.scrollView}
           contentContainerStyle={styles.content}
           showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View
-            style={[
-              styles.header,
-              {
-                backgroundColor: bgColor,
-                borderBottomColor: borderColor,
-                paddingTop: SPACING.md,
-              },
-            ]}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="arrow-back-ios" size={20} color={textColor} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: textColor }]}>
-              Delete Account
-            </Text>
-            <View style={styles.headerSpacer} />
-          </View>
-
           {/* Warning Header */}
           <View
             style={[
               styles.warningHeader,
               {
-                backgroundColor: theme.isDark
-                  ? 'rgba(239, 68, 68, 0.1)'
-                  : '#FFF5F5',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FFF5F5',
               },
             ]}>
             <Ionicons name="warning" size={64} color="#EF4444" />
@@ -275,9 +275,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.gracePeriodInfo,
               {
-                backgroundColor: theme.isDark
-                  ? 'rgba(59, 130, 246, 0.1)'
-                  : '#F0F5FF',
+                backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#F0F5FF',
               },
             ]}>
             <Ionicons name="time-outline" size={24} color={COLORS.primary} />
@@ -285,7 +283,7 @@ const DeleteAccountScreen = () => {
               <Text
                 style={[
                   styles.gracePeriodTitle,
-                  { color: theme.isDark ? '#93C5FD' : COLORS.primary },
+                  { color: isDark ? '#93C5FD' : COLORS.primary },
                 ]}>
                 7-Day Grace Period
               </Text>
@@ -334,9 +332,7 @@ const DeleteAccountScreen = () => {
             style={[
               styles.checkboxContainer,
               {
-                backgroundColor: theme.isDark
-                  ? 'rgba(239, 68, 68, 0.1)'
-                  : '#FFF5F5',
+                backgroundColor: isDark ? 'rgba(239, 68, 68, 0.1)' : '#FFF5F5',
                 borderColor: borderColor,
               },
             ]}
@@ -377,7 +373,7 @@ const DeleteAccountScreen = () => {
                   color: textColor,
                 },
                 isConfirmationValid && {
-                  backgroundColor: theme.isDark
+                  backgroundColor: isDark
                     ? 'rgba(16, 185, 129, 0.1)'
                     : '#F0FFF4',
                 },
@@ -408,12 +404,12 @@ const DeleteAccountScreen = () => {
               onPress={handleDeleteAccount}
               disabled={!canDelete || isDeleting}
               loading={isDeleting}
-              style={[
+              style={StyleSheet.flatten([
                 styles.deleteButton,
                 {
                   backgroundColor: canDelete ? '#EF4444' : textSecondaryColor,
                 },
-              ]}
+              ])}
             />
           </View>
 
@@ -453,30 +449,6 @@ const styles = StyleSheet.create({
   content: {
     padding: SPACING.md,
     paddingBottom: 200, // Extra padding so delete button sits above nav bar
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.md,
-    paddingBottom: SPACING.md,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    flex: 1,
-    textAlign: 'center',
-    paddingRight: 40,
-  },
-  headerSpacer: {
-    width: 40,
   },
   warningHeader: {
     alignItems: 'center',

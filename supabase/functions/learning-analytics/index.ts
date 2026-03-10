@@ -12,18 +12,20 @@
  * - GET /learning-analytics/retention - Get knowledge retention metrics
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler } from '../api-v2/_handler-utils.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Learning Analytics service class
@@ -58,7 +60,7 @@ class LearningAnalyticsService {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const sessionDates = sessions.map(s => {
+    const sessionDates = sessions.map((s: { session_date: string }) => {
       const date = new Date(s.session_date);
       date.setHours(0, 0, 0, 0);
       return date;
@@ -66,7 +68,9 @@ class LearningAnalyticsService {
 
     // Calculate current streak (consecutive days from today backwards)
     const checkDate = new Date(today);
-    while (sessionDates.some(d => d.getTime() === checkDate.getTime())) {
+    while (
+      sessionDates.some((d: Date) => d.getTime() === checkDate.getTime())
+    ) {
       currentStreak++;
       checkDate.setDate(checkDate.getDate() - 1);
     }
@@ -118,12 +122,21 @@ class LearningAnalyticsService {
 
     // Calculate metrics
     const totalSessions = sessions.length;
-    const srsSessions = sessions.filter(s => s.has_spaced_repetition).length;
+    const srsSessions = sessions.filter(
+      (s: { has_spaced_repetition?: boolean }) => s.has_spaced_repetition,
+    ).length;
     const averageQuality =
       srsData.length > 0
-        ? srsData.reduce((sum, s) => sum + s.quality_rating, 0) / srsData.length
+        ? srsData.reduce(
+            (sum: number, s: { quality_rating: number }) =>
+              sum + s.quality_rating,
+            0,
+          ) / srsData.length
         : 0;
-    const totalReviews = srsData.reduce((sum, s) => sum + s.review_count, 0);
+    const totalReviews = srsData.reduce(
+      (sum: number, s: { review_count: number }) => sum + s.review_count,
+      0,
+    );
 
     return {
       total_sessions: totalSessions,
@@ -164,35 +177,52 @@ class LearningAnalyticsService {
       throw handleDbError(courseError);
     }
 
-    const courseProgress = courses.map(course => {
-      const activeAssignments = course.assignments.filter(a => !a.deleted_at);
-      const activeSessions = course.study_sessions.filter(s => !s.deleted_at);
+    const courseProgress = courses.map(
+      (course: {
+        id: string;
+        course_name: string;
+        course_code: string;
+        assignments: Array<{ deleted_at?: string | null; due_date: string }>;
+        study_sessions: Array<{
+          deleted_at?: string | null;
+          session_date: string;
+        }>;
+      }) => {
+        const activeAssignments = course.assignments.filter(
+          (a: { deleted_at?: string | null }) => !a.deleted_at,
+        );
+        const activeSessions = course.study_sessions.filter(
+          (s: { deleted_at?: string | null }) => !s.deleted_at,
+        );
 
-      const upcomingAssignments = activeAssignments.filter(
-        a => new Date(a.due_date) > new Date(),
-      ).length;
+        const upcomingAssignments = activeAssignments.filter(
+          (a: { due_date: string }) => new Date(a.due_date) > new Date(),
+        ).length;
 
-      const recentSessions = activeSessions.filter(s => {
-        const sessionDate = new Date(s.session_date);
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        return sessionDate >= sevenDaysAgo;
-      }).length;
+        const recentSessions = activeSessions.filter(
+          (s: { session_date: string }) => {
+            const sessionDate = new Date(s.session_date);
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            return sessionDate >= sevenDaysAgo;
+          },
+        ).length;
 
-      return {
-        course_id: course.id,
-        course_name: course.course_name,
-        course_code: course.course_code,
-        total_assignments: activeAssignments.length,
-        upcoming_assignments: upcomingAssignments,
-        total_sessions: activeSessions.length,
-        recent_sessions: recentSessions,
-        activity_score: this.calculateActivityScore(
-          activeSessions,
-          activeAssignments,
-        ),
-      };
-    });
+        return {
+          course_id: course.id,
+          course_name: course.course_name,
+          course_code: course.course_code,
+          total_assignments: activeAssignments.length,
+          upcoming_assignments: upcomingAssignments,
+          total_sessions: activeSessions.length,
+          recent_sessions: recentSessions,
+          activity_score: this.calculateActivityScore(
+            activeSessions,
+            activeAssignments,
+          ),
+        };
+      },
+    );
 
     return courseProgress;
   }
@@ -216,15 +246,15 @@ class LearningAnalyticsService {
     const lastMonth = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     const weeklySessions = sessions.filter(
-      s => new Date(s.session_date) >= lastWeek,
+      (s: { session_date: string }) => new Date(s.session_date) >= lastWeek,
     ).length;
     const monthlySessions = sessions.filter(
-      s => new Date(s.session_date) >= lastMonth,
+      (s: { session_date: string }) => new Date(s.session_date) >= lastMonth,
     ).length;
 
     // Calculate study patterns
     const studyDays = new Set(
-      sessions.map(s => {
+      sessions.map((s: { session_date: string }) => {
         const date = new Date(s.session_date);
         return date.toISOString().split('T')[0];
       }),
@@ -256,17 +286,24 @@ class LearningAnalyticsService {
 
     // Calculate retention metrics
     const totalItems = srsData.length;
-    const masteredItems = srsData.filter(s => s.quality_rating >= 4).length;
-    const strugglingItems = srsData.filter(s => s.quality_rating <= 2).length;
+    const masteredItems = srsData.filter(
+      (s: { quality_rating: number }) => s.quality_rating >= 4,
+    ).length;
+    const strugglingItems = srsData.filter(
+      (s: { quality_rating: number }) => s.quality_rating <= 2,
+    ).length;
 
     const now = new Date();
     const dueForReview = srsData.filter(
-      s => new Date(s.next_review_at) <= now,
+      (s: { next_review_at: string }) => new Date(s.next_review_at) <= now,
     ).length;
 
     const averageReviewCount =
       totalItems > 0
-        ? srsData.reduce((sum, s) => sum + s.review_count, 0) / totalItems
+        ? srsData.reduce(
+            (sum: number, s: { review_count: number }) => sum + s.review_count,
+            0,
+          ) / totalItems
         : 0;
 
     return {
@@ -284,7 +321,7 @@ class LearningAnalyticsService {
     sessions: Array<{ session_date: string }>,
     assignments: Array<{ due_date: string }>,
   ): number {
-    const recentSessions = sessions.filter(s => {
+    const recentSessions = sessions.filter((s: { session_date: string }) => {
       const sessionDate = new Date(s.session_date);
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -415,10 +452,12 @@ function getHandler(action: string | null) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

@@ -1,6 +1,8 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 
 /**
  * Check notification system health
@@ -70,10 +72,12 @@ interface HealthCheckResponse {
   version?: string;
 }
 
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const startTime = Date.now();
@@ -84,7 +88,9 @@ serve(async req => {
   };
 
   const supabaseClient = createClient(
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     Deno.env.get('SUPABASE_URL') ?? '',
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     Deno.env.get('SUPABASE_ANON_KEY') ?? '',
   );
 
@@ -138,7 +144,10 @@ serve(async req => {
 
       return new Response(JSON.stringify(response), {
         status: 503,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
       });
     }
 
@@ -162,7 +171,7 @@ serve(async req => {
 
     // Add response time header
     const headers = {
-      ...corsHeaders,
+      ...getCorsHeaders(origin),
       'Content-Type': 'application/json',
       'X-Response-Time': `${responseTime}ms`,
     };
@@ -183,7 +192,10 @@ serve(async req => {
 
     return new Response(JSON.stringify(response), {
       status: 503,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: {
+        ...getCorsHeaders(origin),
+        'Content-Type': 'application/json',
+      },
     });
   }
 });

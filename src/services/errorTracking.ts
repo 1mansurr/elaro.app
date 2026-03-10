@@ -1,6 +1,6 @@
 // Sentry is temporarily disabled - make it optional
 // Import types even if module might not be available at runtime
-import type { Event, EventHint } from '@sentry/react-native';
+import type { Event } from '@sentry/react-native';
 
 type SentryModule = {
   init?: (options: {
@@ -11,7 +11,7 @@ type SentryModule = {
     tracesSampleRate?: number;
     enableAutoSessionTracking?: boolean;
     sessionTrackingIntervalMillis?: number;
-    beforeSend?: (event: Event, hint: EventHint) => Event | null;
+    beforeSend?: (event: Event) => Event | null;
   }) => void;
   setTag?: (key: string, value: string) => void;
   captureException?: (
@@ -79,90 +79,94 @@ class ErrorTrackingService {
         'unknown';
       const environment = __DEV__ ? 'development' : 'production';
 
-      Sentry.init({
-        dsn,
-        enabled: !__DEV__, // Disable in development
-        environment,
-        release,
-        tracesSampleRate: __DEV__ ? 1.0 : 0.1, // 100% in dev, 10% in prod
-        enableAutoSessionTracking: true,
-        sessionTrackingIntervalMillis: 30000, // 30 seconds
-        beforeSend: (event: Event, hint: EventHint) => {
-          // Helper function to hash string (same as hashString method)
-          const hashString = (str: string): string => {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-              const char = str.charCodeAt(i);
-              hash = (hash << 5) - hash + char;
-              hash = hash & hash;
+      if (Sentry.init) {
+        Sentry.init({
+          dsn,
+          enabled: !__DEV__, // Disable in development
+          environment,
+          release,
+          tracesSampleRate: __DEV__ ? 1.0 : 0.1, // 100% in dev, 10% in prod
+          enableAutoSessionTracking: true,
+          sessionTrackingIntervalMillis: 30000, // 30 seconds
+          beforeSend: (event: Event) => {
+            // Helper function to hash string (same as hashString method)
+            const hashString = (str: string): string => {
+              let hash = 0;
+              for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = (hash << 5) - hash + char;
+                hash = hash & hash;
+              }
+              return Math.abs(hash).toString(36).padStart(8, '0');
+            };
+
+            // Helper function to redact PII (same as redactPIIFromObject method)
+            const redactPIIFromObject = (
+              obj: Record<string, unknown>,
+            ): void => {
+              if (!obj || typeof obj !== 'object') return;
+
+              const piiFields = [
+                'email',
+                'phone',
+                'password',
+                'token',
+                'secret',
+                'key',
+                'ssn',
+                'creditCard',
+              ];
+
+              for (const key in obj) {
+                const lowerKey = key.toLowerCase();
+
+                if (piiFields.some(pii => lowerKey.includes(pii))) {
+                  obj[key] = '[REDACTED]';
+                } else if (
+                  typeof obj[key] === 'object' &&
+                  obj[key] !== null &&
+                  !Array.isArray(obj[key])
+                ) {
+                  redactPIIFromObject(obj[key] as Record<string, unknown>);
+                }
+              }
+            };
+
+            // Redact PII from event
+            if (event.user) {
+              if (event.user.id) {
+                event.user.id = hashString(String(event.user.id));
+              }
+              delete event.user.email;
+              delete event.user.username;
             }
-            return Math.abs(hash).toString(36).padStart(8, '0');
-          };
 
-          // Helper function to redact PII (same as redactPIIFromObject method)
-          const redactPIIFromObject = (obj: Record<string, unknown>): void => {
-            if (!obj || typeof obj !== 'object') return;
+            if (event.tags) {
+              delete event.tags.email;
+              delete event.tags.phone;
+              delete event.tags.userId;
+            }
 
-            const piiFields = [
-              'email',
-              'phone',
-              'password',
-              'token',
-              'secret',
-              'key',
-              'ssn',
-              'creditCard',
-            ];
+            if (event.extra) {
+              redactPIIFromObject(event.extra as Record<string, unknown>);
+            }
 
-            for (const key in obj) {
-              const lowerKey = key.toLowerCase();
-
-              if (piiFields.some(pii => lowerKey.includes(pii))) {
-                obj[key] = '[REDACTED]';
-              } else if (
-                typeof obj[key] === 'object' &&
-                obj[key] !== null &&
-                !Array.isArray(obj[key])
+            // Filter out non-critical errors in production
+            if (event.level === 'warning' && event.exception) {
+              const error = event.exception.values?.[0];
+              if (
+                error?.type === 'NetworkError' ||
+                error?.type === 'TimeoutError'
               ) {
-                redactPIIFromObject(obj[key] as Record<string, unknown>);
+                // These are handled by retry logic, don't need to alert
+                return null;
               }
             }
-          };
 
-          // Redact PII from event
-          if (event.user) {
-            if (event.user.id) {
-              event.user.id = hashString(event.user.id);
-            }
-            delete event.user.email;
-            delete event.user.username;
-          }
-
-          if (event.tags) {
-            delete event.tags.email;
-            delete event.tags.phone;
-            delete event.tags.userId;
-          }
-
-          if (event.extra) {
-            redactPIIFromObject(event.extra as Record<string, unknown>);
-          }
-
-          // Filter out non-critical errors in production
-          if (event.level === 'warning' && event.exception) {
-            const error = event.exception.values?.[0];
-            if (
-              error?.type === 'NetworkError' ||
-              error?.type === 'TimeoutError'
-            ) {
-              // These are handled by retry logic, don't need to alert
-              return null;
-            }
-          }
-
-          return event;
-        },
-      });
+            return event;
+          },
+        });
+      }
 
       // Set initial context
       if (Sentry?.setTag) {
@@ -222,9 +226,11 @@ class ErrorTrackingService {
 
     if (context) {
       // Set tags if provided
-      if (context.tags && Sentry.setTag) {
+      if (context.tags && Sentry?.setTag) {
         Object.entries(context.tags).forEach(([key, value]) => {
-          Sentry.setTag(key, value);
+          if (Sentry.setTag) {
+            Sentry.setTag(key, String(value));
+          }
         });
       }
 

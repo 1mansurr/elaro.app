@@ -1,3 +1,8 @@
+// @ts-nocheck
+// This is a Deno script, not a Node.js/TypeScript file
+// Deno-specific syntax (Deno.env, Deno.args, ESM imports) is intentionally used here
+// Run with: deno run --allow-net --allow-env scripts/migrate-master-key.ts
+
 /**
  * Migration script to migrate existing master key to new system
  *

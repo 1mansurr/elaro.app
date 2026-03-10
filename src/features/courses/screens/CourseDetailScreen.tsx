@@ -1,5 +1,5 @@
 // FILE: src/features/courses/screens/CourseDetailScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { QueryStateWrapper } from '@/shared/components';
 import { supabase } from '@/services/supabase';
@@ -39,8 +38,7 @@ const CourseDetailScreen = () => {
   const { courseId } = route.params;
   const { user } = useAuth();
   const { isOnline } = useNetwork();
-  const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
   const {
     data: course,
@@ -52,6 +50,34 @@ const CourseDetailScreen = () => {
   } = useCourseDetail(courseId);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Set navigation header with edit button
+  useLayoutEffect(() => {
+    // Guard: Ensure navigation and courseId are available
+    if (!navigation || !courseId) {
+      return;
+    }
+
+    try {
+      navigation.setOptions({
+        headerRight: () => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('EditCourseModal', { courseId })}
+            style={{ marginRight: 16 }}
+            activeOpacity={0.7}
+            accessibilityLabel="Edit course"
+            accessibilityRole="button">
+            <Ionicons name="create-outline" size={24} color="#135bec" />
+          </TouchableOpacity>
+        ),
+      });
+    } catch (error) {
+      // Silently fail if navigation options can't be set
+      if (__DEV__) {
+        console.warn('Failed to set navigation header options:', error);
+      }
+    }
+  }, [navigation, courseId]);
 
   // Fetch lectures for this course
   const { data: lectures } = useQuery({
@@ -137,38 +163,7 @@ const CourseDetailScreen = () => {
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { backgroundColor: theme.background, paddingTop: insets.top },
-      ]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: theme.background,
-          },
-        ]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={28} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Course Details
-        </Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate('EditCourseModal', { courseId })}
-          style={styles.editButton}
-          activeOpacity={0.7}
-          accessibilityLabel="Edit course"
-          accessibilityRole="button">
-          <Ionicons name="create-outline" size={24} color="#135bec" />
-        </TouchableOpacity>
-      </View>
-
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
       <QueryStateWrapper
         isLoading={isLoading}
         isError={isError}
@@ -386,8 +381,7 @@ const CourseDetailScreen = () => {
               style={[
                 styles.deleteButton,
                 {
-                  backgroundColor:
-                    theme.mode === 'dark' ? '#991b1b20' : '#fee2e2',
+                  backgroundColor: isDark ? '#991b1b20' : '#fee2e2',
                 },
               ]}
               onPress={handleDelete}
@@ -396,13 +390,13 @@ const CourseDetailScreen = () => {
               <Ionicons
                 name="trash-outline"
                 size={20}
-                color={theme.mode === 'dark' ? '#f87171' : '#dc2626'}
+                color={isDark ? '#f87171' : '#dc2626'}
               />
               <Text
                 style={[
                   styles.deleteButtonText,
                   {
-                    color: theme.mode === 'dark' ? '#f87171' : '#dc2626',
+                    color: isDark ? '#f87171' : '#dc2626',
                   },
                 ]}>
                 {isDeleting ? 'Deleting...' : 'Delete Course'}
@@ -427,35 +421,6 @@ const CourseDetailScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: 'transparent',
-  },
-  backButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
-    letterSpacing: -0.015,
-  },
-  editButton: {
-    width: 48,
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 24,
   },
   scrollView: {
     flex: 1,

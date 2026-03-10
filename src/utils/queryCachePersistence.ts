@@ -79,8 +79,10 @@ export async function persistQueryCache(
         fetchStatus: query.state.fetchStatus,
       },
       options: {
-        staleTime: query.options.staleTime,
-        gcTime: query.options.gcTime || query.options.cacheTime, // gcTime is new name, cacheTime is legacy
+        staleTime: (query.options as { staleTime?: number }).staleTime,
+        gcTime:
+          (query.options as { gcTime?: number; cacheTime?: number }).gcTime ||
+          (query.options as { gcTime?: number; cacheTime?: number }).cacheTime, // gcTime is new name, cacheTime is legacy
       },
     }));
 
@@ -108,7 +110,21 @@ export async function restoreQueryCache(
       return;
     }
 
-    const queries: SerializedQuery[] = JSON.parse(serialized);
+    // Guard: Only parse if serialized is valid
+    if (
+      !serialized.trim() ||
+      serialized === 'undefined' ||
+      serialized === 'null'
+    ) {
+      return;
+    }
+
+    let queries: SerializedQuery[];
+    try {
+      queries = JSON.parse(serialized);
+    } catch {
+      return;
+    }
 
     // Restore queries to cache
     queries.forEach((queryData: SerializedQuery) => {

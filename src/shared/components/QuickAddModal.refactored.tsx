@@ -186,7 +186,12 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       try {
         if (taskType === 'assignment') {
           await savePendingTask(
-            { ...base, description: '', dueDate: dateTime, reminders: [120] },
+            {
+              ...base,
+              description: '',
+              dueDate: dateTime.toISOString(),
+              reminders: [120],
+            } as any,
             'assignment',
           );
         } else if (taskType === 'lecture') {
@@ -195,11 +200,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           await savePendingTask(
             {
               ...base,
-              startTime: dateTime,
-              endTime,
+              start_time: dateTime.toISOString(),
+              end_time: endTime.toISOString(),
               recurrence: 'none',
               reminders: [30],
-            },
+            } as any,
             'lecture',
           );
         } else {
@@ -208,10 +213,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               ...base,
               topic: title.trim(),
               description: '',
-              sessionDate: dateTime,
+              session_date: dateTime.toISOString(),
               hasSpacedRepetition: false,
               reminders: [15],
-            },
+            } as any,
             'study_session',
           );
         }
@@ -335,9 +340,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
 
       // Invalidate queries
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient);
 
       onClose();

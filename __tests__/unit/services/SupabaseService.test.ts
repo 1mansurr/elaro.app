@@ -1,4 +1,4 @@
-import { createMockUser, createMockAssignment } from '@tests/utils/testUtils';
+import { createMockUser, createMockAssignment } from '../../utils/testUtils';
 
 // Create a mock supabase client
 const createMockSupabaseClient = () => {

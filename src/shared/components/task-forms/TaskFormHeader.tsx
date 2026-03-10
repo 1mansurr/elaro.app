@@ -17,29 +17,26 @@ export const TaskFormHeader: React.FC<TaskFormHeaderProps> = ({
   showTemplateButton = false,
   onTemplatePress,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.header,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
-          borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
+          borderBottomColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       <TouchableOpacity onPress={onClose} style={styles.headerButton}>
         <Ionicons
           name="close"
           size={24}
-          color={theme.isDark ? '#FFFFFF' : '#111418'}
+          color={isDark ? '#FFFFFF' : '#111418'}
         />
       </TouchableOpacity>
       <Text
-        style={[
-          styles.headerTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
-        ]}>
+        style={[styles.headerTitle, { color: isDark ? '#FFFFFF' : '#111418' }]}>
         {title}
       </Text>
       {showTemplateButton ? (
@@ -47,7 +44,7 @@ export const TaskFormHeader: React.FC<TaskFormHeaderProps> = ({
           <Ionicons
             name="bookmark-outline"
             size={24}
-            color={theme.isDark ? '#FFFFFF' : '#111418'}
+            color={isDark ? '#FFFFFF' : '#111418'}
           />
         </TouchableOpacity>
       ) : (
@@ -64,7 +61,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
-    borderBottomWidth: 1,
+    // borderBottomWidth: 1, // Removed per user request
   },
   headerButton: {
     width: 40,

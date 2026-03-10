@@ -19,6 +19,9 @@
  * ```
  */
 
+// Import the type for use in this file
+import { CircuitBreaker } from '@/utils/circuitBreaker';
+
 // Re-export for backward compatibility
 export { CircuitBreaker } from '@/utils/circuitBreaker';
 

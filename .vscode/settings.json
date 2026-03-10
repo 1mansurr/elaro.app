@@ -1,36 +1,52 @@
 {
-    "git.ignoreLimitWarning": true,
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-workflow.json": "/.github/workflows/*.yml"
-    },
-    "yaml.customTags": [
-        "!And",
-        "!If",
-        "!Not",
-        "!Equals",
-        "!Or",
-        "!FindInMap sequence",
-        "!Base64",
-        "!Cidr",
-        "!Ref",
-        "!Sub",
-        "!GetAtt",
-        "!GetAZs",
-        "!ImportValue",
-        "!Select",
-        "!Split",
-        "!Join sequence"
-    ],
-    "yaml.validate": true,
-    "yaml.completion": true,
-    "[yaml]": {
-        "editor.defaultFormatter": "redhat.vscode-yaml"
-    },
-    "files.associations": {
-        "*.yml": "yaml",
-        ".github/workflows/*.yml": "github-actions"
-    },
-    "github-actions.workflows.pinned.workflows": [
-        ".github/workflows/*.yml"
-    ]
+  "files.associations": {
+    "*.sql": "sql",
+    "**/node_modules/**/package.json": "jsonc",
+    "**/node_modules/**/.eslintrc": "jsonc",
+    "**/node_modules/**/.eslintrc.*": "jsonc",
+    "**/node_modules/**/tsconfig.json": "jsonc"
+  },
+  "[sql]": {
+    "editor.defaultFormatter": null,
+    "mssql.validate": false,
+    "mssql.intelliSense.enableErrorChecking": false
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": null
+  },
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "files.exclude": {
+    "**/node_modules/zod/src": true,
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "search.exclude": {
+    "**/node_modules/zod/src": true,
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/zod/src/**": true,
+    "**/node_modules/zod/src/v3/**": true,
+    "**/node_modules/zod/src/v4/**": true,
+    "**/node_modules/yargs/**": true,
+    "**/node_modules/wonka/**": true,
+    "**/node_modules/wonka/src/**": true
+  },
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "json.schemas": [],
+  "json.validate.enable": true
 }

@@ -25,7 +25,7 @@ const initialCourseData: AddCourseData = {
   endTime: null,
   recurrence: 'none',
   venue: '',
-  reminders: [30], // Default to a 30-minute reminder
+  reminders: [], // No preselected reminders - user must explicitly select
 };
 
 // 3. Create the specific provider for this flow

@@ -5,16 +5,52 @@
     "types": [],
     "baseUrl": "./",
     "module": "esnext",
+    "skipLibCheck": true,
+    "downlevelIteration": true,
     "paths": {
       "@/*": ["src/*"]
     }
   },
+  "include": [
+    "src/**/*",
+    "App.tsx",
+    "index.ts",
+    "scripts/**/*.ts",
+    "e2e/**/*.ts",
+    "e2e/**/*.d.ts"
+  ],
   "exclude": [
     "node_modules",
+    "**/node_modules/**",
+    "**/node_modules/**/*.test.ts",
+    "**/node_modules/**/*.test.tsx",
+    "**/node_modules/**/*.test.js",
+    "**/node_modules/**/*.spec.ts",
+    "**/node_modules/**/*.spec.tsx",
+    "**/node_modules/**/*.spec.js",
+    "**/node_modules/**/test/**",
+    "**/node_modules/**/tests/**",
+    "**/node_modules/**/__tests__/**",
+    "**/node_modules/**/*.d.ts",
+    "**/node_modules/**/tsconfig.json",
+    "node_modules/zod/**",
+    "node_modules/zod/src/**",
+    "node_modules/zod/src/v3/**",
+    "node_modules/zod/src/v3/types.ts",
+    "node_modules/zod/src/v3/helpers/**",
+    "node_modules/zod/src/v4/**",
+    "node_modules/zod/src/v4/core/**",
+    "node_modules/zod/src/v4/mini/tests/**",
+    "node_modules/yargs/**",
+    "node_modules/wonka/**",
+    "node_modules/wonka/src/**",
+    "**/node_modules/wonka/**",
+    "**/node_modules/wonka/src/**",
     "**/__tests__/*",
     "**/*.spec.ts",
     "**/*.spec.tsx",
     "supabase/**/*",
-    "src/future-features/**/*"
+    "src/future-features/**/*",
+    "scripts/migrate-master-key.ts"
   ]
 }

@@ -1,14 +1,18 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders } from '../../_shared/cors.ts';
+import { getCorsHeaders } from '../../_shared/cors.ts';
 import { successResponse, errorResponse } from '../../_shared/response.ts';
-import { AppError, ERROR_CODES } from '../../_shared/function-handler.ts';
+import { AppError } from '../../_shared/function-handler.ts';
+import { ERROR_CODES } from '../../_shared/error-codes.ts';
 import { logger } from '../../_shared/logging.ts';
 import { extractTraceContext } from '../../_shared/tracing.ts';
 import {
   checkRateLimit,
   extractIPAddress,
 } from '../../_shared/rate-limiter.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const MAX_ATTEMPTS = 5;
@@ -44,8 +48,10 @@ const ResetAttemptsSchema = z.object({
 });
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   const traceContext = extractTraceContext(req);
@@ -53,7 +59,7 @@ serve(async (req: Request) => {
 
   try {
     // Rate limiting (by IP for public endpoints)
-    await checkRateLimit('auth-lockout', ipAddress);
+    await checkRateLimit('auth-lockout', ipAddress, 'lockout');
 
     // Create Supabase admin client
     const supabaseAdmin = createClient(
@@ -66,24 +72,40 @@ serve(async (req: Request) => {
     const method = req.method;
 
     // Route to appropriate handler
+    const traceContextTyped = traceContext as unknown as Record<
+      string,
+      unknown
+    >;
     if (method === 'GET' && path.endsWith('/check-lockout')) {
-      return await handleCheckLockout(req, supabaseAdmin, traceContext);
+      return await handleCheckLockout(
+        req,
+        supabaseAdmin,
+        traceContextTyped,
+        origin,
+      );
     } else if (method === 'POST' && path.endsWith('/record-failed-attempt')) {
       return await handleRecordFailedAttempt(
         req,
         supabaseAdmin,
         ipAddress,
-        traceContext,
+        traceContextTyped,
+        origin,
       );
     } else if (method === 'POST' && path.endsWith('/record-successful-login')) {
       return await handleRecordSuccessfulLogin(
         req,
         supabaseAdmin,
         ipAddress,
-        traceContext,
+        traceContextTyped,
+        origin,
       );
     } else if (method === 'POST' && path.endsWith('/reset-attempts')) {
-      return await handleResetAttempts(req, supabaseAdmin, traceContext);
+      return await handleResetAttempts(
+        req,
+        supabaseAdmin,
+        traceContextTyped,
+        origin,
+      );
     } else {
       throw new AppError('Invalid endpoint', 404, ERROR_CODES.NOT_FOUND);
     }
@@ -97,19 +119,25 @@ serve(async (req: Request) => {
     );
 
     if (error instanceof AppError) {
-      return errorResponse(error, error.statusCode);
+      return errorResponse(error, error.statusCode, {}, origin);
     }
 
+    // ZodError should never reach here (caught by safeParse above)
+    // But keep as fallback for safety
     if (error instanceof Error && error.name === 'ZodError') {
       return errorResponse(
-        new AppError('Invalid input data', 400, 'VALIDATION_ERROR'),
+        new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR),
         400,
+        {},
+        origin,
       );
     }
 
     return errorResponse(
       new AppError('Internal server error', 500, ERROR_CODES.INTERNAL_ERROR),
       500,
+      {},
+      origin,
     );
   }
 });
@@ -122,6 +150,7 @@ async function handleCheckLockout(
   req: Request,
   supabaseAdmin: ReturnType<typeof createClient>,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
   const url = new URL(req.url);
   const email = url.searchParams.get('email');
@@ -130,7 +159,22 @@ async function handleCheckLockout(
     throw new AppError('Email parameter is required', 400, 'VALIDATION_ERROR');
   }
 
-  const validatedData = CheckLockoutSchema.parse({ email });
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  const validationResult = CheckLockoutSchema.safeParse({ email });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get user lockout status
   const { data: user, error } = await supabaseAdmin
@@ -147,9 +191,13 @@ async function handleCheckLockout(
         { email: validatedData.email, error: error.code },
         traceContext,
       );
-      return successResponse({
-        isLocked: false,
-      });
+      return successResponse(
+        {
+          isLocked: false,
+        },
+        {},
+        origin,
+      );
     }
     throw new AppError(
       error.message || 'Failed to check lockout status',
@@ -159,9 +207,13 @@ async function handleCheckLockout(
   }
 
   if (!user) {
-    return successResponse({
-      isLocked: false,
-    });
+    return successResponse(
+      {
+        isLocked: false,
+      },
+      {},
+      origin,
+    );
   }
 
   // Check if account is locked
@@ -170,11 +222,15 @@ async function handleCheckLockout(
       (new Date(user.locked_until).getTime() - Date.now()) / 60000,
     );
 
-    return successResponse({
-      isLocked: true,
-      lockedUntil: user.locked_until,
-      minutesRemaining,
-    });
+    return successResponse(
+      {
+        isLocked: true,
+        lockedUntil: user.locked_until,
+        minutesRemaining,
+      },
+      {},
+      origin,
+    );
   }
 
   // If lockout expired, auto-unlock
@@ -184,19 +240,27 @@ async function handleCheckLockout(
       validatedData.email,
       traceContext,
     );
-    return successResponse({
-      isLocked: false,
-      attemptsRemaining: MAX_ATTEMPTS,
-    });
+    return successResponse(
+      {
+        isLocked: false,
+        attemptsRemaining: MAX_ATTEMPTS,
+      },
+      {},
+      origin,
+    );
   }
 
   // Calculate attempts remaining
   const attemptsRemaining = MAX_ATTEMPTS - (user.failed_login_attempts || 0);
 
-  return successResponse({
-    isLocked: false,
-    attemptsRemaining,
-  });
+  return successResponse(
+    {
+      isLocked: false,
+      attemptsRemaining,
+    },
+    {},
+    origin,
+  );
 }
 
 /**
@@ -208,12 +272,59 @@ async function handleRecordFailedAttempt(
   supabaseAdmin: ReturnType<typeof createClient>,
   ipAddress: string,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = RecordFailedAttemptSchema.parse({
-    ...body,
-    ipAddress: body.ipAddress || ipAddress,
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  // PASS 2: Validate body is object before accessing properties
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse(
+      new AppError(
+        'Request body must be an object',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  const bodyObj = body as Record<string, unknown>;
+  const validationResult = RecordFailedAttemptSchema.safeParse({
+    ...bodyObj,
+    ipAddress: bodyObj.ipAddress || ipAddress,
   });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get current failed attempts count
   const { data: user, error: userError } = await supabaseAdmin
@@ -229,7 +340,7 @@ async function handleRecordFailedAttempt(
       { email: validatedData.email },
       traceContext,
     );
-    return successResponse({ recorded: true });
+    return successResponse({ recorded: true }, {}, origin);
   }
 
   const attempts = (user.failed_login_attempts || 0) + 1;
@@ -283,11 +394,15 @@ async function handleRecordFailedAttempt(
     );
   }
 
-  return successResponse({
-    recorded: true,
-    attempts,
-    isLocked: attempts >= MAX_ATTEMPTS,
-  });
+  return successResponse(
+    {
+      recorded: true,
+      attempts,
+      isLocked: attempts >= MAX_ATTEMPTS,
+    },
+    {},
+    origin,
+  );
 }
 
 /**
@@ -299,15 +414,71 @@ async function handleRecordSuccessfulLogin(
   supabaseAdmin: ReturnType<typeof createClient>,
   ipAddress: string,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = RecordSuccessfulLoginSchema.parse({
-    ...body,
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  // PASS 2: Validate body is object before accessing properties
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
+    return errorResponse(
+      new AppError(
+        'Request body must be an object',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  const bodyObj = body as Record<string, unknown>;
+  const validationResult = RecordSuccessfulLoginSchema.safeParse({
+    ...bodyObj,
     deviceInfo: {
-      ...body.deviceInfo,
-      ipAddress: body.deviceInfo?.ipAddress || ipAddress,
+      ...(bodyObj.deviceInfo &&
+      typeof bodyObj.deviceInfo === 'object' &&
+      !Array.isArray(bodyObj.deviceInfo)
+        ? bodyObj.deviceInfo
+        : {}),
+      ipAddress:
+        (bodyObj.deviceInfo &&
+          typeof bodyObj.deviceInfo === 'object' &&
+          !Array.isArray(bodyObj.deviceInfo) &&
+          (bodyObj.deviceInfo as { ipAddress?: unknown }).ipAddress) ||
+        ipAddress,
     },
   });
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   // Get user email
   const { data: user, error: userError } = await supabaseAdmin
@@ -366,7 +537,7 @@ async function handleRecordSuccessfulLogin(
     traceContext,
   );
 
-  return successResponse({ recorded: true });
+  return successResponse({ recorded: true }, {}, origin);
 }
 
 /**
@@ -377,9 +548,41 @@ async function handleResetAttempts(
   req: Request,
   supabaseAdmin: ReturnType<typeof createClient>,
   traceContext: Record<string, unknown>,
+  origin: string | null,
 ): Promise<Response> {
-  const body = await req.json();
-  const validatedData = ResetAttemptsSchema.parse(body);
+  // PASS 1: Crash safety - wrap req.json() in try/catch
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch (error) {
+    return errorResponse(
+      new AppError(
+        'Invalid or missing JSON body',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+      ),
+      400,
+      {},
+      origin,
+    );
+  }
+
+  // PASS 1: Use safeParse to prevent ZodError from crashing worker
+  const validationResult = ResetAttemptsSchema.safeParse(body);
+  if (!validationResult.success) {
+    const zodError = validationResult.error;
+    const flattened = zodError.flatten();
+    return errorResponse(
+      new AppError('Invalid input data', 400, ERROR_CODES.VALIDATION_ERROR, {
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      }),
+      400,
+      {},
+      origin,
+    );
+  }
+  const validatedData = validationResult.data;
 
   await resetFailedAttemptsInternal(
     supabaseAdmin,
@@ -387,7 +590,7 @@ async function handleResetAttempts(
     traceContext,
   );
 
-  return successResponse({ reset: true });
+  return successResponse({ reset: true }, {}, origin);
 }
 
 /**

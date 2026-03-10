@@ -1,7 +1,6 @@
-import {
-  createScheduledHandler,
-  SupabaseClient,
-} from '../_shared/function-handler.ts';
+import { createScheduledHandler } from '../_shared/function-handler.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { logger } from '../_shared/logging.ts';
 import { deliverAlert } from '../_shared/alert-delivery.ts';
 

@@ -105,9 +105,20 @@ class AnalyticsService {
   private async loadFallbackEvents() {
     try {
       const stored = await AsyncStorage.getItem(this.FALLBACK_STORAGE_KEY);
-      if (stored) {
-        this.fallbackEvents = JSON.parse(stored);
-        console.log(`📊 Loaded ${this.fallbackEvents.length} fallback events`);
+      if (
+        stored &&
+        stored.trim() &&
+        stored !== 'undefined' &&
+        stored !== 'null'
+      ) {
+        try {
+          this.fallbackEvents = JSON.parse(stored);
+          console.log(
+            `📊 Loaded ${this.fallbackEvents.length} fallback events`,
+          );
+        } catch {
+          this.fallbackEvents = [];
+        }
       }
     } catch (error) {
       console.error('❌ Failed to load fallback events:', error);

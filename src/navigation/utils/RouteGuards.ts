@@ -49,6 +49,38 @@ export const ROUTES_HIDING_TAB_BAR = [
 ] as const;
 
 /**
+ * Routes that should NEVER be restored from saved navigation state on cold start.
+ * These are temporary screens, modals, flows, or context-dependent screens that
+ * should always start fresh when the app launches.
+ */
+export const NON_RESTORABLE_ROUTES = [
+  // Modal flows
+  'AddCourseFlow',
+  'AddLectureFlow',
+  'AddAssignmentFlow',
+  'AddStudySessionFlow',
+  'TaskDetailModal',
+  'EditCourseModal',
+  'InAppBrowserScreen',
+  // Post-onboarding and first-time screens
+  'PostOnboardingWelcome',
+  'AddCourseFirst',
+  // Subscription and welcome screens
+  'OddityWelcomeScreen',
+  // Study session results
+  'StudyResult',
+  'StudySessionReview',
+  // Auth-related screens (should not persist)
+  'Auth',
+  'ForgotPassword',
+  'ResetPassword',
+  'MFAEnrollmentScreen',
+  'MFAVerificationScreen',
+  // Account management (sensitive, should not persist)
+  'DeleteAccountScreen',
+] as const;
+
+/**
  * Check if a route requires authentication
  */
 export function isAuthenticatedRoute(routeName: string): boolean {
@@ -74,6 +106,13 @@ export function isOnboardingRoute(routeName: string): boolean {
  */
 export function shouldHideTabBar(routeName: string): boolean {
   return (ROUTES_HIDING_TAB_BAR as readonly string[]).includes(routeName);
+}
+
+/**
+ * Check if a route should NOT be restored from saved navigation state
+ */
+export function isNonRestorableRoute(routeName: string): boolean {
+  return (NON_RESTORABLE_ROUTES as readonly string[]).includes(routeName);
 }
 
 /**

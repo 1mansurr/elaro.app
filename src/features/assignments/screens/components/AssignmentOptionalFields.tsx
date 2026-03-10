@@ -14,8 +14,10 @@ interface AssignmentOptionalFieldsProps {
 
   submissionMethod: SubmissionMethod;
   submissionLink: string;
+  submissionVenue?: string;
   onSubmissionMethodChange: (method: SubmissionMethod) => void;
   onSubmissionLinkChange: (link: string) => void;
+  onSubmissionVenueChange?: (venue: string) => void;
 
   reminders: number[];
   onRemindersChange: (reminders: number[]) => void;
@@ -29,8 +31,10 @@ export const AssignmentOptionalFields: React.FC<
   onDescriptionChange,
   submissionMethod,
   submissionLink,
+  submissionVenue = '',
   onSubmissionMethodChange,
   onSubmissionLinkChange,
+  onSubmissionVenueChange,
   reminders,
   onRemindersChange,
   onAddReminder,
@@ -55,8 +59,10 @@ export const AssignmentOptionalFields: React.FC<
       <AssignmentSubmissionSection
         submissionMethod={submissionMethod}
         submissionLink={submissionLink}
+        submissionVenue={submissionVenue}
         onSubmissionMethodChange={onSubmissionMethodChange}
         onSubmissionLinkChange={onSubmissionLinkChange}
+        onSubmissionVenueChange={onSubmissionVenueChange}
       />
 
       <TaskRemindersSection

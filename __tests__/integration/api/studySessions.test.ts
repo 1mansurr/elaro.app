@@ -52,6 +52,8 @@ describe('API Boundary: Study Sessions Edge Function', () => {
         course_id: testCourseId,
         topic: 'Test Topic',
         session_date: new Date().toISOString(),
+        has_spaced_repetition: false,
+        reminders: [],
       };
 
       (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({

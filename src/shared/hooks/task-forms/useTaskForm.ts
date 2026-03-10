@@ -49,8 +49,8 @@ export interface UseTaskFormReturn {
 
   // Draft management
   saveDraft: () => void;
-  loadDraft: () => void;
-  clearDraft: () => void;
+  loadDraft: () => Promise<void>;
+  clearDraft: () => Promise<void>;
 }
 
 const defaultFormData: TaskFormData = {
@@ -69,24 +69,45 @@ export const useTaskForm = (options: UseTaskFormOptions): UseTaskFormReturn => {
   } = options;
 
   const [formData, setFormData] = useState<TaskFormData>(() => {
-    const draft = getDraft(taskType);
-    const baseData = {
+    // Initialize with default data - draft will be loaded asynchronously
+    return {
       ...defaultFormData,
       ...initialData,
-      ...(draft && {
-        title: draft.title || initialData?.title || '',
-        selectedCourse: draft.course || initialData?.selectedCourse || null,
-        dateTime: draft.dateTime
-          ? new Date(draft.dateTime)
-          : initialData?.date || new Date(),
-        reminders: draft.reminders || initialData?.reminders || [],
-      }),
-    };
-    return baseData as TaskFormData;
+    } as TaskFormData;
   });
 
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Load draft on mount
+  useEffect(() => {
+    const loadInitialDraft = async () => {
+      const draft = await getDraft(taskType);
+      if (draft) {
+        setFormData(prev => ({
+          ...prev,
+          title: draft.title || prev.title,
+          selectedCourse: draft.course || prev.selectedCourse,
+          date: draft.dateTime
+            ? new Date(draft.dateTime as string | Date)
+            : prev.date,
+          startTime: draft.dateTime
+            ? new Date(draft.dateTime as string | Date)
+            : prev.startTime,
+          endTime: draft.endTime
+            ? new Date(draft.endTime as string | Date)
+            : prev.endTime,
+          recurrence: draft.recurrence || prev.recurrence,
+          reminders: draft.reminders || prev.reminders,
+          description: draft.description || prev.description,
+          submissionMethod: draft.submissionMethod || prev.submissionMethod,
+          submissionLink: draft.submissionLink || prev.submissionLink,
+          venue: draft.venue || prev.venue,
+        }));
+      }
+    };
+    loadInitialDraft();
+  }, [taskType]);
 
   // Default validation function
   const defaultValidate = useCallback((data: TaskFormData): boolean => {
@@ -146,8 +167,8 @@ export const useTaskForm = (options: UseTaskFormOptions): UseTaskFormReturn => {
   const saveDraftToStorage = useCallback(() => {
     if (!enableDraftAutoSave || !formData.selectedCourse) return;
 
-    const debouncedSave = debounce(() => {
-      saveDraft(taskType, {
+    const debouncedSave = debounce(async () => {
+      await saveDraft(taskType, {
         title: formData.title,
         course: formData.selectedCourse,
         dateTime: formData.date || formData.startTime || new Date(),
@@ -186,16 +207,22 @@ export const useTaskForm = (options: UseTaskFormOptions): UseTaskFormReturn => {
   ]);
 
   // Load draft
-  const loadDraftFromStorage = useCallback(() => {
-    const draft = getDraft(taskType);
+  const loadDraftFromStorage = useCallback(async () => {
+    const draft = await getDraft(taskType);
     if (draft) {
       setFormData(prev => ({
         ...prev,
         title: draft.title || prev.title,
         selectedCourse: draft.course || prev.selectedCourse,
-        date: draft.dateTime ? new Date(draft.dateTime) : prev.date,
-        startTime: draft.dateTime ? new Date(draft.dateTime) : prev.startTime,
-        endTime: draft.endTime ? new Date(draft.endTime) : prev.endTime,
+        date: draft.dateTime
+          ? new Date(draft.dateTime as string | Date)
+          : prev.date,
+        startTime: draft.dateTime
+          ? new Date(draft.dateTime as string | Date)
+          : prev.startTime,
+        endTime: draft.endTime
+          ? new Date(draft.endTime as string | Date)
+          : prev.endTime,
         recurrence: draft.recurrence || prev.recurrence,
         reminders: draft.reminders || prev.reminders,
         description: draft.description || prev.description,
@@ -207,8 +234,8 @@ export const useTaskForm = (options: UseTaskFormOptions): UseTaskFormReturn => {
   }, [taskType]);
 
   // Clear draft
-  const clearDraftFromStorage = useCallback(() => {
-    clearDraft(taskType);
+  const clearDraftFromStorage = useCallback(async () => {
+    await clearDraft(taskType);
   }, [taskType]);
 
   // Handle save

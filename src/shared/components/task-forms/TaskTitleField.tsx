@@ -21,24 +21,21 @@ export const TaskTitleField: React.FC<TaskTitleFieldProps> = ({
   label,
   showCharacterCount = true,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.field}>
       {label && (
         <View style={styles.labelRow}>
           <Text
-            style={[
-              styles.label,
-              { color: theme.isDark ? '#FFFFFF' : '#374151' },
-            ]}>
+            style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
             {label}
           </Text>
           {showCharacterCount && (
             <Text
               style={[
                 styles.characterCount,
-                { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
               ]}>
               {title.length}/{maxLength}
             </Text>

@@ -300,7 +300,7 @@ describe('useSmartPreloading', () => {
       loading: false,
     });
 
-    rerender();
+    rerender(undefined);
 
     act(() => {
       jest.advanceTimersByTime(1000);

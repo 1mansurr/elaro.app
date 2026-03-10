@@ -5,6 +5,7 @@
  * Supports custom schedules per job type, retries, and priorities.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 export type JobStatus =

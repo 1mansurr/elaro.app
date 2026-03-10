@@ -14,7 +14,7 @@
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Session } from '@supabase/supabase-js';
-import { supabase } from '@/services/supabase';
+import { getSupabaseClient } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 
 // Storage keys
@@ -50,10 +50,11 @@ class AuthSyncService {
 
     try {
       // 1. Get session from Supabase (primary source of truth)
+      const supabaseClient = getSupabaseClient();
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession();
+      } = await supabaseClient.auth.getSession();
 
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
@@ -128,10 +129,11 @@ class AuthSyncService {
    */
   async getCurrentSession(): Promise<Session | null> {
     try {
+      const supabaseClient = getSupabaseClient();
       const {
         data: { session },
         error,
-      } = await supabase.auth.getSession();
+      } = await supabaseClient.auth.getSession();
       if (error) {
         console.error('❌ AuthSync: Failed to get session:', error);
         return null;
@@ -154,7 +156,17 @@ class AuthSyncService {
       const cached = await AsyncStorage.getItem(AUTH_STATE_KEY);
       if (!cached) return null;
 
-      const state = JSON.parse(cached);
+      // Guard: Only parse if cached is valid
+      if (!cached.trim() || cached === 'undefined' || cached === 'null') {
+        return null;
+      }
+
+      let state: AuthStateSnapshot;
+      try {
+        state = JSON.parse(cached);
+      } catch {
+        return null;
+      }
 
       // Check version
       if (state.version !== AUTH_STATE_VERSION) {
@@ -164,7 +176,8 @@ class AuthSyncService {
       }
 
       // Check expiration (if token expired, clear cache)
-      if (state.expiresAt && Date.now() / 1000 > state.expiresAt) {
+      const expiresAt = state.session?.expires_at;
+      if (expiresAt && Date.now() / 1000 > expiresAt) {
         console.log('⏰ AuthSync: Cached token expired, clearing');
         await this.clearAuthState();
         return null;

@@ -70,7 +70,7 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
   onMorePress,
   isLocked = false,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const category = getCategoryConfig(task.type);
   const startTime = task.startTime || task.date;
   const endTime = task.endTime;
@@ -90,7 +90,7 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
         styles.card,
         {
           borderLeftColor: category.borderColor,
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
         },
       ]}>
       <View style={styles.content}>
@@ -127,7 +127,7 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
               <Ionicons
                 name="ellipsis-horizontal"
                 size={20}
-                color={theme.isDark ? '#9CA3AF' : '#9DABB9'}
+                color={isDark ? '#9CA3AF' : '#9DABB9'}
               />
             </TouchableOpacity>
           )}
@@ -138,12 +138,12 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
               <Ionicons
                 name="time-outline"
                 size={16}
-                color={theme.isDark ? '#9CA3AF' : '#9DABB9'}
+                color={isDark ? '#9CA3AF' : '#9DABB9'}
               />
               <Text
                 style={[
                   styles.metadataText,
-                  { color: theme.isDark ? '#9CA3AF' : '#9DABB9' },
+                  { color: isDark ? '#9CA3AF' : '#9DABB9' },
                 ]}>
                 {duration}
               </Text>
@@ -154,12 +154,12 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
               <Ionicons
                 name="location-outline"
                 size={16}
-                color={theme.isDark ? '#9CA3AF' : '#9DABB9'}
+                color={isDark ? '#9CA3AF' : '#9DABB9'}
               />
               <Text
                 style={[
                   styles.metadataText,
-                  { color: theme.isDark ? '#9CA3AF' : '#9DABB9' },
+                  { color: isDark ? '#9CA3AF' : '#9DABB9' },
                 ]}>
                 {venue}
               </Text>
@@ -170,12 +170,12 @@ export const CalendarTaskCard: React.FC<CalendarTaskCardProps> = ({
               <Ionicons
                 name="globe-outline"
                 size={16}
-                color={theme.isDark ? '#9CA3AF' : '#9DABB9'}
+                color={isDark ? '#9CA3AF' : '#9DABB9'}
               />
               <Text
                 style={[
                   styles.metadataText,
-                  { color: theme.isDark ? '#9CA3AF' : '#9DABB9' },
+                  { color: isDark ? '#9CA3AF' : '#9DABB9' },
                 ]}>
                 Online Submission
               </Text>

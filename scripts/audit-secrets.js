@@ -26,6 +26,7 @@ const SERVER_ONLY_SECRETS = [
   'SECRET_KEY',
   'API_SECRET',
   'WEBHOOK_SECRET',
+  'INTERNAL_HMAC_SECRET', // HMAC secret for request signing
 ];
 
 // Safe public variables (these are OK to expose)

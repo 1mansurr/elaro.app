@@ -10,13 +10,13 @@ interface SettingsHeaderProps {
 }
 
 export const SettingsHeader: React.FC<SettingsHeaderProps> = ({ onBack }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.header}>
       <BlurView
         intensity={80}
-        tint={theme.isDark ? 'dark' : 'light'}
+        tint={isDark ? 'dark' : 'light'}
         style={StyleSheet.absoluteFill}
       />
       <View style={styles.headerContent}>
@@ -25,15 +25,15 @@ export const SettingsHeader: React.FC<SettingsHeaderProps> = ({ onBack }) => {
           style={styles.backButton}
           activeOpacity={0.7}>
           <Ionicons
-            name="arrow-back-ios"
+            name="arrow-back"
             size={24}
-            color={theme.isDark ? '#FFFFFF' : '#111318'}
+            color={isDark ? '#FFFFFF' : '#111318'}
           />
         </TouchableOpacity>
         <Text
           style={[
             styles.headerTitle,
-            { color: theme.isDark ? '#FFFFFF' : '#111318' },
+            { color: isDark ? '#FFFFFF' : '#111318' },
           ]}>
           Settings
         </Text>

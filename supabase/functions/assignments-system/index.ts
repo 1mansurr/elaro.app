@@ -14,12 +14,10 @@
  * - GET /assignments-system/get/:id - Get specific assignment
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-  ERROR_CODES,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
 import {
   CreateAssignmentSchema,
@@ -28,13 +26,14 @@ import {
   RestoreAssignmentSchema,
 } from '../_shared/schemas/assignment.ts';
 import { encrypt, decrypt } from '../_shared/encryption.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Assignment service class
@@ -80,10 +79,20 @@ class AssignmentService {
     }
 
     // 2. Core Business Logic
+    // Type guards
+    if (typeof title !== 'string') {
+      throw new AppError(
+        'title is required and must be a string',
+        400,
+        ERROR_CODES.INVALID_INPUT,
+      );
+    }
+
     const encryptedTitle = await encrypt(title, encryptionKey);
-    const encryptedDescription = description
-      ? await encrypt(description, encryptionKey)
-      : null;
+    const encryptedDescription =
+      description && typeof description === 'string'
+        ? await encrypt(description, encryptionKey)
+        : null;
 
     const { data: newAssignment, error: insertError } =
       await this.supabaseClient
@@ -105,12 +114,21 @@ class AssignmentService {
     }
 
     // 3. Reminder creation logic
-    if (newAssignment && reminders && reminders.length > 0) {
-      const dueDate = new Date(due_date);
-      const remindersToInsert = reminders.map((mins: number) => ({
+    const newAssignmentTyped = newAssignment as { id: string };
+    const remindersArray = Array.isArray(reminders)
+      ? reminders.filter((r): r is number => typeof r === 'number')
+      : [];
+    if (newAssignmentTyped && remindersArray.length > 0) {
+      const dueDateTyped =
+        typeof due_date === 'string'
+          ? new Date(due_date)
+          : new Date(due_date as string | number | Date);
+      const remindersToInsert = remindersArray.map((mins: number) => ({
         user_id: this.user.id,
-        assignment_id: newAssignment.id,
-        reminder_time: new Date(dueDate.getTime() - mins * 60000).toISOString(),
+        assignment_id: newAssignmentTyped.id,
+        reminder_time: new Date(
+          dueDateTyped.getTime() - mins * 60000,
+        ).toISOString(),
         reminder_type: 'assignment',
         day_number: Math.ceil(mins / (24 * 60)),
         completed: false,
@@ -155,10 +173,10 @@ class AssignmentService {
 
     // Encrypt fields if they are being updated
     const encryptedUpdates = { ...updates };
-    if (updates.title) {
+    if (updates.title && typeof updates.title === 'string') {
       encryptedUpdates.title = await encrypt(updates.title, encryptionKey);
     }
-    if (updates.description) {
+    if (updates.description && typeof updates.description === 'string') {
       encryptedUpdates.description = await encrypt(
         updates.description,
         encryptionKey,
@@ -397,8 +415,9 @@ async function handleListAssignments(req: AuthenticatedRequest) {
 async function handleGetAssignment(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   // ID can be in body or URL path
-  const assignmentId = body?.assignment_id || extractIdFromUrl(req.url);
-  if (!assignmentId) {
+  const assignmentId =
+    (body?.assignment_id as string) || extractIdFromUrl(req.url);
+  if (!assignmentId || typeof assignmentId !== 'string') {
     throw new AppError(
       'Assignment ID is required',
       400,
@@ -410,10 +429,12 @@ async function handleGetAssignment(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

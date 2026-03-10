@@ -116,9 +116,8 @@ const RemindersScreen = () => {
       await clearPendingTask();
 
       // Invalidate queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success!', 'Your assignment has been saved successfully!', [
@@ -200,9 +199,8 @@ const RemindersScreen = () => {
       }
 
       // Invalidate all relevant queries (including calendar queries so task appears immediately)
-      const { invalidateTaskQueries } = await import(
-        '@/utils/queryInvalidation'
-      );
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
       await invalidateTaskQueries(queryClient, 'assignment');
 
       Alert.alert('Success', 'Assignment created successfully!', [

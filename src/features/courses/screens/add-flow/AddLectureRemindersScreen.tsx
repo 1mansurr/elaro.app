@@ -25,6 +25,8 @@ import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+import { generateUUID } from '@/utils/uuid';
+import { Course } from '@/types';
 
 const ReminderOptions = [
   { label: '10 minutes before', value: 10 },
@@ -41,8 +43,9 @@ const AddLectureRemindersScreen = () => {
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
+  // Initialize with empty array - user must explicitly select reminders
   const [selectedReminders, setSelectedReminders] = useState<number[]>(
-    courseData.reminders || [30],
+    courseData.reminders || [],
   );
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +62,12 @@ const AddLectureRemindersScreen = () => {
 
       const { taskData } = pendingTask;
 
+      // Type guard: ensure taskData is Course when taskType is 'course'
+      if (pendingTask.taskType !== 'course' || !('courseName' in taskData)) {
+        Alert.alert('Error', 'Invalid task data for the saved course.');
+        return;
+      }
+
       if (!taskData.courseName?.trim()) {
         Alert.alert(
           'Error',
@@ -69,8 +78,14 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
+      // Generate idempotency key for the mutation
+      const idempotencyKey = generateUUID();
+
       const { error } = await invokeEdgeFunctionWithAuth('create-course', {
         body: taskData,
+        headers: {
+          'Idempotency-Key': idempotencyKey,
+        },
       });
 
       if (error) throw new Error(error.message);
@@ -109,15 +124,15 @@ const AddLectureRemindersScreen = () => {
     setIsLoading(true);
     updateCourseData({ reminders: selectedReminders });
 
-    const finalPayload = {
+    // Create Course object for savePendingTask
+    const finalPayload: Course = {
+      id: '', // Will be generated on server
       courseName: courseData.courseName,
       courseCode: courseData.courseCode,
-      courseDescription: courseData.courseDescription,
-      startTime: courseData.startTime?.toISOString(),
-      endTime: courseData.endTime?.toISOString(),
-      recurrence: courseData.recurrence,
-      venue: courseData.venue,
-      reminders: selectedReminders,
+      aboutCourse: courseData.courseDescription,
+      userId: user?.id || '',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     if (isGuest) {
@@ -144,10 +159,16 @@ const AddLectureRemindersScreen = () => {
         return;
       }
 
+      // Generate idempotency key for the mutation
+      const idempotencyKey = generateUUID();
+
       const { error, data } = await invokeEdgeFunctionWithAuth(
         'create-course',
         {
           body: finalPayload,
+          headers: {
+            'Idempotency-Key': idempotencyKey,
+          },
         },
       );
 
@@ -161,24 +182,34 @@ const AddLectureRemindersScreen = () => {
         throw error;
       }
 
-      Alert.alert(
-        'Success!',
-        `${finalPayload.courseName} has been added to your schedule.`,
-      );
+      // Invalidate queries first (non-blocking, fire-and-forget)
+      // This allows queries to refetch in the background while we navigate
+      // Use refetchType: 'active' to ensure active queries refetch immediately
+      queryClient.invalidateQueries({
+        queryKey: ['courses'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['lectures'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['homeScreenData'],
+        refetchType: 'active',
+      });
+      queryClient.invalidateQueries({
+        queryKey: ['calendarData'],
+        refetchType: 'active',
+      });
 
-      await queryClient.invalidateQueries({ queryKey: ['courses'] });
-      await queryClient.invalidateQueries({ queryKey: ['lectures'] });
-      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-
+      // Reset course data
       resetCourseData();
 
-      // Check if user came from AddCourseFirstScreen and should see PostOnboardingWelcomeScreen
+      // Check if user came from AddCourseFirstScreen (to know if we should navigate to PostOnboardingWelcome)
+      // NOTE: We only check this to determine if we should REQUEST navigation.
+      // PostOnboardingWelcomeScreen itself will decide if it should actually show.
       const hasSeenAddCourseFirst = await AsyncStorage.getItem(
         'hasSeenAddCourseFirstScreen',
-      );
-      const hasSeenPostOnboardingWelcome = await AsyncStorage.getItem(
-        'hasSeenPostOnboardingWelcome',
       );
 
       // Get current navigation state to check if we're in a flow
@@ -186,31 +217,45 @@ const AddLectureRemindersScreen = () => {
       const currentRoute =
         parentNav?.getState()?.routes[parentNav?.getState()?.index || 0];
 
-      // Only navigate to PostOnboardingWelcome if:
-      // 1. User came from AddCourseFirstScreen (has seen it)
-      // 2. User hasn't seen PostOnboardingWelcome
-      // 3. We're still in the AddCourseFlow (not already navigated away)
+      // Navigate FIRST, then show success message
+      // This prevents the alert from blocking navigation and causing app restarts
       if (
         hasSeenAddCourseFirst === 'true' &&
-        hasSeenPostOnboardingWelcome !== 'true' &&
         currentRoute?.name === 'AddCourseFlow'
       ) {
-        // Navigate to PostOnboardingWelcomeScreen
-        console.log(
-          '✅ [AddLectureRemindersScreen] Navigating to PostOnboardingWelcome after course creation',
-        );
+        // Request navigation - PostOnboardingWelcomeScreen will enforce its own visibility rules
+        if (__DEV__) {
+          console.log(
+            '✅ [AddLectureRemindersScreen] Requesting navigation to PostOnboardingWelcome after course creation',
+          );
+        }
         parentNav?.navigate('PostOnboardingWelcome' as any);
+        // Show success message after navigation completes
+        setTimeout(() => {
+          Alert.alert(
+            'Success!',
+            `${finalPayload.courseName} has been added to your schedule.`,
+          );
+        }, 300);
       } else {
         // Otherwise go back normally
-        console.log(
-          '✅ [AddLectureRemindersScreen] Course created, going back',
-          {
-            hasSeenAddCourseFirst,
-            hasSeenPostOnboardingWelcome,
-            currentRoute: currentRoute?.name,
-          },
-        );
+        if (__DEV__) {
+          console.log(
+            '✅ [AddLectureRemindersScreen] Course created, going back',
+            {
+              hasSeenAddCourseFirst,
+              currentRoute: currentRoute?.name,
+            },
+          );
+        }
         parentNav?.goBack();
+        // Show success message after navigation completes
+        setTimeout(() => {
+          Alert.alert(
+            'Success!',
+            `${finalPayload.courseName} has been added to your schedule.`,
+          );
+        }, 300);
       }
     } catch (err) {
       console.error('Failed to create course and lecture:', err);

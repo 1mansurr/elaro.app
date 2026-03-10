@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -6,6 +7,7 @@ import {
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // ============================================================================
@@ -95,7 +97,23 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        AssignmentDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const assignmentValidation = AssignmentDataSchema.safeParse(
+          operation.data,
+        );
+        if (!assignmentValidation.success) {
+          const zodError = assignmentValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for assignment data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'lecture':
         if (operation.table !== 'lectures') {
@@ -105,7 +123,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        LectureDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const lectureValidation = LectureDataSchema.safeParse(operation.data);
+        if (!lectureValidation.success) {
+          const zodError = lectureValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for lecture data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'study_session':
         if (operation.table !== 'study_sessions') {
@@ -115,7 +147,23 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        StudySessionDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const studySessionValidation = StudySessionDataSchema.safeParse(
+          operation.data,
+        );
+        if (!studySessionValidation.success) {
+          const zodError = studySessionValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for study session data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       case 'course':
         if (operation.table !== 'courses') {
@@ -125,7 +173,21 @@ function validateOperationData(
             ERROR_CODES.VALIDATION_ERROR,
           );
         }
-        CourseDataSchema.parse(operation.data);
+        // PASS 1: Use safeParse to prevent ZodError from crashing worker
+        const courseValidation = CourseDataSchema.safeParse(operation.data);
+        if (!courseValidation.success) {
+          const zodError = courseValidation.error;
+          const flattened = zodError.flatten();
+          throw new AppError(
+            'Validation failed for course data',
+            400,
+            ERROR_CODES.VALIDATION_ERROR,
+            {
+              errors: flattened.fieldErrors,
+              formErrors: flattened.formErrors,
+            },
+          );
+        }
         break;
       default:
         throw new AppError(
@@ -146,8 +208,20 @@ serve(
     async ({ body, supabaseClient, user }) => {
       const { operations } = body;
 
+      // Type guard for operations
+      if (!Array.isArray(operations)) {
+        throw new AppError(
+          'operations must be an array',
+          400,
+          ERROR_CODES.INVALID_INPUT,
+        );
+      }
+
       // Validate each operation
-      for (const operation of operations) {
+      const operationsTyped = operations as z.infer<
+        typeof BatchOperationSchema
+      >['operations'];
+      for (const operation of operationsTyped) {
         validateOperationData(operation);
 
         // Ensure user can only operate on their own data
@@ -163,12 +237,12 @@ serve(
 
       // Process operations in batch
       const results = await processBatchOperations(
-        operations,
+        operationsTyped,
         supabaseClient,
         user.id,
       );
 
-      return results;
+      return { results } as Record<string, unknown>;
     },
     {
       rateLimitName: 'batch-operations',

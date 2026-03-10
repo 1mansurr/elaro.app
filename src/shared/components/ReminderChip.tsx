@@ -20,15 +20,15 @@ export const ReminderChip: React.FC<ReminderChipProps> = ({
   label,
   onRemove,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       <View style={styles.content}>
@@ -54,7 +54,7 @@ export const ReminderChip: React.FC<ReminderChipProps> = ({
         <Ionicons
           name="close"
           size={20}
-          color={theme.isDark ? '#9CA3AF' : '#9CA3AF'}
+          color={isDark ? '#9CA3AF' : '#9CA3AF'}
         />
       </TouchableOpacity>
     </View>

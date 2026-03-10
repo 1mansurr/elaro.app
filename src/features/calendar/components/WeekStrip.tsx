@@ -30,7 +30,7 @@ interface Props {
 }
 
 const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const weekDays = useMemo(() => {
     const start = startOfWeek(selectedDate, { weekStartsOn: 1 }); // Monday
     const end = endOfWeek(selectedDate, { weekStartsOn: 1 });
@@ -50,10 +50,8 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
             style={[
               styles.dayContainer,
               {
-                backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                borderColor: theme.isDark
-                  ? 'rgba(255, 255, 255, 0.1)'
-                  : '#E5E7EB',
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#E5E7EB',
               },
               isSelected && [
                 styles.selectedDayContainer,
@@ -69,7 +67,7 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
                 {
                   color: isSelected
                     ? '#FFFFFF'
-                    : theme.isDark
+                    : isDark
                       ? '#9CA3AF'
                       : '#6B7280',
                 },
@@ -82,7 +80,7 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
                 {
                   color: isSelected
                     ? '#FFFFFF'
-                    : theme.isDark
+                    : isDark
                       ? '#FFFFFF'
                       : '#111418',
                 },

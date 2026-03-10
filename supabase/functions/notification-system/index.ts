@@ -1,5 +1,6 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
@@ -20,10 +21,12 @@ import {
 import { sendUnifiedNotification } from '../_shared/unified-notification-sender.ts';
 
 // Consolidated Notification System - Handles all notification operations
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -244,21 +247,80 @@ async function handleSendNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, title, body: notificationBody, type, data } = body;
-
-  // Verify user can send notification (either to themselves or admin)
-  if (user_id !== user.id) {
-    // TODO(@admin): Check if user is admin here if needed
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send notifications to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
 
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      // TODO(@admin): Check if user is admin here if needed
+      throw new AppError(
+        'You can only send notifications to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+
+  const { title, body: notificationBody, type, data } = body;
+
   // Generate deduplication key and check for duplicates
-  const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
-  const _dedupKey = generateDeduplicationKey(user_id, type || 'custom', itemId);
+  const dataTyped = data as
+    | { itemId?: string; assignment_id?: string; lecture_id?: string }
+    | undefined;
+  let itemIdString: string = '';
+  if (dataTyped?.itemId && typeof dataTyped.itemId === 'string') {
+    itemIdString = dataTyped.itemId;
+  } else if (
+    dataTyped?.assignment_id &&
+    typeof dataTyped.assignment_id === 'string'
+  ) {
+    itemIdString = dataTyped.assignment_id;
+  } else if (
+    dataTyped?.lecture_id &&
+    typeof dataTyped.lecture_id === 'string'
+  ) {
+    itemIdString = dataTyped.lecture_id;
+  }
+  // Pass undefined if empty string, or the actual string value
+  const notificationType = typeof type === 'string' ? type : 'custom';
+  const _dedupKey = generateDeduplicationKey(
+    user_id,
+    notificationType,
+    itemIdString || undefined,
+  );
 
   // Check if notification was recently sent (within last hour)
   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -266,27 +328,34 @@ async function handleSendNotification({
     .from('notification_deliveries')
     .select('id')
     .eq('user_id', user_id)
-    .eq('notification_type', type || 'custom')
+    .eq('notification_type', notificationType)
     .gte('sent_at', oneHourAgo)
     .limit(1)
     .single();
 
-  if (recentDelivery) {
+  const recentDeliveryTyped = recentDelivery as { id: string } | null;
+  if (recentDeliveryTyped) {
     // Check if metadata matches (same itemId if present)
     const { data: deliveryDetails } = await supabaseClient
       .from('notification_deliveries')
       .select('metadata, title, body')
-      .eq('id', recentDelivery.id)
+      .eq('id', recentDeliveryTyped.id)
       .single();
+
+    const deliveryDetailsTyped = deliveryDetails as {
+      metadata?: { itemId?: string };
+      title?: string;
+      body?: string;
+    } | null;
 
     // If same itemId and same type, likely a duplicate
     if (
-      deliveryDetails?.metadata?.itemId === itemId ||
-      (deliveryDetails?.title === title &&
-        deliveryDetails?.body === notificationBody)
+      deliveryDetailsTyped?.metadata?.itemId === itemIdString ||
+      (deliveryDetailsTyped?.title === title &&
+        deliveryDetailsTyped?.body === notificationBody)
     ) {
       return {
-        id: recentDelivery.id,
+        id: recentDeliveryTyped.id,
         message: 'Notification already sent recently',
         duplicate: true,
       };
@@ -300,7 +369,7 @@ async function handleSendNotification({
       user_id,
       title,
       body: notificationBody,
-      type,
+      type: notificationType,
       data,
       sent_at: new Date().toISOString(),
     })
@@ -309,11 +378,20 @@ async function handleSendNotification({
 
   if (error) handleDbError(error);
 
+  const notificationTyped = notification as { id: string } | null;
+  if (!notificationTyped) {
+    throw new AppError(
+      'Failed to create notification',
+      500,
+      ERROR_CODES.INTERNAL_ERROR,
+    );
+  }
+
   // Check preferences before sending
   const prefs = await getUserNotificationPreferences(supabaseClient, user_id);
-  if (!prefs || !canSendNotification(prefs, type || 'custom')) {
+  if (!prefs || !canSendNotification(prefs, notificationType)) {
     return {
-      id: notification.id,
+      id: notificationTyped.id,
       message: 'Notification blocked by user preferences or quiet hours',
       blocked: true,
     };
@@ -323,12 +401,12 @@ async function handleSendNotification({
   // Pass preferences to avoid refetch in unified sender
   const result = await sendUnifiedNotification(supabaseClient, {
     userId: user_id,
-    notificationType: type || 'custom',
-    title,
-    body: notificationBody,
-    emailSubject: title,
+    notificationType: notificationType,
+    title: title as string,
+    body: notificationBody as string,
+    emailSubject: title as string,
     emailContent: `<h2>${title}</h2><p>${notificationBody}</p>`,
-    data,
+    data: data as object | undefined,
     options: {
       priority: 'high',
     },
@@ -337,7 +415,7 @@ async function handleSendNotification({
 
   if (!result.pushSent && !result.emailSent) {
     return {
-      id: notification.id,
+      id: notificationTyped.id,
       message: 'Notification blocked by preferences',
       blocked: true,
     };
@@ -402,7 +480,8 @@ async function handleCancelNotification({
     .single();
 
   if (checkError) handleDbError(checkError);
-  if (existingReminder.user_id !== user.id) {
+  const existingReminderTyped = existingReminder as { user_id: string } | null;
+  if (!existingReminderTyped || existingReminderTyped.user_id !== user.id) {
     throw new AppError(
       'You can only cancel your own reminders',
       403,
@@ -441,7 +520,8 @@ async function handleProcessNotifications({
     reason?: string;
     error?: string;
   }> = [];
-  for (const reminder of reminders || []) {
+  const remindersArray = Array.isArray(reminders) ? reminders : [];
+  for (const reminder of remindersArray) {
     try {
       // Check preferences before sending
       const prefs = await getUserNotificationPreferences(
@@ -508,17 +588,51 @@ async function handleDailySummary({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id } = body || {};
-  const targetUserId = user_id || user.id;
-
-  // Verify user can access this summary
-  if (targetUserId !== user.id) {
+  // PASS 2: Validate body is object before accessing properties
+  if (body && (typeof body !== 'object' || Array.isArray(body))) {
     throw new AppError(
-      'You can only get your own daily summary',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body?.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only get your own daily summary',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const targetUserId = user.id;
 
   // Check preferences before processing
   const prefs = await getUserNotificationPreferences(
@@ -560,10 +674,13 @@ async function handleDailySummary({
       .lt('session_date', todayEnd),
   ]);
 
+  const assignmentsData = assignmentsRes.data as Array<unknown> | null;
+  const lecturesData = lecturesRes.data as Array<unknown> | null;
+  const studySessionsData = studySessionsRes.data as Array<unknown> | null;
   const summary = {
-    assignments: assignmentsRes.data?.length || 0,
-    lectures: lecturesRes.data?.length || 0,
-    studySessions: studySessionsRes.data?.length || 0,
+    assignments: assignmentsData?.length || 0,
+    lectures: lecturesData?.length || 0,
+    studySessions: studySessionsData?.length || 0,
   };
 
   const title = 'Daily Summary';
@@ -601,7 +718,7 @@ async function handleDailySummary({
     throw new AppError(
       'Failed to send daily summary',
       500,
-      ERROR_CODES.DELIVERY_FAILED,
+      ERROR_CODES.INTERNAL_ERROR,
     );
   }
 
@@ -613,17 +730,51 @@ async function handleEveningCapture({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id } = body || {};
-  const targetUserId = user_id || user.id;
-
-  // Verify user can send this notification
-  if (targetUserId !== user.id) {
+  // PASS 2: Validate body is object before accessing properties
+  if (body && (typeof body !== 'object' || Array.isArray(body))) {
     throw new AppError(
-      'You can only send evening capture to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body?.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send evening capture to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const targetUserId = user.id;
 
   // Check preferences before sending
   const prefs = await getUserNotificationPreferences(
@@ -662,7 +813,7 @@ async function handleEveningCapture({
     throw new AppError(
       'Failed to send evening capture',
       500,
-      ERROR_CODES.DELIVERY_FAILED,
+      ERROR_CODES.INTERNAL_ERROR,
     );
   }
 
@@ -674,18 +825,53 @@ async function handleWelcomeNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, user_name } = body;
-
-  // Verify user can send welcome notification (typically admin or system)
-  // For now, allow if it's for themselves or if they're sending it (system use case)
-  if (user_id && user_id !== user.id) {
-    // TODO(@admin): Check admin status if needed
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send welcome notifications for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      // TODO(@admin): Check admin status if needed
+      throw new AppError(
+        'You can only send welcome notifications for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { user_name } = body;
 
   const title = `Welcome to ELARO, ${user_name || 'User'}!`;
   const notificationBody =
@@ -712,7 +898,10 @@ async function handleWelcomeNotification({
     .select('push_token')
     .eq('user_id', targetUserId);
 
-  const pushTokens = devices?.map(d => d.push_token).filter(Boolean) || [];
+  const pushTokens = ((devices as Array<{ push_token?: string }> | null)
+    ?.map((d: { push_token?: string }) => d.push_token)
+    .filter((token): token is string => typeof token === 'string') ||
+    []) as string[];
 
   if (pushTokens.length > 0) {
     await sendExpoPushNotification(
@@ -744,16 +933,52 @@ async function handleReminderNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const { user_id, assignment_id, lecture_id } = body;
-
-  // Verify user can send reminder for this user_id
-  if (user_id !== user.id) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send reminders for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send reminders for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { assignment_id, lecture_id } = body;
 
   let title = 'Reminder';
   let notificationBody = 'You have an upcoming task';
@@ -769,9 +994,10 @@ async function handleReminderNotification({
 
     if (error) handleDbError(error);
 
-    if (assignment) {
+    const assignmentTyped = assignment as { title?: string } | null;
+    if (assignmentTyped) {
       title = 'Assignment Reminder';
-      notificationBody = `Don't forget: ${assignment.title} is due soon!`;
+      notificationBody = `Don't forget: ${assignmentTyped.title} is due soon!`;
       notificationType = 'assignment';
     }
   }
@@ -786,9 +1012,10 @@ async function handleReminderNotification({
 
     if (error) handleDbError(error);
 
-    if (lecture) {
+    const lectureTyped = lecture as { lecture_name?: string } | null;
+    if (lectureTyped) {
       title = 'Lecture Reminder';
-      notificationBody = `Upcoming: ${lecture.lecture_name} starts soon!`;
+      notificationBody = `Upcoming: ${lectureTyped.lecture_name} starts soon!`;
       notificationType = 'lecture';
     }
   }
@@ -824,7 +1051,7 @@ async function handleReminderNotification({
     throw new AppError(
       'Failed to send reminder',
       500,
-      ERROR_CODES.DELIVERY_FAILED,
+      ERROR_CODES.INTERNAL_ERROR,
     );
   }
 
@@ -855,9 +1082,12 @@ async function handlePreferences({
       .eq('user_id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') {
-      // Not found is OK, return defaults
-      handleDbError(error);
+    if (error) {
+      const errorTyped = error as { code?: string };
+      if (errorTyped.code !== 'PGRST116') {
+        // Not found is OK, return defaults
+        handleDbError(error);
+      }
     }
 
     if (!data) {
@@ -884,20 +1114,41 @@ async function handlePreferences({
     // Update preferences
     delete preferences.method; // Remove method if present
 
-    const { data, error } = await supabaseClient
+    // Check if preferences exist, then update or insert
+    const { data: existing } = await supabaseClient
       .from('notification_preferences')
-      .upsert(
-        {
+      .select('user_id')
+      .eq('user_id', user.id)
+      .single();
+
+    let data, error;
+    if (existing) {
+      // Update existing preferences
+      const result = await supabaseClient
+        .from('notification_preferences')
+        .update({
+          ...preferences,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    } else {
+      // Insert new preferences
+      const result = await supabaseClient
+        .from('notification_preferences')
+        .insert({
           user_id: user.id,
           ...preferences,
           updated_at: new Date().toISOString(),
-        },
-        {
-          onConflict: 'user_id',
-        },
-      )
-      .select()
-      .single();
+        })
+        .select()
+        .single();
+      data = result.data;
+      error = result.error;
+    }
 
     if (error) handleDbError(error);
     return data;
@@ -912,11 +1163,14 @@ async function handleHistory({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const urlParams = (body as Record<string, unknown>)?.urlParams || {};
-  const limit = parseInt(urlParams.limit || '50');
-  const offset = parseInt(urlParams.offset || '0');
-  const filter = urlParams.filter || 'all';
-  const includeRead = urlParams.includeRead !== 'false';
+  const urlParams =
+    ((body as Record<string, unknown>)?.urlParams as
+      | Record<string, unknown>
+      | undefined) || {};
+  const limit = parseInt((urlParams.limit as string | undefined) || '50');
+  const offset = parseInt((urlParams.offset as string | undefined) || '0');
+  const filter = (urlParams.filter as string | undefined) || 'all';
+  const includeRead = (urlParams.includeRead as string | undefined) !== 'false';
 
   let query = supabaseClient
     .from('notification_deliveries')
@@ -956,14 +1210,22 @@ async function handleUnreadCount({
   user,
   supabaseClient,
 }: AuthenticatedRequest) {
-  const { count, error } = await supabaseClient
+  // Use a different approach for count query - remove options parameter
+  const query = supabaseClient
     .from('notification_deliveries')
-    .select('*', { count: 'exact', head: true })
+    .select('*')
     .eq('user_id', user.id)
-    .is('opened_at', null);
+    .is('opened_at', null) as unknown as Promise<{
+    count: number | null;
+    error: unknown;
+  }>;
 
-  if (error) handleDbError(error);
-  return { count: count || 0 };
+  const result = await query;
+
+  const { count, error } = result;
+
+  if (error) handleDbError(error as Error);
+  return { count: (count as number | null) || 0 };
 }
 
 /**
@@ -988,7 +1250,8 @@ async function handleMarkRead({
     .single();
 
   if (checkError) handleDbError(checkError);
-  if (notification.user_id !== user.id) {
+  const notificationTyped = notification as { user_id: string } | null;
+  if (!notificationTyped || notificationTyped.user_id !== user.id) {
     throw new AppError(
       'You can only mark your own notifications as read',
       403,
@@ -1017,14 +1280,18 @@ async function handleQueue({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const method = (body as Record<string, unknown>)?.method || 'GET';
-  const urlParams = (body as Record<string, unknown>)?.urlParams || {};
+  const method =
+    ((body as Record<string, unknown>)?.method as string | undefined) || 'GET';
+  const urlParams =
+    ((body as Record<string, unknown>)?.urlParams as
+      | Record<string, unknown>
+      | undefined) || {};
 
   if (method === 'GET' || method === 'get') {
     // Get queue items
-    const limit = parseInt(urlParams.limit || '50');
-    const offset = parseInt(urlParams.offset || '0');
-    const status = urlParams.status || 'pending';
+    const limit = parseInt((urlParams.limit as string | undefined) || '50');
+    const offset = parseInt((urlParams.offset as string | undefined) || '0');
+    const status = (urlParams.status as string | undefined) || 'pending';
 
     let query = supabaseClient
       .from('notification_queue')
@@ -1092,7 +1359,8 @@ async function handleQueue({
       .single();
 
     if (checkError) handleDbError(checkError);
-    if (queueItem.user_id !== user.id) {
+    const queueItemTyped = queueItem as { user_id: string } | null;
+    if (!queueItemTyped || queueItemTyped.user_id !== user.id) {
       throw new AppError(
         'You can only delete your own queue items',
         403,

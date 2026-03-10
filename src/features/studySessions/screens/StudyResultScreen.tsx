@@ -115,7 +115,6 @@ const StudyResultScreen: React.FC = () => {
           title="Done"
           onPress={handleDone}
           style={styles.doneButton}
-          testID="study-result-done-button"
         />
       </View>
     </View>

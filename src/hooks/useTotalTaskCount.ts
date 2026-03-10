@@ -6,16 +6,29 @@ import {
 } from './useDataQueries'; // Assuming these hooks exist and fetch all tasks
 
 export const useTotalTaskCount = () => {
-  const { data: assignments, isLoading: isLoadingAssignments } =
+  const { data: assignmentsData, isLoading: isLoadingAssignments } =
     useAssignments();
-  const { data: lectures, isLoading: isLoadingLectures } = useLectures();
-  const { data: studySessions, isLoading: isLoadingStudySessions } =
+  const { data: lecturesData, isLoading: isLoadingLectures } = useLectures();
+  const { data: studySessionsData, isLoading: isLoadingStudySessions } =
     useStudySessions();
 
+  // Flatten InfiniteData to get all items
+  const assignments = useMemo(() => {
+    if (!assignmentsData?.pages) return [];
+    return assignmentsData.pages.flatMap(page => page.assignments || []);
+  }, [assignmentsData]);
+
+  const lectures = useMemo(() => {
+    if (!lecturesData?.pages) return [];
+    return lecturesData.pages.flatMap(page => page.lectures || []);
+  }, [lecturesData]);
+
+  const studySessions = useMemo(() => {
+    if (!studySessionsData?.pages) return [];
+    return studySessionsData.pages.flatMap(page => page.studySessions || []);
+  }, [studySessionsData]);
+
   const totalTaskCount = useMemo(() => {
-    if (!assignments || !lectures || !studySessions) {
-      return null; // Return null if data is not yet available
-    }
     return (
       (assignments?.length || 0) +
       (lectures?.length || 0) +

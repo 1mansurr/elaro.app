@@ -7,7 +7,7 @@ import {
   recordSuccessfulLogin,
 } from '@/utils/authLockout';
 import { updateLastActiveTimestamp } from '@/utils/sessionTimeout';
-import { mixpanelService } from '@/services/analytics';
+import { analyticsService } from '@/services/analytics';
 import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 // Mock dependencies
@@ -36,8 +36,8 @@ const mockUpdateLastActiveTimestamp =
   updateLastActiveTimestamp as jest.MockedFunction<
     typeof updateLastActiveTimestamp
   >;
-const mockMixpanelService = mixpanelService as jest.Mocked<
-  typeof mixpanelService
+const mockAnalyticsService = analyticsService as jest.Mocked<
+  typeof analyticsService
 >;
 
 describe('AuthContext', () => {
@@ -45,12 +45,12 @@ describe('AuthContext', () => {
     jest.clearAllMocks();
     mockCheckAccountLockout.mockResolvedValue({
       isLocked: false,
-      minutesRemaining: null,
+      minutesRemaining: undefined,
     });
     mockResetFailedAttempts.mockResolvedValue();
     mockRecordSuccessfulLogin.mockResolvedValue();
     mockUpdateLastActiveTimestamp.mockResolvedValue();
-    mockMixpanelService.track = jest.fn();
+    mockAnalyticsService.track = jest.fn();
   });
 
   describe('initialization', () => {
@@ -178,7 +178,7 @@ describe('AuthContext', () => {
         firstName: 'Test',
         lastName: 'User',
       });
-      expect(mockMixpanelService.track).toHaveBeenCalledWith(
+      expect(mockAnalyticsService.track).toHaveBeenCalledWith(
         'user_signed_up',
         expect.objectContaining({
           signup_method: 'email',

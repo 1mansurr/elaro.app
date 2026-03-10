@@ -1,7 +1,7 @@
 {
   "cli": {
     "version": ">= 7.6.0",
-    "appVersionSource": "local"
+    "appVersionSource": "remote"
   },
   "build": {
     "development": {
@@ -9,25 +9,43 @@
       "distribution": "internal",
       "channel": "development",
       "ios": {
-        "buildConfiguration": "Debug"
+        "buildConfiguration": "Debug",
+        "image": "macos-sequoia-15.6-xcode-16.4"
       }
     },
     "preview": {
       "developmentClient": true,
       "distribution": "internal",
-      "channel": "preview"
+      "channel": "preview",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4"
+      }
     },
     "staging": {
       "developmentClient": false,
       "distribution": "internal",
-      "channel": "staging"
+      "channel": "staging",
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4"
+      }
     },
     "production": {
       "developmentClient": false,
       "distribution": "store",
       "channel": "production",
+      "autoIncrement": true,
+      "ios": {
+        "image": "macos-sequoia-15.6-xcode-16.4",
+        "autoIncrement": "buildNumber"
+      },
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "app-bundle",
+        "autoIncrement": "versionCode"
+      },
+      "env": {
+        "SENTRY_ORG": "elaro-7p",
+        "SENTRY_PROJECT": "react-native",
+        "SENTRY_AUTH_TOKEN": "@sentry_auth_token"
       }
     }
   },

@@ -32,7 +32,7 @@ export const UpgradeSuccessModal: React.FC<UpgradeSuccessModalProps> = ({
   onClose,
   onContinue,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   // Auto-close after 3 seconds
   useEffect(() => {
@@ -62,7 +62,7 @@ export const UpgradeSuccessModal: React.FC<UpgradeSuccessModalProps> = ({
           style={[
             styles.modal,
             {
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
             },
           ]}>
           {/* Success Icon */}

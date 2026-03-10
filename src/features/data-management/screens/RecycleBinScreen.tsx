@@ -21,7 +21,7 @@ import { formatDistanceToNow } from 'date-fns';
 const RecycleBinScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const {
     data: items,
     isLoading,
@@ -147,16 +147,15 @@ const RecycleBinScreen = () => {
             style={[
               styles.iconContainer,
               {
-                backgroundColor:
-                  theme.mode === 'dark'
-                    ? `${iconColor.dark}20`
-                    : `${iconColor.light}15`,
+                backgroundColor: isDark
+                  ? `${iconColor.dark}20`
+                  : `${iconColor.light}15`,
               },
             ]}>
             <Ionicons
               name={getItemIcon(item.type) as any}
               size={24}
-              color={theme.mode === 'dark' ? iconColor.dark : iconColor.light}
+              color={isDark ? iconColor.dark : iconColor.light}
             />
           </View>
           <View style={styles.itemInfo}>
@@ -179,8 +178,7 @@ const RecycleBinScreen = () => {
           style={[
             styles.restoreButton,
             {
-              backgroundColor:
-                theme.mode === 'dark' ? '#135bec30' : '#135bec15',
+              backgroundColor: isDark ? '#135bec30' : '#135bec15',
             },
             isRestoring && styles.restoreButtonDisabled,
           ]}
@@ -191,7 +189,7 @@ const RecycleBinScreen = () => {
             style={[
               styles.restoreButtonText,
               {
-                color: theme.mode === 'dark' ? '#60a5fa' : '#135bec',
+                color: isDark ? '#60a5fa' : '#135bec',
               },
             ]}>
             {isRestoring ? 'Restoring...' : 'Restore'}
@@ -207,27 +205,6 @@ const RecycleBinScreen = () => {
         styles.container,
         { backgroundColor: theme.background, paddingTop: insets.top },
       ]}>
-      {/* Header */}
-      <View
-        style={[
-          styles.header,
-          {
-            backgroundColor: theme.background,
-            borderBottomColor: theme.border,
-          },
-        ]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-          activeOpacity={0.7}>
-          <Ionicons name="arrow-back" size={24} color={theme.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Recycle Bin
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
       <QueryStateWrapper
         isLoading={isLoading}
         isError={isError}
@@ -248,21 +225,20 @@ const RecycleBinScreen = () => {
             style={[
               styles.infoBanner,
               {
-                backgroundColor:
-                  theme.mode === 'dark' ? '#f59e0b20' : '#fef3c7',
-                borderColor: theme.mode === 'dark' ? '#f59e0b30' : '#fde68a',
+                backgroundColor: isDark ? '#f59e0b20' : '#fef3c7',
+                borderColor: isDark ? '#f59e0b30' : '#fde68a',
               },
             ]}>
             <Ionicons
               name="information-circle"
               size={20}
-              color={theme.mode === 'dark' ? '#fbbf24' : '#d97706'}
+              color={isDark ? '#fbbf24' : '#d97706'}
             />
             <Text
               style={[
                 styles.infoText,
                 {
-                  color: theme.mode === 'dark' ? '#fbbf24' : '#92400e',
+                  color: isDark ? '#fbbf24' : '#92400e',
                 },
               ]}>
               Items are permanently removed after 30 days. Restore courses to
@@ -290,31 +266,6 @@ const RecycleBinScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 20,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
-    letterSpacing: -0.015,
-  },
-  headerSpacer: {
-    width: 40,
   },
   scrollView: {
     flex: 1,

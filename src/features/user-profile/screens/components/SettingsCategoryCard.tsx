@@ -15,15 +15,15 @@ export const SettingsCategoryCard: React.FC<SettingsCategoryCardProps> = ({
   icon,
   children,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View
       style={[
         styles.categoryCard,
         {
-          backgroundColor: theme.isDark ? '#1E2330' : '#FFFFFF',
-          borderColor: theme.isDark
+          backgroundColor: isDark ? '#1E2330' : '#FFFFFF',
+          borderColor: isDark
             ? 'rgba(255, 255, 255, 0.05)'
             : 'rgba(0, 0, 0, 0.05)',
         },
@@ -32,14 +32,14 @@ export const SettingsCategoryCard: React.FC<SettingsCategoryCardProps> = ({
         style={[
           styles.categoryHeader,
           {
-            borderBottomColor: theme.isDark ? '#374151' : '#F3F4F6',
+            borderBottomColor: isDark ? '#374151' : '#F3F4F6',
           },
         ]}>
         <Ionicons name={icon} size={20} color={COLORS.primary} />
         <Text
           style={[
             styles.categoryTitle,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}>
           {title}
         </Text>

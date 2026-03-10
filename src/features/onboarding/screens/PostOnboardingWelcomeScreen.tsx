@@ -1,10 +1,25 @@
-import React from 'react';
+/**
+ * PostOnboardingWelcomeScreen
+ *
+ * ⚠️ STRICT RENDER CONTRACT: This component enforces a hard render guard.
+ * It will NEVER render UI unless ALL conditions are met.
+ *
+ * Render conditions (canRenderWelcome):
+ * - User has completed onboarding
+ * - User has NOT seen post-onboarding welcome (AsyncStorage check)
+ * - Welcome has NOT been dismissed in this session
+ *
+ * If ANY condition fails, component returns null immediately (no JSX rendered).
+ * Navigation is optional - render guard handles visibility, not navigation.
+ */
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, CommonActions } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList } from '@/types/navigation';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
@@ -13,23 +28,132 @@ type PostOnboardingWelcomeScreenNavigationProp = StackNavigationProp<
   'PostOnboardingWelcome'
 >;
 
-const POST_ONBOARDING_WELCOME_KEY = 'hasSeenPostOnboardingWelcome';
+/**
+ * SINGLE SOURCE OF TRUTH: This constant is the ONLY place where the storage key is defined.
+ * All other files should import and reference this constant if they need the key for any reason.
+ */
+export const POST_ONBOARDING_WELCOME_KEY = 'hasSeenPostOnboardingWelcome';
 
 export const PostOnboardingWelcomeScreen: React.FC = () => {
   const navigation = useNavigation<PostOnboardingWelcomeScreenNavigationProp>();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
+  const [isChecking, setIsChecking] = useState(true);
+  const [hasSeenInStorage, setHasSeenInStorage] = useState<boolean | null>(
+    null,
+  );
+  const [dismissedInSession, setDismissedInSession] = useState(false);
 
+  // STRICT RENDER CONTRACT: Check AsyncStorage once on mount
+  useEffect(() => {
+    const checkStorage = async () => {
+      try {
+        const hasSeen = await AsyncStorage.getItem(POST_ONBOARDING_WELCOME_KEY);
+        const hasSeenValue =
+          hasSeen === 'true' || hasSeen === '1' || hasSeen === 'yes';
+        setHasSeenInStorage(hasSeenValue);
+
+        if (__DEV__) {
+          console.log('🔍 [PostOnboardingWelcomeScreen] Storage check:', {
+            hasSeen,
+            hasSeenValue,
+            userOnboardingCompleted: user?.onboarding_completed,
+          });
+        }
+      } catch (error) {
+        console.error('Error checking post-onboarding welcome status:', error);
+        // On error, assume user has seen it (defensive: don't show)
+        setHasSeenInStorage(true);
+      } finally {
+        setIsChecking(false);
+      }
+    };
+
+    checkStorage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // STRICT RENDER CONTRACT: Compute canRenderWelcome
+  // This is the ONLY condition that determines if UI should render
+  const canRenderWelcome = (() => {
+    // Still checking - don't render yet
+    if (isChecking || hasSeenInStorage === null) {
+      return false;
+    }
+
+    // User has dismissed in this session - never render
+    if (dismissedInSession) {
+      return false;
+    }
+
+    // User has seen it in storage - never render
+    if (hasSeenInStorage === true) {
+      return false;
+    }
+
+    // User must have completed onboarding
+    if (!user?.onboarding_completed) {
+      return false;
+    }
+
+    // All conditions met - can render
+    return true;
+  })();
+
+  // HARD RENDER GUARD: Return null immediately if cannot render
+  // This happens BEFORE any JSX is rendered
+  if (!canRenderWelcome) {
+    return null;
+  }
+
+  // STRICT RENDER CONTRACT: Handle dismiss
+  // Updates storage and local state immediately so component unmounts visually
   const handleDismiss = async () => {
     try {
-      // Mark that user has seen the post-onboarding welcome screen
+      // Permanently mark that user has seen the post-onboarding welcome screen
       await AsyncStorage.setItem(POST_ONBOARDING_WELCOME_KEY, 'true');
+      // Update local state immediately - this makes canRenderWelcome false
+      // Component will unmount visually immediately
+      setDismissedInSession(true);
+      setHasSeenInStorage(true);
+
+      if (__DEV__) {
+        console.log(
+          '✅ [PostOnboardingWelcomeScreen] Dismissed - updating state to unmount',
+        );
+      }
     } catch (error) {
       console.error('Error saving post-onboarding welcome status:', error);
+      // Even if saving fails, update local state to hide immediately
+      setDismissedInSession(true);
     }
-    // Navigate to Main
-    navigation.replace('Main');
+
+    // Optional: Navigate away (not required for hiding - render guard handles it)
+    // Navigation is a convenience, not a requirement
+    try {
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [
+            {
+              name: 'Main',
+              state: {
+                routes: [{ name: 'Home' }],
+                index: 0,
+              },
+            },
+          ],
+        }),
+      );
+    } catch (navError) {
+      // Navigation error is non-critical - render guard already hides the screen
+      if (__DEV__) {
+        console.warn('Navigation error (non-critical):', navError);
+      }
+    }
   };
 
+  // Only reached if canRenderWelcome is true
   return (
     <View
       style={[

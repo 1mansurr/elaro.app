@@ -86,7 +86,7 @@ const CalendarScreen = () => {
   const jsThreadMetrics = useJSThreadMonitor({
     enabled: __DEV__,
     logSlowFrames: false, // Disable individual frame logging - too verbose
-    slowFrameThreshold: 20,
+    slowFrameThreshold: 25, // Increased from 20ms to reduce false positives (25ms = 40fps)
   });
 
   // Memory monitoring (dev only)
@@ -95,14 +95,17 @@ const CalendarScreen = () => {
   // Log warnings in dev if too many slow frames (only log summary at intervals)
   const lastLoggedCountRef = React.useRef(0);
   React.useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 100) {
-      // Only log every 50 frames to reduce noise
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 200) {
+      // Only log every 100 frames to reduce noise, and only after 200 slow frames
       const framesSinceLastLog =
         jsThreadMetrics.slowFrameCount - lastLoggedCountRef.current;
-      if (framesSinceLastLog >= 50) {
-        console.warn(
-          `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
-        );
+      if (framesSinceLastLog >= 100) {
+        // Only warn if average frame time is actually problematic (> 20ms)
+        if (jsThreadMetrics.averageFrameTime > 20) {
+          console.warn(
+            `⚠️ CalendarScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
+          );
+        }
         lastLoggedCountRef.current = jsThreadMetrics.slowFrameCount;
       }
     }
@@ -359,8 +362,9 @@ const CalendarScreen = () => {
             ? '#F97316' // Orange
             : '#137FEC'; // Blue for study_session and reviews
 
-      if (marked[dateKey].dots.length < 3) {
-        marked[dateKey].dots.push({ color: dotColor });
+      const dateMarked = marked[dateKey];
+      if (dateMarked && dateMarked.dots && dateMarked.dots.length < 3) {
+        dateMarked.dots.push({ color: dotColor });
       }
     });
 
@@ -388,14 +392,24 @@ const CalendarScreen = () => {
       return;
     }
     try {
+      if (!offerings.current?.availablePackages) {
+        Alert.alert('Error', 'The Oddity plan is not available.');
+        return;
+      }
       const oddityPackage = offerings.current.availablePackages.find(
-        (pkg: PurchasesPackage) => pkg.identifier === 'oddity_monthly',
+        (pkg: unknown) => {
+          if (!pkg || typeof pkg !== 'object') return false;
+          return (
+            'identifier' in pkg &&
+            (pkg as { identifier: string }).identifier === 'oddity_monthly'
+          );
+        },
       );
       if (!oddityPackage) {
         Alert.alert('Error', 'The Oddity plan is not available.');
         return;
       }
-      await purchasePackage(oddityPackage);
+      await purchasePackage(oddityPackage as PurchasesPackage);
       Alert.alert(
         'Success!',
         'You have successfully become an Oddity. Your locked content is now accessible.',
@@ -549,7 +563,7 @@ const CalendarScreen = () => {
             <Ionicons
               name="alert-circle-outline"
               size={16}
-              color={COLORS.destructive}
+              color={COLORS.error}
             />
             <Text style={styles.errorBannerText}>
               Failed to refresh calendar. Showing cached data.
@@ -605,7 +619,7 @@ const styles = StyleSheet.create({
   },
   viewToggleContainer: {
     paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.xs, // Reduced spacing to bring day cards closer to view toggle
+    paddingBottom: SPACING.xs, // Only bottom padding to control spacing below toggle
   },
   weekStripContainer: {
     borderBottomWidth: 1,
@@ -828,7 +842,7 @@ const styles = StyleSheet.create({
   errorBannerText: {
     flex: 1,
     fontSize: FONT_SIZES.sm,
-    color: COLORS.destructive,
+    color: COLORS.error,
     fontWeight: FONT_WEIGHTS.medium,
   },
   retryText: {

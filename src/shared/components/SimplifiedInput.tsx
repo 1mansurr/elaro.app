@@ -120,7 +120,7 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
         </Text>
       )}
 
-      <View style={[themedStyles.inputContainer, style]}>
+      <View style={[themedStyles.inputContainer]}>
         {leftIcon && (
           <Ionicons
             name={leftIcon}
@@ -134,7 +134,7 @@ export const SimplifiedInput: React.FC<SimplifiedInputProps> = ({
 
         <TextInput
           {...props}
-          style={[themedStyles.input, sizeStyles]}
+          style={[themedStyles.input, sizeStyles, style]}
           onFocus={handleFocus}
           onBlur={handleBlur}
           placeholderTextColor={themedStyles.helperText.color}

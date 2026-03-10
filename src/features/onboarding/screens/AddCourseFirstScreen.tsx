@@ -20,6 +20,7 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from '@/constants/theme';
+import { POST_ONBOARDING_WELCOME_KEY } from './PostOnboardingWelcomeScreen';
 
 type AddCourseFirstScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -28,7 +29,6 @@ type AddCourseFirstScreenNavigationProp = StackNavigationProp<
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const ADD_COURSE_FIRST_KEY = 'hasSeenAddCourseFirstScreen';
-const POST_ONBOARDING_WELCOME_KEY = 'hasSeenPostOnboardingWelcome';
 
 // Hero image from local assets
 const HERO_IMAGE = require('../../../../assets/welhero1.png');

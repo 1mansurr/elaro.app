@@ -21,7 +21,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
   selectedMode,
   onModeChange,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const modes: { label: string; value: ViewMode }[] = [
     { label: 'Month', value: 'month' },
@@ -34,7 +34,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       {modes.map(mode => {
@@ -46,7 +46,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
             style={[
               styles.button,
               isSelected && {
-                backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
+                backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
               },
             ]}
             activeOpacity={0.7}>
@@ -56,7 +56,7 @@ export const ViewModeToggle: React.FC<ViewModeToggleProps> = ({
                 {
                   color: isSelected
                     ? theme.text
-                    : theme.isDark
+                    : isDark
                       ? '#9CA3AF'
                       : '#6B7280',
                 },

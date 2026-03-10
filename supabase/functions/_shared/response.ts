@@ -5,7 +5,7 @@
  * following a standard envelope pattern.
  */
 
-import { corsHeaders } from './cors.ts';
+import { corsHeaders, getCorsHeaders } from './cors.ts';
 import { addVersionHeaders } from './versioning.ts';
 
 /**
@@ -31,11 +31,13 @@ export interface StandardResponse<T = unknown> {
  *
  * @param data - Response data
  * @param additionalHeaders - Additional headers to include
+ * @param origin - Optional origin header for CORS (if not provided, uses legacy corsHeaders)
  * @returns Response object with standardized format
  */
 export function successResponse<T>(
   data: T,
   additionalHeaders: Record<string, string> = {},
+  origin: string | null = null,
 ): Response {
   const response: StandardResponse<T> = {
     success: true,
@@ -47,10 +49,11 @@ export function successResponse<T>(
     },
   };
 
+  const cors = origin !== null ? getCorsHeaders(origin) : corsHeaders;
   return new Response(JSON.stringify(response), {
     status: 200,
     headers: {
-      ...corsHeaders,
+      ...cors,
       ...addVersionHeaders(),
       ...additionalHeaders,
       'Content-Type': 'application/json',
@@ -64,12 +67,14 @@ export function successResponse<T>(
  * @param error - Error object (AppError or standard Error)
  * @param statusCode - HTTP status code (default: 500)
  * @param additionalHeaders - Additional headers to include
+ * @param origin - Optional origin header for CORS (if not provided, uses legacy corsHeaders)
  * @returns Response object with standardized error format
  */
 export function errorResponse(
   error: unknown,
   statusCode: number = 500,
   additionalHeaders: Record<string, string> = {},
+  origin: string | null = null,
 ): Response {
   const err = error as {
     code?: string;
@@ -91,10 +96,11 @@ export function errorResponse(
     },
   };
 
+  const cors = origin !== null ? getCorsHeaders(origin) : corsHeaders;
   return new Response(JSON.stringify(response), {
     status: err.statusCode || statusCode,
     headers: {
-      ...corsHeaders,
+      ...cors,
       ...addVersionHeaders(),
       ...additionalHeaders,
       'Content-Type': 'application/json',
@@ -110,6 +116,7 @@ export function errorResponse(
  * @param page - Current page number
  * @param pageSize - Number of items per page
  * @param additionalHeaders - Additional headers
+ * @param origin - Optional origin header for CORS (if not provided, uses legacy corsHeaders)
  * @returns Response with pagination metadata
  */
 export function paginatedResponse<T>(
@@ -118,6 +125,7 @@ export function paginatedResponse<T>(
   page: number,
   pageSize: number,
   additionalHeaders: Record<string, string> = {},
+  origin: string | null = null,
 ): Response {
   const totalPages = Math.ceil(total / pageSize);
   const hasNextPage = page < totalPages;
@@ -140,10 +148,11 @@ export function paginatedResponse<T>(
     },
   };
 
+  const cors = origin !== null ? getCorsHeaders(origin) : corsHeaders;
   return new Response(JSON.stringify(response), {
     status: 200,
     headers: {
-      ...corsHeaders,
+      ...cors,
       ...addVersionHeaders(),
       ...additionalHeaders,
       'Content-Type': 'application/json',

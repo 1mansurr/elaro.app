@@ -1,11 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, StyleSheet, ViewStyle } from 'react-native';
 import { Button } from '@/shared/components/Button';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,7 +18,7 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
   isSaving,
   saveButtonText = 'Save',
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
@@ -32,28 +26,22 @@ export const TaskFormFooter: React.FC<TaskFormFooterProps> = ({
       style={[
         styles.footer,
         {
-          backgroundColor: theme.isDark ? '#101922' : '#F6F7F8',
-          borderTopColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#101922' : '#F6F7F8',
+          borderTopColor: isDark ? '#374151' : '#E5E7EB',
           paddingBottom: insets.bottom + SPACING.md,
         },
       ]}>
       <Button
+        title={isSaving ? 'Saving...' : saveButtonText}
         onPress={onSave}
         disabled={!isValid || isSaving}
-        style={[
+        loading={isSaving}
+        variant="primary"
+        style={StyleSheet.flatten([
           styles.saveButton,
           (!isValid || isSaving) && styles.saveButtonDisabled,
-        ]}
-        variant="primary">
-        {isSaving ? (
-          <View style={styles.saveButtonContent}>
-            <ActivityIndicator size="small" color="#FFFFFF" />
-            <Text style={styles.saveButtonText}>Saving...</Text>
-          </View>
-        ) : (
-          <Text style={styles.saveButtonText}>{saveButtonText}</Text>
-        )}
-      </Button>
+        ])}
+      />
     </View>
   );
 };
@@ -73,15 +61,5 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: {
     opacity: 0.6,
-  },
-  saveButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
   },
 });

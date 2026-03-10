@@ -1,12 +1,10 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
 import { validateApiVersion } from '../_shared/versioning.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-  ERROR_CODES,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
   handleDbError,
@@ -37,7 +35,10 @@ import {
   DeleteStudySessionSchema,
   RestoreStudySessionSchema,
 } from '../_shared/schemas/studySession.ts';
-import { UpdateUserProfileSchema } from '../_shared/schemas/user.ts';
+import {
+  UpdateUserProfileSchema,
+  RegisterDeviceSchema,
+} from '../_shared/schemas/user.ts';
 import {
   SendNotificationSchema,
   ScheduleNotificationSchema,
@@ -54,9 +55,11 @@ import { logger } from '../_shared/logging.ts';
 
 // Consolidated API v2 - Handles multiple operations through routing
 serve(async req => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -275,6 +278,12 @@ function getHandler(resource: string, action: string) {
         'api-v2-users-update',
         UpdateUserProfileSchema,
         true,
+      ),
+      devices: wrapOldHandler(
+        handleUserDevices,
+        'api-v2-users-devices',
+        RegisterDeviceSchema, // Schema for POST requests (GET has no body so won't validate)
+        true, // Require idempotency for POST
       ),
       // Note: suspend, unsuspend, delete are admin operations - removed from api-v2
       // They are available in admin-system only
@@ -899,6 +908,63 @@ async function handleGetStudySession(req: AuthenticatedRequest) {
   return data;
 }
 
+/**
+ * Check if a string appears to be base64-encoded encrypted data
+ * Encrypted data from our system is base64-encoded and typically > 20 characters
+ * Base64 strings contain only A-Z, a-z, 0-9, +, /, and = (padding)
+ */
+function isBase64Encrypted(str: string): boolean {
+  if (!str || typeof str !== 'string' || str.length <= 20) {
+    return false;
+  }
+
+  // Base64 regex: allows A-Z, a-z, 0-9, +, /, and = (for padding)
+  const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+
+  // Check if string matches base64 pattern and has reasonable length
+  // Encrypted data with IV (12 bytes) + encrypted content will be at least 20+ chars
+  return base64Regex.test(str) && str.length >= 20;
+}
+
+/**
+ * Safely decrypt a field value
+ * Returns empty string if decryption fails (instead of returning encrypted string)
+ */
+async function safeDecryptField(
+  value: string | null | undefined,
+  fieldName: string,
+  encryptionKey: string,
+  userId: string,
+): Promise<string> {
+  // Return empty string if value is null, undefined, or not a string
+  if (!value || typeof value !== 'string') {
+    return '';
+  }
+
+  // If it doesn't look like encrypted data, return as-is (plaintext)
+  if (!isBase64Encrypted(value)) {
+    return value;
+  }
+
+  // Attempt decryption
+  try {
+    const decrypted = await decrypt(value, encryptionKey);
+    return decrypted;
+  } catch (decryptError) {
+    // Log the error with field name for debugging
+    console.error(
+      `❌ Failed to decrypt ${fieldName} for user ${userId}:`,
+      decryptError instanceof Error
+        ? decryptError.message
+        : String(decryptError),
+    );
+
+    // Return empty string instead of encrypted string
+    // This prevents encrypted base64 from being displayed to users
+    return '';
+  }
+}
+
 // User handlers - Migrated
 async function handleUserProfile({
   user,
@@ -912,103 +978,48 @@ async function handleUserProfile({
 
   if (error) handleDbError(error);
 
-  // Decrypt sensitive fields (first_name, last_name, university, and program) before returning
+  // Decrypt sensitive fields before returning
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (encryptionKey && data) {
     const decryptedData = { ...data };
 
-    // Decrypt first_name if it exists and appears to be encrypted
-    if (
-      decryptedData.first_name &&
-      typeof decryptedData.first_name === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.first_name.length > 20) {
-          decryptedData.first_name = await decrypt(
-            decryptedData.first_name,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt first_name for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    // Decrypt all sensitive fields using the safe decryption helper
+    // This ensures we never return encrypted strings to the frontend
+    decryptedData.first_name = await safeDecryptField(
+      decryptedData.first_name,
+      'first_name',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt last_name if it exists and appears to be encrypted
-    if (
-      decryptedData.last_name &&
-      typeof decryptedData.last_name === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.last_name.length > 20) {
-          decryptedData.last_name = await decrypt(
-            decryptedData.last_name,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt last_name for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.last_name = await safeDecryptField(
+      decryptedData.last_name,
+      'last_name',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt university if it exists and appears to be encrypted
-    if (
-      decryptedData.university &&
-      typeof decryptedData.university === 'string'
-    ) {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.university.length > 20) {
-          decryptedData.university = await decrypt(
-            decryptedData.university,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt university for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.university = await safeDecryptField(
+      decryptedData.university,
+      'university',
+      encryptionKey,
+      user.id,
+    );
 
-    // Decrypt program if it exists and appears to be encrypted
-    if (decryptedData.program && typeof decryptedData.program === 'string') {
-      try {
-        // Only attempt decryption if the string looks like base64-encoded encrypted data
-        if (decryptedData.program.length > 20) {
-          decryptedData.program = await decrypt(
-            decryptedData.program,
-            encryptionKey,
-          );
-        }
-      } catch (decryptError) {
-        // If decryption fails, the data might not be encrypted (legacy data)
-        // or might be corrupted - log warning but don't fail the request
-        console.warn(
-          `Failed to decrypt program for user ${user.id}:`,
-          decryptError,
-        );
-        // Keep the original value if decryption fails
-      }
-    }
+    decryptedData.program = await safeDecryptField(
+      decryptedData.program,
+      'program',
+      encryptionKey,
+      user.id,
+    );
+
+    // Add country field decryption (was missing before)
+    decryptedData.country = await safeDecryptField(
+      decryptedData.country,
+      'country',
+      encryptionKey,
+      user.id,
+    );
 
     return decryptedData;
   }
@@ -1033,6 +1044,63 @@ async function handleUpdateUserProfile({
   return data;
 }
 
+// Device handlers - handles both GET and POST based on request method
+async function handleUserDevices(req: AuthenticatedRequest) {
+  const { user, supabaseClient, body } = req;
+  const method = req.method;
+
+  if (method === 'GET') {
+    const { data, error } = await supabaseClient
+      .from('user_devices')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false });
+
+    if (error) handleDbError(error);
+    return data || [];
+  }
+
+  if (method === 'POST') {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = RegisterDeviceSchema.safeParse(body);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError(
+        'Validation failed',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        },
+      );
+    }
+    const validatedData = validationResult.data;
+    const { push_token, platform, updated_at } = validatedData;
+
+    const { data, error } = await supabaseClient
+      .from('user_devices')
+      .upsert(
+        {
+          user_id: user.id,
+          push_token,
+          platform,
+          updated_at: updated_at || new Date().toISOString(),
+        },
+        { onConflict: 'user_id,platform' },
+      )
+      .select()
+      .single();
+
+    if (error) handleDbError(error);
+    return data;
+  }
+
+  throw new AppError('Method not allowed', 405, ERROR_CODES.VALIDATION_ERROR);
+}
+
 // Note: suspend, unsuspend, delete user handlers removed from api-v2
 // These are admin operations and should only be accessed through admin-system
 
@@ -1042,23 +1110,53 @@ async function handleSendNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  const {
-    user_id,
-    title,
-    body: notificationBody,
-    type,
-    data,
-    ...otherData
-  } = body;
-
-  // Verify user can send notification (either to themselves or admin)
-  if (user_id !== user.id) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only send notifications to yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only send notifications to yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+
+  const { title, body: notificationBody, type, data, ...otherData } = body;
 
   // Generate deduplication key and check for duplicates
   const itemId = data?.itemId || data?.assignment_id || data?.lecture_id;
@@ -1156,15 +1254,52 @@ async function handleScheduleNotification({
   supabaseClient,
   body,
 }: AuthenticatedRequest) {
-  // Verify user can schedule notification for this user_id
-  const { user_id, ...reminderData } = body;
-  if (user_id && user_id !== user.id) {
+  // PASS 2: Validate body is object before destructuring
+  if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw new AppError(
-      'You can only schedule notifications for yourself',
-      403,
-      ERROR_CODES.FORBIDDEN,
+      'Request body must be an object',
+      400,
+      ERROR_CODES.VALIDATION_ERROR,
     );
   }
+
+  // PASS 2: Extract and validate user_id (never trust client-provided IDs)
+  const bodyUser_id = body.user_id;
+  if (bodyUser_id !== undefined && bodyUser_id !== null) {
+    // Validate format if provided
+    if (typeof bodyUser_id !== 'string') {
+      throw new AppError(
+        'user_id must be a string',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a string type' },
+      );
+    }
+    // Validate UUID format if provided
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        bodyUser_id,
+      )
+    ) {
+      throw new AppError(
+        'Invalid user_id format',
+        400,
+        ERROR_CODES.VALIDATION_ERROR,
+        { field: 'user_id', message: 'user_id must be a valid UUID' },
+      );
+    }
+    // CRITICAL: Never trust client-provided user_id - must match authenticated user
+    if (bodyUser_id !== user.id) {
+      throw new AppError(
+        'You can only schedule notifications for yourself',
+        403,
+        ERROR_CODES.FORBIDDEN,
+      );
+    }
+  }
+  // Use authenticated user.id (never use client-provided user_id)
+  const user_id = user.id;
+  const { ...reminderData } = body;
 
   const { data, error } = await supabaseClient
     .from('reminders')
@@ -1414,8 +1549,20 @@ async function handleGetCount({
 
   // Apply filters if provided
   if (filters) {
+    // PASS 1: Crash safety - JSON.parse already in try/catch, but ensure it returns Response on error
     try {
       const filterObj = JSON.parse(filters);
+      if (
+        !filterObj ||
+        typeof filterObj !== 'object' ||
+        Array.isArray(filterObj)
+      ) {
+        throw new AppError(
+          'Invalid filters format: must be an object',
+          400,
+          ERROR_CODES.VALIDATION_ERROR,
+        );
+      }
       Object.entries(filterObj).forEach(([key, value]) => {
         if (value !== null && value !== undefined) {
           if (Array.isArray(value)) {

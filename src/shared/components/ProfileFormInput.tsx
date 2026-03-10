@@ -26,7 +26,7 @@ export const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
   editable = true,
   autoCapitalize = 'sentences',
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.container}>
@@ -37,7 +37,7 @@ export const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
             <Ionicons
               name={icon}
               size={22}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
             />
           </View>
         )}
@@ -47,14 +47,14 @@ export const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
             {
               backgroundColor: theme.background,
               color: theme.text,
-              borderColor: theme.isDark ? '#374151' : '#DBDFE6',
+              borderColor: isDark ? '#374151' : '#DBDFE6',
               paddingLeft: icon ? 44 : SPACING.md,
             },
           ]}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
-          placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+          placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
           editable={editable}
           autoCapitalize={autoCapitalize}
         />
@@ -63,7 +63,7 @@ export const ProfileFormInput: React.FC<ProfileFormInputProps> = ({
         <Text
           style={[
             styles.helperText,
-            { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+            { color: isDark ? '#9CA3AF' : '#6B7280' },
           ]}>
           {helperText}
         </Text>

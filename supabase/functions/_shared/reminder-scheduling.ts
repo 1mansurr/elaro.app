@@ -6,6 +6,7 @@
  * produce identical reminder times for the same inputs.
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 import { addDeterministicJitter } from './deterministic-jitter.ts';
 
@@ -121,8 +122,10 @@ export async function scheduleSRSReminder(
  * @param options - Scheduling options (with intervals array)
  * @returns Array of scheduled reminder data
  */
-export interface ScheduleMultipleRemindersOptions
-  extends Omit<ScheduleReminderOptions, 'daysOffset'> {
+export interface ScheduleMultipleRemindersOptions extends Omit<
+  ScheduleReminderOptions,
+  'daysOffset'
+> {
   intervals: number[]; // Array of day offsets (e.g., [1, 3, 7, 14])
 }
 

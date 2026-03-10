@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
-import { format, startOfWeek, addDays, isSameDay } from 'date-fns';
+import { format, startOfWeek, addDays, isSameDay, startOfDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -49,7 +49,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
   onLockedTaskPress,
   onDateSelect,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   // Refs for scroll synchronization
   const headerScrollRef = useRef<ScrollView>(null);
   const gridScrollRef = useRef<ScrollView>(null);
@@ -273,12 +273,16 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
         showsHorizontalScrollIndicator={false}
         onScroll={handleHeaderScroll}
         scrollEventThrottle={16}
+        style={styles.headerScrollView}
         contentContainerStyle={styles.headerRowContainer}>
         <View style={styles.headerRow}>
           <View style={styles.timeHeaderPlaceholder} />
           {weekDays.map((day, index) => {
-            const isToday = isSameDay(day, new Date());
-            const isSelected = isSameDay(day, selectedDate);
+            const isToday = isSameDay(startOfDay(day), startOfDay(new Date()));
+            const isSelected = isSameDay(
+              startOfDay(day),
+              startOfDay(selectedDate),
+            );
 
             return (
               <TouchableOpacity
@@ -286,8 +290,8 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                 style={[
                   styles.dayHeader,
                   {
-                    backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-                    borderColor: theme.isDark
+                    backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+                    borderColor: isDark
                       ? 'rgba(255, 255, 255, 0.1)'
                       : '#E5E7EB',
                   },
@@ -307,7 +311,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                         ? '#FFFFFF'
                         : isToday
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#9CA3AF'
                             : '#6B7280',
                     },
@@ -322,7 +326,7 @@ const WeekGridView: React.FC<WeekGridViewProps> = ({
                         ? '#FFFFFF'
                         : isToday
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#FFFFFF'
                             : '#111418',
                     },
@@ -396,11 +400,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  headerScrollView: {
+    flexShrink: 0, // Prevent shrinking
+    flexGrow: 0, // Prevent vertical expansion - height defined by content only
+  },
   headerRowContainer: {
     borderBottomWidth: 2,
     borderBottomColor: COLORS.border,
     backgroundColor: COLORS.background,
-    paddingHorizontal: SPACING.md,
+    paddingVertical: 0, // Explicitly zero to remove all vertical spacing
   },
   headerRow: {
     flexDirection: 'row',
@@ -416,7 +424,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: BORDER_RADIUS.md,
-    marginHorizontal: SPACING.xs,
     borderWidth: 1,
     ...SHADOWS.xs,
   },

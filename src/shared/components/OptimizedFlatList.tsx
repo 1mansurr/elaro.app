@@ -17,8 +17,10 @@
 import React from 'react';
 import { FlatList, FlatListProps, ListRenderItem } from 'react-native';
 
-interface OptimizedFlatListProps<T>
-  extends Omit<FlatListProps<T>, 'renderItem'> {
+interface OptimizedFlatListProps<T> extends Omit<
+  FlatListProps<T>,
+  'renderItem'
+> {
   /**
    * Render function for list items
    * Prefer passing a memoized component
@@ -139,10 +141,14 @@ export function createVariableHeightLayout<T>(
   return (data: ArrayLike<T> | null | undefined, index: number) => {
     let offset = 0;
     for (let i = 0; i < index; i++) {
-      offset += getItemHeight(data?.[i], i) + separatorHeight;
+      const item = data?.[i];
+      if (item !== undefined) {
+        offset += getItemHeight(item, i) + separatorHeight;
+      }
     }
+    const item = data?.[index];
     return {
-      length: getItemHeight(data?.[index], index),
+      length: item !== undefined ? getItemHeight(item, index) : 0,
       offset,
       index,
     };

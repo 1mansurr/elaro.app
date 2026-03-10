@@ -88,19 +88,25 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
         placeholderTextColor="transparent"
         textAlignVertical={multiline ? 'top' : 'center'}
       />
-      <Animated.Text
+      <Animated.View
         style={[
           styles.label,
           {
             transform: [{ translateY: labelTranslateY }],
-            fontSize: labelFontSize,
-            color: isFocused ? '#135bec' : '#6b7280',
           },
         ]}
         pointerEvents="none">
-        {label}
-        {optional && <Text style={styles.optionalText}> (Optional)</Text>}
-      </Animated.Text>
+        <Animated.Text
+          style={[
+            {
+              fontSize: labelFontSize,
+              color: isFocused ? '#135bec' : '#6b7280',
+            },
+          ]}>
+          {label}
+          {optional && <Text style={styles.optionalText}> (Optional)</Text>}
+        </Animated.Text>
+      </Animated.View>
       {isFocused && placeholderHint && (
         <Text style={styles.placeholderHint}>{placeholderHint}</Text>
       )}
@@ -108,7 +114,7 @@ export const FloatingLabelInput: React.FC<FloatingLabelInputProps> = ({
         <Text
           style={[
             styles.characterCount,
-            isNearLimit && styles.characterCountWarning,
+            isNearLimit ? styles.characterCountWarning : undefined,
           ]}>
           {currentLength}/{maxLength}
         </Text>
@@ -139,8 +145,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     top: 14,
-    fontSize: 16,
-    color: '#6b7280',
   },
   optionalText: {
     fontSize: 12,

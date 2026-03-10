@@ -1,16 +1,16 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-  ERROR_CODES,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { createAdminHandler } from '../_shared/admin-handler.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Admin operation schemas
 const AdminExportSchema = z.object({
@@ -66,10 +66,11 @@ function getAdminClient() {
 }
 
 // Consolidated Admin System - Handles all admin operations
-serve(async req => {
+serve(async (req: Request) => {
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    const origin = req.headers.get('Origin');
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {
@@ -77,7 +78,7 @@ serve(async req => {
     const action = url.pathname.split('/').pop();
 
     // Route to appropriate handler
-    const handler = getHandler(action);
+    const handler = getHandler(action || null);
     if (!handler) {
       return errorResponse(
         new AppError('Invalid admin action', 404, ERROR_CODES.DB_NOT_FOUND),
@@ -250,7 +251,13 @@ async function handleExportData({ body }: AuthenticatedRequest) {
 }
 
 async function handleCleanupData({ body }: AuthenticatedRequest) {
-  const { type, older_than_days = 30 } = body;
+  const { type, older_than_days: olderThanDays } = body;
+  const older_than_days =
+    typeof olderThanDays === 'number'
+      ? olderThanDays
+      : typeof olderThanDays === 'string'
+        ? parseInt(olderThanDays, 10)
+        : 30;
   const supabaseAdmin = getAdminClient();
 
   const cutoffDate = new Date(
@@ -527,5 +534,5 @@ async function handleAutoUnsuspend({}: AuthenticatedRequest) {
     }
   }
 
-  return results;
+  return results as unknown as Record<string, unknown>;
 }

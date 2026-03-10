@@ -39,7 +39,7 @@ const getCategoryConfig = (taskType: string) => {
       };
     default:
       return {
-        icon: 'menu-book-outline' as const,
+        icon: 'book-outline' as const,
         bgColor: '#E7F1FF',
         iconColor: '#137FEC',
       };
@@ -70,7 +70,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
   task,
   onPress,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const category = getCategoryConfig(task.type);
   const taskDate = new Date(task.date);
   const timeStr = format(taskDate, 'h:mm a');
@@ -84,10 +84,8 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: theme.isDark
-            ? 'rgba(255, 255, 255, 0.1)'
-            : 'transparent',
+          backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
         },
       ]}>
       <View
@@ -105,10 +103,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         </Text>
         {subtitle && (
           <Text
-            style={[
-              styles.subtitle,
-              { color: theme.isDark ? '#9CA3AF' : '#637588' },
-            ]}
+            style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#637588' }]}
             numberOfLines={1}>
             {subtitle}
           </Text>
@@ -116,11 +111,7 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
       </View>
       <View style={styles.timeContainer}>
         <Text style={[styles.time, { color: theme.text }]}>{timeStr}</Text>
-        <Text
-          style={[
-            styles.date,
-            { color: theme.isDark ? '#9CA3AF' : '#637588' },
-          ]}>
+        <Text style={[styles.date, { color: isDark ? '#9CA3AF' : '#637588' }]}>
           {dateLabel}
         </Text>
       </View>

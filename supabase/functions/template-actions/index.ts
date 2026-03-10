@@ -1,9 +1,10 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler } from '../api-v2/_handler-utils.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -15,6 +16,7 @@ import {
 import {
   type SupabaseClient,
   type User,
+  // @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
 
 // Template service class
@@ -39,8 +41,18 @@ class TemplateService {
   }
 
   async createTemplate(data: Record<string, unknown>) {
-    const { template_name, task_type, template_data } =
-      CreateTemplateSchema.parse(data);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CreateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
+    const { template_name, task_type, template_data } = validationResult.data;
 
     const { data: template, error } = await this.supabaseClient
       .from('task_templates')
@@ -61,7 +73,18 @@ class TemplateService {
   }
 
   async updateTemplate(data: Record<string, unknown>) {
-    const { id, ...updates } = UpdateTemplateSchema.parse(data);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = UpdateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
+    const { id, ...updates } = validationResult.data;
 
     // Verify ownership before updating
     const { data: existing, error: checkError } = await this.supabaseClient
@@ -191,10 +214,12 @@ function getHandler(method: string) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

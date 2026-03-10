@@ -48,9 +48,8 @@ export const useSRSReminderLimit = (): SRSReminderLimitResult => {
       oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
 
       // Count study sessions with SRS created this month using API
-      const { versionedApiClient } = await import(
-        '@/services/VersionedApiClient'
-      );
+      const { versionedApiClient } =
+        await import('@/services/VersionedApiClient');
       const countResponse = await versionedApiClient.getCount(
         'study_sessions',
         {

@@ -1,5 +1,7 @@
 -- Validation Queries for Phase 3 Migrations
 -- Run these in Supabase SQL Editor after applying migrations
+-- NOTE: This file uses PostgreSQL syntax (Supabase uses PostgreSQL)
+-- The MSSQL linter errors are false positives - this is correct PostgreSQL syntax
 
 -- ============================================================================
 -- VALIDATE API QUOTA MONITORING TABLES
@@ -9,7 +11,7 @@
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'api_quota_usage'
     ) 
@@ -21,7 +23,7 @@ SELECT
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'quota_alerts'
     ) 
@@ -33,7 +35,7 @@ SELECT
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'notification_queue'
     ) 
@@ -49,7 +51,7 @@ SELECT
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'api_cost_tracking'
     ) 
@@ -61,7 +63,7 @@ SELECT
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'budget_configs'
     ) 
@@ -73,7 +75,7 @@ SELECT
 SELECT 
   CASE 
     WHEN EXISTS (
-      SELECT FROM information_schema.tables 
+      SELECT 1 FROM information_schema.tables 
       WHERE table_schema = 'public' 
       AND table_name = 'budget_alerts'
     ) 
@@ -133,13 +135,14 @@ ORDER BY tablename, indexname;
 -- ============================================================================
 
 -- Check if budget configs were initialized
+-- NOTE: MSSQL linter may flag 'enabled' in CASE, but in PostgreSQL boolean columns work correctly
 SELECT 
   service_name,
   monthly_budget_usd,
   alert_threshold_70,
   alert_threshold_90,
   enabled,
-  CASE WHEN enabled THEN '✅ Active' ELSE '⚠️ Disabled' END as status
+  CASE WHEN enabled = true THEN '✅ Active' ELSE '⚠️ Disabled' END as status
 FROM budget_configs
 ORDER BY service_name;
 
@@ -148,12 +151,14 @@ ORDER BY service_name;
 -- ============================================================================
 
 -- Test track_quota_usage function
+-- NOTE: PostgreSQL casting syntax (::) is correct for Supabase
+-- Using CAST() for better cross-dialect compatibility while maintaining PostgreSQL correctness
 SELECT 
   track_quota_usage(
-    'expo_push'::text,
-    'daily'::text,
-    1::integer,
-    10000::integer
+    CAST('expo_push' AS text),
+    CAST('daily' AS text),
+    CAST(1 AS integer),
+    CAST(10000 AS integer)
   ) as quota_result;
 
 -- Test get_quota_status function
@@ -164,12 +169,14 @@ SELECT * FROM get_quota_status('expo_push', 'daily');
 -- ============================================================================
 
 -- Test record_api_cost function
+-- NOTE: ::text, ::numeric, ::integer are PostgreSQL casting syntax (correct for Supabase)
+-- MSSQL linter errors are false positives
 SELECT 
   record_api_cost(
-    'expo_push'::text,
-    0.01::numeric,
-    'api_call'::text,
-    1::integer,
+    CAST('expo_push' AS text),
+    CAST(0.01 AS numeric),
+    CAST('api_call' AS text),
+    CAST(1 AS integer),
     CURRENT_DATE
   ) as cost_result;
 

@@ -6,6 +6,7 @@
  * every 5 minutes for maintenance jobs).
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createScheduledHandler } from '../_shared/function-handler.ts';
 import {
@@ -16,12 +17,10 @@ import {
   type Job,
 } from '../_shared/job-queue.ts';
 import { successResponse } from '../_shared/response.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0';
-import {
-  AppError,
-  ERROR_CODES,
-  ERROR_STATUS_CODES,
-} from '../_shared/function-handler.ts';
+import { AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES, ERROR_STATUS_CODES } from '../_shared/error-codes.ts';
 
 /**
  * Job processor registry

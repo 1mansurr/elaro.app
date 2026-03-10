@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -7,7 +8,7 @@ import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { CheckUsernameSchema } from '../_shared/schemas/user.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { addVersionHeaders } from '../_shared/versioning.ts';
 import { isReservedUsername } from '../_shared/reserved-usernames.ts';
 
@@ -15,8 +16,11 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const { username } = body;
+  const usernameTyped =
+    typeof username === 'string' ? username : String(username);
+  const origin = (req as unknown as Request).headers.get('Origin');
   const responseHeaders = {
-    ...corsHeaders,
+    ...getCorsHeaders(origin),
     ...addVersionHeaders(),
     'Content-Type': 'application/json',
   };
@@ -27,7 +31,7 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
     'Checking username availability',
     {
       user_id: user.id,
-      username,
+      username: usernameTyped,
       has_auth_header: !!authHeader,
       auth_header_length: authHeader?.length || 0,
     },
@@ -36,12 +40,12 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
 
   try {
     // Check if username is reserved (word-boundary aware, case-insensitive)
-    if (isReservedUsername(username)) {
+    if (isReservedUsername(usernameTyped)) {
       await logger.info(
         'Username is reserved',
         {
           user_id: user.id,
-          username,
+          username: usernameTyped,
         },
         traceContext,
       );
@@ -56,7 +60,7 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
     const { data: rpcData, error: rpcError } = await supabaseClient.rpc(
       'check_username_available',
       {
-        p_username: username,
+        p_username: usernameTyped,
         p_exclude_user_id: user.id,
       },
     );
@@ -71,7 +75,7 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
       'Username availability check complete',
       {
         user_id: user.id,
-        username,
+        username: usernameTyped,
         is_available: isAvailable,
       },
       traceContext,
@@ -86,7 +90,7 @@ async function handleCheckUsername(req: AuthenticatedRequest) {
       'Username availability check failed',
       {
         user_id: user.id,
-        username,
+        username: usernameTyped,
         error:
           error instanceof Error
             ? { message: error.message, stack: error.stack }

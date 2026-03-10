@@ -220,8 +220,9 @@ export function mapDatabaseError(error: unknown): {
     };
   }
 
-  const errorCode = error.code || '';
-  const errorMessage = error.message || '';
+  const errorTyped = error as { code?: string; message?: string };
+  const errorCode = errorTyped.code || '';
+  const errorMessage = errorTyped.message || '';
 
   // PostgreSQL error codes
   // https://www.postgresql.org/docs/current/errcodes-appendix.html

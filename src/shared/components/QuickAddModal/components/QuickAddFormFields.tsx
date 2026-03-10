@@ -37,7 +37,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
   onOpenDatePicker,
   onOpenTimePicker,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const titleLabel = taskType === 'study_session' ? 'Topic *' : 'Title *';
   const placeholder =
@@ -52,45 +52,43 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
   return (
     <View style={styles.container}>
       {/* Title Input */}
-      <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {titleLabel}
       </Text>
       <TextInput
         style={[
           styles.input,
           {
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-            borderColor: theme.isDark ? '#3B4754' : COLORS.border,
-            color: theme.isDark ? '#FFFFFF' : '#111418',
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#3B4754' : COLORS.border,
+            color: isDark ? '#FFFFFF' : '#111418',
           },
         ]}
         value={title}
         onChangeText={onTitleChange}
         placeholder={placeholder}
-        placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+        placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
         autoFocus
         maxLength={35}
       />
       <Text
         style={[
           styles.characterCount,
-          { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+          { color: isDark ? '#9CA3AF' : '#6B7280' },
         ]}>
         {title.length}/35
       </Text>
 
       {/* Course Selector */}
-      <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Course *
       </Text>
       <TouchableOpacity
         style={[
           styles.selectButton,
           {
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-            borderColor: theme.isDark ? '#3B4754' : COLORS.border,
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#3B4754' : COLORS.border,
           },
         ]}
         onPress={onOpenCourseModal}
@@ -101,10 +99,10 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
             !selectedCourse && styles.selectButtonPlaceholder,
             {
               color: !selectedCourse
-                ? theme.isDark
+                ? isDark
                   ? '#6B7280'
                   : '#9CA3AF'
-                : theme.isDark
+                : isDark
                   ? '#FFFFFF'
                   : '#111418',
             },
@@ -116,13 +114,12 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
         <Ionicons
           name="chevron-down"
           size={20}
-          color={theme.isDark ? '#9CA3AF' : COLORS.gray}
+          color={isDark ? '#9CA3AF' : COLORS.gray}
         />
       </TouchableOpacity>
 
       {/* Date & Time */}
-      <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {dateTimeLabel}
       </Text>
       <View style={styles.dateTimeRow}>
@@ -132,8 +129,8 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
             {
               flex: 1,
               marginRight: 8,
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-              borderColor: theme.isDark ? '#3B4754' : COLORS.border,
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+              borderColor: isDark ? '#3B4754' : COLORS.border,
             },
           ]}
           onPress={onOpenDatePicker}>
@@ -141,7 +138,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
           <Text
             style={[
               styles.dateTimeButtonText,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             {format(dateTime, 'MMM dd')}
           </Text>
@@ -152,8 +149,8 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
             styles.dateTimeButton,
             {
               flex: 1,
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-              borderColor: theme.isDark ? '#3B4754' : COLORS.border,
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+              borderColor: isDark ? '#3B4754' : COLORS.border,
             },
           ]}
           onPress={onOpenTimePicker}>
@@ -161,7 +158,7 @@ export const QuickAddFormFields: React.FC<QuickAddFormFieldsProps> = ({
           <Text
             style={[
               styles.dateTimeButtonText,
-              { color: theme.isDark ? '#FFFFFF' : '#111418' },
+              { color: isDark ? '#FFFFFF' : '#111418' },
             ]}>
             {format(dateTime, 'h:mm a')}
           </Text>

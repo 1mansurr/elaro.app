@@ -35,7 +35,7 @@ export const studySessionsApiMutations = {
           'study_session',
           {
             type: 'CREATE',
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },
@@ -96,9 +96,8 @@ export const studySessionsApiMutations = {
         console.log('📴 Offline: Queueing UPDATE study_session action');
 
         // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } = await import(
-          '@/utils/taskCache'
-        );
+        const { getCachedTask, mergeTaskUpdates } =
+          await import('@/utils/taskCache');
         const cachedTask = await getCachedTask(sessionId, 'study_session');
 
         if (!cachedTask) {
@@ -120,7 +119,7 @@ export const studySessionsApiMutations = {
           {
             type: 'UPDATE',
             id: sessionId,
-            data: request,
+            data: request as unknown as Record<string, unknown>,
           },
           userId,
           { syncImmediately: false },

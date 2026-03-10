@@ -12,22 +12,21 @@
  * - GET /srs-system/statistics - Get SRS statistics
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-  ERROR_CODES,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
+import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
   extractIdFromUrl,
   handleDbError,
 } from '../api-v2/_handler-utils.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
 import { z } from 'zod';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import {
   type SupabaseClient,
   type User,
@@ -61,7 +60,20 @@ class SRSService {
       quality_rating,
       response_time_seconds,
       schedule_next: _schedule_next,
-    } = RecordSRSPerformanceSchema.parse(data);
+    } = (() => {
+      // PASS 1: Use safeParse to prevent ZodError from crashing worker
+      const validationResult = RecordSRSPerformanceSchema.safeParse(data);
+      if (!validationResult.success) {
+        const zodError = validationResult.error;
+        const flattened = zodError.flatten();
+        throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+          message: 'Request body validation failed',
+          errors: flattened.fieldErrors,
+          formErrors: flattened.formErrors,
+        });
+      }
+      return validationResult.data;
+    })();
 
     // 1. Verify the study session belongs to the user
     const { data: session, error: sessionError } = await this.supabaseClient
@@ -224,11 +236,22 @@ class SRSService {
   }
 
   async scheduleReview(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = ScheduleReviewSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
     const {
       session_id,
       next_review_date,
       interval_days: _interval_days,
-    } = ScheduleReviewSchema.parse(data);
+    } = validationResult.data;
 
     // Verify session ownership
     const { data: session, error: sessionError } = await this.supabaseClient
@@ -289,7 +312,11 @@ class SRSService {
 
     const totalReviews = stats.length;
     const averageQuality =
-      stats.reduce((sum, s) => sum + (s.quality_rating || 0), 0) / totalReviews;
+      stats.reduce(
+        (sum: number, s: { quality_rating?: number }) =>
+          sum + (s.quality_rating || 0),
+        0,
+      ) / totalReviews;
 
     // Count due reminders
     const now = new Date().toISOString();
@@ -302,7 +329,9 @@ class SRSService {
       .lte('reminder_time', now);
 
     return {
-      total_sessions: new Set(stats.map(s => s.session_id)).size,
+      total_sessions: new Set(
+        stats.map((s: { session_id: string }) => s.session_id),
+      ).size,
       total_reviews: totalReviews,
       average_quality: Math.round(averageQuality * 100) / 100,
       due_for_review: dueCount || 0,
@@ -373,10 +402,12 @@ async function handleGetStatistics(req: AuthenticatedRequest) {
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request): Promise<Response> => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

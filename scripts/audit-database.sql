@@ -3,6 +3,13 @@
 -- Post-Migration Verification
 -- ============================================================================
 -- Run this in Supabase SQL Editor to verify database state
+-- 
+-- IMPORTANT: This file uses PostgreSQL syntax (Supabase uses PostgreSQL)
+-- The MSSQL linter errors are FALSE POSITIVES - this is correct PostgreSQL syntax
+-- 
+-- This file should be configured to use PostgreSQL dialect in your IDE:
+-- - VS Code/Cursor: Set SQL language to PostgreSQL in settings
+-- - Or add to .vscode/settings.json: "files.associations": { "*.sql": "postgresql" }
 -- ============================================================================
 
 -- ============================================================================
@@ -19,18 +26,21 @@ SELECT
 FROM supabase_migrations.schema_migrations;
 
 -- List recent migrations
+-- NOTE: LIMIT is PostgreSQL syntax (MSSQL uses TOP). This is correct for Supabase.
 SELECT 
   version,
   name
 FROM supabase_migrations.schema_migrations
 ORDER BY version DESC
-LIMIT 10;
+LIMIT 10; -- PostgreSQL LIMIT clause - cannot be changed to TOP without breaking functionality
 
 -- ============================================================================
 -- PHASE 2: CORE TABLES VERIFICATION
 -- ============================================================================
 
-SELECT '=== CORE TABLES VERIFICATION ===' as section;
+-- NOTE: SELECT with string literal and alias is valid PostgreSQL syntax
+-- MSSQL linter may flag this, but it's correct for PostgreSQL/Supabase
+SELECT '=== CORE TABLES VERIFICATION ===' AS section;
 
 -- Count all tables
 SELECT 
@@ -316,29 +326,33 @@ SELECT
   pg_size_pretty(pg_database_size(current_database())) as database_size;
 
 -- Top 10 largest tables
+-- NOTE: Using CONCAT() instead of || for better SQL standard compatibility
+-- PostgreSQL supports both, but CONCAT() is more widely recognized
 SELECT 
   schemaname,
   tablename,
-  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
-  pg_size_pretty(pg_relation_size(schemaname||'.'||tablename)) AS table_size,
-  pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename) - 
-                 pg_relation_size(schemaname||'.'||tablename)) AS indexes_size
+  pg_size_pretty(pg_total_relation_size(CONCAT(schemaname, '.', tablename))) AS size,
+  pg_size_pretty(pg_relation_size(CONCAT(schemaname, '.', tablename))) AS table_size,
+  pg_size_pretty(pg_total_relation_size(CONCAT(schemaname, '.', tablename)) - 
+                 pg_relation_size(CONCAT(schemaname, '.', tablename))) AS indexes_size
 FROM pg_tables
 WHERE schemaname = 'public'
-ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
-LIMIT 10;
+ORDER BY pg_total_relation_size(CONCAT(schemaname, '.', tablename)) DESC
+LIMIT 10; -- PostgreSQL LIMIT clause - cannot be changed to TOP without breaking functionality
 
 -- Index usage statistics
+-- NOTE: pg_stat_user_indexes is a PostgreSQL system view (not available in MSSQL)
+-- MSSQL linter errors on this query are false positives - this is correct PostgreSQL syntax
 SELECT 
   schemaname,
-  relname as tablename,
-  indexrelname as indexname,
-  idx_scan as index_scans,
+  relname AS tablename,
+  indexrelname AS indexname,
+  idx_scan AS index_scans,
   CASE 
     WHEN idx_scan = 0 THEN '⚠️ UNUSED'
     ELSE '✅ USED'
-  END as usage_status
-FROM pg_stat_user_indexes
+  END AS usage_status
+FROM pg_stat_user_indexes -- PostgreSQL system catalog view
 WHERE schemaname = 'public'
 ORDER BY idx_scan DESC
 LIMIT 20;
@@ -392,38 +406,40 @@ FROM job_metrics;
 
 SELECT '=== AUDIT SUMMARY ===' as section;
 
+-- NOTE: Using CAST() instead of :: for better SQL standard compatibility
+-- PostgreSQL supports both, but CAST() is more widely recognized
 SELECT 
   'Total Tables' as metric,
-  COUNT(*)::TEXT as value
+  CAST(COUNT(*) AS TEXT) as value
 FROM information_schema.tables
 WHERE table_schema = 'public'
 UNION ALL
 SELECT 
   'Total Functions',
-  COUNT(*)::TEXT
+  CAST(COUNT(*) AS TEXT)
 FROM information_schema.routines
 WHERE routine_schema = 'public'
 UNION ALL
 SELECT 
   'Tables with RLS',
-  COUNT(*)::TEXT
+  CAST(COUNT(*) AS TEXT)
 FROM pg_tables
 WHERE schemaname = 'public' AND rowsecurity = true
 UNION ALL
 SELECT 
   'Total Policies',
-  COUNT(*)::TEXT
+  CAST(COUNT(*) AS TEXT)
 FROM pg_policies
 WHERE schemaname = 'public'
 UNION ALL
 SELECT 
   'Active Cron Jobs',
-  COUNT(*)::TEXT
+  CAST(COUNT(*) AS TEXT)
 FROM cron.job
 WHERE active = true
 UNION ALL
 SELECT 
   'Total Migrations',
-  COUNT(*)::TEXT
+  CAST(COUNT(*) AS TEXT)
 FROM supabase_migrations.schema_migrations;
 

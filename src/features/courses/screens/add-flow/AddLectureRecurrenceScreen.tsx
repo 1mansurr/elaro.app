@@ -19,10 +19,7 @@ import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
 import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 
-type ScreenNavigationProp = StackNavigationProp<
-  AddCourseStackParamList,
-  'AddLectureRecurrence'
->;
+type ScreenNavigationProp = StackNavigationProp<AddCourseStackParamList>;
 
 const RecurrenceOptions: ('weekly' | 'bi-weekly')[] = ['weekly', 'bi-weekly'];
 

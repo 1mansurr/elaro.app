@@ -1,4 +1,4 @@
-import { User } from '@/types';
+import { User } from '@/types/entities';
 
 // Mock user data factory
 export const createMockUser = (overrides: Partial<User> = {}): User => ({
@@ -6,6 +6,7 @@ export const createMockUser = (overrides: Partial<User> = {}): User => ({
   email: 'test@example.com',
   first_name: 'Test',
   last_name: 'User',
+  role: 'user',
   subscription_tier: 'free',
   onboarding_completed: true,
   created_at: '2024-01-01T00:00:00Z',
@@ -14,6 +15,9 @@ export const createMockUser = (overrides: Partial<User> = {}): User => ({
   program: 'Test Program',
   subscription_expires_at: null,
   account_status: 'active',
+  deleted_at: null,
+  deletion_scheduled_at: null,
+  suspension_end_date: null,
   ...overrides,
 });
 
@@ -28,7 +32,8 @@ export const createMockPremiumUser = (overrides: Partial<User> = {}): User =>
 export const createMockAdminUser = (overrides: Partial<User> = {}): User =>
   createMockUser({
     id: 'admin-user-1',
-    subscription_tier: 'admin',
+    role: 'admin',
+    subscription_tier: null, // Admin users don't have subscription tiers
     ...overrides,
   });
 

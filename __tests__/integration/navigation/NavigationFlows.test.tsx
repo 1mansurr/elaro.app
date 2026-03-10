@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { NextTaskCard } from '@/features/dashboard/components/NextTaskCard';
+import NextTaskCard from '@/features/dashboard/components/NextTaskCard';
 import {
   SafeNavigation,
   NavigationPatterns,
@@ -293,10 +293,14 @@ describe('Navigation Flows Integration Tests', () => {
 
       // Simulate deep link: elaro://assignment/123
       const assignmentId = 'assignment-123';
-      safeNav.navigate('AssignmentDetail', { assignmentId });
+      safeNav.navigate('TaskDetailModal', {
+        taskId: assignmentId,
+        taskType: 'assignment',
+      });
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith('AssignmentDetail', {
-        assignmentId,
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('TaskDetailModal', {
+        taskId: assignmentId,
+        taskType: 'assignment',
       });
     });
 
@@ -318,22 +322,24 @@ describe('Navigation Flows Integration Tests', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
 
-      safeNav.navigate('AddCourseNavigator');
+      safeNav.navigate('AddCourseFlow');
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith(
-        'AddCourseNavigator',
-      );
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('AddCourseFlow');
     });
 
     it('should navigate to Add Assignment modal flow', () => {
       const mockNavigation = createMockNavigation();
       const safeNav = new SafeNavigation(mockNavigation as any);
 
-      safeNav.navigate('AddAssignmentNavigator', { courseId: 'course-123' });
+      safeNav.navigate('AddAssignmentFlow', {
+        initialData: { course: { id: 'course-123' } as any },
+      });
 
       expect(mockNavigation.navigate).toHaveBeenCalledWith(
-        'AddAssignmentNavigator',
-        { courseId: 'course-123' },
+        'AddAssignmentFlow',
+        {
+          initialData: { course: { id: 'course-123' } as any },
+        },
       );
     });
 
@@ -341,12 +347,10 @@ describe('Navigation Flows Integration Tests', () => {
       const mockNavigation = createMockNavigation();
 
       // Simulate navigating to modal and then going back
-      mockNavigation.navigate('AddCourseNavigator');
+      mockNavigation.navigate('AddCourseFlow');
       mockNavigation.goBack();
 
-      expect(mockNavigation.navigate).toHaveBeenCalledWith(
-        'AddCourseNavigator',
-      );
+      expect(mockNavigation.navigate).toHaveBeenCalledWith('AddCourseFlow');
       expect(mockNavigation.goBack).toHaveBeenCalled();
     });
   });
@@ -357,16 +361,16 @@ describe('Navigation Flows Integration Tests', () => {
       const safeNav = new SafeNavigation(mockNavigation as any);
 
       // Navigate through multiple screens
-      safeNav.navigate('CoursesScreen');
+      safeNav.navigate('Courses');
       safeNav.navigate('CourseDetail', { courseId: 'course-123' });
-      safeNav.navigate('AssignmentDetail', { assignmentId: 'assignment-456' });
+      safeNav.navigate('TaskDetailModal', {
+        taskId: 'assignment-456',
+        taskType: 'assignment',
+      });
 
       // Verify navigation stack was built correctly
       expect(mockNavigation.navigate).toHaveBeenCalledTimes(3);
-      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
-        1,
-        'CoursesScreen',
-      );
+      expect(mockNavigation.navigate).toHaveBeenNthCalledWith(1, 'Courses');
       expect(mockNavigation.navigate).toHaveBeenNthCalledWith(
         2,
         'CourseDetail',

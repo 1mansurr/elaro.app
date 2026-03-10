@@ -38,7 +38,7 @@ const EDGE_SWIPE_THRESHOLD = 50;
 
 export const NotificationManagementScreen: React.FC = () => {
   const navigation = useNavigation();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>(
@@ -122,7 +122,7 @@ export const NotificationManagementScreen: React.FC = () => {
   };
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -131,7 +131,7 @@ export const NotificationManagementScreen: React.FC = () => {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent;
+    const translationX = event.nativeEvent.translationX as number;
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -169,11 +169,11 @@ export const NotificationManagementScreen: React.FC = () => {
   };
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -226,7 +226,7 @@ export const NotificationManagementScreen: React.FC = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+            <Ionicons name="arrow-back" size={20} color={textColor} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: textColor }]}>
             Notifications
@@ -300,7 +300,7 @@ const ScheduledNotificationsList: React.FC<ScheduledNotificationsListProps> = ({
   onRefresh,
   refreshing,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   if (loading) {
     return (
@@ -358,13 +358,13 @@ const ScheduledNotificationItem: React.FC<ScheduledNotificationItemProps> = ({
   notification,
   onCancel,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   // Light mode default colors
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const handleCancel = () => {
     Alert.alert(

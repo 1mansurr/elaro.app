@@ -81,7 +81,7 @@ export async function batchNavigationActions(
 export function createSafeResetAction<K extends keyof RootStackParamList>(
   routeName: K,
   params?: RootStackParamList[K],
-): typeof CommonActions.reset {
+) {
   return CommonActions.reset({
     index: 0,
     routes: [
@@ -105,7 +105,13 @@ export async function navigateAfterInteraction<
 ): Promise<void> {
   await InteractionManager.runAfterInteractions(() => {
     try {
-      navigation.navigate(routeName, params);
+      if (params === undefined) {
+        // @ts-expect-error - React Navigation's type system requires this pattern for optional params
+        navigation.navigate(routeName);
+      } else {
+        // @ts-expect-error - React Navigation's type system requires this pattern for optional params
+        navigation.navigate(routeName, params);
+      }
     } catch (error) {
       console.error('Delayed navigation failed:', error);
     }

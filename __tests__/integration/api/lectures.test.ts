@@ -51,14 +51,14 @@ describe('API Boundary: Lectures Edge Function', () => {
       const request: CreateLectureRequest = {
         course_id: testCourseId,
         lecture_name: 'Test Lecture',
-        lecture_date: new Date().toISOString(),
+        start_time: new Date().toISOString(),
       };
 
       (mockSupabase.functions.invoke as jest.Mock).mockResolvedValue({
         data: {
           id: 'lecture-123',
           lecture_name: request.lecture_name,
-          lecture_date: request.lecture_date,
+          start_time: request.start_time,
           course_id: testCourseId,
         },
         error: null,

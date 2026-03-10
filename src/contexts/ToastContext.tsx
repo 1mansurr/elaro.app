@@ -9,7 +9,7 @@ import React, {
 } from 'react';
 import { UndoToast } from '@/shared/components/UndoToast';
 
-interface ToastOptions {
+export interface ToastOptions {
   message: string;
   onUndo?: () => void;
   duration?: number; // in milliseconds, default 5000

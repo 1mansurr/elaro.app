@@ -68,6 +68,7 @@ describe('AuthScreen', () => {
       session: null,
       user: null,
       loading: false,
+      isInitializing: false,
       isGuest: true,
       signIn: mockSignIn,
       signUp: mockSignUp,

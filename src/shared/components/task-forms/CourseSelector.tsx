@@ -30,20 +30,19 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
   courses,
   onOpenModal,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   return (
     <View style={styles.field}>
-      <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         {label} {required && '*'}
       </Text>
       <TouchableOpacity
         style={[
           styles.selectButton,
           {
-            backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-            borderColor: theme.isDark ? '#3B4754' : 'transparent',
+            backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+            borderColor: isDark ? '#3B4754' : 'transparent',
           },
         ]}
         onPress={onOpenModal}
@@ -51,7 +50,7 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
         {isLoading ? (
           <ActivityIndicator
             size="small"
-            color={theme.isDark ? '#FFFFFF' : '#111418'}
+            color={isDark ? '#FFFFFF' : '#111418'}
           />
         ) : (
           <Text
@@ -59,10 +58,10 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
               styles.selectButtonText,
               {
                 color: !selectedCourse
-                  ? theme.isDark
+                  ? isDark
                     ? '#9CA3AF'
                     : '#9CA3AF'
-                  : theme.isDark
+                  : isDark
                     ? '#FFFFFF'
                     : '#111418',
               },
@@ -73,9 +72,9 @@ export const CourseSelector: React.FC<CourseSelectorProps> = ({
           </Text>
         )}
         <Ionicons
-          name="expand-more"
+          name="chevron-down"
           size={24}
-          color={theme.isDark ? '#FFFFFF' : '#111418'}
+          color={isDark ? '#FFFFFF' : '#111418'}
         />
       </TouchableOpacity>
     </View>

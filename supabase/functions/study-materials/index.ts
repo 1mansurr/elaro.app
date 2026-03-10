@@ -14,12 +14,13 @@
  * - POST /study-materials/share - Share study materials
  */
 
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { handleDbError } from '../api-v2/_handler-utils.ts';
 import { wrapOldHandler, extractIdFromUrl } from '../api-v2/_handler-utils.ts';
-import { corsHeaders } from '../_shared/cors.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
 import { errorResponse } from '../_shared/response.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
@@ -30,6 +31,7 @@ import {
   ApplyTemplateSchema,
   ShareMaterialsSchema,
 } from '../_shared/schemas/studyMaterials.ts';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import {
   type SupabaseClient,
   type User,
@@ -43,8 +45,19 @@ class StudyMaterialsService {
   ) {}
 
   async createTemplate(data: Record<string, unknown>) {
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = CreateTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
     const { template_name, task_type, template_data, is_public } =
-      CreateTemplateSchema.parse(data);
+      validationResult.data;
 
     const { data: template, error } = await this.supabaseClient
       .from('study_templates')
@@ -145,8 +158,18 @@ class StudyMaterialsService {
   }
 
   async applyTemplate(data: Record<string, unknown>) {
-    const { template_id, course_id, customizations } =
-      ApplyTemplateSchema.parse(data);
+    // PASS 1: Use safeParse to prevent ZodError from crashing worker
+    const validationResult = ApplyTemplateSchema.safeParse(data);
+    if (!validationResult.success) {
+      const zodError = validationResult.error;
+      const flattened = zodError.flatten();
+      throw new AppError('Validation failed', 400, 'VALIDATION_ERROR', {
+        message: 'Request body validation failed',
+        errors: flattened.fieldErrors,
+        formErrors: flattened.formErrors,
+      });
+    }
+    const { template_id, course_id, customizations } = validationResult.data;
 
     // Get template
     const { data: template, error: templateError } = await this.supabaseClient
@@ -182,6 +205,7 @@ class StudyMaterialsService {
 
     // Apply template data with customizations
     const templateData = { ...template.template_data, ...customizations };
+    // @ts-expect-error - Deno.env is available at runtime in Deno
     const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
     if (!encryptionKey)
       throw new AppError(
@@ -341,7 +365,10 @@ class StudyMaterialsService {
     }
 
     // Create sharing records
-    const sharingRecords = share_with_users.map((userId: string) => ({
+    const shareWithUsersTyped = Array.isArray(share_with_users)
+      ? share_with_users.filter((u): u is string => typeof u === 'string')
+      : [];
+    const sharingRecords = shareWithUsersTyped.map((userId: string) => ({
       material_id,
       shared_by: this.user.id,
       shared_with: userId,
@@ -381,8 +408,14 @@ async function handleListTemplates(req: AuthenticatedRequest) {
 
 async function handleUpdateTemplate(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const templateId = body?.template_id || extractIdFromUrl(req.url);
-  if (!templateId) {
+  const bodyTemplateId =
+    body && typeof body === 'object' && 'template_id' in body
+      ? typeof body.template_id === 'string'
+        ? body.template_id
+        : null
+      : null;
+  const templateId = bodyTemplateId || extractIdFromUrl(req.url);
+  if (!templateId || typeof templateId !== 'string') {
     throw new AppError(
       'Template ID is required',
       400,
@@ -390,13 +423,19 @@ async function handleUpdateTemplate(req: AuthenticatedRequest) {
     );
   }
   const service = new StudyMaterialsService(supabaseClient, user);
-  return await service.updateTemplate(templateId, body);
+  return await service.updateTemplate(templateId as string, body);
 }
 
 async function handleDeleteTemplate(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
-  const templateId = body?.template_id || extractIdFromUrl(req.url);
-  if (!templateId) {
+  const bodyTemplateId =
+    body && typeof body === 'object' && 'template_id' in body
+      ? typeof body.template_id === 'string'
+        ? body.template_id
+        : null
+      : null;
+  const templateId = bodyTemplateId || extractIdFromUrl(req.url);
+  if (!templateId || typeof templateId !== 'string') {
     throw new AppError(
       'Template ID is required',
       400,
@@ -404,7 +443,7 @@ async function handleDeleteTemplate(req: AuthenticatedRequest) {
     );
   }
   const service = new StudyMaterialsService(supabaseClient, user);
-  return await service.deleteTemplate(templateId);
+  return await service.deleteTemplate(templateId as string);
 }
 
 async function handleApplyTemplate(req: AuthenticatedRequest) {
@@ -493,10 +532,12 @@ function getHandler(
 }
 
 // Main handler with routing
-serve(async req => {
+serve(async (req: Request): Promise<Response> => {
+  const origin = req.headers.get('Origin');
+
   // Handle CORS
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return new Response('ok', { headers: getCorsHeaders(origin) });
   }
 
   try {

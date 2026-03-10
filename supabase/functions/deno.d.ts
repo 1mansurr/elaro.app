@@ -1,6 +1,6 @@
-/// <reference lib="deno.ns" />
-
 // Deno global namespace declarations for TypeScript
+// Note: The /// <reference lib="deno.ns" /> directive is not recognized by VS Code's TypeScript,
+// but Deno runtime will use it. This file provides the type declarations for VS Code.
 declare const Deno: {
   readonly env: {
     get(key: string): string | undefined;

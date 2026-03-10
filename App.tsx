@@ -2,7 +2,14 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import {
   NavigationContainer,
   NavigationContainerRef,
@@ -47,20 +54,53 @@ import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
 import { syncManager } from './src/services/syncManager';
 import { useAppStateSync } from './src/hooks/useAppState';
 import { navigationSyncService } from './src/services/navigationSync';
-import { AUTHENTICATED_ROUTES } from './src/navigation/utils/RouteGuards';
+import {
+  AUTHENTICATED_ROUTES,
+  NON_RESTORABLE_ROUTES,
+  isNonRestorableRoute,
+} from './src/navigation/utils/RouteGuards';
 import { validateAndLogConfig } from './src/utils/configValidator';
 import {
   setupQueryCachePersistence,
   persistQueryCache,
 } from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
-import { Subscription } from 'expo-modules-core';
-import { Task } from '@/types';
+import { Task, User } from '@/types';
+import { Session } from '@supabase/supabase-js';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
+import {
+  logBoot,
+  logWarn,
+  logError,
+  logNav,
+  logSplash,
+} from './src/utils/logger';
+import {
+  initializeSentry,
+  startStartupTransaction,
+  addBreadcrumb,
+  captureEvent,
+  captureError,
+  finishTransaction,
+  startSpan,
+  finishSpan,
+} from './src/services/monitoring/sentry';
 
 // Validate configuration on startup
 validateAndLogConfig();
+
+// Initialize Sentry for remote logging and performance tracing (Layer 2 & 3)
+initializeSentry(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
+
+// Start performance transaction for app startup (Layer 3)
+// This will be finished when NavigationContainer is ready
+const startupTransactionRef = { current: startStartupTransaction() };
+if (startupTransactionRef.current) {
+  addBreadcrumb({ message: 'App module loaded' });
+}
+
+logBoot('App module loaded');
 
 // Disable React Native DevTools overlay for non-technical users
 if (__DEV__) {
@@ -255,7 +295,7 @@ if (__DEV__) {
   }
 }
 
-// Initialize centralized error tracking service
+// Initialize centralized error tracking service (legacy - kept for compatibility)
 errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
 
 // Initialize cache monitoring (only in production)
@@ -371,7 +411,9 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
     }
 
     let cacheCleanup: (() => void) | null = null;
-    let appStateSubscription: Subscription | null = null;
+    let appStateSubscription: ReturnType<
+      typeof AppState.addEventListener
+    > | null = null;
 
     try {
       // CRITICAL: Wrap setup in try-catch to catch any errors from React Query
@@ -430,8 +472,22 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
 };
 
 // Component to handle navigation state saving with auth context
+// Made defensive to handle cases where AuthProvider might not be ready yet
 const NavigationStateHandler: React.FC = () => {
-  const { user, session } = useAuth();
+  // Safely access auth context
+  let user: User | null;
+  let session: Session | null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    session = auth.session;
+  } catch (error) {
+    // AuthProvider not ready yet - return null and let component re-render when ready
+    if (__DEV__) {
+      console.log('⚠️ [NavigationStateHandler] AuthProvider not ready yet');
+    }
+    return null;
+  }
 
   useEffect(() => {
     // Update current user ID in navigationSyncService
@@ -471,16 +527,26 @@ const NavigationStateValidator: React.FC<{
   useEffect(() => {
     let isCancelled = false;
     let maxTimeoutId: NodeJS.Timeout | null = null;
-    let validationTimeoutId: NodeJS.Timeout | null = null;
+
+    logNav('NavigationStateValidator effect triggered', {
+      authLoading,
+      hasSession: !!session,
+      hasUser: !!user,
+      hasInitialState: !!initialNavigationState,
+    });
 
     const validateNavigationState = async () => {
+      logNav('Starting navigation state validation');
+      addBreadcrumb({ message: 'Navigation state validation started' });
+      // STEP 3 FIX: Consolidated to single master timeout
       // GUARANTEED EXIT: Maximum timeout ensures we always resolve
       // This is the final safety net - app will render after 3 seconds maximum
       maxTimeoutId = setTimeout(() => {
         if (isCancelled) return;
-        console.warn(
-          '⚠️ [NavigationStateValidator] Maximum timeout reached - proceeding with safe fallback',
+        logWarn(
+          'Navigation state validation maximum timeout reached - proceeding with safe fallback',
         );
+        captureEvent('startup_timeout_nav_validation_max', { timeout: 3000 });
         onStateValidated(null);
       }, 3000); // 3 second absolute maximum
 
@@ -489,6 +555,7 @@ const NavigationStateValidator: React.FC<{
         // If auth is still loading after 1.5 seconds, proceed with current state
         // Note: If authLoading changes, the effect will re-run (it's in dependencies)
         if (authLoading) {
+          let authTimedOut = false;
           await new Promise<void>(resolve => {
             if (isCancelled) {
               resolve();
@@ -496,9 +563,16 @@ const NavigationStateValidator: React.FC<{
             }
 
             const timeoutId = setTimeout(() => {
-              console.warn(
-                '⚠️ [NavigationStateValidator] Auth still loading after timeout - proceeding with current state',
+              logWarn(
+                'Auth still loading after timeout - proceeding with current state',
               );
+              authTimedOut = true;
+              // FIX: Immediately call onStateValidated when auth times out
+              // This prevents the app from getting stuck if there's an initialNavigationState
+              if (!isCancelled) {
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+              }
               resolve();
             }, 1500); // 1.5 seconds max wait for auth
 
@@ -510,6 +584,9 @@ const NavigationStateValidator: React.FC<{
               resolve();
             }
           });
+
+          // If we timed out and already called onStateValidated, return early
+          if (authTimedOut || isCancelled) return;
         }
 
         // If we have a pre-loaded initial state, validate it
@@ -537,15 +614,12 @@ const NavigationStateValidator: React.FC<{
             const authenticatedRoutes =
               AUTHENTICATED_ROUTES as readonly string[];
 
-            // If user is not authenticated but saved state contains authenticated route, clear it
-            if (
-              !isAuthenticated &&
-              currentRoute &&
-              authenticatedRoutes.includes(currentRoute)
-            ) {
-              console.log(
-                '🔒 [NavigationStateValidator] User not authenticated, clearing authenticated navigation state',
-              );
+            // HARDENING: Check NON_RESTORABLE_ROUTES first - these should NEVER be restored
+            // This runs BEFORE getSafeInitialState to catch invalid routes early
+            if (currentRoute && isNonRestorableRoute(currentRoute)) {
+              logNav('Non-restorable route detected - discarding saved state', {
+                route: currentRoute,
+              });
               await navigationSyncService.clearState().catch(() => {
                 // Ignore errors - we're clearing state anyway
               });
@@ -555,22 +629,85 @@ const NavigationStateValidator: React.FC<{
               return;
             }
 
+            // Handle conditional routes that may be restored only under specific conditions
+            if (currentRoute === 'OnboardingFlow') {
+              // Only restore OnboardingFlow if onboarding is still incomplete
+              const isOnboardingComplete = user?.onboarding_completed ?? false;
+              if (isOnboardingComplete) {
+                logNav(
+                  'OnboardingFlow detected but onboarding complete - discarding saved state',
+                );
+                await navigationSyncService.clearState().catch(() => {
+                  // Ignore errors - we're clearing state anyway
+                });
+                if (isCancelled) return;
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+                return;
+              }
+              // Onboarding incomplete - will be validated further in getSafeInitialState
+            }
+
+            if (currentRoute === 'PaywallScreen') {
+              // Only restore PaywallScreen if subscription is inactive
+              const subscriptionStatus = user?.subscription_status;
+              const subscriptionTier = user?.subscription_tier;
+              const hasActiveSubscription =
+                subscriptionStatus === 'active' ||
+                (subscriptionTier && subscriptionTier !== 'free');
+
+              if (hasActiveSubscription) {
+                logNav(
+                  'PaywallScreen detected but subscription active - discarding saved state',
+                );
+                await navigationSyncService.clearState().catch(() => {
+                  // Ignore errors - we're clearing state anyway
+                });
+                if (isCancelled) return;
+                if (maxTimeoutId) clearTimeout(maxTimeoutId);
+                onStateValidated(null);
+                return;
+              }
+              // Subscription inactive - will be validated further in getSafeInitialState
+            }
+
+            // If user is not authenticated but saved state contains authenticated route, clear it
+            if (
+              !isAuthenticated &&
+              currentRoute &&
+              authenticatedRoutes.includes(currentRoute)
+            ) {
+              logNav(
+                'User not authenticated - clearing authenticated navigation state',
+              );
+              await navigationSyncService.clearState().catch(() => {
+                // Ignore errors - we're clearing state anyway
+              });
+              if (isCancelled) return;
+              onStateValidated(null);
+              return;
+            }
+
+            // STEP 3 FIX: Removed validationTimeoutId - rely on master timeout
             // Get safe initial state with timeout protection
             // This ensures we never wait indefinitely for navigation sync
-            validationTimeoutId = setTimeout(() => {
-              if (isCancelled) return;
-              console.warn(
-                '⚠️ [NavigationStateValidator] Navigation sync timeout - using safe fallback',
-              );
-              if (maxTimeoutId) clearTimeout(maxTimeoutId);
-              onStateValidated(null);
-            }, 1500); // 1.5 second timeout for navigation sync
+            // Master timeout (maxTimeoutId) will handle overall timeout
+
+            // Pass user info for conditional route validation (onboarding, subscription)
+            const userInfo = user
+              ? {
+                  onboarding_completed: user.onboarding_completed,
+                  subscription_status: user.subscription_status,
+                  subscription_tier: user.subscription_tier,
+                }
+              : undefined;
 
             const safeState = await Promise.race([
               navigationSyncService.getSafeInitialState(
                 isAuthenticated,
                 false, // Don't pass authLoading - we've already waited
                 user?.id,
+                userInfo,
               ),
               new Promise<NavigationState | null>(resolve => {
                 setTimeout(() => resolve(null), 1500);
@@ -578,25 +715,24 @@ const NavigationStateValidator: React.FC<{
             ]);
 
             if (isCancelled) return;
-            if (validationTimeoutId) clearTimeout(validationTimeoutId);
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
 
-            console.log(
-              `✅ [NavigationStateValidator] Navigation state validated successfully`,
-            );
+            logNav('Navigation state validated successfully');
+            addBreadcrumb({
+              message: 'Navigation state validated successfully',
+            });
             onStateValidated(safeState);
             return;
           } catch (error) {
             if (isCancelled) return;
-            console.error(
-              '❌ [NavigationStateValidator] Error validating initial state:',
-              error,
-            );
+            logError('Error validating initial navigation state', {
+              error: String(error),
+            });
+            captureError(error, { context: 'nav_state_validation' });
             // Clear state on error to prevent navigation errors
             await navigationSyncService.clearState().catch(() => {
               // Ignore errors during cleanup
             });
-            if (validationTimeoutId) clearTimeout(validationTimeoutId);
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
             onStateValidated(null);
             return;
@@ -606,18 +742,15 @@ const NavigationStateValidator: React.FC<{
         // No initial state to validate - proceed with default (null = default navigation)
         if (isCancelled) return;
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
-        console.log(
-          '✅ [NavigationStateValidator] No initial state - using default navigation',
-        );
+        logNav('No initial state - using default navigation');
         onStateValidated(null);
       } catch (error) {
         // Final catch-all - ensures we always resolve
         if (isCancelled) return;
-        console.error(
-          '❌ [NavigationStateValidator] Unexpected error during validation:',
-          error,
-        );
-        if (validationTimeoutId) clearTimeout(validationTimeoutId);
+        logError('Unexpected error during navigation state validation', {
+          error: String(error),
+        });
+        captureError(error, { context: 'nav_state_validation_unexpected' });
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
         onStateValidated(null);
       }
@@ -629,7 +762,6 @@ const NavigationStateValidator: React.FC<{
     return () => {
       isCancelled = true;
       if (maxTimeoutId) clearTimeout(maxTimeoutId);
-      if (validationTimeoutId) clearTimeout(validationTimeoutId);
     };
   }, [
     authLoading,
@@ -737,6 +869,117 @@ const DeepLinkHandler: React.FC = () => {
   return null;
 };
 
+// Debug Log Viewer Component - Shows console logs on screen (enabled for debugging)
+const DebugLogViewer: React.FC = () => {
+  const [logs, setLogs] = useState<string[]>([]);
+  const [isVisible, setIsVisible] = useState(true); // Enable for debugging
+  const [isMinimized, setIsMinimized] = useState(false);
+
+  useEffect(() => {
+    // Capture console logs
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    const addLog = (prefix: string, args: any[]) => {
+      const logMessage = args
+        .map(arg => {
+          if (typeof arg === 'object') {
+            try {
+              return JSON.stringify(arg, null, 2);
+            } catch {
+              return String(arg);
+            }
+          }
+          return String(arg);
+        })
+        .join(' ');
+
+      setLogs(prev => {
+        const newLogs = [...prev.slice(-99), `${prefix} ${logMessage}`];
+        return newLogs;
+      });
+    };
+
+    console.log = (...args: any[]) => {
+      addLog('[LOG]', args);
+      originalLog(...args);
+    };
+
+    console.error = (...args: any[]) => {
+      addLog('[ERROR]', args);
+      originalError(...args);
+    };
+
+    console.warn = (...args: any[]) => {
+      addLog('[WARN]', args);
+      originalWarn(...args);
+    };
+
+    return () => {
+      console.log = originalLog;
+      console.error = originalError;
+      console.warn = originalWarn;
+    };
+  }, []);
+
+  if (!isVisible) {
+    return (
+      <TouchableOpacity
+        style={styles.debugToggleButton}
+        onPress={() => setIsVisible(true)}>
+        <Text style={styles.debugToggleText}>Show Logs</Text>
+      </TouchableOpacity>
+    );
+  }
+
+  return (
+    <View
+      style={[
+        styles.debugContainer,
+        isMinimized && styles.debugContainerMinimized,
+      ]}>
+      <View style={styles.debugHeader}>
+        <Text style={styles.debugHeaderText}>Debug Logs ({logs.length})</Text>
+        <View style={styles.debugButtons}>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setIsMinimized(!isMinimized)}>
+            <Text style={styles.debugButtonText}>
+              {isMinimized ? 'Expand' : 'Minimize'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setLogs([])}>
+            <Text style={styles.debugButtonText}>Clear</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.debugButton}
+            onPress={() => setIsVisible(false)}>
+            <Text style={styles.debugButtonText}>Hide</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      {!isMinimized && (
+        <ScrollView
+          style={styles.debugScrollView}
+          contentContainerStyle={styles.debugScrollContent}>
+          {logs.length === 0 ? (
+            <Text style={styles.debugEmptyText}>No logs yet...</Text>
+          ) : (
+            logs.map((log, i) => (
+              <Text key={i} style={styles.debugLogText}>
+                {log}
+              </Text>
+            ))
+          )}
+        </ScrollView>
+      )}
+    </View>
+  );
+};
+
 // Component to integrate React Query with Error Boundary
 const AppWithErrorBoundary: React.FC<{
   initialNavigationState?: NavigationState;
@@ -759,22 +1002,48 @@ const AppWithErrorBoundary: React.FC<{
   useAppStateSync();
 
   const handleStateValidated = useCallback((state: NavigationState | null) => {
+    logNav('Navigation state validated', { hasState: !!state });
+    addBreadcrumb({ message: 'Navigation state validated' });
     setSafeInitialState(state);
     setIsStateValidated(true);
   }, []);
 
   const handleAppInitializerStateChange = useCallback(
     (state: { appIsReady: boolean; isAnimationFinished: boolean }) => {
-      console.log(
-        '📱 [AppWithErrorBoundary] AppInitializer state changed:',
-        state,
-      );
+      logBoot('AppInitializer state changed', state);
       setAppInitializerState(state);
     },
     [],
   );
 
   const { appIsReady, isAnimationFinished } = appInitializerState;
+
+  // Don't render NavigationContainer until navigation state validation is complete
+  // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
+  const shouldShowLoading = !isStateValidated;
+
+  // Track when isStateValidated changes
+  useEffect(() => {
+    logNav('Navigation state validation status changed', {
+      isStateValidated,
+      appIsReady,
+      isAnimationFinished,
+    });
+    // Debug logging for blank screen diagnosis (using console.error so it works in production)
+    console.error('🔍 [DEBUG] App State Changed:', {
+      appIsReady,
+      isAnimationFinished,
+      isStateValidated,
+      shouldShowLoading,
+      navigationContainerMounted,
+    });
+  }, [
+    isStateValidated,
+    appIsReady,
+    isAnimationFinished,
+    shouldShowLoading,
+    navigationContainerMounted,
+  ]);
 
   // Hide native splash screen ONLY when ALL conditions are met:
   // 1. appIsReady === true
@@ -829,19 +1098,17 @@ const AppWithErrorBoundary: React.FC<{
 
     if (allConditionsMet && !hasHiddenSplashRef.current) {
       hasHiddenSplashRef.current = true;
-      console.log(
-        '✅ [AppWithErrorBoundary] All conditions met - hiding native splash',
-        {
-          appIsReady,
-          isAnimationFinished,
-          isStateValidated,
-          navigationContainerRendered,
-          navigationContainerMounted,
-        },
-      );
+      logBoot('All conditions met - hiding native splash', {
+        appIsReady,
+        isAnimationFinished,
+        isStateValidated,
+        navigationContainerRendered,
+        navigationContainerMounted,
+      });
+      addBreadcrumb({ message: 'Splash screen hidden' });
       SplashScreen.hideAsync().catch(error => {
-        console.error('❌ Failed to hide splash screen:', error);
-        // Don't throw - app can continue
+        logError('Failed to hide splash screen', { error: String(error) });
+        captureError(error, { context: 'splash_hide' });
       });
     }
   }, [
@@ -856,19 +1123,23 @@ const AppWithErrorBoundary: React.FC<{
   useEffect(() => {
     const fallbackSplashTimeout = setTimeout(() => {
       if (!hasHiddenSplashRef.current) {
-        console.warn(
-          '⚠️ [AppWithErrorBoundary] Splash screen fallback timeout - forcing hide',
-          {
-            appIsReady,
-            isAnimationFinished,
-            isStateValidated,
-            shouldShowLoading,
-            navigationContainerMounted,
-          },
-        );
+        logWarn('Splash screen fallback timeout - forcing hide', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          shouldShowLoading,
+          navigationContainerMounted,
+        });
+        captureEvent('startup_timeout_splash_fallback', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+        });
         hasHiddenSplashRef.current = true;
         SplashScreen.hideAsync().catch(error => {
-          console.error('❌ Failed to hide splash screen (fallback):', error);
+          logError('Failed to hide splash screen (fallback)', {
+            error: String(error),
+          });
         });
       }
     }, 6000); // 6 second absolute maximum
@@ -885,27 +1156,96 @@ const AppWithErrorBoundary: React.FC<{
   // Defensive fallback: NavigationStateValidator guarantees resolution within 3 seconds,
   // but this provides a final safety net (5 seconds) in case of unexpected issues
   useEffect(() => {
+    // IMMEDIATE FALLBACK: Force validation after 2 seconds if still stuck
+    // This helps debug and ensures the app doesn't stay on white screen
+    const immediateFallback = setTimeout(() => {
+      if (!isStateValidated) {
+        logWarn(
+          'Immediate fallback triggered (2s) - forcing render to prevent white screen',
+          {
+            appIsReady,
+            isAnimationFinished,
+            shouldShowLoading,
+          },
+        );
+        captureEvent('startup_timeout_nav_validation_immediate', {
+          appIsReady,
+          isAnimationFinished,
+        });
+        setIsStateValidated(true);
+        setSafeInitialState(null);
+      }
+    }, 2000); // 2 second immediate fallback
+
+    // EXISTING FALLBACK: 5 second final safety net
     const fallbackTimeout = setTimeout(() => {
       if (!isStateValidated) {
-        console.error(
-          '❌ [AppWithErrorBoundary] Navigation state validation did not complete within expected time - forcing render',
+        logError(
+          'Navigation state validation did not complete within expected time - forcing render',
         );
+        captureEvent('startup_timeout_nav_validation_final', {
+          timeout: 5000,
+        });
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
     }, 5000); // 5 second final safety net (NavigationStateValidator max is 3s)
 
-    return () => clearTimeout(fallbackTimeout);
-  }, [isStateValidated]);
+    return () => {
+      clearTimeout(immediateFallback);
+      clearTimeout(fallbackTimeout);
+    };
+  }, [isStateValidated, appIsReady, isAnimationFinished, shouldShowLoading]);
 
-  // Don't render NavigationContainer until navigation state validation is complete
-  // Note: NavigationStateValidator (inside AppProviders) handles auth loading check
-  const shouldShowLoading = !isStateValidated;
+  // CRITICAL: Hard safety net - guarantees splash always hides and app always renders
+  // This ensures no path exists where app remains stuck on white screen
+  useEffect(() => {
+    const hardSafetyTimeout = setTimeout(() => {
+      // Force unblock all gates if still blocking after 5 seconds
+      if (!hasHiddenSplashRef.current) {
+        logWarn('Hard safety net triggered - forcing all gates open', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          navigationContainerMounted,
+        });
+        captureEvent('startup_timeout_hard_safety', {
+          appIsReady,
+          isAnimationFinished,
+          isStateValidated,
+          navigationContainerMounted,
+        });
+
+        // Force all conditions to true
+        if (!isStateValidated) {
+          setIsStateValidated(true);
+          setSafeInitialState(null);
+        }
+
+        // Force hide splash screen
+        hasHiddenSplashRef.current = true;
+        SplashScreen.hideAsync().catch(error => {
+          console.error(
+            '❌ Failed to hide splash screen (hard safety):',
+            error,
+          );
+        });
+      }
+    }, 5000); // 5 second absolute maximum
+
+    return () => clearTimeout(hardSafetyTimeout);
+  }, [
+    appIsReady,
+    isAnimationFinished,
+    isStateValidated,
+    navigationContainerMounted,
+  ]);
 
   return (
     <ErrorBoundary onReset={reset}>
       <AppProviders queryClient={queryClient}>
         {!__DEV__ && <QueryCacheSetup queryClient={queryClient} />}
+        <DebugLogViewer />
         <AppInitializer onStateChange={handleAppInitializerStateChange}>
           {shouldShowLoading ? (
             <View
@@ -913,9 +1253,12 @@ const AppWithErrorBoundary: React.FC<{
                 flex: 1,
                 justifyContent: 'center',
                 alignItems: 'center',
-                backgroundColor: COLORS.background,
+                backgroundColor: '#f8f9fa', // Changed from COLORS.background to ensure visibility
               }}>
               <ActivityIndicator size="large" color={COLORS.primary} />
+              <Text style={{ marginTop: 16, color: '#666', fontSize: 14 }}>
+                Loading...
+              </Text>
               <NavigationStateValidator
                 initialNavigationState={initialNavigationState}
                 onStateValidated={handleStateValidated}
@@ -931,6 +1274,18 @@ const AppWithErrorBoundary: React.FC<{
                 onReady={() => {
                   // Mark NavigationContainer as mounted
                   setNavigationContainerMounted(true);
+                  logNav('NavigationContainer ready');
+                  addBreadcrumb({ message: 'NavigationContainer ready' });
+
+                  // Finish startup transaction (Layer 3: Performance)
+                  if (startupTransactionRef.current) {
+                    finishTransaction(startupTransactionRef.current);
+                    startupTransactionRef.current = null;
+                    logBoot('First screen rendered - startup complete');
+                    addBreadcrumb({
+                      message: 'First screen rendered - startup complete',
+                    });
+                  }
                 }}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
@@ -974,7 +1329,7 @@ const AppInitializer: React.FC<{
   // Notify parent when state changes
   useEffect(() => {
     if (onStateChange) {
-      console.log('📱 [AppInitializer] State changed, notifying parent:', {
+      logBoot('AppInitializer state changed', {
         appIsReady,
         isAnimationFinished,
       });
@@ -982,21 +1337,38 @@ const AppInitializer: React.FC<{
     }
   }, [appIsReady, isAnimationFinished, onStateChange]);
 
-  // Add safety timeout - force show app after 3 seconds max
+  // CRITICAL: Hard safety net - guarantees app always renders
+  // This is a production-safe fallback that does NOT change happy path behavior
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
+      // Force unblock if any gate is still blocking after 4 seconds
       if (!appIsReady || !isAnimationFinished) {
-        console.warn('⚠️ App initialization timeout - forcing app to show');
+        logWarn('AppInitializer safety timeout - forcing app to show', {
+          appIsReady,
+          isAnimationFinished,
+        });
+        captureEvent('startup_timeout_app_initializer', {
+          appIsReady,
+          isAnimationFinished,
+        });
         setAppIsReady(true);
         setAnimationFinished(true);
       }
-    }, 3000); // 3 second max timeout
+    }, 4000); // 4 second absolute maximum
 
     return () => clearTimeout(safetyTimeout);
   }, []);
 
   useEffect(() => {
     const prepare = async () => {
+      logBoot('AppInitializer prepare started');
+      addBreadcrumb({ message: 'AppInitializer prepare started' });
+
+      // Start auth initialization span (Layer 3: Performance)
+      const authSpan = startupTransactionRef.current
+        ? startSpan(startupTransactionRef.current, 'auth_init', 'app.auth')
+        : null;
+
       try {
         // Set a minimum display time for splash (500ms) for better UX
         // Reduced from 800ms for faster perceived startup
@@ -1163,14 +1535,16 @@ const AppInitializer: React.FC<{
         // Only wait for minimum splash time - don't wait for sync manager
         // Sync manager will initialize in background and won't block app startup
         await minSplashTime;
+        logBoot('AppInitializer prepare completed');
+        addBreadcrumb({ message: 'AppInitializer prepare completed' });
       } catch (e) {
-        console.error('❌ App initialization error:', e);
-        errorTracking.captureError(e as Error, {
-          tags: { component: 'app', phase: 'initialization' },
-        });
+        logError('App initialization error', { error: String(e) });
+        captureError(e, { context: 'app_initialization' });
         // Don't block app startup - continue with degraded functionality
       } finally {
+        finishSpan(authSpan);
         setAppIsReady(true);
+        logBoot('AppInitializer appIsReady set to true');
       }
     };
 
@@ -1184,10 +1558,10 @@ const AppInitializer: React.FC<{
   useEffect(() => {
     const animationTimeout = setTimeout(() => {
       if (!isAnimationFinished) {
-        console.warn('⚠️ Animation timeout - forcing finish');
+        logWarn('Animation timeout - forcing finish');
         setAnimationFinished(true);
       }
-    }, 2000); // 2 second timeout for animation
+    }, 1500); // Reduced to 1.5s to match AnimatedSplashScreen timeout
 
     return () => clearTimeout(animationTimeout);
   }, [isAnimationFinished]);
@@ -1203,6 +1577,8 @@ const AppInitializer: React.FC<{
         <AnimatedSplashScreen
           onAnimationFinish={() => {
             // Mark animation as finished (will be checked when app is ready)
+            logSplash('Splash animation finished');
+            addBreadcrumb({ message: 'Splash animation finished' });
             setAnimationFinished(true);
           }}
         />
@@ -1257,7 +1633,19 @@ const ThemedStatusBar = () => {
 // Main App Component
 // Move this logic into a child component
 function AuthEffects() {
-  const { user } = useAuth();
+  // Safely access auth context - don't throw if not ready
+  // Made defensive to handle cases where AuthProvider might not be ready yet
+  let user: User | null;
+  try {
+    const auth = useAuth();
+    user = auth.user;
+  } catch (error) {
+    // AuthProvider not ready yet - return null and let component re-render when ready
+    if (__DEV__) {
+      console.log('⚠️ [AuthEffects] AuthProvider not ready yet');
+    }
+    return null;
+  }
 
   useEffect(() => {
     const setupNotifications = async () => {
@@ -1451,6 +1839,31 @@ function App() {
             .loadState()
             .then(state => {
               if (state) {
+                // HARDENING: Sanitize state immediately after loading
+                // Check if PostOnboardingWelcome or other non-restorable routes are in the state
+                const getRouteName = (
+                  navState: NavigationState,
+                ): string | null => {
+                  if (!navState?.routes || navState.routes.length === 0)
+                    return null;
+                  const currentRoute = navState.routes[navState.index || 0];
+                  if (!currentRoute) return null;
+                  if (currentRoute.state && 'routes' in currentRoute.state) {
+                    return getRouteName(currentRoute.state as NavigationState);
+                  }
+                  return currentRoute.name || null;
+                };
+
+                const currentRoute = getRouteName(state);
+                if (currentRoute && isNonRestorableRoute(currentRoute)) {
+                  console.log(
+                    `🚫 [App] Non-restorable route "${currentRoute}" detected in loaded state. Discarding.`,
+                  );
+                  // Don't set the state - let it start fresh
+                  navigationSyncService.clearState().catch(() => {});
+                  return;
+                }
+
                 setInitialNavigationState(state);
                 console.log(
                   '✅ Navigation state loaded, will validate after auth loads',
@@ -1460,6 +1873,9 @@ function App() {
             .catch(error => {
               console.warn('⚠️ Navigation state restoration failed:', error);
             }),
+
+          // Clean up legacy navigation state keys (non-blocking, idempotent)
+          navigationSyncService.cleanupLegacyKeys(),
         ]).catch(error => {
           console.warn('⚠️ Some app initialization tasks failed:', error);
         });
@@ -1501,3 +1917,88 @@ function App() {
 }
 
 export default App;
+
+// Styles for Debug Log Viewer
+const styles = StyleSheet.create({
+  debugContainer: {
+    position: 'absolute',
+    top: 50,
+    left: 10,
+    right: 10,
+    maxHeight: 400,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#FF6B6B',
+    zIndex: 99999,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  debugContainerMinimized: {
+    maxHeight: 50,
+  },
+  debugHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#333',
+  },
+  debugHeaderText: {
+    color: '#FF6B6B',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  debugButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  debugButton: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#333',
+    borderRadius: 4,
+  },
+  debugButtonText: {
+    color: '#FFF',
+    fontSize: 10,
+  },
+  debugScrollView: {
+    maxHeight: 350,
+  },
+  debugScrollContent: {
+    padding: 10,
+  },
+  debugLogText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontFamily: 'monospace',
+    marginBottom: 4,
+    lineHeight: 14,
+  },
+  debugEmptyText: {
+    color: '#999',
+    fontSize: 12,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 20,
+  },
+  debugToggleButton: {
+    position: 'absolute',
+    top: 50,
+    right: 10,
+    backgroundColor: 'rgba(255, 107, 107, 0.8)',
+    padding: 8,
+    borderRadius: 4,
+    zIndex: 99999,
+  },
+  debugToggleText: {
+    color: '#FFF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+});

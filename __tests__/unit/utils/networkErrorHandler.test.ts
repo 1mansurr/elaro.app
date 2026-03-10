@@ -126,7 +126,7 @@ describe('networkErrorHandler utilities', () => {
 
       const fetchPromise = networkAwareFetch(
         'https://api.example.com',
-        { timeout: 30000 },
+        {} as RequestInit,
         true,
       );
 

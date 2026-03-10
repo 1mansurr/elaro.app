@@ -23,7 +23,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
   onClose,
   onDelete,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const courseLabel = courseCode
     ? `${courseCode.toUpperCase()}`
@@ -34,8 +34,8 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: theme.isDark ? '#18212B' : '#FFFFFF',
-          borderBottomColor: theme.isDark ? '#374151' : '#E5E7EB',
+          backgroundColor: isDark ? '#18212B' : '#FFFFFF',
+          borderBottomColor: isDark ? '#374151' : '#E5E7EB',
         },
       ]}>
       {/* Course Badge */}
@@ -43,18 +43,16 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
         style={[
           styles.courseBadge,
           {
-            backgroundColor: theme.isDark
+            backgroundColor: isDark
               ? COLORS.primary + '33'
               : COLORS.primary + '1A',
-            borderColor: theme.isDark
-              ? COLORS.primary + '33'
-              : COLORS.primary + '1A',
+            borderColor: isDark ? COLORS.primary + '33' : COLORS.primary + '1A',
           },
         ]}>
         <Text
           style={[
             styles.courseBadgeText,
-            { color: theme.isDark ? '#FFFFFF' : COLORS.primary },
+            { color: isDark ? '#FFFFFF' : COLORS.primary },
           ]}>
           {courseLabel}
         </Text>
@@ -66,7 +64,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
           style={[
             styles.iconButton,
             {
-              backgroundColor: theme.isDark ? '#283039' : '#F3F4F6',
+              backgroundColor: isDark ? '#283039' : '#F3F4F6',
             },
           ]}
           onPress={onEdit}
@@ -74,7 +72,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
           <Ionicons
             name="pencil-outline"
             size={20}
-            color={theme.isDark ? '#FFFFFF' : '#111418'}
+            color={isDark ? '#FFFFFF' : '#111418'}
           />
         </TouchableOpacity>
 
@@ -83,7 +81,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
             style={[
               styles.iconButton,
               {
-                backgroundColor: theme.isDark ? '#283039' : '#F3F4F6',
+                backgroundColor: isDark ? '#283039' : '#F3F4F6',
               },
             ]}
             onPress={onDelete}
@@ -97,7 +95,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
             style={[
               styles.iconButton,
               {
-                backgroundColor: theme.isDark ? '#283039' : '#F3F4F6',
+                backgroundColor: isDark ? '#283039' : '#F3F4F6',
               },
             ]}
             onPress={onClose}
@@ -105,7 +103,7 @@ export const DetailSheetHeader: React.FC<DetailSheetHeaderProps> = ({
             <Ionicons
               name="close"
               size={24}
-              color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
             />
           </TouchableOpacity>
         )}

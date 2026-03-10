@@ -339,6 +339,7 @@ const HomeScreen = () => {
             onPress: () => navigation.navigate('AddStudySessionFlow'),
           },
         ]}
+        isOpen={isFabOpen}
         onStateChange={handleFabStateChange}
         onDoubleTap={() => {}}
         draftCount={0}

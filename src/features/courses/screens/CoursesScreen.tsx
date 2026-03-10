@@ -1,5 +1,11 @@
 // FILE: src/features/courses/screens/CoursesScreen.tsx
-import React, { useLayoutEffect, useCallback, useState, memo } from 'react';
+import React, {
+  useLayoutEffect,
+  useCallback,
+  useState,
+  memo,
+  useRef,
+} from 'react';
 import {
   View,
   Text,
@@ -12,7 +18,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useCourses } from '@/hooks/useDataQueries';
@@ -28,12 +34,15 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 import { BlurView } from 'expo-blur';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/services/supabase';
 
 // Define the navigation prop type for this screen
 type CoursesScreenNavigationProp =
   NativeStackNavigationProp<RootStackParamList>;
 
 // Memoized course item component - simplified design
+// Custom comparison function for better memoization
 const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
   ({ item, onPress }) => {
     const { theme } = useTheme();
@@ -59,6 +68,14 @@ const CourseItem = memo<{ item: Course; onPress: (id: string) => void }>(
       </TouchableOpacity>
     );
   },
+  (prevProps, nextProps) => {
+    // Only re-render if item ID or courseName changes
+    return (
+      prevProps.item.id === nextProps.item.id &&
+      prevProps.item.courseName === nextProps.item.courseName &&
+      prevProps.onPress === nextProps.onPress
+    );
+  },
 );
 CourseItem.displayName = 'CourseItem';
 
@@ -68,12 +85,17 @@ const CoursesScreen = () => {
   const offerings = { current: null as any };
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+
+  // State for total course count (to check if user has hit the limit)
+  const [totalCourseCount, setTotalCourseCount] = useState<number | null>(null);
 
   // JS Thread monitoring (dev only)
+  // Increased threshold to 25ms to reduce false positives (25ms = 40fps, acceptable for list screens)
   const jsThreadMetrics = useJSThreadMonitor({
     enabled: __DEV__,
     logSlowFrames: true,
-    slowFrameThreshold: 20,
+    slowFrameThreshold: 25,
   });
 
   // Memory monitoring (dev only)
@@ -81,7 +103,8 @@ const CoursesScreen = () => {
 
   // Log warnings in dev if too many slow frames
   React.useEffect(() => {
-    if (__DEV__ && jsThreadMetrics.slowFrameCount > 10) {
+    if (__DEV__ && jsThreadMetrics.slowFrameCount > 20) {
+      // Only log if we have more than 20 slow frames (reduced frequency)
       console.warn(
         `⚠️ CoursesScreen: ${jsThreadMetrics.slowFrameCount} slow frames detected. Avg frame time: ${jsThreadMetrics.averageFrameTime.toFixed(2)}ms`,
       );
@@ -120,6 +143,63 @@ const CoursesScreen = () => {
 
   // Flatten all pages into a single array
   const courses = data?.pages.flatMap(page => page.courses) ?? [];
+
+  // Fetch total course count to check if user has hit the free tier limit
+  React.useEffect(() => {
+    const fetchTotalCourseCount = async () => {
+      if (!user?.id) {
+        setTotalCourseCount(null);
+        return;
+      }
+
+      try {
+        const { count, error } = await supabase
+          .from('courses')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .is('deleted_at', null);
+
+        if (error) {
+          console.error('Error fetching total course count:', error);
+          setTotalCourseCount(null);
+        } else {
+          setTotalCourseCount(count || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching total course count:', error);
+        setTotalCourseCount(null);
+      }
+    };
+
+    fetchTotalCourseCount();
+  }, [user?.id]);
+
+  // Refetch courses when screen comes into focus, but only if:
+  // 1. We don't have any data yet, OR
+  // 2. The data is stale (older than 30 seconds)
+  // This prevents excessive refetches while still ensuring fresh data after course creation
+  const lastRefetchTime = useRef<number>(0);
+  const REFETCH_COOLDOWN = 30000; // 30 seconds cooldown between refetches
+
+  useFocusEffect(
+    useCallback(() => {
+      const now = Date.now();
+      const timeSinceLastRefetch = now - lastRefetchTime.current;
+
+      // Only refetch if:
+      // - Not currently loading/refetching
+      // - At least 30 seconds have passed since the last refetch (cooldown)
+      // - We don't have data (first load) OR cooldown has passed (stale data refresh)
+      if (
+        !isLoading &&
+        !isRefetching &&
+        timeSinceLastRefetch >= REFETCH_COOLDOWN
+      ) {
+        lastRefetchTime.current = now;
+        refetch();
+      }
+    }, [refetch, isLoading, isRefetching, courses.length]),
+  );
 
   // Handle upgrade to unlock locked courses
   const handleUpgrade = useCallback(async () => {
@@ -206,13 +286,108 @@ const CoursesScreen = () => {
     );
   }, [isFetchingNextPage, theme]);
 
-  // Empty state
-  const renderEmptyState = () => (
-    <View style={styles.emptyStateContainer}>
-      <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-        {searchQuery.trim() ? 'No courses found' : 'You have no courses.'}
-      </Text>
-    </View>
+  // Check if user should see the course limit banner
+  const subscriptionTier = user?.subscription_tier || 'free';
+  const shouldShowLimitBanner =
+    subscriptionTier === 'free' &&
+    totalCourseCount !== null &&
+    totalCourseCount >= 2;
+
+  // Course limit banner component
+  const renderCourseLimitBanner = useCallback(() => {
+    if (!shouldShowLimitBanner) {
+      return null;
+    }
+
+    return (
+      <View
+        style={[
+          styles.limitBanner,
+          {
+            backgroundColor: theme.warningBackground || '#FEF3C7',
+            borderColor: theme.border || '#FCD34D',
+          },
+        ]}>
+        <View style={styles.limitBannerContent}>
+          <Ionicons
+            name="information-circle"
+            size={20}
+            color={theme.warning || '#92400E'}
+            style={styles.limitBannerIcon}
+          />
+          <Text
+            style={[
+              styles.limitBannerText,
+              { color: theme.warning || '#92400E' },
+            ]}>
+            You're on the free plan with a limit of 2 courses. Upgrade to add
+            and view unlimited courses.
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.limitBannerButton,
+            { backgroundColor: COLORS.primary },
+          ]}
+          onPress={handleUpgrade}
+          activeOpacity={0.8}>
+          <Text style={styles.limitBannerButtonText}>Upgrade</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }, [shouldShowLimitBanner, theme, handleUpgrade]);
+
+  // Empty state - memoized to prevent re-renders
+  const renderEmptyState = useCallback(
+    () => (
+      <View style={styles.emptyStateContainer}>
+        <Ionicons
+          name={searchQuery.trim() ? 'search-outline' : 'book-outline'}
+          size={64}
+          color={theme.textSecondary || '#9ca3af'}
+          style={styles.emptyStateIcon}
+        />
+        <Text style={[styles.emptyStateTitle, { color: theme.text }]}>
+          {searchQuery.trim() ? 'No courses found' : 'No courses yet'}
+        </Text>
+        <Text
+          style={[
+            styles.emptyStateMessage,
+            { color: theme.textSecondary || '#9ca3af' },
+          ]}>
+          {searchQuery.trim()
+            ? 'Try adjusting your search terms or filters.'
+            : 'Create your first course to start organizing your studies. Tap "Add New Course" below to get started.'}
+        </Text>
+      </View>
+    ),
+    [searchQuery, theme.text, theme.textSecondary],
+  );
+
+  // Memoized header component to prevent re-renders
+  const renderHeader = useCallback(
+    () => (
+      <>
+        {renderCourseLimitBanner()}
+        <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
+      </>
+    ),
+    [renderCourseLimitBanner, handleUpgrade],
+  );
+
+  // getItemLayout for better FlatList performance (estimated item height: 88px)
+  // padding: 20*2 = 40, marginBottom: 16, text height: ~32 = ~88px total
+  const ITEM_HEIGHT = 88;
+  const getItemLayout = useCallback(
+    (
+      _data: ArrayLike<Course> | null | undefined,
+      index: number,
+    ): { length: number; offset: number; index: number } => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    [],
   );
 
   return (
@@ -291,29 +466,26 @@ const CoursesScreen = () => {
           refetch={refetch}
           isRefetching={isRefetching}
           onRefresh={refetch}
-          emptyTitle=""
-          emptyMessage=""
-          emptyIcon="">
+          emptyStateComponent={renderEmptyState()}>
           <FlatList
             data={courses}
             renderItem={renderCourse}
             keyExtractor={item => item.id}
+            getItemLayout={getItemLayout}
             contentContainerStyle={[
               styles.listContainer,
               courses.length === 0 && styles.listContainerEmpty,
             ]}
             ListEmptyComponent={renderEmptyState}
-            ListHeaderComponent={
-              <LockedItemsBanner itemType="courses" onUpgrade={handleUpgrade} />
-            }
+            ListHeaderComponent={renderHeader}
             ListFooterComponent={renderFooter}
             onEndReached={handleLoadMore}
             onEndReachedThreshold={0.5}
             removeClippedSubviews={true}
-            maxToRenderPerBatch={10}
-            windowSize={5}
+            maxToRenderPerBatch={8}
+            windowSize={3}
             updateCellsBatchingPeriod={50}
-            initialNumToRender={10}
+            initialNumToRender={8}
             showsVerticalScrollIndicator={false}
           />
         </QueryStateWrapper>
@@ -519,18 +691,68 @@ const styles = StyleSheet.create({
     paddingBottom: 200, // Space for bottom section
   },
   listContainerEmpty: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyStateContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 60,
+    paddingHorizontal: SPACING.xl,
+    minHeight: 400,
+  },
+  emptyStateIcon: {
+    marginBottom: SPACING.lg,
+  },
+  emptyStateTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: SPACING.sm,
   },
   emptyStateText: {
     fontSize: 16,
     textAlign: 'center',
+  },
+  emptyStateMessage: {
+    fontSize: 16,
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 300,
+    alignSelf: 'center',
+  },
+  limitBanner: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+  },
+  limitBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  limitBannerIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  limitBannerText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  limitBannerButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  limitBannerButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   courseItem: {
     flexDirection: 'row',

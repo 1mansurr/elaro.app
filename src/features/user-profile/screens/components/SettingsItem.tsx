@@ -27,16 +27,16 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
   rightContent,
   showChevron = true,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const defaultIconColor = isDestructive
     ? '#EF4444'
-    : iconColor || (theme.isDark ? '#9CA3AF' : '#4B5563');
+    : iconColor || (isDark ? '#9CA3AF' : '#4B5563');
   const defaultIconBg = isDestructive
-    ? theme.isDark
+    ? isDark
       ? 'rgba(239, 68, 68, 0.2)'
       : '#FEE2E2'
-    : iconBgColor || (theme.isDark ? '#374151' : '#F3F4F6');
+    : iconBgColor || (isDark ? '#374151' : '#F3F4F6');
 
   return (
     <TouchableOpacity
@@ -55,7 +55,7 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
         style={[
           styles.settingLabel,
           isDestructive && styles.settingLabelDestructive,
-          { color: theme.isDark ? '#FFFFFF' : COLORS.text },
+          { color: isDark ? '#FFFFFF' : COLORS.text },
         ]}>
         {label}
       </Text>
@@ -64,7 +64,7 @@ export const SettingsItem: React.FC<SettingsItemProps> = ({
           <Ionicons
             name="chevron-forward"
             size={20}
-            color={theme.isDark ? '#6B7280' : '#9CA3AF'}
+            color={isDark ? '#6B7280' : '#9CA3AF'}
           />
         ))}
     </TouchableOpacity>

@@ -47,7 +47,10 @@ describe('useTaskMutations', () => {
     mockUseNetwork.mockReturnValue({
       isOnline: true,
       isOffline: false,
-      isInternetReachable: true,
+      networkType: 'wifi' as any,
+      isLoading: false,
+      netInfoState: null,
+      refresh: jest.fn().mockResolvedValue(undefined),
     });
 
     mockUseAuth.mockReturnValue({
@@ -115,7 +118,10 @@ describe('useTaskMutations', () => {
       mockUseNetwork.mockReturnValue({
         isOnline: false,
         isOffline: true,
-        isInternetReachable: false,
+        networkType: 'none' as any,
+        isLoading: false,
+        netInfoState: null,
+        refresh: jest.fn().mockResolvedValue(undefined),
       });
 
       const { result } = renderHook(() => useCompleteTask(), { wrapper });
@@ -199,7 +205,10 @@ describe('useTaskMutations', () => {
       mockUseNetwork.mockReturnValue({
         isOnline: false,
         isOffline: true,
-        isInternetReachable: false,
+        networkType: 'none' as any,
+        isLoading: false,
+        netInfoState: null,
+        refresh: jest.fn().mockResolvedValue(undefined),
       });
 
       const { result } = renderHook(() => useDeleteTask(), { wrapper });

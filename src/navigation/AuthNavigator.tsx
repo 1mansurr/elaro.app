@@ -1,4 +1,11 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, {
+  Suspense,
+  lazy,
+  useEffect,
+  useState,
+  useMemo,
+  useRef,
+} from 'react';
 import {
   createStackNavigator,
   StackNavigationOptions,
@@ -18,10 +25,7 @@ import {
 type ScreenConfig<
   K extends keyof RootStackParamList = keyof RootStackParamList,
 > = {
-  component: React.ComponentType<{
-    route: { params: RootStackParamList[K] };
-    navigation: unknown;
-  }>;
+  component: React.ComponentType<any>;
   options?: StackNavigationOptions;
 };
 
@@ -141,37 +145,61 @@ const renderScreens = (screens: ScreensConfig) => {
  * and can be accessed from AuthenticatedNavigator for auth-related flows.
  */
 export const AuthNavigator: React.FC = () => {
+  // FIX 2: Use ref to ensure initialRoute is set only once, preventing re-initialization
+  const initialRouteRef = useRef<string | null>(null);
   const [initialRoute, setInitialRoute] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initializationCompleteRef = useRef(false);
 
   useEffect(() => {
+    // Only initialize once, even if component re-renders
+    if (initializationCompleteRef.current) {
+      return;
+    }
+
     const checkFirstTimeUser = async () => {
       try {
         const hasSeenWelcome = await AsyncStorage.getItem(
           'hasSeenWelcomeScreen',
         );
-        setInitialRoute(hasSeenWelcome ? 'Auth' : 'AppWelcome');
+        const route = hasSeenWelcome ? 'Auth' : 'AppWelcome';
+        initialRouteRef.current = route;
+        setInitialRoute(route);
       } catch (error) {
         console.error('Error checking welcome screen status:', error);
         // Default to showing welcome screen on error
-        setInitialRoute('AppWelcome');
+        const route = 'AppWelcome';
+        initialRouteRef.current = route;
+        setInitialRoute(route);
       } finally {
         setIsLoading(false);
+        initializationCompleteRef.current = true;
       }
     };
 
     checkFirstTimeUser();
   }, []);
 
+  // FIX 2: Memoize navigator to prevent re-creation on re-renders
+  const navigatorKey = useMemo(() => {
+    // Use a stable key based on initial route to prevent remounting
+    return `auth-nav-${initialRouteRef.current || 'loading'}`;
+  }, []);
+
   if (isLoading) {
     return <LoadingFallback />;
   }
 
+  // Use the ref value if state hasn't been set yet (during first render)
+  const stableInitialRoute =
+    initialRoute || initialRouteRef.current || 'AppWelcome';
+
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Stack.Navigator
+        key={navigatorKey}
         screenOptions={authScreenOptions}
-        initialRouteName={initialRoute as 'AppWelcome' | 'Auth'}>
+        initialRouteName={stableInitialRoute as 'AppWelcome' | 'Auth'}>
         <Stack.Group>{renderScreens(authScreens)}</Stack.Group>
       </Stack.Navigator>
     </Suspense>

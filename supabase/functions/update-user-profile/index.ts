@@ -1,3 +1,4 @@
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import {
   createAuthenticatedHandler,
@@ -15,6 +16,7 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
   const { user, supabaseClient, body } = req;
   const traceContext = extractTraceContext(req as unknown as Request);
   const updates = body;
+  // @ts-expect-error - Deno.env is available at runtime in Deno
   const encryptionKey = Deno.env.get('ENCRYPTION_KEY');
   if (!encryptionKey)
     throw new AppError(
@@ -30,34 +32,42 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
     traceContext,
   );
 
-  // Encrypt fields if they are being updated
+  // Encrypt sensitive fields if they are being updated
   const encryptedUpdates: Record<string, string> = {};
-  if (updates.first_name) {
+  if (updates.first_name && typeof updates.first_name === 'string') {
     encryptedUpdates.first_name = await encrypt(
       updates.first_name,
       encryptionKey,
     );
   }
-  if (updates.last_name) {
+  if (updates.last_name && typeof updates.last_name === 'string') {
     encryptedUpdates.last_name = await encrypt(
       updates.last_name,
       encryptionKey,
     );
   }
-  if (updates.university) {
+  if (updates.university && typeof updates.university === 'string') {
     encryptedUpdates.university = await encrypt(
       updates.university,
       encryptionKey,
     );
   }
-  if (updates.program) {
+  if (updates.program && typeof updates.program === 'string') {
     encryptedUpdates.program = await encrypt(updates.program, encryptionKey);
+  }
+  // Encrypt country field (was missing before)
+  if (updates.country && typeof updates.country === 'string') {
+    encryptedUpdates.country = await encrypt(updates.country, encryptionKey);
   }
 
   // Fields that don't need encryption can be passed through directly
+  // Ensure username is included if provided (it shouldn't be encrypted)
   const finalUpdates = {
     ...updates,
     ...encryptedUpdates,
+    // Explicitly include username if provided (not encrypted)
+    username: updates.username || undefined,
+    // Country is now encrypted above, so remove the plaintext version
     updated_at: new Date().toISOString(),
   };
 
@@ -75,7 +85,7 @@ async function handleUpdateUserProfile(req: AuthenticatedRequest) {
     { user_id: user.id },
     traceContext,
   );
-  return data;
+  return (data || {}) as Record<string, unknown>;
 }
 
 serve(

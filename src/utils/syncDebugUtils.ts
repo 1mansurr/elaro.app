@@ -90,7 +90,9 @@ export async function getSyncStateSummary(): Promise<SyncStateSummary> {
       auth: {
         cached: !!authCached,
         userId: authCached?.userId || null,
-        lastSynced: authCached?.lastSyncedAt || null,
+        lastSynced: authCached?.lastSyncedAt
+          ? new Date(authCached.lastSyncedAt).toISOString()
+          : null,
       },
       navigation: {
         hasState: navStats.hasState,
@@ -111,9 +113,21 @@ export async function getSyncStateSummary(): Promise<SyncStateSummary> {
   } catch (error) {
     console.error('❌ Failed to get sync state summary:', error);
     return {
-      auth: {},
-      navigation: {},
-      studySession: {},
+      auth: {
+        cached: false,
+        userId: null,
+        lastSynced: null,
+      },
+      navigation: {
+        hasState: false,
+        currentRoute: null,
+        routeCount: 0,
+      },
+      studySession: {
+        hasActiveSession: false,
+        sessionId: null,
+        status: null,
+      },
       settings: {},
     };
   }
@@ -207,10 +221,13 @@ export async function exportSyncState(): Promise<string> {
     for (const key of syncKeys) {
       const value = await AsyncStorage.getItem(key);
       if (value) {
-        try {
-          state[key] = JSON.parse(value);
-        } catch {
-          state[key] = value;
+        // Guard: Only parse if value is valid
+        if (value.trim() && value !== 'undefined' && value !== 'null') {
+          try {
+            state[key] = JSON.parse(value);
+          } catch {
+            state[key] = value;
+          }
         }
       }
     }
@@ -232,7 +249,22 @@ export async function importSyncState(jsonString: string): Promise<void> {
   }
 
   try {
-    const state = JSON.parse(jsonString);
+    // Guard: Only parse if jsonString is valid
+    if (
+      !jsonString ||
+      !jsonString.trim() ||
+      jsonString === 'undefined' ||
+      jsonString === 'null'
+    ) {
+      return;
+    }
+
+    let state: any;
+    try {
+      state = JSON.parse(jsonString);
+    } catch {
+      return;
+    }
     const entries = Object.entries(state);
 
     for (const [key, value] of entries) {

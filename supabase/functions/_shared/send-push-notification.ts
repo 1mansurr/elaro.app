@@ -1,13 +1,16 @@
+// @ts-expect-error - Deno npm imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { Expo } from 'npm:expo-server-sdk@3.7.0';
+// @ts-expect-error - Deno URL imports are valid at runtime but VS Code TypeScript doesn't recognize them
 import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 import { withTimeout, DEFAULT_TIMEOUTS } from './timeout.ts';
 import { retryWithBackoff } from './retry.ts';
 import { circuitBreakers } from './circuit-breaker.ts';
+import { queueNotificationForLater } from './fallback-handler.ts';
 import {
+  trackQuotaUsage,
+  getQuotaStatus,
   shouldUseFallback,
-  queueNotificationForLater,
-} from './fallback-handler.ts';
-import { trackQuotaUsage, getQuotaStatus } from './quota-monitor.ts';
+} from './quota-monitor.ts';
 
 // Define a clear return type for the function
 export interface NotificationResult {
@@ -158,34 +161,47 @@ export async function sendPushNotification(
 
       console.log('Sent notification chunk, received tickets:', tickets);
 
-      tickets.forEach((ticket, index) => {
-        const originalMessage = chunk[index];
+      const ticketsArray = Array.isArray(tickets) ? tickets : [];
+      ticketsArray.forEach(
+        (
+          ticket: {
+            status?: string;
+            id?: string;
+            message?: string;
+            details?: { error?: string };
+          },
+          index: number,
+        ) => {
+          const originalMessage = chunk[index];
 
-        if (ticket.status === 'ok') {
-          sentCount++;
-          ticketIds.push(ticket.id);
-        } else if (ticket.status === 'error') {
-          failureCount++;
-          console.error(
-            `Error sending notification to ${originalMessage.to}: ${ticket.message}`,
-          );
+          if (ticket.status === 'ok') {
+            sentCount++;
+            if (ticket.id) {
+              ticketIds.push(ticket.id);
+            }
+          } else if (ticket.status === 'error') {
+            failureCount++;
+            console.error(
+              `Error sending notification to ${originalMessage.to}: ${ticket.message || 'Unknown error'}`,
+            );
 
-          // Check for permanent errors that indicate invalid tokens
-          const errorCode = ticket.details?.error;
-          const permanentErrors = [
-            'DeviceNotRegistered',
-            'InvalidCredentials',
-            'InvalidRegistration',
-            'MismatchSenderId',
-            'MessageTooBig',
-          ];
+            // Check for permanent errors that indicate invalid tokens
+            const errorCode = ticket.details?.error;
+            const permanentErrors = [
+              'DeviceNotRegistered',
+              'InvalidCredentials',
+              'InvalidRegistration',
+              'MismatchSenderId',
+              'MessageTooBig',
+            ];
 
-          if (errorCode && permanentErrors.includes(errorCode)) {
-            // This token is permanently invalid and should be removed
-            invalidTokens.push(originalMessage.to as string);
+            if (errorCode && permanentErrors.includes(errorCode)) {
+              // This token is permanently invalid and should be removed
+              invalidTokens.push(originalMessage.to as string);
+            }
           }
-        }
-      });
+        },
+      );
     }
   } catch (error) {
     const err = error as { message?: string };
@@ -222,9 +238,8 @@ export async function sendPushNotification(
 
     // Record cost for successful notifications
     try {
-      const { recordApiCost, DEFAULT_COSTS } = await import(
-        './cost-tracker.ts'
-      );
+      const { recordApiCost, DEFAULT_COSTS } =
+        await import('./cost-tracker.ts');
       await recordApiCost(supabaseAdmin, {
         serviceName: 'expo_push',
         operationType: 'push_notification',
