@@ -67,6 +67,7 @@ React Navigation v6. Main entry: `src/navigation/AppNavigator.tsx`. Auth vs. aut
 All design tokens (colors, typography, spacing, animations) are centralized in `src/constants/theme.ts`. Always import from there — don't hardcode values.
 
 Key exports:
+
 - `COLORS` — full color palette
 - `TYPOGRAPHY` — text styles
 - `SPACING` — `{ xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 }`
