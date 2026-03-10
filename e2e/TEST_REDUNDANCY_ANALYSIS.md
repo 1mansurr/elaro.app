@@ -12,6 +12,7 @@ This document analyzes existing E2E test files for redundancies and provides a p
 ## Test File Inventory
 
 ### 1. Pass-Based Tests (Sequential Structure)
+
 - ✅ `pass1-setup-verification.test.ts` - Setup & infrastructure (KEEP)
 - ✅ `pass2-auth-flow-validation.test.ts` - Auth flows (KEEP, but update)
 - ⚠️ `pass3-study-flow-validation.test.ts` - Study sessions (CONSOLIDATE)
@@ -20,6 +21,7 @@ This document analyzes existing E2E test files for redundancies and provides a p
 - ✅ `pass6-reporting.test.ts` - Reporting (KEEP)
 
 ### 2. Core Journey Tests (Feature-Specific)
+
 - ✅ `core-journeys/onboarding-complete.e2e.ts` - Onboarding (KEEP)
 - ✅ `core-journeys/course-creation.e2e.ts` - Course creation (KEEP)
 - ✅ `core-journeys/lecture-creation.e2e.ts` - Lecture creation (NEW - KEEP)
@@ -35,6 +37,7 @@ This document analyzes existing E2E test files for redundancies and provides a p
 - ✅ `core-journeys/session-expiration.e2e.ts` - Session expiration (KEEP)
 
 ### 3. Other Test Files
+
 - ⚠️ `main-app.test.js` - Comprehensive main app tests (CONSOLIDATE)
 - ⚠️ `onboarding.test.js` - Onboarding tests (CONSOLIDATE)
 - ⚠️ `navigation-flows.e2e.ts` - Navigation flows (CONSOLIDATE)
@@ -42,6 +45,7 @@ This document analyzes existing E2E test files for redundancies and provides a p
 - ⚠️ `starter.test.js` - Starter test (REMOVE or UPDATE)
 
 ### 4. Sync Tests (Specialized)
+
 - ✅ `sync/` directory - Keep all sync tests (specialized domain)
 
 ---
@@ -51,77 +55,96 @@ This document analyzes existing E2E test files for redundancies and provides a p
 ### 🔴 HIGH PRIORITY REDUNDANCIES
 
 #### 1. Onboarding Tests (3 files)
+
 **Files:**
+
 - `onboarding.test.js` (237 lines, comprehensive)
 - `core-journeys/onboarding-complete.e2e.ts` (102 lines, basic)
 - `navigation/complete-flow.test.ts` (partial onboarding)
 
 **Overlap:**
+
 - Both test complete onboarding flow
 - Both test profile setup
 - Both test course selection
 - Both test validation
 
-**Action:** 
+**Action:**
+
 - ✅ Keep `core-journeys/onboarding-complete.e2e.ts` (newer, cleaner)
 - ⚠️ Merge best parts from `onboarding.test.js` into it
 - ❌ Remove `onboarding.test.js` after merge
 - ⚠️ Update `navigation/complete-flow.test.ts` to reference onboarding test
 
 #### 2. Profile/Settings Tests (2 files)
+
 **Files:**
+
 - `pass4-profile-flow-validation.test.ts` (187 lines)
 - `core-journeys/profile-settings.e2e.ts` (NEW, 58 lines)
 
 **Overlap:**
+
 - Both test profile navigation
 - Both test settings navigation
 - Both test back navigation
 
 **Action:**
+
 - ✅ Keep `core-journeys/profile-settings.e2e.ts` (newer, priority-based)
 - ⚠️ Merge detailed tests from `pass4-profile-flow-validation.test.ts`
 - ❌ Remove `pass4-profile-flow-validation.test.ts` after merge
 - ⚠️ Update pass4 to reference core-journeys test
 
 #### 3. Study Session Tests (2 files)
+
 **Files:**
+
 - `pass3-study-flow-validation.test.ts` (178 lines)
 - `core-journeys/study-session-complete.e2e.ts` (existing)
 
 **Overlap:**
+
 - Both test study session navigation
 - Both test study session completion
 - Both test result screen
 
 **Action:**
+
 - ✅ Keep `core-journeys/study-session-complete.e2e.ts`
 - ⚠️ Merge navigation tests from `pass3-study-flow-validation.test.ts`
 - ⚠️ Update `pass3-study-flow-validation.test.ts` to reference core-journeys
 - ⚠️ Keep pass3 as a lightweight integration test
 
 #### 4. Navigation Tests (3 files)
+
 **Files:**
+
 - `navigation-flows.e2e.ts` (198 lines)
 - `navigation/complete-flow.test.ts` (110 lines)
 - `main-app.test.js` (partial navigation)
 
 **Overlap:**
+
 - All test navigation flows
 - All test screen transitions
 - All test deep linking (some)
 
 **Action:**
+
 - ✅ Keep `navigation-flows.e2e.ts` (most comprehensive)
 - ⚠️ Merge unique tests from `navigation/complete-flow.test.ts`
 - ❌ Remove `navigation/complete-flow.test.ts` after merge
 - ⚠️ Extract navigation tests from `main-app.test.js` to navigation-flows
 
 #### 5. Main App Tests (1 file with many overlaps)
+
 **Files:**
+
 - `main-app.test.js` (331 lines, very comprehensive)
 
 **Overlaps with:**
+
 - Home screen tests → `core-journeys/home-screen-display.e2e.ts`
 - Calendar tests → `core-journeys/calendar-view.e2e.ts`
 - Task creation → `core-journeys/task-management-complete.e2e.ts`
@@ -129,16 +152,20 @@ This document analyzes existing E2E test files for redundancies and provides a p
 - Navigation → `navigation-flows.e2e.ts`
 
 **Action:**
+
 - ⚠️ Extract unique tests (error handling, performance, accessibility)
 - ⚠️ Move overlapping tests to appropriate core-journeys files
 - ⚠️ Keep `main-app.test.js` for integration/end-to-end scenarios only
 - ⚠️ Rename to `main-app-integration.e2e.ts` for clarity
 
 #### 6. Starter Test (1 file)
+
 **Files:**
+
 - `starter.test.js` (14 lines, minimal)
 
 **Action:**
+
 - ❌ Remove (redundant with pass1-setup-verification)
 
 ---
@@ -148,10 +175,13 @@ This document analyzes existing E2E test files for redundancies and provides a p
 ### Phase 1: High Priority Consolidations (Week 1)
 
 #### Task 1.1: Consolidate Onboarding Tests
+
 **Files to merge:**
+
 - `onboarding.test.js` → `core-journeys/onboarding-complete.e2e.ts`
 
 **Steps:**
+
 1. Review both files for unique test cases
 2. Add missing tests from `onboarding.test.js` to `onboarding-complete.e2e.ts`:
    - Progress indicator tests
@@ -165,10 +195,13 @@ This document analyzes existing E2E test files for redundancies and provides a p
 **Estimated effort:** 2-3 hours
 
 #### Task 1.2: Consolidate Profile/Settings Tests
+
 **Files to merge:**
+
 - `pass4-profile-flow-validation.test.ts` → `core-journeys/profile-settings.e2e.ts`
 
 **Steps:**
+
 1. Add detailed navigation tests from pass4
 2. Add sub-navigation tests (DeviceManagement, LoginHistory)
 3. Add back navigation tests
@@ -178,10 +211,13 @@ This document analyzes existing E2E test files for redundancies and provides a p
 **Estimated effort:** 1-2 hours
 
 #### Task 1.3: Consolidate Study Session Tests
+
 **Files to merge:**
+
 - `pass3-study-flow-validation.test.ts` → `core-journeys/study-session-complete.e2e.ts`
 
 **Steps:**
+
 1. Review both for unique test cases
 2. Merge navigation parameter passing tests
 3. Update pass3 to be a lightweight smoke test
@@ -192,11 +228,14 @@ This document analyzes existing E2E test files for redundancies and provides a p
 ### Phase 2: Navigation & Main App Consolidation (Week 2)
 
 #### Task 2.1: Consolidate Navigation Tests
+
 **Files to merge:**
+
 - `navigation/complete-flow.test.ts` → `navigation-flows.e2e.ts`
 - Extract navigation tests from `main-app.test.js`
 
 **Steps:**
+
 1. Merge unique tests from `navigation/complete-flow.test.ts`
 2. Extract navigation-related tests from `main-app.test.js`
 3. Organize by navigation type (tab, stack, modal, deep link)
@@ -206,10 +245,13 @@ This document analyzes existing E2E test files for redundancies and provides a p
 **Estimated effort:** 2-3 hours
 
 #### Task 2.2: Refactor Main App Test
+
 **Files to refactor:**
+
 - `main-app.test.js` → `main-app-integration.e2e.ts`
 
 **Steps:**
+
 1. Extract overlapping tests to appropriate core-journeys files:
    - Home screen tests → `home-screen-display.e2e.ts`
    - Calendar tests → `calendar-view.e2e.ts`
@@ -228,12 +270,15 @@ This document analyzes existing E2E test files for redundancies and provides a p
 ### Phase 3: Cleanup & Optimization (Week 3)
 
 #### Task 3.1: Remove Redundant Files
+
 **Files to remove:**
+
 - ❌ `onboarding.test.js` (after merge)
 - ❌ `navigation/complete-flow.test.ts` (after merge)
 - ❌ `starter.test.js` (redundant)
 
 **Steps:**
+
 1. Verify all tests are merged
 2. Remove files
 3. Update any imports/references
@@ -242,12 +287,15 @@ This document analyzes existing E2E test files for redundancies and provides a p
 **Estimated effort:** 1 hour
 
 #### Task 3.2: Update Pass-Based Tests
+
 **Files to update:**
+
 - `pass2-auth-flow-validation.test.ts`
 - `pass3-study-flow-validation.test.ts` (lightweight)
 - `pass4-profile-flow-validation.test.ts` (lightweight)
 
 **Steps:**
+
 1. Make pass tests lightweight smoke tests
 2. Reference core-journeys tests for detailed coverage
 3. Keep passes for CI/CD quick validation
@@ -256,10 +304,13 @@ This document analyzes existing E2E test files for redundancies and provides a p
 **Estimated effort:** 2 hours
 
 #### Task 3.3: Update Priority Test Runner
+
 **File to update:**
+
 - `priority-test-runner.e2e.ts`
 
 **Steps:**
+
 1. Remove references to consolidated files
 2. Add references to updated files
 3. Ensure all priority tests are included
@@ -271,23 +322,23 @@ This document analyzes existing E2E test files for redundancies and provides a p
 
 ## Test Coverage Matrix
 
-| Feature | Old Tests | New Tests | Status |
-|---------|-----------|-----------|--------|
-| Onboarding | 3 files | 1 file | ✅ Consolidated |
-| Auth | 1 file | 1 file | ✅ Keep pass2 |
-| Course Creation | 1 file | 1 file | ✅ Keep |
-| Lecture Creation | 0 files | 1 file | ✅ NEW |
-| Assignment | 1 file | 1 file | ✅ Keep |
-| Study Sessions | 2 files | 1 file | ✅ Consolidated |
-| Home Screen | 1 file (partial) | 1 file | ✅ NEW |
-| Calendar | 1 file (partial) | 1 file | ✅ NEW |
-| Templates | 0 files | 1 file | ✅ NEW |
-| Profile/Settings | 2 files | 1 file | ✅ Consolidated |
-| Navigation | 3 files | 1 file | ✅ Consolidated |
-| Offline | 1 file | 1 file | ✅ Keep |
-| Notifications | 1 file | 1 file | ✅ Keep |
-| Error Handling | 1 file | 1 file | ✅ Keep pass5 |
-| Reporting | 1 file | 1 file | ✅ Keep pass6 |
+| Feature          | Old Tests        | New Tests | Status          |
+| ---------------- | ---------------- | --------- | --------------- |
+| Onboarding       | 3 files          | 1 file    | ✅ Consolidated |
+| Auth             | 1 file           | 1 file    | ✅ Keep pass2   |
+| Course Creation  | 1 file           | 1 file    | ✅ Keep         |
+| Lecture Creation | 0 files          | 1 file    | ✅ NEW          |
+| Assignment       | 1 file           | 1 file    | ✅ Keep         |
+| Study Sessions   | 2 files          | 1 file    | ✅ Consolidated |
+| Home Screen      | 1 file (partial) | 1 file    | ✅ NEW          |
+| Calendar         | 1 file (partial) | 1 file    | ✅ NEW          |
+| Templates        | 0 files          | 1 file    | ✅ NEW          |
+| Profile/Settings | 2 files          | 1 file    | ✅ Consolidated |
+| Navigation       | 3 files          | 1 file    | ✅ Consolidated |
+| Offline          | 1 file           | 1 file    | ✅ Keep         |
+| Notifications    | 1 file           | 1 file    | ✅ Keep         |
+| Error Handling   | 1 file           | 1 file    | ✅ Keep pass5   |
+| Reporting        | 1 file           | 1 file    | ✅ Keep pass6   |
 
 ---
 
@@ -334,6 +385,7 @@ e2e/
 ## Implementation Checklist
 
 ### Phase 1: High Priority (Week 1) ✅ COMPLETE
+
 - [x] Task 1.1: Merge onboarding tests ✅
   - Merged `onboarding.test.js` → `core-journeys/onboarding-complete.e2e.ts`
   - Added: progress indicators, data persistence, accessibility, network error handling
@@ -354,6 +406,7 @@ e2e/
 - [ ] Update priority-test-runner (if needed)
 
 ### Phase 2: Navigation & Main App (Week 2) ✅ COMPLETE
+
 - [x] Task 2.1: Consolidate navigation tests ✅
   - Merged `navigation/complete-flow.test.ts` → `navigation-flows.e2e.ts`
   - Extracted navigation tests from `main-app.test.js`
@@ -369,6 +422,7 @@ e2e/
   - Removed: `main-app.test.js`
 
 ### Phase 3: Cleanup (Week 3) ✅ COMPLETE
+
 - [x] Task 3.1: Remove redundant files ✅
   - Verified all redundant files removed
   - `onboarding.test.js` - ✅ Removed (Phase 1)
@@ -396,15 +450,18 @@ e2e/
 ## Risk Assessment
 
 ### Low Risk
+
 - ✅ Removing `starter.test.js` (minimal, redundant)
 - ✅ Consolidating onboarding tests (clear overlap)
 - ✅ Consolidating profile tests (clear overlap)
 
 ### Medium Risk
+
 - ⚠️ Refactoring `main-app.test.js` (large file, many tests)
 - ⚠️ Merging navigation tests (multiple files)
 
 ### Mitigation
+
 1. **Backup:** Create branch before changes
 2. **Incremental:** Make changes in phases
 3. **Verification:** Run tests after each consolidation
@@ -415,12 +472,14 @@ e2e/
 ## Success Metrics
 
 ### Before Consolidation
+
 - **Total test files:** ~25 files
 - **Redundant tests:** ~8-10 files
 - **Test execution time:** Baseline
 - **Maintainability:** Medium (scattered tests)
 
 ### After Consolidation ✅ ACHIEVED
+
 - **Total test files:** ~18 files (28% reduction) ✅
 - **Redundant tests:** 0 files ✅
 - **Files removed:** 4 files (onboarding.test.js, starter.test.js, main-app.test.js, navigation/complete-flow.test.ts) ✅

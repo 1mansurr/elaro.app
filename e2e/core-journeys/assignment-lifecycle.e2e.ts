@@ -58,7 +58,9 @@ describe('Assignment Lifecycle Journey', () => {
           await waitFor(fabButton).toBeVisible().withTimeout(5000);
           await fabButton.tap();
         } catch {
-          console.log('⚠️ FAB button not found - user may not be logged in or FAB has different testID');
+          console.log(
+            '⚠️ FAB button not found - user may not be logged in or FAB has different testID',
+          );
           throw new Error('FAB button not found - cannot create assignment');
         }
       }

@@ -94,9 +94,9 @@ describe('Complete Onboarding Flow', () => {
         }
 
         // Step 5: Course Selection
-        const courseSelectionScreen = element(by.id('course-selection-screen')).or(
-          element(by.id('courses-step')),
-        );
+        const courseSelectionScreen = element(
+          by.id('course-selection-screen'),
+        ).or(element(by.id('courses-step')));
         try {
           await waitFor(courseSelectionScreen).toBeVisible().withTimeout(3000);
 
@@ -158,7 +158,9 @@ describe('Complete Onboarding Flow', () => {
         await waitFor(welcomeScreen).toBeVisible().withTimeout(3000);
 
         // Complete welcome and profile steps
-        await element(by.id('welcome-continue-button')).or(element(by.id('get-started-button'))).tap();
+        await element(by.id('welcome-continue-button'))
+          .or(element(by.id('get-started-button')))
+          .tap();
         await TestHelpers.wait(1000);
 
         // Fill profile
@@ -166,7 +168,9 @@ describe('Complete Onboarding Flow', () => {
         if (await firstNameInput.isVisible()) {
           await firstNameInput.typeText('Jane');
           await element(by.id('last-name-input')).typeText('Smith');
-          await element(by.id('profile-next-button')).or(element(by.id('continue-button'))).tap();
+          await element(by.id('profile-next-button'))
+            .or(element(by.id('continue-button')))
+            .tap();
           await TestHelpers.wait(1000);
         }
 
@@ -176,14 +180,16 @@ describe('Complete Onboarding Flow', () => {
           await skipCoursesButton.tap();
 
           // Handle skip confirmation dialog
-          const skipConfirmationDialog = element(by.id('skip-confirmation-dialog'));
+          const skipConfirmationDialog = element(
+            by.id('skip-confirmation-dialog'),
+          );
           if (await skipConfirmationDialog.isVisible()) {
             await element(by.id('confirm-skip-button')).tap();
           }
 
           // Should navigate to main app
           await waitFor(
-            element(by.id('home-screen')).or(element(by.id('main-screen')))
+            element(by.id('home-screen')).or(element(by.id('main-screen'))),
           )
             .toBeVisible()
             .withTimeout(5000);
@@ -217,7 +223,9 @@ describe('Complete Onboarding Flow', () => {
           if (await coursesBackButton.isVisible()) {
             await coursesBackButton.tap();
             await waitFor(
-              element(by.id('profile-step')).or(element(by.id('profile-setup-screen')))
+              element(by.id('profile-step')).or(
+                element(by.id('profile-setup-screen')),
+              ),
             )
               .toBeVisible()
               .withTimeout(3000);
@@ -256,7 +264,9 @@ describe('Complete Onboarding Flow', () => {
 
           // Should show validation error
           await waitFor(
-            element(by.id('validation-error')).or(element(by.text(/required/i)))
+            element(by.id('validation-error')).or(
+              element(by.text(/required/i)),
+            ),
           )
             .toBeVisible()
             .withTimeout(2000);
@@ -351,7 +361,9 @@ describe('Complete Onboarding Flow', () => {
 
             // Data should still be there
             try {
-              await waitFor(element(by.id('first-name-input'))).toBeVisible().withTimeout(2000);
+              await waitFor(element(by.id('first-name-input')))
+                .toBeVisible()
+                .withTimeout(2000);
               // Note: Detox doesn't have toHaveText, but we can verify field is visible
               // In real implementation, you'd check the value
             } catch {
@@ -391,7 +403,9 @@ describe('Complete Onboarding Flow', () => {
           // Should return to onboarding with data intact
           try {
             await waitFor(
-              element(by.id('profile-step')).or(element(by.id('profile-setup-screen')))
+              element(by.id('profile-step')).or(
+                element(by.id('profile-setup-screen')),
+              ),
             )
               .toBeVisible()
               .withTimeout(5000);
@@ -418,7 +432,9 @@ describe('Complete Onboarding Flow', () => {
           }
         } catch {
           // API not available in this Detox version, skip network error test
-          console.log('⚠️ setURLBlacklist API not available, skipping network error test');
+          console.log(
+            '⚠️ setURLBlacklist API not available, skipping network error test',
+          );
           return;
         }
 
@@ -447,7 +463,9 @@ describe('Complete Onboarding Flow', () => {
             // Should show error message
             try {
               await waitFor(
-                element(by.id('error-message')).or(element(by.text(/network|error/i)))
+                element(by.id('error-message')).or(
+                  element(by.text(/network|error/i)),
+                ),
               )
                 .toBeVisible()
                 .withTimeout(3000);

@@ -9,10 +9,7 @@ import { AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import { logger } from '../_shared/logging.ts';
 import { extractTraceContext } from '../_shared/tracing.ts';
-import {
-  checkRateLimit,
-  extractIPAddress,
-} from '../_shared/rate-limiter.ts';
+import { checkRateLimit, extractIPAddress } from '../_shared/rate-limiter.ts';
 import { encrypt } from '../_shared/encryption.ts';
 
 serve(async (req: Request) => {

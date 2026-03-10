@@ -48,7 +48,9 @@ describe('Templates Flow', () => {
       .withTimeout(5000);
 
     // Fill form
-    await element(by.id('lecture-name-input')).typeText('Template Test Lecture');
+    await element(by.id('lecture-name-input')).typeText(
+      'Template Test Lecture',
+    );
 
     // Enable "Save as template"
     const saveAsTemplateToggle = element(by.id('save-as-template-toggle'));

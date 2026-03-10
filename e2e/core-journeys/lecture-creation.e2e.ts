@@ -378,7 +378,9 @@ describe('Lecture Creation Flow', () => {
             quickAddModal = element(by.text('Quick Add'));
             await waitFor(quickAddModal).toBeVisible().withTimeout(5000);
           } catch {
-            console.log('⚠️ Quick Add modal not found - may use different testID');
+            console.log(
+              '⚠️ Quick Add modal not found - may use different testID',
+            );
             throw new Error('Quick Add modal not found');
           }
         }

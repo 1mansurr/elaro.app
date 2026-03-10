@@ -175,10 +175,12 @@ describe('Complete Task Management Flow', () => {
         .withTimeout(5000);
 
       // Open add task modal
-      const fabButton = element(by.id('fab-button')).or(element(by.id('add-task-fab')));
+      const fabButton = element(by.id('fab-button')).or(
+        element(by.id('add-task-fab')),
+      );
       await fabButton.tap();
       await waitFor(
-        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal')))
+        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal'))),
       )
         .toBeVisible()
         .withTimeout(3000);
@@ -240,7 +242,7 @@ describe('Complete Task Management Flow', () => {
 
       // Modal should close and show success
       await waitFor(
-        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal')))
+        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal'))),
       )
         .not.toBeVisible()
         .withTimeout(3000);
@@ -257,7 +259,9 @@ describe('Complete Task Management Flow', () => {
 
     it('should create new study session via modal', async () => {
       // Select study session type
-      const studySessionTypeButton = element(by.id('study-session-type-button'));
+      const studySessionTypeButton = element(
+        by.id('study-session-type-button'),
+      );
       try {
         await studySessionTypeButton.tap();
         await waitFor(element(by.id('study-session-form')))
@@ -320,7 +324,7 @@ describe('Complete Task Management Flow', () => {
 
         // Should show validation errors
         await waitFor(
-          element(by.id('validation-error')).or(element(by.text(/required/i)))
+          element(by.id('validation-error')).or(element(by.text(/required/i))),
         )
           .toBeVisible()
           .withTimeout(2000);
@@ -354,7 +358,7 @@ describe('Complete Task Management Flow', () => {
 
       // Modal should close without saving
       await waitFor(
-        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal')))
+        element(by.id('add-task-modal')).or(element(by.id('quick-add-modal'))),
       )
         .not.toBeVisible()
         .withTimeout(3000);

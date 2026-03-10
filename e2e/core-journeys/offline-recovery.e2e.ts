@@ -31,7 +31,9 @@ describe('Offline Recovery Flow', () => {
     if (typeof device.setNetworkCondition === 'function') {
       await device.setNetworkCondition('none');
     } else {
-      console.log('⚠️ setNetworkCondition not available on iOS - skipping offline simulation');
+      console.log(
+        '⚠️ setNetworkCondition not available on iOS - skipping offline simulation',
+      );
       // For iOS, we'll skip the offline simulation but still test the sync UI
       // The test will verify that sync indicators work when network is available
     }
@@ -113,7 +115,7 @@ describe('Offline Recovery Flow', () => {
   it('should handle sync errors gracefully', async () => {
     // Use safer method to avoid crashes
     try {
-      await device.launchApp({newInstance: false});
+      await device.launchApp({ newInstance: false });
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -134,7 +136,9 @@ describe('Offline Recovery Flow', () => {
     if (typeof device.setNetworkCondition === 'function') {
       await device.setNetworkCondition('none');
     } else {
-      console.log('⚠️ setNetworkCondition not available - skipping offline simulation');
+      console.log(
+        '⚠️ setNetworkCondition not available - skipping offline simulation',
+      );
       // Continue test without offline simulation
     }
 
@@ -190,7 +194,7 @@ describe('Offline Recovery Flow', () => {
   it('should show sync progress indicator', async () => {
     // Use safer method to avoid crashes
     try {
-      await device.launchApp({newInstance: false});
+      await device.launchApp({ newInstance: false });
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch {
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -211,7 +215,9 @@ describe('Offline Recovery Flow', () => {
     if (typeof device.setNetworkCondition === 'function') {
       await device.setNetworkCondition('none');
     } else {
-      console.log('⚠️ setNetworkCondition not available - skipping offline simulation');
+      console.log(
+        '⚠️ setNetworkCondition not available - skipping offline simulation',
+      );
       // Continue test without offline simulation
     }
 

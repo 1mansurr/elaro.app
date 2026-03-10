@@ -502,7 +502,9 @@ export const AuthenticatedNavigator: React.FC = () => {
           // Handle Supabase client initialization failure (e.g., missing config after OTA)
           console.error(
             '❌ [AuthenticatedNavigator] Supabase client initialization failed:',
-            supabaseError instanceof Error ? supabaseError.message : String(supabaseError),
+            supabaseError instanceof Error
+              ? supabaseError.message
+              : String(supabaseError),
           );
           // Default to 0 courses - app can still function
           courseCountResult = 0;

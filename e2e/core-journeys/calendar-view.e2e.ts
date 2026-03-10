@@ -206,7 +206,9 @@ describe('Calendar View', () => {
         calendarDate = element(by.id('calendar-date-1'));
         await waitFor(calendarDate).toBeVisible().withTimeout(2000);
       } catch {
-        console.log('ℹ️ Date selection - may use different calendar implementation');
+        console.log(
+          'ℹ️ Date selection - may use different calendar implementation',
+        );
         return;
       }
     }
@@ -225,7 +227,9 @@ describe('Calendar View', () => {
       }
     } catch {
       // Date selection may use different structure
-      console.log('ℹ️ Date selection - may use different calendar implementation');
+      console.log(
+        'ℹ️ Date selection - may use different calendar implementation',
+      );
     }
   });
 });

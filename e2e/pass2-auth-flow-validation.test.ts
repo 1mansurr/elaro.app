@@ -125,7 +125,7 @@ describe('Pass 2: Auth Flow Validation', () => {
         try {
           await element(by.id('toggle-auth-mode-button')).tap();
           await TestHelpers.wait(1000); // Wait for animation/transition
-          
+
           // Wait for signup inputs to appear after toggle
           await waitFor(element(by.id('first-name-input')))
             .toBeVisible()
@@ -133,7 +133,9 @@ describe('Pass 2: Auth Flow Validation', () => {
           isInSignupMode = true;
         } catch {
           // Toggle button not found - might already be in signup mode or button doesn't exist
-          console.log('⚠️ Toggle auth mode button not found - may already be in signup mode');
+          console.log(
+            '⚠️ Toggle auth mode button not found - may already be in signup mode',
+          );
           // Try one more time to see if inputs are visible
           try {
             await waitFor(element(by.id('first-name-input')))
@@ -141,7 +143,9 @@ describe('Pass 2: Auth Flow Validation', () => {
               .withTimeout(2000);
             isInSignupMode = true;
           } catch {
-            throw new Error('Could not switch to signup mode - first-name-input not found');
+            throw new Error(
+              'Could not switch to signup mode - first-name-input not found',
+            );
           }
         }
       }
@@ -202,7 +206,7 @@ describe('Pass 2: Auth Flow Validation', () => {
         }
         await TestHelpers.wait(1000); // Wait and retry
       }
-      
+
       // Use standard JavaScript check instead of Detox expect for non-UI values
       if (!sessionBefore) {
         console.log('⚠️ Session not found after login - login may have failed');
@@ -253,7 +257,9 @@ describe('Pass 2: Auth Flow Validation', () => {
         await TestHelpers.wait(1000); // Wait for animation/transition
       } catch {
         // Toggle button not found - might not be available or already in correct mode
-        console.log('⚠️ Toggle auth mode button not found - may not be available');
+        console.log(
+          '⚠️ Toggle auth mode button not found - may not be available',
+        );
         // If we can't toggle, test can't proceed
         throw new Error('Cannot toggle auth mode - toggle button not found');
       }
@@ -273,7 +279,9 @@ describe('Pass 2: Auth Flow Validation', () => {
               .withTimeout(2000);
             // Email input visible means we're in signin mode (signup has first name before email)
           } catch {
-            throw new Error('Mode toggle failed - could not verify signin mode');
+            throw new Error(
+              'Mode toggle failed - could not verify signin mode',
+            );
           }
         }
       } else {

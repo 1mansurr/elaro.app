@@ -24,9 +24,9 @@ describe('Course Creation Journey', () => {
     try {
       await Promise.race([
         loginWithTestUser(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Login timeout')), 15000)
-        )
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Login timeout')), 15000),
+        ),
       ]);
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch {

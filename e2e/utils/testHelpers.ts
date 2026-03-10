@@ -70,7 +70,9 @@ export const TestHelpers = {
 
       // Also check if auth screen is NOT visible (might indicate logged in)
       try {
-        await waitFor(element(by.id('auth-screen'))).toBeVisible().withTimeout(500);
+        await waitFor(element(by.id('auth-screen')))
+          .toBeVisible()
+          .withTimeout(500);
         // Auth screen is visible, so not logged in
         return false;
       } catch {
@@ -100,7 +102,7 @@ export const TestHelpers = {
 
     // Try to navigate to auth screen
     let authScreenVisible = false;
-    
+
     // First, check if auth screen is already visible
     try {
       await this.waitForElement('auth-screen', 2000);
@@ -113,7 +115,7 @@ export const TestHelpers = {
         await waitFor(getStartedButton).toBeVisible().withTimeout(2000);
         await getStartedButton.tap();
         await this.wait(1000);
-        
+
         try {
           await this.waitForElement('auth-screen', 3000);
           authScreenVisible = true;
@@ -139,7 +141,7 @@ export const TestHelpers = {
       await waitFor(element(by.id('email-input')))
         .toBeVisible()
         .withTimeout(5000);
-      
+
       // Toggle to sign in mode if needed (check if we're in signup mode)
       try {
         const signInText = element(by.text('Sign In'));
@@ -168,7 +170,7 @@ export const TestHelpers = {
 
       // Wait for navigation away from auth screen - give more time for login to complete
       await this.wait(3000);
-      
+
       // Verify login succeeded - check multiple times with retries
       let loggedInAfter = false;
       for (let i = 0; i < 3; i++) {
@@ -178,7 +180,7 @@ export const TestHelpers = {
         }
         await this.wait(1000); // Wait a bit more and retry
       }
-      
+
       if (!loggedInAfter) {
         // Login might have failed, but don't throw - let test continue
         console.log('⚠️ Login attempt completed but user may not be logged in');
@@ -194,11 +196,15 @@ export const TestHelpers = {
         await this.wait(1000);
         return;
       }
-      
+
       // Not logged in and can't login - but don't throw, just log and continue
       // This allows tests to continue and potentially handle the unauthenticated state
-      console.log('⚠️ Could not complete login - email input not found and user not logged in');
-      console.log('⚠️ Test will continue - may need to handle unauthenticated state');
+      console.log(
+        '⚠️ Could not complete login - email input not found and user not logged in',
+      );
+      console.log(
+        '⚠️ Test will continue - may need to handle unauthenticated state',
+      );
     }
   },
 
@@ -247,7 +253,7 @@ export const TestHelpers = {
 
     // Try each screen ID with a portion of the timeout
     const timeoutPerId = Math.max(2000, timeout / homeScreenIds.length);
-    
+
     for (const screenId of homeScreenIds) {
       try {
         await waitFor(element(by.id(screenId)))
@@ -265,7 +271,7 @@ export const TestHelpers = {
       // User is logged in, screen might just be slow to appear
       // Wait longer and retry with exponential backoff
       await this.wait(3000);
-      
+
       // Retry with primary IDs
       const primaryIds = ['home-screen', 'main-screen', 'dashboard-screen'];
       for (const screenId of primaryIds) {
@@ -278,16 +284,20 @@ export const TestHelpers = {
           // Try next
         }
       }
-      
+
       // Still not found, but user is logged in - might be on different screen
       // Don't throw error, just log warning and continue
-      console.log('⚠️ Home screen not found but user appears to be logged in. Screen might use different testID.');
+      console.log(
+        '⚠️ Home screen not found but user appears to be logged in. Screen might use different testID.',
+      );
       return; // Continue anyway - test might work without explicit screen check
     }
 
     // Not logged in - but don't throw, just log warning and continue
     // The test might still work if it doesn't need the home screen immediately
-    console.log('⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.');
+    console.log(
+      '⚠️ Home screen not found and user appears not to be logged in. Continuing anyway - test might handle this.',
+    );
     // Wait a bit more in case login is still in progress
     await this.wait(2000);
     // Try one more time
@@ -317,7 +327,7 @@ export const TestHelpers = {
 
     // Try each screen ID
     const timeoutPerId = Math.max(2000, timeout / authScreenIds.length);
-    
+
     for (const screenId of authScreenIds) {
       try {
         await waitFor(element(by.id(screenId)))
@@ -336,7 +346,7 @@ export const TestHelpers = {
       await waitFor(getStartedButton).toBeVisible().withTimeout(2000);
       await getStartedButton.tap();
       await this.wait(1000);
-      
+
       // Retry finding auth screen
       for (const screenId of authScreenIds) {
         try {
@@ -367,7 +377,9 @@ export const TestHelpers = {
 
     // Still not found - but don't throw, just log warning
     // The test might be able to continue or handle this gracefully
-    console.log('⚠️ Auth screen not found. App might be in unexpected state. Continuing anyway.');
+    console.log(
+      '⚠️ Auth screen not found. App might be in unexpected state. Continuing anyway.',
+    );
     return; // Continue - test might handle this
   },
 
@@ -419,7 +431,9 @@ export const TestHelpers = {
     }
 
     // Still not found - but don't throw, just log warning and continue
-    console.log('⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.');
+    console.log(
+      '⚠️ Guest screen not found after logout. App might be in unexpected state. Continuing anyway.',
+    );
     return; // Continue - test might handle this
   },
 };

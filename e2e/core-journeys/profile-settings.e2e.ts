@@ -49,7 +49,9 @@ describe('Profile & Settings Flow', () => {
           accountTab = element(by.text('Account'));
           await waitFor(accountTab).toBeVisible().withTimeout(2000);
         } catch {
-          console.log('ℹ️ Account tab navigation - may need manual verification');
+          console.log(
+            'ℹ️ Account tab navigation - may need manual verification',
+          );
         }
       }
       if (accountTab) {
@@ -96,16 +98,16 @@ describe('Profile & Settings Flow', () => {
       if (settingsButton) {
         try {
           await settingsButton.tap();
-        await TestHelpers.wait(2000);
+          await TestHelpers.wait(2000);
 
-        // Verify Settings screen is visible
-        await waitFor(element(by.id('settings-screen')))
-          .toBeVisible()
-          .withTimeout(3000);
-        console.log('✅ Navigated to Settings screen');
-      } catch {
-        console.log('ℹ️ Settings navigation - screen structure may vary');
-      }
+          // Verify Settings screen is visible
+          await waitFor(element(by.id('settings-screen')))
+            .toBeVisible()
+            .withTimeout(3000);
+          console.log('✅ Navigated to Settings screen');
+        } catch {
+          console.log('ℹ️ Settings navigation - screen structure may vary');
+        }
       }
     });
 

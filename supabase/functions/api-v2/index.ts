@@ -3,10 +3,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { createResponse, errorResponse } from '../_shared/response.ts';
 import { validateApiVersion } from '../_shared/versioning.ts';
-import {
-  AuthenticatedRequest,
-  AppError,
-} from '../_shared/function-handler.ts';
+import { AuthenticatedRequest, AppError } from '../_shared/function-handler.ts';
 import { ERROR_CODES } from '../_shared/error-codes.ts';
 import {
   wrapOldHandler,
@@ -923,7 +920,7 @@ function isBase64Encrypted(str: string): boolean {
 
   // Base64 regex: allows A-Z, a-z, 0-9, +, /, and = (for padding)
   const base64Regex = /^[A-Za-z0-9+/]+=*$/;
-  
+
   // Check if string matches base64 pattern and has reasonable length
   // Encrypted data with IV (12 bytes) + encrypted content will be at least 20+ chars
   return base64Regex.test(str) && str.length >= 20;
@@ -957,9 +954,11 @@ async function safeDecryptField(
     // Log the error with field name for debugging
     console.error(
       `❌ Failed to decrypt ${fieldName} for user ${userId}:`,
-      decryptError instanceof Error ? decryptError.message : String(decryptError),
+      decryptError instanceof Error
+        ? decryptError.message
+        : String(decryptError),
     );
-    
+
     // Return empty string instead of encrypted string
     // This prevents encrypted base64 from being displayed to users
     return '';

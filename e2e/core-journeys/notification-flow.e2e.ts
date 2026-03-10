@@ -16,7 +16,7 @@ describe('Notification Flow', () => {
 
   it('should handle notification tap and navigation', async () => {
     // Step 1: Wait for app to be ready
-      await TestHelpers.waitForHomeScreen(5000);
+    await TestHelpers.waitForHomeScreen(5000);
 
     // Step 2: Simulate receiving a notification
     // In real E2E, this would be triggered by the notification system
@@ -84,14 +84,14 @@ describe('Notification Flow', () => {
   it('should handle notification dismissal', async () => {
     // Use safer method to avoid crashes
     try {
-      await device.launchApp({newInstance: false});
+      await device.launchApp({ newInstance: false });
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     await loginWithTestUser();
 
-      await TestHelpers.waitForHomeScreen(5000);
+    await TestHelpers.waitForHomeScreen(5000);
 
     // Open notifications
     const notificationBell = element(by.id('notification-bell'));
@@ -125,14 +125,14 @@ describe('Notification Flow', () => {
   it('should handle notification settings', async () => {
     // Use safer method to avoid crashes
     try {
-      await device.launchApp({newInstance: false});
+      await device.launchApp({ newInstance: false });
       await new Promise(resolve => setTimeout(resolve, 2000));
     } catch {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
     await loginWithTestUser();
 
-      await TestHelpers.waitForHomeScreen(5000);
+    await TestHelpers.waitForHomeScreen(5000);
 
     // Navigate to settings
     let profileTab;

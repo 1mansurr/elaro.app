@@ -83,7 +83,10 @@ serve(async (req: Request) => {
         }),
         {
           status: 500,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json',
+          },
         },
       );
     }
@@ -96,7 +99,10 @@ serve(async (req: Request) => {
         }),
         {
           status: 500,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json',
+          },
         },
       );
     }
@@ -115,7 +121,9 @@ serve(async (req: Request) => {
       const encrypted = await encrypt(testValue, encryptionKey);
       const decrypted = await decrypt(encrypted, encryptionKey);
       if (decrypted !== testValue) {
-        throw new Error('Encryption/decryption test failed - values do not match');
+        throw new Error(
+          'Encryption/decryption test failed - values do not match',
+        );
       }
       console.log('✅ Encryption/decryption test passed');
     } catch (error) {
@@ -126,7 +134,10 @@ serve(async (req: Request) => {
         }),
         {
           status: 500,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json',
+          },
         },
       );
     }
@@ -156,7 +167,10 @@ serve(async (req: Request) => {
         }),
         {
           status: 500,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json',
+          },
         },
       );
     }
@@ -176,7 +190,10 @@ serve(async (req: Request) => {
         }),
         {
           status: 200,
-          headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+          headers: {
+            ...getCorsHeaders(origin),
+            'Content-Type': 'application/json',
+          },
         },
       );
     }
@@ -190,7 +207,9 @@ serve(async (req: Request) => {
     // Process users in batches
     for (let i = 0; i < users.length; i += batchSize) {
       const batch = users.slice(i, i + batchSize);
-      console.log(`🔄 Processing batch ${Math.floor(i / batchSize) + 1} (${batch.length} users)...`);
+      console.log(
+        `🔄 Processing batch ${Math.floor(i / batchSize) + 1} (${batch.length} users)...`,
+      );
 
       for (const user of batch) {
         const result: MigrationResult = {
@@ -281,7 +300,9 @@ serve(async (req: Request) => {
               `  🔍 [DRY RUN] User ${user.id}: Would update ${result.fieldsEncrypted.length} field(s)`,
             );
           } else {
-            console.log(`  ⏭️  User ${user.id}: No updates needed (all fields already encrypted or empty)`);
+            console.log(
+              `  ⏭️  User ${user.id}: No updates needed (all fields already encrypted or empty)`,
+            );
           }
         } catch (error) {
           const errorMsg = `Unexpected error processing user: ${error instanceof Error ? error.message : String(error)}`;
@@ -295,7 +316,8 @@ serve(async (req: Request) => {
 
     const summary: MigrationSummary = {
       totalUsersProcessed: users.length,
-      totalUsersUpdated: results.filter(r => r.fieldsEncrypted.length > 0).length,
+      totalUsersUpdated: results.filter(r => r.fieldsEncrypted.length > 0)
+        .length,
       totalFieldsEncrypted,
       results,
       errors: globalErrors,
@@ -306,7 +328,9 @@ serve(async (req: Request) => {
     console.log(`  Total users processed: ${summary.totalUsersProcessed}`);
     console.log(`  Users with updates: ${summary.totalUsersUpdated}`);
     console.log(`  Total fields encrypted: ${summary.totalFieldsEncrypted}`);
-    console.log(`  Mode: ${dryRun ? 'DRY RUN (no changes made)' : 'LIVE (changes applied)'}`);
+    console.log(
+      `  Mode: ${dryRun ? 'DRY RUN (no changes made)' : 'LIVE (changes applied)'}`,
+    );
 
     return new Response(
       JSON.stringify({
@@ -317,7 +341,10 @@ serve(async (req: Request) => {
       }),
       {
         status: 200,
-        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
       },
     );
   } catch (error) {
@@ -329,7 +356,10 @@ serve(async (req: Request) => {
       }),
       {
         status: 500,
-        headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' },
+        headers: {
+          ...getCorsHeaders(origin),
+          'Content-Type': 'application/json',
+        },
       },
     );
   }

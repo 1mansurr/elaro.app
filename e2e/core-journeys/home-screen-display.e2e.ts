@@ -187,7 +187,9 @@ describe('Home Screen & Task Display', () => {
             const scrollView = element(by.id('home-content'));
             await scrollView.swipe('down', 'fast', 0.8, 0.2, 0.5);
           } catch {
-            console.log('⚠️ Could not perform pull to refresh - element may not support swipe');
+            console.log(
+              '⚠️ Could not perform pull to refresh - element may not support swipe',
+            );
           }
         }
       }

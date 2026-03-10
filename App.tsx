@@ -2,7 +2,14 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import {
   NavigationContainer,
   NavigationContainerRef,
@@ -933,9 +940,7 @@ const DebugLogViewer: React.FC = () => {
         isMinimized && styles.debugContainerMinimized,
       ]}>
       <View style={styles.debugHeader}>
-        <Text style={styles.debugHeaderText}>
-          Debug Logs ({logs.length})
-        </Text>
+        <Text style={styles.debugHeaderText}>Debug Logs ({logs.length})</Text>
         <View style={styles.debugButtons}>
           <TouchableOpacity
             style={styles.debugButton}
@@ -1032,7 +1037,13 @@ const AppWithErrorBoundary: React.FC<{
       shouldShowLoading,
       navigationContainerMounted,
     });
-  }, [isStateValidated, appIsReady, isAnimationFinished, shouldShowLoading, navigationContainerMounted]);
+  }, [
+    isStateValidated,
+    appIsReady,
+    isAnimationFinished,
+    shouldShowLoading,
+    navigationContainerMounted,
+  ]);
 
   // Hide native splash screen ONLY when ALL conditions are met:
   // 1. appIsReady === true

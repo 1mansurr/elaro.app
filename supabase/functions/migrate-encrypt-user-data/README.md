@@ -12,11 +12,13 @@ This edge function migrates existing plaintext user data to encrypted format.
 ## What It Does
 
 Encrypts plaintext fields in the `users` table:
+
 - `first_name` (if plaintext)
 - `last_name` (if plaintext)
 - `country` (if plaintext)
 
 **Skips:**
+
 - Empty/null fields
 - Already encrypted fields (detected by base64 pattern)
 - `username` (intentionally left as plaintext - public field)
@@ -52,6 +54,7 @@ curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/migrate-encrypt-user-
 ### Step 2: Review the Results
 
 Check the response to see:
+
 - How many users will be affected
 - Which fields will be encrypted for each user
 - Any errors that occurred
@@ -84,11 +87,11 @@ curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/migrate-encrypt-user-
 
 ## Request Parameters
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `dryRun` | boolean | `true` | If `true`, only logs what would change (no database updates) |
-| `userId` | string | `undefined` | Optional: Migrate only this specific user ID |
-| `batchSize` | number | `100` | Number of users to process in each batch |
+| Parameter   | Type    | Default     | Description                                                  |
+| ----------- | ------- | ----------- | ------------------------------------------------------------ |
+| `dryRun`    | boolean | `true`      | If `true`, only logs what would change (no database updates) |
+| `userId`    | string  | `undefined` | Optional: Migrate only this specific user ID                 |
+| `batchSize` | number  | `100`       | Number of users to process in each batch                     |
 
 ## Response Format
 
@@ -132,14 +135,17 @@ After running the migration, verify the data:
 ## Troubleshooting
 
 ### Error: "Encryption test failed"
+
 - Check that `ENCRYPTION_KEY` environment variable is set correctly
 - Verify the encryption key hasn't changed
 
 ### Error: "Failed to query users"
+
 - Check database connection
 - Verify RLS policies allow service role access
 
 ### Some fields not encrypted
+
 - Fields might already be encrypted (check base64 pattern)
 - Fields might be empty (skipped intentionally)
 - Check error messages in the response

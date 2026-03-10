@@ -184,7 +184,9 @@ describe('Main App Integration Tests', () => {
 
       const startTime = Date.now();
 
-      const calendarTab = element(by.id('calendar-tab')).or(element(by.text('Calendar')));
+      const calendarTab = element(by.id('calendar-tab')).or(
+        element(by.text('Calendar')),
+      );
       try {
         await calendarTab.tap();
         await waitFor(element(by.id('calendar-screen')))
@@ -226,7 +228,9 @@ describe('Main App Integration Tests', () => {
         console.log('✅ Large data set handling verified');
       } catch {
         // Assignments list may not be accessible or may use different structure
-        console.log('ℹ️ Large data set test - assignments list may use different structure');
+        console.log(
+          'ℹ️ Large data set test - assignments list may use different structure',
+        );
       }
     });
   });
@@ -273,7 +277,9 @@ describe('Main App Integration Tests', () => {
       }
 
       // Navigate through interactive elements
-      const fabButton = element(by.id('fab-button')).or(element(by.id('add-task-fab')));
+      const fabButton = element(by.id('fab-button')).or(
+        element(by.id('add-task-fab')),
+      );
       try {
         await fabButton.tap();
         await TestHelpers.wait(500);
@@ -334,7 +340,9 @@ describe('Main App Integration Tests', () => {
       // Detailed notification tests are in core-journeys/notification-flow.e2e.ts
 
       try {
-        const permissionDialog = element(by.id('notification-permission-dialog'));
+        const permissionDialog = element(
+          by.id('notification-permission-dialog'),
+        );
         try {
           await waitFor(permissionDialog).toBeVisible().withTimeout(5000);
 
@@ -345,9 +353,7 @@ describe('Main App Integration Tests', () => {
             await TestHelpers.wait(1000);
 
             // Permission dialog should disappear
-            await waitFor(permissionDialog)
-              .not.toBeVisible()
-              .withTimeout(2000);
+            await waitFor(permissionDialog).not.toBeVisible().withTimeout(2000);
             console.log('✅ Notification permission flow works');
           }
         } catch {
