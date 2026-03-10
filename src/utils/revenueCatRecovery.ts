@@ -7,10 +7,7 @@
 import {
   RevenueCat,
   PurchasesOfferingType as PurchasesOffering,
-  PurchasesPackageType as PurchasesPackage,
 } from '@/services/revenueCatWrapper';
-import { executeWithRecovery, RecoveryStrategy } from './errorRecovery';
-import { revenueCatService } from '@/services/revenueCat';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CACHED_OFFERINGS_KEY = '@elaro_cached_offerings';
@@ -22,7 +19,6 @@ const CACHED_CUSTOMER_INFO_KEY = '@elaro_cached_customer_info';
 async function getCachedOfferings(): Promise<PurchasesOffering | null> {
   try {
     const cached = await AsyncStorage.getItem(CACHED_OFFERINGS_KEY);
-    // Guard: Only parse if cached is valid
     if (
       cached &&
       cached.trim() &&
@@ -35,7 +31,6 @@ async function getCachedOfferings(): Promise<PurchasesOffering | null> {
       } catch {
         return null;
       }
-      // Check if cache is still valid (not older than 1 hour)
       const cacheAge = Date.now() - (parsed.timestamp || 0);
       if (cacheAge < 60 * 60 * 1000) {
         return parsed.data as PurchasesOffering;
@@ -48,105 +43,26 @@ async function getCachedOfferings(): Promise<PurchasesOffering | null> {
 }
 
 /**
- * Cache offerings to AsyncStorage
- */
-async function cacheOfferings(
-  offerings: PurchasesOffering | null,
-): Promise<void> {
-  try {
-    if (offerings) {
-      // Guard: Ensure undefined is never stringified
-      const dataToCache = {
-        data: offerings,
-        timestamp: Date.now(),
-      };
-      const serialized = JSON.stringify(dataToCache, (_key, value) =>
-        value === undefined ? null : value,
-      );
-      // Guard: Only save if serialized is valid
-      if (serialized && serialized !== 'undefined') {
-        await AsyncStorage.setItem(CACHED_OFFERINGS_KEY, serialized);
-      }
-    }
-  } catch (error) {
-    console.error('Failed to cache offerings:', error);
-  }
-}
-
-/**
- * Create default offering structure when RevenueCat is unavailable
- */
-function createDefaultOffering(): PurchasesOffering | null {
-  // Return null as default - UI should handle gracefully
-  return null;
-}
-
-/**
  * Get offerings with recovery strategy
- * Primary: RevenueCat API
- * Fallback 1: Cached offerings
- * Fallback 2: Default offering structure
+ * Returns cached offerings or null when RevenueCat is unavailable.
  */
 export async function getOfferingsWithRecovery(): Promise<PurchasesOffering | null> {
-  // Early return if RevenueCat not available
   if (!RevenueCat.isAvailable) {
     console.warn(
       '⚠️ RevenueCat not available - using cached/default offerings',
     );
     const cached = await getCachedOfferings();
-    return cached || createDefaultOffering();
+    return cached || null;
   }
 
-  const strategy: RecoveryStrategy<PurchasesOffering | null> = {
-    primary: async () => {
-      const offerings = await revenueCatService.getOfferingsDirect();
-      // Cache successful result
-      if (offerings) {
-        await cacheOfferings(offerings);
-      }
-      return offerings;
-    },
-    fallbacks: [
-      // Fallback 1: Return cached offerings
-      async () => {
-        const cached = await getCachedOfferings();
-        if (cached) {
-          console.log('✅ Using cached offerings');
-          return cached;
-        }
-        throw new Error('No cached offerings available');
-      },
-      // Fallback 2: Return default offering structure
-      async () => {
-        console.log('⚠️ Using default offering structure');
-        return createDefaultOffering();
-      },
-    ],
-    shouldRetry: error => {
-      // Don't retry user cancellations
-      const err = error as { code?: string; message?: string };
-      return err?.code !== 'PURCHASES_ERROR_PURCHASE_CANCELLED';
-    },
-    onFailure: (error, attempt) => {
-      console.warn(
-        `⚠️ RevenueCat offerings attempt ${attempt} failed:`,
-        error.message,
-      );
-    },
-  };
-
-  return executeWithRecovery(strategy);
+  return null;
 }
 
 /**
  * Get customer info with recovery strategy
- * Primary: RevenueCat API
- * Fallback: Cached customer info
+ * Returns null when RevenueCat is unavailable.
  */
-export async function getCustomerInfoWithRecovery(): Promise<
-  ReturnType<typeof revenueCatService.getCustomerInfo>
-> {
-  // Early return if RevenueCat not available
+export async function getCustomerInfoWithRecovery(): Promise<null> {
   if (!RevenueCat.isAvailable) {
     console.warn('⚠️ RevenueCat not available - using cached customer info');
     try {
@@ -171,44 +87,5 @@ export async function getCustomerInfoWithRecovery(): Promise<
     throw new Error('RevenueCat not available and no cached customer info');
   }
 
-  const strategy: RecoveryStrategy<
-    Awaited<ReturnType<typeof revenueCatService.getCustomerInfo>>
-  > = {
-    primary: async () => {
-      return await revenueCatService.getCustomerInfo();
-    },
-    fallbacks: [
-      // Fallback: Return cached customer info
-      async () => {
-        try {
-          const cached = await AsyncStorage.getItem(CACHED_CUSTOMER_INFO_KEY);
-          if (
-            cached &&
-            cached.trim() &&
-            cached !== 'undefined' &&
-            cached !== 'null'
-          ) {
-            let parsed: any;
-            try {
-              parsed = JSON.parse(cached);
-            } catch {
-              return null;
-            }
-            const cacheAge = Date.now() - (parsed.timestamp || 0);
-            // Cache valid for 24 hours
-            if (cacheAge < 24 * 60 * 60 * 1000) {
-              console.log('✅ Using cached customer info');
-              return parsed.data;
-            }
-          }
-          throw new Error('No cached customer info available');
-        } catch {
-          throw new Error('Failed to load cached customer info');
-        }
-      },
-    ],
-    shouldRetry: () => true,
-  };
-
-  return executeWithRecovery(strategy);
+  throw new Error('RevenueCat service removed');
 }

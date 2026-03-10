@@ -1,9 +1,8 @@
-import React, { memo, useEffect } from 'react';
+import React, { memo } from 'react';
 import { Task } from '@/types';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import { QuickAddModal } from '@/shared/components';
 import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 
 interface HomeScreenModalsProps {
   selectedTask: Task | null;
@@ -29,43 +28,6 @@ const HomeScreenModals: React.FC<HomeScreenModalsProps> = memo(
     onCloseQuickAdd,
     onCloseNotificationHistory,
   }) => {
-    // Enhanced performance monitoring
-    useEffect(() => {
-      performanceMonitoringService.startTimer('modals-component-mount');
-      return () => {
-        performanceMonitoringService.endTimer('modals-component-mount');
-      };
-    }, []);
-
-    // Monitor modal visibility changes
-    useEffect(() => {
-      if (isQuickAddVisible) {
-        performanceMonitoringService.startTimer('quick-add-modal-open');
-      } else {
-        performanceMonitoringService.endTimer('quick-add-modal-open');
-      }
-    }, [isQuickAddVisible]);
-
-    useEffect(() => {
-      if (isNotificationHistoryVisible) {
-        performanceMonitoringService.startTimer(
-          'notification-history-modal-open',
-        );
-      } else {
-        performanceMonitoringService.endTimer(
-          'notification-history-modal-open',
-        );
-      }
-    }, [isNotificationHistoryVisible]);
-
-    useEffect(() => {
-      if (selectedTask) {
-        performanceMonitoringService.startTimer('task-detail-sheet-open');
-      } else {
-        performanceMonitoringService.endTimer('task-detail-sheet-open');
-      }
-    }, [selectedTask]);
-
     return (
       <>
         <QuickAddModal

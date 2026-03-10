@@ -13,13 +13,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import { useToast, ToastOptions } from '@/contexts/ToastContext';
 import { supabase } from '@/services/supabase';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
-import { TASK_EVENTS } from '@/utils/analyticsEvents';
 import { getDraftCount } from '@/utils/draftStorage';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Task, User, HomeScreenData, RootStackParamList } from '@/types';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
@@ -78,13 +74,6 @@ export const useTaskManagement = () => {
   const { showToast } = useToast();
 
   const handleViewDetails = useCallback((task: Task) => {
-    mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
-      task_id: task.id,
-      task_type: task.type,
-      task_title: task.title,
-      source: 'home_screen',
-      timestamp: new Date().toISOString(),
-    });
     setSelectedTask(task);
   }, []);
 
@@ -94,13 +83,6 @@ export const useTaskManagement = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-
-    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
-      task_id: selectedTask.id,
-      task_type: selectedTask.type,
-      task_title: selectedTask.title,
-      source: 'task_detail_sheet',
-    });
 
     // Determine which modal to navigate to based on task type
     let modalName:

@@ -4,7 +4,6 @@ import {
   CustomerInfoType as CustomerInfo,
   PurchasesPackageType as PurchasesPackage,
 } from '@/services/revenueCatWrapper';
-import { revenueCatService } from '@/services/revenueCat';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
 
@@ -76,105 +75,28 @@ export const useSubscription = (): UseSubscriptionReturn => {
   const loadCustomerInfo = useCallback(async () => {
     if (!RevenueCat.isAvailable) {
       setError('RevenueCat not available');
-      return;
-    }
-
-    // Add timeout in dev mode to prevent hanging
-    const timeout = __DEV__ ? 2000 : 5000;
-    try {
-      const timeoutPromise = new Promise<CustomerInfo>((_, reject) => {
-        setTimeout(
-          () => reject(new Error('Customer info fetch timeout')),
-          timeout,
-        );
-      });
-
-      const infoPromise = revenueCatService.getCustomerInfo();
-      const info = await Promise.race([infoPromise, timeoutPromise]);
-
-      setCustomerInfo(info);
-      setError(null);
-    } catch (err) {
-      // Only log errors in dev mode to reduce noise
-      if (__DEV__) {
-        console.error('Error loading customer info:', err);
-      }
-      // Don't set error state - allow app to continue without subscription info
-      // Error will be shown only when user tries to use subscription features
-      setError(null);
     }
   }, []);
 
   // Purchase a subscription
   const purchasePackage = useCallback(
-    async (packageToPurchase: PurchasesPackage): Promise<CustomerInfo> => {
-      if (!RevenueCat.isAvailable) {
-        throw new Error('RevenueCat not available');
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const info = await revenueCatService.purchasePackage(packageToPurchase);
-        setCustomerInfo(info);
-
-        // Update user subscription in backend
-        await updateUserSubscription(info);
-
-        return info;
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Purchase failed';
-        setError(errorMessage);
-        throw err;
-      } finally {
-        setIsLoading(false);
-      }
+    async (_packageToPurchase: PurchasesPackage): Promise<CustomerInfo> => {
+      throw new Error('RevenueCat not available');
     },
-    [updateUserSubscription],
+    [],
   );
 
   // Restore purchases
   const restorePurchases = useCallback(async (): Promise<CustomerInfo> => {
-    if (!RevenueCat.isAvailable) {
-      throw new Error('RevenueCat not available');
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const info = await revenueCatService.restorePurchases();
-      setCustomerInfo(info);
-
-      // Update user subscription in backend
-      await updateUserSubscription(info);
-
-      return info;
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'Restore failed';
-      setError(errorMessage);
-      throw err;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [updateUserSubscription]);
+    throw new Error('RevenueCat not available');
+  }, []);
 
   // Clear error state
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Set RevenueCat user ID when user changes
-  useEffect(() => {
-    if (RevenueCat.isAvailable && user?.id) {
-      revenueCatService.setUserId(user.id).catch(err => {
-        console.error('Failed to set RevenueCat user ID:', err);
-      });
-    }
-  }, [user?.id]);
+  // RevenueCat user ID setting removed
 
   // Defer customer info loading - only load when user is available AND component needs it
   // This prevents blocking app startup with RevenueCat API calls
@@ -190,26 +112,11 @@ export const useSubscription = (): UseSubscriptionReturn => {
   }, [user]);
 
   // Computed values
-  const hasActiveSubscription =
-    RevenueCat.isAvailable && customerInfo
-      ? revenueCatService.hasActiveSubscription(customerInfo)
-      : false;
-  const subscriptionTier =
-    RevenueCat.isAvailable && customerInfo
-      ? revenueCatService.getSubscriptionTier(customerInfo)
-      : 'free';
-  const subscriptionExpiration =
-    RevenueCat.isAvailable && customerInfo
-      ? revenueCatService.getSubscriptionExpiration(customerInfo)
-      : null;
-  const isInGracePeriod =
-    RevenueCat.isAvailable && customerInfo
-      ? revenueCatService.isInGracePeriod(customerInfo)
-      : false;
-  const gracePeriodExpiration =
-    RevenueCat.isAvailable && customerInfo
-      ? revenueCatService.getGracePeriodExpiration(customerInfo)
-      : null;
+  const hasActiveSubscription = false;
+  const subscriptionTier = 'free';
+  const subscriptionExpiration = null;
+  const isInGracePeriod = false;
+  const gracePeriodExpiration = null;
 
   // Return early values if RevenueCat not available
   if (!RevenueCat.isAvailable) {

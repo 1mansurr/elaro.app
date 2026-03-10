@@ -10,8 +10,6 @@ import { authSyncService } from '@/services/authSync';
 import { navigationSyncService } from '@/services/navigationSync';
 import { User } from '@/types';
 import { getPendingTask } from '@/utils/taskPersistence';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
 import {
   isSessionExpired,
   clearLastActiveTimestamp,
@@ -28,13 +26,6 @@ import {
 } from '@/utils/authLockout';
 import { Platform } from 'react-native';
 import { logAuth, logWarn, logError } from '@/utils/logger';
-import {
-  addBreadcrumb,
-  captureEvent,
-  captureError,
-  startSpan,
-  finishSpan,
-} from '@/services/monitoring/sentry';
 // import { useData } from './DataContext'; // Removed to fix circular dependency
 // import { useGracePeriod } from '@/hooks/useGracePeriod'; // Removed to fix circular dependency - moved to GracePeriodChecker component
 
@@ -377,7 +368,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const initializeAuth = async () => {
       logAuth('Auth initialization started');
-      addBreadcrumb({ message: 'Auth initialization started' });
 
       try {
         // FAST PATH: Use direct Supabase client getSession() - no API round-trip
@@ -390,7 +380,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (error) {
           logError('Error getting initial session', { error: String(error) });
-          captureError(error, { context: 'auth_get_session' });
           setSession(null);
           setUser(null);
           setLoading(false);
@@ -419,7 +408,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
                 logAuth('Using valid cached user profile', {
                   onboardingCompleted: true,
                 });
-                addBreadcrumb({ message: 'Using cached user profile' });
                 // Set cached profile immediately - this prevents loading screen and shows correct UI
                 // STEP 1 FIX: Eliminated background fetch to remove race condition
                 // Using cached user directly, set isInitializing to false only when we have definitive state
@@ -450,7 +438,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
           // STEP 3: No valid cached profile exists - show loading and fetch from server
           logAuth('Fetching user profile from server');
-          addBreadcrumb({ message: 'Fetching user profile from server' });
           // Keep loading=true and isInitializing=true while we fetch (shows loading indicator)
 
           try {
@@ -460,9 +447,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               new Promise<null>(resolve => {
                 setTimeout(() => {
                   logWarn('Profile fetch timeout - proceeding unauthenticated');
-                  captureEvent('startup_timeout_auth_profile_fetch', {
-                    timeout: 5000,
-                  });
                   resolve(null);
                 }, 5000); // 5 second timeout
               }),
@@ -476,7 +460,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
               setLoading(false);
               setIsInitializing(false); // We have a valid profile from server
               logAuth('User profile loaded from server');
-              addBreadcrumb({ message: 'User profile loaded from server' });
             } else {
               // Profile fetch failed - create safe minimal user as last resort
               logWarn(
@@ -509,7 +492,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
             logError('Error fetching user profile', {
               error: String(fetchError),
             });
-            captureError(fetchError, { context: 'auth_profile_fetch' });
             // Create safe minimal user as fallback
             const minimalUserFromSession = createMinimalUserFromSession(
               session.user,
@@ -540,10 +522,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           setIsInitializing(false);
         }
         logAuth('Auth initialization completed');
-        addBreadcrumb({ message: 'Auth initialization completed' });
       } catch (error) {
         logError('Error initializing auth', { error: String(error) });
-        captureError(error, { context: 'auth_initialization' });
         // Don't block app - continue with no session
         setSession(null);
         setUser(null);
@@ -858,38 +838,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Identify user in Mixpanel and set user properties
-      if (user) {
-        mixpanelService.identify(user.id);
-        mixpanelService.setUserProperties({
-          subscription_tier: user.subscription_tier,
-          onboarding_completed: user.onboarding_completed,
-          created_at: user.created_at,
-          university: user.university,
-          program: user.program,
-        });
-
-        // Track login event
-        mixpanelService.track(AnalyticsEvents.USER_LOGGED_IN, {
-          subscription_tier: user.subscription_tier,
-          onboarding_completed: user.onboarding_completed,
-          login_method: 'email',
-        });
-      }
     };
 
     handleUserProfileReady();
   }, [session?.user?.id, user?.id]);
-
-  // Track logout when user becomes null
-  useEffect(() => {
-    if (!session && user) {
-      // User just logged out
-      mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-        logout_reason: 'manual',
-      });
-    }
-  }, [session, user]);
 
   // Check for session timeout on app load
   useEffect(() => {
@@ -899,12 +851,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
         if (expired && session) {
           console.log('⏰ Session expired due to inactivity. Logging out...');
-
-          // Track the session timeout event
-          mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-            logout_reason: 'session_timeout',
-            timeout_days: 30,
-          });
 
           // Sign out the user
           await signOut();
@@ -1414,22 +1360,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         }
       }
 
-      // Track sign up event
-      mixpanelService.track(AnalyticsEvents.USER_SIGNED_UP, {
-        signup_method: 'email',
-        has_first_name: !!credentials.firstName,
-        has_last_name: !!credentials.lastName,
-      });
-
       return { error: null };
     } catch (error) {
       console.error('❌ Sign up error:', error);
-
-      // Track failed sign up
-      mixpanelService.track(AnalyticsEvents.ERROR_OCCURRED, {
-        error_type: 'signup_failed',
-        error_message: error instanceof Error ? error.message : 'Unknown error',
-      });
 
       return {
         error: error instanceof Error ? error : new Error(String(error)),
@@ -1439,11 +1372,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const signOut = async () => {
     try {
-      // Track logout event before signing out
-      mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-        logout_reason: 'manual',
-      });
-
       // Clear all cached data on logout
       await cache.clearAll();
 

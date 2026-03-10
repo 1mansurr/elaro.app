@@ -1,6 +1,4 @@
 import * as Updates from 'expo-updates';
-import Constants from 'expo-constants';
-import { errorTracking } from './errorTracking';
 
 class UpdateService {
   private static instance: UpdateService;
@@ -33,9 +31,6 @@ class UpdateService {
         const result = await Updates.fetchUpdateAsync();
 
         if (result.isNew) {
-          // Log update availability
-          errorTracking.captureMessage('Update downloaded and ready', 'info');
-
           // Auto-apply update (as per your preference)
           await Updates.reloadAsync();
 
@@ -49,9 +44,6 @@ class UpdateService {
 
       return { isAvailable: false, isDownloaded: false };
     } catch (error) {
-      errorTracking.captureError(error as Error, {
-        tags: { type: 'update_check_failed' },
-      });
       return { isAvailable: false, isDownloaded: false };
     }
   }

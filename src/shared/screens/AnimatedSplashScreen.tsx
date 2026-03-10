@@ -5,7 +5,6 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { COLORS } from '@/constants/theme';
 import { logSplash } from '@/utils/logger';
-import { addBreadcrumb } from '@/services/monitoring/sentry';
 
 interface AnimatedSplashScreenProps {
   onAnimationFinish: () => void;
@@ -29,7 +28,6 @@ const AnimatedSplashScreen: React.FC<AnimatedSplashScreenProps> = ({
   // 3. Define the animation sequence with fail-safe guarantees
   useEffect(() => {
     logSplash('Splash animation started');
-    addBreadcrumb({ message: 'Splash animation started' });
 
     // Hard timeout fallback - guarantees callback fires even if animation fails
     const timeoutId = setTimeout(() => {

@@ -16,7 +16,6 @@ import TodayOverviewCard from '../../components/TodayOverviewCard';
 import { SwipeableTaskCard } from '../../components/SwipeableTaskCard';
 import { PrimaryButton } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
@@ -56,32 +55,17 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
     const { user } = useAuth();
     const queryClient = useQueryClient();
 
-    // Enhanced performance monitoring
-    useEffect(() => {
-      performanceMonitoringService.startTimer('content-component-mount');
-      return () => {
-        performanceMonitoringService.endTimer('content-component-mount');
-      };
-    }, []);
-
     // Optimized refresh with request deduplication
     const handleRefresh = useStableCallback(async () => {
-      performanceMonitoringService.startTimer('home-screen-refresh');
-
       await requestDeduplicationService.deduplicateRequest(
         'home-screen-refresh',
         () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }),
       );
-
-      performanceMonitoringService.endTimer('home-screen-refresh');
     }, [queryClient]);
 
     // Optimized data processing with expensive memoization
     const processedHomeData = useExpensiveMemo(() => {
-      performanceMonitoringService.startTimer('home-data-processing');
-
       if (!homeData) {
-        performanceMonitoringService.endTimer('home-data-processing');
         return null;
       }
 
@@ -90,7 +74,6 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
         todayOverview: homeData.todayOverview,
       };
 
-      performanceMonitoringService.endTimer('home-data-processing');
       return processed;
     }, [homeData]);
 

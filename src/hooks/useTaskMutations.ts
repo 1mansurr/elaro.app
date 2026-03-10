@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { Task, HomeScreenData } from '@/types';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
-import { TASK_EVENTS } from '@/utils/analyticsEvents';
 import { Alert } from 'react-native';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -139,14 +136,6 @@ export const useCompleteTask = () => {
         console.log(`↩️ Rolled back optimistic update for task ${taskId}`);
       }
 
-      // Track error
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETION_FAILED.name, {
-        task_id: taskId,
-        task_type: taskType,
-        error: error.message,
-        source: 'task_detail_sheet',
-      });
-
       // Show error alert (only for online errors - offline actions are queued)
       if (isOnline) {
         const errorTitle = getErrorTitle(error);
@@ -165,21 +154,11 @@ export const useCompleteTask = () => {
       }
     },
 
-    // On success, track the event and cancel notifications
+    // On success, cancel notifications
     onSuccess: async (
       data,
       { taskId, taskType, taskTitle, skipNotificationCancellation },
     ) => {
-      // Track successful completion (includes both online and offline modes)
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_COMPLETED.name, {
-        task_id: taskId,
-        task_type: taskType,
-        task_title: taskTitle,
-        completion_time: new Date().toISOString(),
-        source: 'task_detail_sheet',
-        offline_mode: !isOnline,
-      });
-
       // Cancel local notifications for this task (skip for recurring lectures)
       if (!skipNotificationCancellation) {
         try {
@@ -321,18 +300,8 @@ export const useDeleteTask = () => {
       }
     },
 
-    // On success, track the event and cancel notifications
+    // On success, cancel notifications
     onSuccess: async (data, { taskId, taskType, taskTitle }) => {
-      // Track successful deletion (includes both online and offline modes)
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_DELETED.name, {
-        task_id: taskId,
-        task_type: taskType,
-        task_title: taskTitle,
-        deletion_reason: 'user_request',
-        was_completed: false,
-        offline_mode: !isOnline,
-      });
-
       // Cancel local notifications for this task
       try {
         const { notificationService } =
@@ -454,15 +423,8 @@ export const useRestoreTask = () => {
       }
     },
 
-    // Track restore event
-    onSuccess: (data, { taskId, taskType, taskTitle }) => {
-      mixpanelService.trackEvent(TASK_EVENTS.TASK_RESTORED.name, {
-        task_id: taskId,
-        task_type: taskType,
-        task_title: taskTitle,
-        restore_source: 'undo_toast',
-        offline_mode: !isOnline,
-      });
+    onSuccess: (_data, _variables) => {
+      // restore tracking removed
     },
   });
 };

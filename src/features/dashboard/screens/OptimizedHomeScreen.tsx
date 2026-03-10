@@ -27,7 +27,6 @@ import { NotificationHistoryModal } from '@/shared/components/NotificationHistor
 // Performance optimization imports
 import { useExpensiveMemo, useStableCallback } from '@/hooks/useMemoization';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 
 import { RootStackParamList, Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
@@ -65,14 +64,6 @@ const HomeScreen = () => {
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
-  // Performance monitoring
-  useEffect(() => {
-    performanceMonitoringService.startTimer('home-screen-render');
-    return () => {
-      performanceMonitoringService.endTimer('home-screen-render');
-    };
-  }, []);
-
   // State management with performance optimizations
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -88,8 +79,6 @@ const HomeScreen = () => {
 
   // Memoized calculations for expensive operations
   const processedHomeData = useExpensiveMemo(() => {
-    performanceMonitoringService.startTimer('data-processing');
-
     if (!homeData) return null;
 
     const result = {
@@ -98,7 +87,6 @@ const HomeScreen = () => {
       // Add any other processing here
     };
 
-    performanceMonitoringService.endTimer('data-processing');
     return result;
   }, [homeData]);
 
@@ -112,8 +100,6 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      performanceMonitoringService.startTimer('task-completion');
-
       // Use request deduplication to prevent duplicate completions
       await requestDeduplicationService.deduplicateRequest(
         `complete-task-${selectedTask.id}`,
@@ -126,10 +112,8 @@ const HomeScreen = () => {
         },
       );
 
-      performanceMonitoringService.endTimer('task-completion');
       Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
-      performanceMonitoringService.endTimer('task-completion');
       console.error('Error completing task:', error);
     }
   }, [selectedTask, completeTaskMutation]);
@@ -138,8 +122,6 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      performanceMonitoringService.startTimer('task-deletion');
-
       await requestDeduplicationService.deduplicateRequest(
         `delete-task-${selectedTask.id}`,
         async () => {
@@ -151,11 +133,9 @@ const HomeScreen = () => {
         },
       );
 
-      performanceMonitoringService.endTimer('task-deletion');
       setSelectedTask(null);
       Alert.alert('Success', 'Task deleted successfully!');
     } catch (error) {
-      performanceMonitoringService.endTimer('task-deletion');
       console.error('Error deleting task:', error);
     }
   }, [selectedTask, deleteTaskMutation]);
@@ -164,8 +144,6 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      performanceMonitoringService.startTimer('task-restoration');
-
       await requestDeduplicationService.deduplicateRequest(
         `restore-task-${selectedTask.id}`,
         async () => {
@@ -177,11 +155,9 @@ const HomeScreen = () => {
         },
       );
 
-      performanceMonitoringService.endTimer('task-restoration');
       setSelectedTask(null);
       Alert.alert('Success', 'Task restored successfully!');
     } catch (error) {
-      performanceMonitoringService.endTimer('task-restoration');
       console.error('Error restoring task:', error);
     }
   }, [selectedTask, restoreTaskMutation]);
@@ -211,15 +187,6 @@ const HomeScreen = () => {
     monthlyTaskCount,
     user?.subscription_tier,
   ]);
-
-  // Performance monitoring for render times
-  useEffect(() => {
-    const startTime = Date.now();
-    return () => {
-      const renderTime = Date.now() - startTime;
-      performanceMonitoringService.recordRenderTime('HomeScreen', renderTime);
-    };
-  });
 
   // Rest of the component logic...
   const getPersonalizedTitle = useCallback(() => {
@@ -265,13 +232,9 @@ const HomeScreen = () => {
 
   // Performance-optimized refresh handler
   const handleRefresh = useStableCallback(async () => {
-    performanceMonitoringService.startTimer('home-screen-refresh');
-
     try {
       await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-      performanceMonitoringService.endTimer('home-screen-refresh');
     } catch (error) {
-      performanceMonitoringService.endTimer('home-screen-refresh');
       console.error('Error refreshing data:', error);
     }
   }, [queryClient]);

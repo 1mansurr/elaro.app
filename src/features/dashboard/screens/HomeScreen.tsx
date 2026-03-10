@@ -47,9 +47,6 @@ import TaskCardSkeleton from '../components/TaskCardSkeleton';
 import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
 import { HomeScreenEmptyState } from '../components/HomeScreenEmptyState';
 import { supabase } from '@/services/supabase';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
-import { TASK_EVENTS } from '@/utils/analyticsEvents';
 import { getDraftCount } from '@/utils/draftStorage';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
@@ -154,14 +151,8 @@ const HomeScreen = () => {
   );
 
   const promptSignUp = useCallback(() => {
-    mixpanelService.track(AnalyticsEvents.SIGN_UP_PROMPTED, {
-      source: 'home_screen',
-      user_type: isGuest ? 'guest' : 'authenticated',
-      prompt_context: 'home_screen_access',
-      timestamp: new Date().toISOString(),
-    });
     navigation.navigate('Auth', { mode: 'signup' });
-  }, [isGuest, navigation]);
+  }, [navigation]);
 
   const { checkCourseLimit, checkActivityLimit } = useLimitCheck();
   const { showUsageLimitPaywall } = useUsageLimitPaywall();
@@ -184,7 +175,6 @@ const HomeScreen = () => {
   const handleAddActivity = useCallback(
     async (
       flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
-      eventName: string,
     ) => {
       const limitCheck = await checkActivityLimit();
       if (!limitCheck.allowed && limitCheck.limitType) {
@@ -197,16 +187,6 @@ const HomeScreen = () => {
         );
         return;
       }
-      // Track analytics before navigating
-      mixpanelService.track(eventName as any, {
-        task_type: flowName
-          .replace('Add', '')
-          .replace('Flow', '')
-          .toLowerCase(),
-        source: 'home_screen_fab',
-        creation_method: 'manual',
-        timestamp: new Date().toISOString(),
-      });
       navigation.navigate(flowName);
     },
     [checkActivityLimit, showUsageLimitPaywall, navigation],
@@ -217,26 +197,17 @@ const HomeScreen = () => {
       {
         icon: 'book-outline' as const,
         label: 'Add Study Session',
-        onPress: () =>
-          handleAddActivity(
-            'AddStudySessionFlow',
-            AnalyticsEvents.STUDY_SESSION_CREATED,
-          ),
+        onPress: () => handleAddActivity('AddStudySessionFlow'),
       },
       {
         icon: 'document-text-outline' as const,
         label: 'Add Assignment',
-        onPress: () =>
-          handleAddActivity(
-            'AddAssignmentFlow',
-            AnalyticsEvents.ASSIGNMENT_CREATED,
-          ),
+        onPress: () => handleAddActivity('AddAssignmentFlow'),
       },
       {
         icon: 'school-outline' as const,
         label: 'Add Lecture',
-        onPress: () =>
-          handleAddActivity('AddLectureFlow', AnalyticsEvents.LECTURE_CREATED),
+        onPress: () => handleAddActivity('AddLectureFlow'),
       },
     ],
     [handleAddActivity],
@@ -265,13 +236,6 @@ const HomeScreen = () => {
   );
 
   const handleViewDetails = useCallback((task: Task) => {
-    mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
-      task_id: task.id,
-      task_type: task.type,
-      task_title: task.title,
-      source: 'home_screen',
-      timestamp: new Date().toISOString(),
-    });
     setSelectedTask(task);
   }, []);
 
@@ -281,13 +245,6 @@ const HomeScreen = () => {
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-
-    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
-      task_id: selectedTask.id,
-      task_type: selectedTask.type,
-      task_title: selectedTask.title,
-      source: 'task_detail_sheet',
-    });
 
     // Determine which modal to navigate to based on task type
     let modalName:

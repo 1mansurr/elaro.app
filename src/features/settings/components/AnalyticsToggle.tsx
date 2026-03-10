@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ANALYTICS_CONSENT_KEY = 'analytics_consent';
@@ -21,7 +19,6 @@ export const AnalyticsToggle: React.FC = () => {
       const consent = await AsyncStorage.getItem(ANALYTICS_CONSENT_KEY);
       const hasConsent = consent === 'true';
       setIsEnabled(hasConsent);
-      mixpanelService.setUserConsent(hasConsent);
     } catch (error) {
       console.error('Error loading analytics consent:', error);
     } finally {
@@ -33,13 +30,6 @@ export const AnalyticsToggle: React.FC = () => {
     try {
       await AsyncStorage.setItem(ANALYTICS_CONSENT_KEY, value.toString());
       setIsEnabled(value);
-      mixpanelService.setUserConsent(value);
-
-      // Track the privacy setting change
-      mixpanelService.track(AnalyticsEvents.ANALYTICS_CONSENT_CHANGED, {
-        enabled: value,
-        timestamp: new Date().toISOString(),
-      });
     } catch (error) {
       console.error('Error saving analytics consent:', error);
     }

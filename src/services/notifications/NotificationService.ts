@@ -2,8 +2,6 @@ import { NotificationDeliveryService } from './NotificationDeliveryService';
 import { NotificationPreferenceService } from './NotificationPreferenceService';
 import { NotificationSchedulingService } from './NotificationSchedulingService';
 import { notificationHistoryService } from './NotificationHistoryService';
-import { weeklyAnalyticsService } from '../analytics/WeeklyAnalyticsService';
-import { batchProcessingService } from '../analytics/BatchProcessingService';
 import {
   INotificationDeliveryService,
   INotificationPreferenceService,
@@ -23,16 +21,12 @@ export class NotificationService {
   public readonly preferences: INotificationPreferenceService;
   public readonly scheduling: INotificationSchedulingService;
   public readonly history: typeof notificationHistoryService;
-  public readonly weeklyAnalytics: typeof weeklyAnalyticsService;
-  public readonly batchProcessing: typeof batchProcessingService;
 
   private constructor() {
     this.delivery = NotificationDeliveryService.getInstance();
     this.preferences = NotificationPreferenceService.getInstance();
     this.scheduling = NotificationSchedulingService.getInstance();
     this.history = notificationHistoryService;
-    this.weeklyAnalytics = weeklyAnalyticsService;
-    this.batchProcessing = batchProcessingService;
   }
 
   public static getInstance(): NotificationService {

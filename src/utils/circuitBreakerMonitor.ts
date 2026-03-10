@@ -5,7 +5,6 @@
  */
 
 import { getSupabaseCircuitBreakerStats } from './supabaseQueryWrapper';
-import { errorTracking } from '@/services/errorTracking';
 
 let monitoringInterval: NodeJS.Timeout | null = null;
 
@@ -18,16 +17,9 @@ export function monitorCircuitBreakers() {
 
     // Alert if circuit breaker is open
     if (stats.state === 'open') {
-      errorTracking.captureMessage(
-        `Supabase circuit breaker is OPEN after ${stats.failures} failures`,
-        'error',
+      console.warn(
+        `⚠️ Supabase circuit breaker is OPEN after ${stats.failures} failures`,
       );
-
-      errorTracking.trackEvent('circuit_breaker_open', {
-        service: 'supabase',
-        failures: stats.failures,
-        lastFailureTime: stats.lastFailureTime,
-      });
     }
 
     // Log half-open state for monitoring
@@ -35,11 +27,6 @@ export function monitorCircuitBreakers() {
       console.warn(
         '⚠️ Supabase circuit breaker is HALF-OPEN (testing recovery)',
       );
-
-      errorTracking.trackEvent('circuit_breaker_half_open', {
-        service: 'supabase',
-        successes: stats.successes,
-      });
     }
 
     return stats;

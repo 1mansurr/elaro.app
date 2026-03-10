@@ -27,11 +27,6 @@ import Constants from 'expo-constants';
 import { useNotification } from './src/contexts/NotificationContext';
 import { AppProviders } from './src/providers/AppProviders';
 import { setNotificationTaskHandler } from './src/services/notifications';
-import { OfflineBanner } from './src/shared/components/OfflineBanner';
-import { SyncIndicator } from './src/shared/components/SyncIndicator';
-import { revenueCatService } from './src/services/revenueCat';
-import { analyticsService } from './src/services/analytics';
-import { errorTracking } from './src/services/errorTracking';
 import { Platform } from 'react-native';
 import TaskDetailSheet from './src/shared/components/TaskDetailSheet';
 import { AppNavigator } from './src/navigation/AppNavigator';
@@ -47,7 +42,6 @@ import {
 } from './src/utils/notificationActions';
 import { promptForUpdateIfNeeded } from './src/utils/apiVersionCheck';
 import { GracePeriodChecker } from './src/components/GracePeriodChecker';
-import { updateService } from './src/services/updateService';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
 import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
@@ -76,29 +70,10 @@ import {
   logNav,
   logSplash,
 } from './src/utils/logger';
-import {
-  initializeSentry,
-  startStartupTransaction,
-  addBreadcrumb,
-  captureEvent,
-  captureError,
-  finishTransaction,
-  startSpan,
-  finishSpan,
-} from './src/services/monitoring/sentry';
 
 // Validate configuration on startup
 validateAndLogConfig();
 
-// Initialize Sentry for remote logging and performance tracing (Layer 2 & 3)
-initializeSentry(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
-
-// Start performance transaction for app startup (Layer 3)
-// This will be finished when NavigationContainer is ready
-const startupTransactionRef = { current: startStartupTransaction() };
-if (startupTransactionRef.current) {
-  addBreadcrumb({ message: 'App module loaded' });
-}
 
 logBoot('App module loaded');
 
@@ -295,27 +270,10 @@ if (__DEV__) {
   }
 }
 
-// Initialize centralized error tracking service (legacy - kept for compatibility)
-errorTracking.initialize(Constants.expoConfig?.extra?.EXPO_PUBLIC_SENTRY_DSN);
-
-// Initialize cache monitoring (only in production)
-if (!__DEV__) {
-  import('@/services/cacheMonitoring').then(({ cacheMonitoring }) => {
-    cacheMonitoring.start();
-  });
-}
-
 // Global unhandled promise rejection handler
-// Send to error tracking service for monitoring in production
 if (typeof process !== 'undefined' && process.on) {
-  process.on('unhandledRejection', (reason, promise) => {
+  process.on('unhandledRejection', (reason, _promise) => {
     console.error('Unhandled Promise Rejection:', reason);
-
-    // Send to error tracking service
-    errorTracking.captureError(reason as Error, {
-      tags: { type: 'unhandled_promise_rejection' },
-      extra: { promise: String(promise) },
-    });
   });
 }
 
@@ -537,7 +495,6 @@ const NavigationStateValidator: React.FC<{
 
     const validateNavigationState = async () => {
       logNav('Starting navigation state validation');
-      addBreadcrumb({ message: 'Navigation state validation started' });
       // STEP 3 FIX: Consolidated to single master timeout
       // GUARANTEED EXIT: Maximum timeout ensures we always resolve
       // This is the final safety net - app will render after 3 seconds maximum
@@ -546,7 +503,6 @@ const NavigationStateValidator: React.FC<{
         logWarn(
           'Navigation state validation maximum timeout reached - proceeding with safe fallback',
         );
-        captureEvent('startup_timeout_nav_validation_max', { timeout: 3000 });
         onStateValidated(null);
       }, 3000); // 3 second absolute maximum
 
@@ -718,9 +674,6 @@ const NavigationStateValidator: React.FC<{
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
 
             logNav('Navigation state validated successfully');
-            addBreadcrumb({
-              message: 'Navigation state validated successfully',
-            });
             onStateValidated(safeState);
             return;
           } catch (error) {
@@ -728,7 +681,6 @@ const NavigationStateValidator: React.FC<{
             logError('Error validating initial navigation state', {
               error: String(error),
             });
-            captureError(error, { context: 'nav_state_validation' });
             // Clear state on error to prevent navigation errors
             await navigationSyncService.clearState().catch(() => {
               // Ignore errors during cleanup
@@ -750,7 +702,6 @@ const NavigationStateValidator: React.FC<{
         logError('Unexpected error during navigation state validation', {
           error: String(error),
         });
-        captureError(error, { context: 'nav_state_validation_unexpected' });
         if (maxTimeoutId) clearTimeout(maxTimeoutId);
         onStateValidated(null);
       }
@@ -1003,7 +954,6 @@ const AppWithErrorBoundary: React.FC<{
 
   const handleStateValidated = useCallback((state: NavigationState | null) => {
     logNav('Navigation state validated', { hasState: !!state });
-    addBreadcrumb({ message: 'Navigation state validated' });
     setSafeInitialState(state);
     setIsStateValidated(true);
   }, []);
@@ -1105,10 +1055,8 @@ const AppWithErrorBoundary: React.FC<{
         navigationContainerRendered,
         navigationContainerMounted,
       });
-      addBreadcrumb({ message: 'Splash screen hidden' });
       SplashScreen.hideAsync().catch(error => {
         logError('Failed to hide splash screen', { error: String(error) });
-        captureError(error, { context: 'splash_hide' });
       });
     }
   }, [
@@ -1129,11 +1077,6 @@ const AppWithErrorBoundary: React.FC<{
           isStateValidated,
           shouldShowLoading,
           navigationContainerMounted,
-        });
-        captureEvent('startup_timeout_splash_fallback', {
-          appIsReady,
-          isAnimationFinished,
-          isStateValidated,
         });
         hasHiddenSplashRef.current = true;
         SplashScreen.hideAsync().catch(error => {
@@ -1168,10 +1111,6 @@ const AppWithErrorBoundary: React.FC<{
             shouldShowLoading,
           },
         );
-        captureEvent('startup_timeout_nav_validation_immediate', {
-          appIsReady,
-          isAnimationFinished,
-        });
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
@@ -1183,9 +1122,6 @@ const AppWithErrorBoundary: React.FC<{
         logError(
           'Navigation state validation did not complete within expected time - forcing render',
         );
-        captureEvent('startup_timeout_nav_validation_final', {
-          timeout: 5000,
-        });
         setIsStateValidated(true);
         setSafeInitialState(null);
       }
@@ -1209,13 +1145,6 @@ const AppWithErrorBoundary: React.FC<{
           isStateValidated,
           navigationContainerMounted,
         });
-        captureEvent('startup_timeout_hard_safety', {
-          appIsReady,
-          isAnimationFinished,
-          isStateValidated,
-          navigationContainerMounted,
-        });
-
         // Force all conditions to true
         if (!isStateValidated) {
           setIsStateValidated(true);
@@ -1275,17 +1204,7 @@ const AppWithErrorBoundary: React.FC<{
                   // Mark NavigationContainer as mounted
                   setNavigationContainerMounted(true);
                   logNav('NavigationContainer ready');
-                  addBreadcrumb({ message: 'NavigationContainer ready' });
-
-                  // Finish startup transaction (Layer 3: Performance)
-                  if (startupTransactionRef.current) {
-                    finishTransaction(startupTransactionRef.current);
-                    startupTransactionRef.current = null;
-                    logBoot('First screen rendered - startup complete');
-                    addBreadcrumb({
-                      message: 'First screen rendered - startup complete',
-                    });
-                  }
+                  logBoot('First screen rendered - startup complete');
                 }}
                 onStateChange={async state => {
                   // Update last active timestamp whenever user navigates
@@ -1299,9 +1218,6 @@ const AppWithErrorBoundary: React.FC<{
                 <NavigationStateHandler />
                 <GracePeriodChecker />
                 <AuthEffects />
-                {/* Offline Support UI Indicators */}
-                <OfflineBanner />
-                <SyncIndicator />
                 <AppNavigator />
                 <NotificationHandler />
                 {/* DevTools Disabler - prevents overlay from appearing */}
@@ -1347,10 +1263,6 @@ const AppInitializer: React.FC<{
           appIsReady,
           isAnimationFinished,
         });
-        captureEvent('startup_timeout_app_initializer', {
-          appIsReady,
-          isAnimationFinished,
-        });
         setAppIsReady(true);
         setAnimationFinished(true);
       }
@@ -1362,12 +1274,6 @@ const AppInitializer: React.FC<{
   useEffect(() => {
     const prepare = async () => {
       logBoot('AppInitializer prepare started');
-      addBreadcrumb({ message: 'AppInitializer prepare started' });
-
-      // Start auth initialization span (Layer 3: Performance)
-      const authSpan = startupTransactionRef.current
-        ? startSpan(startupTransactionRef.current, 'auth_init', 'app.auth')
-        : null;
 
       try {
         // Set a minimum display time for splash (500ms) for better UX
@@ -1375,120 +1281,6 @@ const AppInitializer: React.FC<{
         const minSplashTime = Promise.resolve().then(
           () => new Promise(resolve => setTimeout(resolve, 500)),
         );
-
-        // RevenueCat - Initialize in background, don't wait for it
-        // This prevents blocking app startup if RevenueCat is slow or misconfigured
-        (async () => {
-          try {
-            const revenueCatApiKey =
-              Constants.expoConfig?.extra?.EXPO_PUBLIC_REVENUECAT_APPLE_KEY;
-
-            if (revenueCatApiKey) {
-              // Add timeout to prevent hanging
-              try {
-                const initTimeout = new Promise<boolean>((_, reject) => {
-                  setTimeout(
-                    () => reject(new Error('RevenueCat init timeout')),
-                    3000,
-                  );
-                });
-
-                const initPromise =
-                  revenueCatService.initialize(revenueCatApiKey);
-                let initSuccess = false;
-
-                try {
-                  initSuccess = await Promise.race([initPromise, initTimeout]);
-                } catch (raceError) {
-                  // Timeout or error occurred - silently continue (non-blocking)
-                  // Don't show error to user - app can function without RevenueCat
-                  if (__DEV__) {
-                    const errorMsg =
-                      raceError instanceof Error
-                        ? raceError.message
-                        : 'Unknown error';
-                    console.warn(
-                      '⚠️ RevenueCat initialization failed (non-blocking):',
-                      errorMsg,
-                    );
-                  }
-                  return; // Exit early on error - app continues without RevenueCat
-                }
-
-                if (initSuccess) {
-                  if (__DEV__) {
-                    console.log('✅ RevenueCat initialized');
-                  }
-                  // Verification can happen in background - don't block
-                  import('./src/config/verifyRevenuecat')
-                    .then(({ verifyRevenueCatSetup }) => {
-                      // Add timeout for verification too
-                      const verifyTimeout = new Promise<boolean>(
-                        (_, reject) => {
-                          setTimeout(
-                            () => reject(new Error('Verification timeout')),
-                            2000,
-                          );
-                        },
-                      );
-                      return Promise.race([
-                        verifyRevenueCatSetup(),
-                        verifyTimeout,
-                      ]);
-                    })
-                    .then(verified => {
-                      if (verified && __DEV__) {
-                        console.log('✅ RevenueCat setup verified');
-                      }
-                    })
-                    .catch(verifyError => {
-                      // Silently fail in dev, only log in production if critical
-                      if (!__DEV__) {
-                        errorTracking.captureError(verifyError as Error, {
-                          tags: {
-                            component: 'revenuecat',
-                            phase: 'verification',
-                          },
-                        });
-                      }
-                    });
-                } else if (__DEV__) {
-                  console.warn(
-                    '⚠️ RevenueCat initialization failed - subscription features disabled',
-                  );
-                }
-              } catch (initError) {
-                // Timeout or initialization error - silently continue (non-blocking)
-                // Don't show error to user - app can function without RevenueCat
-                if (__DEV__) {
-                  const errorMsg =
-                    initError instanceof Error
-                      ? initError.message
-                      : 'Unknown error';
-                  console.warn(
-                    '⚠️ RevenueCat initialization failed (non-blocking):',
-                    errorMsg,
-                  );
-                }
-              }
-            } else if (__DEV__) {
-              console.warn(
-                '⚠️ RevenueCat API key not found - subscription features disabled',
-              );
-            }
-          } catch (error) {
-            // Only log errors in dev mode to reduce noise
-            if (__DEV__) {
-              console.warn('⚠️ RevenueCat init failed (non-blocking):', error);
-            }
-            // Still track errors in production for monitoring
-            if (!__DEV__) {
-              errorTracking.captureError(error as Error, {
-                tags: { component: 'revenuecat', phase: 'initialization' },
-              });
-            }
-          }
-        })();
 
         // Sync Manager - make truly non-blocking with timeout
         // Don't block app startup - sync manager can initialize in background
@@ -1525,24 +1317,14 @@ const AppInitializer: React.FC<{
           })
           .catch(console.error);
 
-        // Track bundle size (non-blocking)
-        import('./src/services/bundleSizeTracking').then(
-          ({ trackBundleSize }) => {
-            trackBundleSize().catch(console.error);
-          },
-        );
-
         // Only wait for minimum splash time - don't wait for sync manager
         // Sync manager will initialize in background and won't block app startup
         await minSplashTime;
         logBoot('AppInitializer prepare completed');
-        addBreadcrumb({ message: 'AppInitializer prepare completed' });
       } catch (e) {
         logError('App initialization error', { error: String(e) });
-        captureError(e, { context: 'app_initialization' });
         // Don't block app startup - continue with degraded functionality
       } finally {
-        finishSpan(authSpan);
         setAppIsReady(true);
         logBoot('AppInitializer appIsReady set to true');
       }
@@ -1578,7 +1360,6 @@ const AppInitializer: React.FC<{
           onAnimationFinish={() => {
             // Mark animation as finished (will be checked when app is ready)
             logSplash('Splash animation finished');
-            addBreadcrumb({ message: 'Splash animation finished' });
             setAnimationFinished(true);
           }}
         />
@@ -1655,17 +1436,6 @@ function AuthEffects() {
         // Setup notification categories and channels
         await notificationServiceNew.setupNotificationCategories();
         await notificationServiceNew.setupAndroidChannels();
-
-        // Initialize Analytics with user ID
-        analyticsService.identifyUser(user.id);
-
-        // Track user login
-        analyticsService.track('User Logged In', {
-          user_id: user.id,
-          subscription_tier: user.subscription_tier || 'free',
-          onboarding_completed: user.onboarding_completed || false,
-          timestamp: new Date().toISOString(),
-        });
 
         // Data fetching is now handled by React Query hooks in individual components
       }
@@ -1809,22 +1579,8 @@ function App() {
       try {
         console.log('🚀 Starting app initialization...');
 
-        const projectToken =
-          Constants.expoConfig?.extra?.EXPO_PUBLIC_MIXPANEL_TOKEN;
-
         // Parallelize independent operations for faster startup (all non-blocking)
         Promise.allSettled([
-          // Initialize Analytics (non-blocking)
-          analyticsService.initialize(projectToken || '').then(() => {
-            // Track app launch only after successful initialization
-            analyticsService.track('App Launched', {
-              platform: Platform.OS,
-              timestamp: new Date().toISOString(),
-              app_version: '1.0.0',
-            });
-            console.log('✅ Analytics initialized');
-          }),
-
           // Check API version compatibility (non-blocking, don't fail if it fails)
           promptForUpdateIfNeeded()
             .then(() => {
@@ -1879,13 +1635,6 @@ function App() {
         ]).catch(error => {
           console.warn('⚠️ Some app initialization tasks failed:', error);
         });
-
-        // Check for updates (non-blocking, auto-installs)
-        if (!__DEV__) {
-          updateService.checkAndInstallUpdates().catch(error => {
-            console.warn('Update check failed:', error);
-          });
-        }
 
         const endTime = performance.now();
         const initializationTime = endTime - startTime;

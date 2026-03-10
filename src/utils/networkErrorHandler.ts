@@ -7,7 +7,6 @@
 import { useNetwork } from '@/contexts/NetworkContext';
 import { mapErrorCodeToMessage, isRecoverableError } from './errorMapping';
 import { calculateRetryDelay, getRetryConfig } from './retryConfig';
-import { networkMonitoring } from '@/services/networkMonitoring';
 import { executeWithRecovery, RecoveryStrategy } from './errorRecovery';
 
 export interface NetworkErrorOptions {
@@ -173,14 +172,6 @@ export async function networkAwareFetch(
     throw new Error('Device is offline');
   }
 
-  const startTime = performance.now();
-  const requestSize = JSON.stringify(options.body || '').length;
-  const requestId = networkMonitoring.trackRequest(
-    url,
-    options.method || 'GET',
-    requestSize,
-  );
-
   // Create abort controller for timeout
   const controller = new AbortController();
   const timeout =
@@ -200,28 +191,6 @@ export async function networkAwareFetch(
 
     clearTimeout(timeoutId);
 
-    const endTime = performance.now();
-    const latency = endTime - startTime;
-
-    // Get response size (approximate)
-    let responseSize = 0;
-    try {
-      const clonedResponse = response.clone();
-      const text = await clonedResponse.text();
-      responseSize = text.length;
-    } catch {
-      // If we can't read the response, estimate based on headers
-      const contentLength = response.headers.get('content-length');
-      responseSize = contentLength ? parseInt(contentLength, 10) : 0;
-    }
-
-    networkMonitoring.trackResponse(
-      requestId,
-      url,
-      response.status,
-      responseSize,
-    );
-
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
@@ -229,8 +198,6 @@ export async function networkAwareFetch(
     return response;
   } catch (error: unknown) {
     if (error instanceof Error) {
-      networkMonitoring.trackError(requestId, url, error);
-
       if (error.name === 'AbortError' || error.name === 'TimeoutError') {
         throw new Error('Request timed out. Please try again.');
       }

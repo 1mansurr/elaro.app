@@ -2,8 +2,6 @@ import { useState, useCallback } from 'react';
 import { Task } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePermissions } from '@/shared/hooks/usePermissions';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 export const useHomeScreenState = () => {
   const { session, user } = useAuth();
@@ -17,13 +15,6 @@ export const useHomeScreenState = () => {
 
   // Handlers
   const handleViewDetails = useCallback((task: Task) => {
-    mixpanelService.track(AnalyticsEvents.TASK_DETAILS_VIEWED, {
-      task_id: task.id,
-      task_type: task.type,
-      task_title: task.title,
-      source: 'home_screen',
-      timestamp: new Date().toISOString(),
-    });
     setSelectedTask(task);
   }, []);
 

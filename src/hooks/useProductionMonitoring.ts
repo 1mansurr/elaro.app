@@ -1,59 +1,21 @@
 /**
  * Production Monitoring Hook
  *
- * Integrates JS thread monitoring, memory monitoring, and network monitoring
- * to provide comprehensive production monitoring.
+ * Integrates JS thread monitoring and memory monitoring.
  */
 
-import { useEffect } from 'react';
-import { productionMonitoring } from '@/services/productionMonitoring';
-import { networkMonitoring } from '@/services/networkMonitoring';
 import { useJSThreadMonitor } from './useJSThreadMonitor';
 import { useMemoryMonitor } from './useMemoryMonitor';
-
-const MONITORING_INTERVAL = 30000; // 30 seconds
 
 /**
  * Hook to enable comprehensive production monitoring
  */
 export function useProductionMonitoring(enabled: boolean = __DEV__) {
-  const jsThreadMetrics = useJSThreadMonitor({ enabled });
+  useJSThreadMonitor({ enabled });
   useMemoryMonitor(enabled);
 
-  useEffect(() => {
-    if (!enabled) return;
-
-    const interval = setInterval(() => {
-      const networkMetrics = networkMonitoring.getMetrics();
-      const errorRate =
-        networkMetrics.totalRequests > 0
-          ? networkMetrics.failedRequests / networkMetrics.totalRequests
-          : 0;
-
-      // Track all metrics
-      productionMonitoring.trackMetrics({
-        jsThreadTime: jsThreadMetrics.averageFrameTime,
-        memoryUsage: 0, // Memory monitoring is handled separately
-        networkLatency: networkMetrics.averageLatency,
-        errorRate,
-      });
-
-      // Report health status
-      const health = productionMonitoring.reportHealth();
-      if (health.status !== 'healthy') {
-        console.warn(
-          '⚠️ Production health status:',
-          health.status,
-          health.issues,
-        );
-      }
-    }, MONITORING_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [enabled, jsThreadMetrics.averageFrameTime]);
-
   return {
-    health: productionMonitoring.reportHealth(),
-    metrics: productionMonitoring.getMetricsSummary(),
+    health: null,
+    metrics: null,
   };
 }

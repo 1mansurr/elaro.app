@@ -4,9 +4,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList, Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
-import { TASK_EVENTS } from '@/utils/analyticsEvents';
 
 import { QuickAddModal } from '@/shared/components';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
@@ -34,13 +31,6 @@ export const HomeScreenModals: React.FC<HomeScreenModalsProps> = ({
 
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
-
-    mixpanelService.trackEvent(TASK_EVENTS.TASK_EDIT_INITIATED.name, {
-      task_id: selectedTask.id,
-      task_type: selectedTask.type,
-      task_title: selectedTask.title,
-      source: 'task_detail_sheet',
-    });
 
     // Determine which modal to navigate to based on task type
     let modalName:

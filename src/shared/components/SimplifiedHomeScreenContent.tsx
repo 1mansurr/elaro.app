@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useMemo, useEffect } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,6 @@ import TodayOverviewCard from '@/features/dashboard/components/TodayOverviewCard
 import { SwipeableTaskCard } from '@/features/dashboard/components/SwipeableTaskCard';
 import { PrimaryButton } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
@@ -196,14 +195,6 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
       onSubscribePress,
       onDismissBanner,
     } = eventHandlers;
-
-    // Performance monitoring
-    useEffect(() => {
-      performanceMonitoringService.startTimer('HomeScreenContent');
-      return () => {
-        performanceMonitoringService.endTimer('HomeScreenContent');
-      };
-    }, []);
 
     // Memoized subscription tier
     const subscriptionTier = useExpensiveMemo(() => {

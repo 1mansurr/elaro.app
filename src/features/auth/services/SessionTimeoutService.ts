@@ -4,8 +4,6 @@ import {
   clearLastActiveTimestamp,
   updateLastActiveTimestamp,
 } from '@/utils/sessionTimeout';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
 
 export interface SessionTimeoutConfig {
   timeoutDays: number;
@@ -55,14 +53,6 @@ export class SessionTimeoutService {
    */
   private async handleTimeout(): Promise<void> {
     try {
-      // Track the session timeout event
-      if (this.config.trackAnalytics) {
-        mixpanelService.track(AnalyticsEvents.USER_LOGGED_OUT, {
-          logout_reason: 'session_timeout',
-          timeout_days: this.config.timeoutDays,
-        });
-      }
-
       // Clear the last active timestamp
       await clearLastActiveTimestamp();
 

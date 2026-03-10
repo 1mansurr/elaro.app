@@ -8,11 +8,8 @@ import {
 import { BlurView } from 'expo-blur';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { mixpanelService } from '@/services/mixpanel';
-import { AnalyticsEvents } from '@/services/analyticsEvents';
 import { RootStackParamList } from '@/types';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
-import { performanceMonitoringService } from '@/services/PerformanceMonitoringService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
@@ -36,14 +33,6 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const fabAnimation = useRef(new Animated.Value(0)).current;
 
-    // Enhanced performance monitoring
-    useEffect(() => {
-      performanceMonitoringService.startTimer('fab-component-mount');
-      return () => {
-        performanceMonitoringService.endTimer('fab-component-mount');
-      };
-    }, []);
-
     // Optimized FAB actions with expensive memoization
     const fabActions = useExpensiveMemo(
       () => [
@@ -51,12 +40,6 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
           icon: 'book-outline' as any,
           label: 'Add Study Session',
           onPress: () => {
-            mixpanelService.track(AnalyticsEvents.STUDY_SESSION_CREATED, {
-              task_type: 'study_session',
-              source: 'home_screen_fab',
-              creation_method: 'manual',
-              timestamp: new Date().toISOString(),
-            });
             navigation.navigate('AddStudySessionFlow');
           },
         },
@@ -64,12 +47,6 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
           icon: 'document-text-outline' as any,
           label: 'Add Assignment',
           onPress: () => {
-            mixpanelService.track(AnalyticsEvents.ASSIGNMENT_CREATED, {
-              task_type: 'assignment',
-              source: 'home_screen_fab',
-              creation_method: 'manual',
-              timestamp: new Date().toISOString(),
-            });
             navigation.navigate('AddAssignmentFlow');
           },
         },
@@ -77,12 +54,6 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
           icon: 'school-outline' as any,
           label: 'Add Lecture',
           onPress: () => {
-            mixpanelService.track(AnalyticsEvents.LECTURE_CREATED, {
-              task_type: 'lecture',
-              source: 'home_screen_fab',
-              creation_method: 'manual',
-              timestamp: new Date().toISOString(),
-            });
             navigation.navigate('AddLectureFlow');
           },
         },
@@ -97,16 +68,12 @@ const HomeScreenFAB: React.FC<HomeScreenFABProps> = memo(
 
     const handleFabStateChange = useCallback(
       ({ isOpen }: { isOpen: boolean }) => {
-        performanceMonitoringService.startTimer('fab-state-change');
-
         onStateChange({ isOpen });
         Animated.spring(fabAnimation, {
           toValue: isOpen ? 1 : 0,
           friction: 7,
           useNativeDriver: false,
-        }).start(() => {
-          performanceMonitoringService.endTimer('fab-state-change');
-        });
+        }).start();
       },
       [onStateChange, fabAnimation],
     );

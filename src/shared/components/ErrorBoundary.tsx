@@ -1,6 +1,5 @@
 import React, { Component, ReactNode } from 'react';
 import { DevSettings } from 'react-native';
-import { errorTracking } from '@/services/errorTracking';
 import { ErrorFallback } from './ErrorFallback';
 
 interface Props {
@@ -24,14 +23,8 @@ class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Use centralized error tracking service
-    errorTracking.captureError(error, {
-      extra: {
-        componentStack: errorInfo.componentStack,
-        errorBoundary: true,
-      },
-    });
+  componentDidCatch(_error: Error, _errorInfo: React.ErrorInfo) {
+    // error tracking removed
   }
 
   handleRestart = () => {

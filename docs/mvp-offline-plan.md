@@ -67,6 +67,7 @@ rm src/services/PerformanceMonitoringService.ts
 **1.5 Remove initialization calls from `App.tsx`**
 
 Open `App.tsx` and:
+
 - Remove `import` statements for: `revenueCat`, `analytics`/`mixpanel`, `errorTracking`/`Sentry`
 - Remove the `initialize()` / `init()` call for each of those three services
 - Remove any `try/catch` blocks wrapping those calls if they become empty
@@ -86,6 +87,7 @@ Fix any "Cannot find module" errors from removed imports before continuing.
 **Verify:** `npx tsc --noEmit` passes (or errors are only in files not yet touched).
 
 **Commit:**
+
 ```
 chore(mvp): phase 1 — delete analytics, monitoring, and RevenueCat services
 ```
@@ -152,6 +154,7 @@ rm -rf src/features/subscription/
 ```
 
 Then open `src/navigation/AuthenticatedNavigator.tsx` and remove:
+
 - The `import` for `PaywallScreen`
 - The `import` for `OddityWelcomeScreen`
 - The `<Stack.Screen>` registrations for both screens
@@ -175,10 +178,12 @@ Remove those imports and usages.
 ### Checkpoint 2
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors from deleted folders
 2. `grep -r "from.*features/admin\|from.*features/support\|from.*features/subscription\|from.*features/system-health\|from.*features/data-management" src/ --include="*.ts" --include="*.tsx"` — should return nothing
 
 **Commit:**
+
 ```
 chore(mvp): phase 2 — delete standalone feature folders (admin, support, subscription, system-health, data-management)
 ```
@@ -200,6 +205,7 @@ rm src/contexts/UsageLimitPaywallContext.tsx
 ```
 
 Then open `src/contexts/AppProviders.tsx` (or wherever contexts are composed) and:
+
 - Remove the import
 - Remove the `<UsageLimitPaywallContext.Provider>` wrapper
 
@@ -210,6 +216,7 @@ rm src/contexts/SoftLaunchContext.tsx
 ```
 
 Remove from `AppProviders.tsx`:
+
 - Import
 - Provider wrapper
 
@@ -220,6 +227,7 @@ rm src/contexts/OnboardingContext.tsx
 ```
 
 Remove from `AppProviders.tsx`:
+
 - Import
 - Provider wrapper
 
@@ -259,10 +267,12 @@ This lets Phase 11 uninstall `@react-native-community/netinfo` without hunting d
 ### Checkpoint 3
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `grep -r "UsageLimitPaywall\|SoftLaunch\|OnboardingContext" src/ --include="*.ts" --include="*.tsx"` — only the deleted file paths, no living imports
 
 **Commit:**
+
 ```
 chore(mvp): phase 3 — remove paywall/softlaunch/onboarding contexts, stub NetworkContext
 ```
@@ -284,6 +294,7 @@ rm -rf src/features/onboarding/
 ```
 
 Then open the navigator that mounts `OnboardingNavigator` and remove:
+
 - The import for `OnboardingNavigator`
 - The `<Stack.Screen>` for the onboarding stack
 
@@ -317,6 +328,7 @@ Remove all imports and JSX usages of this component.
 **4.4 Remove deleted screens from `AuthenticatedNavigator.tsx`**
 
 Open `src/navigation/AuthenticatedNavigator.tsx` and remove `<Stack.Screen>` entries for:
+
 - `AccountScreen`
 - `DeviceManagementScreen`
 - `LoginHistoryScreen`
@@ -329,10 +341,12 @@ Remove their imports at the top of the file.
 ### Checkpoint 4
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `grep -r "AccountScreen\|DeviceManagementScreen\|LoginHistoryScreen\|DeleteAccountScreen\|SubscriptionManagementCard" src/ --include="*.ts" --include="*.tsx"` — no living imports
 
 **Commit:**
+
 ```
 chore(mvp): phase 4 — delete onboarding feature and auth-only user-profile screens
 ```
@@ -374,11 +388,13 @@ rm src/shared/hooks/usePermissions.ts
 **5.4 Fix `useQuickAddForm.ts`**
 
 This is the only surviving file known to import `usePermissions`. Open it and:
+
 - Remove the `import { usePermissions }` line
 - Find the task-limit enforcement block (usually an early return or disabled state based on a limit check)
 - Remove it entirely — all task creation is now unconditional
 
 Verify fix:
+
 ```bash
 npx tsc --noEmit src/shared/hooks/useQuickAddForm.ts 2>&1
 ```
@@ -419,10 +435,12 @@ These are KEPT but may have auth-error-specific branches. Open both files and re
 ### Checkpoint 5
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `grep -r "usePermissions" src/ --include="*.ts" --include="*.tsx"` — zero results
 
 **Commit:**
+
 ```
 chore(mvp): phase 5 — delete auth services, permissions layer, and subscription-gated shared components
 ```
@@ -493,11 +511,13 @@ Delete anything that is no longer needed (services already deleted in Phase 5, s
 ### Checkpoint 6
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. App launches directly to the main tab/stack (no login screen) when run on simulator: `npx expo start --ios`
 3. Navigation works between main screens
 
 **Commit:**
+
 ```
 chore(mvp): phase 6 — remove auth screens and rewrite AppNavigator to always render authenticated app
 ```
@@ -705,9 +725,12 @@ Add a temporary log in the database init to confirm it opens:
 ```typescript
 const db = await getDatabase();
 const result = await db.getAllAsync<{ name: string }>(
-  "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+  "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name",
 );
-console.log('Tables:', result.map(r => r.name));
+console.log(
+  'Tables:',
+  result.map(r => r.name),
+);
 ```
 
 Run the app and confirm the table list appears in the Metro console. Remove the log after confirming.
@@ -717,11 +740,13 @@ Run the app and confirm the table list appears in the Metro console. Remove the 
 ### Checkpoint 7
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors in new files
 2. App launches and database initializes (confirm via console log in step 7.6)
 3. All 6 tables appear in the log output
 
 **Commit:**
+
 ```
 feat(mvp): phase 7 — install expo-sqlite, create local DB schema, device ID utility
 ```
@@ -738,13 +763,19 @@ Rewrite each feature's data layer one at a time. Keep the app compiling after ea
 
 ```typescript
 // Before (Supabase)
-const { data, error } = await supabase.from('tasks').select('*').eq('user_id', userId);
+const { data, error } = await supabase
+  .from('tasks')
+  .select('*')
+  .eq('user_id', userId);
 if (error) throw error;
 return data;
 
 // After (SQLite) — hook code above this does not change
 const db = await getDatabase();
-return db.getAllAsync<Task>('SELECT * FROM tasks WHERE user_id = ? AND is_deleted = 0', [userId]);
+return db.getAllAsync<Task>(
+  'SELECT * FROM tasks WHERE user_id = ? AND is_deleted = 0',
+  [userId],
+);
 ```
 
 ---
@@ -922,7 +953,7 @@ Replace Supabase reads with SQLite queries:
 
 ```typescript
 const builtInCount = await db.getFirstAsync<{ count: number }>(
-  'SELECT COUNT(*) as count FROM templates WHERE is_built_in = 1'
+  'SELECT COUNT(*) as count FROM templates WHERE is_built_in = 1',
 );
 if (builtInCount?.count === 0) {
   // Insert default templates
@@ -936,11 +967,13 @@ if (builtInCount?.count === 0) {
 ### Checkpoint 8
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. Full user flow: create course → add assignment → add lecture → complete study session → SRS notifications scheduled → templates visible
 3. All data persists across app restarts (kill and reopen the app)
 
 **Commit:**
+
 ```
 feat(mvp): phase 8 — rewrite all feature services from Supabase to SQLite
 ```
@@ -967,12 +1000,12 @@ Save this list. You will work through it systematically.
 
 For each file in the list, identify which part of the auth object it uses:
 
-| Usage pattern | Action |
-|---|---|
-| `const { user } = useAuth()` and only uses `user.id` | Replace with `const deviceId = useDeviceId()` |
-| Checks `isLoading` / `session` | Remove the loading guard entirely |
-| Calls `signOut()` | Remove the sign-out button and handler |
-| Passes user to a child component | Update the child's prop type to accept `string` (deviceId) |
+| Usage pattern                                        | Action                                                     |
+| ---------------------------------------------------- | ---------------------------------------------------------- |
+| `const { user } = useAuth()` and only uses `user.id` | Replace with `const deviceId = useDeviceId()`              |
+| Checks `isLoading` / `session`                       | Remove the loading guard entirely                          |
+| Calls `signOut()`                                    | Remove the sign-out button and handler                     |
+| Passes user to a child component                     | Update the child's prop type to accept `string` (deviceId) |
 
 **9.3 Update each call site**
 
@@ -991,6 +1024,7 @@ rm src/contexts/AuthContext.tsx
 ```
 
 Remove from `AppProviders.tsx`:
+
 - The import
 - The `<AuthContext.Provider>` wrapper
 
@@ -1023,11 +1057,13 @@ rm -rf src/features/auth/
 ### Checkpoint 9
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `grep -r "useAuth\|AuthContext" src/ --include="*.ts" --include="*.tsx"` — zero results
 3. App launches and all screens that previously used `user.id` now correctly use `deviceId`
 
 **Commit:**
+
 ```
 chore(mvp): phase 9 — replace AuthContext with useDeviceId across all call sites, delete auth feature
 ```
@@ -1105,11 +1141,13 @@ rm src/services/updateService.ts
 ### Checkpoint 10
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `grep -r "supabase" src/ --include="*.ts" --include="*.tsx"` — zero results
 3. App launches and all data operations work (create/read/update/delete)
 
 **Commit:**
+
 ```
 chore(mvp): phase 10 — delete Supabase client, sync services, and API versioning layer
 ```
@@ -1193,21 +1231,25 @@ npm uninstall \
 **11.2 Conditionally uninstall based on verification above**
 
 If `expo-secure-store` grep returned zero results:
+
 ```bash
 npm uninstall expo-secure-store
 ```
 
 If `expo-crypto` grep returned zero results:
+
 ```bash
 npm uninstall expo-crypto
 ```
 
 If `expo-device` grep returned zero results:
+
 ```bash
 npm uninstall expo-device
 ```
 
 If `nativewind` / `className=` grep returned zero results:
+
 ```bash
 npm uninstall nativewind tailwindcss-react-native
 ```
@@ -1233,11 +1275,13 @@ Remove any plugin entries for uninstalled packages (e.g., `nativewind/babel` if 
 ### Checkpoint 11
 
 **Verify:**
+
 1. `npx tsc --noEmit` — no errors
 2. `npx expo-doctor` — no blocking issues
 3. App builds without native module errors: `npx expo start --ios`
 
 **Commit:**
+
 ```
 chore(mvp): phase 11 — uninstall removed packages, clean app.json and babel config
 ```
@@ -1315,6 +1359,7 @@ Delete any empty directories.
 ### Checkpoint 12
 
 **Verify:**
+
 1. `npx tsc --noEmit` — zero errors
 2. `npx expo-doctor` — no blocking issues
 3. Full end-to-end smoke test on simulator:
@@ -1329,6 +1374,7 @@ Delete any empty directories.
 4. `grep -r "supabase\|AuthContext\|usePermissions" src/` — zero results
 
 **Commit:**
+
 ```
 chore(mvp): phase 12 — final navigation cleanup, remove duplicate HomeScreen variants
 ```
@@ -1337,17 +1383,17 @@ chore(mvp): phase 12 — final navigation cleanup, remove duplicate HomeScreen v
 
 ## Summary Table
 
-| Phase | Description | Effort | Primary Risk |
-|---|---|---|---|
-| 1 | Delete analytics & monitoring services | Quick | None — leaf nodes |
-| 2 | Delete standalone feature folders | Quick | `dev/` notification screen — verify first |
-| 3 | Remove dead contexts, stub NetworkContext | Quick | None |
-| 4 | Delete onboarding & auth-only profile screens | Quick | Navigator import cleanup |
-| 5 | Delete permissions layer, auth sub-services, locked UI components | Medium | `usePermissions` call sites across shared components |
-| 6 | Delete auth screens, rewrite AppNavigator | Medium | Navigator must compile after rewrite |
-| 7 | Install SQLite, create schema + device ID | Heavy | Schema design is final — migration required to change it |
-| 8 | Rewrite all feature services to SQLite | Heavy | Largest phase — do one feature at a time |
-| 9 | Replace `AuthContext` / `useAuth()` across all files | Medium | Many call sites — categorize before editing |
-| 10 | Delete Supabase client and all sync infrastructure | Medium | Must confirm zero Supabase imports before deleting `supabase.ts` |
-| 11 | Uninstall removed packages | Medium | Conditional removals depend on grep verification |
-| 12 | Final navigation cleanup, remove duplicate screens | Quick | Identify active HomeScreen variant before deleting |
+| Phase | Description                                                       | Effort | Primary Risk                                                     |
+| ----- | ----------------------------------------------------------------- | ------ | ---------------------------------------------------------------- |
+| 1     | Delete analytics & monitoring services                            | Quick  | None — leaf nodes                                                |
+| 2     | Delete standalone feature folders                                 | Quick  | `dev/` notification screen — verify first                        |
+| 3     | Remove dead contexts, stub NetworkContext                         | Quick  | None                                                             |
+| 4     | Delete onboarding & auth-only profile screens                     | Quick  | Navigator import cleanup                                         |
+| 5     | Delete permissions layer, auth sub-services, locked UI components | Medium | `usePermissions` call sites across shared components             |
+| 6     | Delete auth screens, rewrite AppNavigator                         | Medium | Navigator must compile after rewrite                             |
+| 7     | Install SQLite, create schema + device ID                         | Heavy  | Schema design is final — migration required to change it         |
+| 8     | Rewrite all feature services to SQLite                            | Heavy  | Largest phase — do one feature at a time                         |
+| 9     | Replace `AuthContext` / `useAuth()` across all files              | Medium | Many call sites — categorize before editing                      |
+| 10    | Delete Supabase client and all sync infrastructure                | Medium | Must confirm zero Supabase imports before deleting `supabase.ts` |
+| 11    | Uninstall removed packages                                        | Medium | Conditional removals depend on grep verification                 |
+| 12    | Final navigation cleanup, remove duplicate screens                | Quick  | Identify active HomeScreen variant before deleting               |
