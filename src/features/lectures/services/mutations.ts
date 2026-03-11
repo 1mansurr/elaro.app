@@ -1,142 +1,164 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
 import { Lecture } from '@/types';
 import { CreateLectureRequest, UpdateLectureRequest } from '@/types/api';
-import { handleApiError } from '@/services/api/errors';
-import { syncManager } from '@/services/syncManager';
-import { generateTempId } from '@/utils/uuid';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string | null;
+  description: string | null;
+  start_time: string | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+interface LectureMetadata {
+  venue?: string;
+  is_recurring?: boolean;
+  recurring_pattern?: string;
+}
+
+function rowToLecture(row: TaskRow): Lecture {
+  let meta: LectureMetadata = {};
+  if (row.metadata) {
+    try {
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
+    }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    lectureDate: row.start_time ?? '',
+    isRecurring: meta.is_recurring ?? false,
+    recurringPattern: meta.recurring_pattern,
+    lectureName: row.title ?? undefined,
+    description: row.description ?? undefined,
+    venue: meta.venue,
+    createdAt: row.created_at,
+  };
+}
+
+async function fetchTaskRow(id: string): Promise<TaskRow> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<TaskRow>(
+    `SELECT id, user_id, course_id, title, description, start_time, metadata, created_at
+     FROM tasks WHERE id = ? AND type = 'lecture'`,
+    [id],
+  );
+  if (!row) throw new Error(`Lecture not found: ${id}`);
+  return row;
+}
 
 export const lecturesApiMutations = {
-  /**
-   * Create a new lecture
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Generates temp ID, adds to sync queue, returns optimistic data
-   */
   async create(
     request: CreateLectureRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Lecture> {
-    try {
-      // OFFLINE MODE: Generate temp ID and queue for later sync
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing CREATE lecture action');
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const id = generateUUID();
+    const now = new Date().toISOString();
 
-        const tempId = generateTempId('lecture');
+    const meta: LectureMetadata = {};
+    if (request.venue) meta.venue = request.venue;
+    if (request.is_recurring !== undefined)
+      meta.is_recurring = request.is_recurring;
+    if (request.recurring_pattern)
+      meta.recurring_pattern = request.recurring_pattern;
 
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'CREATE',
-          'lecture',
-          {
-            type: 'CREATE',
-            data: request as unknown as Record<string, unknown>,
-          },
-          userId,
-          { syncImmediately: false },
-        );
+    await db.runAsync(
+      `INSERT INTO tasks (id, user_id, type, course_id, title, description, start_time, end_time, metadata, created_at, updated_at)
+       VALUES (?, ?, 'lecture', ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        userId,
+        request.course_id || null,
+        request.lecture_name,
+        request.description ?? null,
+        request.start_time,
+        request.end_time ?? null,
+        Object.keys(meta).length > 0 ? JSON.stringify(meta) : null,
+        now,
+        now,
+      ],
+    );
 
-        // Return optimistic lecture with temp ID
-        const optimisticLecture: Lecture = {
-          id: tempId,
-          user_id: userId,
-          course_id: request.course_id,
-          date_time: request.start_time,
-          recurrence_rule: request.is_recurring
-            ? request.recurring_pattern
-            : null,
-          recurrence_end_date: null,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          deleted_at: null,
-          _offline: true, // Mark as offline-created
-          _tempId: tempId, // Store temp ID for reference
-        } as any;
-
-        console.log(`✅ Created optimistic lecture with temp ID: ${tempId}`);
-        return optimisticLecture;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Creating lecture on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'create-lecture',
-        { body: request },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return rowToLecture(await fetchTaskRow(id));
   },
 
-  /**
-   * Update an existing lecture
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue for later sync
-   */
   async update(
     lectureId: string,
     request: UpdateLectureRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Lecture> {
-    try {
-      // OFFLINE MODE: Queue for later sync and return optimistic data
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing UPDATE lecture action');
+    const db = await getDatabase();
+    const now = new Date().toISOString();
 
-        // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } =
-          await import('@/utils/taskCache');
-        const cachedTask = await getCachedTask(lectureId, 'lecture');
+    const setParts: string[] = ['updated_at = ?'];
+    const values: (string | null)[] = [now];
 
-        if (!cachedTask) {
-          throw new Error(
-            'Lecture not found in cache. Please sync and try again.',
-          );
-        }
-
-        // Merge updates with cached data
-        const optimisticTask = mergeTaskUpdates(cachedTask as Lecture, request);
-
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'UPDATE',
-          'lecture',
-          {
-            type: 'UPDATE',
-            id: lectureId,
-            data: request as unknown as Record<string, unknown>,
-          },
-          userId,
-          { syncImmediately: false },
-        );
-
-        console.log(`✅ Created optimistic update for lecture ${lectureId}`);
-        return optimisticTask as Lecture;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Updating lecture on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'update-lecture',
-        {
-          body: {
-            lecture_id: lectureId,
-            ...request,
-          },
-        },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
+    if (request.lecture_name !== undefined) {
+      setParts.push('title = ?');
+      values.push(request.lecture_name);
     }
+    if (request.description !== undefined) {
+      setParts.push('description = ?');
+      values.push(request.description ?? null);
+    }
+    if (request.start_time !== undefined) {
+      setParts.push('start_time = ?');
+      values.push(request.start_time ?? null);
+    }
+    if (request.end_time !== undefined) {
+      setParts.push('end_time = ?');
+      values.push(request.end_time ?? null);
+    }
+
+    // Merge is_recurring / recurring_pattern into metadata
+    if (
+      request.is_recurring !== undefined ||
+      request.recurring_pattern !== undefined
+    ) {
+      const existing = await fetchTaskRow(lectureId);
+      let meta: LectureMetadata = {};
+      if (existing.metadata) {
+        try {
+          meta = JSON.parse(existing.metadata);
+        } catch {
+          // ignore
+        }
+      }
+      if (request.is_recurring !== undefined)
+        meta.is_recurring = request.is_recurring;
+      if (request.recurring_pattern !== undefined)
+        meta.recurring_pattern = request.recurring_pattern;
+      setParts.push('metadata = ?');
+      values.push(JSON.stringify(meta));
+    }
+
+    values.push(lectureId);
+    await db.runAsync(
+      `UPDATE tasks SET ${setParts.join(', ')} WHERE id = ? AND type = 'lecture'`,
+      values,
+    );
+
+    return rowToLecture(await fetchTaskRow(lectureId));
+  },
+
+  async delete(lectureId: string): Promise<void> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE tasks SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id = ? AND type = 'lecture'`,
+      [now, now, lectureId],
+    );
   },
 };

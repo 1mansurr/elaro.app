@@ -1,7 +1,6 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
 import { Lecture } from '@/types';
-import { handleApiError } from '@/services/api/errors';
-import { mapDbLectureToAppLecture } from '@/services/api/mappers';
 
 export interface LecturesPage {
   lectures: Lecture[];
@@ -16,68 +15,90 @@ export interface LectureQueryOptions {
   sortAscending?: boolean;
 }
 
-export const lecturesApi = {
-  /**
-   * Get all lectures (backward compatibility - use listPage for pagination)
-   * @deprecated Consider using listPage() for better performance with large datasets
-   */
-  async getAll(): Promise<Lecture[]> {
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string | null;
+  description: string | null;
+  start_time: string | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+interface LectureMetadata {
+  venue?: string;
+  is_recurring?: boolean;
+  recurring_pattern?: string;
+}
+
+function rowToLecture(row: TaskRow): Lecture {
+  let meta: LectureMetadata = {};
+  if (row.metadata) {
     try {
-      const { data, error } = await supabase
-        .from('lectures')
-        .select('*')
-        .is('deleted_at', null) // Explicitly filter soft-deleted items
-        .order('start_time', { ascending: true });
-      if (error) throw error;
-      // Map the data before returning it
-      return (data || []).map(mapDbLectureToAppLecture);
-    } catch (error) {
-      throw handleApiError(error);
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
     }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    lectureDate: row.start_time ?? '',
+    isRecurring: meta.is_recurring ?? false,
+    recurringPattern: meta.recurring_pattern,
+    lectureName: row.title ?? undefined,
+    description: row.description ?? undefined,
+    venue: meta.venue,
+    createdAt: row.created_at,
+  };
+}
+
+export const lecturesApi = {
+  async getAll(): Promise<Lecture[]> {
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, start_time, metadata, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'lecture' AND is_deleted = 0
+       ORDER BY start_time ASC`,
+      [userId],
+    );
+    return rows.map(rowToLecture);
   },
 
-  /**
-   * Get paginated lectures with sorting options
-   * @param options - Query options including pagination and sorting
-   * @returns Paginated lectures with metadata
-   */
   async listPage(options?: LectureQueryOptions): Promise<LecturesPage> {
-    try {
-      const {
-        pageParam = 0,
-        pageSize = 50,
-        sortBy = 'start_time',
-        sortAscending = true,
-      } = options || {};
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const {
+      pageParam = 0,
+      pageSize = 50,
+      sortBy = 'start_time',
+      sortAscending = true,
+    } = options || {};
 
-      let query = supabase
-        .from('lectures')
-        .select('*', { count: 'exact' })
-        .is('deleted_at', null); // Explicitly filter soft-deleted items
+    // 'lecture_date' and 'start_time' both map to the start_time column
+    const col = sortBy === 'created_at' ? 'created_at' : 'start_time';
+    const order = sortAscending ? 'ASC' : 'DESC';
 
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortAscending });
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, start_time, metadata, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'lecture' AND is_deleted = 0
+       ORDER BY ${col} ${order}`,
+      [userId],
+    );
 
-      // Apply pagination
-      const from = pageParam;
-      const to = pageParam + pageSize - 1;
-      query = query.range(from, to);
+    const allLectures = rows.map(rowToLecture);
+    const paginated = allLectures.slice(pageParam, pageParam + pageSize);
+    const hasMore = pageParam + pageSize < allLectures.length;
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      const mappedData = (data || []).map(mapDbLectureToAppLecture);
-      const hasMore = count ? pageParam + pageSize < count : false;
-      const nextOffset = hasMore ? pageParam + pageSize : undefined;
-
-      return {
-        lectures: mappedData,
-        nextOffset,
-        hasMore,
-      };
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return {
+      lectures: paginated,
+      nextOffset: hasMore ? pageParam + pageSize : undefined,
+      hasMore,
+    };
   },
 };
