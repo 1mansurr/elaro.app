@@ -1,156 +1,123 @@
-import { supabase } from '@/services/supabase';
-import { handleApiError } from '@/services/api/errors';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
 import { Course, CreateCourseRequest } from '@/types';
-import { syncManager } from '@/services/syncManager';
-import { generateTempId } from '@/utils/uuid';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+
+interface CourseRow {
+  id: string;
+  user_id: string;
+  name: string;
+  code: string | null;
+  about_course: string | null;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+function rowToCourse(row: CourseRow): Course {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseName: row.name,
+    courseCode: row.code ?? undefined,
+    aboutCourse: row.about_course ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    deletedAt: row.deleted_at ?? undefined,
+  };
+}
+
+async function fetchCourseRow(id: string): Promise<CourseRow> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<CourseRow>(
+    'SELECT id, user_id, name, code, about_course, deleted_at, created_at, updated_at FROM courses WHERE id = ?',
+    [id],
+  );
+  if (!row) throw new Error(`Course not found: ${id}`);
+  return row;
+}
 
 export const coursesApiMutations = {
-  /**
-   * Update an existing course
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue
-   */
+  async create(data: CreateCourseRequest): Promise<Course> {
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const id = generateUUID();
+    const now = new Date().toISOString();
+
+    await db.runAsync(
+      'INSERT INTO courses (id, user_id, name, code, about_course, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [
+        id,
+        userId,
+        data.course_name,
+        data.course_code ?? null,
+        data.about_course ?? null,
+        now,
+        now,
+      ],
+    );
+
+    return rowToCourse(await fetchCourseRow(id));
+  },
+
   async update(
     courseId: string,
     updates: Partial<CreateCourseRequest>,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Course> {
-    try {
-      // OFFLINE MODE: Queue for later sync
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing UPDATE course action for ${courseId}`,
-        );
+    const db = await getDatabase();
+    const now = new Date().toISOString();
 
-        await syncManager.addToQueue(
-          'UPDATE',
-          'course',
-          {
-            type: 'UPDATE',
-            resourceId: courseId,
-            updates,
-          },
-          userId,
-          { syncImmediately: false },
-        );
+    const setParts: string[] = ['updated_at = ?'];
+    const values: (string | null)[] = [now];
 
-        // Return optimistic result
-        return { id: courseId, ...updates } as Course;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(`🌐 Online: Updating course ${courseId} on server`);
-      const { data, error } = await supabase
-        .from('courses')
-        .update(updates)
-        .eq('id', courseId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
+    if (updates.course_name !== undefined) {
+      setParts.push('name = ?');
+      values.push(updates.course_name);
     }
+    if (updates.course_code !== undefined) {
+      setParts.push('code = ?');
+      values.push(updates.course_code ?? null);
+    }
+    if (updates.about_course !== undefined) {
+      setParts.push('about_course = ?');
+      values.push(updates.about_course ?? null);
+    }
+
+    values.push(courseId);
+    await db.runAsync(
+      `UPDATE courses SET ${setParts.join(', ')} WHERE id = ?`,
+      values,
+    );
+
+    return rowToCourse(await fetchCourseRow(courseId));
   },
 
-  /**
-   * Delete a course (soft delete)
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue
-   */
   async delete(
     courseId: string,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<void> {
-    try {
-      // OFFLINE MODE: Queue for later sync
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing DELETE course action for ${courseId}`,
-        );
-
-        await syncManager.addToQueue(
-          'DELETE',
-          'course',
-          {
-            type: 'DELETE',
-            resourceId: courseId,
-          },
-          userId,
-          { syncImmediately: false },
-        );
-
-        return;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(`🌐 Online: Deleting course ${courseId} on server`);
-      const { error } = await supabase
-        .from('courses')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', courseId);
-
-      if (error) throw error;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      'UPDATE courses SET deleted_at = ?, updated_at = ? WHERE id = ?',
+      [now, now, courseId],
+    );
   },
 
-  /**
-   * Restore a soft-deleted course
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue
-   */
   async restore(
     courseId: string,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Course> {
-    try {
-      // OFFLINE MODE: Queue for later sync
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing RESTORE course action for ${courseId}`,
-        );
-
-        await syncManager.addToQueue(
-          'RESTORE',
-          'course',
-          {
-            type: 'RESTORE',
-            resourceId: courseId,
-          },
-          userId,
-          { syncImmediately: false },
-        );
-
-        // Return optimistic result (partial course object)
-        return { id: courseId, deleted_at: null } as any;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(`🌐 Online: Restoring course ${courseId} on server`);
-      const { data, error } = await supabase
-        .from('courses')
-        .update({ deleted_at: null })
-        .eq('id', courseId)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      'UPDATE courses SET deleted_at = NULL, updated_at = ? WHERE id = ?',
+      [now, courseId],
+    );
+    return rowToCourse(await fetchCourseRow(courseId));
   },
 };

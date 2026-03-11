@@ -1,20 +1,22 @@
 import * as SQLite from 'expo-sqlite';
 
 const DB_NAME = 'elaro.db';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 const SCHEMA = `
   CREATE TABLE IF NOT EXISTS courses (
-    id          TEXT PRIMARY KEY,
-    user_id     TEXT NOT NULL,
-    name        TEXT NOT NULL,
-    code        TEXT,
-    color       TEXT,
-    icon        TEXT,
-    schedule    TEXT,
-    created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    updated_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-    synced_at   TEXT
+    id            TEXT PRIMARY KEY,
+    user_id       TEXT NOT NULL,
+    name          TEXT NOT NULL,
+    code          TEXT,
+    about_course  TEXT,
+    color         TEXT,
+    icon          TEXT,
+    schedule      TEXT,
+    deleted_at    TEXT,
+    created_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    updated_at    TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
+    synced_at     TEXT
   );
 
   CREATE TABLE IF NOT EXISTS tasks (
@@ -114,7 +116,24 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync(DB_NAME);
   await db.execAsync('PRAGMA journal_mode = WAL;');
   await db.execAsync('PRAGMA foreign_keys = ON;');
-  await db.execAsync(SCHEMA);
+
+  const versionRow = await db.getFirstAsync<{ user_version: number }>(
+    'PRAGMA user_version',
+  );
+  const currentVersion = versionRow?.user_version ?? 0;
+
+  if (currentVersion === 0) {
+    // Fresh install — create all tables
+    await db.execAsync(SCHEMA);
+  } else if (currentVersion < SCHEMA_VERSION) {
+    // Incremental migrations
+    if (currentVersion < 2) {
+      await db.runAsync('ALTER TABLE courses ADD COLUMN about_course TEXT');
+      await db.runAsync('ALTER TABLE courses ADD COLUMN deleted_at TEXT');
+    }
+  }
+
+  await db.execAsync(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   dbInstance = db;
   return db;
 }
