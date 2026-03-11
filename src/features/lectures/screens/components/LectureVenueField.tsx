@@ -17,8 +17,7 @@ export const LectureVenueField: React.FC<LectureVenueFieldProps> = ({
 
   return (
     <View style={styles.field}>
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Venue
       </Text>
       <View style={styles.venueInputContainer}>

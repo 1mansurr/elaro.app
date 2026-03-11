@@ -19,8 +19,7 @@ export const LectureRecurrenceSection: React.FC<
 
   return (
     <View style={styles.field}>
-      <Text
-        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+      <Text style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Recurrence
       </Text>
       <View style={styles.recurrenceGrid}>

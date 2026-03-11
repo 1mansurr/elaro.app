@@ -173,7 +173,9 @@ const DraftsScreen = () => {
   };
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent as unknown as { translationX: number };
+    const { translationX } = event.nativeEvent as unknown as {
+      translationX: number;
+    };
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -182,7 +184,9 @@ const DraftsScreen = () => {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent as unknown as { translationX: number };
+    const { translationX } = event.nativeEvent as unknown as {
+      translationX: number;
+    };
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -289,9 +293,7 @@ const DraftsScreen = () => {
             style={[
               styles.infoBanner,
               {
-                backgroundColor: isDark
-                  ? 'rgba(59, 130, 246, 0.1)'
-                  : '#F0F5FF',
+                backgroundColor: isDark ? 'rgba(59, 130, 246, 0.1)' : '#F0F5FF',
               },
             ]}>
             <Ionicons
