@@ -253,7 +253,9 @@ export class RecurringTaskService {
     if (!patternRow) throw new Error(`Pattern not found: ${request.patternId}`);
     const pattern = rowToPattern(patternRow);
 
-    const startDate = request.startDate ? new Date(request.startDate) : new Date();
+    const startDate = request.startDate
+      ? new Date(request.startDate)
+      : new Date();
     const templateData = request.templateData;
 
     // Insert the template task
@@ -379,8 +381,7 @@ export class RecurringTaskService {
           ...taskMeta,
         },
         isActive:
-          !patternRow.end_date ||
-          new Date(patternRow.end_date) >= new Date(),
+          !patternRow.end_date || new Date(patternRow.end_date) >= new Date(),
         nextGenerationDate: nextDate.toISOString(),
         lastGeneratedAt: patternRow.last_generated ?? undefined,
         totalGenerated,
@@ -495,8 +496,7 @@ export class RecurringTaskService {
       [recurringTaskId],
     );
     if (!patternRow) throw new Error(`Pattern not found: ${recurringTaskId}`);
-    if (!patternRow.task_id)
-      throw new Error('Pattern has no template task');
+    if (!patternRow.task_id) throw new Error('Pattern has no template task');
 
     const templateRow = await db.getFirstAsync<TaskRow>(
       `SELECT id, user_id, type, title, description, course_id, due_date,
@@ -570,7 +570,10 @@ export class RecurringTaskService {
         id: newTaskId,
         recurringTaskId,
         taskId: newTaskId,
-        taskType: templateRow.type as 'assignment' | 'lecture' | 'study_session',
+        taskType: templateRow.type as
+          | 'assignment'
+          | 'lecture'
+          | 'study_session',
         generationDate: now,
         scheduledDate,
         isCompleted: false,
