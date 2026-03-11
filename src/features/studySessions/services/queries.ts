@@ -1,7 +1,6 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
 import { StudySession } from '@/types';
-import { handleApiError } from '@/services/api/errors';
-import { mapDbStudySessionToAppStudySession } from '@/services/api/mappers';
 
 export interface StudySessionsPage {
   studySessions: StudySession[];
@@ -16,70 +15,100 @@ export interface StudySessionQueryOptions {
   sortAscending?: boolean;
 }
 
-export const studySessionsApi = {
-  /**
-   * Get all study sessions (backward compatibility - use listPage for pagination)
-   * @deprecated Consider using listPage() for better performance with large datasets
-   */
-  async getAll(): Promise<StudySession[]> {
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  metadata: string | null;
+  deleted_at: string | null;
+  created_at: string;
+}
+
+interface StudySessionMetadata {
+  has_spaced_repetition?: boolean;
+  difficulty_rating?: number | null;
+  confidence_level?: number | null;
+  time_spent_minutes?: number | null;
+  last_reviewed_at?: string | null;
+  review_count?: number;
+}
+
+function rowToStudySession(row: TaskRow): StudySession {
+  let meta: StudySessionMetadata = {};
+  if (row.metadata) {
     try {
-      const { data, error } = await supabase
-        .from('study_sessions')
-        .select('*')
-        .is('deleted_at', null) // Explicitly filter soft-deleted items
-        .order('session_date', { ascending: true });
-      if (error) throw error;
-      // Map the data before returning it
-      return (data || []).map(mapDbStudySessionToAppStudySession);
-    } catch (error) {
-      throw handleApiError(error);
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
     }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    topic: row.title,
+    description: row.description ?? undefined,
+    sessionDate: row.due_date ?? '',
+    hasSpacedRepetition: meta.has_spaced_repetition ?? false,
+    difficulty_rating: meta.difficulty_rating ?? null,
+    confidence_level: meta.confidence_level ?? null,
+    time_spent_minutes: meta.time_spent_minutes ?? null,
+    last_reviewed_at: meta.last_reviewed_at ?? null,
+    review_count: meta.review_count ?? 0,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at ?? null,
+  };
+}
+
+export const studySessionsApi = {
+  async getAll(): Promise<StudySession[]> {
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, due_date, metadata, deleted_at, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'study_session' AND is_deleted = 0
+       ORDER BY due_date ASC`,
+      [userId],
+    );
+    return rows.map(rowToStudySession);
   },
 
-  /**
-   * Get paginated study sessions with sorting options
-   * @param options - Query options including pagination and sorting
-   * @returns Paginated study sessions with metadata
-   */
   async listPage(
     options?: StudySessionQueryOptions,
   ): Promise<StudySessionsPage> {
-    try {
-      const {
-        pageParam = 0,
-        pageSize = 50,
-        sortBy = 'session_date',
-        sortAscending = true,
-      } = options || {};
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const {
+      pageParam = 0,
+      pageSize = 50,
+      sortBy = 'session_date',
+      sortAscending = true,
+    } = options || {};
 
-      let query = supabase
-        .from('study_sessions')
-        .select('*', { count: 'exact' })
-        .is('deleted_at', null); // Explicitly filter soft-deleted items
+    // 'session_date' maps to the due_date column
+    const col = sortBy === 'created_at' ? 'created_at' : 'due_date';
+    const order = sortAscending ? 'ASC' : 'DESC';
 
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortAscending });
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, due_date, metadata, deleted_at, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'study_session' AND is_deleted = 0
+       ORDER BY ${col} ${order}`,
+      [userId],
+    );
 
-      // Apply pagination
-      const from = pageParam;
-      const to = pageParam + pageSize - 1;
-      query = query.range(from, to);
+    const allSessions = rows.map(rowToStudySession);
+    const paginated = allSessions.slice(pageParam, pageParam + pageSize);
+    const hasMore = pageParam + pageSize < allSessions.length;
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      const mappedData = (data || []).map(mapDbStudySessionToAppStudySession);
-      const hasMore = count ? pageParam + pageSize < count : false;
-      const nextOffset = hasMore ? pageParam + pageSize : undefined;
-
-      return {
-        studySessions: mappedData,
-        nextOffset,
-        hasMore,
-      };
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return {
+      studySessions: paginated,
+      nextOffset: hasMore ? pageParam + pageSize : undefined,
+      hasMore,
+    };
   },
 };

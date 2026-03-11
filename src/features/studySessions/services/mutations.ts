@@ -1,151 +1,186 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
 import { StudySession } from '@/types';
 import {
   CreateStudySessionRequest,
   UpdateStudySessionRequest,
 } from '@/types/api';
-import { handleApiError } from '@/services/api/errors';
-import { syncManager } from '@/services/syncManager';
-import { generateTempId } from '@/utils/uuid';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  metadata: string | null;
+  deleted_at: string | null;
+  created_at: string;
+}
+
+interface StudySessionMetadata {
+  has_spaced_repetition?: boolean;
+  difficulty_rating?: number | null;
+  confidence_level?: number | null;
+  time_spent_minutes?: number | null;
+  last_reviewed_at?: string | null;
+  review_count?: number;
+}
+
+function rowToStudySession(row: TaskRow): StudySession {
+  let meta: StudySessionMetadata = {};
+  if (row.metadata) {
+    try {
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
+    }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    topic: row.title,
+    description: row.description ?? undefined,
+    sessionDate: row.due_date ?? '',
+    hasSpacedRepetition: meta.has_spaced_repetition ?? false,
+    difficulty_rating: meta.difficulty_rating ?? null,
+    confidence_level: meta.confidence_level ?? null,
+    time_spent_minutes: meta.time_spent_minutes ?? null,
+    last_reviewed_at: meta.last_reviewed_at ?? null,
+    review_count: meta.review_count ?? 0,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at ?? null,
+  };
+}
+
+async function fetchTaskRow(id: string): Promise<TaskRow> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<TaskRow>(
+    `SELECT id, user_id, course_id, title, description, due_date, metadata, deleted_at, created_at
+     FROM tasks WHERE id = ? AND type = 'study_session'`,
+    [id],
+  );
+  if (!row) throw new Error(`Study session not found: ${id}`);
+  return row;
+}
 
 export const studySessionsApiMutations = {
-  /**
-   * Create a new study session
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Generates temp ID, adds to sync queue, returns optimistic data
-   */
   async create(
     request: CreateStudySessionRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<StudySession> {
-    try {
-      // OFFLINE MODE: Generate temp ID and queue for later sync
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing CREATE study_session action');
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const id = generateUUID();
+    const now = new Date().toISOString();
 
-        const tempId = generateTempId('study_session');
+    const meta: StudySessionMetadata = {
+      has_spaced_repetition: request.has_spaced_repetition,
+    };
 
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'CREATE',
-          'study_session',
-          {
-            type: 'CREATE',
-            data: request as unknown as Record<string, unknown>,
-          },
-          userId,
-          { syncImmediately: false },
-        );
+    await db.runAsync(
+      `INSERT INTO tasks (id, user_id, type, course_id, title, description, due_date, metadata, created_at, updated_at)
+       VALUES (?, ?, 'study_session', ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        userId,
+        request.course_id || null,
+        request.topic,
+        request.notes ?? null,
+        request.session_date,
+        JSON.stringify(meta),
+        now,
+        now,
+      ],
+    );
 
-        // Return optimistic study session with temp ID
-        const optimisticStudySession: StudySession = {
-          id: tempId,
-          user_id: userId,
-          course_id: request.course_id,
-          topic: request.topic,
-          date: request.session_date,
-          duration_minutes: null,
-          notes: request.notes || null,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          deleted_at: null,
-          _offline: true, // Mark as offline-created
-          _tempId: tempId, // Store temp ID for reference
-        } as any;
-
-        console.log(
-          `✅ Created optimistic study session with temp ID: ${tempId}`,
-        );
-        return optimisticStudySession;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Creating study session on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'create-study-session',
-        { body: request },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return rowToStudySession(await fetchTaskRow(id));
   },
 
-  /**
-   * Update an existing study session
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue for later sync
-   */
   async update(
     sessionId: string,
     request: UpdateStudySessionRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<StudySession> {
-    try {
-      // OFFLINE MODE: Queue for later sync and return optimistic data
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing UPDATE study_session action');
+    const db = await getDatabase();
+    const now = new Date().toISOString();
 
-        // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } =
-          await import('@/utils/taskCache');
-        const cachedTask = await getCachedTask(sessionId, 'study_session');
+    const setParts: string[] = ['updated_at = ?'];
+    const values: (string | null)[] = [now];
 
-        if (!cachedTask) {
-          throw new Error(
-            'Study session not found in cache. Please sync and try again.',
-          );
-        }
-
-        // Merge updates with cached data
-        const optimisticTask = mergeTaskUpdates(
-          cachedTask as StudySession,
-          request,
-        );
-
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'UPDATE',
-          'study_session',
-          {
-            type: 'UPDATE',
-            id: sessionId,
-            data: request as unknown as Record<string, unknown>,
-          },
-          userId,
-          { syncImmediately: false },
-        );
-
-        console.log(
-          `✅ Created optimistic update for study session ${sessionId}`,
-        );
-        return optimisticTask as StudySession;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Updating study session on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'update-study-session',
-        {
-          body: {
-            study_session_id: sessionId,
-            ...request,
-          },
-        },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
+    if (request.topic !== undefined) {
+      setParts.push('title = ?');
+      values.push(request.topic);
     }
+    if (request.notes !== undefined) {
+      setParts.push('description = ?');
+      values.push(request.notes ?? null);
+    }
+    if (request.session_date !== undefined) {
+      setParts.push('due_date = ?');
+      values.push(request.session_date ?? null);
+    }
+
+    if (request.has_spaced_repetition !== undefined) {
+      const existing = await fetchTaskRow(sessionId);
+      let meta: StudySessionMetadata = {};
+      if (existing.metadata) {
+        try {
+          meta = JSON.parse(existing.metadata);
+        } catch {
+          // ignore
+        }
+      }
+      meta.has_spaced_repetition = request.has_spaced_repetition;
+      setParts.push('metadata = ?');
+      values.push(JSON.stringify(meta));
+    }
+
+    values.push(sessionId);
+    await db.runAsync(
+      `UPDATE tasks SET ${setParts.join(', ')} WHERE id = ? AND type = 'study_session'`,
+      values,
+    );
+
+    return rowToStudySession(await fetchTaskRow(sessionId));
+  },
+
+  async delete(sessionId: string): Promise<void> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE tasks SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id = ? AND type = 'study_session'`,
+      [now, now, sessionId],
+    );
+  },
+
+  async complete(
+    sessionId: string,
+    updates?: Partial<StudySessionMetadata>,
+  ): Promise<StudySession> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+
+    const existing = await fetchTaskRow(sessionId);
+    let meta: StudySessionMetadata = {};
+    if (existing.metadata) {
+      try {
+        meta = JSON.parse(existing.metadata);
+      } catch {
+        // ignore
+      }
+    }
+    if (updates) Object.assign(meta, updates);
+
+    await db.runAsync(
+      `UPDATE tasks SET is_completed = 1, completed_at = ?, metadata = ?, updated_at = ? WHERE id = ? AND type = 'study_session'`,
+      [now, JSON.stringify(meta), now, sessionId],
+    );
+
+    return rowToStudySession(await fetchTaskRow(sessionId));
   },
 };
