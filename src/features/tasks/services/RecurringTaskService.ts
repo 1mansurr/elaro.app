@@ -1,32 +1,22 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
 
-// NOTE: This service uses direct Supabase queries and needs API endpoints created.
-// TODO: Create API endpoints in api-v2 for recurring task operations:
-//   - POST /api-v2/recurring-tasks/patterns (create pattern)
-//   - GET /api-v2/recurring-tasks/patterns (list patterns)
-//   - POST /api-v2/recurring-tasks (create recurring task)
-//   - GET /api-v2/recurring-tasks (list recurring tasks)
-//   - POST /api-v2/recurring-tasks/generate (generate tasks)
+// ─────────────────────────────────────────────────────────────
+// Public interfaces (kept compatible with useRecurringTasks.ts)
+// ─────────────────────────────────────────────────────────────
 
 export interface RecurringPattern {
   id: string;
-  name: string;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
+  userId: string;
+  taskId: string | null;
+  frequency: 'daily' | 'weekly' | 'monthly';
   intervalValue: number;
   daysOfWeek?: number[];
   dayOfMonth?: number;
   endDate?: string;
   maxOccurrences?: number;
-  timezone: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface TaskTemplate {
-  id: string;
-  name: string;
-  taskType: 'assignment' | 'lecture' | 'study_session';
-  data: Record<string, unknown>;
+  lastGenerated?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,20 +51,141 @@ export interface GeneratedTask {
 export interface CreateRecurringTaskRequest {
   patternId: string;
   taskType: 'assignment' | 'lecture' | 'study_session';
-  templateData: Record<string, any>;
+  templateData: Record<string, unknown>;
   startDate?: string;
 }
 
 export interface CreatePatternRequest {
   name: string;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'custom';
+  frequency: 'daily' | 'weekly' | 'monthly';
   intervalValue: number;
   daysOfWeek?: number[];
   dayOfMonth?: number;
   endDate?: string;
   maxOccurrences?: number;
-  timezone?: string;
+  timezone?: string; // accepted for API compat, not persisted
 }
+
+// ─────────────────────────────────────────────────────────────
+// Internal row types
+// ─────────────────────────────────────────────────────────────
+
+interface PatternRow {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  frequency: 'daily' | 'weekly' | 'monthly';
+  interval_value: number;
+  days_of_week: string | null; // JSON-encoded number[]
+  day_of_month: number | null;
+  end_date: string | null;
+  max_occurrences: number | null;
+  last_generated: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+interface TaskRow {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  description: string | null;
+  course_id: string | null;
+  due_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  is_completed: number;
+  completed_at: string | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────
+
+function rowToPattern(row: PatternRow): RecurringPattern {
+  let daysOfWeek: number[] | undefined;
+  if (row.days_of_week) {
+    try {
+      daysOfWeek = JSON.parse(row.days_of_week);
+    } catch {
+      // ignore malformed
+    }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    taskId: row.task_id,
+    frequency: row.frequency,
+    intervalValue: row.interval_value,
+    daysOfWeek,
+    dayOfMonth: row.day_of_month ?? undefined,
+    endDate: row.end_date ?? undefined,
+    maxOccurrences: row.max_occurrences ?? undefined,
+    lastGenerated: row.last_generated ?? undefined,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+/**
+ * Pure JS next-date calculator — replaces all Supabase RPC date functions.
+ */
+function calculateNextDate(
+  frequency: 'daily' | 'weekly' | 'monthly',
+  intervalValue: number,
+  daysOfWeek: number[] | undefined,
+  dayOfMonth: number | undefined,
+  fromDate: Date,
+): Date {
+  const next = new Date(fromDate);
+
+  switch (frequency) {
+    case 'daily':
+      next.setDate(next.getDate() + intervalValue);
+      break;
+
+    case 'weekly': {
+      if (daysOfWeek && daysOfWeek.length > 0) {
+        const sorted = [...daysOfWeek].sort((a, b) => a - b);
+        const currentDay = next.getDay();
+        const nextDayInWeek = sorted.find(d => d > currentDay);
+        if (nextDayInWeek !== undefined) {
+          next.setDate(next.getDate() + (nextDayInWeek - currentDay));
+        } else {
+          // Wrap to the first matching day in the next interval cycle
+          next.setDate(
+            next.getDate() + (7 * intervalValue - currentDay + sorted[0]),
+          );
+        }
+      } else {
+        next.setDate(next.getDate() + intervalValue * 7);
+      }
+      break;
+    }
+
+    case 'monthly': {
+      next.setMonth(next.getMonth() + intervalValue);
+      if (dayOfMonth !== undefined) {
+        const maxDay = new Date(
+          next.getFullYear(),
+          next.getMonth() + 1,
+          0,
+        ).getDate();
+        next.setDate(Math.min(dayOfMonth, maxDay));
+      }
+      break;
+    }
+  }
+
+  return next;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────
 
 export class RecurringTaskService {
   private static instance: RecurringTaskService;
@@ -87,465 +198,510 @@ export class RecurringTaskService {
   }
 
   /**
-   * Create a new recurring pattern
+   * Create a new recurring pattern.
    */
   async createPattern(
     request: CreatePatternRequest,
   ): Promise<RecurringPattern> {
-    try {
-      const { data: pattern, error } = await supabase
-        .from('recurring_patterns')
-        .insert({
-          name: request.name,
-          frequency: request.frequency,
-          interval_value: request.intervalValue,
-          days_of_week: request.daysOfWeek,
-          day_of_month: request.dayOfMonth,
-          end_date: request.endDate,
-          max_occurrences: request.maxOccurrences,
-          timezone: request.timezone || 'UTC',
-        })
-        .select()
-        .single();
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const id = generateUUID();
+    const now = new Date().toISOString();
 
-      if (error) {
-        throw new Error(`Failed to create pattern: ${error.message}`);
-      }
+    await db.runAsync(
+      `INSERT INTO recurring_patterns
+         (id, user_id, frequency, interval_value, days_of_week, day_of_month,
+          end_date, max_occurrences, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        userId,
+        request.frequency,
+        request.intervalValue,
+        request.daysOfWeek ? JSON.stringify(request.daysOfWeek) : null,
+        request.dayOfMonth ?? null,
+        request.endDate ?? null,
+        request.maxOccurrences ?? null,
+        now,
+        now,
+      ],
+    );
 
-      return this.mapPatternFromDB(pattern);
-    } catch (error) {
-      console.error('❌ Error creating recurring pattern:', error);
-      throw error;
-    }
+    const row = await db.getFirstAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE id = ?',
+      [id],
+    );
+    if (!row) throw new Error('Failed to create pattern');
+    return rowToPattern(row);
   }
 
   /**
-   * Create a recurring task
+   * Create a recurring task: inserts the template task row and links the pattern.
    */
   async createRecurringTask(
-    userId: string,
+    _userId: string,
     request: CreateRecurringTaskRequest,
   ): Promise<RecurringTask> {
-    try {
-      // Calculate next generation date
-      const startDate = request.startDate
-        ? new Date(request.startDate)
-        : new Date();
-      const nextGenerationDate = await this.calculateNextGenerationDate(
-        request.patternId,
-        startDate,
-      );
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const now = new Date().toISOString();
 
-      const { data: recurringTask, error } = await supabase
-        .from('recurring_tasks')
-        .insert({
-          user_id: userId,
-          pattern_id: request.patternId,
-          task_type: request.taskType,
-          template_data: request.templateData,
-          next_generation_date: nextGenerationDate.toISOString(),
-        })
-        .select(
-          `
-          *,
-          recurring_patterns!inner(*)
-        `,
-        )
-        .single();
+    const patternRow = await db.getFirstAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE id = ?',
+      [request.patternId],
+    );
+    if (!patternRow) throw new Error(`Pattern not found: ${request.patternId}`);
+    const pattern = rowToPattern(patternRow);
 
-      if (error) {
-        throw new Error(`Failed to create recurring task: ${error.message}`);
-      }
+    const startDate = request.startDate ? new Date(request.startDate) : new Date();
+    const templateData = request.templateData;
 
-      return this.mapRecurringTaskFromDB(recurringTask);
-    } catch (error) {
-      console.error('❌ Error creating recurring task:', error);
-      throw error;
-    }
+    // Insert the template task
+    const taskId = generateUUID();
+    const templateMeta = JSON.stringify({
+      recurring_pattern_id: request.patternId,
+      is_template: true,
+    });
+
+    await db.runAsync(
+      `INSERT INTO tasks (id, user_id, type, title, description, course_id, due_date, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        taskId,
+        deviceId,
+        request.taskType,
+        (templateData.title as string) || 'Recurring Task',
+        (templateData.description as string) || null,
+        (templateData.course_id as string) || null,
+        startDate.toISOString(),
+        templateMeta,
+        now,
+        now,
+      ],
+    );
+
+    // Link pattern → task
+    await db.runAsync(
+      'UPDATE recurring_patterns SET task_id = ?, updated_at = ? WHERE id = ?',
+      [taskId, now, request.patternId],
+    );
+
+    const nextDate = calculateNextDate(
+      pattern.frequency,
+      pattern.intervalValue,
+      pattern.daysOfWeek,
+      pattern.dayOfMonth,
+      startDate,
+    );
+
+    return {
+      id: request.patternId,
+      userId: deviceId,
+      patternId: request.patternId,
+      pattern: { ...pattern, taskId },
+      taskType: request.taskType,
+      templateData,
+      isActive: true,
+      nextGenerationDate: nextDate.toISOString(),
+      totalGenerated: 0,
+      createdAt: now,
+      updatedAt: now,
+    };
   }
 
   /**
-   * Get user's recurring tasks
+   * Get all recurring tasks for the current device user.
+   * Replaces the Supabase JOIN query with two SQLite reads + pure JS.
    */
-  async getUserRecurringTasks(userId: string): Promise<RecurringTask[]> {
-    try {
-      const { data: recurringTasks, error } = await supabase
-        .from('recurring_tasks')
-        .select(
-          `
-          *,
-          recurring_patterns!inner(*)
-        `,
-        )
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
+  async getUserRecurringTasks(_userId: string): Promise<RecurringTask[]> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
 
-      if (error) {
-        throw new Error(`Failed to get recurring tasks: ${error.message}`);
+    const patternRows = await db.getAllAsync<PatternRow>(
+      `SELECT * FROM recurring_patterns
+       WHERE user_id = ? AND task_id IS NOT NULL
+       ORDER BY created_at DESC`,
+      [deviceId],
+    );
+
+    const results: RecurringTask[] = [];
+
+    for (const patternRow of patternRows) {
+      const pattern = rowToPattern(patternRow);
+
+      const taskRow = await db.getFirstAsync<TaskRow>(
+        `SELECT id, user_id, type, title, description, course_id, due_date,
+                start_time, end_time, is_completed, completed_at, metadata, created_at
+         FROM tasks WHERE id = ?`,
+        [patternRow.task_id!],
+      );
+      if (!taskRow) continue;
+
+      // Count tasks generated from this pattern
+      const countRow = await db.getFirstAsync<{ count: number }>(
+        `SELECT COUNT(*) as count FROM tasks
+         WHERE metadata LIKE ? AND is_deleted = 0`,
+        [`%"recurring_pattern_id":"${patternRow.id}"%`],
+      );
+      const totalGenerated = countRow?.count ?? 0;
+
+      const fromDate = patternRow.last_generated
+        ? new Date(patternRow.last_generated)
+        : new Date();
+      const nextDate = calculateNextDate(
+        pattern.frequency,
+        pattern.intervalValue,
+        pattern.daysOfWeek,
+        pattern.dayOfMonth,
+        fromDate,
+      );
+
+      let taskMeta: Record<string, unknown> = {};
+      if (taskRow.metadata) {
+        try {
+          taskMeta = JSON.parse(taskRow.metadata);
+        } catch {
+          // ignore
+        }
       }
 
-      return (recurringTasks || []).map(task =>
-        this.mapRecurringTaskFromDB(task),
-      );
-    } catch (error) {
-      console.error('❌ Error getting user recurring tasks:', error);
-      throw error;
+      results.push({
+        id: patternRow.id,
+        userId: deviceId,
+        patternId: patternRow.id,
+        pattern,
+        taskType: taskRow.type as 'assignment' | 'lecture' | 'study_session',
+        templateData: {
+          title: taskRow.title,
+          description: taskRow.description,
+          course_id: taskRow.course_id,
+          due_date: taskRow.due_date,
+          ...taskMeta,
+        },
+        isActive:
+          !patternRow.end_date ||
+          new Date(patternRow.end_date) >= new Date(),
+        nextGenerationDate: nextDate.toISOString(),
+        lastGeneratedAt: patternRow.last_generated ?? undefined,
+        totalGenerated,
+        createdAt: patternRow.created_at,
+        updatedAt: patternRow.updated_at,
+      });
     }
+
+    return results;
   }
 
   /**
-   * Get available patterns (public patterns)
+   * Get all patterns for the current device user.
    */
   async getAvailablePatterns(): Promise<RecurringPattern[]> {
-    try {
-      const { data: patterns, error } = await supabase
-        .from('recurring_patterns')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        throw new Error(`Failed to get patterns: ${error.message}`);
-      }
-
-      return (patterns || []).map(pattern => this.mapPatternFromDB(pattern));
-    } catch (error) {
-      console.error('❌ Error getting available patterns:', error);
-      throw error;
-    }
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const rows = await db.getAllAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE user_id = ? ORDER BY created_at DESC',
+      [userId],
+    );
+    return rows.map(rowToPattern);
   }
 
   /**
-   * Update a recurring task
+   * Update a recurring task (pattern + its template task).
    */
   async updateRecurringTask(
     recurringTaskId: string,
     updates: Partial<RecurringTask>,
   ): Promise<RecurringTask> {
-    try {
-      const updateData: Record<string, unknown> = {};
+    const db = await getDatabase();
+    const now = new Date().toISOString();
 
-      if (updates.isActive !== undefined) {
-        updateData.is_active = updates.isActive;
-      }
-
-      if (updates.templateData) {
-        updateData.template_data = updates.templateData;
-      }
-
-      const { data: updatedTask, error } = await supabase
-        .from('recurring_tasks')
-        .update(updateData)
-        .eq('id', recurringTaskId)
-        .select(
-          `
-          *,
-          recurring_patterns!inner(*)
-        `,
-        )
-        .single();
-
-      if (error) {
-        throw new Error(`Failed to update recurring task: ${error.message}`);
-      }
-
-      return this.mapRecurringTaskFromDB(updatedTask);
-    } catch (error) {
-      console.error('❌ Error updating recurring task:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Delete a recurring task
-   */
-  async deleteRecurringTask(recurringTaskId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('recurring_tasks')
-        .delete()
-        .eq('id', recurringTaskId);
-
-      if (error) {
-        throw new Error(`Failed to delete recurring task: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('❌ Error deleting recurring task:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get generated tasks for a recurring task
-   */
-  async getGeneratedTasks(recurringTaskId: string): Promise<GeneratedTask[]> {
-    try {
-      const { data: generatedTasks, error } = await supabase
-        .from('generated_tasks')
-        .select('*')
-        .eq('recurring_task_id', recurringTaskId)
-        .order('scheduled_date', { ascending: false });
-
-      if (error) {
-        throw new Error(`Failed to get generated tasks: ${error.message}`);
-      }
-
-      return (generatedTasks || []).map(task =>
-        this.mapGeneratedTaskFromDB(task),
+    if (updates.templateData !== undefined) {
+      const patternRow = await db.getFirstAsync<PatternRow>(
+        'SELECT * FROM recurring_patterns WHERE id = ?',
+        [recurringTaskId],
       );
-    } catch (error) {
-      console.error('❌ Error getting generated tasks:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Manually trigger task generation for a recurring task
-   */
-  async generateNextTasks(recurringTaskId: string): Promise<GeneratedTask[]> {
-    try {
-      const { data: result, error } = await supabase.rpc(
-        'generate_tasks_from_pattern',
-        {
-          p_recurring_task_id: recurringTaskId,
-        },
-      );
-
-      if (error) {
-        throw new Error(`Failed to generate tasks: ${error.message}`);
-      }
-
-      // Get the newly generated tasks
-      return await this.getGeneratedTasks(recurringTaskId);
-    } catch (error) {
-      console.error('❌ Error generating next tasks:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Process all due recurring tasks (for cron jobs)
-   */
-  async processDueRecurringTasks(): Promise<number> {
-    try {
-      const { data: generatedCount, error } = await supabase.rpc(
-        'process_due_recurring_tasks',
-      );
-
-      if (error) {
-        throw new Error(
-          `Failed to process due recurring tasks: ${error.message}`,
+      if (patternRow?.task_id) {
+        const td = updates.templateData;
+        const title = typeof td.title === 'string' ? td.title : null;
+        const description =
+          typeof td.description === 'string' ? td.description : null;
+        await db.runAsync(
+          'UPDATE tasks SET title = ?, description = ?, updated_at = ? WHERE id = ?',
+          [title, description, now, patternRow.task_id],
         );
       }
-
-      return generatedCount || 0;
-    } catch (error) {
-      console.error('❌ Error processing due recurring tasks:', error);
-      throw error;
     }
+
+    await db.runAsync(
+      'UPDATE recurring_patterns SET updated_at = ? WHERE id = ?',
+      [now, recurringTaskId],
+    );
+
+    const all = await this.getUserRecurringTasks('');
+    const updated = all.find(t => t.id === recurringTaskId);
+    if (!updated)
+      throw new Error(`Recurring task not found: ${recurringTaskId}`);
+    return updated;
   }
 
   /**
-   * Calculate next generation date for a pattern
+   * Delete a recurring pattern (cascade deletes via FK).
    */
-  private async calculateNextGenerationDate(
-    patternId: string,
-    currentDate: Date,
-  ): Promise<Date> {
-    try {
-      const { data: nextDate, error } = await supabase.rpc(
-        'calculate_next_generation_date',
-        {
-          p_pattern_id: patternId,
-          p_current_date: currentDate.toISOString(),
-        },
-      );
+  async deleteRecurringTask(recurringTaskId: string): Promise<void> {
+    const db = await getDatabase();
+    await db.runAsync('DELETE FROM recurring_patterns WHERE id = ?', [
+      recurringTaskId,
+    ]);
+  }
 
-      if (error || !nextDate) {
-        // Fallback: add 1 day
-        return new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
+  /**
+   * Get tasks generated from a given recurring pattern.
+   */
+  async getGeneratedTasks(recurringTaskId: string): Promise<GeneratedTask[]> {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, type, title, description, course_id, due_date,
+              start_time, end_time, is_completed, completed_at, metadata, created_at
+       FROM tasks
+       WHERE metadata LIKE ? AND is_deleted = 0
+       ORDER BY due_date DESC`,
+      [`%"recurring_pattern_id":"${recurringTaskId}"%`],
+    );
+
+    return rows.map(row => ({
+      id: row.id,
+      recurringTaskId,
+      taskId: row.id,
+      taskType: row.type as 'assignment' | 'lecture' | 'study_session',
+      generationDate: row.created_at,
+      scheduledDate: row.due_date ?? row.start_time ?? row.created_at,
+      isCompleted: row.is_completed === 1,
+      completedAt: row.completed_at ?? undefined,
+      createdAt: row.created_at,
+    }));
+  }
+
+  /**
+   * Generate the next task occurrence for a recurring pattern.
+   * Pure JS: calculate next date → insert task row → update last_generated.
+   */
+  async generateNextTasks(recurringTaskId: string): Promise<GeneratedTask[]> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const now = new Date().toISOString();
+
+    const patternRow = await db.getFirstAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE id = ?',
+      [recurringTaskId],
+    );
+    if (!patternRow) throw new Error(`Pattern not found: ${recurringTaskId}`);
+    if (!patternRow.task_id)
+      throw new Error('Pattern has no template task');
+
+    const templateRow = await db.getFirstAsync<TaskRow>(
+      `SELECT id, user_id, type, title, description, course_id, due_date,
+              start_time, end_time, is_completed, completed_at, metadata, created_at
+       FROM tasks WHERE id = ?`,
+      [patternRow.task_id],
+    );
+    if (!templateRow) throw new Error('Template task not found');
+
+    const pattern = rowToPattern(patternRow);
+    const fromDate = patternRow.last_generated
+      ? new Date(patternRow.last_generated)
+      : new Date();
+
+    const nextDate = calculateNextDate(
+      pattern.frequency,
+      pattern.intervalValue,
+      pattern.daysOfWeek,
+      pattern.dayOfMonth,
+      fromDate,
+    );
+
+    // Don't generate past end date
+    if (patternRow.end_date && nextDate > new Date(patternRow.end_date)) {
+      return [];
+    }
+
+    // Build metadata for the new task
+    let baseMeta: Record<string, unknown> = {};
+    if (templateRow.metadata) {
+      try {
+        baseMeta = JSON.parse(templateRow.metadata);
+      } catch {
+        // ignore
       }
-
-      return new Date(nextDate);
-    } catch (error) {
-      console.error('❌ Error calculating next generation date:', error);
-      // Fallback: add 1 day
-      return new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
     }
+    delete baseMeta.is_template;
+    baseMeta.recurring_pattern_id = recurringTaskId;
+
+    const scheduledDate = nextDate.toISOString();
+    const newTaskId = generateUUID();
+
+    await db.runAsync(
+      `INSERT INTO tasks
+         (id, user_id, type, course_id, title, description, due_date, start_time, end_time, metadata, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        newTaskId,
+        deviceId,
+        templateRow.type,
+        templateRow.course_id,
+        templateRow.title,
+        templateRow.description,
+        scheduledDate,
+        templateRow.type === 'lecture' ? scheduledDate : null,
+        templateRow.end_time,
+        JSON.stringify(baseMeta),
+        now,
+        now,
+      ],
+    );
+
+    // Update last_generated on the pattern
+    await db.runAsync(
+      'UPDATE recurring_patterns SET last_generated = ?, updated_at = ? WHERE id = ?',
+      [scheduledDate, now, recurringTaskId],
+    );
+
+    return [
+      {
+        id: newTaskId,
+        recurringTaskId,
+        taskId: newTaskId,
+        taskType: templateRow.type as 'assignment' | 'lecture' | 'study_session',
+        generationDate: now,
+        scheduledDate,
+        isCompleted: false,
+        createdAt: now,
+      },
+    ];
   }
 
   /**
-   * Map database pattern to RecurringPattern interface
+   * Process all due recurring tasks.
+   * Replaces the Supabase RPC with a JS loop over patterns where last_generated < today.
    */
-  private mapPatternFromDB(
-    dbPattern: Record<string, unknown>,
-  ): RecurringPattern {
-    return {
-      id: dbPattern.id as string,
-      name: dbPattern.name as string,
-      frequency: dbPattern.frequency as
-        | 'daily'
-        | 'weekly'
-        | 'monthly'
-        | 'custom',
-      intervalValue: dbPattern.interval_value as number,
-      daysOfWeek: dbPattern.days_of_week as number[] | undefined,
-      dayOfMonth: dbPattern.day_of_month as number | undefined,
-      endDate: dbPattern.end_date as string | undefined,
-      maxOccurrences: dbPattern.max_occurrences as number | undefined,
-      timezone: dbPattern.timezone as string,
-      createdAt: dbPattern.created_at as string,
-      updatedAt: dbPattern.updated_at as string,
-    };
-  }
+  async processDueRecurringTasks(): Promise<number> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const today = new Date();
 
-  /**
-   * Map database recurring task to RecurringTask interface
-   */
-  private mapRecurringTaskFromDB(
-    dbTask: Record<string, unknown>,
-  ): RecurringTask {
-    return {
-      id: dbTask.id as string,
-      userId: dbTask.user_id as string,
-      patternId: dbTask.pattern_id as string,
-      pattern: this.mapPatternFromDB(
-        dbTask.recurring_patterns as Record<string, unknown>,
-      ),
-      taskType: dbTask.task_type as 'assignment' | 'lecture' | 'study_session',
-      templateData: dbTask.template_data as Record<string, unknown>,
-      isActive: (dbTask.is_active ?? false) as boolean,
-      nextGenerationDate: dbTask.next_generation_date as string,
-      lastGeneratedAt: dbTask.last_generated_at as string | undefined,
-      totalGenerated: dbTask.total_generated as number,
-      createdAt: dbTask.created_at as string,
-      updatedAt: dbTask.updated_at as string,
-    };
-  }
+    const patternRows = await db.getAllAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE user_id = ? AND task_id IS NOT NULL',
+      [deviceId],
+    );
 
-  /**
-   * Map database generated task to GeneratedTask interface
-   */
-  private mapGeneratedTaskFromDB(
-    dbTask: Record<string, unknown>,
-  ): GeneratedTask {
-    return {
-      id: dbTask.id as string,
-      recurringTaskId: dbTask.recurring_task_id as string,
-      taskId: dbTask.task_id as string,
-      taskType: dbTask.task_type as 'assignment' | 'lecture' | 'study_session',
-      generationDate: dbTask.generation_date as string,
-      scheduledDate: dbTask.scheduled_date as string,
-      isCompleted: (dbTask.is_completed ?? false) as boolean,
-      completedAt: dbTask.completed_at as string | undefined,
-      createdAt: dbTask.created_at as string,
-    };
-  }
+    let generated = 0;
+    for (const patternRow of patternRows) {
+      // Skip if past end date
+      if (patternRow.end_date && new Date(patternRow.end_date) < today)
+        continue;
 
-  /**
-   * Create common recurring patterns
-   */
-  async createCommonPatterns(): Promise<void> {
-    try {
-      const commonPatterns = [
-        {
-          name: 'Daily Study Session',
-          frequency: 'daily' as const,
-          intervalValue: 1,
-          timezone: 'UTC',
-        },
-        {
-          name: 'Weekly Assignment Review',
-          frequency: 'weekly' as const,
-          intervalValue: 1,
-          daysOfWeek: [1, 3, 5], // Monday, Wednesday, Friday
-          timezone: 'UTC',
-        },
-        {
-          name: 'Monthly Project Check-in',
-          frequency: 'monthly' as const,
-          intervalValue: 1,
-          dayOfMonth: 1,
-          timezone: 'UTC',
-        },
-        {
-          name: 'Bi-weekly Lecture Prep',
-          frequency: 'weekly' as const,
-          intervalValue: 2,
-          daysOfWeek: [0], // Sunday
-          timezone: 'UTC',
-        },
-      ];
+      const fromDate = patternRow.last_generated
+        ? new Date(patternRow.last_generated)
+        : new Date(patternRow.created_at);
 
-      for (const pattern of commonPatterns) {
-        await this.createPattern(pattern);
+      if (fromDate < today) {
+        try {
+          const tasks = await this.generateNextTasks(patternRow.id);
+          generated += tasks.length;
+        } catch {
+          // Continue with other patterns on error
+        }
       }
-    } catch (error) {
-      console.error('❌ Error creating common patterns:', error);
-      throw error;
     }
+
+    return generated;
   }
 
   /**
-   * Get recurring task statistics
+   * Recurring task statistics — computed from SQLite, no RPC.
    */
-  async getRecurringTaskStats(userId: string): Promise<{
+  async getRecurringTaskStats(_userId: string): Promise<{
     totalActive: number;
     totalGenerated: number;
     upcomingGenerations: number;
     completionRate: number;
   }> {
-    try {
-      const { data: stats, error } = await supabase
-        .from('recurring_tasks')
-        .select(
-          `
-          is_active,
-          total_generated,
-          next_generation_date,
-          generated_tasks!inner(is_completed)
-        `,
-        )
-        .eq('user_id', userId);
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const today = new Date();
+    const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      if (error) {
-        throw new Error(`Failed to get recurring task stats: ${error.message}`);
-      }
+    const patternRows = await db.getAllAsync<PatternRow>(
+      'SELECT * FROM recurring_patterns WHERE user_id = ? AND task_id IS NOT NULL',
+      [deviceId],
+    );
 
-      const totalActive = stats.filter(s => s.is_active).length;
-      const totalGenerated = stats.reduce(
-        (sum, s) => sum + s.total_generated,
-        0,
+    const totalActive = patternRows.filter(
+      p => !p.end_date || new Date(p.end_date) >= today,
+    ).length;
+
+    const genCountRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM tasks
+       WHERE metadata LIKE '%"recurring_pattern_id":%' AND is_deleted = 0`,
+    );
+    const totalGenerated = genCountRow?.count ?? 0;
+
+    let upcomingGenerations = 0;
+    for (const patternRow of patternRows) {
+      if (patternRow.end_date && new Date(patternRow.end_date) < today)
+        continue;
+      const pattern = rowToPattern(patternRow);
+      const fromDate = patternRow.last_generated
+        ? new Date(patternRow.last_generated)
+        : new Date();
+      const nextDate = calculateNextDate(
+        pattern.frequency,
+        pattern.intervalValue,
+        pattern.daysOfWeek,
+        pattern.dayOfMonth,
+        fromDate,
       );
-      const upcomingGenerations = stats.filter(
-        s =>
-          s.is_active &&
-          new Date(s.next_generation_date) <=
-            new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      ).length;
+      if (nextDate <= nextWeek) upcomingGenerations++;
+    }
 
-      const completedTasks = stats.reduce((sum, s) => {
-        // Defensive check: ensure generated_tasks is an array before filtering
-        if (!Array.isArray(s.generated_tasks)) return sum;
-        return (
-          sum +
-          s.generated_tasks.filter(
-            (gt: { is_completed?: boolean }) => gt.is_completed,
-          ).length
-        );
-      }, 0);
-      const completionRate =
-        totalGenerated > 0 ? (completedTasks / totalGenerated) * 100 : 0;
+    const completedRow = await db.getFirstAsync<{ count: number }>(
+      `SELECT COUNT(*) as count FROM tasks
+       WHERE metadata LIKE '%"recurring_pattern_id":%' AND is_deleted = 0 AND is_completed = 1`,
+    );
+    const completedCount = completedRow?.count ?? 0;
+    const completionRate =
+      totalGenerated > 0 ? (completedCount / totalGenerated) * 100 : 0;
 
-      return {
-        totalActive,
-        totalGenerated,
-        upcomingGenerations,
-        completionRate,
-      };
-    } catch (error) {
-      console.error('❌ Error getting recurring task stats:', error);
-      throw error;
+    return { totalActive, totalGenerated, upcomingGenerations, completionRate };
+  }
+
+  /**
+   * Seed common recurring patterns for the current user.
+   */
+  async createCommonPatterns(): Promise<void> {
+    const commonPatterns: CreatePatternRequest[] = [
+      { name: 'Daily Study Session', frequency: 'daily', intervalValue: 1 },
+      {
+        name: 'Weekly Assignment Review',
+        frequency: 'weekly',
+        intervalValue: 1,
+        daysOfWeek: [1, 3, 5],
+      },
+      {
+        name: 'Monthly Project Check-in',
+        frequency: 'monthly',
+        intervalValue: 1,
+        dayOfMonth: 1,
+      },
+      {
+        name: 'Bi-weekly Lecture Prep',
+        frequency: 'weekly',
+        intervalValue: 2,
+        daysOfWeek: [0],
+      },
+    ];
+
+    for (const pattern of commonPatterns) {
+      await this.createPattern(pattern);
     }
   }
 }
