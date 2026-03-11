@@ -110,35 +110,6 @@ const SelectCourseScreen = () => {
     );
   };
 
-  const handleGuestSignUp = () => {
-    // Navigate to root Auth screen from nested navigator
-    navigation.getParent()?.navigate('Auth', {
-      mode: 'signup',
-      onAuthSuccess: () => {
-        // After successful auth, user will have courses and can continue
-        // The screen will automatically refresh and show course selection
-      },
-    } as any);
-  };
-
-  if (isGuest) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Select Course</Text>
-          <Text style={styles.subtitle}>Step 1 of 6</Text>
-        </View>
-
-        <View style={styles.guestContainer}>
-          <Text style={styles.guestText}>
-            Create an account to save your assignments and get reminders.
-          </Text>
-          <Button title="Sign Up" onPress={handleGuestSignUp} />
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <View style={styles.header}>

@@ -124,14 +124,6 @@ export const useQuickAddForm = (
     },
   });
 
-  // Block Quick Add for unauthenticated users
-  useEffect(() => {
-    if (isVisible && isGuest) {
-      onClose();
-      navigation.navigate('Auth', { mode: 'signup' });
-    }
-  }, [isVisible, isGuest, onClose, navigation]);
-
   // Reset form when modal closes
   useEffect(() => {
     if (!isVisible) {

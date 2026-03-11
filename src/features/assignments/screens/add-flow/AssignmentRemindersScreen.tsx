@@ -141,23 +141,6 @@ const RemindersScreen = () => {
   };
 
   const createAssignment = async (reminders: number[]) => {
-    if (isGuest) {
-      // Save current task data before showing modal
-      await savePendingTask(
-        {
-          ...assignmentData,
-          reminders,
-        } as any,
-        'assignment',
-      );
-      // Navigate to Auth screen
-      navigation.getParent()?.navigate('Auth', {
-        mode: 'signup',
-        onAuthSuccess: autoCreateTask,
-      } as any);
-      return;
-    }
-
     if (
       !assignmentData.course ||
       !assignmentData.title.trim() ||

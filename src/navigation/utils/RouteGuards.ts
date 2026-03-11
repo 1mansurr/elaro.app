@@ -22,17 +22,13 @@ export const AUTHENTICATED_ROUTES = [
   'AddStudySessionFlow',
   'EditCourseModal',
   'TaskDetailModal',
-  'MFAEnrollmentScreen',
-  'MFAVerificationScreen',
   'AnalyticsAdmin',
-  'PaywallScreen',
-  'OddityWelcomeScreen',
   'StudyResult',
   'StudySessionReview',
 ] as const;
 
 // Routes accessible to both authenticated and unauthenticated users
-export const PUBLIC_ROUTES = ['Launch', 'Auth'] as const;
+export const PUBLIC_ROUTES = ['Launch'] as const;
 
 // Routes accessible during onboarding (no onboarding flow in MVP)
 export const ONBOARDING_ROUTES = [] as const;
@@ -67,12 +63,6 @@ export const NON_RESTORABLE_ROUTES = [
   // Study session results
   'StudyResult',
   'StudySessionReview',
-  // Auth-related screens (should not persist)
-  'Auth',
-  'ForgotPassword',
-  'ResetPassword',
-  'MFAEnrollmentScreen',
-  'MFAVerificationScreen',
 ] as const;
 
 /**

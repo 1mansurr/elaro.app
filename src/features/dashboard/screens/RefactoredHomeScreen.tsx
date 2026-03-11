@@ -35,10 +35,6 @@ const RefactoredHomeScreen: React.FC = () => {
     getTrialDaysRemaining,
   } = useHomeScreenState();
 
-  const handleSubscribePress = () => {
-    navigation.navigate('Auth', { mode: 'signup' });
-  };
-
   return (
     <View style={styles.container}>
       <HomeScreenHeader title={getPersonalizedTitle()} />

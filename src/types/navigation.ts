@@ -15,12 +15,6 @@ export type FlowInitialData = {
 export type RootStackParamList = {
   // Core navigation
   Launch: undefined;
-  AppWelcome: undefined;
-  Auth: {
-    onClose?: () => void;
-    onAuthSuccess?: () => void;
-    mode?: 'signup' | 'signin';
-  };
   Main: undefined;
   PostOnboardingWelcome: undefined;
   AddCourseFirst: undefined;
@@ -35,12 +29,6 @@ export type RootStackParamList = {
   Profile: undefined;
   Settings: undefined;
   NotificationManagement: undefined;
-
-  // Auth-related screens
-  MFAEnrollmentScreen: undefined;
-  MFAVerificationScreen: { factorId: string };
-  ForgotPassword: undefined;
-  ResetPassword: undefined;
 
   // Modal flows (can accept optional initialData)
   AddCourseFlow: { initialData?: FlowInitialData } | undefined;

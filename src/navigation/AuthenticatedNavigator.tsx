@@ -6,7 +6,6 @@ import {
 import { View, ActivityIndicator, Text } from 'react-native';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 import { AddCourseProvider } from '@/features/courses/contexts/AddCourseContext';
 import FeatureErrorBoundary from '@/shared/components/FeatureErrorBoundary';
 import { MainTabNavigator } from './MainTabNavigator';
@@ -19,9 +18,6 @@ import {
 
 // Critical screens - loaded immediately
 import LaunchScreen from '@/shared/screens/LaunchScreen';
-import { AuthScreen } from '@/features/auth/screens/AuthScreen';
-import { ForgotPasswordScreen } from '@/features/auth/screens/ForgotPasswordScreen';
-import { ResetPasswordScreen } from '@/features/auth/screens/ResetPasswordScreen';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import DraftsScreen from '@/features/dashboard/screens/DraftsScreen';
 import TemplatesScreen from '@/features/dashboard/screens/TemplatesScreen';
@@ -64,16 +60,6 @@ const CourseDetailScreen = lazy(() =>
 );
 const TaskDetailModal = lazy(
   () => import('@/shared/components/TaskDetailModal'),
-);
-const MFAEnrollmentScreen = lazy(() =>
-  import('@/navigation/bundles/AuthBundle').then(module => ({
-    default: module.MFAEnrollmentScreen,
-  })),
-);
-const MFAVerificationScreen = lazy(() =>
-  import('@/navigation/bundles/AuthBundle').then(module => ({
-    default: module.MFAVerificationScreen,
-  })),
 );
 const InAppBrowserScreen = lazy(() =>
   import('@/shared/screens').then(module => ({
@@ -269,20 +255,6 @@ const mainScreens = {
       headerTitle: 'Calendar',
     },
   },
-  MFAEnrollmentScreen: {
-    component: MFAEnrollmentScreen,
-    options: {
-      ...SCREEN_CONFIGS.MFAEnrollmentScreen,
-      headerTitle: 'Enable MFA',
-    },
-  },
-  MFAVerificationScreen: {
-    component: MFAVerificationScreen,
-    options: {
-      ...SCREEN_CONFIGS.MFAVerificationScreen,
-      headerTitle: 'Verify Your Identity',
-    },
-  },
   Profile: {
     component: ProfileScreen,
     options: {
@@ -321,42 +293,8 @@ const mainScreens = {
 };
 
 export const AuthenticatedNavigator: React.FC = () => {
-  const { user, isInitializing, session } = useAuth();
-
   // Enable smart preloading for better performance
   useSmartPreloading();
-
-  // GUARD: Show loading screen while AuthContext is initializing
-  // This prevents race conditions where we have a session but no valid profile
-  // OPTIMIZATION: Only wait for initialization if we don't have a session
-  // If we have a session, show the app immediately (profile will load in background)
-  if (isInitializing && !session) {
-    if (__DEV__) {
-      console.log(
-        '⏳ [AuthenticatedNavigator] Waiting for auth initialization...',
-      );
-    }
-    return <LoadingFallback />;
-  }
-
-  // CRITICAL FIX: Guard against null user - AuthenticatedNavigator requires a valid user
-  // This prevents blank screen when session exists but user profile fetch failed
-  // After OTA updates, profile fetch may fail/timeout, leaving session but no user
-  if (!user) {
-    if (__DEV__) {
-      console.warn(
-        '⚠️ [AuthenticatedNavigator] No user profile - showing loading fallback',
-        { hasSession: !!session, isInitializing },
-      );
-    } else {
-      // Production logging for debugging blank screen issues
-      console.log('[AuthenticatedNavigator] No user profile detected', {
-        hasSession: !!session,
-        isInitializing,
-      });
-    }
-    return <LoadingFallback />;
-  }
 
   const initialRouteName: keyof RootStackParamList = 'Main';
 
@@ -374,33 +312,6 @@ export const AuthenticatedNavigator: React.FC = () => {
 
         {/* Modal flows */}
         <Stack.Group>
-          {/* Auth screen - available for switching accounts */}
-          <Stack.Screen
-            name="Auth"
-            component={AuthScreen}
-            options={SCREEN_CONFIGS.Auth}
-          />
-
-          {/* Forgot Password screen */}
-          <Stack.Screen
-            name="ForgotPassword"
-            component={ForgotPasswordScreen}
-            options={{
-              presentation: 'modal' as const,
-              headerShown: false,
-            }}
-          />
-
-          {/* Reset Password screen */}
-          <Stack.Screen
-            name="ResetPassword"
-            component={ResetPasswordScreen}
-            options={{
-              presentation: 'modal' as const,
-              headerShown: false,
-            }}
-          />
-
           {Object.entries(modalFlows).map(([name, config]) => {
             // Type narrowing: ensure name is a valid route
             const routeName = name as keyof RootStackParamList;

@@ -212,17 +212,6 @@ export const NavigationPatterns = {
   },
 
   /**
-   * Navigate to auth modal
-   */
-  navigateToAuth: (
-    navigation: AppNavigationProp,
-    mode?: 'signup' | 'signin',
-  ) => {
-    const safeNav = new SafeNavigation(navigation);
-    safeNav.navigate('Auth', { mode });
-  },
-
-  /**
    * Navigate to course detail
    */
   navigateToCourseDetail: (navigation: AppNavigationProp, courseId: string) => {
@@ -339,7 +328,6 @@ export const NavigationValidation = {
   isValidRoute: (routeName: string): routeName is keyof RootStackParamList => {
     const validRoutes: (keyof RootStackParamList)[] = [
       'Launch',
-      'Auth',
       'Main',
       'Courses',
       'Drafts',
@@ -355,8 +343,6 @@ export const NavigationValidation = {
       'AddStudySessionFlow',
       'EditCourseModal',
       'TaskDetailModal',
-      'MFAEnrollmentScreen',
-      'MFAVerificationScreen',
       'InAppBrowserScreen',
       'AnalyticsAdmin',
       'PaywallScreen',

@@ -213,14 +213,10 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
 
     // Memoized add activity handler
     const handleAddActivity = useStableCallback(() => {
-      if (isGuest) {
-        navigation.navigate('Auth', { mode: 'signin' });
-      } else {
-        // TaskCreationFlow is deprecated - use AddAssignmentFlow as default
-        // Users can switch to other task types from within the flow
-        navigation.navigate('AddAssignmentFlow');
-      }
-    }, [isGuest, navigation]);
+      // TaskCreationFlow is deprecated - use AddAssignmentFlow as default
+      // Users can switch to other task types from within the flow
+      navigation.navigate('AddAssignmentFlow');
+    }, [navigation]);
 
     // Show loading state
     if (isLoading) {

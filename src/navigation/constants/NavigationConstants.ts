@@ -345,25 +345,6 @@ export const SCREEN_CONFIGS = {
     ...GESTURES.vertical,
   },
 
-  // Auth screens
-  Auth: {
-    ...SCREEN_OPTIONS.auth,
-    ...TRANSITIONS.scaleIn,
-    ...GESTURES.disabled,
-  },
-
-  MFAEnrollmentScreen: {
-    ...SCREEN_OPTIONS.standard,
-    ...TRANSITIONS.slideFromRight,
-    ...GESTURES.horizontal,
-  },
-
-  MFAVerificationScreen: {
-    ...SCREEN_OPTIONS.standard,
-    ...TRANSITIONS.slideFromRight,
-    ...GESTURES.horizontal,
-  },
-
   // Special screens
   PaywallScreen: {
     ...SCREEN_OPTIONS.modal,

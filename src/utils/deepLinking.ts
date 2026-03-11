@@ -72,7 +72,6 @@ export function parseDeepLink(url: string): DeepLinkParams | null {
       settings: { screen: 'Settings', paramKey: undefined },
       'recycle-bin': { screen: 'RecycleBin', paramKey: undefined },
       paywall: { screen: 'PaywallScreen', paramKey: undefined },
-      'reset-password': { screen: 'ResetPassword', paramKey: undefined },
     };
 
     const route = routeMap[segments[0]];
@@ -140,7 +139,6 @@ export function generateDeepLink(
       Settings: { path: 'settings' },
       RecycleBin: { path: 'recycle-bin' },
       PaywallScreen: { path: 'paywall' },
-      ResetPassword: { path: 'reset-password' },
       Main: { path: 'home' },
     };
 

@@ -148,10 +148,6 @@ const HomeScreen = () => {
     }, []),
   );
 
-  const promptSignUp = useCallback(() => {
-    navigation.navigate('Auth', { mode: 'signup' });
-  }, [navigation]);
-
   const handleAddCourse = useCallback(() => {
     navigation.navigate('AddCourseFlow');
   }, [navigation]);

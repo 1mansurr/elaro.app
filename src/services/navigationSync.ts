@@ -33,7 +33,6 @@ const LEGACY_NAVIGATION_KEYS = [
 // Valid route names (from RootStackParamList)
 const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'Launch',
-  'Auth',
   'Main',
   'Courses',
   'Drafts',
@@ -43,8 +42,6 @@ const VALID_ROUTES: Set<keyof RootStackParamList> = new Set([
   'RecycleBin',
   'Profile',
   'Settings',
-  'MFAEnrollmentScreen',
-  'MFAVerificationScreen',
   'AddCourseFlow',
   'AddLectureFlow',
   'AddAssignmentFlow',
@@ -80,9 +77,6 @@ const MODAL_FLOW_ROUTES: Set<keyof RootStackParamList> = new Set([
   'StudyResult',
   'PostOnboardingWelcome', // Should not be restored - only shown programmatically after course creation
   'StudySessionReview',
-  'ForgotPassword',
-  'ResetPassword',
-  'Auth', // Auth screen shouldn't be restored either
 ]);
 
 interface NavigationSnapshot {

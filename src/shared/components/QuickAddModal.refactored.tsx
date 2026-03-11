@@ -116,14 +116,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
   const isGuest = !session;
 
-  // Block Quick Add for unauthenticated users
-  useEffect(() => {
-    if (isVisible && isGuest) {
-      onClose();
-      navigation.navigate('Auth', { mode: 'signup' });
-    }
-  }, [isVisible, isGuest, onClose, navigation]);
-
   // Reset form when modal closes
   useEffect(() => {
     if (!isVisible) {
@@ -174,58 +166,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
   const handleQuickSave = async () => {
     if (!isFormValid) return;
-
-    // Handle guest users
-    if (isGuest) {
-      const base = { course: selectedCourse, title: title.trim() };
-      try {
-        if (taskType === 'assignment') {
-          await savePendingTask(
-            {
-              ...base,
-              description: '',
-              dueDate: dateTime.toISOString(),
-              reminders: [120],
-            } as any,
-            'assignment',
-          );
-        } else if (taskType === 'lecture') {
-          const endTime = new Date(dateTime);
-          endTime.setHours(endTime.getHours() + 1);
-          await savePendingTask(
-            {
-              ...base,
-              start_time: dateTime.toISOString(),
-              end_time: endTime.toISOString(),
-              recurrence: 'none',
-              reminders: [30],
-            } as any,
-            'lecture',
-          );
-        } else {
-          await savePendingTask(
-            {
-              ...base,
-              topic: title.trim(),
-              description: '',
-              session_date: dateTime.toISOString(),
-              hasSpacedRepetition: false,
-              reminders: [15],
-            } as any,
-            'study_session',
-          );
-        }
-        Alert.alert(
-          'Task Saved!',
-          'Your task is almost saved! Sign up to complete it.',
-        );
-        navigation.navigate('Auth', { mode: 'signup' });
-      } catch (error) {
-        console.error('Error saving pending task:', error);
-        Alert.alert('Error', 'Failed to save your progress. Please try again.');
-      }
-      return;
-    }
 
     setIsSaving(true);
 
@@ -337,11 +277,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   };
 
   const handleAddMoreDetails = () => {
-    if (isGuest) {
-      navigation.navigate('Auth', { mode: 'signup' });
-      return;
-    }
-
     if (!isFormValid) {
       Alert.alert(
         'Missing Information',

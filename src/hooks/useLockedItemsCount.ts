@@ -3,7 +3,6 @@ import { versionedApiClient } from '@/services/VersionedApiClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/services/supabase';
 
-
 type ItemType = 'courses' | 'assignments' | 'lectures' | 'study_sessions';
 
 const fetchTotalItemCount = async (itemType: ItemType, userId: string) => {

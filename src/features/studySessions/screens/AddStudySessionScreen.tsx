@@ -354,35 +354,6 @@ const AddStudySessionScreen = () => {
       return;
     }
 
-    if (isGuest) {
-      await savePendingTask(
-        {
-          courseId: selectedCourse!.id,
-          topic,
-          description: description || '',
-          sessionDate: (sessionDate || new Date()).toISOString(),
-          hasSpacedRepetition,
-          userId: '',
-          createdAt: new Date().toISOString(),
-        } as StudySession,
-        'study_session',
-      );
-      Alert.alert(
-        'Task Saved!',
-        'Your task is almost saved! Sign up to complete it.',
-      );
-      navigation.navigate('Auth', {
-        mode: 'signup',
-        onAuthSuccess: async () => {
-          const pendingTask = await getPendingTask();
-          if (pendingTask && pendingTask.taskType === 'study_session') {
-            navigation.goBack();
-          }
-        },
-      } as any);
-      return;
-    }
-
     setIsSaving(true);
 
     try {

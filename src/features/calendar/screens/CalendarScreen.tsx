@@ -528,23 +528,6 @@ const CalendarScreen = () => {
     </View>
   );
 
-  if (isGuest) {
-    return (
-      <View style={styles.guestContainer}>
-        <Ionicons name="calendar-outline" size={64} color={COLORS.gray} />
-        <Text style={styles.guestText}>Sign in to view your calendar</Text>
-        <TouchableOpacity
-          style={styles.guestButton}
-          onPress={() => navigation.navigate('Auth', { mode: 'signin' })}
-          accessibilityLabel="Sign in"
-          accessibilityHint="Opens the sign in screen"
-          accessibilityRole="button">
-          <Text style={styles.guestButtonText}>Sign In</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
   // Optimistic rendering: Show UI immediately if we have data OR if it's just a refetch
   // Only show full loading screen on true initial load (no data at all)
   if (!isInitialLoad) {

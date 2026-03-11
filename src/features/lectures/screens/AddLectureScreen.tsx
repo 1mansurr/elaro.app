@@ -319,35 +319,6 @@ const AddLectureScreen = () => {
       return;
     }
 
-    if (isGuest) {
-      await savePendingTask(
-        {
-          courseId: selectedCourse.id,
-          lectureName,
-          lectureDate: startTime.toISOString(),
-          description: '',
-          venue,
-          userId: '',
-          createdAt: new Date().toISOString(),
-        } as Lecture,
-        'lecture',
-      );
-      Alert.alert(
-        'Task Saved!',
-        'Your task is almost saved! Sign up to complete it.',
-      );
-      navigation.navigate('Auth', {
-        mode: 'signup',
-        onAuthSuccess: async () => {
-          const pendingTask = await getPendingTask();
-          if (pendingTask && pendingTask.taskType === 'lecture') {
-            navigation.goBack();
-          }
-        },
-      } as any);
-      return;
-    }
-
     setIsSaving(true);
 
     try {

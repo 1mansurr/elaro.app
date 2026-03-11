@@ -263,35 +263,6 @@ const AddAssignmentScreen = () => {
       return;
     }
 
-    if (isGuest) {
-      await savePendingTask(
-        {
-          course: selectedCourse,
-          title,
-          description,
-          dueDate,
-          submissionMethod,
-          submissionLink,
-          reminders,
-        } as any,
-        'assignment',
-      );
-      Alert.alert(
-        'Task Saved!',
-        'Your task is almost saved! Sign up to complete it.',
-      );
-      navigation.navigate('Auth', {
-        mode: 'signup',
-        onAuthSuccess: async () => {
-          const pendingTask = await getPendingTask();
-          if (pendingTask && pendingTask.taskType === 'assignment') {
-            navigation.goBack();
-          }
-        },
-      } as any);
-      return;
-    }
-
     setIsSaving(true);
 
     try {

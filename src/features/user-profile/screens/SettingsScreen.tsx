@@ -42,10 +42,6 @@ export function SettingsScreen() {
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [isResettingSettings, setIsResettingSettings] = useState(false);
 
-  const handleEnableMfa = () => {
-    navigation.navigate('MFAEnrollmentScreen');
-  };
-
   const handleChangePassword = () => {
     Alert.alert(
       'Change Password',
@@ -242,20 +238,6 @@ export function SettingsScreen() {
             label="Change Password"
             onPress={handleChangePassword}
             icon="key"
-            iconColor={COLORS.primary}
-            iconBgColor={isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
-            showChevron
-          />
-          <View
-            style={[
-              styles.divider,
-              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
-            ]}
-          />
-          <SettingsItem
-            label="Multi-Factor Authentication"
-            onPress={handleEnableMfa}
-            icon="lock-closed"
             iconColor={COLORS.primary}
             iconBgColor={isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
             showChevron

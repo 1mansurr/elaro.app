@@ -135,16 +135,6 @@ const AddLectureRemindersScreen = () => {
       updatedAt: new Date().toISOString(),
     };
 
-    if (isGuest) {
-      await savePendingTask(finalPayload, 'course');
-      navigation.getParent()?.navigate('Auth', {
-        mode: 'signup',
-        onAuthSuccess: autoCreateTask,
-      } as any);
-      setIsLoading(false);
-      return;
-    }
-
     try {
       // Validate required fields before making the API call
       if (!finalPayload.courseName?.trim()) {
