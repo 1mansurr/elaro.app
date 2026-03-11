@@ -13,14 +13,14 @@ interface LectureRecurrenceSectionProps {
 export const LectureRecurrenceSection: React.FC<
   LectureRecurrenceSectionProps
 > = ({ recurrence, onRecurrenceChange }) => {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
 
   const recurrenceOptions: RecurrenceType[] = ['none', 'weekly', 'bi-weekly'];
 
   return (
     <View style={styles.field}>
       <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Recurrence
       </Text>
       <View style={styles.recurrenceGrid}>
@@ -35,12 +35,12 @@ export const LectureRecurrenceSection: React.FC<
                 {
                   backgroundColor: isSelected
                     ? COLORS.primary + '1A'
-                    : theme.isDark
+                    : isDark
                       ? '#1C252E'
                       : '#FFFFFF',
                   borderColor: isSelected
                     ? COLORS.primary + '33'
-                    : theme.isDark
+                    : isDark
                       ? '#3B4754'
                       : '#E5E7EB',
                 },
@@ -52,7 +52,7 @@ export const LectureRecurrenceSection: React.FC<
                   {
                     color: isSelected
                       ? COLORS.primary
-                      : theme.isDark
+                      : isDark
                         ? '#FFFFFF'
                         : '#111418',
                     fontWeight: isSelected ? '600' : '500',

@@ -143,7 +143,7 @@ const AddLectureRemindersScreen = () => {
         return;
       }
 
-      if (!finalPayload.startTime || !finalPayload.endTime) {
+      if (!(finalPayload as any).startTime || !(finalPayload as any).endTime) {
         Alert.alert('Error', 'Start time and end time are required.');
         setIsLoading(false);
         return;

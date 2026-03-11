@@ -27,7 +27,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
   onClose,
   maxReminders = 2,
 }) => {
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
 
   const handleSelect = (minutes: number) => {
     onSelect(minutes);
@@ -48,7 +48,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           style={[
             styles.modalContent,
             {
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
             },
           ]}
           onStartShouldSetResponder={() => true}>
@@ -58,7 +58,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
           <Text
             style={[
               styles.modalSubtitle,
-              { color: theme.isDark ? '#9CA3AF' : '#6B7280' },
+              { color: isDark ? '#9CA3AF' : '#6B7280' },
             ]}>
             Choose up to {maxReminders} reminders
           </Text>
@@ -79,7 +79,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                         : 'transparent',
                       borderColor: isSelected
                         ? COLORS.primary + '33'
-                        : theme.isDark
+                        : isDark
                           ? '#374151'
                           : '#E5E7EB',
                     },
@@ -92,7 +92,7 @@ export const ReminderModal: React.FC<ReminderModalProps> = ({
                       {
                         color: isSelected
                           ? COLORS.primary
-                          : theme.isDark
+                          : isDark
                             ? '#FFFFFF'
                             : '#111418',
                       },

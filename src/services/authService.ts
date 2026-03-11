@@ -614,7 +614,7 @@ export const authService = {
 
       try {
         const { data: sessionData, error: sessionError } =
-          await supabase.auth.setSession({
+          await getSupabaseClient().auth.setSession({
             access_token: response.data.session.access_token,
             refresh_token: response.data.session.refresh_token,
           });

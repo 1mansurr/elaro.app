@@ -48,7 +48,7 @@ type DraftsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 const DraftsScreen = () => {
   const navigation = useNavigation<DraftsScreenNavigationProp>();
-  const { theme } = useTheme();
+  const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const [drafts, setDrafts] = useState<DraftData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -89,7 +89,7 @@ const DraftsScreen = () => {
   const handleOpenDraft = (draft: DraftData) => {
     // Navigate to appropriate modal based on task type
     const initialData = {
-      course: draft.course,
+      course: draft.course ?? undefined,
       title: draft.title,
       dateTime: draft.dateTime,
     };
@@ -173,7 +173,7 @@ const DraftsScreen = () => {
   };
 
   const handleEdgeSwipe = (event: GestureHandlerGestureEvent) => {
-    const { translationX } = event.nativeEvent;
+    const { translationX } = event.nativeEvent as unknown as { translationX: number };
     if (translationX < -EDGE_SWIPE_THRESHOLD) {
       const progress = Math.min(1, Math.abs(translationX) / screenWidth);
       edgeSwipeTranslateX.setValue(translationX);
@@ -182,7 +182,7 @@ const DraftsScreen = () => {
   };
 
   const handleEdgeSwipeEnd = (event: GestureHandlerStateChangeEvent) => {
-    const { translationX } = event.nativeEvent;
+    const { translationX } = event.nativeEvent as unknown as { translationX: number };
     if (Math.abs(translationX) > EDGE_SWIPE_THRESHOLD) {
       // Animate out and go back
       Animated.parallel([
@@ -220,11 +220,11 @@ const DraftsScreen = () => {
   };
 
   // Light mode default colors
-  const bgColor = theme.isDark ? '#101922' : '#F6F7F8';
-  const surfaceColor = theme.isDark ? '#1C252E' : '#FFFFFF';
-  const textColor = theme.isDark ? '#FFFFFF' : '#111418';
-  const textSecondaryColor = theme.isDark ? '#9CA3AF' : '#6B7280';
-  const borderColor = theme.isDark ? '#374151' : '#E5E7EB';
+  const bgColor = isDark ? '#101922' : '#F6F7F8';
+  const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
+  const textColor = isDark ? '#FFFFFF' : '#111418';
+  const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
+  const borderColor = isDark ? '#374151' : '#E5E7EB';
 
   const renderEmpty = () => (
     <View style={styles.emptyContainer}>
@@ -267,7 +267,7 @@ const DraftsScreen = () => {
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="arrow-back-ios" size={20} color={textColor} />
+            <Ionicons name="arrow-back" size={20} color={textColor} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: textColor }]}>
             Drafts {drafts.length > 0 && `(${drafts.length})`}
@@ -289,7 +289,7 @@ const DraftsScreen = () => {
             style={[
               styles.infoBanner,
               {
-                backgroundColor: theme.isDark
+                backgroundColor: isDark
                   ? 'rgba(59, 130, 246, 0.1)'
                   : '#F0F5FF',
               },
@@ -302,7 +302,7 @@ const DraftsScreen = () => {
             <Text
               style={[
                 styles.infoBannerText,
-                { color: theme.isDark ? '#93C5FD' : COLORS.primary },
+                { color: isDark ? '#93C5FD' : COLORS.primary },
               ]}>
               Tap a draft to continue editing. Drafts are auto-saved as you
               type.
@@ -336,7 +336,7 @@ const DraftsScreen = () => {
                       styles.typeIcon,
                       {
                         backgroundColor:
-                          typeInfo.color + (theme.isDark ? '30' : '20'),
+                          typeInfo.color + (isDark ? '30' : '20'),
                       },
                     ]}>
                     <Ionicons

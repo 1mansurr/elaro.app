@@ -70,6 +70,8 @@ import {
   logNav,
   logSplash,
 } from './src/utils/logger';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
 
 // Validate configuration on startup
 validateAndLogConfig();
@@ -763,11 +765,6 @@ const linking: LinkingOptions<RootStackParamList> = {
       Settings: 'settings',
       RecycleBin: 'recycle-bin',
       PaywallScreen: 'paywall',
-      // Auth
-      Auth: 'auth',
-      ResetPassword: 'reset-password',
-      // Onboarding
-      OnboardingFlow: 'onboarding',
     },
   },
 };
@@ -1316,6 +1313,9 @@ const AppInitializer: React.FC<{
             }
           })
           .catch(console.error);
+
+        // Initialize local SQLite database and device ID
+        await Promise.all([getDatabase(), getOrCreateDeviceId()]);
 
         // Only wait for minimum splash time - don't wait for sync manager
         // Sync manager will initialize in background and won't block app startup

@@ -301,7 +301,7 @@ export const QueryStateWrapper: React.FC<QueryStateWrapperProps> = ({
             element.props.children,
             addRefreshControlToVirtualizedList,
           );
-          return React.cloneElement(element, {
+          return React.cloneElement(element as React.ReactElement<any>, {
             children: processedChildren,
           });
         }

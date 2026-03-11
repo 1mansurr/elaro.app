@@ -41,15 +41,17 @@ export const LectureRequiredFields: React.FC<LectureRequiredFieldsProps> = ({
   onStartTimeChange,
   onEndTimeChange,
   onDateChange,
+  hasPickedStartTime,
+  hasPickedEndTime,
 }) => {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <View style={styles.section}>
       <Text
         style={[
           styles.sectionTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          { color: isDark ? '#FFFFFF' : '#111418' },
         ]}>
         Required Information
       </Text>

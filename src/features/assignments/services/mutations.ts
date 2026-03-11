@@ -32,7 +32,7 @@ export const assignmentsApiMutations = {
           'assignment',
           {
             type: 'CREATE',
-            data: request,
+            data: request as any,
           },
           userId,
           { syncImmediately: false },
@@ -114,7 +114,7 @@ export const assignmentsApiMutations = {
           {
             type: 'UPDATE',
             id: assignmentId,
-            data: request,
+            data: request as any,
           },
           userId,
           { syncImmediately: false },

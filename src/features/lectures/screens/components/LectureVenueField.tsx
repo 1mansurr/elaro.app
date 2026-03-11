@@ -13,34 +13,34 @@ export const LectureVenueField: React.FC<LectureVenueFieldProps> = ({
   venue,
   onVenueChange,
 }) => {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <View style={styles.field}>
       <Text
-        style={[styles.label, { color: theme.isDark ? '#FFFFFF' : '#374151' }]}>
+        style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
         Venue
       </Text>
       <View style={styles.venueInputContainer}>
         <Ionicons
           name="location-outline"
           size={20}
-          color={theme.isDark ? '#9CA3AF' : '#6B7280'}
+          color={isDark ? '#9CA3AF' : '#6B7280'}
           style={styles.venueIcon}
         />
         <TextInput
           style={[
             styles.venueInput,
             {
-              backgroundColor: theme.isDark ? '#1C252E' : '#FFFFFF',
-              borderColor: theme.isDark ? '#3B4754' : 'transparent',
-              color: theme.isDark ? '#FFFFFF' : '#111418',
+              backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
+              borderColor: isDark ? '#3B4754' : 'transparent',
+              color: isDark ? '#FFFFFF' : '#111418',
             },
           ]}
           value={venue}
           onChangeText={onVenueChange}
           placeholder="e.g., Room 404, Main Building"
-          placeholderTextColor={theme.isDark ? '#6B7280' : '#9CA3AF'}
+          placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
           maxLength={200}
         />
       </View>

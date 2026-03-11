@@ -27,14 +27,14 @@ export const LectureOptionalFields: React.FC<LectureOptionalFieldsProps> = ({
   onRemindersChange,
   onAddReminder,
 }) => {
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
 
   return (
     <View style={styles.section}>
       <Text
         style={[
           styles.sectionTitle,
-          { color: theme.isDark ? '#FFFFFF' : '#111418' },
+          { color: isDark ? '#FFFFFF' : '#111418' },
         ]}>
         Optional Details
       </Text>

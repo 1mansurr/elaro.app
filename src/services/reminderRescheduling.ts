@@ -57,7 +57,7 @@ export async function rescheduleReminder(
         },
         trigger: {
           date: newScheduledTime,
-        },
+        } as any,
       });
     } catch (scheduleError) {
       console.error('Failed to schedule notification:', scheduleError);
