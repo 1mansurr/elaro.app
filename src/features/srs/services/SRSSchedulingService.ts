@@ -157,7 +157,13 @@ export class SRSSchedulingService {
   ): Promise<ScheduledReminder[]> {
     const config = this.buildConfig(preferences);
     const intervals = this.resolveIntervals(config, preferences);
-    return this.createReminders(sessionId, sessionDate, topic, intervals, config);
+    return this.createReminders(
+      sessionId,
+      sessionDate,
+      topic,
+      intervals,
+      config,
+    );
   }
 
   /**
@@ -268,10 +274,7 @@ export class SRSSchedulingService {
   /**
    * Create or retrieve the SRS item for a completed study session.
    */
-  async createOrUpdateSRSItem(
-    taskId: string,
-    topic: string,
-  ): Promise<SRSItem> {
+  async createOrUpdateSRSItem(taskId: string, topic: string): Promise<SRSItem> {
     const db = await getDatabase();
     const deviceId = await getOrCreateDeviceId();
     const now = new Date().toISOString();
