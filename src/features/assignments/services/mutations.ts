@@ -1,146 +1,166 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
 import { Assignment } from '@/types';
 import { CreateAssignmentRequest, UpdateAssignmentRequest } from '@/types/api';
-import { handleApiError } from '@/services/api/errors';
-import { syncManager } from '@/services/syncManager';
-import { generateTempId } from '@/utils/uuid';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+interface AssignmentMetadata {
+  submission_method?: string;
+  submission_link?: string;
+}
+
+function rowToAssignment(row: TaskRow): Assignment {
+  let meta: AssignmentMetadata = {};
+  if (row.metadata) {
+    try {
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
+    }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    title: row.title,
+    description: row.description ?? undefined,
+    submissionMethod: meta.submission_method,
+    submissionLink: meta.submission_link,
+    dueDate: row.due_date ?? '',
+    createdAt: row.created_at,
+  };
+}
+
+async function fetchTaskRow(id: string): Promise<TaskRow> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<TaskRow>(
+    `SELECT id, user_id, course_id, title, description, due_date, metadata, created_at
+     FROM tasks WHERE id = ? AND type = 'assignment'`,
+    [id],
+  );
+  if (!row) throw new Error(`Assignment not found: ${id}`);
+  return row;
+}
 
 export const assignmentsApiMutations = {
-  /**
-   * Create a new assignment
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Generates temp ID, adds to sync queue, returns optimistic data
-   */
   async create(
     request: CreateAssignmentRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Assignment> {
-    try {
-      // OFFLINE MODE: Generate temp ID and queue for later sync
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing CREATE assignment action');
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const id = generateUUID();
+    const now = new Date().toISOString();
 
-        const tempId = generateTempId('assignment');
+    const meta: AssignmentMetadata = {};
+    if (request.submission_method) meta.submission_method = request.submission_method;
+    if (request.submission_link) meta.submission_link = request.submission_link;
 
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'CREATE',
-          'assignment',
-          {
-            type: 'CREATE',
-            data: request as any,
-          },
-          userId,
-          { syncImmediately: false },
-        );
+    await db.runAsync(
+      `INSERT INTO tasks (id, user_id, type, course_id, title, description, due_date, metadata, created_at, updated_at)
+       VALUES (?, ?, 'assignment', ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        id,
+        userId,
+        request.course_id || null,
+        request.title,
+        request.description ?? null,
+        request.due_date,
+        Object.keys(meta).length > 0 ? JSON.stringify(meta) : null,
+        now,
+        now,
+      ],
+    );
 
-        // Return optimistic assignment with temp ID
-        const optimisticAssignment: Assignment = {
-          id: tempId,
-          user_id: userId,
-          course_id: request.course_id,
-          title: request.title,
-          description: request.description || null,
-          due_date: request.due_date,
-          submission_method: request.submission_method || null,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          deleted_at: null,
-          _offline: true, // Mark as offline-created
-          _tempId: tempId, // Store temp ID for reference
-        } as any;
-
-        console.log(`✅ Created optimistic assignment with temp ID: ${tempId}`);
-        return optimisticAssignment;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Creating assignment on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'create-assignment',
-        { body: request },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return rowToAssignment(await fetchTaskRow(id));
   },
 
-  /**
-   * Update an existing assignment
-   *
-   * OFFLINE SUPPORT:
-   * - When online: Executes server mutation immediately
-   * - When offline: Adds to sync queue for later sync
-   */
   async update(
     assignmentId: string,
     request: UpdateAssignmentRequest,
-    isOnline: boolean,
-    userId: string,
+    _isOnline: boolean,
+    _userId: string,
   ): Promise<Assignment> {
-    try {
-      // OFFLINE MODE: Queue for later sync and return optimistic data
-      if (!isOnline) {
-        console.log('📴 Offline: Queueing UPDATE assignment action');
+    const db = await getDatabase();
+    const now = new Date().toISOString();
 
-        // Get cached task data
-        const { getCachedTask, mergeTaskUpdates } =
-          await import('@/utils/taskCache');
-        const cachedTask = await getCachedTask(assignmentId, 'assignment');
+    const setParts: string[] = ['updated_at = ?'];
+    const values: (string | null)[] = [now];
 
-        if (!cachedTask) {
-          throw new Error(
-            'Assignment not found in cache. Please sync and try again.',
-          );
-        }
-
-        // Merge updates with cached data
-        const optimisticTask = mergeTaskUpdates(
-          cachedTask as Assignment,
-          request,
-        );
-
-        // Add to sync queue
-        await syncManager.addToQueue(
-          'UPDATE',
-          'assignment',
-          {
-            type: 'UPDATE',
-            id: assignmentId,
-            data: request as any,
-          },
-          userId,
-          { syncImmediately: false },
-        );
-
-        console.log(
-          `✅ Created optimistic update for assignment ${assignmentId}`,
-        );
-        return optimisticTask as Assignment;
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log('🌐 Online: Updating assignment on server');
-      const { data, error } = await invokeEdgeFunctionWithAuth(
-        'update-assignment',
-        {
-          body: {
-            assignment_id: assignmentId,
-            ...request,
-          },
-        },
-      );
-      if (error) throw error;
-      return data;
-    } catch (error) {
-      throw handleApiError(error);
+    if (request.title !== undefined) {
+      setParts.push('title = ?');
+      values.push(request.title);
     }
+    if (request.description !== undefined) {
+      setParts.push('description = ?');
+      values.push(request.description ?? null);
+    }
+    if (request.due_date !== undefined) {
+      setParts.push('due_date = ?');
+      values.push(request.due_date ?? null);
+    }
+
+    // Merge submission fields into metadata
+    if (
+      request.submission_method !== undefined ||
+      request.submission_link !== undefined
+    ) {
+      const existing = await fetchTaskRow(assignmentId);
+      let meta: AssignmentMetadata = {};
+      if (existing.metadata) {
+        try {
+          meta = JSON.parse(existing.metadata);
+        } catch {
+          // ignore
+        }
+      }
+      if (request.submission_method !== undefined) {
+        meta.submission_method = request.submission_method;
+      }
+      if (request.submission_link !== undefined) {
+        meta.submission_link = request.submission_link;
+      }
+      setParts.push('metadata = ?');
+      values.push(JSON.stringify(meta));
+    }
+
+    values.push(assignmentId);
+    await db.runAsync(
+      `UPDATE tasks SET ${setParts.join(', ')} WHERE id = ? AND type = 'assignment'`,
+      values,
+    );
+
+    return rowToAssignment(await fetchTaskRow(assignmentId));
+  },
+
+  async delete(assignmentId: string): Promise<void> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE tasks SET is_deleted = 1, deleted_at = ?, updated_at = ? WHERE id = ? AND type = 'assignment'`,
+      [now, now, assignmentId],
+    );
+  },
+
+  async complete(assignmentId: string): Promise<Assignment> {
+    const db = await getDatabase();
+    const now = new Date().toISOString();
+    await db.runAsync(
+      `UPDATE tasks SET is_completed = 1, completed_at = ?, updated_at = ? WHERE id = ? AND type = 'assignment'`,
+      [now, now, assignmentId],
+    );
+    return rowToAssignment(await fetchTaskRow(assignmentId));
   },
 };

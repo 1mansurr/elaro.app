@@ -1,7 +1,6 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
 import { Assignment } from '@/types';
-import { handleApiError } from '@/services/api/errors';
-import { mapDbAssignmentToAppAssignment } from '@/services/api/mappers';
 
 export interface AssignmentsPage {
   assignments: Assignment[];
@@ -16,69 +15,87 @@ export interface AssignmentQueryOptions {
   sortAscending?: boolean;
 }
 
-export const assignmentsApi = {
-  /**
-   * Get all assignments (backward compatibility - use listPage for pagination)
-   * @deprecated Consider using listPage() for better performance with large datasets
-   */
-  async getAll(): Promise<Assignment[]> {
+interface TaskRow {
+  id: string;
+  user_id: string;
+  course_id: string | null;
+  title: string;
+  description: string | null;
+  due_date: string | null;
+  metadata: string | null;
+  created_at: string;
+}
+
+interface AssignmentMetadata {
+  submission_method?: string;
+  submission_link?: string;
+}
+
+function rowToAssignment(row: TaskRow): Assignment {
+  let meta: AssignmentMetadata = {};
+  if (row.metadata) {
     try {
-      const { data, error } = await supabase
-        .from('assignments')
-        .select('*')
-        .is('deleted_at', null) // Explicitly filter soft-deleted items
-        .order('due_date', { ascending: true });
-      if (error) throw error;
-      // Map the data before returning it
-      return (data || []).map(mapDbAssignmentToAppAssignment);
-    } catch (error) {
-      throw handleApiError(error);
+      meta = JSON.parse(row.metadata);
+    } catch {
+      // ignore malformed metadata
     }
+  }
+  return {
+    id: row.id,
+    userId: row.user_id,
+    courseId: row.course_id ?? '',
+    title: row.title,
+    description: row.description ?? undefined,
+    submissionMethod: meta.submission_method,
+    submissionLink: meta.submission_link,
+    dueDate: row.due_date ?? '',
+    createdAt: row.created_at,
+  };
+}
+
+export const assignmentsApi = {
+  async getAll(): Promise<Assignment[]> {
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, due_date, metadata, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'assignment' AND is_deleted = 0
+       ORDER BY due_date ASC`,
+      [userId],
+    );
+    return rows.map(rowToAssignment);
   },
 
-  /**
-   * Get paginated assignments with sorting options
-   * @param options - Query options including pagination and sorting
-   * @returns Paginated assignments with metadata
-   */
   async listPage(options?: AssignmentQueryOptions): Promise<AssignmentsPage> {
-    try {
-      const {
-        pageParam = 0,
-        pageSize = 50,
-        sortBy = 'due_date',
-        sortAscending = true,
-      } = options || {};
+    const db = await getDatabase();
+    const userId = await getOrCreateDeviceId();
+    const {
+      pageParam = 0,
+      pageSize = 50,
+      sortBy = 'due_date',
+      sortAscending = true,
+    } = options || {};
 
-      let query = supabase
-        .from('assignments')
-        .select('*', { count: 'exact' })
-        .is('deleted_at', null); // Explicitly filter soft-deleted items
+    const order = sortAscending ? 'ASC' : 'DESC';
+    const col = sortBy === 'created_at' ? 'created_at' : 'due_date';
 
-      // Apply sorting
-      query = query.order(sortBy, { ascending: sortAscending });
+    const rows = await db.getAllAsync<TaskRow>(
+      `SELECT id, user_id, course_id, title, description, due_date, metadata, created_at
+       FROM tasks
+       WHERE user_id = ? AND type = 'assignment' AND is_deleted = 0
+       ORDER BY ${col} ${order}`,
+      [userId],
+    );
 
-      // Apply pagination
-      const from = pageParam;
-      const to = pageParam + pageSize - 1;
-      query = query.range(from, to);
+    const allAssignments = rows.map(rowToAssignment);
+    const paginated = allAssignments.slice(pageParam, pageParam + pageSize);
+    const hasMore = pageParam + pageSize < allAssignments.length;
 
-      const { data, error, count } = await query;
-
-      if (error) throw error;
-
-      // Map the data before returning it
-      const mappedData = (data || []).map(mapDbAssignmentToAppAssignment);
-      const hasMore = count ? pageParam + pageSize < count : false;
-      const nextOffset = hasMore ? pageParam + pageSize : undefined;
-
-      return {
-        assignments: mappedData,
-        nextOffset,
-        hasMore,
-      };
-    } catch (error) {
-      throw handleApiError(error);
-    }
+    return {
+      assignments: paginated,
+      nextOffset: hasMore ? pageParam + pageSize : undefined,
+      hasMore,
+    };
   },
 };
