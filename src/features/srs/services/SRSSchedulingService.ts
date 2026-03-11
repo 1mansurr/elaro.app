@@ -1,11 +1,20 @@
-import { supabase } from '@/services/supabase';
-import { User } from '@/types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Notifications from 'expo-notifications';
+import { SchedulableTriggerInputTypes } from 'expo-notifications';
+import * as SQLite from 'expo-sqlite';
 
-// NOTE: This service uses direct Supabase queries for SRS configuration.
-// TODO: Create API endpoints in api-v2 or extend srs-system for:
-//   - GET /api-v2/srs/configuration (get SRS config)
-//   - POST /api-v2/srs/schedule (schedule SRS reminders)
-//   - GET /api-v2/srs/preferences (get SRS preferences)
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
+import { generateUUID } from '@/utils/uuid';
+
+// Fixed SRS intervals (days) — no subscription-tier branching
+const SRS_INTERVALS = [1, 3, 7, 14, 30];
+
+const PREFERENCES_KEY = 'srs_user_preferences';
+
+// ─────────────────────────────────────────────────────────────
+// Public interfaces (kept compatible with useSRSScheduling.ts)
+// ─────────────────────────────────────────────────────────────
 
 export interface SRSUserPreferences {
   preferredStudyTimes: TimeSlot[];
@@ -26,7 +35,6 @@ export interface SRSConfiguration {
   intervals: number[];
   jitterMinutes: number;
   preferredHour: number;
-  maxRemindersPerMonth: number;
 }
 
 export interface ScheduledReminder {
@@ -39,6 +47,93 @@ export interface ScheduledReminder {
   priority: 'low' | 'medium' | 'high';
 }
 
+export interface SRSItem {
+  id: string;
+  user_id: string;
+  task_id: string | null;
+  topic: string;
+  interval_days: number;
+  ease_factor: number;
+  repetitions: number;
+  next_review_date: string;
+  last_reviewed_at: string | null;
+  last_quality_rating: number | null;
+  is_active: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// SM-2 Algorithm (pure JS)
+// ─────────────────────────────────────────────────────────────
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
+
+export function calculateNextInterval(
+  item: SRSItem,
+  qualityRating: 1 | 2 | 3 | 4 | 5,
+): SRSItem {
+  const newItem = { ...item };
+  if (qualityRating < 3) {
+    newItem.repetitions = 0;
+    newItem.interval_days = 1;
+  } else {
+    newItem.repetitions += 1;
+    newItem.interval_days =
+      newItem.repetitions === 1
+        ? 1
+        : newItem.repetitions === 2
+          ? 6
+          : Math.round(newItem.interval_days * newItem.ease_factor);
+    newItem.ease_factor = Math.max(
+      1.3,
+      newItem.ease_factor +
+        0.1 -
+        (5 - qualityRating) * (0.08 + (5 - qualityRating) * 0.02),
+    );
+  }
+  newItem.last_quality_rating = qualityRating;
+  newItem.last_reviewed_at = new Date().toISOString();
+  newItem.next_review_date = addDays(
+    new Date(),
+    newItem.interval_days,
+  ).toISOString();
+  return newItem;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Local notification helper
+// ─────────────────────────────────────────────────────────────
+
+async function scheduleLocalNotification(
+  db: SQLite.SQLiteDatabase,
+  reminder: { id: string; title: string; body: string; scheduled_time: string },
+): Promise<void> {
+  const notificationId = await Notifications.scheduleNotificationAsync({
+    content: {
+      title: reminder.title,
+      body: reminder.body,
+      data: { reminderId: reminder.id },
+    },
+    trigger: {
+      type: SchedulableTriggerInputTypes.DATE,
+      date: new Date(reminder.scheduled_time),
+    },
+  });
+  await db.runAsync(
+    'UPDATE reminders SET expo_notification_id = ? WHERE id = ?',
+    [notificationId, reminder.id],
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// Service
+// ─────────────────────────────────────────────────────────────
+
 export class SRSSchedulingService {
   private static instance: SRSSchedulingService;
 
@@ -50,316 +145,342 @@ export class SRSSchedulingService {
   }
 
   /**
-   * Schedule SRS reminders for a study session
+   * Schedule SRS reminders for a study session.
+   * sessionId is treated as the task_id for the study session row.
    */
   async scheduleReminders(
     sessionId: string,
-    userId: string,
+    _userId: string,
     sessionDate: Date,
     topic: string,
     preferences?: Partial<SRSUserPreferences>,
   ): Promise<ScheduledReminder[]> {
-    try {
-      // 1. Get user's SRS configuration
-      const config = await this.getSRSConfiguration(userId, preferences);
-
-      // 2. Calculate optimal intervals based on user performance
-      const intervals = await this.calculateOptimalIntervals(
-        userId,
-        sessionId,
-        config,
-      );
-
-      // 3. Generate reminders with user preferences
-      const reminders = await this.createReminders(
-        sessionId,
-        userId,
-        sessionDate,
-        topic,
-        intervals,
-        config,
-      );
-
-      return reminders;
-    } catch (error) {
-      console.error('❌ Error scheduling SRS reminders:', error);
-      throw error;
-    }
+    const config = this.buildConfig(preferences);
+    const intervals = this.resolveIntervals(config, preferences);
+    return this.createReminders(sessionId, sessionDate, topic, intervals, config);
   }
 
   /**
-   * Get user's SRS configuration based on subscription and preferences
+   * Record a review result for an SRS item (SM-2 update + reschedule).
    */
-  private async getSRSConfiguration(
-    userId: string,
+  async recordReview(
+    srsItemId: string,
+    qualityRating: 1 | 2 | 3 | 4 | 5,
+    topic: string,
     preferences?: Partial<SRSUserPreferences>,
-  ): Promise<SRSConfiguration> {
-    try {
-      // Get user's subscription tier
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('subscription_tier')
-        .eq('id', userId)
-        .single();
+  ): Promise<void> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const now = new Date().toISOString();
 
-      if (userError || !userData) {
-        throw new Error('User not found');
+    const row = await db.getFirstAsync<SRSItem>(
+      'SELECT * FROM srs_items WHERE id = ?',
+      [srsItemId],
+    );
+    if (!row) throw new Error(`SRS item not found: ${srsItemId}`);
+
+    const updated = calculateNextInterval(row, qualityRating);
+
+    await db.runAsync(
+      `UPDATE srs_items
+       SET interval_days = ?, ease_factor = ?, repetitions = ?,
+           next_review_date = ?, last_reviewed_at = ?, last_quality_rating = ?,
+           updated_at = ?
+       WHERE id = ?`,
+      [
+        updated.interval_days,
+        updated.ease_factor,
+        updated.repetitions,
+        updated.next_review_date,
+        updated.last_reviewed_at,
+        updated.last_quality_rating,
+        now,
+        srsItemId,
+      ],
+    );
+
+    // Cancel existing unfired reminders for this SRS item
+    const existing = await db.getAllAsync<{
+      id: string;
+      expo_notification_id: string | null;
+    }>(
+      `SELECT id, expo_notification_id FROM reminders
+       WHERE srs_item_id = ? AND is_cancelled = 0 AND fired_at IS NULL`,
+      [srsItemId],
+    );
+    for (const r of existing) {
+      if (r.expo_notification_id) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(
+            r.expo_notification_id,
+          );
+        } catch {
+          // ignore if already fired
+        }
       }
-
-      const subscriptionTier = userData.subscription_tier;
-
-      // Get base intervals from database
-      const { data: schedule, error: scheduleError } = await supabase
-        .from('srs_schedules')
-        .select('intervals')
-        .eq('tier_restriction', subscriptionTier)
-        .single();
-
-      if (scheduleError || !schedule) {
-        // Fallback to default intervals
-        const defaultIntervals =
-          subscriptionTier === 'oddity'
-            ? [1, 3, 7, 14, 30, 60, 120, 180]
-            : [1, 3, 7];
-
-        return {
-          intervals: defaultIntervals,
-          jitterMinutes: 30,
-          preferredHour: 10,
-          maxRemindersPerMonth: subscriptionTier === 'oddity' ? 112 : 15,
-        };
-      }
-
-      // Apply user preferences if provided
-      let intervals = schedule.intervals;
-      if (
-        preferences?.customIntervals &&
-        preferences.customIntervals.length > 0
-      ) {
-        intervals = preferences.customIntervals;
-      }
-
-      // Adjust intervals based on difficulty preference
-      if (preferences?.difficultyAdjustment) {
-        intervals = this.adjustIntervalsForDifficulty(
-          intervals,
-          preferences.difficultyAdjustment,
-        );
-      }
-
-      return {
-        intervals,
-        jitterMinutes: preferences?.reminderFrequency === 'minimal' ? 60 : 30,
-        preferredHour: this.getPreferredHour(preferences),
-        maxRemindersPerMonth: subscriptionTier === 'oddity' ? 112 : 15,
-      };
-    } catch (error) {
-      console.error('❌ Error getting SRS configuration:', error);
-      throw error;
     }
+    if (existing.length > 0) {
+      await db.runAsync(
+        `UPDATE reminders SET is_cancelled = 1, updated_at = ?
+         WHERE srs_item_id = ? AND is_cancelled = 0`,
+        [now, srsItemId],
+      );
+    }
+
+    // Schedule next review reminder
+    const config = this.buildConfig(preferences);
+    const nextDate = new Date(updated.next_review_date);
+    nextDate.setHours(config.preferredHour, 0, 0, 0);
+    const jittered = this.addDeterministicJitter(
+      nextDate,
+      config.jitterMinutes,
+      `${srsItemId}-${updated.interval_days}`,
+    );
+
+    const reminderId = generateUUID();
+    const title = `Review: ${topic}`;
+    const body = `Time to review "${topic}" to reinforce your memory.`;
+
+    await db.runAsync(
+      `INSERT INTO reminders
+         (id, user_id, srs_item_id, title, body, scheduled_time, reminder_type, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'srs_review', ?, ?)`,
+      [
+        reminderId,
+        deviceId,
+        srsItemId,
+        title,
+        body,
+        jittered.toISOString(),
+        now,
+        now,
+      ],
+    );
+
+    await scheduleLocalNotification(db, {
+      id: reminderId,
+      title,
+      body,
+      scheduled_time: jittered.toISOString(),
+    });
   }
 
   /**
-   * Calculate optimal intervals based on user performance history
+   * Create or retrieve the SRS item for a completed study session.
    */
-  private async calculateOptimalIntervals(
-    userId: string,
-    sessionId: string,
+  async createOrUpdateSRSItem(
+    taskId: string,
+    topic: string,
+  ): Promise<SRSItem> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const now = new Date().toISOString();
+    const tomorrow = addDays(new Date(), 1).toISOString();
+
+    const existing = await db.getFirstAsync<SRSItem>(
+      'SELECT * FROM srs_items WHERE task_id = ? AND user_id = ?',
+      [taskId, deviceId],
+    );
+    if (existing) return existing;
+
+    const id = generateUUID();
+    await db.runAsync(
+      `INSERT INTO srs_items
+         (id, user_id, task_id, topic, interval_days, ease_factor, repetitions,
+          next_review_date, is_active, created_at, updated_at)
+       VALUES (?, ?, ?, ?, 1, 2.5, 0, ?, 1, ?, ?)`,
+      [id, deviceId, taskId, topic, tomorrow, now, now],
+    );
+
+    return (await db.getFirstAsync<SRSItem>(
+      'SELECT * FROM srs_items WHERE id = ?',
+      [id],
+    ))!;
+  }
+
+  /**
+   * Persist updated SRS preferences to AsyncStorage.
+   */
+  async updateUserPreferences(
+    _userId: string,
+    preferences: Partial<SRSUserPreferences>,
+  ): Promise<void> {
+    const current = await this.getUserPreferences(_userId);
+    const merged = { ...(current ?? {}), ...preferences };
+    await AsyncStorage.setItem(PREFERENCES_KEY, JSON.stringify(merged));
+  }
+
+  /**
+   * Retrieve SRS preferences from AsyncStorage.
+   */
+  async getUserPreferences(
+    _userId: string,
+  ): Promise<SRSUserPreferences | null> {
+    const raw = await AsyncStorage.getItem(PREFERENCES_KEY);
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw) as SRSUserPreferences;
+    } catch {
+      return null;
+    }
+  }
+
+  // ─── Private helpers ──────────────────────────────────────
+
+  private buildConfig(
+    preferences?: Partial<SRSUserPreferences>,
+  ): SRSConfiguration {
+    return {
+      intervals: SRS_INTERVALS,
+      jitterMinutes: preferences?.reminderFrequency === 'minimal' ? 60 : 30,
+      preferredHour: this.getPreferredHour(preferences),
+    };
+  }
+
+  private resolveIntervals(
     config: SRSConfiguration,
-  ): Promise<number[]> {
-    try {
-      // Get user's performance history for similar topics
-      const { data: performanceHistory, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating, ease_factor, next_interval_days')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(50); // Last 50 reviews
+    preferences?: Partial<SRSUserPreferences>,
+  ): number[] {
+    let intervals =
+      preferences?.customIntervals && preferences.customIntervals.length > 0
+        ? preferences.customIntervals
+        : [...config.intervals];
 
-      if (error || !performanceHistory || performanceHistory.length === 0) {
-        // No performance history, use default intervals
-        return config.intervals;
-      }
-
-      // Analyze performance patterns
-      const averageQuality =
-        performanceHistory.reduce((sum, p) => sum + p.quality_rating, 0) /
-        performanceHistory.length;
-      const averageEaseFactor =
-        performanceHistory.reduce((sum, p) => sum + p.ease_factor, 0) /
-        performanceHistory.length;
-
-      // Adjust intervals based on performance
-      let adjustedIntervals = [...config.intervals];
-
-      if (averageQuality < 3) {
-        // User struggling, make intervals shorter
-        adjustedIntervals = adjustedIntervals.map(interval =>
-          Math.max(1, Math.floor(interval * 0.8)),
-        );
-      } else if (averageQuality > 4 && averageEaseFactor > 2.8) {
-        // User excelling, make intervals longer
-        adjustedIntervals = adjustedIntervals.map(interval =>
-          Math.floor(interval * 1.2),
-        );
-      }
-
-      return adjustedIntervals;
-    } catch (error) {
-      console.error('❌ Error calculating optimal intervals:', error);
-      return config.intervals; // Fallback to default
+    if (preferences?.difficultyAdjustment) {
+      intervals = this.adjustIntervalsForDifficulty(
+        intervals,
+        preferences.difficultyAdjustment,
+      );
     }
+
+    return intervals;
   }
 
-  /**
-   * Create reminders with timezone awareness and jitter
-   */
   private async createReminders(
     sessionId: string,
-    userId: string,
     sessionDate: Date,
     topic: string,
     intervals: number[],
     config: SRSConfiguration,
   ): Promise<ScheduledReminder[]> {
-    try {
-      const remindersToInsert = await Promise.all(
-        intervals.map(async days => {
-          // Use timezone-aware scheduling
-          const { data: timezoneAwareTime, error: tzError } =
-            await supabase.rpc('schedule_reminder_in_user_timezone', {
-              p_user_id: userId,
-              p_base_time: sessionDate.toISOString(),
-              p_days_offset: days,
-              p_hour: config.preferredHour,
-            });
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    const now = new Date().toISOString();
 
-          let reminderTime: Date;
-
-          if (tzError || !timezoneAwareTime) {
-            // Fallback to UTC calculation
-            reminderTime = new Date(sessionDate);
-            reminderTime.setDate(sessionDate.getDate() + days);
-            reminderTime.setHours(config.preferredHour, 0, 0, 0);
-          } else {
-            reminderTime = new Date(timezoneAwareTime);
-          }
-
-          // Apply deterministic jitter (same session + interval = same jitter)
-          // This makes scheduling predictable for testing while still preventing clustering
-          const seed = `${sessionId}-${days}`;
-          const jitteredTime = this.addDeterministicJitter(
-            reminderTime,
-            config.jitterMinutes,
-            seed,
+    // Cancel existing unfired srs_review reminders for this session
+    const existing = await db.getAllAsync<{
+      id: string;
+      expo_notification_id: string | null;
+    }>(
+      `SELECT id, expo_notification_id FROM reminders
+       WHERE task_id = ? AND reminder_type = 'srs_review'
+         AND is_cancelled = 0 AND fired_at IS NULL`,
+      [sessionId],
+    );
+    for (const r of existing) {
+      if (r.expo_notification_id) {
+        try {
+          await Notifications.cancelScheduledNotificationAsync(
+            r.expo_notification_id,
           );
+        } catch {
+          // ignore
+        }
+      }
+    }
+    if (existing.length > 0) {
+      await db.runAsync(
+        `UPDATE reminders SET is_cancelled = 1, updated_at = ?
+         WHERE task_id = ? AND reminder_type = 'srs_review' AND is_cancelled = 0`,
+        [now, sessionId],
+      );
+    }
 
-          return {
-            user_id: userId,
-            session_id: sessionId,
-            reminder_time: jitteredTime.toISOString(),
-            reminder_type: 'spaced_repetition' as const,
-            title: `Spaced Repetition: Review "${topic}"`,
-            body: `It's time to review your study session on "${topic}" to strengthen your memory.`,
-            completed: false,
-            priority: 'medium' as const,
-          };
-        }),
+    const results: ScheduledReminder[] = [];
+
+    for (const days of intervals) {
+      const reminderDate = addDays(sessionDate, days);
+      reminderDate.setHours(config.preferredHour, 0, 0, 0);
+      const jittered = this.addDeterministicJitter(
+        reminderDate,
+        config.jitterMinutes,
+        `${sessionId}-${days}`,
       );
 
-      // Cancel existing incomplete reminders for this session before inserting new ones
-      const now = new Date().toISOString();
-      await supabase
-        .from('reminders')
-        .update({
-          completed: true,
-          processed_at: now,
-          action_taken: 'rescheduled',
-        })
-        .eq('user_id', userId)
-        .eq('session_id', sessionId)
-        .in('reminder_type', ['spaced_repetition', 'srs_review'])
-        .eq('completed', false)
-        .gt('reminder_time', now);
+      const title = `Spaced Repetition: Review "${topic}"`;
+      const body = `It's time to review your study session on "${topic}" to strengthen your memory.`;
+      const reminderId = generateUUID();
 
-      // Insert reminders into database
-      const { data: insertedReminders, error: insertError } = await supabase
-        .from('reminders')
-        .insert(remindersToInsert)
-        .select();
+      await db.runAsync(
+        `INSERT INTO reminders
+           (id, user_id, task_id, title, body, scheduled_time, reminder_type, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, 'srs_review', ?, ?)`,
+        [
+          reminderId,
+          deviceId,
+          sessionId,
+          title,
+          body,
+          jittered.toISOString(),
+          now,
+          now,
+        ],
+      );
 
-      if (insertError) {
-        throw new Error(`Failed to insert reminders: ${insertError.message}`);
-      }
+      await scheduleLocalNotification(db, {
+        id: reminderId,
+        title,
+        body,
+        scheduled_time: jittered.toISOString(),
+      });
 
-      return insertedReminders.map(reminder => ({
-        id: reminder.id,
-        session_id: reminder.session_id,
-        reminder_time: reminder.reminder_time,
-        reminder_type: reminder.reminder_type,
-        title: reminder.title,
-        body: reminder.body,
-        priority: reminder.priority,
-      }));
-    } catch (error) {
-      console.error('❌ Error creating reminders:', error);
-      throw error;
+      results.push({
+        id: reminderId,
+        session_id: sessionId,
+        reminder_time: jittered.toISOString(),
+        reminder_type: 'spaced_repetition',
+        title,
+        body,
+        priority: 'medium',
+      });
     }
+
+    return results;
   }
 
-  /**
-   * Adjust intervals based on difficulty preference
-   */
   private adjustIntervalsForDifficulty(
     intervals: number[],
     difficulty: string,
   ): number[] {
     switch (difficulty) {
       case 'conservative':
-        return intervals.map(interval =>
-          Math.max(1, Math.floor(interval * 0.8)),
-        );
+        return intervals.map(i => Math.max(1, Math.floor(i * 0.8)));
       case 'aggressive':
-        return intervals.map(interval => Math.floor(interval * 1.3));
-      case 'moderate':
+        return intervals.map(i => Math.floor(i * 1.3));
       default:
         return intervals;
     }
   }
 
-  /**
-   * Get preferred hour from user preferences
-   */
   private getPreferredHour(preferences?: Partial<SRSUserPreferences>): number {
-    if (
-      preferences?.preferredStudyTimes &&
-      preferences.preferredStudyTimes.length > 0
-    ) {
-      // Use the first preferred time slot's start hour
-      const firstSlot = preferences.preferredStudyTimes[0];
-      return parseInt(firstSlot.start.split(':')[0]);
+    if (preferences?.preferredStudyTimes?.length) {
+      return parseInt(
+        preferences.preferredStudyTimes[0].start.split(':')[0],
+        10,
+      );
     }
     return 10; // Default to 10 AM
   }
 
-  /**
-   * Generate deterministic "random" value based on seed
-   * Same seed produces same value - useful for testing and consistency
-   */
   private seededRandom(seed: string, max: number): number {
     let hash = 0;
     for (let i = 0; i < seed.length; i++) {
       hash = (hash << 5) - hash + seed.charCodeAt(i);
       hash = hash & hash; // Convert to 32-bit integer
     }
-    // Map to range [-max, max]
     return (Math.abs(hash) % (max * 2 + 1)) - max;
   }
 
-  /**
-   * Add deterministic jitter to a date based on a seed
-   * Same inputs produce same jittered time (useful for testing)
-   */
   private addDeterministicJitter(
     date: Date,
     maxMinutes: number,
@@ -367,61 +488,5 @@ export class SRSSchedulingService {
   ): Date {
     const jitterValue = this.seededRandom(seed, maxMinutes);
     return new Date(date.getTime() + jitterValue * 60000);
-  }
-
-  /**
-   * Add random jitter to a date (non-deterministic)
-   * Use when you need true randomness
-   */
-  private addRandomJitter(date: Date, maxMinutes: number): Date {
-    const jitterMinutes =
-      Math.floor(Math.random() * (maxMinutes * 2 + 1)) - maxMinutes;
-    return new Date(date.getTime() + jitterMinutes * 60000);
-  }
-
-  /**
-   * Update user's SRS preferences
-   */
-  async updateUserPreferences(
-    userId: string,
-    preferences: Partial<SRSUserPreferences>,
-  ): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('users')
-        .update({
-          srs_preferences: preferences,
-        })
-        .eq('id', userId);
-
-      if (error) {
-        throw new Error(`Failed to update SRS preferences: ${error.message}`);
-      }
-    } catch (error) {
-      console.error('❌ Error updating SRS preferences:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get user's SRS preferences
-   */
-  async getUserPreferences(userId: string): Promise<SRSUserPreferences | null> {
-    try {
-      const { data: userData, error } = await supabase
-        .from('users')
-        .select('srs_preferences')
-        .eq('id', userId)
-        .single();
-
-      if (error || !userData) {
-        return null;
-      }
-
-      return userData.srs_preferences as SRSUserPreferences;
-    } catch (error) {
-      console.error('❌ Error getting SRS preferences:', error);
-      return null;
-    }
   }
 }
