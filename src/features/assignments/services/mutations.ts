@@ -65,7 +65,8 @@ export const assignmentsApiMutations = {
     const now = new Date().toISOString();
 
     const meta: AssignmentMetadata = {};
-    if (request.submission_method) meta.submission_method = request.submission_method;
+    if (request.submission_method)
+      meta.submission_method = request.submission_method;
     if (request.submission_link) meta.submission_link = request.submission_link;
 
     await db.runAsync(
