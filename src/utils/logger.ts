@@ -140,7 +140,7 @@ export function logSplash(event: string, data?: LogData): void {
 }
 
 /**
- * Log performance events (minimal - detailed perf goes to Sentry)
+ * Log performance events
  */
 export function logPerf(event: string, data?: LogData): void {
   if (!ENABLED_TAGS.includes('PERF')) return;

@@ -55,15 +55,6 @@ export interface NotificationPreferences {
   updated_at: string;
 }
 
-export interface AuthContextType {
-  user: User | null;
-  isLoading: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, name?: string) => Promise<void>;
-  signOut: () => Promise<void>;
-  refreshUser: () => Promise<void>;
-}
-
 // ─────────────────────────────────────────────────────────────
 // 📚 Course & Educational Content Types
 // ─────────────────────────────────────────────────────────────

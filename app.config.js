@@ -83,7 +83,6 @@ module.exports = ({ config }) => {
       bundler: 'metro',
     },
     plugins: [
-      'expo-dev-client',
       [
         'expo-build-properties',
         {

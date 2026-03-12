@@ -42,7 +42,6 @@ import {
   endOfMonth,
 } from 'date-fns';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { useSubscription } from '@/hooks/useSubscription';
 import {
   useDeleteTask,
   useCompleteTask,
@@ -53,11 +52,7 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
-import {
-  RevenueCat,
-  PurchasesOfferingType as PurchasesOffering,
-  PurchasesPackageType as PurchasesPackage,
-} from '@/services/revenueCatWrapper';
+// Subscription service removed in offline MVP
 
 type CalendarScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 type ViewMode = 'month' | 'week' | 'agenda';
@@ -67,11 +62,7 @@ const CalendarScreen = () => {
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
-  // const { offerings, purchasePackage } = useSubscription();
-  const { purchasePackage } = useSubscription();
-
-  // Mock offerings for now
-  const offerings = { current: null as PurchasesOffering | null };
+  // Subscriptions removed in offline MVP
 
   // Mutations for task actions
   const deleteTaskMutation = useDeleteTask();
@@ -377,52 +368,11 @@ const CalendarScreen = () => {
   }, [viewMode, calendarData, selectedDate]);
 
   const handleUpgrade = useCallback(async () => {
-    if (!offerings?.current) {
-      Alert.alert(
-        'Error',
-        'Subscription offerings are not available at the moment.',
-      );
-      return;
-    }
-    try {
-      if (!offerings.current?.availablePackages) {
-        Alert.alert('Error', 'The Oddity plan is not available.');
-        return;
-      }
-      const oddityPackage = offerings.current.availablePackages.find(
-        (pkg: unknown) => {
-          if (!pkg || typeof pkg !== 'object') return false;
-          return (
-            'identifier' in pkg &&
-            (pkg as { identifier: string }).identifier === 'oddity_monthly'
-          );
-        },
-      );
-      if (!oddityPackage) {
-        Alert.alert('Error', 'The Oddity plan is not available.');
-        return;
-      }
-      await purchasePackage(oddityPackage as PurchasesPackage);
-      Alert.alert(
-        'Success!',
-        'You have successfully become an Oddity. Your locked content is now accessible.',
-      );
-      await queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarMonthData'] });
-    } catch (error: unknown) {
-      console.error('Upgrade error:', error);
-      const err = error as {
-        userCancelled?: boolean;
-        message?: string;
-        code?: string;
-      };
-      if (!err?.userCancelled) {
-        const errorTitle = getErrorTitle(err);
-        const errorMessage = mapErrorCodeToMessage(err);
-        Alert.alert(errorTitle, errorMessage);
-      }
-    }
-  }, [offerings, purchasePackage, queryClient]);
+    Alert.alert(
+      'Not available',
+      'Subscriptions are not available in offline mode.',
+    );
+  }, []);
 
   const handleLockedTaskPress = useCallback(
     (task: Task) => {

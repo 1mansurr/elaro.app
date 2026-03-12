@@ -294,14 +294,6 @@ export const NavigationPatterns = {
   },
 
   /**
-   * Navigate to paywall
-   */
-  navigateToPaywall: (navigation: AppNavigationProp) => {
-    const safeNav = new SafeNavigation(navigation);
-    safeNav.navigate('PaywallScreen');
-  },
-
-  /**
    * Navigate to analytics admin
    */
   navigateToAnalyticsAdmin: (navigation: AppNavigationProp) => {
@@ -347,7 +339,6 @@ export const NavigationValidation = {
       'TaskDetailModal',
       'InAppBrowserScreen',
       'AnalyticsAdmin',
-      'PaywallScreen',
       'OddityWelcomeScreen',
       'StudyResult',
       'StudySessionReview',
@@ -390,15 +381,6 @@ export const NavigationErrorHandler = {
    */
   handleError: (error: Error, routeName: string, action: string) => {
     console.error(`Navigation ${action} error for ${routeName}:`, error);
-
-    // Log to analytics/monitoring service
-    // Sentry.captureException(error, {
-    //   tags: {
-    //     feature: 'navigation',
-    //     action,
-    //     route: routeName
-    //   }
-    // });
   },
 
   /**

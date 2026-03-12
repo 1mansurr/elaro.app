@@ -49,9 +49,6 @@ export type RootStackParamList = {
 
   // Special screens
   AnalyticsAdmin: undefined;
-  PaywallScreen:
-    | { variant?: 'locked' | 'general'; lockedContent?: string }
-    | undefined;
   OddityWelcomeScreen: {
     variant:
       | 'direct'

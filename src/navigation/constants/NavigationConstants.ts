@@ -345,13 +345,6 @@ export const SCREEN_CONFIGS = {
     ...GESTURES.vertical,
   },
 
-  // Special screens
-  PaywallScreen: {
-    ...SCREEN_OPTIONS.modal,
-    ...TRANSITIONS.modalSlideUp,
-    ...GESTURES.vertical,
-  },
-
   OddityWelcomeScreen: {
     ...SCREEN_OPTIONS.transparentModal,
     ...TRANSITIONS.fadeIn,

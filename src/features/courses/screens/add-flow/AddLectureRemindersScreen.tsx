@@ -23,8 +23,7 @@ import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
-import { generateUUID } from '@/utils/uuid';
+import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { Course } from '@/types';
 
 const ReminderOptions = [
@@ -77,17 +76,11 @@ const AddLectureRemindersScreen = () => {
 
       setIsLoading(true);
 
-      // Generate idempotency key for the mutation
-      const idempotencyKey = generateUUID();
-
-      const { error } = await invokeEdgeFunctionWithAuth('create-course', {
-        body: taskData,
-        headers: {
-          'Idempotency-Key': idempotencyKey,
-        },
+      await coursesApiMutations.create({
+        course_name: taskData.courseName,
+        course_code: taskData.courseCode,
+        about_course: taskData.aboutCourse,
       });
-
-      if (error) throw new Error(error.message);
 
       await clearPendingTask();
 
@@ -142,34 +135,11 @@ const AddLectureRemindersScreen = () => {
         return;
       }
 
-      if (!(finalPayload as any).startTime || !(finalPayload as any).endTime) {
-        Alert.alert('Error', 'Start time and end time are required.');
-        setIsLoading(false);
-        return;
-      }
-
-      // Generate idempotency key for the mutation
-      const idempotencyKey = generateUUID();
-
-      const { error, data } = await invokeEdgeFunctionWithAuth(
-        'create-course',
-        {
-          body: finalPayload,
-          headers: {
-            'Idempotency-Key': idempotencyKey,
-          },
-        },
-      );
-
-      if (error) {
-        console.error('Edge function error:', {
-          error,
-          message: error.message,
-          context: error.context,
-          payload: finalPayload,
-        });
-        throw error;
-      }
+      await coursesApiMutations.create({
+        course_name: finalPayload.courseName,
+        course_code: finalPayload.courseCode,
+        about_course: finalPayload.aboutCourse,
+      });
 
       // Invalidate queries first (non-blocking, fire-and-forget)
       // This allows queries to refetch in the background while we navigate

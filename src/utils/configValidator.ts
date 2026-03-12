@@ -16,20 +16,12 @@ interface ConfigValidationResult {
 /**
  * Required environment variables for app to function
  */
-const REQUIRED_VARS = [
-  'EXPO_PUBLIC_SUPABASE_URL',
-  'EXPO_PUBLIC_SUPABASE_ANON_KEY',
-];
+const REQUIRED_VARS: string[] = [];
 
 /**
  * Recommended environment variables (warn if missing)
- * Note: Mixpanel is parked, so token is optional
  */
-const RECOMMENDED_VARS = [
-  'EXPO_PUBLIC_REVENUECAT_APPLE_KEY',
-  'EXPO_PUBLIC_SENTRY_DSN',
-  // 'EXPO_PUBLIC_MIXPANEL_TOKEN', // Removed - service is parked (see MIXPANEL_STATUS.md)
-];
+const RECOMMENDED_VARS: string[] = [];
 
 /**
  * Validate app configuration
@@ -98,8 +90,6 @@ export function validateAndLogConfig(): void {
     result.missing.forEach(varName => {
       console.error(`   - ${varName}`);
     });
-    console.error('\n💡 Solution: Add missing variables to your .env file');
-    console.error('   See docs/CONFIGURATION_GUIDE.md for details\n');
   }
 
   if (result.warnings.length > 0) {
@@ -107,49 +97,9 @@ export function validateAndLogConfig(): void {
     result.warnings.forEach(varName => {
       console.warn(`   - ${varName}`);
     });
-    console.warn(
-      '   These are optional but recommended for full functionality\n',
-    );
   }
 
   if (result.isValid && result.warnings.length === 0) {
     console.log('✅ Configuration validated successfully');
   }
-}
-
-/**
- * Get Supabase configuration
- */
-export function getSupabaseConfig(): { url: string; anonKey: string } | null {
-  const url = getConfigValue('EXPO_PUBLIC_SUPABASE_URL');
-  const anonKey = getConfigValue('EXPO_PUBLIC_SUPABASE_ANON_KEY');
-
-  if (!url || !anonKey) {
-    console.error('❌ Supabase configuration is missing');
-    return null;
-  }
-
-  return { url, anonKey };
-}
-
-/**
- * Get analytics configuration
- */
-export function getAnalyticsConfig(): {
-  mixpanelToken?: string;
-  sentryDsn?: string;
-} {
-  return {
-    mixpanelToken: getConfigValue('EXPO_PUBLIC_MIXPANEL_TOKEN'),
-    sentryDsn: getConfigValue('EXPO_PUBLIC_SENTRY_DSN'),
-  };
-}
-
-/**
- * Get RevenueCat configuration
- */
-export function getRevenueCatConfig(): { appleKey?: string } {
-  return {
-    appleKey: getConfigValue('EXPO_PUBLIC_REVENUECAT_APPLE_KEY'),
-  };
 }

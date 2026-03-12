@@ -565,27 +565,6 @@ const NavigationStateValidator: React.FC<{
               // Onboarding incomplete - will be validated further in getSafeInitialState
             }
 
-            if (currentRoute === 'PaywallScreen') {
-              // Only restore PaywallScreen if subscription is inactive
-              const subscriptionStatus = user?.subscription_status;
-              const subscriptionTier = user?.subscription_tier;
-              const hasActiveSubscription =
-                subscriptionStatus === 'active' ||
-                (subscriptionTier && subscriptionTier !== 'free');
-
-              if (hasActiveSubscription) {
-                logNav(
-                  'PaywallScreen detected but subscription active - discarding saved state',
-                );
-                // navigation state cleared (offline)
-                if (isCancelled) return;
-                if (maxTimeoutId) clearTimeout(maxTimeoutId);
-                onStateValidated(null);
-                return;
-              }
-              // Subscription inactive - will be validated further in getSafeInitialState
-            }
-
             // If user is not authenticated but saved state contains authenticated route, clear it
             if (
               !isAuthenticated &&
@@ -707,7 +686,6 @@ const linking: LinkingOptions<RootStackParamList> = {
       Profile: 'profile',
       Settings: 'settings',
       RecycleBin: 'recycle-bin',
-      PaywallScreen: 'paywall',
     },
   },
 };
