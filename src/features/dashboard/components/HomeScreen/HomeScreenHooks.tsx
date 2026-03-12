@@ -9,13 +9,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
 import { differenceInCalendarDays } from 'date-fns';
 import { useQueryClient, QueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import { useToast, ToastOptions } from '@/contexts/ToastContext';
 import { supabase } from '@/services/supabase';
 import { getDraftCount } from '@/utils/draftStorage';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
-import { Task, User, HomeScreenData, RootStackParamList } from '@/types';
+import { Task, HomeScreenData, RootStackParamList } from '@/types';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
@@ -23,7 +22,6 @@ import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
 // Custom hook for subscription upgrade
 export const useSubscriptionUpgrade = () => {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const handleSubscribePress = () => {
@@ -205,14 +203,10 @@ export const useDraftCount = () => {
 
 // Custom hook for welcome prompt
 export const useWelcomePrompt = (
-  isGuest: boolean,
-  user: User | null,
   navigation: NavigationContainerRef<RootStackParamList>,
 ) => {
   useEffect(() => {
     const checkAndShowWelcomePrompt = async () => {
-      if (isGuest || !user) return;
-
       try {
         const hasSeenPrompt = await AsyncStorage.getItem(
           'hasSeenHowItWorksPrompt',
@@ -256,5 +250,5 @@ export const useWelcomePrompt = (
     };
 
     checkAndShowWelcomePrompt();
-  }, [isGuest, user, navigation]);
+  }, [navigation]);
 };

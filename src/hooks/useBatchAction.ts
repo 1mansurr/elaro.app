@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { syncManager } from '@/services/syncManager';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
@@ -70,7 +70,7 @@ async function batchAction(
 export function useBatchAction() {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useMutation({
     mutationFn: async (request: BatchActionRequest) => {
@@ -81,7 +81,7 @@ export function useBatchAction() {
         );
 
         // Add to sync queue
-        if (user?.id) {
+        if (deviceId) {
           await syncManager.addToQueue(
             request.action === 'RESTORE' ? 'BATCH_RESTORE' : 'BATCH_DELETE',
             'assignment', // This is just for type - batch actions work across types
@@ -93,7 +93,7 @@ export function useBatchAction() {
                 type: item.type as any,
               })),
             },
-            user.id,
+            deviceId,
             { syncImmediately: false },
           );
         }

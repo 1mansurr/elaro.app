@@ -1,7 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
-import { useAuth } from '@/contexts/AuthContext';
 import { MainTabParamList } from '@/types';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
 import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
@@ -12,27 +11,6 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 // Main Tab Navigator component
 export const MainTabNavigator: React.FC = () => {
-  const { session, user } = useAuth();
-
-  const getFirstName = () => {
-    if (!session || !user) {
-      return 'Account';
-    }
-
-    // Use the first_name from the users table (populated by our database trigger)
-    if (user.first_name) {
-      return user.first_name;
-    }
-
-    // Fallback for older users - check user_metadata
-    if (user.user_metadata?.first_name) {
-      return user.user_metadata.first_name;
-    }
-
-    // Default if no name is found
-    return 'Account';
-  };
-
   return (
     <Tab.Navigator
       tabBar={props => <CustomTabBar {...props} />}
@@ -64,7 +42,7 @@ export const MainTabNavigator: React.FC = () => {
         name="Account"
         component={ProfileScreen}
         options={{
-          tabBarLabel: getFirstName(),
+          tabBarLabel: 'Account',
         }}
       />
     </Tab.Navigator>

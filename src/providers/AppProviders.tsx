@@ -21,7 +21,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NetworkProvider } from '@/contexts/NetworkContext';
 import { LocaleProvider } from '@/contexts/LocaleContext';
 import { ThemeProvider } from '@/contexts/ThemeContext';
-import { AuthProvider } from '@/contexts/AuthContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { ToastProvider } from '@/contexts/ToastContext';
 
@@ -48,11 +47,9 @@ export const AppProviders: React.FC<AppProvidersProps> = ({
         <NetworkProvider>
           <LocaleProvider>
             <ThemeProvider>
-              <AuthProvider>
-                <NotificationProvider>
-                  <ToastProvider>{children}</ToastProvider>
-                </NotificationProvider>
-              </AuthProvider>
+              <NotificationProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </NotificationProvider>
             </ThemeProvider>
           </LocaleProvider>
         </NetworkProvider>

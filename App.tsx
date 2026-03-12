@@ -33,7 +33,6 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { COLORS } from './src/constants/theme';
 import { useTheme } from './src/contexts/ThemeContext';
 import AnimatedSplashScreen from './src/shared/screens/AnimatedSplashScreen';
-import { useAuth } from '@/contexts/AuthContext';
 import { notificationService } from './src/services/notifications';
 import notificationServiceNew from './src/services/notificationService';
 import {
@@ -59,8 +58,7 @@ import {
   persistQueryCache,
 } from './src/utils/queryCachePersistence';
 import { AppState } from 'react-native';
-import { Task, User } from '@/types';
-import { Session } from '@supabase/supabase-js';
+import { Task } from '@/types';
 import { useCompleteTask, useDeleteTask } from '@/hooks/useTaskMutations';
 import { createRetryDelayFunction } from './src/utils/retryConfig';
 import {
@@ -430,47 +428,11 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
   return null;
 };
 
-// Component to handle navigation state saving with auth context
-// Made defensive to handle cases where AuthProvider might not be ready yet
+// Component to handle navigation state saving
 const NavigationStateHandler: React.FC = () => {
-  // Safely access auth context
-  let user: User | null;
-  let session: Session | null;
-  try {
-    const auth = useAuth();
-    user = auth.user;
-    session = auth.session;
-  } catch (error) {
-    // AuthProvider not ready yet - return null and let component re-render when ready
-    if (__DEV__) {
-      console.log('⚠️ [NavigationStateHandler] AuthProvider not ready yet');
-    }
-    return null;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
-    // Update current user ID in navigationSyncService
-    navigationSyncService.setUserId(user?.id);
-
-    // Clear navigation state on logout
-    if (!session && !user) {
-      console.log(
-        '🔒 NavigationSync: User logged out, clearing navigation state',
-      );
-      navigationSyncService.clearState();
-      navigationSyncService.setUserId(undefined);
-      return;
-    }
-
-    // When user changes and is logged in, save current state with userId
-    if (navigationRef.current && session && user) {
-      const currentState = navigationRef.current.getRootState();
-      if (currentState) {
-        navigationSyncService.saveState(currentState, user.id);
-      }
-    }
-  }, [user?.id, session, user]);
+    navigationSyncService.setUserId(undefined);
+  }, []);
 
   return null;
 };
@@ -482,7 +444,10 @@ const NavigationStateValidator: React.FC<{
   initialNavigationState?: NavigationState;
   onStateValidated: (state: NavigationState | null) => void;
 }> = ({ initialNavigationState, onStateValidated }) => {
-  const { session, user, loading: authLoading } = useAuth();
+  const session = null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const user = null as any;
+  const authLoading = false;
 
   useEffect(() => {
     let isCancelled = false;
@@ -1414,36 +1379,15 @@ const ThemedStatusBar = () => {
 // Main App Component
 // Move this logic into a child component
 function AuthEffects() {
-  // Safely access auth context - don't throw if not ready
-  // Made defensive to handle cases where AuthProvider might not be ready yet
-  let user: User | null;
-  try {
-    const auth = useAuth();
-    user = auth.user;
-  } catch (error) {
-    // AuthProvider not ready yet - return null and let component re-render when ready
-    if (__DEV__) {
-      console.log('⚠️ [AuthEffects] AuthProvider not ready yet');
-    }
-    return null;
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const setupNotifications = async () => {
-      if (user && user.id) {
-        notificationService.initialize(user.id);
-
-        // Setup notification categories and channels
-        await notificationServiceNew.setupNotificationCategories();
-        await notificationServiceNew.setupAndroidChannels();
-
-        // Data fetching is now handled by React Query hooks in individual components
-      }
+      // Setup notification categories and channels
+      await notificationServiceNew.setupNotificationCategories();
+      await notificationServiceNew.setupAndroidChannels();
     };
 
     setupNotifications();
-  }, [user]);
+  }, []);
 
   return null;
 }

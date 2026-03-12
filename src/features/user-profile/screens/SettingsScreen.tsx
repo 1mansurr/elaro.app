@@ -15,9 +15,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
-import { useAuth } from '@/contexts/AuthContext';
-import { authService } from '@/services/authService';
-import { supabase } from '@/services/supabase';
 import { ExpandableDetails } from '@/shared/components';
 import { useTheme } from '@/contexts/ThemeContext';
 import { showToast } from '@/utils/showToast';
@@ -33,7 +30,6 @@ import {
 type SettingsScreenNavigationProp = StackNavigationProp<RootStackParamList>;
 
 export function SettingsScreen() {
-  const { user, session, signOut } = useAuth();
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
@@ -41,42 +37,6 @@ export function SettingsScreen() {
 
   const [isClearingCache, setIsClearingCache] = useState(false);
   const [isResettingSettings, setIsResettingSettings] = useState(false);
-
-  const handleChangePassword = () => {
-    Alert.alert(
-      'Change Password',
-      'This feature will allow you to update your password. Please check your email for password reset instructions.',
-    );
-  };
-
-  const handleGlobalSignOut = async () => {
-    Alert.alert(
-      'Log Out From All Devices',
-      'Are you sure you want to log out from all your devices? This will end all active sessions.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out Everywhere',
-          onPress: async () => {
-            try {
-              await authService.signOutFromAllDevices();
-              await signOut();
-              showToast({
-                type: 'success',
-                message: 'Logged out from all devices.',
-              });
-            } catch (error) {
-              showToast({
-                type: 'error',
-                message: 'Failed to log out from all devices.',
-              });
-            }
-          },
-          style: 'destructive',
-        },
-      ],
-    );
-  };
 
   const handleClearCache = useCallback(async () => {
     try {
@@ -120,8 +80,6 @@ export function SettingsScreen() {
   }, [queryClient]);
 
   const handleResetSettings = useCallback(async () => {
-    if (!user) return;
-
     Alert.alert(
       'Reset All Settings',
       'Are you sure you want to reset all settings to their defaults? This will not affect your tasks, courses, or account data.\n\nThis will reset:\n• Notification preferences\n• Privacy & Analytics settings\n• Clear cached data',
@@ -134,25 +92,7 @@ export function SettingsScreen() {
             setIsResettingSettings(true);
 
             try {
-              // 1. Reset notification preferences to defaults (all enabled)
-              try {
-                const { error } = await supabase.functions.invoke(
-                  'reset-notification-preferences',
-                );
-                if (error) {
-                  console.error(
-                    'Error resetting notification preferences:',
-                    error,
-                  );
-                }
-              } catch (notifError) {
-                console.error(
-                  'Failed to reset notification preferences:',
-                  notifError,
-                );
-              }
-
-              // 2. Reset analytics consent to default (true = opted in)
+              // 1. Reset analytics consent to default (true = opted in)
               try {
                 await AsyncStorage.setItem('analytics_consent', 'true');
               } catch (analyticsError) {
@@ -162,7 +102,7 @@ export function SettingsScreen() {
                 );
               }
 
-              // 3. Clear cache
+              // 2. Clear cache
               try {
                 await cache.clearAll();
                 queryClient.clear();
@@ -170,7 +110,7 @@ export function SettingsScreen() {
                 console.error('Failed to clear cache:', cacheError);
               }
 
-              // 4. Reset quiet hours if stored in AsyncStorage
+              // 3. Reset quiet hours if stored in AsyncStorage
               try {
                 await AsyncStorage.removeItem('quiet_hours_enabled');
                 await AsyncStorage.removeItem('quiet_hours_start');
@@ -179,11 +119,10 @@ export function SettingsScreen() {
                 console.error('Failed to reset quiet hours:', quietError);
               }
 
-              // 5. Invalidate queries to refresh UI
+              // 4. Invalidate queries to refresh UI
               await queryClient.invalidateQueries({
                 queryKey: ['notificationPreferences'],
               });
-              await queryClient.invalidateQueries({ queryKey: ['user'] });
 
               showToast({
                 type: 'success',
@@ -202,25 +141,7 @@ export function SettingsScreen() {
         },
       ],
     );
-  }, [user, queryClient]);
-
-  // If no session, show empty state
-  if (!session || !user) {
-    return (
-      <View
-        style={[
-          styles.container,
-          { backgroundColor: theme.background, paddingTop: insets.top },
-        ]}>
-        <View style={styles.emptyState}>
-          <Ionicons name="settings-outline" size={64} color={COLORS.gray} />
-          <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
-            Please sign in to access settings
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  }, [queryClient]);
 
   return (
     <View
@@ -232,18 +153,6 @@ export function SettingsScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
-        {/* Profile & Security */}
-        <SettingsCategoryCard title="PROFILE & SECURITY" icon="shield">
-          <SettingsItem
-            label="Change Password"
-            onPress={handleChangePassword}
-            icon="key"
-            iconColor={COLORS.primary}
-            iconBgColor={isDark ? 'rgba(19, 91, 236, 0.2)' : '#EFF6FF'}
-            showChevron
-          />
-        </SettingsCategoryCard>
-
         {/* App Settings */}
         <SettingsCategoryCard title="APP SETTINGS" icon="settings">
           <SettingsNotificationsSection />
@@ -341,21 +250,6 @@ export function SettingsScreen() {
             iconColor={isDark ? '#9CA3AF' : '#4B5563'}
             iconBgColor={isDark ? '#374151' : '#F3F4F6'}
             showChevron
-          />
-          <View
-            style={[
-              styles.divider,
-              { backgroundColor: isDark ? '#374151' : '#F3F4F6' },
-            ]}
-          />
-          <SettingsItem
-            label="Log Out From All Devices"
-            onPress={handleGlobalSignOut}
-            icon="phone-portrait-outline"
-            iconColor="#EF4444"
-            iconBgColor={isDark ? 'rgba(239, 68, 68, 0.1)' : '#FEE2E2'}
-            isDestructive
-            showChevron={false}
           />
         </SettingsCategoryCard>
       </ScrollView>

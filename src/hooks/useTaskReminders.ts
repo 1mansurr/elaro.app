@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { formatReminderLabel } from '@/utils/reminderUtils';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
@@ -17,12 +17,12 @@ export const useTaskReminders = (
   taskId: string | null | undefined,
   taskType: TaskType | null | undefined,
 ) => {
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useQuery({
     queryKey: ['taskReminders', taskType, taskId],
     queryFn: async () => {
-      if (!taskId || !taskType || !user) {
+      if (!taskId || !taskType || !deviceId) {
         return [];
       }
 
@@ -39,7 +39,7 @@ export const useTaskReminders = (
       const { data, error } = await supabase
         .from('reminders')
         .select('id, reminder_time, reminder_type, minutes_before')
-        .eq('user_id', user.id)
+        .eq('user_id', deviceId)
         .eq(reminderField, taskId)
         .eq('completed', false)
         .order('reminder_time', { ascending: true });
@@ -75,6 +75,6 @@ export const useTaskReminders = (
         };
       });
     },
-    enabled: !!taskId && !!taskType && !!user,
+    enabled: !!taskId && !!taskType && !!deviceId,
   });
 };

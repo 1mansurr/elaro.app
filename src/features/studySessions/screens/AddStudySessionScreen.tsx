@@ -19,7 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
 import { RootStackParamList, Course, StudySession } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import {
   Button,
@@ -32,12 +32,7 @@ import { api } from '@/services/api';
 import { supabase } from '@/services/supabase';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
-import { useMonthlyTaskCount, useTotalTaskCount } from '@/hooks';
-import {
-  savePendingTask,
-  clearPendingTask,
-  getPendingTask,
-} from '@/utils/taskPersistence';
+import { useMonthlyTaskCount } from '@/hooks';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { saveDraft, getDraft, clearDraft } from '@/utils/draftStorage';
@@ -66,13 +61,11 @@ type AddStudySessionScreenRouteProp = RouteProp<
 const AddStudySessionScreen = () => {
   const navigation = useNavigation<AddStudySessionScreenNavigationProp>();
   const route = useRoute<AddStudySessionScreenRouteProp>();
-  const { session, user } = useAuth();
+  const deviceId = useDeviceId();
   const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
   const { limitReached, monthlyTaskCount, monthlyLimit } =
     useMonthlyTaskCount();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
-    useTotalTaskCount();
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const {
@@ -80,8 +73,6 @@ const AddStudySessionScreen = () => {
     maxLimit: srsMaxLimit,
     isAtLimit: isSRSAtLimit,
   } = useSRSReminderLimit();
-
-  const isGuest = !session;
 
   // Template management
   const { createTemplate, hasTemplates } = useTemplateManagement();
@@ -214,8 +205,6 @@ const AddStudySessionScreen = () => {
   // Fetch courses
   useEffect(() => {
     const fetchCourses = async () => {
-      if (isGuest) return;
-
       setIsLoadingCourses(true);
       try {
         const { data, error } = await supabase
@@ -229,7 +218,7 @@ const AddStudySessionScreen = () => {
           courseName: course.course_name,
           courseCode: course.course_code,
           aboutCourse: course.about_course,
-          userId: user?.id || '',
+          userId: deviceId || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })) as Course[];
@@ -243,7 +232,7 @@ const AddStudySessionScreen = () => {
     };
 
     fetchCourses();
-  }, [isGuest, user?.id]);
+  }, [deviceId]);
 
   // Check if form is valid
   const isFormValid =
@@ -406,14 +395,14 @@ const AddStudySessionScreen = () => {
           taskToEdit.id!,
           taskData,
           isOnline,
-          user?.id || '',
+          deviceId || '',
         );
       } else {
         // Create new study session
         await api.mutations.studySessions.create(
           taskData,
           isOnline,
-          user?.id || '',
+          deviceId || '',
         );
 
         // Save as template if enabled (only for new tasks)
@@ -426,15 +415,7 @@ const AddStudySessionScreen = () => {
             });
           } catch (templateError) {
             console.error('Error saving template:', templateError);
-            // Don't show error for template creation failure
           }
-        }
-
-        // Check if this is the user's first task
-        if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-          await notificationService.registerForPushNotifications(
-            session.user.id,
-          );
         }
       }
 

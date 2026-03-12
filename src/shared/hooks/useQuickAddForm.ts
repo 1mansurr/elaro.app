@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { Course } from '@/types';
 import { useCourseSelector } from './task-forms/useCourseSelector';
 import { useTaskTemplate } from './task-forms/useTaskTemplate';
-import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types';
@@ -63,8 +62,6 @@ export const useQuickAddForm = (
 ): UseQuickAddFormReturn => {
   const { isVisible, onClose } = options;
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { session } = useAuth();
-  const isGuest = !session;
 
   // Course selector
   const { courses, isLoading: isLoadingCourses } = useCourseSelector();

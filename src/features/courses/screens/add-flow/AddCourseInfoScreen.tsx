@@ -15,7 +15,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
@@ -35,7 +35,7 @@ const COURSE_LIMITS: { [key: string]: number } = {
 const AddCourseInfoScreen = () => {
   const navigation = useNavigation<AddCourseInfoScreenNavigationProp>();
   const { courseData, updateCourseData } = useAddCourse();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
@@ -51,12 +51,12 @@ const AddCourseInfoScreen = () => {
 
   useEffect(() => {
     const checkCourseCount = async () => {
-      if (!user?.id) return;
+      if (!deviceId) return;
 
       const { count, error } = await supabase
         .from('courses')
         .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id);
+        .eq('user_id', deviceId);
 
       if (!error && count !== null) {
         setCourseCount(count);
@@ -64,7 +64,7 @@ const AddCourseInfoScreen = () => {
     };
 
     checkCourseCount();
-  }, [user?.id]);
+  }, [deviceId]);
 
   const handleNext = async () => {
     if (!courseName.trim()) {

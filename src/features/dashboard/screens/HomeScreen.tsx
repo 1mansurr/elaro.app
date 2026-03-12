@@ -25,7 +25,6 @@ import { NotificationBell } from '@/shared/components/NotificationBell';
 import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
 
 import { RootStackParamList, Task } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 import { format, isAfter } from 'date-fns';
 import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -44,7 +43,6 @@ import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
 import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
 import { HomeScreenEmptyState } from '../components/HomeScreenEmptyState';
-import { supabase } from '@/services/supabase';
 import { getDraftCount } from '@/utils/draftStorage';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
@@ -61,13 +59,11 @@ const getGreeting = () => {
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { session, user } = useAuth();
-  const isGuest = !session;
   const queryClient = useQueryClient();
   const insets = useSafeAreaInsets();
 
-  // Always fetch data for authenticated users
-  const shouldFetchData = !isGuest;
+  // Always fetch data
+  const shouldFetchData = true;
 
   const {
     data: homeData,
@@ -84,7 +80,7 @@ const HomeScreen = () => {
 
   // Extract upcoming tasks (next 4, excluding the "Up Next" task)
   const upcomingTasks = useMemo(() => {
-    if (!calendarData || isGuest) return [];
+    if (!calendarData) return [];
     const now = new Date();
     const allTasks = Object.values(calendarData).flat();
     const upcoming = allTasks
@@ -99,7 +95,7 @@ const HomeScreen = () => {
       })
       .slice(0, 4);
     return upcoming;
-  }, [calendarData, isGuest]);
+  }, [calendarData]);
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isBannerDismissed, setIsBannerDismissed] = useState(false);
@@ -265,7 +261,7 @@ const HomeScreen = () => {
   // Handle swipe-to-complete for next task card
   const handleSwipeComplete = useCallback(async () => {
     const nextTask = homeData?.nextUpcomingTask;
-    if (!nextTask || isGuest) return;
+    if (!nextTask) return;
 
     try {
       await completeTaskMutation.mutateAsync({
@@ -282,7 +278,7 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error completing task via swipe:', error);
     }
-  }, [homeData?.nextUpcomingTask, completeTaskMutation, showToast, isGuest]);
+  }, [homeData?.nextUpcomingTask, completeTaskMutation, showToast]);
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
@@ -335,13 +331,8 @@ const HomeScreen = () => {
 
   // Get personalized title - memoized to prevent recalculation on every render
   const personalizedTitle = useMemo(() => {
-    if (isGuest) {
-      return "Let's Make Today Count";
-    }
-
-    const name = user?.username || user?.first_name || 'there';
-    return `${getGreeting()}, ${name}!`;
-  }, [isGuest, user?.username, user?.first_name]);
+    return `${getGreeting()}, there!`;
+  }, []);
 
   // Get formatted date for header
   const formattedDate = useMemo(() => {
@@ -350,15 +341,12 @@ const HomeScreen = () => {
 
   // Get subscription limit
   const subscriptionLimit = useMemo(() => {
-    return user?.subscription_tier === 'oddity' ? 70 : 15;
-  }, [user?.subscription_tier]);
+    return 15;
+  }, []);
 
   // Show one-time "How It Works" prompt for new users
   useEffect(() => {
     const checkAndShowWelcomePrompt = async () => {
-      // Only show for authenticated users
-      if (isGuest || !user) return;
-
       try {
         const hasSeenPrompt = await AsyncStorage.getItem(
           'hasSeenHowItWorksPrompt',
@@ -406,7 +394,7 @@ const HomeScreen = () => {
     };
 
     checkAndShowWelcomePrompt();
-  }, [isGuest, user, navigation]);
+  }, [navigation]);
 
   // Memoized callbacks for better performance
   const handleNotificationBellPress = useCallback(() => {
@@ -468,160 +456,136 @@ const HomeScreen = () => {
     [handleViewDetails],
   );
 
-  // Wrap content with QueryStateWrapper for authenticated users
   const content = (
     <View style={styles.container} testID="home-screen">
       {/* Header with Date, Greeting, and Notification Bell */}
-      {!isGuest && (
-        <View style={[styles.header, { paddingTop: SPACING.md }]}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.headerDate}>{formattedDate}</Text>
-            <Text style={styles.headerTitle}>{personalizedTitle}</Text>
-          </View>
-          <NotificationBell onPress={handleNotificationBellPress} />
+      <View style={[styles.header, { paddingTop: SPACING.md }]}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.headerDate}>{formattedDate}</Text>
+          <Text style={styles.headerTitle}>{personalizedTitle}</Text>
         </View>
-      )}
+        <NotificationBell onPress={handleNotificationBellPress} />
+      </View>
 
       <ScrollView
         style={styles.scrollContainer}
         contentContainerStyle={styles.scrollContent}
         refreshControl={
-          !isGuest ? (
-            <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
-          ) : undefined
+          <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
         scrollEnabled={!isFabOpen}>
-        {isGuest && <Text style={styles.title}>{personalizedTitle}</Text>}
-
         {/* Up Next Section */}
-        {!isGuest && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Up Next</Text>
-            <UpNextCard
-              task={homeData?.nextUpcomingTask || null}
-              onPress={handleUpNextPress}
-            />
-          </View>
-        )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Up Next</Text>
+          <UpNextCard
+            task={homeData?.nextUpcomingTask || null}
+            onPress={handleUpNextPress}
+          />
+        </View>
 
         {/* Today's Overview Section */}
-        {!isGuest && (
-          <View style={[styles.section, { marginTop: SPACING.xl }]}>
-            <Text style={styles.sectionTitle}>Today's Overview</Text>
-            <TodayOverviewGrid overview={homeData?.todayOverview || null} />
-            <View style={{ marginTop: SPACING.lg }}>
-              <MonthlyLimitCard
-                monthlyTaskCount={monthlyTaskCount}
-                limit={subscriptionLimit}
-              />
-            </View>
+        <View style={[styles.section, { marginTop: SPACING.xl }]}>
+          <Text style={styles.sectionTitle}>Today's Overview</Text>
+          <TodayOverviewGrid overview={homeData?.todayOverview || null} />
+          <View style={{ marginTop: SPACING.lg }}>
+            <MonthlyLimitCard
+              monthlyTaskCount={monthlyTaskCount}
+              limit={subscriptionLimit}
+            />
           </View>
-        )}
+        </View>
 
         {/* Upcoming Section */}
-        {!isGuest && (
-          <View style={[styles.section, { marginTop: SPACING.xl }]}>
-            <Text style={styles.sectionTitle}>Upcoming</Text>
-            {upcomingTasks.length > 0 ? (
-              upcomingTasks.map(task => (
-                <UpcomingTaskItem
-                  key={`${task.type}-${task.id}`}
-                  task={task}
-                  onPress={() => handleUpcomingTaskPress(task)}
-                />
-              ))
-            ) : (
-              <Text style={styles.emptyText}>No upcoming tasks</Text>
-            )}
-          </View>
-        )}
+        <View style={[styles.section, { marginTop: SPACING.xl }]}>
+          <Text style={styles.sectionTitle}>Upcoming</Text>
+          {upcomingTasks.length > 0 ? (
+            upcomingTasks.map(task => (
+              <UpcomingTaskItem
+                key={`${task.type}-${task.id}`}
+                task={task}
+                onPress={() => handleUpcomingTaskPress(task)}
+              />
+            ))
+          ) : (
+            <Text style={styles.emptyText}>No upcoming tasks</Text>
+          )}
+        </View>
       </ScrollView>
     </View>
   );
 
-  // For authenticated users, wrap with QueryStateWrapper
-  if (!isGuest) {
-    // Show empty state immediately if error, update when data arrives
-    // Don't block UI with error states - show empty state instead for better UX
-    const shouldShowLoading = isLoading;
-    const shouldShowError = false; // Never show error - show empty state instead
-    const displayData = isError ? null : homeData; // Treat errors as empty data
-    // If empty state is dismissed, show content even if data is empty
-    const finalData =
-      isEmptyStateDismissed && !displayData
-        ? { _dismissed: true }
-        : displayData;
+  const shouldShowLoading = isLoading;
+  const shouldShowError = false;
+  const displayData = isError ? null : homeData;
+  const finalData =
+    isEmptyStateDismissed && !displayData ? { _dismissed: true } : displayData;
 
-    return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
-        <QueryStateWrapper
-          isLoading={shouldShowLoading}
-          isError={shouldShowError}
-          error={null} // Don't show error UI
-          data={finalData}
-          refetch={handleRefetch}
-          isRefetching={isRefetching}
-          onRefresh={refetch}
-          emptyStateComponent={
-            !isEmptyStateDismissed ? (
-              <HomeScreenEmptyState
-                onAddActivity={handleOpenFab}
-                onDismiss={handleDismissEmptyState}
-              />
-            ) : undefined
-          }
-          skeletonComponent={<TaskCardSkeleton />}
-          skeletonCount={3}>
-          {content}
-        </QueryStateWrapper>
+  return (
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <QueryStateWrapper
+        isLoading={shouldShowLoading}
+        isError={shouldShowError}
+        error={null}
+        data={finalData}
+        refetch={handleRefetch}
+        isRefetching={isRefetching}
+        onRefresh={refetch}
+        emptyStateComponent={
+          !isEmptyStateDismissed ? (
+            <HomeScreenEmptyState
+              onAddActivity={handleOpenFab}
+              onDismiss={handleDismissEmptyState}
+            />
+          ) : undefined
+        }
+        skeletonComponent={<TaskCardSkeleton />}
+        skeletonCount={3}>
+        {content}
+      </QueryStateWrapper>
 
-        {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
-        {isFabOpen && (
-          <TouchableWithoutFeedback onPress={handleBackdropPress}>
-            <Animated.View
-              style={[styles.backdrop, { opacity: backdropOpacity }]}>
-              <BlurView
-                intensity={40}
-                tint="dark"
-                style={StyleSheet.absoluteFill}
-              />
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        )}
+      {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
+      {isFabOpen && (
+        <TouchableWithoutFeedback onPress={handleBackdropPress}>
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropOpacity }]}>
+            <BlurView
+              intensity={40}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          </Animated.View>
+        </TouchableWithoutFeedback>
+      )}
 
-        <FloatingActionButton
-          actions={fabActions}
-          isOpen={isFabOpen}
-          onStateChange={handleFabStateChange}
-          onDoubleTap={handleQuickAddDoubleTap}
-          draftCount={draftCount}
-          onDraftBadgePress={handleDraftBadgePress}
-        />
+      <FloatingActionButton
+        actions={fabActions}
+        isOpen={isFabOpen}
+        onStateChange={handleFabStateChange}
+        onDoubleTap={handleQuickAddDoubleTap}
+        draftCount={draftCount}
+        onDraftBadgePress={handleDraftBadgePress}
+      />
 
-        <QuickAddModal
-          isVisible={isQuickAddVisible}
-          onClose={handleQuickAddClose}
-        />
+      <QuickAddModal
+        isVisible={isQuickAddVisible}
+        onClose={handleQuickAddClose}
+      />
 
-        <TaskDetailSheet
-          task={selectedTask}
-          isVisible={!!selectedTask}
-          onClose={handleCloseSheet}
-          onEdit={handleEditTask}
-          onComplete={handleCompleteTask}
-          onDelete={handleDeleteTask}
-        />
+      <TaskDetailSheet
+        task={selectedTask}
+        isVisible={!!selectedTask}
+        onClose={handleCloseSheet}
+        onEdit={handleEditTask}
+        onComplete={handleCompleteTask}
+        onDelete={handleDeleteTask}
+      />
 
-        <NotificationHistoryModal
-          isVisible={isNotificationHistoryVisible}
-          onClose={handleNotificationHistoryClose}
-        />
-      </View>
-    );
-  }
-
-  // For guest users, return content directly
-  return content;
+      <NotificationHistoryModal
+        isVisible={isNotificationHistoryVisible}
+        onClose={handleNotificationHistoryClose}
+      />
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({

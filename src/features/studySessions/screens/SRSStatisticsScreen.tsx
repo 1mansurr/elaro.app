@@ -11,7 +11,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { getSRSStatistics } from '@/utils/reminderUtils';
 
 interface SRSStats {
@@ -37,7 +37,7 @@ interface SRSStats {
 export function SRSStatisticsScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const [stats, setStats] = useState<SRSStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -47,10 +47,10 @@ export function SRSStatisticsScreen() {
   }, []);
 
   const loadStatistics = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
-      const data = await getSRSStatistics(user.id);
+      const data = await getSRSStatistics(deviceId);
       setStats(data);
     } catch (error) {
       console.error('Error loading SRS statistics:', error);

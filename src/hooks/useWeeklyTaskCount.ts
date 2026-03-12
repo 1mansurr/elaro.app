@@ -4,15 +4,12 @@ import {
   useLectures,
   useStudySessions,
 } from './useDataQueries';
-import { useAuth } from '@/contexts/AuthContext';
-
 const MONTHLY_TASK_LIMITS = {
   free: 15,
   oddity: 70,
 };
 
 export const useMonthlyTaskCount = () => {
-  const { user } = useAuth();
   const { data: assignmentsData, isLoading: isLoadingAssignments } =
     useAssignments();
   const { data: lecturesData, isLoading: isLoadingLectures } = useLectures();
@@ -55,10 +52,8 @@ export const useMonthlyTaskCount = () => {
     return monthlyAssignments + monthlyLectures + monthlyStudySessions;
   }, [assignments, lectures, studySessions]);
 
-  const userTier = user?.subscription_tier || 'free';
-  const monthlyLimit =
-    MONTHLY_TASK_LIMITS[userTier] || MONTHLY_TASK_LIMITS.free;
-  const isPremium = userTier !== 'free';
+  const monthlyLimit = MONTHLY_TASK_LIMITS.free;
+  const isPremium = false;
   const limitReached = !isPremium && monthlyTaskCount >= monthlyLimit;
 
   return {

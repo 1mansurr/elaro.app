@@ -13,7 +13,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { Course } from '@/types';
 import { Button } from '@/shared/components';
 
@@ -42,18 +42,14 @@ const SelectCourseScreen = () => {
   const updateAssignmentData = (data: any) => {
     console.log('Mock updateAssignmentData:', data);
   };
-  const { session, user } = useAuth();
+  const deviceId = useDeviceId();
 
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const isGuest = !session;
-
   useEffect(() => {
     const fetchCourses = async () => {
-      if (isGuest) return; // Don't fetch for guests
-
       setIsLoading(true);
       try {
         const { data, error } = await supabase
@@ -70,7 +66,7 @@ const SelectCourseScreen = () => {
           courseName: course.course_name,
           courseCode: course.course_code,
           aboutCourse: course.about_course,
-          userId: user?.id || '',
+          userId: deviceId || '',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         })) as Course[];
@@ -85,7 +81,7 @@ const SelectCourseScreen = () => {
     };
 
     fetchCourses();
-  }, [isGuest, user?.id]);
+  }, [deviceId]);
 
   const handleCourseSelect = (course: Course) => {
     updateAssignmentData({ course });

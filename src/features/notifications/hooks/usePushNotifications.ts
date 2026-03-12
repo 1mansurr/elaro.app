@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as Notifications from 'expo-notifications';
 import notificationService from '@/services/notificationService';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface UsePushNotificationsReturn {
   registerForPushNotifications: () => Promise<void>;
@@ -16,7 +15,6 @@ interface UsePushNotificationsReturn {
  * Provides a clean interface for components to interact with the notification system.
  */
 export const usePushNotifications = (): UsePushNotificationsReturn => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistered, setIsRegistered] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -39,14 +37,9 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
 
   /**
    * Registers the device for push notifications.
-   * This includes requesting permissions, getting the push token, and saving it to the backend.
+   * This includes requesting permissions and getting the push token.
    */
   const registerForPushNotifications = useCallback(async () => {
-    if (!user) {
-      setError('User must be logged in to register for notifications');
-      return;
-    }
-
     setIsLoading(true);
     setError(null);
 
@@ -65,8 +58,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         return;
       }
 
-      // Step 3: Save the token to the backend
-      await notificationService.savePushToken(user.id, token);
+      // savePushToken skipped in offline MVP
 
       setIsRegistered(true);
       console.log('Successfully registered for push notifications');
@@ -78,7 +70,7 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
     } finally {
       setIsLoading(false);
     }
-  }, [user, checkPermissions]);
+  }, [checkPermissions]);
 
   /**
    * Handles notification taps by extracting task information and calling the appropriate handler.
@@ -91,33 +83,20 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
         // Check if a deep link URL is provided
         if (data?.url) {
           console.log('Notification tapped with deep link:', data.url);
-
-          // The notificationService will handle the navigation
-          // Just log for debugging
           console.log('Deep link will be handled by notificationService');
           return;
         }
 
         // Fallback to old behavior for notifications without deep links
         if (data?.taskId && data?.taskType) {
-          // This is a task-related notification
           console.log(
             'Notification tapped for task:',
             data.taskId,
             data.taskType,
           );
-
-          // You can dispatch navigation actions or update app state here
-          // For example, navigate to the task detail screen
-          // navigation.navigate('TaskDetailModal', {
-          //   taskId: data.taskId,
-          //   taskType: data.taskType
-          // });
         } else if (data?.reminderId) {
-          // This is a reminder notification
           console.log('Reminder notification tapped:', data.reminderId);
         } else {
-          // Generic notification
           console.log('Generic notification tapped');
         }
       } catch (err) {
@@ -133,53 +112,31 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
   const handleNotificationReceived = useCallback(
     (notification: Notifications.Notification) => {
       console.log('Notification received:', notification);
-
-      // You can customize the behavior here, such as:
-      // - Showing a custom in-app notification
-      // - Updating app state
-      // - Playing custom sounds
     },
     [],
   );
 
   // Set up notification listeners when the hook is first used
   useEffect(() => {
-    let responseSubscription: (() => void) | undefined;
-    let receivedSubscription: (() => void) | undefined;
-
-    if (user) {
-      // Set up notification response listener (when user taps notification)
-      responseSubscription =
-        notificationService.addNotificationResponseListener(
-          handleNotificationResponse,
-        );
-
-      // Set up notification received listener (when app is in foreground)
-      receivedSubscription = notificationService.addNotificationListener(
-        handleNotificationReceived,
+    const responseSubscription =
+      notificationService.addNotificationResponseListener(
+        handleNotificationResponse,
       );
-    }
 
-    // Cleanup listeners on unmount
+    const receivedSubscription = notificationService.addNotificationListener(
+      handleNotificationReceived,
+    );
+
     return () => {
-      if (responseSubscription) {
-        responseSubscription();
-      }
-      if (receivedSubscription) {
-        receivedSubscription();
-      }
+      if (responseSubscription) responseSubscription();
+      if (receivedSubscription) receivedSubscription();
     };
-  }, [user, handleNotificationResponse, handleNotificationReceived]);
+  }, [handleNotificationResponse, handleNotificationReceived]);
 
-  // Check permissions when user changes
+  // Check permissions on mount
   useEffect(() => {
-    if (user) {
-      checkPermissions();
-    } else {
-      setHasPermission(false);
-      setIsRegistered(false);
-    }
-  }, [user, checkPermissions]);
+    checkPermissions();
+  }, [checkPermissions]);
 
   return {
     registerForPushNotifications,
@@ -195,12 +152,9 @@ export const usePushNotifications = (): UsePushNotificationsReturn => {
  * Use this when you just need to register for notifications without managing state.
  */
 export const useSimplePushNotifications = () => {
-  const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const registerForPushNotifications = useCallback(async () => {
-    if (!user) return;
-
     setIsLoading(true);
     try {
       const hasPermission = await notificationService.getPermissions();
@@ -215,7 +169,7 @@ export const useSimplePushNotifications = () => {
         return;
       }
 
-      await notificationService.savePushToken(user.id, token);
+      // savePushToken skipped in offline MVP
       console.log('Successfully registered for push notifications');
     } catch (error) {
       console.error(
@@ -225,7 +179,7 @@ export const useSimplePushNotifications = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, []);
 
   return {
     registerForPushNotifications,

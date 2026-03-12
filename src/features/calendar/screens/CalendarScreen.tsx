@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { Calendar, DateData } from 'react-native-calendars';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useAuth } from '@/contexts/AuthContext';
 import { useCalendarTasksWithLockState } from '@/features/calendar/hooks/useCalendarTasksWithLockState';
 import { useCalendarData, useCalendarMonthData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
@@ -65,9 +64,7 @@ type ViewMode = 'month' | 'week' | 'agenda';
 
 const CalendarScreen = () => {
   const navigation = useNavigation<CalendarScreenNavigationProp>();
-  const { session, user } = useAuth();
   const queryClient = useQueryClient();
-  const isGuest = !session;
   const insets = useSafeAreaInsets();
 
   // const { offerings, purchasePackage } = useSubscription();
@@ -165,8 +162,6 @@ const CalendarScreen = () => {
 
   const handleDateSelect = useCallback(
     (newDate: Date) => {
-      if (isGuest) return;
-
       const newWeekStart = startOfWeek(newDate, { weekStartsOn: 1 });
       if (!isSameDay(newWeekStart, currentWeekStart)) {
         setCurrentWeekStart(newWeekStart);
@@ -174,7 +169,7 @@ const CalendarScreen = () => {
       }
       setSelectedDate(newDate);
     },
-    [isGuest, currentWeekStart],
+    [currentWeekStart],
   );
 
   const handleMonthDayPress = useCallback((day: DateData) => {
@@ -318,17 +313,15 @@ const CalendarScreen = () => {
   );
 
   const { tasksWithLockState, isLoading: isLockStateLoading } =
-    useCalendarTasksWithLockState(calendarData, user);
+    useCalendarTasksWithLockState(calendarData, null);
 
   const tasksForSelectedDay = useMemo(() => {
-    if (isGuest) return [];
-
     const dateKey = format(selectedDate, 'yyyy-MM-dd');
     const tasksOnDay = tasksWithLockState.filter(
       task => format(new Date(task.date), 'yyyy-MM-dd') === dateKey,
     );
     return tasksOnDay;
-  }, [selectedDate, tasksWithLockState, isGuest]);
+  }, [selectedDate, tasksWithLockState]);
 
   // Generate marked dates for month view
   const markedDates = useMemo(() => {

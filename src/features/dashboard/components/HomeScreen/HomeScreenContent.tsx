@@ -9,7 +9,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
 import NextTaskCard from '../../components/NextTaskCard';
 import TodayOverviewCard from '../../components/TodayOverviewCard';
@@ -52,7 +51,6 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
     onDismissBanner,
   }) => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
-    const { user } = useAuth();
     const queryClient = useQueryClient();
 
     // Optimized refresh with request deduplication
@@ -98,9 +96,9 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
         </SwipeableTaskCard>
 
         <TodayOverviewCard
-          overview={isGuest ? null : processedHomeData?.todayOverview || null}
-          monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
-          subscriptionTier={user?.subscription_tier || 'free'}
+          overview={processedHomeData?.todayOverview || null}
+          monthlyTaskCount={monthlyTaskCount}
+          subscriptionTier={'free'}
         />
       </ScrollView>
     );

@@ -1,4 +1,5 @@
-import { supabase } from '@/services/supabase';
+import { getDatabase } from '@/services/database';
+import { getOrCreateDeviceId } from '@/utils/deviceId';
 
 export interface LearningInsights {
   retentionRate: number;
@@ -74,6 +75,24 @@ export interface OverallStats {
   currentStreak: number;
 }
 
+// Row types for SQLite queries
+interface SRSItemRow {
+  id: string;
+  topic: string;
+  ease_factor: number;
+  last_quality_rating: number | null;
+  last_reviewed_at: string | null;
+  next_review_date: string;
+  repetitions: number;
+}
+
+interface ReminderRow {
+  id: string;
+  srs_item_id: string | null;
+  scheduled_time: string;
+  topic: string | null;
+}
+
 export class SRSAnalyticsService {
   private static instance: SRSAnalyticsService;
 
@@ -87,23 +106,29 @@ export class SRSAnalyticsService {
   /**
    * Generate comprehensive learning insights for a user
    */
-  async generateLearningInsights(userId: string): Promise<LearningInsights> {
+  async generateLearningInsights(_userId: string): Promise<LearningInsights> {
     try {
       const [
         retentionRate,
         learningVelocity,
         difficultyPatterns,
         optimalStudyTimes,
-        recommendations,
         masteryLevel,
       ] = await Promise.all([
-        this.calculateRetentionRate(userId),
-        this.calculateLearningVelocity(userId),
-        this.analyzeDifficultyPatterns(userId),
-        this.findOptimalStudyTimes(userId),
-        this.generateRecommendations(userId),
-        this.calculateMasteryLevel(userId),
+        this.calculateRetentionRate(),
+        this.calculateLearningVelocity(),
+        this.analyzeDifficultyPatterns(),
+        this.findOptimalStudyTimes(),
+        this.calculateMasteryLevel(),
       ]);
+
+      const recommendations = this.buildRecommendations(
+        retentionRate,
+        learningVelocity,
+        difficultyPatterns,
+        optimalStudyTimes,
+        masteryLevel,
+      );
 
       return {
         retentionRate,
@@ -122,24 +147,32 @@ export class SRSAnalyticsService {
   /**
    * Get comprehensive performance dashboard
    */
-  async getPerformanceDashboard(userId: string): Promise<PerformanceDashboard> {
+  async getPerformanceDashboard(
+    _userId: string,
+  ): Promise<PerformanceDashboard> {
     try {
       const [
-        weeklyProgress,
+        weeklyProgressList,
         topicMastery,
         studyStreaks,
         upcomingReviews,
         overallStats,
       ] = await Promise.all([
-        this.getWeeklyProgress(userId),
-        this.getTopicMasteryLevels(userId),
-        this.getStudyStreaks(userId),
-        this.getUpcomingReviews(userId),
-        this.getOverallStats(userId),
+        this.getWeeklyProgress(),
+        this.getTopicMasteryLevels(),
+        this.getStudyStreaks(),
+        this.getUpcomingReviews(),
+        this.getOverallStats(),
       ]);
 
       return {
-        weeklyProgress: weeklyProgress[0] || weeklyProgress,
+        weeklyProgress: weeklyProgressList[0] ?? {
+          week: '',
+          reviewsCompleted: 0,
+          averageQuality: 0,
+          retentionRate: 0,
+          timeSpent: 0,
+        },
         topicMastery,
         studyStreaks,
         upcomingReviews,
@@ -151,25 +184,31 @@ export class SRSAnalyticsService {
     }
   }
 
+  // ─── Private helpers ─────────────────────────────────────────
+
+  private async getReviewedItems(): Promise<SRSItemRow[]> {
+    const db = await getDatabase();
+    const deviceId = await getOrCreateDeviceId();
+    return db.getAllAsync<SRSItemRow>(
+      `SELECT id, topic, ease_factor, last_quality_rating, last_reviewed_at,
+              next_review_date, repetitions
+       FROM srs_items
+       WHERE user_id = ? AND last_quality_rating IS NOT NULL`,
+      [deviceId],
+    );
+  }
+
   /**
-   * Calculate retention rate based on performance history
+   * Calculate retention rate based on srs_items last_quality_rating
    */
-  private async calculateRetentionRate(userId: string): Promise<number> {
+  private async calculateRetentionRate(): Promise<number> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating')
-        .eq('user_id', userId);
-
-      if (error || !performance || performance.length === 0) {
-        return 0;
-      }
-
-      // Retention rate = percentage of reviews with quality >= 3
-      const successfulReviews = performance.filter(
-        p => p.quality_rating >= 3,
+      const items = await this.getReviewedItems();
+      if (items.length === 0) return 0;
+      const successful = items.filter(
+        i => (i.last_quality_rating ?? 0) >= 3,
       ).length;
-      return (successfulReviews / performance.length) * 100;
+      return (successful / items.length) * 100;
     } catch (error) {
       console.error('❌ Error calculating retention rate:', error);
       return 0;
@@ -177,34 +216,17 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Calculate learning velocity (rate of improvement)
+   * Calculate learning velocity as ease-factor improvement over baseline
    */
-  private async calculateLearningVelocity(userId: string): Promise<number> {
+  private async calculateLearningVelocity(): Promise<number> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating, created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-
-      if (error || !performance || performance.length < 2) {
-        return 0;
-      }
-
-      // Calculate improvement over time using linear regression
-      const n = performance.length;
-      const x = performance.map((_, index) => index);
-      const y = performance.map(p => p.quality_rating);
-
-      const sumX = x.reduce((sum, val) => sum + val, 0);
-      const sumY = y.reduce((sum, val) => sum + val, 0);
-      const sumXY = x.reduce((sum, val, index) => sum + val * y[index], 0);
-      const sumXX = x.reduce((sum, val) => sum + val * val, 0);
-
-      const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-
-      // Return positive slope as learning velocity
-      return Math.max(0, slope * 100); // Convert to percentage
+      const items = await this.getReviewedItems();
+      if (items.length < 2) return 0;
+      // Proxy: items whose ease_factor exceeds the SM-2 default (2.5) indicate
+      // positive learning momentum.
+      const avgEase =
+        items.reduce((sum, i) => sum + i.ease_factor, 0) / items.length;
+      return Math.max(0, (avgEase - 2.5) * 50); // 0-50 range approximation
     } catch (error) {
       console.error('❌ Error calculating learning velocity:', error);
       return 0;
@@ -212,93 +234,44 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Analyze difficulty patterns across topics
+   * Analyze difficulty patterns per topic using srs_items
    */
-  private async analyzeDifficultyPatterns(
-    userId: string,
-  ): Promise<DifficultyPattern[]> {
+  private async analyzeDifficultyPatterns(): Promise<DifficultyPattern[]> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select(
-          `
-          session_id,
-          quality_rating,
-          created_at,
-          study_sessions!inner(topic)
-        `,
-        )
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error || !performance) {
-        return [];
-      }
+      const items = await this.getReviewedItems();
+      if (items.length === 0) return [];
 
       // Group by topic
-      interface PerformanceWithSession {
-        session_id: string;
-        quality_rating: number;
-        created_at: string;
-        study_sessions: { topic: string } | { topic: string }[];
-      }
-      const typedPerformance = performance as PerformanceWithSession[];
-      const topicGroups = typedPerformance.reduce(
-        (groups, p) => {
-          let topic: string | undefined;
-          const sessionData = p.study_sessions;
-          if (Array.isArray(sessionData)) {
-            topic = sessionData[0]?.topic;
-          } else if (
-            sessionData &&
-            typeof sessionData === 'object' &&
-            'topic' in sessionData
-          ) {
-            topic = sessionData.topic;
-          }
-          if (topic) {
-            if (!groups[topic]) {
-              groups[topic] = [];
-            }
-            groups[topic].push(p);
-          }
+      const topicGroups = items.reduce(
+        (groups, item) => {
+          if (!groups[item.topic]) groups[item.topic] = [];
+          groups[item.topic].push(item);
           return groups;
         },
-        {} as Record<string, PerformanceWithSession[]>,
+        {} as Record<string, SRSItemRow[]>,
       );
 
-      // Analyze each topic
       const patterns: DifficultyPattern[] = [];
 
-      for (const [topic, reviews] of Object.entries(topicGroups)) {
-        if (reviews.length < 3) continue; // Need at least 3 reviews for pattern analysis
+      for (const [topic, topicItems] of Object.entries(topicGroups)) {
+        if (topicItems.length < 3) continue;
 
-        const recentReviews = reviews.slice(0, 7); // Last 7 reviews
-        const qualityScores = recentReviews.map(r => r.quality_rating);
+        const qualityScores = topicItems
+          .slice(0, 7)
+          .map(i => i.last_quality_rating ?? 0);
 
-        const difficultyScore =
-          5 -
-          qualityScores.reduce((sum, score) => sum + score, 0) /
-            qualityScores.length;
+        const avgQuality =
+          qualityScores.reduce((sum, s) => sum + s, 0) / qualityScores.length;
+        const difficultyScore = 5 - avgQuality;
 
-        // Calculate trend (improvement over last 7 reviews)
-        const trend = qualityScores;
+        // Determine trend using ease_factor relative to baseline
+        const avgEase =
+          topicItems.reduce((sum, i) => sum + i.ease_factor, 0) /
+          topicItems.length;
 
-        // Determine improvement direction
         let improvement: 'improving' | 'stable' | 'declining' = 'stable';
-        if (trend.length >= 2) {
-          const firstHalf = trend.slice(0, Math.floor(trend.length / 2));
-          const secondHalf = trend.slice(Math.floor(trend.length / 2));
-
-          const firstAvg =
-            firstHalf.reduce((sum, score) => sum + score, 0) / firstHalf.length;
-          const secondAvg =
-            secondHalf.reduce((sum, score) => sum + score, 0) /
-            secondHalf.length;
-
-          if (secondAvg > firstAvg + 0.5) improvement = 'improving';
-          else if (secondAvg < firstAvg - 0.5) improvement = 'declining';
-        }
+        if (avgEase > 2.7) improvement = 'improving';
+        else if (avgEase < 2.3) improvement = 'declining';
 
         patterns.push({
           topic,
@@ -316,53 +289,41 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Find optimal study times based on performance history
+   * Find optimal study times from last_reviewed_at hours
    */
-  private async findOptimalStudyTimes(userId: string): Promise<TimeSlot[]> {
+  private async findOptimalStudyTimes(): Promise<TimeSlot[]> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating, created_at')
-        .eq('user_id', userId);
+      const items = await this.getReviewedItems();
+      const withTime = items.filter(i => i.last_reviewed_at !== null);
+      if (withTime.length === 0) return [];
 
-      if (error || !performance) {
-        return [];
-      }
-
-      // Group by hour of day
-      const hourGroups = performance.reduce(
-        (groups, p) => {
-          const hour = new Date(p.created_at).getHours();
-          if (!groups[hour]) {
-            groups[hour] = { scores: [], count: 0 };
-          }
-          groups[hour].scores.push(p.quality_rating);
+      const hourGroups = withTime.reduce(
+        (groups, item) => {
+          const hour = new Date(item.last_reviewed_at!).getHours();
+          if (!groups[hour]) groups[hour] = { scores: [], count: 0 };
+          groups[hour].scores.push(item.last_quality_rating ?? 0);
           groups[hour].count++;
           return groups;
         },
         {} as Record<number, { scores: number[]; count: number }>,
       );
 
-      // Calculate performance for each hour
       const timeSlots: TimeSlot[] = [];
 
       for (const [hour, data] of Object.entries(hourGroups)) {
-        if (data.count < 3) continue; // Need at least 3 reviews for reliable data
-
-        const averagePerformance =
-          data.scores.reduce((sum, score) => sum + score, 0) /
-          data.scores.length;
-
+        if (data.count < 3) continue;
+        const performance =
+          data.scores.reduce((sum, s) => sum + s, 0) / data.scores.length;
         timeSlots.push({
-          hour: parseInt(hour),
-          performance: averagePerformance,
+          hour: parseInt(hour, 10),
+          performance,
           frequency: data.count,
         });
       }
 
       return timeSlots
         .sort((a, b) => b.performance - a.performance)
-        .slice(0, 5); // Top 5 optimal times
+        .slice(0, 5);
     } catch (error) {
       console.error('❌ Error finding optimal study times:', error);
       return [];
@@ -370,89 +331,74 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Generate personalized recommendations
+   * Build personalized recommendations from pre-computed insights (no extra DB call)
    */
-  private async generateRecommendations(userId: string): Promise<string[]> {
-    try {
-      const insights = await this.generateLearningInsights(userId);
-      const recommendations: string[] = [];
+  private buildRecommendations(
+    retentionRate: number,
+    learningVelocity: number,
+    difficultyPatterns: DifficultyPattern[],
+    optimalStudyTimes: TimeSlot[],
+    masteryLevel: 'beginner' | 'intermediate' | 'advanced',
+  ): string[] {
+    const recommendations: string[] = [];
 
-      // Retention rate recommendations
-      if (insights.retentionRate < 70) {
-        recommendations.push(
-          'Your retention rate is below 70%. Consider reviewing more frequently or using different study techniques.',
-        );
-      }
-
-      // Learning velocity recommendations
-      if (insights.learningVelocity < 5) {
-        recommendations.push(
-          'Your learning velocity is slow. Try breaking down complex topics into smaller chunks.',
-        );
-      }
-
-      // Difficulty pattern recommendations
-      const strugglingTopics = insights.difficultyPatterns.filter(
-        p => p.difficultyScore > 3,
+    if (retentionRate < 70) {
+      recommendations.push(
+        'Your retention rate is below 70%. Consider reviewing more frequently or using different study techniques.',
       );
-      if (strugglingTopics.length > 0) {
-        recommendations.push(
-          `Focus more on these challenging topics: ${strugglingTopics.map(t => t.topic).join(', ')}`,
-        );
-      }
-
-      // Study time recommendations
-      if (insights.optimalStudyTimes.length > 0) {
-        const bestTime = insights.optimalStudyTimes[0];
-        recommendations.push(
-          `Your best performance is at ${bestTime.hour}:00. Schedule more reviews during this time.`,
-        );
-      }
-
-      // Mastery level recommendations
-      if (insights.masteryLevel === 'beginner') {
-        recommendations.push(
-          "You're still in the beginner phase. Focus on understanding fundamentals before moving to advanced topics.",
-        );
-      }
-
-      return recommendations;
-    } catch (error) {
-      console.error('❌ Error generating recommendations:', error);
-      return [];
     }
+
+    if (learningVelocity < 5) {
+      recommendations.push(
+        'Your learning velocity is slow. Try breaking down complex topics into smaller chunks.',
+      );
+    }
+
+    const strugglingTopics = difficultyPatterns.filter(
+      p => p.difficultyScore > 3,
+    );
+    if (strugglingTopics.length > 0) {
+      recommendations.push(
+        `Focus more on these challenging topics: ${strugglingTopics.map(t => t.topic).join(', ')}`,
+      );
+    }
+
+    if (optimalStudyTimes.length > 0) {
+      const bestTime = optimalStudyTimes[0];
+      recommendations.push(
+        `Your best performance is at ${bestTime.hour}:00. Schedule more reviews during this time.`,
+      );
+    }
+
+    if (masteryLevel === 'beginner') {
+      recommendations.push(
+        "You're still in the beginner phase. Focus on understanding fundamentals before moving to advanced topics.",
+      );
+    }
+
+    return recommendations;
   }
 
   /**
-   * Calculate overall mastery level
+   * Calculate overall mastery level from srs_items
    */
-  private async calculateMasteryLevel(
-    userId: string,
-  ): Promise<'beginner' | 'intermediate' | 'advanced'> {
+  private async calculateMasteryLevel(): Promise<
+    'beginner' | 'intermediate' | 'advanced'
+  > {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating, ease_factor')
-        .eq('user_id', userId);
-
-      if (error || !performance || performance.length === 0) {
-        return 'beginner';
-      }
+      const items = await this.getReviewedItems();
+      if (items.length === 0) return 'beginner';
 
       const averageQuality =
-        performance.reduce((sum, p) => sum + p.quality_rating, 0) /
-        performance.length;
+        items.reduce((sum, i) => sum + (i.last_quality_rating ?? 0), 0) /
+        items.length;
       const averageEaseFactor =
-        performance.reduce((sum, p) => sum + p.ease_factor, 0) /
-        performance.length;
+        items.reduce((sum, i) => sum + i.ease_factor, 0) / items.length;
 
-      if (averageQuality >= 4 && averageEaseFactor >= 3.0) {
-        return 'advanced';
-      } else if (averageQuality >= 3 && averageEaseFactor >= 2.5) {
+      if (averageQuality >= 4 && averageEaseFactor >= 3.0) return 'advanced';
+      if (averageQuality >= 3 && averageEaseFactor >= 2.5)
         return 'intermediate';
-      } else {
-        return 'beginner';
-      }
+      return 'beginner';
     } catch (error) {
       console.error('❌ Error calculating mastery level:', error);
       return 'beginner';
@@ -460,65 +406,44 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Get weekly progress data
+   * Get weekly progress data from srs_items.last_reviewed_at
    */
-  private async getWeeklyProgress(userId: string): Promise<WeeklyProgress[]> {
+  private async getWeeklyProgress(): Promise<WeeklyProgress[]> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('quality_rating, created_at, response_time_seconds')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(100); // Last 100 reviews
+      const items = await this.getReviewedItems();
+      const withTime = items.filter(i => i.last_reviewed_at !== null);
+      if (withTime.length === 0) return [];
 
-      if (error || !performance) {
-        return [];
-      }
-
-      // Group by week
-      interface PerformanceData {
-        quality_rating: number;
-        created_at: string;
-        response_time_seconds?: number | null;
-      }
-      const typedPerformance = performance as PerformanceData[];
-      const weekGroups = typedPerformance.reduce(
-        (groups, p) => {
-          const date = new Date(p.created_at);
+      const weekGroups = withTime.reduce(
+        (groups, item) => {
+          const date = new Date(item.last_reviewed_at!);
           const weekStart = new Date(date);
           weekStart.setDate(date.getDate() - date.getDay());
           const weekKey = weekStart.toISOString().split('T')[0];
 
-          if (!groups[weekKey]) {
-            groups[weekKey] = { reviews: [], timeSpent: 0 };
-          }
-          groups[weekKey].reviews.push(p);
-          if (p.response_time_seconds) {
-            groups[weekKey].timeSpent += p.response_time_seconds;
-          }
+          if (!groups[weekKey]) groups[weekKey] = [];
+          groups[weekKey].push(item);
           return groups;
         },
-        {} as Record<string, { reviews: PerformanceData[]; timeSpent: number }>,
+        {} as Record<string, SRSItemRow[]>,
       );
 
       const weeklyProgress: WeeklyProgress[] = [];
 
-      for (const [week, data] of Object.entries(weekGroups)) {
-        const qualityScores = data.reviews.map(r => r.quality_rating);
+      for (const [week, weekItems] of Object.entries(weekGroups)) {
+        const qualityScores = weekItems.map(i => i.last_quality_rating ?? 0);
         const averageQuality =
-          qualityScores.reduce((sum, score) => sum + score, 0) /
-          qualityScores.length;
+          qualityScores.reduce((sum, s) => sum + s, 0) / qualityScores.length;
         const retentionRate =
-          (qualityScores.filter(score => score >= 3).length /
-            qualityScores.length) *
+          (qualityScores.filter(s => s >= 3).length / qualityScores.length) *
           100;
 
         weeklyProgress.push({
           week,
-          reviewsCompleted: data.reviews.length,
+          reviewsCompleted: weekItems.length,
           averageQuality,
           retentionRate,
-          timeSpent: Math.round(data.timeSpent / 60), // Convert to minutes
+          timeSpent: 0, // No response_time_seconds equivalent in SQLite schema
         });
       }
 
@@ -530,60 +455,32 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Get topic mastery levels
+   * Get topic mastery levels from srs_items
    */
-  private async getTopicMasteryLevels(userId: string): Promise<TopicMastery[]> {
+  private async getTopicMasteryLevels(): Promise<TopicMastery[]> {
     try {
-      const { data: sessions, error } = await supabase
-        .from('study_sessions')
-        .select(
-          `
-          id,
-          topic,
-          last_reviewed_at,
-          review_count,
-          srs_performance!inner(
-            ease_factor,
-            created_at
-          )
-        `,
-        )
-        .eq('user_id', userId)
-        .eq('deleted_at', null);
+      const db = await getDatabase();
+      const deviceId = await getOrCreateDeviceId();
 
-      if (error || !sessions) {
-        return [];
-      }
+      const items = await db.getAllAsync<SRSItemRow>(
+        `SELECT id, topic, ease_factor, last_quality_rating, last_reviewed_at,
+                next_review_date, repetitions
+         FROM srs_items
+         WHERE user_id = ? AND is_active = 1 AND repetitions > 0`,
+        [deviceId],
+      );
 
-      const topicMastery: TopicMastery[] = [];
-
-      for (const session of sessions) {
-        if (session.srs_performance.length === 0) continue;
-
-        const latestPerformance = session.srs_performance[0];
-        const masteryLevel = Math.min(
-          100,
-          (latestPerformance.ease_factor / 3.0) * 100,
-        );
-
-        // Calculate next review date (simplified)
-        const lastReview = new Date(latestPerformance.created_at);
-        const nextReview = new Date(lastReview);
-        nextReview.setDate(lastReview.getDate() + 7); // Default 7 days
-
-        topicMastery.push({
-          sessionId: session.id,
-          topic: session.topic,
-          masteryLevel,
-          lastReviewed:
-            session.last_reviewed_at || latestPerformance.created_at,
-          nextReview: nextReview.toISOString(),
-          easeFactor: latestPerformance.ease_factor,
-          reviewCount: session.review_count || 0,
-        });
-      }
-
-      return topicMastery.sort((a, b) => b.masteryLevel - a.masteryLevel);
+      return items
+        .map(item => ({
+          sessionId: item.id,
+          topic: item.topic,
+          masteryLevel: Math.min(100, (item.ease_factor / 3.0) * 100),
+          lastReviewed: item.last_reviewed_at ?? item.next_review_date,
+          nextReview: item.next_review_date,
+          easeFactor: item.ease_factor,
+          reviewCount: item.repetitions,
+        }))
+        .sort((a, b) => b.masteryLevel - a.masteryLevel);
     } catch (error) {
       console.error('❌ Error getting topic mastery levels:', error);
       return [];
@@ -591,28 +488,29 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Get study streaks
+   * Get study streaks from srs_items.last_reviewed_at
    */
-  private async getStudyStreaks(userId: string): Promise<StudyStreak[]> {
+  private async getStudyStreaks(): Promise<StudyStreak[]> {
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select('created_at')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+      const db = await getDatabase();
+      const deviceId = await getOrCreateDeviceId();
 
-      if (error || !performance) {
-        return [];
-      }
+      const rows = await db.getAllAsync<{ last_reviewed_at: string }>(
+        `SELECT last_reviewed_at FROM srs_items
+         WHERE user_id = ? AND last_reviewed_at IS NOT NULL`,
+        [deviceId],
+      );
 
-      // Group consecutive days
+      if (rows.length === 0) return [];
+
+      const uniqueDates = [
+        ...new Set(
+          rows.map(r => new Date(r.last_reviewed_at).toDateString()).sort(),
+        ),
+      ].sort();
+
       const streaks: StudyStreak[] = [];
       let currentStreak: Date[] = [];
-
-      const sortedDates = performance
-        .map(p => new Date(p.created_at).toDateString())
-        .sort();
-      const uniqueDates = [...new Set(sortedDates)].sort();
 
       for (let i = 0; i < uniqueDates.length; i++) {
         const currentDate = new Date(uniqueDates[i]);
@@ -622,10 +520,8 @@ export class SRSAnalyticsService {
           prevDate &&
           currentDate.getTime() - prevDate.getTime() === 24 * 60 * 60 * 1000
         ) {
-          // Consecutive day
           currentStreak.push(currentDate);
         } else {
-          // New streak
           if (currentStreak.length > 0) {
             streaks.push({
               startDate: currentStreak[0].toISOString(),
@@ -638,7 +534,6 @@ export class SRSAnalyticsService {
         }
       }
 
-      // Add current streak
       if (currentStreak.length > 0) {
         streaks.push({
           startDate: currentStreak[0].toISOString(),
@@ -656,58 +551,34 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Get upcoming reviews
+   * Get upcoming SRS reviews from reminders joined with srs_items for topic
    */
-  private async getUpcomingReviews(userId: string): Promise<UpcomingReview[]> {
+  private async getUpcomingReviews(): Promise<UpcomingReview[]> {
     try {
-      const { data: reminders, error } = await supabase
-        .from('reminders')
-        .select(
-          `
-          session_id,
-          reminder_time,
-          priority,
-          study_sessions!inner(topic)
-        `,
-        )
-        .eq('user_id', userId)
-        .eq('reminder_type', 'spaced_repetition')
-        .eq('completed', false)
-        .gte('reminder_time', new Date().toISOString())
-        .order('reminder_time', { ascending: true })
-        .limit(10);
+      const db = await getDatabase();
+      const deviceId = await getOrCreateDeviceId();
 
-      if (error || !reminders) {
-        return [];
-      }
+      const rows = await db.getAllAsync<ReminderRow>(
+        `SELECT r.id, r.srs_item_id, r.scheduled_time, s.topic
+         FROM reminders r
+         LEFT JOIN srs_items s ON s.id = r.srs_item_id
+         WHERE r.user_id = ?
+           AND r.reminder_type = 'srs_review'
+           AND r.is_cancelled = 0
+           AND r.fired_at IS NULL
+           AND r.scheduled_time >= ?
+         ORDER BY r.scheduled_time ASC
+         LIMIT 10`,
+        [deviceId, new Date().toISOString()],
+      );
 
-      interface ReminderWithSession {
-        session_id: string;
-        reminder_time: string;
-        priority: 'low' | 'medium' | 'high';
-        study_sessions: { topic: string } | { topic: string }[] | null;
-      }
-      const typedReminders = reminders as ReminderWithSession[];
-      return typedReminders.map(reminder => {
-        let topic: string | undefined;
-        const sessionData = reminder.study_sessions;
-        if (Array.isArray(sessionData)) {
-          topic = sessionData[0]?.topic;
-        } else if (
-          sessionData &&
-          typeof sessionData === 'object' &&
-          'topic' in sessionData
-        ) {
-          topic = sessionData.topic;
-        }
-        return {
-          sessionId: reminder.session_id,
-          topic: topic || '',
-          dueDate: reminder.reminder_time,
-          priority: reminder.priority,
-          estimatedDifficulty: 3, // Default difficulty, could be calculated based on history
-        };
-      });
+      return rows.map(row => ({
+        sessionId: row.srs_item_id ?? row.id,
+        topic: row.topic ?? '',
+        dueDate: row.scheduled_time,
+        priority: 'medium' as const,
+        estimatedDifficulty: 3,
+      }));
     } catch (error) {
       console.error('❌ Error getting upcoming reviews:', error);
       return [];
@@ -715,51 +586,40 @@ export class SRSAnalyticsService {
   }
 
   /**
-   * Get overall statistics
+   * Get overall statistics from srs_items
    */
-  private async getOverallStats(userId: string): Promise<OverallStats> {
+  private async getOverallStats(): Promise<OverallStats> {
+    const empty: OverallStats = {
+      totalReviews: 0,
+      averageQuality: 0,
+      retentionRate: 0,
+      topicsReviewed: 0,
+      averageEaseFactor: 0,
+      studyTimeTotal: 0,
+      longestStreak: 0,
+      currentStreak: 0,
+    };
+
     try {
-      const { data: performance, error } = await supabase
-        .from('srs_performance')
-        .select(
-          'quality_rating, ease_factor, response_time_seconds, session_id',
-        )
-        .eq('user_id', userId);
+      const items = await this.getReviewedItems();
+      if (items.length === 0) return empty;
 
-      if (error || !performance) {
-        return {
-          totalReviews: 0,
-          averageQuality: 0,
-          retentionRate: 0,
-          topicsReviewed: 0,
-          averageEaseFactor: 0,
-          studyTimeTotal: 0,
-          longestStreak: 0,
-          currentStreak: 0,
-        };
-      }
-
-      const totalReviews = performance.length;
+      const totalReviews = items.length;
       const averageQuality =
-        performance.reduce((sum, p) => sum + p.quality_rating, 0) /
+        items.reduce((sum, i) => sum + (i.last_quality_rating ?? 0), 0) /
         totalReviews;
       const retentionRate =
-        (performance.filter(p => p.quality_rating >= 3).length / totalReviews) *
+        (items.filter(i => (i.last_quality_rating ?? 0) >= 3).length /
+          totalReviews) *
         100;
-      const topicsReviewed = new Set(performance.map(p => p.session_id)).size;
+      const topicsReviewed = new Set(items.map(i => i.topic)).size;
       const averageEaseFactor =
-        performance.reduce((sum, p) => sum + p.ease_factor, 0) / totalReviews;
-      const studyTimeTotal =
-        performance.reduce(
-          (sum, p) => sum + (p.response_time_seconds || 0),
-          0,
-        ) / 60; // minutes
+        items.reduce((sum, i) => sum + i.ease_factor, 0) / totalReviews;
 
-      // Get streaks
-      const streaks = await this.getStudyStreaks(userId);
+      const streaks = await this.getStudyStreaks();
       const longestStreak =
         streaks.length > 0 ? Math.max(...streaks.map(s => s.length)) : 0;
-      const currentStreak = streaks.find(s => s.isActive)?.length || 0;
+      const currentStreak = streaks.find(s => s.isActive)?.length ?? 0;
 
       return {
         totalReviews,
@@ -767,22 +627,13 @@ export class SRSAnalyticsService {
         retentionRate,
         topicsReviewed,
         averageEaseFactor,
-        studyTimeTotal,
+        studyTimeTotal: 0, // No response_time_seconds equivalent in SQLite schema
         longestStreak,
         currentStreak,
       };
     } catch (error) {
       console.error('❌ Error getting overall stats:', error);
-      return {
-        totalReviews: 0,
-        averageQuality: 0,
-        retentionRate: 0,
-        topicsReviewed: 0,
-        averageEaseFactor: 0,
-        studyTimeTotal: 0,
-        longestStreak: 0,
-        currentStreak: 0,
-      };
+      return empty;
     }
   }
 }

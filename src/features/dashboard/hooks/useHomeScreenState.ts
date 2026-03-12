@@ -1,11 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Task } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 
 export const useHomeScreenState = () => {
-  const { session, user } = useAuth();
-  const isGuest = !session;
-
   // State management
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isFabOpen, setIsFabOpen] = useState(false);
@@ -30,19 +26,13 @@ export const useHomeScreenState = () => {
 
   // Get personalized title
   const getPersonalizedTitle = useCallback(() => {
-    if (isGuest) {
-      return 'Welcome to ELARO';
-    }
-
     const hour = new Date().getHours();
     let greeting = 'Good evening';
     if (hour < 12) greeting = 'Good morning';
     else if (hour < 17) greeting = 'Good afternoon';
 
-    const firstName =
-      user?.first_name || user?.user_metadata?.first_name || 'there';
-    return `${greeting}, ${firstName}`;
-  }, [isGuest, user]);
+    return `${greeting}, there`;
+  }, []);
 
   // Check if should show trial banner
   const shouldShowBanner = useCallback(async () => {
@@ -51,21 +41,14 @@ export const useHomeScreenState = () => {
 
   // Calculate trial days remaining
   const getTrialDaysRemaining = useCallback(() => {
-    if (!user?.subscription_expires_at) return 0;
-    const now = new Date();
-    const expiry = new Date(user.subscription_expires_at);
-    const diffTime = expiry.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return Math.max(0, diffDays);
-  }, [user?.subscription_expires_at]);
+    return 0;
+  }, []);
 
   return {
     // State
     selectedTask,
     isFabOpen,
     isBannerDismissed,
-    isGuest,
-    user,
 
     // Handlers
     handleViewDetails,

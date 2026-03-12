@@ -4,7 +4,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 import { COLORS } from '@/constants/theme';
 
 import { useHomeScreenState } from '../hooks/useHomeScreenState';
@@ -20,8 +19,6 @@ type RefactoredHomeScreenNavigationProp = StackNavigationProp<
 
 const RefactoredHomeScreen: React.FC = () => {
   const navigation = useNavigation<RefactoredHomeScreenNavigationProp>();
-  const { session } = useAuth();
-  const isGuest = !session;
 
   const {
     selectedTask,

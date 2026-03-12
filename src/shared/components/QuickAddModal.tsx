@@ -14,13 +14,11 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { Button } from './Button';
 import { api } from '@/services/api';
 import { useQueryClient } from '@tanstack/react-query';
-import { notificationService } from '@/services/notifications';
-import { useTotalTaskCount } from '@/hooks';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { savePendingTask } from '@/utils/taskPersistence';
 import { TemplateBrowserModal } from '@/features/templates/components/TemplateBrowserModal';
@@ -51,11 +49,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   onClose,
 }) => {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
-  const { user, session } = useAuth();
+  const deviceId = useDeviceId();
   const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
-    useTotalTaskCount();
   // Course selector
   const { courses, isLoading: isLoadingCourses } = useCourseSelector();
 
@@ -113,8 +109,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       }
     },
   });
-
-  const isGuest = !session;
 
   // Reset form when modal closes
   useEffect(() => {
@@ -208,7 +202,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             due_date: dateTime.toISOString(),
             reminders: [120],
           };
-          await api.mutations.assignments.create(taskData, isOnline, user!.id);
+          await api.mutations.assignments.create(
+            taskData,
+            isOnline,
+            deviceId || '',
+          );
           break;
 
         case 'lecture':
@@ -224,7 +222,11 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             recurring_pattern: 'none',
             reminders: [30],
           };
-          await api.mutations.lectures.create(taskData, isOnline, user!.id);
+          await api.mutations.lectures.create(
+            taskData,
+            isOnline,
+            deviceId || '',
+          );
           break;
 
         case 'study_session':
@@ -239,7 +241,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           await api.mutations.studySessions.create(
             taskData,
             isOnline,
-            user!.id,
+            deviceId || '',
           );
           break;
       }
@@ -254,11 +256,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
         } catch (templateError) {
           console.error('Error saving template:', templateError);
         }
-      }
-
-      // Check if first task for push notification registration
-      if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-        await notificationService.registerForPushNotifications(session.user.id);
       }
 
       // Invalidate queries

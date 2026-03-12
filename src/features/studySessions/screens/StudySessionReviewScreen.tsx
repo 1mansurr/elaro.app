@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { SRSReviewCard } from '../components/SRSReviewCard';
 import { supabase } from '@/services/supabase';
 import { PrimaryButton } from '@/shared/components';
@@ -47,7 +46,6 @@ const StudySessionReviewScreen: React.FC = () => {
   const navigation = useNavigation<StudySessionReviewScreenNavigationProp>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
 
   const { sessionId } = route.params;
 

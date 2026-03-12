@@ -29,7 +29,7 @@ import { useExpensiveMemo, useStableCallback } from '@/hooks/useMemoization';
 import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 
 import { RootStackParamList, Task } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
@@ -54,13 +54,12 @@ import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
 import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
 import { HomeScreenEmptyState } from '../components/HomeScreenEmptyState';
-import { supabase } from '@/services/supabase';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 
 const HomeScreen = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { user, isGuest } = useAuth();
+  const deviceId = useDeviceId();
   const { showToast } = useToast();
   const queryClient = useQueryClient();
 
@@ -167,34 +166,30 @@ const HomeScreen = () => {
     return (
       <NextTaskCard
         task={processedHomeData?.nextUpcomingTask || null}
-        isGuestMode={isGuest}
+        isGuestMode={false}
         onAddActivity={() => setIsFabOpen(true)}
         onViewDetails={task => setSelectedTask(task)}
       />
     );
-  }, [processedHomeData?.nextUpcomingTask, isGuest]);
+  }, [processedHomeData?.nextUpcomingTask]);
 
   const MemoizedTodayOverviewCard = useMemo(() => {
     return (
       <TodayOverviewCard
         overview={processedHomeData?.todayOverview || null}
         monthlyTaskCount={monthlyTaskCount || 0}
-        subscriptionTier={user?.subscription_tier || 'free'}
+        subscriptionTier={'free'}
       />
     );
-  }, [
-    processedHomeData?.todayOverview,
-    monthlyTaskCount,
-    user?.subscription_tier,
-  ]);
+  }, [processedHomeData?.todayOverview, monthlyTaskCount]);
 
   // Rest of the component logic...
   const getPersonalizedTitle = useCallback(() => {
     const hour = new Date().getHours();
-    if (hour < 12) return `Good morning, ${user?.first_name || 'there'}!`;
-    if (hour < 17) return `Good afternoon, ${user?.first_name || 'there'}!`;
-    return `Good evening, ${user?.first_name || 'there'}!`;
-  }, [user?.first_name]);
+    if (hour < 12) return `Good morning, there!`;
+    if (hour < 17) return `Good afternoon, there!`;
+    return `Good evening, there!`;
+  }, []);
 
   // Trial banner logic removed - no longer using free trials
 
@@ -242,31 +237,25 @@ const HomeScreen = () => {
   return (
     <View style={styles.container}>
       {/* Header with Notification Bell */}
-      {!isGuest && (
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
-          <NotificationBell
-            onPress={() => setIsNotificationHistoryVisible(true)}
-          />
-        </View>
-      )}
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>{getPersonalizedTitle()}</Text>
+        <NotificationBell
+          onPress={() => setIsNotificationHistoryVisible(true)}
+        />
+      </View>
 
       <ScrollView
         style={styles.scrollContainer}
         refreshControl={
-          !isGuest ? (
-            <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
-          ) : undefined
+          <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
         scrollEnabled={!isFabOpen}>
-        {isGuest && <Text style={styles.title}>{getPersonalizedTitle()}</Text>}
-
         <SwipeableTaskCard
           onSwipeComplete={() =>
             processedHomeData?.nextUpcomingTask &&
             handleSwipeComplete(processedHomeData.nextUpcomingTask)
           }
-          enabled={!isGuest && !!processedHomeData?.nextUpcomingTask}>
+          enabled={!!processedHomeData?.nextUpcomingTask}>
           {MemoizedNextTaskCard}
         </SwipeableTaskCard>
 

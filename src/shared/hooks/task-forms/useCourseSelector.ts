@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/services/supabase';
 import { Course } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 
 export interface UseCourseSelectorReturn {
   courses: Course[];
@@ -11,13 +11,13 @@ export interface UseCourseSelectorReturn {
 }
 
 export const useCourseSelector = (): UseCourseSelectorReturn => {
-  const { user, session } = useAuth();
+  const deviceId = useDeviceId();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   const fetchCourses = async () => {
-    if (!session || !user) {
+    if (!deviceId) {
       setCourses([]);
       return;
     }
@@ -37,7 +37,7 @@ export const useCourseSelector = (): UseCourseSelectorReturn => {
         courseName: course.course_name,
         courseCode: course.course_code,
         aboutCourse: course.about_course,
-        userId: user.id,
+        userId: deviceId || '',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       })) as Course[];
@@ -55,7 +55,7 @@ export const useCourseSelector = (): UseCourseSelectorReturn => {
 
   useEffect(() => {
     fetchCourses();
-  }, [session, user?.id]);
+  }, [deviceId]);
 
   return {
     courses,

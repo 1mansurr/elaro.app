@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import {
   savePendingTask,
   getPendingTask,
@@ -39,7 +39,7 @@ const AddLectureRemindersScreen = () => {
   const navigation = useNavigation();
   const queryClient = useQueryClient();
   const { courseData, updateCourseData, resetCourseData } = useAddCourse();
-  const { user, isGuest } = useAuth();
+  const deviceId = useDeviceId();
   const insets = useSafeAreaInsets();
   const { theme } = useTheme();
 
@@ -130,7 +130,7 @@ const AddLectureRemindersScreen = () => {
       courseName: courseData.courseName,
       courseCode: courseData.courseCode,
       aboutCourse: courseData.courseDescription,
-      userId: user?.id || '',
+      userId: deviceId || '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

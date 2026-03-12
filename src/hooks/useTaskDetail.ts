@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { versionedApiClient } from '@/services/VersionedApiClient';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { Assignment, Lecture, StudySession } from '@/types';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
@@ -14,13 +14,13 @@ export const useTaskDetail = (
   taskType: TaskType | null | undefined,
   options: UseTaskDetailOptions = {},
 ) => {
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const { enabled = true } = options;
 
   return useQuery({
     queryKey: ['taskDetail', taskType, taskId],
     queryFn: async () => {
-      if (!taskId || !taskType || !user) {
+      if (!taskId || !taskType || !deviceId) {
         return null;
       }
 
@@ -134,6 +134,6 @@ export const useTaskDetail = (
 
       return null;
     },
-    enabled: enabled && !!taskId && !!taskType && !!user,
+    enabled: enabled && !!taskId && !!taskType && !!deviceId,
   });
 };

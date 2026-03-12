@@ -18,7 +18,7 @@ import {
 } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme, ThemeType } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext'; // TODO: Update to @/contexts/AuthContext after move
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   NotificationHistoryItem,
@@ -38,7 +38,7 @@ export const NotificationHistoryModal: React.FC<
   NotificationHistoryModalProps
 > = ({ isVisible, onClose }) => {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const insets = useSafeAreaInsets();
   const [notifications, setNotifications] = useState<NotificationHistoryItem[]>(
     [],
@@ -107,10 +107,10 @@ export const NotificationHistoryModal: React.FC<
   const filters = notificationHistoryService.getNotificationFilters();
 
   useEffect(() => {
-    if (isVisible && user) {
+    if (isVisible && deviceId) {
       loadNotifications();
     }
-  }, [isVisible, user]);
+  }, [isVisible, deviceId]);
 
   useEffect(() => {
     // Apply filter
@@ -146,12 +146,12 @@ export const NotificationHistoryModal: React.FC<
   }, [notifications, activeFilter]);
 
   const loadNotifications = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       setLoading(true);
       const data = await notificationHistoryService.getNotificationHistory(
-        user.id,
+        deviceId,
         {
           limit: 50,
           includeRead: true,
@@ -174,10 +174,10 @@ export const NotificationHistoryModal: React.FC<
   };
 
   const handleMarkAllAsRead = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
-      await notificationHistoryService.markAllAsRead(user.id);
+      await notificationHistoryService.markAllAsRead(deviceId);
       await loadNotifications();
     } catch (error) {
       console.error('Error marking all as read:', error);
@@ -186,10 +186,10 @@ export const NotificationHistoryModal: React.FC<
   };
 
   const handleMarkAsRead = async (notificationId: string) => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
-      await notificationHistoryService.markAsRead(notificationId, user.id);
+      await notificationHistoryService.markAsRead(notificationId, deviceId);
       await loadNotifications();
     } catch (error) {
       console.error('Error marking as read:', error);
@@ -197,12 +197,12 @@ export const NotificationHistoryModal: React.FC<
   };
 
   const handleDeleteNotification = async (notificationId: string) => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       await notificationHistoryService.deleteNotification(
         notificationId,
-        user.id,
+        deviceId,
       );
       await loadNotifications();
     } catch (error) {
@@ -211,12 +211,12 @@ export const NotificationHistoryModal: React.FC<
   };
 
   const handleCompleteTask = async (notificationId: string) => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       await notificationHistoryService.completeTaskFromNotification(
         notificationId,
-        user.id,
+        deviceId,
       );
       await loadNotifications();
     } catch (error) {

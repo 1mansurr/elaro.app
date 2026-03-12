@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course } from '@/types';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 
 /**
  * React Query hook for fetching a single course by ID
@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
  * @returns React Query result with course data
  */
 export const useCourseDetail = (courseId: string) => {
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useQuery<Course, Error>({
     queryKey: ['courseDetail', courseId],
@@ -40,7 +40,7 @@ export const useCourseDetail = (courseId: string) => {
           courseName: apiCourse.course_name,
           courseCode: apiCourse.course_code,
           aboutCourse: apiCourse.about_course,
-          userId: user?.id || '', // VersionedApiClient.Course doesn't have userId, use from context
+          userId: deviceId || '', // VersionedApiClient.Course doesn't have userId, use from context
           createdAt: apiCourse.created_at,
           updatedAt: apiCourse.updated_at,
           deletedAt: apiCourse.deleted_at,
@@ -64,8 +64,8 @@ export const useCourseDetail = (courseId: string) => {
           );
 
           try {
-            if (!user?.id) {
-              throw new Error('User not authenticated');
+            if (!deviceId) {
+              throw new Error('Device ID not available');
             }
 
             // Query course directly from Supabase
@@ -73,7 +73,7 @@ export const useCourseDetail = (courseId: string) => {
               .from('courses')
               .select('*')
               .eq('id', courseId)
-              .eq('user_id', user.id)
+              .eq('user_id', deviceId)
               .is('deleted_at', null)
               .single();
 
@@ -112,7 +112,7 @@ export const useCourseDetail = (courseId: string) => {
         throw error;
       }
     },
-    enabled: !!courseId && !!user?.id,
+    enabled: !!courseId && !!deviceId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

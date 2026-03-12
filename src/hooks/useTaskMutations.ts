@@ -3,7 +3,7 @@ import { supabase } from '@/services/supabase';
 import { Task, HomeScreenData } from '@/types';
 import { Alert } from 'react-native';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { syncManager } from '@/services/syncManager';
 import { cache } from '@/utils/cache';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
@@ -39,7 +39,7 @@ interface RestoreTaskParams {
 export const useCompleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: CompleteTaskParams) => {
@@ -50,7 +50,7 @@ export const useCompleteTask = () => {
         );
 
         // Add to sync queue
-        if (user?.id) {
+        if (deviceId) {
           await syncManager.addToQueue(
             'COMPLETE',
             taskType as 'assignment' | 'lecture' | 'study_session',
@@ -58,7 +58,7 @@ export const useCompleteTask = () => {
               type: 'COMPLETE',
               resourceId: taskId,
             },
-            user.id,
+            deviceId,
             { syncImmediately: false },
           );
         }
@@ -192,7 +192,7 @@ export const useCompleteTask = () => {
 export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: DeleteTaskParams) => {
@@ -203,7 +203,7 @@ export const useDeleteTask = () => {
         );
 
         // Add to sync queue
-        if (user?.id) {
+        if (deviceId) {
           await syncManager.addToQueue(
             'DELETE',
             taskType as 'assignment' | 'lecture' | 'study_session',
@@ -211,7 +211,7 @@ export const useDeleteTask = () => {
               type: 'DELETE',
               resourceId: taskId,
             },
-            user.id,
+            deviceId,
             { syncImmediately: false },
           );
         }
@@ -329,7 +329,7 @@ export const useDeleteTask = () => {
 export const useRestoreTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: RestoreTaskParams) => {
@@ -353,7 +353,7 @@ export const useRestoreTask = () => {
           `📴 Offline: Queueing RESTORE action for ${taskType} ${taskId}`,
         );
 
-        if (user?.id) {
+        if (deviceId) {
           await syncManager.addToQueue(
             'RESTORE',
             taskType as 'assignment' | 'lecture' | 'study_session',
@@ -361,7 +361,7 @@ export const useRestoreTask = () => {
               type: 'RESTORE',
               resourceId: taskId,
             },
-            user.id,
+            deviceId,
             { syncImmediately: false },
           );
         }

@@ -32,7 +32,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
 import { useMemoryMonitor } from '@/hooks/useMemoryMonitor';
 import { BlurView } from 'expo-blur';
-import { useAuth } from '@/contexts/AuthContext';
 
 // Define the navigation prop type for this screen
 type CoursesScreenNavigationProp =
@@ -80,7 +79,6 @@ const CoursesScreen = () => {
   const navigation = useNavigation<CoursesScreenNavigationProp>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
 
   // JS Thread monitoring (dev only)
   // Increased threshold to 25ms to reduce false positives (25ms = 40fps, acceptable for list screens)

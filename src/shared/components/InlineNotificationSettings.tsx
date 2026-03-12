@@ -8,33 +8,32 @@ import {
   Alert,
 } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationPreferences } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 export const InlineNotificationSettings: React.FC = () => {
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const [preferences, setPreferences] =
     useState<SimpleNotificationPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (user) {
+    if (deviceId) {
       loadPreferences();
     }
-  }, [user]);
+  }, [deviceId]);
 
   const loadPreferences = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       setLoading(true);
-      const prefs = await notificationService.preferences.getUserPreferences(
-        user.id,
-      );
+      const prefs =
+        await notificationService.preferences.getUserPreferences(deviceId);
       setPreferences(prefs);
     } catch (error) {
       console.error('Error loading notification preferences:', error);
@@ -47,14 +46,14 @@ export const InlineNotificationSettings: React.FC = () => {
     key: keyof SimpleNotificationPreferences,
     value: boolean,
   ) => {
-    if (!preferences || !user) return;
+    if (!preferences || !deviceId) return;
 
     try {
       setSaving(true);
       const updatedPreferences = { ...preferences, [key]: value };
       setPreferences(updatedPreferences);
 
-      await notificationService.preferences.updateUserPreferences(user.id, {
+      await notificationService.preferences.updateUserPreferences(deviceId, {
         [key]: value,
       });
     } catch (error) {
@@ -67,7 +66,7 @@ export const InlineNotificationSettings: React.FC = () => {
   };
 
   const handleQuietHoursToggle = async (enabled: boolean) => {
-    if (!preferences || !user) return;
+    if (!preferences || !deviceId) return;
 
     try {
       setSaving(true);
@@ -77,7 +76,7 @@ export const InlineNotificationSettings: React.FC = () => {
       };
       setPreferences(updatedPreferences);
 
-      await notificationService.preferences.updateUserPreferences(user.id, {
+      await notificationService.preferences.updateUserPreferences(deviceId, {
         quietHours: { enabled },
       });
     } catch (error) {

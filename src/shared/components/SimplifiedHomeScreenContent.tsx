@@ -10,7 +10,6 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
-import { useAuth } from '@/contexts/AuthContext';
 import { RootStackParamList, Task } from '@/types';
 // TrialBanner component not found - import removed
 import NextTaskCard from '@/features/dashboard/components/NextTaskCard';
@@ -181,7 +180,6 @@ EmptyStateSection.displayName = 'EmptyStateSection';
 export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentProps> =
   memo(({ data, uiState, eventHandlers }) => {
     const navigation = useNavigation<HomeScreenNavigationProp>();
-    const { user } = useAuth();
     const queryClient = useQueryClient();
 
     const { isGuest, homeData, isLoading, monthlyTaskCount } = data;
@@ -197,9 +195,7 @@ export const SimplifiedHomeScreenContent: React.FC<SimplifiedHomeScreenContentPr
     } = eventHandlers;
 
     // Memoized subscription tier
-    const subscriptionTier = useExpensiveMemo(() => {
-      return user?.subscription_tier || 'free';
-    }, [user?.subscription_tier]);
+    const subscriptionTier = useExpensiveMemo(() => 'free' as const, []);
 
     // Memoized refresh handler
     const handleRefresh = useStableCallback(() => {

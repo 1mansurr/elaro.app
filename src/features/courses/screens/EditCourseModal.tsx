@@ -18,7 +18,7 @@ import DateTimePicker, {
   DateTimePickerEvent,
 } from '@react-native-community/datetimepicker';
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
@@ -39,7 +39,7 @@ const EditCourseModal = () => {
   const navigation = useNavigation();
   const route = useRoute<EditCourseModalRouteProp>();
   const { courseId } = route.params;
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const { isOnline } = useNetwork();
   const insets = useSafeAreaInsets();
   const { theme, isDark } = useTheme();
@@ -134,11 +134,6 @@ const EditCourseModal = () => {
       return;
     }
 
-    if (!user?.id) {
-      Alert.alert('Error', 'User not authenticated.');
-      return;
-    }
-
     setIsSaving(true);
     try {
       await coursesApiMutations.update(
@@ -149,7 +144,7 @@ const EditCourseModal = () => {
           about_course: aboutCourse.trim(),
         },
         isOnline,
-        user.id,
+        deviceId || '',
       );
 
       // TODO: Update lecture schedule if changed
@@ -234,14 +229,9 @@ const EditCourseModal = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!user?.id) {
-      Alert.alert('Error', 'User not authenticated.');
-      return;
-    }
-
     setIsSaving(true);
     try {
-      await coursesApiMutations.delete(courseId, isOnline, user.id);
+      await coursesApiMutations.delete(courseId, isOnline, deviceId || '');
 
       // Invalidate React Query caches to update UI immediately
       await queryClient.invalidateQueries({ queryKey: ['courses'] });

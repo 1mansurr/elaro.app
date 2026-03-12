@@ -13,16 +13,10 @@ import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
 import { Button, ReminderSelector } from '@/shared/components';
 import { api } from '@/services/api';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useQueryClient } from '@tanstack/react-query';
-import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
-import { useTotalTaskCount } from '@/hooks';
-import {
-  savePendingTask,
-  getPendingTask,
-  clearPendingTask,
-} from '@/utils/taskPersistence';
+import { getPendingTask, clearPendingTask } from '@/utils/taskPersistence';
 import { formatDate } from '@/i18n';
 
 type RemindersScreenNavigationProp = StackNavigationProp<
@@ -52,7 +46,7 @@ const RemindersScreen = () => {
   const resetAssignmentData = () => {
     console.log('Mock resetAssignmentData');
   };
-  const { session, user } = useAuth();
+  const deviceId = useDeviceId();
   const queryClient = useQueryClient();
   const {
     limitReached,
@@ -60,12 +54,9 @@ const RemindersScreen = () => {
     monthlyLimit,
     isLoading: isTaskLimitLoading,
   } = useMonthlyTaskCount();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
-    useTotalTaskCount();
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const isGuest = !session;
   const maxReminders = 2; // This should come from a user context later
 
   const handleBack = () => {
@@ -109,8 +100,8 @@ const RemindersScreen = () => {
           reminders: taskData.reminders,
         },
         true,
-        user?.id || '',
-      ); // Add isOnline and userId parameters
+        deviceId || '',
+      );
 
       // Clear pending data
       await clearPendingTask();
@@ -168,18 +159,11 @@ const RemindersScreen = () => {
               ? assignmentData.submissionLink.trim()
               : undefined,
           due_date: assignmentData.dueDate.toISOString(),
-          reminders: reminders, // Pass the array of reminder minutes
+          reminders: reminders,
         },
         true,
-        user?.id || '',
-      ); // Add isOnline and userId parameters
-
-      // Reminders are now handled by the backend create-assignment function
-
-      // Check if this is the user's first task ever created
-      if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-        await notificationService.registerForPushNotifications(session.user.id);
-      }
+        deviceId || '',
+      );
 
       // Invalidate all relevant queries (including calendar queries so task appears immediately)
       const { invalidateTaskQueries } =
@@ -215,35 +199,6 @@ const RemindersScreen = () => {
   const handleCreateAssignment = async () => {
     await createAssignment(assignmentData.reminders);
   };
-
-  if (isGuest) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Text style={styles.backButtonText}>← Back</Text>
-          </TouchableOpacity>
-          <Text style={styles.title}>Reminders</Text>
-          <Text style={styles.subtitle}>Step 6 of 6</Text>
-        </View>
-
-        <View style={styles.guestContainer}>
-          <Text style={styles.guestText}>
-            Create an account to save your assignments and get reminders.
-          </Text>
-          <Button
-            title="Sign Up"
-            onPress={() => {
-              Alert.alert(
-                'Sign Up',
-                'Please use the main menu to create an account.',
-              );
-            }}
-          />
-        </View>
-      </View>
-    );
-  }
 
   return (
     <View style={styles.container}>

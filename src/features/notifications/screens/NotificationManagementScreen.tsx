@@ -19,7 +19,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { notificationService } from '@/services/notifications';
 import { SimpleNotificationSettings } from '../components/SimpleNotificationSettings';
@@ -39,7 +39,7 @@ const EDGE_SWIPE_THRESHOLD = 50;
 export const NotificationManagementScreen: React.FC = () => {
   const navigation = useNavigation();
   const { theme, isDark } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>(
     'settings',
@@ -62,13 +62,12 @@ export const NotificationManagementScreen: React.FC = () => {
   }, [activeTab]);
 
   const loadScheduledNotifications = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       setLoading(true);
-      const notifications = await notificationService.getScheduledNotifications(
-        user.id,
-      );
+      const notifications =
+        await notificationService.getScheduledNotifications(deviceId);
       setScheduledNotifications(notifications);
     } catch (error) {
       console.error('Error loading scheduled notifications:', error);
@@ -96,11 +95,11 @@ export const NotificationManagementScreen: React.FC = () => {
   };
 
   const handleTestNotification = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       const success = await notificationService.sendSmartNotification(
-        user.id,
+        deviceId,
         'Test Notification',
         'This is a test notification to verify your settings are working correctly.',
         'test',

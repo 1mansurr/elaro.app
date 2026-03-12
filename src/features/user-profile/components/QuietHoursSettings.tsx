@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/contexts/ThemeContext';
 import { supabase } from '@/services/supabase';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { formatDate } from '@/i18n';
 
 interface QuietHoursSettingsProps {
@@ -21,7 +21,7 @@ interface QuietHoursSettingsProps {
 
 export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietStart, setQuietStart] = useState(new Date());
   const [quietEnd, setQuietEnd] = useState(new Date());
@@ -35,7 +35,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   }, []);
 
   const loadSettings = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       const { data, error } = await supabase
@@ -43,7 +43,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
         .select(
           'quiet_hours_start, quiet_hours_end, weekend_notifications_enabled',
         )
-        .eq('user_id', user.id)
+        .eq('user_id', deviceId)
         .single();
 
       if (error) throw error;
@@ -85,7 +85,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   };
 
   const saveSettings = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       const startTime = `${quietStart.getHours().toString().padStart(2, '0')}:${quietStart.getMinutes().toString().padStart(2, '0')}:00`;
@@ -98,7 +98,7 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
           quiet_hours_end: quietHoursEnabled ? endTime : null,
           weekend_notifications_enabled: weekendNotifications,
         })
-        .eq('user_id', user.id);
+        .eq('user_id', deviceId);
 
       if (error) throw error;
 

@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RootStackParamList } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { PrimaryButton } from '@/shared/components';
 import {
   COLORS,
@@ -35,7 +34,6 @@ const StudyResultScreen: React.FC = () => {
   const navigation = useNavigation<StudyResultScreenNavigationProp>();
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
 
   const { sessionId } = route.params;
 

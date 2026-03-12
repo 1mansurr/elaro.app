@@ -3,16 +3,10 @@ import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList, Course, Lecture } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
-import { useMonthlyTaskCount, useTotalTaskCount } from '@/hooks';
-import {
-  savePendingTask,
-  clearPendingTask,
-  getPendingTask,
-} from '@/utils/taskPersistence';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { SPACING } from '@/constants/theme';
 import { saveDraft, getDraft, clearDraft } from '@/utils/draftStorage';
@@ -52,15 +46,11 @@ type AddLectureScreenRouteProp = RouteProp<
 const AddLectureScreen = () => {
   const navigation = useNavigation<AddLectureScreenNavigationProp>();
   const route = useRoute<AddLectureScreenRouteProp>();
-  const { session, user } = useAuth();
+  const deviceId = useDeviceId();
   const { isOnline } = useNetwork();
   const queryClient = useQueryClient();
-  const { isFirstTask, isLoading: isTotalTaskCountLoading } =
-    useTotalTaskCount();
   const { theme, isDark } = useTheme();
   const insets = useSafeAreaInsets();
-
-  const isGuest = !session;
 
   // Get initial data from Quick Add if available
   const initialData = route.params?.initialData;
@@ -366,10 +356,10 @@ const AddLectureScreen = () => {
           taskToEdit.id!,
           taskData,
           isOnline,
-          user?.id || '',
+          deviceId || '',
         );
       } else {
-        await api.mutations.lectures.create(taskData, isOnline, user?.id || '');
+        await api.mutations.lectures.create(taskData, isOnline, deviceId || '');
 
         if (saveAsTemplate && canSaveAsTemplate(taskData, 'lecture')) {
           try {
@@ -380,12 +370,6 @@ const AddLectureScreen = () => {
           } catch (templateError) {
             console.error('Error saving template:', templateError);
           }
-        }
-
-        if (!isTotalTaskCountLoading && isFirstTask && session?.user) {
-          await notificationService.registerForPushNotifications(
-            session.user.id,
-          );
         }
       }
 

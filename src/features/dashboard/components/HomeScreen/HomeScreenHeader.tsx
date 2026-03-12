@@ -2,7 +2,6 @@ import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { NotificationBell } from '@/shared/components/NotificationBell';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { useAuth } from '@/contexts/AuthContext';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
 // Helper function to get greeting based on time of day
@@ -20,19 +19,16 @@ interface HomeScreenHeaderProps {
 
 const HomeScreenHeader: React.FC<HomeScreenHeaderProps> = memo(
   ({ isGuest, onNotificationPress }) => {
-    const { user } = useAuth();
-
     // Optimized personalized title calculation with expensive memoization
     const personalizedTitle = useExpensiveMemo(() => {
       if (isGuest) {
         return "Let's Make Today Count";
       }
 
-      const name = user?.username || user?.first_name || 'there';
-      const title = `${getGreeting()}, ${name}!`;
+      const title = `${getGreeting()}, there!`;
 
       return title;
-    }, [isGuest, user?.username, user?.first_name]);
+    }, [isGuest]);
 
     // Stable callback for notification press
     const handleNotificationPress = useStableCallback(() => {

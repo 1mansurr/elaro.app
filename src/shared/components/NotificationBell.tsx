@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { notificationHistoryService } from '@/services/notifications/NotificationHistoryService';
 import { supabase } from '@/services/supabase';
 
@@ -26,13 +26,13 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
   onPress,
 }) => {
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [badgeAnimation] = useState(new Animated.Value(1));
 
   useEffect(() => {
-    if (!user) return;
+    if (!deviceId) return;
 
     // Load initial count
     loadUnreadCount();
@@ -46,7 +46,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
           event: '*',
           schema: 'public',
           table: 'notification_deliveries',
-          filter: `user_id=eq.${user.id}`,
+          filter: `user_id=eq.${deviceId}`,
         },
         payload => {
           console.log('Notification bell update:', payload);
@@ -58,16 +58,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
     return () => {
       subscription.unsubscribe();
     };
-  }, [user]);
+  }, [deviceId]);
 
   const loadUnreadCount = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
       setLoading(true);
 
       // Get unread count using the notification service
-      const count = await notificationHistoryService.getUnreadCount(user.id);
+      const count = await notificationHistoryService.getUnreadCount(deviceId);
       setUnreadCount(count);
 
       // Animate badge if count changed
@@ -107,7 +107,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
     return Math.max(16, (width / 375) * 24);
   };
 
-  if (!user) return null;
+  if (!deviceId) return null;
 
   return (
     <TouchableOpacity

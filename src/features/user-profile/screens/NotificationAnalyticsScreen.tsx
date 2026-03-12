@@ -11,13 +11,13 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { getNotificationAnalytics } from '@/utils/notificationQueue';
 
 export function NotificationAnalyticsScreen() {
   const navigation = useNavigation();
   const { theme } = useTheme();
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const [analytics, setAnalytics] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -27,10 +27,10 @@ export function NotificationAnalyticsScreen() {
   }, []);
 
   const loadAnalytics = async () => {
-    if (!user) return;
+    if (!deviceId) return;
 
     try {
-      const data = await getNotificationAnalytics(user.id);
+      const data = await getNotificationAnalytics(deviceId);
       setAnalytics(data);
     } catch (error) {
       console.error('Error loading analytics:', error);

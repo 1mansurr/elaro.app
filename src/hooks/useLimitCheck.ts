@@ -1,5 +1,4 @@
 import { useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 
 export type LimitCheckResult = {
   allowed: boolean;
@@ -11,8 +10,6 @@ export type LimitCheckResult = {
 };
 
 export const useLimitCheck = () => {
-  const { user } = useAuth();
-
   /**
    * Check if user can add more courses
    */

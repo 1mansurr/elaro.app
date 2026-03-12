@@ -5,7 +5,6 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 import { useHomeScreenData } from '@/hooks/useDataQueries';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { COLORS, SPACING } from '@/constants/theme';
@@ -30,8 +29,6 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
   onFabStateChange,
 }) => {
   const navigation = useNavigation<HomeScreenContentNavigationProp>();
-  const { session, user } = useAuth();
-  const isGuest = !session;
   const {
     data: homeData,
     isLoading,
@@ -39,7 +36,7 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
     error,
     refetch,
     isRefetching,
-  } = useHomeScreenData(!isGuest);
+  } = useHomeScreenData(true);
   const { monthlyTaskCount } = useMonthlyTaskCount();
   const queryClient = useQueryClient();
 
@@ -51,21 +48,19 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
     <ScrollView
       style={styles.scrollContainer}
       refreshControl={
-        !isGuest ? (
-          <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
-        ) : undefined
+        <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
       }>
       <NextTaskCard
-        task={isGuest ? null : homeData?.nextUpcomingTask || null}
-        isGuestMode={isGuest}
+        task={homeData?.nextUpcomingTask || null}
+        isGuestMode={false}
         onAddActivity={() => onFabStateChange({ isOpen: true })}
         onViewDetails={() => {}}
       />
 
       <TodayOverviewCard
-        overview={isGuest ? null : homeData?.todayOverview || null}
-        monthlyTaskCount={isGuest ? 0 : monthlyTaskCount}
-        subscriptionTier={user?.subscription_tier || 'free'}
+        overview={homeData?.todayOverview || null}
+        monthlyTaskCount={monthlyTaskCount}
+        subscriptionTier={'free'}
       />
 
       <Button
@@ -75,31 +70,25 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
     </ScrollView>
   );
 
-  // For authenticated users, wrap with QueryStateWrapper
-  if (!isGuest) {
-    return (
-      <QueryStateWrapper
-        isLoading={isLoading}
-        isError={isError}
-        error={error}
-        data={homeData}
-        refetch={handleRefresh}
-        isRefetching={isRefetching}
-        onRefresh={refetch}
-        emptyStateComponent={
-          <HomeScreenEmptyState
-            onAddActivity={() => onFabStateChange({ isOpen: true })}
-          />
-        }
-        skeletonComponent={<TaskCardSkeleton />}
-        skeletonCount={3}>
-        {content}
-      </QueryStateWrapper>
-    );
-  }
-
-  // For guest users, return content directly
-  return content;
+  return (
+    <QueryStateWrapper
+      isLoading={isLoading}
+      isError={isError}
+      error={error}
+      data={homeData}
+      refetch={handleRefresh}
+      isRefetching={isRefetching}
+      onRefresh={refetch}
+      emptyStateComponent={
+        <HomeScreenEmptyState
+          onAddActivity={() => onFabStateChange({ isOpen: true })}
+        />
+      }
+      skeletonComponent={<TaskCardSkeleton />}
+      skeletonCount={3}>
+      {content}
+    </QueryStateWrapper>
+  );
 };
 
 const styles = StyleSheet.create({

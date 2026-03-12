@@ -10,7 +10,6 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
 import { getDraftCount } from '@/utils/draftStorage';
 import { COLORS } from '@/constants/theme';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
@@ -30,8 +29,6 @@ export const HomeScreenFAB: React.FC<HomeScreenFABProps> = ({
   onQuickAddPress,
 }) => {
   const navigation = useNavigation<HomeScreenFABNavigationProp>();
-  const { session } = useAuth();
-  const isGuest = !session;
   const [isFabOpen, setIsFabOpen] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
   const backdropOpacity = useRef(new Animated.Value(0)).current;

@@ -14,7 +14,7 @@ import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { QueryStateWrapper } from '@/shared/components';
 import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
-import { useAuth } from '@/contexts/AuthContext';
+import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
@@ -36,7 +36,7 @@ const CourseDetailScreen = () => {
   const route = useRoute<CourseDetailScreenRouteProp>();
   const navigation = useNavigation<CourseDetailScreenNavigationProp>();
   const { courseId } = route.params;
-  const { user } = useAuth();
+  const deviceId = useDeviceId();
   const { isOnline } = useNetwork();
   const { theme, isDark } = useTheme();
   const queryClient = useQueryClient();
@@ -102,14 +102,9 @@ const CourseDetailScreen = () => {
   };
 
   const handleConfirmDelete = async () => {
-    if (!user?.id) {
-      Alert.alert('Error', 'User not authenticated.');
-      return;
-    }
-
     setIsDeleting(true);
     try {
-      await coursesApiMutations.delete(courseId, isOnline, user.id);
+      await coursesApiMutations.delete(courseId, isOnline, deviceId || '');
 
       // Invalidate React Query caches to update UI immediately
       await queryClient.invalidateQueries({ queryKey: ['courses'] });
