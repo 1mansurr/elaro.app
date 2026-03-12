@@ -22,7 +22,8 @@ export const useCourseSelector = (): UseCourseSelectorReturn => {
       const page = await coursesApi.getAll();
       setCourses(page.courses);
     } catch (err) {
-      const e = err instanceof Error ? err : new Error('Failed to fetch courses');
+      const e =
+        err instanceof Error ? err : new Error('Failed to fetch courses');
       setError(e);
       console.error('Error fetching courses:', e);
     } finally {

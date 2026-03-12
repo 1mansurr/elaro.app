@@ -16,7 +16,8 @@ export const useTaskDetail = (
 
   return useQuery({
     queryKey: ['taskDetail', taskType, taskId],
-    queryFn: async (): Promise<Assignment | Lecture | StudySession | null> => null,
+    queryFn: async (): Promise<Assignment | Lecture | StudySession | null> =>
+      null,
     enabled: enabled && !!taskId && !!taskType,
   });
 };

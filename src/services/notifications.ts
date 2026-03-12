@@ -365,7 +365,9 @@ export const notificationService = {
 
     try {
       // Offline mode — cannot fetch task from DB
-      console.warn('handleNotificationTapLegacy: not available in offline mode');
+      console.warn(
+        'handleNotificationTapLegacy: not available in offline mode',
+      );
     } catch (error) {
       console.error('Error handling notification tap:', error);
     }
@@ -496,7 +498,9 @@ export const notificationService = {
       await this.cancelSRReminders(sessionId);
 
       // Offline mode — DB reminder rescheduling not available
-      console.log(`Reminder rescheduling skipped for session ${sessionId} (offline mode)`);
+      console.log(
+        `Reminder rescheduling skipped for session ${sessionId} (offline mode)`,
+      );
     } catch (error) {
       console.error('❌ Exception in rescheduleSRReminders:', error);
       // Don't throw - allow the update to proceed even if reminder rescheduling fails

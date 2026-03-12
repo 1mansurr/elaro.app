@@ -19,7 +19,12 @@ export async function queueNotification(
 
 export async function queueNotificationBatch(
   _notifications: QueuedNotification[],
-): Promise<{ success: boolean; queued: number; failed: number; duplicates: number }> {
+): Promise<{
+  success: boolean;
+  queued: number;
+  failed: number;
+  duplicates: number;
+}> {
   return { success: false, queued: 0, failed: 0, duplicates: 0 };
 }
 

@@ -130,11 +130,25 @@ interface Course {
 
 // Offline MVP stub for versionedApiClient usages in this example file
 // Offline MVP stub for versionedApiClient usages in this example file
-const _stubApiResponse = { error: undefined as string | undefined, deprecationWarning: false, sunsetDate: undefined as string | undefined, migrationGuide: undefined as string | undefined };
+const _stubApiResponse = {
+  error: undefined as string | undefined,
+  deprecationWarning: false,
+  sunsetDate: undefined as string | undefined,
+  migrationGuide: undefined as string | undefined,
+};
 const versionedApiClient = {
-  createCourse: async (_data: unknown) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
-  updateCourse: async (_id: string, _data: unknown) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
-  deleteCourse: async (_id: string) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
+  createCourse: async (_data: unknown) => ({
+    ..._stubApiResponse,
+    error: 'Not available in offline mode',
+  }),
+  updateCourse: async (_id: string, _data: unknown) => ({
+    ..._stubApiResponse,
+    error: 'Not available in offline mode',
+  }),
+  deleteCourse: async (_id: string) => ({
+    ..._stubApiResponse,
+    error: 'Not available in offline mode',
+  }),
   upgradeToLatest: async () => false,
 };
 

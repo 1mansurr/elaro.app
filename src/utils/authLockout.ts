@@ -7,7 +7,9 @@ export interface LockoutStatus {
   minutesRemaining?: number;
 }
 
-export async function checkAccountLockout(_email: string): Promise<LockoutStatus> {
+export async function checkAccountLockout(
+  _email: string,
+): Promise<LockoutStatus> {
   return { isLocked: false };
 }
 
@@ -18,7 +20,9 @@ export async function recordFailedAttempt(
   _userAgent?: string,
 ): Promise<void> {}
 
-export async function resetFailedAttempts(_userIdOrEmail: string): Promise<void> {}
+export async function resetFailedAttempts(
+  _userIdOrEmail: string,
+): Promise<void> {}
 
 export async function recordSuccessfulLogin(
   _userId: string,

@@ -7,8 +7,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface SyncStateSummary {
   auth: { cached: boolean; userId: string | null; lastSynced: string | null };
-  navigation: { hasState: boolean; currentRoute: string | null; routeCount: number };
-  studySession: { hasActiveSession: boolean; sessionId: string | null; status: string | null };
+  navigation: {
+    hasState: boolean;
+    currentRoute: string | null;
+    routeCount: number;
+  };
+  studySession: {
+    hasActiveSession: boolean;
+    sessionId: string | null;
+    status: string | null;
+  };
   settings: Record<string, unknown>;
 }
 
@@ -53,7 +61,12 @@ export async function forceSyncAll(_userId?: string): Promise<{
   studySession: boolean;
   settings: boolean;
 }> {
-  return { auth: false, navigation: false, studySession: false, settings: false };
+  return {
+    auth: false,
+    navigation: false,
+    studySession: false,
+    settings: false,
+  };
 }
 
 export async function exportSyncState(): Promise<string> {
@@ -68,7 +81,11 @@ export async function exportSyncState(): Promise<string> {
     for (const key of syncKeys) {
       const value = await AsyncStorage.getItem(key);
       if (value && value.trim() && value !== 'undefined' && value !== 'null') {
-        try { state[key] = JSON.parse(value); } catch { state[key] = value; }
+        try {
+          state[key] = JSON.parse(value);
+        } catch {
+          state[key] = value;
+        }
       }
     }
     return JSON.stringify(state, null, 2);
@@ -84,12 +101,25 @@ export async function importSyncState(jsonString: string): Promise<void> {
     return;
   }
   try {
-    if (!jsonString || !jsonString.trim() || jsonString === 'undefined' || jsonString === 'null') return;
+    if (
+      !jsonString ||
+      !jsonString.trim() ||
+      jsonString === 'undefined' ||
+      jsonString === 'null'
+    )
+      return;
     let state: any;
-    try { state = JSON.parse(jsonString); } catch { return; }
+    try {
+      state = JSON.parse(jsonString);
+    } catch {
+      return;
+    }
     const entries = Object.entries(state);
     for (const [key, value] of entries) {
-      await AsyncStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      await AsyncStorage.setItem(
+        key,
+        typeof value === 'string' ? value : JSON.stringify(value),
+      );
     }
     console.log(`✅ Imported ${entries.length} sync state entries`);
   } catch (error) {
@@ -115,5 +145,7 @@ if (__DEV__ && typeof global !== 'undefined') {
     export: exportSyncState,
     import: importSyncState,
   };
-  console.log('🔧 Sync debug utilities available at global.__ELARO_SYNC_DEBUG__');
+  console.log(
+    '🔧 Sync debug utilities available at global.__ELARO_SYNC_DEBUG__',
+  );
 }

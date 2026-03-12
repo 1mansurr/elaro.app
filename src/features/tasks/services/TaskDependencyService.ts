@@ -49,11 +49,17 @@ export class TaskDependencyService {
     return TaskDependencyService.instance;
   }
 
-  async createTaskWithDependencies(_task: EnhancedTask, _userId: string): Promise<EnhancedTask> {
+  async createTaskWithDependencies(
+    _task: EnhancedTask,
+    _userId: string,
+  ): Promise<EnhancedTask> {
     throw new Error('TaskDependencyService not available in offline mode');
   }
 
-  async completeTask(_taskId: string, _taskType: 'assignment' | 'lecture' | 'study_session'): Promise<void> {
+  async completeTask(
+    _taskId: string,
+    _taskType: 'assignment' | 'lecture' | 'study_session',
+  ): Promise<void> {
     throw new Error('TaskDependencyService not available in offline mode');
   }
 
@@ -75,6 +81,11 @@ export class TaskDependencyService {
     _dependencies: TaskDependency[],
     _userId: string,
   ): Promise<DependencyValidationResult> {
-    return { isValid: true, errors: [], warnings: [], circularDependencies: [] };
+    return {
+      isValid: true,
+      errors: [],
+      warnings: [],
+      circularDependencies: [],
+    };
   }
 }

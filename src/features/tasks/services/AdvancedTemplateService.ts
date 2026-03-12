@@ -23,7 +23,13 @@ export interface AdvancedTaskTemplate {
   templateName: string;
   description: string;
   taskType: 'assignment' | 'lecture' | 'study_session';
-  category: 'academic' | 'work' | 'personal' | 'study' | 'project' | 'maintenance';
+  category:
+    | 'academic'
+    | 'work'
+    | 'personal'
+    | 'study'
+    | 'project'
+    | 'maintenance';
   fields: TemplateField[];
   defaultValues: Record<string, any>;
   validationRules: Record<string, any>;
@@ -139,7 +145,10 @@ export class AdvancedTemplateService {
     return AdvancedTemplateService.instance;
   }
 
-  async createTemplate(_userId: string, _request: CreateTemplateRequest): Promise<AdvancedTaskTemplate> {
+  async createTemplate(
+    _userId: string,
+    _request: CreateTemplateRequest,
+  ): Promise<AdvancedTaskTemplate> {
     throw new Error('AdvancedTemplateService not available in offline mode');
   }
 
@@ -147,11 +156,15 @@ export class AdvancedTemplateService {
     return [];
   }
 
-  async getPublicTemplates(_options?: PublicTemplateQueryOptions): Promise<PublicTemplatesPage> {
+  async getPublicTemplates(
+    _options?: PublicTemplateQueryOptions,
+  ): Promise<PublicTemplatesPage> {
     return { templates: [], nextOffset: undefined, hasMore: false };
   }
 
-  async getPublicTemplatesLegacy(_filters?: TemplateSearchFilters): Promise<AdvancedTaskTemplate[]> {
+  async getPublicTemplatesLegacy(
+    _filters?: TemplateSearchFilters,
+  ): Promise<AdvancedTaskTemplate[]> {
     return [];
   }
 
@@ -163,7 +176,10 @@ export class AdvancedTemplateService {
     return [];
   }
 
-  async createTaskFromTemplate(_userId: string, _request: CreateTaskFromTemplateRequest): Promise<string> {
+  async createTaskFromTemplate(
+    _userId: string,
+    _request: CreateTaskFromTemplateRequest,
+  ): Promise<string> {
     throw new Error('AdvancedTemplateService not available in offline mode');
   }
 
@@ -179,11 +195,17 @@ export class AdvancedTemplateService {
     throw new Error('AdvancedTemplateService not available in offline mode');
   }
 
-  async shareTemplate(_userId: string, _request: ShareTemplateRequest): Promise<TemplateShare[]> {
+  async shareTemplate(
+    _userId: string,
+    _request: ShareTemplateRequest,
+  ): Promise<TemplateShare[]> {
     return [];
   }
 
-  async rateTemplate(_userId: string, _request: RateTemplateRequest): Promise<TemplateRating> {
+  async rateTemplate(
+    _userId: string,
+    _request: RateTemplateRequest,
+  ): Promise<TemplateRating> {
     throw new Error('AdvancedTemplateService not available in offline mode');
   }
 
@@ -195,7 +217,10 @@ export class AdvancedTemplateService {
     return [];
   }
 
-  async updateTemplate(_templateId: string, _updates: Partial<CreateTemplateRequest>): Promise<AdvancedTaskTemplate> {
+  async updateTemplate(
+    _templateId: string,
+    _updates: Partial<CreateTemplateRequest>,
+  ): Promise<AdvancedTaskTemplate> {
     throw new Error('AdvancedTemplateService not available in offline mode');
   }
 

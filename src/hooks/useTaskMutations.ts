@@ -37,7 +37,6 @@ export const useCompleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
 
-
   return useMutation({
     mutationFn: async ({ taskId, taskType }: CompleteTaskParams) => {
       // OFFLINE MODE: Add to queue instead of calling server
@@ -176,7 +175,6 @@ export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
 
-
   return useMutation({
     mutationFn: async ({ taskId, taskType }: DeleteTaskParams) => {
       // OFFLINE MODE: Add to queue instead of calling server
@@ -298,7 +296,6 @@ export const useDeleteTask = () => {
 export const useRestoreTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: RestoreTaskParams) => {

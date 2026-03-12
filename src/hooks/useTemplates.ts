@@ -34,7 +34,9 @@ export const useTemplates = () => {
 export const useCreateTemplate = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (_templateData: CreateTemplateData): Promise<TaskTemplate> => {
+    mutationFn: async (
+      _templateData: CreateTemplateData,
+    ): Promise<TaskTemplate> => {
       throw new Error('Template creation not available in offline mode');
     },
     onSuccess: () => {
@@ -46,7 +48,9 @@ export const useCreateTemplate = () => {
 export const useUpdateTemplate = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (_updateData: UpdateTemplateData): Promise<TaskTemplate> => {
+    mutationFn: async (
+      _updateData: UpdateTemplateData,
+    ): Promise<TaskTemplate> => {
       throw new Error('Template update not available in offline mode');
     },
     onSuccess: () => {

@@ -50,7 +50,10 @@ export class NotificationDeliveryService implements INotificationDeliveryService
     _userId: string,
     _notification: NotificationPayload,
   ): Promise<DeliveryResult> {
-    return { success: false, error: 'Push notifications not available in offline mode' };
+    return {
+      success: false,
+      error: 'Push notifications not available in offline mode',
+    };
   }
 
   /**
@@ -121,19 +124,21 @@ export class NotificationDeliveryService implements INotificationDeliveryService
       const localNotifications =
         await Notifications.getAllScheduledNotificationsAsync();
 
-      return localNotifications.map(notif => {
-        const triggerDate =
-          notif.trigger && 'date' in notif.trigger
-            ? new Date(notif.trigger.date)
-            : new Date();
-        return {
-          id: notif.identifier,
-          title: notif.content.title || '',
-          body: notif.content.body || '',
-          scheduledFor: triggerDate,
-          data: notif.content.data as Record<string, unknown> | undefined,
-        };
-      }).sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
+      return localNotifications
+        .map(notif => {
+          const triggerDate =
+            notif.trigger && 'date' in notif.trigger
+              ? new Date(notif.trigger.date)
+              : new Date();
+          return {
+            id: notif.identifier,
+            title: notif.content.title || '',
+            body: notif.content.body || '',
+            scheduledFor: triggerDate,
+            data: notif.content.data as Record<string, unknown> | undefined,
+          };
+        })
+        .sort((a, b) => a.scheduledFor.getTime() - b.scheduledFor.getTime());
     } catch (error) {
       console.error('Error getting scheduled notifications:', error);
       return [];
