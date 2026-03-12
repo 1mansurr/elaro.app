@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import { SRSReviewCard } from '../components/SRSReviewCard';
-import { supabase } from '@/services/supabase';
+import { studySessionsApi } from '../services/queries';
 import { PrimaryButton } from '@/shared/components';
 import {
   COLORS,
@@ -71,14 +71,10 @@ const StudySessionReviewScreen: React.FC = () => {
       }
 
       try {
-        const { data, error: dbError } = await supabase
-          .from('study_sessions')
-          .select('*')
-          .eq('id', sessionId)
-          .single();
-
-        if (dbError) throw dbError;
-        setStudySession(data);
+        const all = await studySessionsApi.getAll();
+        const session = all.find(s => s.id === sessionId);
+        if (!session) throw new Error('Study session not found');
+        setStudySession(session);
       } catch (err: any) {
         console.error('Error fetching study session:', err);
         setError(err.message || 'Failed to load study session');

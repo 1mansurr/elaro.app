@@ -12,9 +12,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AddAssignmentStackParamList } from '@/navigation/AddAssignmentNavigator';
 // import { useAddAssignment } from '@/features/assignments/contexts/AddAssignmentContext';
-import { supabase } from '@/services/supabase';
-import { useDeviceId } from '@/hooks/useDeviceId';
 import { Course } from '@/types';
+import { coursesApi } from '@/features/courses/services/queries';
 import { Button } from '@/shared/components';
 
 type SelectCourseScreenNavigationProp = StackNavigationProp<
@@ -42,8 +41,6 @@ const SelectCourseScreen = () => {
   const updateAssignmentData = (data: any) => {
     console.log('Mock updateAssignmentData:', data);
   };
-  const deviceId = useDeviceId();
-
   const [courses, setCourses] = useState<Course[]>([]);
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -52,26 +49,8 @@ const SelectCourseScreen = () => {
     const fetchCourses = async () => {
       setIsLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('courses')
-          .select('id, course_name, course_code, about_course');
-
-        if (error) {
-          Alert.alert('Error', 'Could not fetch your courses.');
-          return;
-        }
-
-        const formattedCourses = (data || []).map(course => ({
-          id: course.id,
-          courseName: course.course_name,
-          courseCode: course.course_code,
-          aboutCourse: course.about_course,
-          userId: deviceId || '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })) as Course[];
-
-        setCourses(formattedCourses);
+        const page = await coursesApi.getAll();
+        setCourses(page.courses);
       } catch (error) {
         console.error('Error fetching courses:', error);
         Alert.alert('Error', 'Could not fetch your courses.');
@@ -81,7 +60,7 @@ const SelectCourseScreen = () => {
     };
 
     fetchCourses();
-  }, [deviceId]);
+  }, []);
 
   const handleCourseSelect = (course: Course) => {
     updateAssignmentData({ course });

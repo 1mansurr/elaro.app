@@ -1,9 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
 import { cache } from '@/utils/cache';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { useDeviceId } from '@/hooks/useDeviceId';
-import { syncManager } from '@/services/syncManager';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
 
 export type BatchActionType = 'RESTORE' | 'DELETE_PERMANENTLY';
@@ -70,47 +67,27 @@ async function batchAction(
 export function useBatchAction() {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const deviceId = useDeviceId();
 
   return useMutation({
     mutationFn: async (request: BatchActionRequest) => {
-      // OFFLINE MODE: Add to queue instead of calling server
+      // OFFLINE MODE: Return optimistic result
       if (!isOnline) {
         console.log(
-          `📴 Offline: Queueing BATCH ${request.action} for ${request.items.length} items`,
+          `📴 Offline: Batch ${request.action} for ${request.items.length} items (no sync queue in offline mode)`,
         );
-
-        // Add to sync queue
-        if (deviceId) {
-          await syncManager.addToQueue(
-            request.action === 'RESTORE' ? 'BATCH_RESTORE' : 'BATCH_DELETE',
-            'assignment', // This is just for type - batch actions work across types
-            {
-              type: 'BATCH',
-              action: request.action === 'RESTORE' ? 'RESTORE' : 'DELETE',
-              items: request.items.map(item => ({
-                id: item.id,
-                type: item.type as any,
-              })),
-            },
-            deviceId,
-            { syncImmediately: false },
-          );
-        }
-
-        // Return optimistic result
         return {
-          message: `Batch ${request.action} queued for sync`,
+          message: `Batch ${request.action} not available offline`,
           results: {
             total: request.items.length,
-            succeeded: request.items.length,
-            failed: 0,
+            succeeded: 0,
+            failed: request.items.length,
             details: {
-              success: request.items.map(item => ({
+              success: [],
+              failed: request.items.map(item => ({
                 id: item.id,
                 type: item.type,
+                error: 'Offline mode',
               })),
-              failed: [],
             },
           },
           offline: true,

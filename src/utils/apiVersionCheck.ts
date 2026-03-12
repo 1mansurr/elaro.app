@@ -1,6 +1,5 @@
 import { Alert } from 'react-native';
 import Constants from 'expo-constants';
-import { supabase } from '@/services/supabase';
 
 // Semantic versioning comparison
 interface Version {
@@ -64,86 +63,8 @@ export async function checkAPIVersionCompatibility(): Promise<{
   action?: 'update_required' | 'update_recommended' | 'none';
   message?: string;
 }> {
-  try {
-    // Get API version from health check
-    const { data, error } = await supabase.functions.invoke('health-check', {
-      method: 'GET',
-    });
-
-    if (error || !data) {
-      console.warn('Could not check API version:', error);
-      return {
-        compatible: true, // Assume compatible if we can't check
-        appVersion: APP_VERSION,
-        action: 'none',
-      };
-    }
-
-    const apiVersion = data.version || '1.0.0';
-    const compatible = isVersionCompatible(
-      apiVersion,
-      MIN_API_VERSION,
-      MAX_API_VERSION,
-    );
-
-    if (!compatible) {
-      const apiVer = parseVersion(apiVersion);
-      const minVer = parseVersion(MIN_API_VERSION);
-      const maxVer = parseVersion(MAX_API_VERSION);
-
-      // API is too old
-      if (compareVersions(apiVer, minVer) < 0) {
-        return {
-          compatible: false,
-          apiVersion,
-          appVersion: APP_VERSION,
-          action: 'update_required',
-          message: 'The server API is outdated. Please contact support.',
-        };
-      }
-
-      // API is too new (breaking changes)
-      if (compareVersions(apiVer, maxVer) >= 0) {
-        return {
-          compatible: false,
-          apiVersion,
-          appVersion: APP_VERSION,
-          action: 'update_required',
-          message:
-            'Your app version is outdated. Please update to the latest version.',
-        };
-      }
-    }
-
-    // Check if update is recommended (minor version difference)
-    const apiVer = parseVersion(apiVersion);
-    const appVer = parseVersion(APP_VERSION);
-
-    if (apiVer.minor > appVer.minor && apiVer.major === appVer.major) {
-      return {
-        compatible: true,
-        apiVersion,
-        appVersion: APP_VERSION,
-        action: 'update_recommended',
-        message:
-          'A new version of ELARO is available with improvements and bug fixes.',
-      };
-    }
-
-    return {
-      compatible: true,
-      apiVersion,
-      appVersion: APP_VERSION,
-      action: 'none',
-    };
-  } catch (error) {
-    console.error('Error checking API version:', error);
-    return {
-      compatible: true,
-      appVersion: APP_VERSION,
-      action: 'none',
-    };
-  }
+  // Offline mode — assume compatible
+  return { compatible: true, appVersion: APP_VERSION, action: 'none' };
 }
 
 /**

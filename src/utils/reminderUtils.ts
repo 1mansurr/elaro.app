@@ -28,44 +28,33 @@ export const REMINDER_OPTIONS = [
 ];
 
 /**
- * Snooze a reminder by rescheduling it
+ * Snooze a reminder by rescheduling it (offline — no-op)
  */
 export async function snoozeReminder(
-  reminderId: string,
-  minutes: number,
+  _reminderId: string,
+  _minutes: number,
 ): Promise<void> {
-  const { supabase } = await import('@/services/supabase');
-  const newTime = new Date(Date.now() + minutes * 60 * 1000);
-
-  await supabase
-    .from('reminders')
-    .update({ reminder_time: newTime.toISOString(), completed: false })
-    .eq('id', reminderId);
+  // Offline mode — no-op
 }
 
 /**
- * Cancel a reminder
+ * Cancel a reminder (offline — no-op)
  */
 export async function cancelReminder(
-  reminderId: string,
-  reason?: string,
+  _reminderId: string,
+  _reason?: string,
 ): Promise<void> {
-  const { supabase } = await import('@/services/supabase');
-
-  await supabase
-    .from('reminders')
-    .update({ completed: true })
-    .eq('id', reminderId);
+  // Offline mode — no-op
 }
 
 /**
- * Record SRS performance for a study session
+ * Record SRS performance for a study session (offline — not available)
  */
 export async function recordSRSPerformance(
-  sessionId: string,
-  qualityRating: number,
-  reminderId?: string,
-  responseTimeSeconds?: number,
+  _sessionId: string,
+  _qualityRating: number,
+  _reminderId?: string,
+  _responseTimeSeconds?: number,
 ): Promise<{
   success: boolean;
   error?: string;
@@ -73,75 +62,14 @@ export async function recordSRSPerformance(
   easeFactor?: number;
   message?: string;
 }> {
-  const { supabase } = await import('@/services/supabase');
-
-  try {
-    const result = await supabase.functions.invoke('record-srs-performance', {
-      body: {
-        session_id: sessionId,
-        reminder_id: reminderId,
-        quality_rating: qualityRating,
-        response_time_seconds: responseTimeSeconds,
-      },
-    });
-
-    if (result.error) {
-      return { success: false, error: result.error.message };
-    }
-
-    return {
-      success: true,
-      nextIntervalDays: result.data?.next_interval_days,
-      easeFactor: result.data?.ease_factor,
-      message: result.data?.message,
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-    };
-  }
+  return { success: false, error: 'Not available in offline mode' };
 }
 
 /**
- * Get SRS statistics for a user
+ * Get SRS statistics for a user (offline — not available)
  */
-export async function getSRSStatistics(userId: string): Promise<{
-  total_reviews: number;
-  average_quality: number;
-  retention_rate: number;
-  topics_reviewed: number;
-  average_ease_factor: number;
-  strongest_topics: Array<{
-    session_id: string;
-    topic: string;
-    avg_quality: number;
-    ease_factor: number;
-  }>;
-  weakest_topics: Array<{
-    session_id: string;
-    topic: string;
-    avg_quality: number;
-    ease_factor: number;
-  }>;
-} | null> {
-  const { supabase } = await import('@/services/supabase');
-
-  try {
-    const result = await supabase.rpc('get_srs_statistics', {
-      p_user_id: userId,
-    });
-
-    if (result.error) {
-      console.error('Error getting SRS statistics:', result.error);
-      return null;
-    }
-
-    return result.data?.[0] || null;
-  } catch (error) {
-    console.error('Error getting SRS statistics:', error);
-    return null;
-  }
+export async function getSRSStatistics(_userId: string): Promise<null> {
+  return null;
 }
 
 /**

@@ -11,7 +11,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { notificationHistoryService } from '@/services/notifications/NotificationHistoryService';
-import { supabase } from '@/services/supabase';
 
 interface NotificationBellProps {
   onPress: () => void;
@@ -33,31 +32,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
 
   useEffect(() => {
     if (!deviceId) return;
-
-    // Load initial count
     loadUnreadCount();
-
-    // Set up real-time subscription
-    const subscription = supabase
-      .channel('notification_bell_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'notification_deliveries',
-          filter: `user_id=eq.${deviceId}`,
-        },
-        payload => {
-          console.log('Notification bell update:', payload);
-          loadUnreadCount();
-        },
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [deviceId]);
 
   const loadUnreadCount = async () => {

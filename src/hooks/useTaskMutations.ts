@@ -1,10 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
-import { Task, HomeScreenData } from '@/types';
+import { HomeScreenData } from '@/types';
 import { Alert } from 'react-native';
 import { useNetwork } from '@/contexts/NetworkContext';
-import { useDeviceId } from '@/hooks/useDeviceId';
-import { syncManager } from '@/services/syncManager';
 import { cache } from '@/utils/cache';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
@@ -39,7 +36,7 @@ interface RestoreTaskParams {
 export const useCompleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const deviceId = useDeviceId();
+
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: CompleteTaskParams) => {
@@ -48,20 +45,6 @@ export const useCompleteTask = () => {
         console.log(
           `📴 Offline: Queueing COMPLETE action for ${taskType} ${taskId}`,
         );
-
-        // Add to sync queue
-        if (deviceId) {
-          await syncManager.addToQueue(
-            'COMPLETE',
-            taskType as 'assignment' | 'lecture' | 'study_session',
-            {
-              type: 'COMPLETE',
-              resourceId: taskId,
-            },
-            deviceId,
-            { syncImmediately: false },
-          );
-        }
 
         // Return immediately - optimistic update already handled by onMutate
         return { success: true, offline: true };
@@ -192,7 +175,7 @@ export const useCompleteTask = () => {
 export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const deviceId = useDeviceId();
+
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: DeleteTaskParams) => {
@@ -201,20 +184,6 @@ export const useDeleteTask = () => {
         console.log(
           `📴 Offline: Queueing DELETE action for ${taskType} ${taskId}`,
         );
-
-        // Add to sync queue
-        if (deviceId) {
-          await syncManager.addToQueue(
-            'DELETE',
-            taskType as 'assignment' | 'lecture' | 'study_session',
-            {
-              type: 'DELETE',
-              resourceId: taskId,
-            },
-            deviceId,
-            { syncImmediately: false },
-          );
-        }
 
         // Return immediately - optimistic update already handled by onMutate
         return { success: true, offline: true };
@@ -329,7 +298,7 @@ export const useDeleteTask = () => {
 export const useRestoreTask = () => {
   const queryClient = useQueryClient();
   const { isOnline } = useNetwork();
-  const deviceId = useDeviceId();
+
 
   return useMutation({
     mutationFn: async ({ taskId, taskType }: RestoreTaskParams) => {
@@ -352,19 +321,6 @@ export const useRestoreTask = () => {
         console.log(
           `📴 Offline: Queueing RESTORE action for ${taskType} ${taskId}`,
         );
-
-        if (deviceId) {
-          await syncManager.addToQueue(
-            'RESTORE',
-            taskType as 'assignment' | 'lecture' | 'study_session',
-            {
-              type: 'RESTORE',
-              resourceId: taskId,
-            },
-            deviceId,
-            { syncImmediately: false },
-          );
-        }
 
         return { success: true, offline: true };
       }

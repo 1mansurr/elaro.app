@@ -44,9 +44,7 @@ import { GracePeriodChecker } from './src/components/GracePeriodChecker';
 import * as Notifications from 'expo-notifications';
 import ErrorBoundary from './src/shared/components/ErrorBoundary';
 import { updateLastActiveTimestamp } from './src/utils/sessionTimeout';
-import { syncManager } from './src/services/syncManager';
 import { useAppStateSync } from './src/hooks/useAppState';
-import { navigationSyncService } from './src/services/navigationSync';
 import {
   AUTHENTICATED_ROUTES,
   NON_RESTORABLE_ROUTES,
@@ -431,7 +429,7 @@ const QueryCacheSetup: React.FC<{ queryClient: QueryClient }> = ({
 // Component to handle navigation state saving
 const NavigationStateHandler: React.FC = () => {
   useEffect(() => {
-    navigationSyncService.setUserId(undefined);
+    // Offline MVP — navigation state sync removed
   }, []);
 
   return null;
@@ -543,9 +541,7 @@ const NavigationStateValidator: React.FC<{
               logNav('Non-restorable route detected - discarding saved state', {
                 route: currentRoute,
               });
-              await navigationSyncService.clearState().catch(() => {
-                // Ignore errors - we're clearing state anyway
-              });
+              // navigation state cleared (offline)
               if (isCancelled) return;
               if (maxTimeoutId) clearTimeout(maxTimeoutId);
               onStateValidated(null);
@@ -560,9 +556,7 @@ const NavigationStateValidator: React.FC<{
                 logNav(
                   'OnboardingFlow detected but onboarding complete - discarding saved state',
                 );
-                await navigationSyncService.clearState().catch(() => {
-                  // Ignore errors - we're clearing state anyway
-                });
+                // navigation state cleared (offline)
                 if (isCancelled) return;
                 if (maxTimeoutId) clearTimeout(maxTimeoutId);
                 onStateValidated(null);
@@ -583,9 +577,7 @@ const NavigationStateValidator: React.FC<{
                 logNav(
                   'PaywallScreen detected but subscription active - discarding saved state',
                 );
-                await navigationSyncService.clearState().catch(() => {
-                  // Ignore errors - we're clearing state anyway
-                });
+                // navigation state cleared (offline)
                 if (isCancelled) return;
                 if (maxTimeoutId) clearTimeout(maxTimeoutId);
                 onStateValidated(null);
@@ -603,9 +595,7 @@ const NavigationStateValidator: React.FC<{
               logNav(
                 'User not authenticated - clearing authenticated navigation state',
               );
-              await navigationSyncService.clearState().catch(() => {
-                // Ignore errors - we're clearing state anyway
-              });
+              // navigation state cleared (offline)
               if (isCancelled) return;
               onStateValidated(null);
               return;
@@ -625,17 +615,7 @@ const NavigationStateValidator: React.FC<{
                 }
               : undefined;
 
-            const safeState = await Promise.race([
-              navigationSyncService.getSafeInitialState(
-                isAuthenticated,
-                false, // Don't pass authLoading - we've already waited
-                user?.id,
-                userInfo,
-              ),
-              new Promise<NavigationState | null>(resolve => {
-                setTimeout(() => resolve(null), 1500);
-              }),
-            ]);
+            const safeState: NavigationState | null = null;
 
             if (isCancelled) return;
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
@@ -649,9 +629,7 @@ const NavigationStateValidator: React.FC<{
               error: String(error),
             });
             // Clear state on error to prevent navigation errors
-            await navigationSyncService.clearState().catch(() => {
-              // Ignore errors during cleanup
-            });
+            // navigation state cleared (offline)
             if (maxTimeoutId) clearTimeout(maxTimeoutId);
             onStateValidated(null);
             return;
@@ -1172,9 +1150,7 @@ const AppWithErrorBoundary: React.FC<{
                   // Update last active timestamp whenever user navigates
                   await updateLastActiveTimestamp();
 
-                  // Save navigation state using navigationSyncService
-                  // User ID will be set via NavigationStateHandler component
-                  await navigationSyncService.saveState(state);
+                  // Offline MVP — navigation state not persisted
                 }}>
                 <DeepLinkHandler />
                 <NavigationStateHandler />
@@ -1244,40 +1220,7 @@ const AppInitializer: React.FC<{
           () => new Promise(resolve => setTimeout(resolve, 500)),
         );
 
-        // Sync Manager - make truly non-blocking with timeout
-        // Don't block app startup - sync manager can initialize in background
-        const syncManagerInit = Promise.race([
-          syncManager.start().then(() => {
-            if (__DEV__) {
-              console.log('✅ Sync Manager initialized');
-            }
-          }),
-          new Promise<void>(resolve => {
-            setTimeout(() => {
-              if (__DEV__) {
-                console.warn(
-                  '⚠️ SyncManager init timeout - continuing without it',
-                );
-              }
-              resolve();
-            }, 2000); // 2 second timeout - don't block app startup
-          }),
-        ]).catch(error => {
-          if (__DEV__) {
-            console.warn('⚠️ Sync Manager init failed (non-blocking):', error);
-          }
-          // Continue anyway - sync manager can start later
-        });
-
-        // Initialize circuit breaker monitoring (non-blocking)
-        import('./src/utils/circuitBreakerMonitor')
-          .then(({ startCircuitBreakerMonitoring }) => {
-            startCircuitBreakerMonitoring(30000); // Check every 30 seconds
-            if (__DEV__) {
-              console.log('✅ Circuit breaker monitoring initialized');
-            }
-          })
-          .catch(console.error);
+        // Sync Manager removed (offline MVP)
 
         // Initialize local SQLite database and device ID
         await Promise.all([getDatabase(), getOrCreateDeviceId()]);
@@ -1535,48 +1478,8 @@ function App() {
               console.warn('⚠️ API version check failed:', error);
             }),
 
-          // Load navigation state (non-blocking)
-          navigationSyncService
-            .loadState()
-            .then(state => {
-              if (state) {
-                // HARDENING: Sanitize state immediately after loading
-                // Check if PostOnboardingWelcome or other non-restorable routes are in the state
-                const getRouteName = (
-                  navState: NavigationState,
-                ): string | null => {
-                  if (!navState?.routes || navState.routes.length === 0)
-                    return null;
-                  const currentRoute = navState.routes[navState.index || 0];
-                  if (!currentRoute) return null;
-                  if (currentRoute.state && 'routes' in currentRoute.state) {
-                    return getRouteName(currentRoute.state as NavigationState);
-                  }
-                  return currentRoute.name || null;
-                };
-
-                const currentRoute = getRouteName(state);
-                if (currentRoute && isNonRestorableRoute(currentRoute)) {
-                  console.log(
-                    `🚫 [App] Non-restorable route "${currentRoute}" detected in loaded state. Discarding.`,
-                  );
-                  // Don't set the state - let it start fresh
-                  navigationSyncService.clearState().catch(() => {});
-                  return;
-                }
-
-                setInitialNavigationState(state);
-                console.log(
-                  '✅ Navigation state loaded, will validate after auth loads',
-                );
-              }
-            })
-            .catch(error => {
-              console.warn('⚠️ Navigation state restoration failed:', error);
-            }),
-
-          // Clean up legacy navigation state keys (non-blocking, idempotent)
-          navigationSyncService.cleanupLegacyKeys(),
+          // Navigation state persistence removed (offline MVP)
+          Promise.resolve(),
         ]).catch(error => {
           console.warn('⚠️ Some app initialization tasks failed:', error);
         });

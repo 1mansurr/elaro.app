@@ -17,7 +17,6 @@ import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
 import { AddCourseStackParamList } from '@/navigation/AddCourseNavigator';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { FloatingLabelInput, ProgressIndicator } from '@/shared/components';
 import { useTheme } from '@/hooks/useTheme';
@@ -45,26 +44,8 @@ const AddCourseInfoScreen = () => {
   const [description, setDescription] = useState(
     courseData.courseDescription || '',
   );
-  const [courseCount, setCourseCount] = useState(0);
   const [hasInteractedWithName, setHasInteractedWithName] = useState(false);
   const [hasInteractedWithCode, setHasInteractedWithCode] = useState(false);
-
-  useEffect(() => {
-    const checkCourseCount = async () => {
-      if (!deviceId) return;
-
-      const { count, error } = await supabase
-        .from('courses')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', deviceId);
-
-      if (!error && count !== null) {
-        setCourseCount(count);
-      }
-    };
-
-    checkCourseCount();
-  }, [deviceId]);
 
   const handleNext = async () => {
     if (!courseName.trim()) {

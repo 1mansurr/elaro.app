@@ -26,7 +26,6 @@ import { NotificationHistoryModal } from '@/shared/components/NotificationHistor
 
 // Performance optimization imports
 import { useExpensiveMemo, useStableCallback } from '@/hooks/useMemoization';
-import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 
 import { RootStackParamList, Task } from '@/types';
 import { useDeviceId } from '@/hooks/useDeviceId';
@@ -99,17 +98,11 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      // Use request deduplication to prevent duplicate completions
-      await requestDeduplicationService.deduplicateRequest(
-        `complete-task-${selectedTask.id}`,
-        async () => {
-          return completeTaskMutation.mutateAsync({
-            taskId: selectedTask.id,
-            taskType: selectedTask.type,
-            taskTitle: selectedTask.title || selectedTask.name,
-          });
-        },
-      );
+      await completeTaskMutation.mutateAsync({
+        taskId: selectedTask.id,
+        taskType: selectedTask.type,
+        taskTitle: selectedTask.title || selectedTask.name,
+      });
 
       Alert.alert('Success', 'Task marked as complete!');
     } catch (error) {
@@ -121,16 +114,11 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      await requestDeduplicationService.deduplicateRequest(
-        `delete-task-${selectedTask.id}`,
-        async () => {
-          return deleteTaskMutation.mutateAsync({
-            taskId: selectedTask.id,
-            taskType: selectedTask.type,
-            taskTitle: selectedTask.title || 'Untitled Task',
-          });
-        },
-      );
+      await deleteTaskMutation.mutateAsync({
+        taskId: selectedTask.id,
+        taskType: selectedTask.type,
+        taskTitle: selectedTask.title || 'Untitled Task',
+      });
 
       setSelectedTask(null);
       Alert.alert('Success', 'Task deleted successfully!');
@@ -143,16 +131,11 @@ const HomeScreen = () => {
     if (!selectedTask) return;
 
     try {
-      await requestDeduplicationService.deduplicateRequest(
-        `restore-task-${selectedTask.id}`,
-        async () => {
-          return restoreTaskMutation.mutateAsync({
-            taskId: selectedTask.id,
-            taskType: selectedTask.type,
-            taskTitle: selectedTask.title || 'Untitled Task',
-          });
-        },
-      );
+      await restoreTaskMutation.mutateAsync({
+        taskId: selectedTask.id,
+        taskType: selectedTask.type,
+        taskTitle: selectedTask.title || 'Untitled Task',
+      });
 
       setSelectedTask(null);
       Alert.alert('Success', 'Task restored successfully!');

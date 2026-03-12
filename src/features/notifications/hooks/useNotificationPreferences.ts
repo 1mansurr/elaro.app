@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
 import { SimpleNotificationPreferences } from '@/services/notifications/interfaces/SimpleNotificationPreferences';
 
 export const useNotificationPreferences = () => {

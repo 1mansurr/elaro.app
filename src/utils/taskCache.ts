@@ -136,20 +136,7 @@ export async function resolveTaskId(
     return taskId;
   }
 
-  // Try to resolve from sync manager
-  try {
-    const { syncManager } = await import('@/services/syncManager');
-    // Use the public resolveTempId method
-    if (syncManager && typeof syncManager.resolveTempId === 'function') {
-      const realId = syncManager.resolveTempId(taskId);
-      if (realId && realId !== taskId) {
-        console.log(`✅ Resolved temp ID ${taskId} to real ID ${realId}`);
-        return realId;
-      }
-    }
-  } catch (error) {
-    console.warn(`Failed to resolve temp ID ${taskId}:`, error);
-  }
+  // Offline MVP: syncManager removed — temp IDs cannot be resolved
 
   // Return original if not resolved yet
   return taskId;

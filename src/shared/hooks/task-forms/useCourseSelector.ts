@@ -1,7 +1,6 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/services/supabase';
+import { useState, useEffect, useCallback } from 'react';
 import { Course } from '@/types';
-import { useDeviceId } from '@/hooks/useDeviceId';
+import { coursesApi } from '@/features/courses/services/queries';
 
 export interface UseCourseSelectorReturn {
   courses: Course[];
@@ -11,51 +10,29 @@ export interface UseCourseSelectorReturn {
 }
 
 export const useCourseSelector = (): UseCourseSelectorReturn => {
-  const deviceId = useDeviceId();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const fetchCourses = async () => {
-    if (!deviceId) {
-      setCourses([]);
-      return;
-    }
-
+  const fetchCourses = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const { data, error: fetchError } = await supabase
-        .from('courses')
-        .select('id, course_name, course_code, about_course');
-
-      if (fetchError) throw fetchError;
-
-      const formattedCourses = (data || []).map(course => ({
-        id: course.id,
-        courseName: course.course_name,
-        courseCode: course.course_code,
-        aboutCourse: course.about_course,
-        userId: deviceId || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      })) as Course[];
-
-      setCourses(formattedCourses);
+      const page = await coursesApi.getAll();
+      setCourses(page.courses);
     } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error('Failed to fetch courses');
-      setError(error);
-      console.error('Error fetching courses:', error);
+      const e = err instanceof Error ? err : new Error('Failed to fetch courses');
+      setError(e);
+      console.error('Error fetching courses:', e);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchCourses();
-  }, [deviceId]);
+  }, [fetchCourses]);
 
   return {
     courses,

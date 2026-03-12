@@ -1,4 +1,3 @@
-import { versionedApiClient } from '@/services/VersionedApiClient';
 import {
   INotificationPreferenceService,
   NotificationPreferences,
@@ -25,83 +24,18 @@ export class NotificationPreferenceService implements INotificationPreferenceSer
   /**
    * Get user notification preferences
    */
-  async getUserPreferences(userId: string): Promise<NotificationPreferences> {
-    try {
-      const response = await versionedApiClient.getNotificationPreferences();
-
-      if (response.error) {
-        // Check if it's a "function not found" or "request failed" error
-        const isFunctionNotFound =
-          response.code === 'HTTP_404' ||
-          response.message?.includes('not found') ||
-          response.message?.includes('Requested function was not found') ||
-          response.message?.includes('Request failed');
-
-        if (isFunctionNotFound) {
-          if (__DEV__) {
-            console.warn(
-              '⚠️ Notification preferences edge function not available, using defaults',
-            );
-          }
-          return this.getDefaultPreferences();
-        }
-
-        // For other errors, only log in dev mode
-        if (__DEV__) {
-          console.error('Error getting user preferences:', response.error);
-        }
-        return this.getDefaultPreferences();
-      }
-
-      if (!response.data) {
-        // Return default preferences for new users
-        return this.getDefaultPreferences();
-      }
-
-      // Convert database format to our interface
-      return this.convertFromDatabase(response.data);
-    } catch (error) {
-      // Always return defaults on error - app should continue working
-      if (__DEV__) {
-        console.error('Error getting user preferences:', error);
-      }
-      return this.getDefaultPreferences();
-    }
+  async getUserPreferences(_userId: string): Promise<NotificationPreferences> {
+    return this.getDefaultPreferences();
   }
 
   /**
    * Update user notification preferences
    */
   async updatePreferences(
-    userId: string,
-    preferences: Partial<NotificationPreferences>,
+    _userId: string,
+    _preferences: Partial<NotificationPreferences>,
   ): Promise<void> {
-    try {
-      // Validate preferences before saving
-      const validation = await this.validatePreferences(
-        preferences as NotificationPreferences,
-      );
-      if (!validation.isValid) {
-        throw new Error(`Invalid preferences: ${validation.errors.join(', ')}`);
-      }
-
-      // Convert to database format
-      const dbPreferences = this.convertToDatabase(preferences);
-
-      const response =
-        await versionedApiClient.updateNotificationPreferences(dbPreferences);
-
-      if (response.error) {
-        throw new Error(
-          response.message || response.error || 'Failed to update preferences',
-        );
-      }
-
-      console.log('Notification preferences updated successfully');
-    } catch (error) {
-      console.error('Error updating preferences:', error);
-      throw error;
-    }
+    // Offline MVP — preference updates not persisted
   }
 
   /**

@@ -5,7 +5,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { NavigationContainerRef } from '@react-navigation/native';
 // Removed ReminderTime and RepeatPattern imports as they were deleted
-import { supabase } from './supabase';
 import { NotificationPreferenceService } from '@/services/notifications/NotificationPreferenceService';
 import { parseResponseJsonSafely } from '@/utils/safeJsonParser';
 import {
@@ -109,181 +108,8 @@ function isWorkerError(error: unknown): boolean {
  * @param userId string
  * @param token string
  */
-async function savePushTokenToSupabase(userId: string, token: string) {
-  // ============================================================================
-  // VALIDATION PHASE: Validate ALL inputs BEFORE any retry logic or API calls
-  // ============================================================================
-
-  // Guard: Do not call API if token is undefined/null/empty
-  if (!token || typeof token !== 'string' || token.trim().length === 0) {
-    console.warn(
-      '⚠️ Cannot save push token to Supabase: token is invalid or missing',
-      {
-        token: token ? 'present but invalid' : 'missing',
-        userId,
-      },
-    );
-    return; // EXIT: Never call API with invalid token
-  }
-
-  // Derive platform ONCE before retry logic
-  const platformOS = Platform.OS;
-  const platform =
-    platformOS === 'ios' ? 'ios' : platformOS === 'android' ? 'android' : null;
-
-  // Guard: Do not call API if platform is invalid
-  if (!platform || (platform !== 'ios' && platform !== 'android')) {
-    console.warn('⚠️ Cannot save push token: unsupported platform', {
-      platformOS,
-      userId,
-    });
-    return; // EXIT: Never call API with invalid platform
-  }
-
-  // ============================================================================
-  // PAYLOAD CONSTRUCTION: Build payload ONCE with validated values
-  // ============================================================================
-
-  // Construct payload ONCE with validated values (before retry logic)
-  const deviceData = {
-    push_token: token, // Already validated above
-    platform: platform, // Already validated above
-    updated_at: new Date().toISOString(),
-  };
-
-  // Final validation: Ensure payload is complete (defense in depth)
-  // This should never fail if above guards work, but provides extra safety
-  if (!deviceData.push_token || !deviceData.platform) {
-    console.error(
-      '❌ CRITICAL: Payload validation failed - this should never happen',
-      {
-        push_token: deviceData.push_token ? 'present' : 'missing',
-        platform: deviceData.platform ? 'present' : 'missing',
-        userId,
-      },
-    );
-    return; // EXIT: Never call API with incomplete payload
-  }
-
-  // ============================================================================
-  // RETRY LOGIC: Retry function receives payload as parameter (no closure capture)
-  // ============================================================================
-
-  // Import retry utility
-  const { retryWithBackoff } = await import('@/utils/errorRecovery');
-
-  // Retry function receives validated payload as parameter (NOT from closure)
-  const saveToken = async (payload: typeof deviceData) => {
-    // Payload is passed as parameter - no closure capture of outer variables
-    // All values are guaranteed to exist because validation happened before this function
-
-    const { versionedApiClient } =
-      await import('@/services/VersionedApiClient');
-
-    const response = await versionedApiClient.registerDevice(payload);
-
-    // Handle new response format: check for ok, skipped, error fields
-    if (response.data && typeof response.data === 'object') {
-      const data = response.data as {
-        ok?: boolean;
-        skipped?: boolean;
-        reason?: string;
-        error?: string;
-        details?: unknown;
-      };
-
-      // Treat skipped as success (race condition safe)
-      if (data.skipped === true) {
-        console.log(
-          '✅ Push token registration skipped (token not ready):',
-          data.reason,
-        );
-        return response; // Return as success
-      }
-
-      // Check for error in new format
-      if (data.ok === false) {
-        const error = new Error(
-          data.error || 'Registration failed',
-        ) as Error & {
-          code?: string;
-          response?: typeof response;
-        };
-        error.code = data.error || 'REGISTRATION_ERROR';
-        error.response = response;
-        throw error;
-      }
-    }
-
-    // Legacy error handling
-    if (response.error) {
-      // Create error object that can be checked by retry logic
-      const error = new Error(response.message || response.error) as Error & {
-        code?: string;
-        response?: typeof response;
-      };
-      error.code = response.code;
-      error.response = response;
-      throw error;
-    }
-
-    return response;
-  };
-
-  // ============================================================================
-  // EXECUTE: Call retry function with validated payload
-  // ============================================================================
-
-  try {
-    // Retry with exponential backoff for timeout errors (504) and worker errors
-    // Pass validated payload as parameter (not from closure)
-    const result = await retryWithBackoff(() => saveToken(deviceData), {
-      maxRetries: 3,
-      baseDelay: 1000, // Start with 1 second
-      maxDelay: 10000, // Max 10 seconds between retries
-      retryCondition: error => {
-        // Don't retry validation errors (not transient)
-        if (
-          error instanceof Error &&
-          (error as Error & { code?: string }).code === 'VALIDATION_ERROR'
-        ) {
-          return false;
-        }
-        // Retry on timeout errors (504) or worker errors (may be transient)
-        return isTimeoutError(error) || isWorkerError(error);
-      },
-    });
-
-    if (!result.success) {
-      const error = result.error as Error & { code?: string; response?: any };
-      console.error('❌ Error saving push token to Supabase after retries:', {
-        error: error instanceof Error ? error.message : String(error),
-        code: error.code,
-        attempts: result.attempts,
-        userId,
-        platform: Platform.OS, // Log current platform for debugging
-      });
-      throw error;
-    }
-
-    console.log('✅ Push token saved successfully to Supabase');
-  } catch (error) {
-    const isTimeout = isTimeoutError(error);
-    const isWorkerErr = isWorkerError(error);
-    console.error(
-      `❌ ${isTimeout ? 'Timeout' : isWorkerErr ? 'Worker Error' : 'Exception'} saving push token to Supabase:`,
-      {
-        error: error instanceof Error ? error.message : String(error),
-        code: (error as { code?: string })?.code,
-        isTimeout,
-        isWorkerError: isWorkerErr,
-        userId,
-        platform: Platform.OS, // Log current platform for debugging
-      },
-    );
-    // Re-throw to allow caller to handle
-    throw error;
-  }
+async function savePushTokenToSupabase(_userId: string, _token: string) {
+  // Offline MVP — device registration not available
 }
 
 // Configure notification behavior
@@ -538,26 +364,8 @@ export const notificationService = {
     }
 
     try {
-      // Fetch the full task data from Supabase
-      const { data: task, error } = await supabase
-        .from(getTableName(taskType))
-        .select('*')
-        .eq('id', itemId)
-        .single();
-
-      if (error || !task) {
-        console.error('Failed to fetch task for notification:', error);
-        return;
-      }
-
-      // Set the task in the NotificationContext
-      if (_setTaskToShow) {
-        _setTaskToShow(task);
-      } else {
-        console.warn(
-          'Notification task handler not set. Make sure NotificationProvider is properly initialized.',
-        );
-      }
+      // Offline mode — cannot fetch task from DB
+      console.warn('handleNotificationTapLegacy: not available in offline mode');
     } catch (error) {
       console.error('Error handling notification tap:', error);
     }
@@ -687,42 +495,8 @@ export const notificationService = {
       // Cancel existing reminders first
       await this.cancelSRReminders(sessionId);
 
-      // Cancel reminders in database as well
-      const now = new Date().toISOString();
-      await supabase
-        .from('reminders')
-        .update({
-          completed: true,
-          processed_at: now,
-          action_taken: 'rescheduled',
-        })
-        .eq('user_id', userId)
-        .eq('session_id', sessionId)
-        .eq('reminder_type', 'spaced_repetition')
-        .eq('completed', false);
-
-      // Use the edge function to schedule new reminders with the new date
-      // This ensures consistency with initial scheduling logic
-      const { error: scheduleError } = await supabase.functions.invoke(
-        'schedule-reminders',
-        {
-          body: {
-            session_id: sessionId,
-            session_date: newDate.toISOString(),
-            topic: sessionTitle,
-          },
-        },
-      );
-
-      if (scheduleError) {
-        console.error('❌ Error rescheduling SRS reminders:', scheduleError);
-        // Don't throw - partial success is acceptable
-        // The old reminders were cancelled, new ones will be created on next sync
-      } else {
-        console.log(
-          `✅ Successfully rescheduled SRS reminders for session ${sessionId}`,
-        );
-      }
+      // Offline mode — DB reminder rescheduling not available
+      console.log(`Reminder rescheduling skipped for session ${sessionId} (offline mode)`);
     } catch (error) {
       console.error('❌ Exception in rescheduleSRReminders:', error);
       // Don't throw - allow the update to proceed even if reminder rescheduling fails

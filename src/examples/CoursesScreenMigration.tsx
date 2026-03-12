@@ -115,7 +115,7 @@ function CoursesScreenLegacy() {
 import { useCourses } from '@/hooks/useVersionedApi';
 import { useBatchOperations } from '@/hooks/useVersionedApi';
 import { VersionInfo } from '@/components/VersionInfo';
-import { versionedApiClient } from '@/services/VersionedApiClient';
+
 import { formatDate } from '@/i18n';
 
 interface Course {
@@ -127,6 +127,16 @@ interface Course {
   updated_at: string;
   deleted_at?: string;
 }
+
+// Offline MVP stub for versionedApiClient usages in this example file
+// Offline MVP stub for versionedApiClient usages in this example file
+const _stubApiResponse = { error: undefined as string | undefined, deprecationWarning: false, sunsetDate: undefined as string | undefined, migrationGuide: undefined as string | undefined };
+const versionedApiClient = {
+  createCourse: async (_data: unknown) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
+  updateCourse: async (_id: string, _data: unknown) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
+  deleteCourse: async (_id: string) => ({ ..._stubApiResponse, error: 'Not available in offline mode' }),
+  upgradeToLatest: async () => false,
+};
 
 function CoursesScreenVersioned() {
   const [showAddModal, setShowAddModal] = useState(false);
@@ -303,7 +313,7 @@ function CoursesScreenVersioned() {
       )}
 
       {/* Courses list */}
-      {courses?.map(course => (
+      {(courses as Course[] | null | undefined)?.map(course => (
         <View
           key={course.id}
           style={[

@@ -6,13 +6,10 @@ import {
   Switch,
   TouchableOpacity,
   Platform,
-  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useTheme } from '@/contexts/ThemeContext';
-import { supabase } from '@/services/supabase';
-import { useDeviceId } from '@/hooks/useDeviceId';
 import { formatDate } from '@/i18n';
 
 interface QuietHoursSettingsProps {
@@ -21,7 +18,6 @@ interface QuietHoursSettingsProps {
 
 export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   const { theme } = useTheme();
-  const deviceId = useDeviceId();
   const [quietHoursEnabled, setQuietHoursEnabled] = useState(false);
   const [quietStart, setQuietStart] = useState(new Date());
   const [quietEnd, setQuietEnd] = useState(new Date());
@@ -35,78 +31,19 @@ export function QuietHoursSettings({ onUpdate }: QuietHoursSettingsProps) {
   }, []);
 
   const loadSettings = async () => {
-    if (!deviceId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('notification_preferences')
-        .select(
-          'quiet_hours_start, quiet_hours_end, weekend_notifications_enabled',
-        )
-        .eq('user_id', deviceId)
-        .single();
-
-      if (error) throw error;
-
-      if (data?.quiet_hours_start && data?.quiet_hours_end) {
-        setQuietHoursEnabled(true);
-
-        // Parse time strings (HH:MM:SS) to Date objects
-        const [startHour, startMin] = data.quiet_hours_start
-          .split(':')
-          .map(Number);
-        const [endHour, endMin] = data.quiet_hours_end.split(':').map(Number);
-
-        const startDate = new Date();
-        startDate.setHours(startHour, startMin, 0, 0);
-
-        const endDate = new Date();
-        endDate.setHours(endHour, endMin, 0, 0);
-
-        setQuietStart(startDate);
-        setQuietEnd(endDate);
-      } else {
-        // Set defaults
-        const defaultStart = new Date();
-        defaultStart.setHours(22, 0, 0, 0); // 10 PM
-        const defaultEnd = new Date();
-        defaultEnd.setHours(8, 0, 0, 0); // 8 AM
-
-        setQuietStart(defaultStart);
-        setQuietEnd(defaultEnd);
-      }
-
-      setWeekendNotifications(data?.weekend_notifications_enabled ?? true);
-    } catch (error) {
-      console.error('Error loading quiet hours settings:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Offline MVP: use defaults
+    const defaultStart = new Date();
+    defaultStart.setHours(22, 0, 0, 0);
+    const defaultEnd = new Date();
+    defaultEnd.setHours(8, 0, 0, 0);
+    setQuietStart(defaultStart);
+    setQuietEnd(defaultEnd);
+    setLoading(false);
   };
 
   const saveSettings = async () => {
-    if (!deviceId) return;
-
-    try {
-      const startTime = `${quietStart.getHours().toString().padStart(2, '0')}:${quietStart.getMinutes().toString().padStart(2, '0')}:00`;
-      const endTime = `${quietEnd.getHours().toString().padStart(2, '0')}:${quietEnd.getMinutes().toString().padStart(2, '0')}:00`;
-
-      const { error } = await supabase
-        .from('notification_preferences')
-        .update({
-          quiet_hours_start: quietHoursEnabled ? startTime : null,
-          quiet_hours_end: quietHoursEnabled ? endTime : null,
-          weekend_notifications_enabled: weekendNotifications,
-        })
-        .eq('user_id', deviceId);
-
-      if (error) throw error;
-
-      onUpdate?.();
-    } catch (error) {
-      console.error('Error saving quiet hours:', error);
-      Alert.alert('Error', 'Failed to save settings');
-    }
+    // Offline MVP: settings stored locally only (no-op for now)
+    onUpdate?.();
   };
 
   const formatTime = (date: Date): string => {

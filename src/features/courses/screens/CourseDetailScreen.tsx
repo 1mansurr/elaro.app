@@ -12,7 +12,6 @@ import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { QueryStateWrapper } from '@/shared/components';
-import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
@@ -20,7 +19,7 @@ import { coursesApiMutations } from '@/features/courses/services/mutations';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/i18n';
 import { DeleteCourseModal } from '@/shared/components';
 
@@ -79,23 +78,9 @@ const CourseDetailScreen = () => {
     }
   }, [navigation, courseId]);
 
-  // Fetch lectures for this course
-  const { data: lectures } = useQuery({
-    queryKey: ['courseLectures', courseId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lectures')
-        .select('*')
-        .eq('course_id', courseId)
-        .is('deleted_at', null)
-        .order('start_time', { ascending: true })
-        .limit(1); // Get first lecture for schedule info
-
-      if (error) throw error;
-      return data?.[0] || null;
-    },
-    enabled: !!courseId,
-  });
+  // Offline MVP: lecture schedule not fetched
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lectures: any = null;
 
   const handleDelete = () => {
     setShowDeleteModal(true);

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/services/supabase';
-import { useDeviceId } from '@/hooks/useDeviceId';
 import { Course } from '@/types';
+import { coursesApi } from '@/features/courses/services/queries';
 
 type TaskType = 'assignment' | 'lecture' | 'study_session';
 
@@ -38,7 +37,6 @@ interface QuickAddFormActions {
 export const useQuickAddForm = (
   isVisible: boolean,
 ): QuickAddFormState & QuickAddFormActions => {
-  const deviceId = useDeviceId();
   // const { resetTemplateSelection } = useTemplateSelection();
   const resetTemplateSelection = () => {}; // Mock implementation
 
@@ -62,24 +60,16 @@ export const useQuickAddForm = (
 
   // Fetch courses when modal opens
   const fetchCourses = useCallback(async () => {
-    if (!deviceId) return;
-
     setIsLoadingCourses(true);
     try {
-      const { data, error } = await supabase
-        .from('courses')
-        .select('*')
-        .eq('user_id', deviceId)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setCourses(data || []);
+      const page = await coursesApi.getAll();
+      setCourses(page.courses);
     } catch (error) {
       console.error('Error fetching courses:', error);
     } finally {
       setIsLoadingCourses(false);
     }
-  }, [deviceId]);
+  }, []);
 
   // Reset form when modal closes
   const resetForm = useCallback(() => {
@@ -93,10 +83,10 @@ export const useQuickAddForm = (
 
   // Effects
   useEffect(() => {
-    if (isVisible && deviceId) {
+    if (isVisible) {
       fetchCourses();
     }
-  }, [isVisible, deviceId, fetchCourses]);
+  }, [isVisible, fetchCourses]);
 
   useEffect(() => {
     if (!isVisible) {

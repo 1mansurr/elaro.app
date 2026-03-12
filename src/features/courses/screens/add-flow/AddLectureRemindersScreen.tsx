@@ -13,7 +13,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAddCourse } from '@/features/courses/contexts/AddCourseContext';
-import { supabase } from '@/services/supabase';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import {
   savePendingTask,

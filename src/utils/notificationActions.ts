@@ -1,4 +1,3 @@
-import { supabase } from '@/services/supabase';
 import { snoozeReminder, cancelReminder } from './reminderUtils';
 import * as Notifications from 'expo-notifications';
 
@@ -80,15 +79,6 @@ async function handleCompleteAction(
     if (reminderId) {
       await cancelReminder(reminderId, 'task_completed');
     }
-
-    // Track analytics
-    await supabase.from('reminder_analytics').insert({
-      reminder_id: reminderId,
-      action_taken: 'completed_from_notification',
-      effectiveness_score: 1.0,
-      hour_of_day: new Date().getHours(),
-      day_of_week: new Date().getDay(),
-    });
   } catch (error) {
     console.error('Error completing task from notification:', error);
   }
@@ -108,16 +98,6 @@ async function handleSnoozeAction(reminderId?: string): Promise<void> {
   try {
     // Snooze for 1 hour
     await snoozeReminder(reminderId, 60);
-
-    // Track analytics
-    await supabase.from('reminder_analytics').insert({
-      reminder_id: reminderId,
-      action_taken: 'snoozed',
-      effectiveness_score: 0.5,
-      hour_of_day: new Date().getHours(),
-      day_of_week: new Date().getDay(),
-    });
-
     console.log('Reminder snoozed for 1 hour');
   } catch (error) {
     console.error('Error snoozing reminder:', error);
@@ -136,22 +116,7 @@ async function handleDismissAction(reminderId?: string): Promise<void> {
   }
 
   try {
-    await supabase
-      .from('reminders')
-      .update({
-        dismissed_at: new Date().toISOString(),
-        action_taken: 'dismissed',
-      })
-      .eq('id', reminderId);
-
-    // Track analytics
-    await supabase.from('reminder_analytics').insert({
-      reminder_id: reminderId,
-      action_taken: 'dismissed',
-      effectiveness_score: 0,
-      hour_of_day: new Date().getHours(),
-      day_of_week: new Date().getDay(),
-    });
+    console.log('Reminder dismissed (offline mode — no DB update)');
   } catch (error) {
     console.error('Error dismissing reminder:', error);
   }
@@ -173,43 +138,8 @@ function getTableName(taskType: string): string {
  * Track notification opened
  */
 export async function trackNotificationOpened(
-  notificationId: string,
-  reminderId?: string,
+  _notificationId: string,
+  _reminderId?: string,
 ): Promise<void> {
-  try {
-    const now = new Date().toISOString();
-
-    // Update reminder if provided
-    if (reminderId) {
-      await supabase
-        .from('reminders')
-        .update({ opened_at: now })
-        .eq('id', reminderId);
-    }
-
-    // Track in analytics
-    if (reminderId) {
-      await supabase.from('reminder_analytics').upsert({
-        reminder_id: reminderId,
-        opened: true,
-        action_taken: 'opened',
-        effectiveness_score: 0.5,
-        hour_of_day: new Date().getHours(),
-        day_of_week: new Date().getDay(),
-      });
-    }
-
-    // Update delivery record
-    await supabase
-      .from('notification_deliveries')
-      .update({
-        opened_at: now,
-        clicked_at: now,
-      })
-      .eq('metadata->reminderId', reminderId);
-
-    console.log('Notification open tracked');
-  } catch (error) {
-    console.error('Error tracking notification open:', error);
-  }
+  // Offline mode — analytics tracking not available
 }

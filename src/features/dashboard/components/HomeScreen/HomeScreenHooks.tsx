@@ -11,11 +11,9 @@ import { differenceInCalendarDays } from 'date-fns';
 import { useQueryClient, QueryClient } from '@tanstack/react-query';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import { useToast, ToastOptions } from '@/contexts/ToastContext';
-import { supabase } from '@/services/supabase';
 import { getDraftCount } from '@/utils/draftStorage';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Task, HomeScreenData, RootStackParamList } from '@/types';
-import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
 // Trial banner hook removed - no longer using free trials
@@ -26,37 +24,9 @@ export const useSubscriptionUpgrade = () => {
 
   const handleSubscribePress = () => {
     Alert.alert(
-      'Unlock Premium Access',
-      'As an early user, you can unlock all premium features for free. Would you like to upgrade your account?',
-      [
-        { text: 'Not Now', style: 'cancel' },
-        {
-          text: 'Upgrade for Free',
-          onPress: async () => {
-            try {
-              const { error } = await supabase.functions.invoke(
-                'grant-premium-access',
-              );
-              if (error) throw new Error(error.message);
-
-              // Invalidate user data to refresh their subscription status and unlock features.
-              queryClient.invalidateQueries({ queryKey: ['user'] });
-              queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-
-              Alert.alert(
-                'Success!',
-                'You now have access to all premium features.',
-              );
-            } catch (error: unknown) {
-              const err = error as Error;
-              const errorTitle = getErrorTitle(err);
-              const errorMessage = mapErrorCodeToMessage(err);
-              Alert.alert(errorTitle, errorMessage);
-              console.error('Free upgrade error:', error);
-            }
-          },
-        },
-      ],
+      'Offline Mode',
+      'Subscription management is not available in offline mode.',
+      [{ text: 'OK' }],
     );
   };
 

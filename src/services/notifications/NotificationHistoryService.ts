@@ -1,7 +1,5 @@
-import { versionedApiClient } from '@/services/VersionedApiClient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppError } from '@/utils/AppError';
-import { supabase } from '@/services/supabase';
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -91,260 +89,51 @@ export class NotificationHistoryService {
    * Get notification history for a user
    */
   async getNotificationHistory(
-    userId: string,
-    options: NotificationHistoryOptions = {},
+    _userId: string,
+    _options: NotificationHistoryOptions = {},
   ): Promise<NotificationHistoryItem[]> {
-    try {
-      const { limit = 50, offset = 0, filter, includeRead = true } = options;
-
-      // Check cache first
-      const cachedData = await this.getCachedHistory(userId);
-      if (cachedData && this.isCacheValid(cachedData.timestamp)) {
-        return this.filterNotifications(cachedData.notifications, filter);
-      }
-
-      // Use API layer
-      const response = await versionedApiClient.getNotificationHistory({
-        limit,
-        offset,
-        filter: filter?.type || 'all',
-        includeRead,
-      });
-
-      if (response.error) {
-        // Try to return cached data if available
-        const cachedData = await this.getCachedHistory(userId);
-        if (cachedData) {
-          return this.filterNotifications(
-            cachedData.notifications,
-            options.filter,
-          );
-        }
-
-        throw new AppError(
-          response.message ||
-            response.error ||
-            'Failed to get notification history',
-          500,
-          'NOTIFICATION_HISTORY_ERROR',
-          { userId, options },
-        );
-      }
-
-      const notifications = (response.data || []) as NotificationHistoryItem[];
-
-      // Cache the results
-      await this.cacheHistory(userId, notifications);
-
-      // Apply filters (API already filters by type, but we keep this for client-side filtering)
-      return this.filterNotifications(notifications, filter);
-    } catch (error) {
-      // Try to return cached data if available
-      const cachedData = await this.getCachedHistory(userId);
-      if (cachedData) {
-        return this.filterNotifications(
-          cachedData.notifications,
-          options.filter,
-        );
-      }
-
-      throw new AppError(
-        `Error getting notification history: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'NOTIFICATION_HISTORY_ERROR',
-        { userId, options },
-      );
-    }
+    return [];
   }
 
   /**
    * Get unread notification count
    */
-  async getUnreadCount(userId: string): Promise<number> {
-    try {
-      const response = await versionedApiClient.getUnreadNotificationCount();
-
-      if (response.error) {
-        throw new AppError(
-          response.message || response.error || 'Failed to get unread count',
-          500,
-          'UNREAD_COUNT_ERROR',
-          { userId },
-        );
-      }
-
-      return response.data?.count || 0;
-    } catch (error) {
-      throw new AppError(
-        `Error getting unread count: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'UNREAD_COUNT_ERROR',
-        { userId },
-      );
-    }
+  async getUnreadCount(_userId: string): Promise<number> {
+    return 0;
   }
 
   /**
    * Mark notification as read
    */
-  async markAsRead(notificationId: string, userId: string): Promise<void> {
-    try {
-      const response =
-        await versionedApiClient.markNotificationAsRead(notificationId);
-
-      if (response.error) {
-        throw new AppError(
-          response.message ||
-            response.error ||
-            'Failed to mark notification as read',
-          500,
-          'MARK_READ_ERROR',
-          { notificationId, userId },
-        );
-      }
-
-      // Clear cache to force refresh
-      await this.clearCache(userId);
-    } catch (error) {
-      // Store offline action if network fails
-      await this.storeOfflineAction({
-        id: `mark_read_${Date.now()}`,
-        action: 'mark_read',
-        notificationId,
-        timestamp: new Date().toISOString(),
-        synced: false,
-      });
-
-      throw new AppError(
-        `Error marking notification as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'MARK_READ_ERROR',
-        { notificationId, userId },
-      );
-    }
+  async markAsRead(_notificationId: string, _userId: string): Promise<void> {
+    // Offline mode — no-op
   }
 
   /**
    * Mark all notifications as read
    */
-  async markAllAsRead(userId: string): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('notification_deliveries')
-        .update({ opened_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .is('opened_at', null);
-
-      if (error) {
-        throw new AppError(
-          `Failed to mark all notifications as read: ${error.message}`,
-          500,
-          'MARK_ALL_READ_ERROR',
-          { userId },
-        );
-      }
-
-      // Clear cache to force refresh
-      await this.clearCache(userId);
-    } catch (error) {
-      throw new AppError(
-        `Error marking all notifications as read: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'MARK_ALL_READ_ERROR',
-        { userId },
-      );
-    }
+  async markAllAsRead(_userId: string): Promise<void> {
+    // Offline mode — no-op
   }
 
   /**
    * Delete notification
    */
   async deleteNotification(
-    notificationId: string,
-    userId: string,
+    _notificationId: string,
+    _userId: string,
   ): Promise<void> {
-    try {
-      const { error } = await supabase
-        .from('notification_deliveries')
-        .delete()
-        .eq('id', notificationId)
-        .eq('user_id', userId);
-
-      if (error) {
-        throw new AppError(
-          `Failed to delete notification: ${error.message}`,
-          500,
-          'DELETE_NOTIFICATION_ERROR',
-          { notificationId, userId },
-        );
-      }
-
-      // Clear cache to force refresh
-      await this.clearCache(userId);
-    } catch (error) {
-      // Store offline action if network fails
-      await this.storeOfflineAction({
-        id: `delete_${Date.now()}`,
-        action: 'delete',
-        notificationId,
-        timestamp: new Date().toISOString(),
-        synced: false,
-      });
-
-      throw new AppError(
-        `Error deleting notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'DELETE_NOTIFICATION_ERROR',
-        { notificationId, userId },
-      );
-    }
+    // Offline mode — no-op
   }
 
   /**
    * Complete task from notification
    */
   async completeTaskFromNotification(
-    notificationId: string,
-    userId: string,
+    _notificationId: string,
+    _userId: string,
   ): Promise<void> {
-    try {
-      // Get notification metadata to find task ID
-      const { data: notification, error: fetchError } = await supabase
-        .from('notification_deliveries')
-        .select('metadata')
-        .eq('id', notificationId)
-        .eq('user_id', userId)
-        .single();
-
-      if (fetchError || !notification?.metadata?.taskId) {
-        throw new AppError(
-          'Task ID not found in notification metadata',
-          500,
-          'TASK_NOT_FOUND',
-          { notificationId, userId },
-        );
-      }
-
-      // Mark task as complete (this would integrate with your existing task service)
-      // For now, we'll just mark the notification as read
-      await this.markAsRead(notificationId, userId);
-    } catch (error) {
-      // Store offline action if network fails
-      await this.storeOfflineAction({
-        id: `complete_task_${Date.now()}`,
-        action: 'complete_task',
-        notificationId,
-        timestamp: new Date().toISOString(),
-        synced: false,
-      });
-
-      throw new AppError(
-        `Error completing task from notification: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        500,
-        'COMPLETE_TASK_ERROR',
-        { notificationId, userId },
-      );
-    }
+    // Offline mode — no-op
   }
 
   // ============================================================================
@@ -539,23 +328,8 @@ export class NotificationHistoryService {
   /**
    * Clean up old notifications (20 days)
    */
-  async cleanupOldNotifications(userId: string): Promise<void> {
-    try {
-      const twentyDaysAgo = new Date();
-      twentyDaysAgo.setDate(twentyDaysAgo.getDate() - 20);
-
-      const { error } = await supabase
-        .from('notification_deliveries')
-        .delete()
-        .eq('user_id', userId)
-        .lt('sent_at', twentyDaysAgo.toISOString());
-
-      if (error) {
-        console.error('Error cleaning up old notifications:', error);
-      }
-    } catch (error) {
-      console.error('Error cleaning up old notifications:', error);
-    }
+  async cleanupOldNotifications(_userId: string): Promise<void> {
+    // Offline mode — no-op
   }
 }
 

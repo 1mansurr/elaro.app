@@ -29,7 +29,7 @@ import {
   ReminderChip,
 } from '@/shared/components';
 import { api } from '@/services/api';
-import { supabase } from '@/services/supabase';
+import { coursesApi } from '@/features/courses/services/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks';
@@ -207,23 +207,8 @@ const AddStudySessionScreen = () => {
     const fetchCourses = async () => {
       setIsLoadingCourses(true);
       try {
-        const { data, error } = await supabase
-          .from('courses')
-          .select('id, course_name, course_code, about_course');
-
-        if (error) throw error;
-
-        const formattedCourses = (data || []).map(course => ({
-          id: course.id,
-          courseName: course.course_name,
-          courseCode: course.course_code,
-          aboutCourse: course.about_course,
-          userId: deviceId || '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })) as Course[];
-
-        setCourses(formattedCourses);
+        const page = await coursesApi.getAll();
+        setCourses(page.courses);
       } catch (error) {
         console.error('Error fetching courses:', error);
       } finally {
@@ -232,7 +217,7 @@ const AddStudySessionScreen = () => {
     };
 
     fetchCourses();
-  }, [deviceId]);
+  }, []);
 
   // Check if form is valid
   const isFormValid =

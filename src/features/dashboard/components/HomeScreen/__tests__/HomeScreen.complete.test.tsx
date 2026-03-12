@@ -20,7 +20,6 @@ jest.mock('@/utils/draftStorage');
 jest.mock('@/utils/errorMapping');
 jest.mock('@/contexts/ToastContext');
 jest.mock('@/hooks');
-jest.mock('@/services/supabase');
 
 // Mock navigation
 const mockNavigate = jest.fn();

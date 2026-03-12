@@ -1,118 +1,24 @@
 import { useQuery } from '@tanstack/react-query';
-import { versionedApiClient } from '@/services/VersionedApiClient';
 import { Course } from '@/types';
-import { supabase } from '@/services/supabase';
-import { useDeviceId } from '@/hooks/useDeviceId';
+import { coursesApi } from '@/features/courses/services/queries';
 
 /**
- * React Query hook for fetching a single course by ID
- * @param courseId - The ID of the course to fetch
- * @returns React Query result with course data
+ * React Query hook for fetching a single course by ID (SQLite)
  */
 export const useCourseDetail = (courseId: string) => {
-  const deviceId = useDeviceId();
-
   return useQuery<Course, Error>({
     queryKey: ['courseDetail', courseId],
     queryFn: async () => {
-      // Guard: Ensure courseId is valid
       if (!courseId) {
         throw new Error('Course ID is required');
       }
-
-      try {
-        const response = await versionedApiClient.getCourse(courseId);
-
-        if (response.error) {
-          throw new Error(
-            response.message || response.error || 'Failed to fetch course',
-          );
-        }
-
-        if (!response.data) {
-          throw new Error('Course not found');
-        }
-
-        // Transform VersionedApiClient.Course to entities.Course
-        const apiCourse = response.data;
-        return {
-          id: apiCourse.id,
-          courseName: apiCourse.course_name,
-          courseCode: apiCourse.course_code,
-          aboutCourse: apiCourse.about_course,
-          userId: deviceId || '', // VersionedApiClient.Course doesn't have userId, use from context
-          createdAt: apiCourse.created_at,
-          updatedAt: apiCourse.updated_at,
-          deletedAt: apiCourse.deleted_at,
-        } as Course;
-      } catch (error) {
-        // Fallback to direct Supabase query if Edge Function fails
-        const errorMessage =
-          error instanceof Error && error.message
-            ? error.message
-            : typeof error === 'string'
-              ? error
-              : 'Unknown error';
-
-        if (
-          errorMessage.includes('Function failed to start') ||
-          errorMessage.includes('Edge Function returned a non-2xx') ||
-          errorMessage.includes('WORKER_ERROR')
-        ) {
-          console.warn(
-            '⚠️ [useCourseDetail] Edge Function failed, falling back to direct Supabase query',
-          );
-
-          try {
-            if (!deviceId) {
-              throw new Error('Device ID not available');
-            }
-
-            // Query course directly from Supabase
-            const { data: courseData, error: dbError } = await supabase
-              .from('courses')
-              .select('*')
-              .eq('id', courseId)
-              .eq('user_id', deviceId)
-              .is('deleted_at', null)
-              .single();
-
-            if (dbError) {
-              throw dbError;
-            }
-
-            if (!courseData) {
-              throw new Error('Course not found');
-            }
-
-            // Transform Supabase data to Course format
-            const course: Course = {
-              id: courseData.id,
-              courseName: courseData.course_name,
-              courseCode: courseData.course_code,
-              aboutCourse: courseData.about_course,
-              userId: courseData.user_id,
-              createdAt: courseData.created_at,
-              updatedAt: courseData.updated_at,
-              deletedAt: courseData.deleted_at,
-            };
-
-            return course;
-          } catch (fallbackError) {
-            console.error(
-              '⚠️ [useCourseDetail] Fallback query also failed:',
-              fallbackError,
-            );
-            // If fallback also fails, throw the original error
-            throw error;
-          }
-        }
-
-        // Re-throw other errors
-        throw error;
+      const course = await coursesApi.getById(courseId);
+      if (!course) {
+        throw new Error('Course not found');
       }
+      return course;
     },
-    enabled: !!courseId && !!deviceId,
+    enabled: !!courseId,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 };

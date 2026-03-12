@@ -25,8 +25,7 @@ import { useCourseDetail } from '@/hooks/useCourseDetail';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/hooks/useTheme';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/services/supabase';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDate } from '@/i18n';
 import { DeleteCourseModal } from '@/shared/components';
 
@@ -54,24 +53,9 @@ const EditCourseModal = () => {
     refetch,
   } = useCourseDetail(courseId);
 
-  // Fetch first lecture for schedule info
-  const { data: lecture } = useQuery({
-    queryKey: ['courseLecture', courseId],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('lectures')
-        .select('*')
-        .eq('course_id', courseId)
-        .is('deleted_at', null)
-        .order('start_time', { ascending: true })
-        .limit(1)
-        .single();
-
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows
-      return data || null;
-    },
-    enabled: !!courseId,
-  });
+  // Offline MVP: lecture schedule not fetched
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const lecture: any = null;
 
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');

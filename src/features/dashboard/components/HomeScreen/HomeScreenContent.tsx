@@ -15,7 +15,7 @@ import TodayOverviewCard from '../../components/TodayOverviewCard';
 import { SwipeableTaskCard } from '../../components/SwipeableTaskCard';
 import { PrimaryButton } from '@/shared/components';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
-import { requestDeduplicationService } from '@/services/RequestDeduplicationService';
+
 import { useStableCallback, useExpensiveMemo } from '@/hooks/useMemoization';
 
 type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
@@ -53,12 +53,8 @@ const HomeScreenContent: React.FC<HomeScreenContentProps> = memo(
     const navigation = useNavigation<HomeScreenNavigationProp>();
     const queryClient = useQueryClient();
 
-    // Optimized refresh with request deduplication
     const handleRefresh = useStableCallback(async () => {
-      await requestDeduplicationService.deduplicateRequest(
-        'home-screen-refresh',
-        () => queryClient.invalidateQueries({ queryKey: ['homeScreenData'] }),
-      );
+      await queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
     }, [queryClient]);
 
     // Optimized data processing with expensive memoization

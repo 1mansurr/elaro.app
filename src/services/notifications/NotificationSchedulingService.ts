@@ -1,4 +1,3 @@
-import { supabase } from '@/services/supabase';
 import {
   INotificationSchedulingService,
   Notification,
@@ -220,61 +219,10 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
    * Handle notification rescheduling
    */
   async handleRescheduling(
-    notificationId: string,
-    reason: string,
+    _notificationId: string,
+    _reason: string,
   ): Promise<void> {
-    try {
-      // Get notification details
-      const { data: notification } = await supabase
-        .from('notification_queue')
-        .select('*')
-        .eq('id', notificationId)
-        .single();
-
-      if (!notification) {
-        throw new Error('Notification not found');
-      }
-
-      // Calculate new time based on reason
-      let newTime: Date;
-      const now = new Date();
-
-      switch (reason) {
-        case 'user_busy':
-          newTime = new Date(now.getTime() + 30 * 60 * 1000); // 30 minutes later
-          break;
-        case 'quiet_hours':
-          newTime = await this.getNextAvailableTime(notification.user_id, now);
-          break;
-        case 'frequency_limit':
-          newTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour later
-          break;
-        default:
-          newTime = new Date(now.getTime() + 15 * 60 * 1000); // 15 minutes later
-      }
-
-      // Update notification in queue
-      const { error } = await supabase
-        .from('notification_queue')
-        .update({
-          scheduled_for: newTime.toISOString(),
-          status: 'pending',
-          retry_count: (notification.retry_count || 0) + 1,
-          last_error: null,
-        })
-        .eq('id', notificationId);
-
-      if (error) {
-        throw error;
-      }
-
-      console.log(
-        `Notification ${notificationId} rescheduled for ${newTime.toISOString()}`,
-      );
-    } catch (error) {
-      console.error('Error rescheduling notification:', error);
-      throw error;
-    }
+    // Offline mode — rescheduling via DB not available
   }
 
   /**
@@ -321,155 +269,28 @@ export class NotificationSchedulingService implements INotificationSchedulingSer
   /**
    * Get user's optimal notification times
    */
-  async getOptimalTimes(userId: string): Promise<OptimalTime[]> {
-    try {
-      // Get user's engagement analytics
-      const { data: analytics } = await supabase
-        .from('notification_analytics')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
-        .limit(100);
-
-      if (!analytics || analytics.length === 0) {
-        // Return default optimal times
-        return this.getDefaultOptimalTimes();
-      }
-
-      // Analyze engagement patterns
-      const timeEngagement = new Map<
-        number,
-        { count: number; engagement: number }
-      >();
-
-      analytics.forEach(analytic => {
-        const hour = new Date(analytic.created_at).getHours();
-        const engagement = analytic.open_rate || 0;
-
-        if (!timeEngagement.has(hour)) {
-          timeEngagement.set(hour, { count: 0, engagement: 0 });
-        }
-
-        const current = timeEngagement.get(hour)!;
-        timeEngagement.set(hour, {
-          count: current.count + 1,
-          engagement:
-            (current.engagement * current.count + engagement) /
-            (current.count + 1),
-        });
-      });
-
-      // Convert to OptimalTime array
-      const optimalTimes: OptimalTime[] = [];
-      timeEngagement.forEach((data, hour) => {
-        optimalTimes.push({
-          hour,
-          dayOfWeek: 0, // Default to Sunday, could be enhanced
-          engagementScore: data.engagement,
-          context: this.getTimeContext(hour),
-        });
-      });
-
-      return optimalTimes.sort((a, b) => b.engagementScore - a.engagementScore);
-    } catch (error) {
-      console.error('Error getting optimal times:', error);
-      return this.getDefaultOptimalTimes();
-    }
+  async getOptimalTimes(_userId: string): Promise<OptimalTime[]> {
+    return this.getDefaultOptimalTimes();
   }
 
   /**
    * Apply frequency controls to prevent notification spam
    */
   private async applyFrequencyControls(
-    userId: string,
-    notification: Notification,
-    options: SmartSchedulingOptions,
+    _userId: string,
+    _notification: Notification,
+    _options: SmartSchedulingOptions,
   ): Promise<void> {
-    try {
-      const preferences =
-        await this.preferenceService.getUserPreferences(userId);
-
-      // Check daily notification count
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
-
-      const { data: todayNotifications } = await supabase
-        .from('notification_deliveries')
-        .select('id')
-        .eq('user_id', userId)
-        .gte('sent_at', today.toISOString())
-        .lt('sent_at', tomorrow.toISOString());
-
-      const todayCount = todayNotifications?.length || 0;
-
-      if (todayCount >= preferences.frequency.maxPerDay) {
-        // Reschedule for tomorrow
-        notification.scheduledFor = new Date(
-          tomorrow.getTime() + 9 * 60 * 60 * 1000,
-        ); // 9 AM tomorrow
-        return;
-      }
-
-      // Check cooldown period
-      const { data: recentNotifications } = await supabase
-        .from('notification_deliveries')
-        .select('sent_at')
-        .eq('user_id', userId)
-        .order('sent_at', { ascending: false })
-        .limit(1);
-
-      if (recentNotifications && recentNotifications.length > 0) {
-        const lastNotification = new Date(recentNotifications[0].sent_at);
-        const timeSinceLastNotification =
-          Date.now() - lastNotification.getTime();
-        const cooldownMs = preferences.frequency.cooldownPeriod * 60 * 1000;
-
-        if (timeSinceLastNotification < cooldownMs) {
-          // Reschedule after cooldown period
-          notification.scheduledFor = new Date(
-            lastNotification.getTime() + cooldownMs,
-          );
-        }
-      }
-    } catch (error) {
-      console.error('Error applying frequency controls:', error);
-    }
+    // Offline mode — frequency controls not available
   }
 
   /**
    * Schedule a notification in the database
    */
   private async scheduleNotification(
-    notification: Notification,
+    _notification: Notification,
   ): Promise<void> {
-    try {
-      // Use API layer for queue operations
-      const { versionedApiClient } =
-        await import('@/services/VersionedApiClient');
-
-      const response = await versionedApiClient.addToNotificationQueue({
-        notification_type: notification.type,
-        title: notification.title,
-        body: notification.body,
-        data: notification.data,
-        scheduled_for:
-          notification.scheduledFor?.toISOString() || new Date().toISOString(),
-        priority: this.getPriorityNumber(notification.priority),
-      });
-
-      if (response.error) {
-        throw new Error(
-          response.message ||
-            response.error ||
-            'Failed to schedule notification',
-        );
-      }
-    } catch (error) {
-      console.error('Error scheduling notification:', error);
-      throw error;
-    }
+    // Offline mode — notification queue not available
   }
 
   /**

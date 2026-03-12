@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
 import { useRoute } from '@react-navigation/native';
-import { supabase } from '@/services/supabase';
 import { RootStackParamList } from '@/types';
 import { RouteProp } from '@react-navigation/native';
 
@@ -19,34 +18,8 @@ const TaskDetailModal = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchTask = async () => {
-      if (!taskId || !taskType) {
-        setError('Task ID or Type is missing.');
-        setLoading(false);
-        return;
-      }
-
-      // Map taskType to Supabase table name
-      const tableName =
-        taskType === 'study_session' ? 'study_sessions' : taskType;
-
-      try {
-        const { data, error: dbError } = await supabase
-          .from(tableName)
-          .select('*')
-          .eq('id', taskId)
-          .single();
-
-        if (dbError) throw dbError;
-        setTask(data);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchTask();
+    // Offline MVP: task details not available via this modal
+    setLoading(false);
   }, [taskId, taskType]);
 
   return (
