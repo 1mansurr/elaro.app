@@ -7,8 +7,7 @@
 
 import { Platform, Alert, Linking } from 'react-native';
 import * as Notifications from 'expo-notifications';
-import * as ImagePicker from 'expo-image-picker';
-import * as LocalAuthentication from 'expo-local-authentication';
+// expo-image-picker and expo-local-authentication removed in offline MVP
 
 export type PermissionType =
   | 'camera'
@@ -31,21 +30,9 @@ export async function requestPermission(
   try {
     switch (type) {
       case 'camera':
-        const cameraResult = await ImagePicker.requestCameraPermissionsAsync();
-        return {
-          granted: cameraResult.granted,
-          canAskAgain: cameraResult.canAskAgain,
-          status: cameraResult.status,
-        };
-
       case 'photos':
-        const photosResult =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        return {
-          granted: photosResult.granted,
-          canAskAgain: photosResult.canAskAgain,
-          status: photosResult.status,
-        };
+        // expo-image-picker removed in offline MVP
+        return { granted: false, canAskAgain: false, status: 'denied' };
 
       case 'notifications':
         const notificationResult =
@@ -57,29 +44,8 @@ export async function requestPermission(
         };
 
       case 'biometric':
-        // Note: Biometric authentication doesn't have a traditional permission
-        // It's checked via device capabilities
-        const biometricAvailable = await LocalAuthentication.hasHardwareAsync();
-        if (!biometricAvailable) {
-          return {
-            granted: false,
-            canAskAgain: false,
-            status: 'denied',
-          };
-        }
-        const enrolled = await LocalAuthentication.isEnrolledAsync();
-        if (!enrolled) {
-          return {
-            granted: false,
-            canAskAgain: false,
-            status: 'undetermined',
-          };
-        }
-        return {
-          granted: true,
-          canAskAgain: true,
-          status: 'granted',
-        };
+        // expo-local-authentication removed in offline MVP
+        return { granted: false, canAskAgain: false, status: 'denied' };
 
       default:
         return {
@@ -107,21 +73,9 @@ export async function checkPermission(
   try {
     switch (type) {
       case 'camera':
-        const cameraResult = await ImagePicker.getCameraPermissionsAsync();
-        return {
-          granted: cameraResult.granted,
-          canAskAgain: cameraResult.canAskAgain,
-          status: cameraResult.status,
-        };
-
       case 'photos':
-        const photosResult =
-          await ImagePicker.getMediaLibraryPermissionsAsync();
-        return {
-          granted: photosResult.granted,
-          canAskAgain: photosResult.canAskAgain,
-          status: photosResult.status,
-        };
+        // expo-image-picker removed in offline MVP
+        return { granted: false, canAskAgain: false, status: 'denied' };
 
       case 'notifications':
         const notificationResult = await Notifications.getPermissionsAsync();
@@ -132,20 +86,8 @@ export async function checkPermission(
         };
 
       case 'biometric':
-        const biometricAvailable = await LocalAuthentication.hasHardwareAsync();
-        if (!biometricAvailable) {
-          return {
-            granted: false,
-            canAskAgain: false,
-            status: 'denied',
-          };
-        }
-        const enrolled = await LocalAuthentication.isEnrolledAsync();
-        return {
-          granted: enrolled,
-          canAskAgain: enrolled,
-          status: enrolled ? 'granted' : 'undetermined',
-        };
+        // expo-local-authentication removed in offline MVP
+        return { granted: false, canAskAgain: false, status: 'denied' };
 
       default:
         return {

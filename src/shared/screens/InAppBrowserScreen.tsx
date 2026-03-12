@@ -5,9 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  ActivityIndicator,
 } from 'react-native';
-import { WebView } from 'react-native-webview';
+// react-native-webview removed in offline MVP
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -47,12 +46,6 @@ const InAppBrowserScreen = () => {
   const textColor = isDark ? '#FFFFFF' : '#111418';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
 
-  const renderLoading = () => (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" />
-    </View>
-  );
-
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
       <View
@@ -77,12 +70,12 @@ const InAppBrowserScreen = () => {
         </Text>
         <View style={styles.headerSpacer} />
       </View>
-      <WebView
-        source={{ uri: url }}
-        startInLoadingState={true}
-        renderLoading={renderLoading}
-        style={styles.webView}
-      />
+      <View style={[styles.webView, styles.loadingContainer]}>
+        <Text style={{ color: textColor }}>
+          WebView not available in offline mode.
+        </Text>
+        <Text style={{ color: textColor, marginTop: 8 }}>{url}</Text>
+      </View>
     </View>
   );
 };
