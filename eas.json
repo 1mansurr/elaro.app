@@ -10,7 +10,7 @@
       "channel": "development",
       "ios": {
         "buildConfiguration": "Debug",
-        "image": "macos-sequoia-15.6-xcode-16.4"
+        "image": "latest"
       }
     },
     "preview": {
@@ -18,7 +18,7 @@
       "distribution": "internal",
       "channel": "preview",
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-16.4"
+        "image": "latest"
       }
     },
     "staging": {
@@ -26,7 +26,7 @@
       "distribution": "internal",
       "channel": "staging",
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-16.4"
+        "image": "latest"
       }
     },
     "production": {
@@ -35,7 +35,7 @@
       "channel": "production",
       "autoIncrement": true,
       "ios": {
-        "image": "macos-sequoia-15.6-xcode-16.4",
+        "image": "latest",
         "autoIncrement": "buildNumber"
       },
       "android": {
