@@ -101,8 +101,6 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
         return focused ? 'home' : 'home-outline';
       case 'Calendar':
         return focused ? 'calendar' : 'calendar-outline';
-      case 'Account':
-        return focused ? 'person' : 'person-outline';
       default:
         return 'help-outline';
     }
@@ -225,18 +223,19 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    paddingHorizontal: SPACING.md,
+    alignItems: 'center',
     paddingTop: SPACING.xs,
     backgroundColor: 'transparent',
   },
   capsuleNavBar: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
-    height: 80,
-    borderRadius: 9999, // rounded-full - capsule shape
+    gap: SPACING.xs,
+    height: 72,
+    borderRadius: 9999,
     borderWidth: 1,
-    paddingHorizontal: SPACING.md,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: SPACING.xs,
   },
   activeTab: {

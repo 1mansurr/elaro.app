@@ -109,27 +109,21 @@ export const ROLES: Record<string, UserRole> = {
   },
 };
 
-// Task limits by subscription tier
+// Task limits by subscription tier.
+// tasks_per_month = combined monthly total across assignments + lectures + study_sessions.
+// srs_reminders   = monthly SRS reminder cap.
+// -1 means unlimited (admin only).
 export const TASK_LIMITS = {
   free: {
-    assignments: 15,
-    lectures: 15,
-    study_sessions: 15,
-    courses: 2,
-    srs_reminders: 5,
+    tasks_per_month: 35,
+    srs_reminders: 15,
   },
   oddity: {
-    assignments: 70,
-    lectures: 70,
-    study_sessions: 70,
-    courses: 10,
-    srs_reminders: 50,
+    tasks_per_month: 80,
+    srs_reminders: 45,
   },
   admin: {
-    assignments: -1, // unlimited
-    lectures: -1,
-    study_sessions: -1,
-    courses: -1,
+    tasks_per_month: -1,
     srs_reminders: -1,
   },
 } as const;
@@ -186,16 +180,17 @@ export const getTaskLimits = (subscriptionTier: string) => {
   );
 };
 
+const TASK_TABLES = ['assignments', 'lectures', 'study_sessions'] as const;
+
 /**
- * Check if user can create a task based on subscription tier
+ * Check if user can create a task based on their subscription tier.
+ * Counts all task types combined within the last 30 days.
  */
 export const canCreateTask = async (
   supabaseClient: SupabaseClient,
   userId: string,
-  taskType: string,
 ): Promise<{ allowed: boolean; reason?: string }> => {
   try {
-    // Get user's subscription tier
     const { data: userData, error } = await supabaseClient
       .from('users')
       .select('subscription_tier')
@@ -208,27 +203,35 @@ export const canCreateTask = async (
 
     const limits = getTaskLimits(userData.subscription_tier);
 
-    // Check if unlimited (admin)
-    if (limits[taskType as keyof typeof limits] === -1) {
+    // Admin: unlimited
+    if (limits.tasks_per_month === -1) {
       return { allowed: true };
     }
 
-    // Check current task count
-    const { count, error: countError } = await supabaseClient
-      .from(taskType)
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .is('deleted_at', null);
+    // Count all task types created in the last 30 days (excluding soft-deleted)
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+    const oneMonthAgoISO = oneMonthAgo.toISOString();
 
-    if (countError) {
-      return { allowed: false, reason: 'Failed to check task limit' };
+    let monthlyCount = 0;
+    for (const table of TASK_TABLES) {
+      const { count, error: countError } = await supabaseClient
+        .from(table)
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .gte('created_at', oneMonthAgoISO)
+        .is('deleted_at', null);
+
+      if (countError) {
+        return { allowed: false, reason: 'Failed to check task limit' };
+      }
+      monthlyCount += count || 0;
     }
 
-    const limit = limits[taskType as keyof typeof limits];
-    if (count && count >= limit) {
+    if (monthlyCount >= limits.tasks_per_month) {
       return {
         allowed: false,
-        reason: `Monthly limit reached for ${taskType}`,
+        reason: `Monthly limit of ${limits.tasks_per_month} tasks reached`,
       };
     }
 

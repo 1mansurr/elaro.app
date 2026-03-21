@@ -72,19 +72,18 @@ const StudyResultScreen = lazy(
 const StudySessionReviewScreen = lazy(
   () => import('@/features/studySessions/screens/StudySessionReviewScreen'),
 );
+const RecycleBinScreen = lazy(() =>
+  import('@/features/tasks/screens/RecycleBinScreen').then(module => ({
+    default: module.RecycleBinScreen,
+  })),
+);
 
 // Lazy-loaded navigators
 const AddCourseNavigator = lazy(() => import('./AddCourseNavigator'));
 
 // Lazy-loaded single screens for simplified flows
-const AddAssignmentScreen = lazy(
-  () => import('@/features/assignments/screens/AddAssignmentScreen'),
-);
 const AddLectureScreen = lazy(
   () => import('@/features/lectures/screens/AddLectureScreen'),
-);
-const AddStudySessionScreen = lazy(
-  () => import('@/features/studySessions/screens/AddStudySessionScreen'),
 );
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -146,24 +145,6 @@ const AddLectureFlow = () => (
   </Suspense>
 );
 
-// AddAssignment Flow - Single screen modal (lazy loaded)
-const AddAssignmentFlow = () => (
-  <Suspense fallback={<LoadingFallback />}>
-    <FeatureErrorBoundary featureName="the Assignment Creation flow">
-      <AddAssignmentScreen />
-    </FeatureErrorBoundary>
-  </Suspense>
-);
-
-// AddStudySession Flow - Single screen modal (lazy loaded)
-const AddStudySessionFlow = () => (
-  <Suspense fallback={<LoadingFallback />}>
-    <FeatureErrorBoundary featureName="the Study Session Creation flow">
-      <AddStudySessionScreen />
-    </FeatureErrorBoundary>
-  </Suspense>
-);
-
 // Modal flows configuration
 const modalFlows = {
   AddCourseFlow: {
@@ -173,14 +154,6 @@ const modalFlows = {
   AddLectureFlow: {
     component: AddLectureFlow,
     options: SCREEN_CONFIGS.AddLectureFlow,
-  },
-  AddAssignmentFlow: {
-    component: AddAssignmentFlow,
-    options: SCREEN_CONFIGS.AddAssignmentFlow,
-  },
-  AddStudySessionFlow: {
-    component: AddStudySessionFlow,
-    options: SCREEN_CONFIGS.AddStudySessionFlow,
   },
   TaskDetailModal: {
     component: TaskDetailModal,
@@ -266,7 +239,7 @@ const mainScreens = {
     component: SettingsScreen,
     options: {
       ...SCREEN_CONFIGS.Settings,
-      headerTitle: 'Settings',
+      headerShown: false,
     },
   },
   NotificationManagement: {
@@ -288,6 +261,13 @@ const mainScreens = {
     options: {
       ...SCREEN_CONFIGS.StudySessionReview,
       headerTitle: 'Review Study Session',
+    },
+  },
+  RecycleBin: {
+    component: RecycleBinScreen,
+    options: {
+      ...SCREEN_CONFIGS.RecycleBin,
+      headerShown: false,
     },
   },
 };

@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Switch,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, Switch, Alert } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { notificationService } from '@/services/notifications';
@@ -65,171 +58,89 @@ export const InlineNotificationSettings: React.FC = () => {
     }
   };
 
-  const handleQuietHoursToggle = async (enabled: boolean) => {
-    if (!preferences || !deviceId) return;
-
-    try {
-      setSaving(true);
-      const updatedPreferences = {
-        ...preferences,
-        quietHours: { ...preferences.quietHours, enabled },
-      };
-      setPreferences(updatedPreferences);
-
-      await notificationService.preferences.updateUserPreferences(deviceId, {
-        quietHours: { enabled },
-      });
-    } catch (error) {
-      console.error('Error updating quiet hours:', error);
-      Alert.alert('Error', 'Failed to update quiet hours');
-      setPreferences(preferences);
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (loading || !preferences) {
     return null;
   }
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: isDark ? 'rgba(0, 0, 0, 0.2)' : '#F9FAFB',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.05)' : '#E5E7EB',
-        },
-      ]}>
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Reminders
-          </Text>
-          <Switch
-            value={preferences.reminders}
-            onValueChange={value => handleToggle('reminders', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Assignments
-          </Text>
-          <Switch
-            value={preferences.assignments}
-            onValueChange={value => handleToggle('assignments', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Lectures
-          </Text>
-          <Switch
-            value={preferences.lectures}
-            onValueChange={value => handleToggle('lectures', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Study Sessions
-          </Text>
-          <Switch
-            value={preferences.studySessions}
-            onValueChange={value => handleToggle('studySessions', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Daily Summaries
-          </Text>
-          <Switch
-            value={preferences.dailySummaries}
-            onValueChange={value => handleToggle('dailySummaries', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <Text style={[styles.toggleLabel, { color: theme.text }]}>
-            Marketing
-          </Text>
-          <Switch
-            value={preferences.marketing}
-            onValueChange={value => handleToggle('marketing', value)}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-        <View style={styles.toggleRow}>
-          <View style={styles.quietHoursLabel}>
-            <Text style={[styles.toggleLabel, { color: theme.text }]}>
-              Quiet Hours
-            </Text>
-            <Text
-              style={[
-                styles.quietHoursTime,
-                { color: isDark ? '#9CA3AF' : '#6B7280' },
-              ]}>
-              {preferences.quietHours.start} - {preferences.quietHours.end}
-            </Text>
-          </View>
-          <Switch
-            value={preferences.quietHours.enabled}
-            onValueChange={handleQuietHoursToggle}
-            disabled={saving || !preferences.enabled}
-            trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
-            thumbColor="#FFFFFF"
-          />
-        </View>
-      </ScrollView>
+    <View style={styles.container}>
+      {/* Built-in task type toggles */}
+      <View style={styles.toggleRow}>
+        <Text style={[styles.toggleLabel, { color: theme.text }]}>
+          Assignments
+        </Text>
+        <Switch
+          value={preferences.assignments}
+          onValueChange={value => handleToggle('assignments', value)}
+          disabled={saving || !preferences.enabled}
+          trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
+          thumbColor="#FFFFFF"
+        />
+      </View>
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' },
+        ]}
+      />
+      <View style={styles.toggleRow}>
+        <Text style={[styles.toggleLabel, { color: theme.text }]}>
+          Study Sessions
+        </Text>
+        <Switch
+          value={preferences.studySessions}
+          onValueChange={value => handleToggle('studySessions', value)}
+          disabled={saving || !preferences.enabled}
+          trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
+          thumbColor="#FFFFFF"
+        />
+      </View>
+      <View
+        style={[
+          styles.divider,
+          { backgroundColor: isDark ? '#1F2937' : '#F3F4F6' },
+        ]}
+      />
+      <View style={styles.toggleRow}>
+        <Text style={[styles.toggleLabel, { color: theme.text }]}>
+          Daily Summaries
+        </Text>
+        <Switch
+          value={preferences.dailySummaries}
+          onValueChange={value => handleToggle('dailySummaries', value)}
+          disabled={saving || !preferences.enabled}
+          trackColor={{ false: '#D1D5DB', true: COLORS.primary }}
+          thumbColor="#FFFFFF"
+        />
+      </View>
+
+      {/*
+       * TASK TYPE TOGGLES — coming soon
+       * When users create custom task types, a toggle will be automatically
+       * inserted here for each type (fetched from user_task_types table).
+       * Each entry: { taskTypeId, label, enabled } → calls handleToggle('taskType_<id>', value)
+       */}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 8,
-    borderWidth: 1,
-    maxHeight: 240,
-  },
-  scrollView: {
-    flexGrow: 0,
+    paddingVertical: SPACING.xs,
   },
   toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: SPACING.md,
+    paddingHorizontal: SPACING.lg,
   },
   toggleLabel: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.medium,
   },
-  quietHoursLabel: {
-    flexDirection: 'column',
-    gap: 2,
-  },
-  quietHoursTime: {
-    fontSize: 12,
+  divider: {
+    height: 1,
+    marginHorizontal: SPACING.lg,
   },
 });

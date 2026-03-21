@@ -1,39 +1,30 @@
-import React, {
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-} from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   RefreshControl,
-  Animated,
-  TouchableWithoutFeedback,
   Alert,
+  Modal,
+  TouchableOpacity,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CommonActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NotificationBell } from '@/shared/components/NotificationBell';
-import { NotificationHistoryModal } from '@/shared/components/NotificationHistoryModal';
+import { Ionicons } from '@expo/vector-icons';
 
-import { RootStackParamList, Task } from '@/types';
-import { format, isAfter } from 'date-fns';
-import { useHomeScreenData, useCalendarData } from '@/hooks/useDataQueries';
+import { RootStackParamList, Task, OverviewData } from '@/types';
+import { format } from 'date-fns';
+import { useHomeScreenData } from '@/hooks/useDataQueries';
+import { AddTaskSheet } from '@/features/tasks/components/AddTaskSheet';
 import { useQueryClient } from '@tanstack/react-query';
 import { useMonthlyTaskCount } from '@/hooks/useWeeklyTaskCount';
 import { useCompleteTask, useDeleteTask, useRestoreTask } from '@/hooks';
 import FloatingActionButton from '@/shared/components/FloatingActionButton';
-import { Button, QueryStateWrapper, QuickAddModal } from '@/shared/components';
+import { QueryStateWrapper } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
-import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { UpNextCard } from '../components/UpNextCard';
 import { TodayOverviewGrid } from '../components/TodayOverviewGrid';
@@ -41,7 +32,6 @@ import { MonthlyLimitCard } from '../components/MonthlyLimitCard';
 import { UpcomingTaskItem } from '../components/UpcomingTaskItem';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
-import { SwipeableTaskCard } from '../components/SwipeableTaskCard';
 import { HomeScreenEmptyState } from '../components/HomeScreenEmptyState';
 import { getDraftCount } from '@/utils/draftStorage';
 import { useJSThreadMonitor } from '@/hooks/useJSThreadMonitor';
@@ -65,46 +55,43 @@ const HomeScreen = () => {
   // Always fetch data
   const shouldFetchData = true;
 
-  const {
-    data: homeData,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isRefetching,
-  } = useHomeScreenData(shouldFetchData);
-  const { monthlyTaskCount } = useMonthlyTaskCount();
+  const { todaysTasks, upcomingTasks, isLoading, refetch } =
+    useHomeScreenData(shouldFetchData);
+  const { monthlyTaskCount, monthlyLimit } = useMonthlyTaskCount();
 
-  // Get calendar data for upcoming tasks
-  const { data: calendarData } = useCalendarData(new Date());
+  const nextUpcomingTask = useMemo<Task | null>(
+    () => todaysTasks[0] ?? upcomingTasks[0] ?? null,
+    [todaysTasks, upcomingTasks],
+  );
 
-  // Extract upcoming tasks (next 4, excluding the "Up Next" task)
-  const upcomingTasks = useMemo(() => {
-    if (!calendarData) return [];
-    const now = new Date();
-    const allTasks = Object.values(calendarData).flat();
-    const upcoming = allTasks
-      .filter(task => {
-        const taskDate = new Date(task.startTime || task.date);
-        return isAfter(taskDate, now);
-      })
-      .sort((a, b) => {
-        const dateA = new Date(a.startTime || a.date);
-        const dateB = new Date(b.startTime || b.date);
-        return dateA.getTime() - dateB.getTime();
-      })
-      .slice(0, 4);
-    return upcoming;
-  }, [calendarData]);
-  const [isFabOpen, setIsFabOpen] = useState(false);
+  const todayOverview = useMemo<OverviewData | null>(() => {
+    if (!todaysTasks.length) return null;
+    return {
+      lectures: 0,
+      studySessions: todaysTasks.filter(t => t.type === 'study_session').length,
+      assignments: todaysTasks.filter(t => t.type === 'assignment').length,
+      reviews: 0,
+    };
+  }, [todaysTasks]);
+  const [sheetVisible, setSheetVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
-  const [isQuickAddVisible, setIsQuickAddVisible] = useState(false);
   const [draftCount, setDraftCount] = useState(0);
-  const [isNotificationHistoryVisible, setIsNotificationHistoryVisible] =
-    useState(false);
-  const [isEmptyStateDismissed, setIsEmptyStateDismissed] = useState(false);
-  const fabAnimation = useRef(new Animated.Value(0)).current;
+  // null = still loading from storage, true = show welcome, false = already seen
+  const [isWelcomeVisible, setIsWelcomeVisible] = useState<boolean | null>(
+    null,
+  );
+
+  // Check on mount whether this is the user's first launch
+  useEffect(() => {
+    AsyncStorage.getItem('hasSeenWelcomeScreen').then(value => {
+      setIsWelcomeVisible(value === null);
+    });
+  }, []);
+
+  const handleDismissWelcome = useCallback(async () => {
+    await AsyncStorage.setItem('hasSeenWelcomeScreen', 'true');
+    setIsWelcomeVisible(false);
+  }, []);
 
   // Optimistic mutation hooks
   const completeTaskMutation = useCompleteTask();
@@ -144,62 +131,6 @@ const HomeScreen = () => {
     }, []),
   );
 
-  const handleAddCourse = useCallback(() => {
-    navigation.navigate('AddCourseFlow');
-  }, [navigation]);
-
-  const handleAddActivity = useCallback(
-    (
-      flowName: 'AddAssignmentFlow' | 'AddLectureFlow' | 'AddStudySessionFlow',
-    ) => {
-      navigation.navigate(flowName);
-    },
-    [navigation],
-  );
-
-  const fabActions = useMemo(
-    () => [
-      {
-        icon: 'book-outline' as const,
-        label: 'Add Study Session',
-        onPress: () => handleAddActivity('AddStudySessionFlow'),
-      },
-      {
-        icon: 'document-text-outline' as const,
-        label: 'Add Assignment',
-        onPress: () => handleAddActivity('AddAssignmentFlow'),
-      },
-      {
-        icon: 'school-outline' as const,
-        label: 'Add Lecture',
-        onPress: () => handleAddActivity('AddLectureFlow'),
-      },
-    ],
-    [handleAddActivity],
-  );
-
-  // Memoize backdrop opacity interpolation to prevent recalculation
-  const backdropOpacity = useMemo(
-    () =>
-      fabAnimation.interpolate({
-        inputRange: [0, 1],
-        outputRange: [0, 1], // Animate opacity to 1 to show the blur view
-      }),
-    [fabAnimation],
-  );
-
-  const handleFabStateChange = useCallback(
-    ({ isOpen }: { isOpen: boolean }) => {
-      setIsFabOpen(isOpen);
-      Animated.spring(fabAnimation, {
-        toValue: isOpen ? 1 : 0,
-        friction: 7,
-        useNativeDriver: false,
-      }).start();
-    },
-    [fabAnimation],
-  );
-
   const handleViewDetails = useCallback((task: Task) => {
     setSelectedTask(task);
   }, []);
@@ -211,30 +142,14 @@ const HomeScreen = () => {
   const handleEditTask = useCallback(() => {
     if (!selectedTask) return;
 
-    // Determine which modal to navigate to based on task type
-    let modalName:
-      | 'AddLectureFlow'
-      | 'AddAssignmentFlow'
-      | 'AddStudySessionFlow';
-    switch (selectedTask.type) {
-      case 'lecture':
-        modalName = 'AddLectureFlow';
-        break;
-      case 'assignment':
-        modalName = 'AddAssignmentFlow';
-        break;
-      case 'study_session':
-        modalName = 'AddStudySessionFlow';
-        break;
-      default:
-        Alert.alert('Error', 'Cannot edit this type of task.');
-        return;
+    if (selectedTask.type === 'lecture') {
+      handleCloseSheet();
+      navigation.navigate('AddLectureFlow', {
+        initialData: { taskToEdit: selectedTask },
+      });
+    } else {
+      Alert.alert('Edit', 'Use the task form to create a new task.');
     }
-
-    handleCloseSheet(); // Close the sheet first
-    navigation.navigate(modalName, {
-      initialData: { taskToEdit: selectedTask },
-    });
   }, [selectedTask, handleCloseSheet, navigation]);
 
   const handleCompleteTask = useCallback(async () => {
@@ -260,7 +175,7 @@ const HomeScreen = () => {
 
   // Handle swipe-to-complete for next task card
   const handleSwipeComplete = useCallback(async () => {
-    const nextTask = homeData?.nextUpcomingTask;
+    const nextTask = nextUpcomingTask;
     if (!nextTask) return;
 
     try {
@@ -278,7 +193,7 @@ const HomeScreen = () => {
     } catch (error) {
       console.error('Error completing task via swipe:', error);
     }
-  }, [homeData?.nextUpcomingTask, completeTaskMutation, showToast]);
+  }, [nextUpcomingTask, completeTaskMutation, showToast]);
 
   const handleDeleteTask = useCallback(async () => {
     if (!selectedTask) return;
@@ -339,114 +254,29 @@ const HomeScreen = () => {
     return format(new Date(), 'EEEE, MMM d');
   }, []);
 
-  // Get subscription limit
-  const subscriptionLimit = useMemo(() => {
-    return 15;
-  }, []);
-
-  // Show one-time "How It Works" prompt for new users
-  useEffect(() => {
-    const checkAndShowWelcomePrompt = async () => {
-      try {
-        const hasSeenPrompt = await AsyncStorage.getItem(
-          'hasSeenHowItWorksPrompt',
-        );
-
-        if (!hasSeenPrompt) {
-          // Set the flag immediately to prevent showing again
-          await AsyncStorage.setItem('hasSeenHowItWorksPrompt', 'true');
-
-          // Small delay to let the screen render first
-          setTimeout(() => {
-            Alert.alert(
-              'Welcome to ELARO!',
-              "Ready to get started? We recommend a quick look at 'How ELARO Works' to learn about all the features that will help you succeed.",
-              [
-                {
-                  text: 'Show Me How',
-                  onPress: () => {
-                    // Navigate to Account screen where "How ELARO Works" is located
-                    navigation.navigate('Main');
-                    // Then switch to Account tab
-                    setTimeout(() => {
-                      navigation.dispatch(
-                        CommonActions.navigate({
-                          name: 'Main',
-                          params: {
-                            screen: 'Account',
-                          },
-                        }),
-                      );
-                    }, 100);
-                  },
-                },
-                {
-                  text: 'Got It',
-                  style: 'cancel',
-                },
-              ],
-            );
-          }, 500);
-        }
-      } catch (error) {
-        console.error('Error checking welcome prompt flag:', error);
-      }
-    };
-
-    checkAndShowWelcomePrompt();
-  }, [navigation]);
-
   // Memoized callbacks for better performance
-  const handleNotificationBellPress = useCallback(() => {
-    setIsNotificationHistoryVisible(true);
-  }, []);
-
   const handleRefresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
   }, [queryClient]);
 
-  const handleCalendarPress = useCallback(() => {
-    navigation.navigate('Calendar');
+  const handleSettingsPress = useCallback(() => {
+    navigation.navigate('Settings');
   }, [navigation]);
-
-  const handleQuickAddClose = useCallback(() => {
-    setIsQuickAddVisible(false);
-  }, []);
-
-  const handleNotificationHistoryClose = useCallback(() => {
-    setIsNotificationHistoryVisible(false);
-  }, []);
-
-  const handleQuickAddDoubleTap = useCallback(() => {
-    setIsQuickAddVisible(true);
-  }, []);
 
   const handleDraftBadgePress = useCallback(() => {
     navigation.navigate('Drafts');
   }, [navigation]);
 
-  const handleBackdropPress = useCallback(() => {
-    handleFabStateChange({ isOpen: false });
-  }, [handleFabStateChange]);
-
-  const handleOpenFab = useCallback(() => {
-    handleFabStateChange({ isOpen: true });
-  }, [handleFabStateChange]);
-
   const handleRefetch = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
   }, [queryClient]);
 
-  const handleDismissEmptyState = useCallback(() => {
-    setIsEmptyStateDismissed(true);
-  }, []);
-
   // Handle Up Next card press
   const handleUpNextPress = useCallback(() => {
-    if (homeData?.nextUpcomingTask) {
-      handleViewDetails(homeData.nextUpcomingTask);
+    if (nextUpcomingTask) {
+      handleViewDetails(nextUpcomingTask);
     }
-  }, [homeData?.nextUpcomingTask, handleViewDetails]);
+  }, [nextUpcomingTask, handleViewDetails]);
 
   // Handle upcoming task item press
   const handleUpcomingTaskPress = useCallback(
@@ -464,7 +294,18 @@ const HomeScreen = () => {
           <Text style={styles.headerDate}>{formattedDate}</Text>
           <Text style={styles.headerTitle}>{personalizedTitle}</Text>
         </View>
-        <NotificationBell onPress={handleNotificationBellPress} />
+        <TouchableOpacity
+          onPress={handleSettingsPress}
+          style={styles.settingsButton}
+          activeOpacity={0.7}
+          accessibilityLabel="Settings"
+          accessibilityRole="button">
+          <Ionicons
+            name="settings-outline"
+            size={26}
+            color={COLORS.textPrimary}
+          />
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -473,24 +314,25 @@ const HomeScreen = () => {
         refreshControl={
           <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
         }
-        scrollEnabled={!isFabOpen}>
+        scrollEnabled={true}>
         {/* Up Next Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Up Next</Text>
-          <UpNextCard
-            task={homeData?.nextUpcomingTask || null}
-            onPress={handleUpNextPress}
-          />
+          <UpNextCard task={nextUpcomingTask} onPress={handleUpNextPress} />
         </View>
 
         {/* Today's Overview Section */}
         <View style={[styles.section, { marginTop: SPACING.xl }]}>
           <Text style={styles.sectionTitle}>Today's Overview</Text>
-          <TodayOverviewGrid overview={homeData?.todayOverview || null} />
+          {todaysTasks.length === 0 ? (
+            <Text style={styles.emptyText}>Nothing scheduled for today</Text>
+          ) : (
+            <TodayOverviewGrid overview={todayOverview} />
+          )}
           <View style={{ marginTop: SPACING.lg }}>
             <MonthlyLimitCard
               monthlyTaskCount={monthlyTaskCount}
-              limit={subscriptionLimit}
+              limit={monthlyLimit}
             />
           </View>
         </View>
@@ -507,68 +349,42 @@ const HomeScreen = () => {
               />
             ))
           ) : (
-            <Text style={styles.emptyText}>No upcoming tasks</Text>
+            <Text style={styles.emptyText}>You're all caught up</Text>
           )}
         </View>
       </ScrollView>
     </View>
   );
 
-  const shouldShowLoading = isLoading;
-  const shouldShowError = false;
-  const displayData = isError ? null : homeData;
-  const finalData =
-    isEmptyStateDismissed && !displayData ? { _dismissed: true } : displayData;
-
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <QueryStateWrapper
-        isLoading={shouldShowLoading}
-        isError={shouldShowError}
+        isLoading={isLoading}
+        isError={false}
         error={null}
-        data={finalData}
+        data={{ loaded: true }}
         refetch={handleRefetch}
-        isRefetching={isRefetching}
+        isRefetching={false}
         onRefresh={refetch}
-        emptyStateComponent={
-          !isEmptyStateDismissed ? (
-            <HomeScreenEmptyState
-              onAddActivity={handleOpenFab}
-              onDismiss={handleDismissEmptyState}
-            />
-          ) : undefined
-        }
         skeletonComponent={<TaskCardSkeleton />}
         skeletonCount={3}>
         {content}
       </QueryStateWrapper>
 
       {/* FAB and modals rendered outside QueryStateWrapper so they're always visible */}
-      {isFabOpen && (
-        <TouchableWithoutFeedback onPress={handleBackdropPress}>
-          <Animated.View
-            style={[styles.backdrop, { opacity: backdropOpacity }]}>
-            <BlurView
-              intensity={40}
-              tint="dark"
-              style={StyleSheet.absoluteFill}
-            />
-          </Animated.View>
-        </TouchableWithoutFeedback>
-      )}
-
       <FloatingActionButton
-        actions={fabActions}
-        isOpen={isFabOpen}
-        onStateChange={handleFabStateChange}
-        onDoubleTap={handleQuickAddDoubleTap}
+        onPress={() => setSheetVisible(true)}
         draftCount={draftCount}
         onDraftBadgePress={handleDraftBadgePress}
       />
 
-      <QuickAddModal
-        isVisible={isQuickAddVisible}
-        onClose={handleQuickAddClose}
+      <AddTaskSheet
+        isVisible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        onSave={() => {
+          setSheetVisible(false);
+          refetch();
+        }}
       />
 
       <TaskDetailSheet
@@ -580,10 +396,19 @@ const HomeScreen = () => {
         onDelete={handleDeleteTask}
       />
 
-      <NotificationHistoryModal
-        isVisible={isNotificationHistoryVisible}
-        onClose={handleNotificationHistoryClose}
-      />
+      {/* Welcome screen — full-screen modal, covers tab bar, shown only on first launch */}
+      <Modal
+        visible={isWelcomeVisible === true}
+        animationType="fade"
+        statusBarTranslucent>
+        <HomeScreenEmptyState
+          onAddActivity={() => {
+            handleDismissWelcome();
+            setSheetVisible(true);
+          }}
+          onDismiss={handleDismissWelcome}
+        />
+      </Modal>
     </View>
   );
 };
@@ -603,6 +428,10 @@ const styles = StyleSheet.create({
   },
   headerLeft: {
     flex: 1,
+  },
+  settingsButton: {
+    padding: 8,
+    marginLeft: 16,
   },
   headerDate: {
     fontSize: FONT_SIZES.sm,

@@ -4,9 +4,11 @@ import {
   useLectures,
   useStudySessions,
 } from './useDataQueries';
+// Combined monthly task limits (assignments + lectures + study_sessions total).
+// Must stay in sync with TASK_LIMITS in supabase/functions/_shared/permissions.ts.
 const MONTHLY_TASK_LIMITS = {
-  free: 15,
-  oddity: 70,
+  free: 35,
+  oddity: 80,
 };
 
 export const useMonthlyTaskCount = () => {
@@ -52,8 +54,12 @@ export const useMonthlyTaskCount = () => {
     return monthlyAssignments + monthlyLectures + monthlyStudySessions;
   }, [assignments, lectures, studySessions]);
 
-  const monthlyLimit = MONTHLY_TASK_LIMITS.free;
+  // TODO: read subscription_tier from the user record once auth is restored.
+  // For now the offline MVP treats all users as free tier.
   const isPremium = false;
+  const monthlyLimit = isPremium
+    ? MONTHLY_TASK_LIMITS.oddity
+    : MONTHLY_TASK_LIMITS.free;
   const limitReached = !isPremium && monthlyTaskCount >= monthlyLimit;
 
   return {
