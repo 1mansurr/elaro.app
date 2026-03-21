@@ -1,12 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
+  Linking,
 } from 'react-native';
-// react-native-webview removed in offline MVP
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -14,13 +13,7 @@ import { RouteProp } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '@/contexts/ThemeContext';
 import { RootStackParamList } from '@/types/navigation';
-import {
-  COLORS,
-  FONT_SIZES,
-  FONT_WEIGHTS,
-  SPACING,
-  BORDER_RADIUS,
-} from '@/constants/theme';
+import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 type InAppBrowserScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -34,20 +27,26 @@ type InAppBrowserScreenRouteProp = RouteProp<
 const InAppBrowserScreen = () => {
   const navigation = useNavigation<InAppBrowserScreenNavigationProp>();
   const route = useRoute<InAppBrowserScreenRouteProp>();
-  const { theme } = useTheme();
+  const { isDark } = useTheme();
   const insets = useSafeAreaInsets();
   const { url, title } = route.params;
 
-  // Light mode default colors
-  const isDark =
-    theme.background === '#101922' || theme.background === '#0A0F14';
   const bgColor = isDark ? '#101922' : '#F6F7F8';
   const surfaceColor = isDark ? '#1C252E' : '#FFFFFF';
   const textColor = isDark ? '#FFFFFF' : '#111418';
+  const subtitleColor = isDark ? '#9CA3AF' : '#6B7280';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
+
+  // Auto-open in system browser on mount
+  useEffect(() => {
+    Linking.openURL(url).catch(err =>
+      console.error('Failed to open URL:', err),
+    );
+  }, [url]);
 
   return (
     <View style={[styles.container, { backgroundColor: bgColor }]}>
+      {/* Header */}
       <View
         style={[
           styles.header,
@@ -60,7 +59,8 @@ const InAppBrowserScreen = () => {
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.closeButton}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          activeOpacity={0.7}>
           <Ionicons name="close" size={24} color={textColor} />
         </TouchableOpacity>
         <Text
@@ -70,11 +70,26 @@ const InAppBrowserScreen = () => {
         </Text>
         <View style={styles.headerSpacer} />
       </View>
-      <View style={[styles.webView, styles.loadingContainer]}>
-        <Text style={{ color: textColor }}>
-          WebView not available in offline mode.
+
+      {/* Body — not absolutely positioned, won't block header touches */}
+      <View style={styles.body}>
+        <Ionicons
+          name="open-outline"
+          size={40}
+          color={isDark ? '#4B5563' : '#D1D5DB'}
+        />
+        <Text style={[styles.bodyTitle, { color: textColor }]}>
+          Opening in your browser…
         </Text>
-        <Text style={{ color: textColor, marginTop: 8 }}>{url}</Text>
+        <Text style={[styles.bodySubtitle, { color: subtitleColor }]}>
+          {url}
+        </Text>
+        <TouchableOpacity
+          style={[styles.openButton, { backgroundColor: COLORS.primary }]}
+          onPress={() => Linking.openURL(url)}
+          activeOpacity={0.85}>
+          <Text style={styles.openButtonText}>Open Again</Text>
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -108,17 +123,32 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: SPACING.md,
   },
-  webView: {
+  body: {
     flex: 1,
-  },
-  loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: SPACING.xl,
+  },
+  bodyTitle: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold,
+    textAlign: 'center',
+  },
+  bodySubtitle: {
+    fontSize: FONT_SIZES.sm,
+    textAlign: 'center',
+  },
+  openButton: {
+    marginTop: SPACING.md,
+    paddingHorizontal: SPACING.xl,
+    paddingVertical: SPACING.md,
+    borderRadius: 100,
+  },
+  openButtonText: {
+    color: '#FFFFFF',
+    fontSize: FONT_SIZES.md,
+    fontWeight: FONT_WEIGHTS.bold,
   },
 });
 
