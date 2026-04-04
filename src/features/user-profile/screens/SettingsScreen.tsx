@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RootStackParamList } from '@/types/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
+import * as WebBrowser from 'expo-web-browser';
 import { LEGAL_URLS } from '@/constants/legal';
 import { InlineNotificationSettings } from '@/shared/components';
 
@@ -127,6 +128,68 @@ export function SettingsScreen() {
           <InlineNotificationSettings />
         </View>
 
+        {/* ── Legal ── */}
+        <SectionHeader
+          label="COMPLIANCE"
+          title="Legal"
+          isDark={isDark}
+          textColor={isDark ? '#FFFFFF' : '#202D51'}
+        />
+
+        <View style={styles.legalGrid}>
+          <TouchableOpacity
+            style={[
+              styles.legalCard,
+              { backgroundColor: cardBg, borderColor: cardBorder },
+            ]}
+            onPress={() =>
+              WebBrowser.openBrowserAsync(LEGAL_URLS.TERMS_OF_SERVICE)
+            }
+            activeOpacity={0.8}>
+            <View
+              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}>
+              <Ionicons
+                name="document-text-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+            </View>
+            <Text
+              style={[
+                styles.legalCardLabel,
+                { color: isDark ? '#FFFFFF' : '#202D51' },
+              ]}>
+              Terms of Service
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.legalCard,
+              { backgroundColor: cardBg, borderColor: cardBorder },
+            ]}
+            onPress={() =>
+              WebBrowser.openBrowserAsync(LEGAL_URLS.PRIVACY_POLICY)
+            }
+            activeOpacity={0.8}>
+            <View
+              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+            </View>
+            <Text
+              style={[
+                styles.legalCardLabel,
+                { color: isDark ? '#FFFFFF' : '#202D51' },
+              ]}>
+              Privacy Policy
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* ── Account Management ── */}
         <SectionHeader
           label="DANGER ZONE"
@@ -171,74 +234,6 @@ export function SettingsScreen() {
             color={isDark ? '#6B7280' : '#9CA3AF'}
           />
         </TouchableOpacity>
-
-        {/* ── Legal ── */}
-        <SectionHeader
-          label="COMPLIANCE"
-          title="Legal"
-          isDark={isDark}
-          textColor={isDark ? '#FFFFFF' : '#202D51'}
-        />
-
-        <View style={styles.legalGrid}>
-          <TouchableOpacity
-            style={[
-              styles.legalCard,
-              { backgroundColor: cardBg, borderColor: cardBorder },
-            ]}
-            onPress={() =>
-              navigation.navigate('InAppBrowserScreen', {
-                url: LEGAL_URLS.TERMS_OF_SERVICE,
-                title: 'Terms of Service',
-              })
-            }
-            activeOpacity={0.8}>
-            <View
-              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}>
-              <Ionicons
-                name="document-text-outline"
-                size={20}
-                color={COLORS.primary}
-              />
-            </View>
-            <Text
-              style={[
-                styles.legalCardLabel,
-                { color: isDark ? '#FFFFFF' : '#202D51' },
-              ]}>
-              Terms of Service
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.legalCard,
-              { backgroundColor: cardBg, borderColor: cardBorder },
-            ]}
-            onPress={() =>
-              navigation.navigate('InAppBrowserScreen', {
-                url: LEGAL_URLS.PRIVACY_POLICY,
-                title: 'Privacy Policy',
-              })
-            }
-            activeOpacity={0.8}>
-            <View
-              style={[styles.iconCircle, { backgroundColor: iconCircleBg }]}>
-              <Ionicons
-                name="shield-checkmark-outline"
-                size={20}
-                color={COLORS.primary}
-              />
-            </View>
-            <Text
-              style={[
-                styles.legalCardLabel,
-                { color: isDark ? '#FFFFFF' : '#202D51' },
-              ]}>
-              Privacy Policy
-            </Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
     </View>
   );

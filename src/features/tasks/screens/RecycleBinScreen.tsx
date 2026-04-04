@@ -18,6 +18,8 @@ import {
   DeletedItem,
 } from '@/hooks/useDeletedItemsQuery';
 import { useRestoreTask } from '@/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/services/api';
 import { formatDistanceToNow } from 'date-fns';
 
 const ITEM_TYPE_CONFIG: Record<
@@ -62,24 +64,12 @@ const ITEM_TYPE_CONFIG_DARK: Record<string, { bg: string; color: string }> = {
   course: { bg: 'rgba(217,119,6,0.2)', color: '#FCD34D' },
 };
 
-const getItemLabel = (item: DeletedItem): string => {
-  switch (item.type) {
-    case 'assignment':
-      return (item as any).title ?? 'Untitled Assignment';
-    case 'lecture':
-      return (item as any).lectureName ?? 'Untitled Lecture';
-    case 'study_session':
-      return (item as any).topic ?? 'Untitled Session';
-    default:
-      return (item as any).name ?? (item as any).title ?? 'Untitled';
-  }
-};
+const getItemLabel = (item: DeletedItem): string => item.title ?? 'Untitled';
 
 const getDeletedLabel = (item: DeletedItem): string => {
-  const deletedAt = (item as any).deletedAt ?? (item as any).deleted_at;
-  if (!deletedAt) return 'Deleted recently';
+  if (!item.deleted_at) return 'Deleted recently';
   try {
-    return `Deleted ${formatDistanceToNow(new Date(deletedAt), { addSuffix: true })}`;
+    return `Deleted ${formatDistanceToNow(new Date(item.deleted_at), { addSuffix: true })}`;
   } catch {
     return 'Deleted recently';
   }
@@ -92,12 +82,17 @@ export const RecycleBinScreen: React.FC = () => {
   const { data: items = [], isLoading, refetch } = useDeletedItemsQuery();
   const restoreMutation = useRestoreTask();
 
+  // Load custom task types for dynamic color/label fallback
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['taskTypes'],
+    queryFn: () => api.taskTypes.getAll(),
+  });
+
   const handleRestore = useCallback(
     (item: DeletedItem) => {
-      if (item.type === 'course') return;
       restoreMutation.mutate({
         taskId: item.id,
-        taskType: item.type as 'lecture' | 'study_session' | 'assignment',
+        taskType: item.type as any,
         taskTitle: getItemLabel(item),
       });
     },
@@ -105,9 +100,24 @@ export const RecycleBinScreen: React.FC = () => {
   );
 
   const renderItem = ({ item }: { item: DeletedItem }) => {
-    const config = ITEM_TYPE_CONFIG[item.type] ?? ITEM_TYPE_CONFIG.course;
-    const darkConfig =
-      ITEM_TYPE_CONFIG_DARK[item.type] ?? ITEM_TYPE_CONFIG_DARK.course;
+    const staticConfig = ITEM_TYPE_CONFIG[item.type];
+    const staticDarkConfig = ITEM_TYPE_CONFIG_DARK[item.type];
+
+    // For custom types, derive color from task_types lookup
+    const customType = item.task_type_id
+      ? taskTypes.find(t => t.id === item.task_type_id)
+      : undefined;
+
+    const config = staticConfig ?? {
+      label: customType?.name ?? item.type,
+      icon: 'ellipse-outline' as keyof typeof Ionicons.glyphMap,
+      bg: (customType?.color ?? '#9CA3AF') + '22',
+      color: customType?.color ?? '#9CA3AF',
+    };
+    const darkConfig = staticDarkConfig ?? {
+      bg: (customType?.color ?? '#9CA3AF') + '33',
+      color: customType?.color ?? '#9CA3AF',
+    };
     const iconBg = isDark ? darkConfig.bg : config.bg;
     const iconColor = isDark ? darkConfig.color : config.color;
     const cardBg = isDark ? '#1A2235' : '#FFFFFF';

@@ -1,10 +1,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HomeScreenData } from '@/types';
 import { Alert } from 'react-native';
-import { useNetwork } from '@/contexts/NetworkContext';
 import { cache } from '@/utils/cache';
 import { mapErrorCodeToMessage, getErrorTitle } from '@/utils/errorMapping';
-import { invokeEdgeFunctionWithAuth } from '@/utils/invokeEdgeFunction';
+import { completeTask, deleteTask, restoreTask } from '@/services/database';
 
 interface CompleteTaskParams {
   taskId: string;
@@ -35,34 +34,11 @@ interface RestoreTaskParams {
  */
 export const useCompleteTask = () => {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetwork();
 
   return useMutation({
-    mutationFn: async ({ taskId, taskType }: CompleteTaskParams) => {
-      // OFFLINE MODE: Add to queue instead of calling server
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing COMPLETE action for ${taskType} ${taskId}`,
-        );
-
-        // Return immediately - optimistic update already handled by onMutate
-        return { success: true, offline: true };
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(
-        `🌐 Online: Executing COMPLETE action for ${taskType} ${taskId}`,
-      );
-      const functionName = `update-${taskType}`;
-      const { data, error } = await invokeEdgeFunctionWithAuth(functionName, {
-        body: {
-          [`${taskType}Id`]: taskId,
-          updates: { status: 'completed' },
-        },
-      });
-
-      if (error) throw error;
-      return data;
+    mutationFn: async ({ taskId }: CompleteTaskParams) => {
+      await completeTask(taskId);
+      return { success: true };
     },
 
     // Optimistic update - runs before the mutation
@@ -81,18 +57,16 @@ export const useCompleteTask = () => {
         old => {
           if (!old) return old;
 
-          // Update the next upcoming task if it's the one being completed
-          if (old.nextUpcomingTask && old.nextUpcomingTask.id === taskId) {
-            return {
-              ...old,
-              nextUpcomingTask: {
-                ...old.nextUpcomingTask,
-                status: 'completed' as const,
-              },
-            };
-          }
-
-          return old;
+          // Mark the task as completed in todaysTasks and upcomingTasks
+          return {
+            ...old,
+            todaysTasks: old.todaysTasks.map(t =>
+              t.id === taskId ? { ...t, status: 'completed' as const } : t,
+            ),
+            upcomingTasks: old.upcomingTasks.map(t =>
+              t.id === taskId ? { ...t, status: 'completed' as const } : t,
+            ),
+          };
         },
       );
 
@@ -118,22 +92,15 @@ export const useCompleteTask = () => {
         console.log(`↩️ Rolled back optimistic update for task ${taskId}`);
       }
 
-      // Show error alert (only for online errors - offline actions are queued)
-      if (isOnline) {
-        const errorTitle = getErrorTitle(error);
-        const errorMessage = mapErrorCodeToMessage(error);
-        Alert.alert(errorTitle, errorMessage);
-      }
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     },
 
-    // Refetch after success to ensure consistency (skip when offline)
     onSettled: async () => {
-      // Only invalidate when online - offline changes are in the queue
-      if (isOnline) {
-        const { invalidateTaskQueries } =
-          await import('@/utils/queryInvalidation');
-        await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
-      }
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient);
     },
 
     // On success, cancel notifications
@@ -173,30 +140,10 @@ export const useCompleteTask = () => {
  */
 export const useDeleteTask = () => {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetwork();
 
   return useMutation({
-    mutationFn: async ({ taskId, taskType }: DeleteTaskParams) => {
-      // OFFLINE MODE: Add to queue instead of calling server
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing DELETE action for ${taskType} ${taskId}`,
-        );
-
-        // Return immediately - optimistic update already handled by onMutate
-        return { success: true, offline: true };
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(
-        `🌐 Online: Executing DELETE action for ${taskType} ${taskId}`,
-      );
-      const functionName = `delete-${taskType}`;
-      const { error } = await invokeEdgeFunctionWithAuth(functionName, {
-        body: { [`${taskType}Id`]: taskId },
-      });
-
-      if (error) throw error;
+    mutationFn: async ({ taskId }: DeleteTaskParams) => {
+      await deleteTask(taskId);
     },
 
     // Optimistic update - runs before the mutation
@@ -215,15 +162,12 @@ export const useDeleteTask = () => {
         old => {
           if (!old) return old;
 
-          // If the next upcoming task is the one being deleted, set it to null
-          if (old.nextUpcomingTask && old.nextUpcomingTask.id === taskId) {
-            return {
-              ...old,
-              nextUpcomingTask: null,
-            };
-          }
-
-          return old;
+          // Remove the deleted task from todaysTasks and upcomingTasks
+          return {
+            ...old,
+            todaysTasks: old.todaysTasks.filter(t => t.id !== taskId),
+            upcomingTasks: old.upcomingTasks.filter(t => t.id !== taskId),
+          };
         },
       );
 
@@ -249,22 +193,15 @@ export const useDeleteTask = () => {
         console.log(`↩️ Rolled back optimistic deletion for task ${taskId}`);
       }
 
-      // Show error alert (only for online errors - offline actions are queued)
-      if (isOnline) {
-        const errorTitle = getErrorTitle(error);
-        const errorMessage = mapErrorCodeToMessage(error);
-        Alert.alert(errorTitle, errorMessage);
-      }
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     },
 
-    // Refetch after success to ensure consistency (skip when offline)
     onSettled: async () => {
-      // Only invalidate when online - offline changes are in the queue
-      if (isOnline) {
-        const { invalidateTaskQueries } =
-          await import('@/utils/queryInvalidation');
-        await invalidateTaskQueries(queryClient); // Invalidates all task queries including calendar
-      }
+      const { invalidateTaskQueries } =
+        await import('@/utils/queryInvalidation');
+      await invalidateTaskQueries(queryClient);
     },
 
     // On success, cancel notifications
@@ -295,89 +232,36 @@ export const useDeleteTask = () => {
  */
 export const useRestoreTask = () => {
   const queryClient = useQueryClient();
-  const { isOnline } = useNetwork();
 
   return useMutation({
-    mutationFn: async ({ taskId, taskType }: RestoreTaskParams) => {
-      // Map task type to correct parameter name
-      const getParameterName = (type: string) => {
-        switch (type) {
-          case 'assignment':
-            return 'assignmentId';
-          case 'lecture':
-            return 'lectureId';
-          case 'study_session':
-            return 'studySessionId';
-          default:
-            return 'id';
-        }
-      };
-
-      // OFFLINE MODE: Add to queue
-      if (!isOnline) {
-        console.log(
-          `📴 Offline: Queueing RESTORE action for ${taskType} ${taskId}`,
-        );
-
-        return { success: true, offline: true };
-      }
-
-      // ONLINE MODE: Execute server mutation
-      console.log(
-        `🌐 Online: Executing RESTORE action for ${taskType} ${taskId}`,
-      );
-      const functionName = `restore-${taskType.replace('_', '-')}`;
-      const parameterName = getParameterName(taskType);
-
-      const { error } = await invokeEdgeFunctionWithAuth(functionName, {
-        body: { [parameterName]: taskId },
-      });
-
-      if (error) throw error;
-      return { success: true, offline: false };
+    mutationFn: async ({ taskId }: RestoreTaskParams) => {
+      await restoreTask(taskId);
+      return { success: true };
     },
 
-    // Optimistic update - invalidate queries to trigger refetch
-    onMutate: async ({ taskId, taskType, taskTitle }) => {
-      // Cancel outgoing queries
+    onMutate: async ({ taskId }) => {
       await queryClient.cancelQueries({ queryKey: ['homeScreenData'] });
-
-      // Snapshot previous data
       const previousData = queryClient.getQueryData<HomeScreenData | null>([
         'homeScreenData',
       ]);
-
-      // Note: We'll invalidate queries on success to refetch the restored task
-
       return { previousData };
     },
 
-    // On error, rollback
     onError: (error, variables, context) => {
       console.error('❌ Error restoring task:', error);
-
       if (context?.previousData) {
         queryClient.setQueryData(['homeScreenData'], context.previousData);
       }
-
-      if (isOnline) {
-        const errorTitle = getErrorTitle(error);
-        const errorMessage = mapErrorCodeToMessage(error);
-        Alert.alert(errorTitle, errorMessage);
-      }
+      const errorTitle = getErrorTitle(error);
+      const errorMessage = mapErrorCodeToMessage(error);
+      Alert.alert(errorTitle, errorMessage);
     },
 
-    // Refetch to get latest data
     onSettled: () => {
-      if (isOnline) {
-        queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
-        queryClient.invalidateQueries({ queryKey: ['calendarData'] });
-        queryClient.invalidateQueries({ queryKey: ['deletedItems'] });
-      }
-    },
-
-    onSuccess: (_data, _variables) => {
-      // restore tracking removed
+      queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
+      queryClient.invalidateQueries({ queryKey: ['calendarData'] });
+      queryClient.invalidateQueries({ queryKey: ['calendarMonthData'] });
+      queryClient.invalidateQueries({ queryKey: ['deletedItems'] });
     },
   });
 };

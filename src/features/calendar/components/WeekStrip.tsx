@@ -62,6 +62,7 @@ const WeekStrip: React.FC<Props> = ({ selectedDate, onDateSelect }) => {
             ]}
             onPress={() => onDateSelect(day)}>
             <Text
+              numberOfLines={1}
               style={[
                 styles.dayName,
                 {

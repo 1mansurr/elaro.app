@@ -36,7 +36,7 @@ export const CalendarMonthView: React.FC<CalendarMonthViewProps> = ({
         theme={{
           backgroundColor: isDark ? '#101922' : COLORS.background,
           calendarBackground: isDark ? '#101922' : COLORS.background,
-          textSectionTitleColor: isDark ? '#9CA3AF' : COLORS.gray,
+          textSectionTitleColor: isDark ? '#9CA3AF' : '#374151',
           selectedDayBackgroundColor: COLORS.primary,
           selectedDayTextColor: COLORS.background,
           todayTextColor: COLORS.primary,

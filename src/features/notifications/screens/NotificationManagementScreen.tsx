@@ -22,7 +22,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { notificationService } from '@/services/notifications';
-import { SimpleNotificationSettings } from '../components/SimpleNotificationSettings';
 import { ScheduledNotification } from '@/services/notifications/interfaces';
 import {
   COLORS,
@@ -41,25 +40,19 @@ export const NotificationManagementScreen: React.FC = () => {
   const { theme, isDark } = useTheme();
   const deviceId = useDeviceId();
   const insets = useSafeAreaInsets();
-  const [activeTab, setActiveTab] = useState<'settings' | 'scheduled'>(
-    'settings',
-  );
   const [scheduledNotifications, setScheduledNotifications] = useState<
     ScheduledNotification[]
   >([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
   // Edge swipe gesture handlers
   const edgeSwipeTranslateX = useRef(new Animated.Value(0)).current;
   const edgeSwipeOpacity = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (activeTab === 'scheduled') {
-      loadScheduledNotifications();
-    }
-  }, [activeTab]);
+    loadScheduledNotifications();
+  }, []);
 
   const loadScheduledNotifications = async () => {
     if (!deviceId) return;
@@ -174,27 +167,6 @@ export const NotificationManagementScreen: React.FC = () => {
   const textSecondaryColor = isDark ? '#9CA3AF' : '#6B7280';
   const borderColor = isDark ? '#374151' : '#E5E7EB';
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'settings':
-        return (
-          <SimpleNotificationSettings onClose={() => setShowSettings(false)} />
-        );
-      case 'scheduled':
-        return (
-          <ScheduledNotificationsList
-            notifications={scheduledNotifications}
-            loading={loading}
-            onCancel={handleCancelNotification}
-            onRefresh={handleRefresh}
-            refreshing={refreshing}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <PanGestureHandler
       onGestureEvent={handleEdgeSwipe}
@@ -228,7 +200,7 @@ export const NotificationManagementScreen: React.FC = () => {
             <Ionicons name="arrow-back" size={20} color={textColor} />
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: textColor }]}>
-            Notifications
+            Notification History
           </Text>
           <TouchableOpacity
             style={[styles.testButton, { backgroundColor: COLORS.primary }]}
@@ -238,46 +210,16 @@ export const NotificationManagementScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabContainer}>
-          {[
-            { key: 'settings', label: 'Settings', icon: 'settings-outline' },
-            { key: 'scheduled', label: 'Scheduled', icon: 'list-outline' },
-          ].map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.tab,
-                {
-                  backgroundColor:
-                    activeTab === tab.key ? COLORS.primary : surfaceColor,
-                  borderColor: borderColor,
-                },
-              ]}
-              onPress={() => {
-                setActiveTab(tab.key as any);
-                if (tab.key === 'settings') setShowSettings(true);
-              }}>
-              <Ionicons
-                name={tab.icon as any}
-                size={16}
-                color={activeTab === tab.key ? 'white' : textColor}
-              />
-              <Text
-                style={[
-                  styles.tabText,
-                  {
-                    color: activeTab === tab.key ? 'white' : textColor,
-                  },
-                ]}>
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
         {/* Content */}
-        <View style={styles.content}>{renderTabContent()}</View>
+        <View style={styles.content}>
+          <ScheduledNotificationsList
+            notifications={scheduledNotifications}
+            loading={loading}
+            onCancel={handleCancelNotification}
+            onRefresh={handleRefresh}
+            refreshing={refreshing}
+          />
+        </View>
       </Animated.View>
     </PanGestureHandler>
   );

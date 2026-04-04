@@ -74,6 +74,21 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
   // This provides a fallback if root state detection fails
   const currentTabRoute = state.routes[state.index]?.name;
 
+  // Check nested stack route within the active tab — detail/taking/results screens
+  // should hide the tab bar even though they live inside the Library stack
+  const activeTabNestedState = state.routes[state.index]?.state;
+  const activeNestedRouteName =
+    activeTabNestedState?.routes?.[activeTabNestedState.index ?? 0]?.name;
+  const NESTED_SCREENS_HIDING_TAB_BAR = [
+    'QuizDetail',
+    'QuizTaking',
+    'Results',
+    'QuizPreview',
+  ];
+  const shouldHideForNestedRoute =
+    typeof activeNestedRouteName === 'string' &&
+    NESTED_SCREENS_HIDING_TAB_BAR.includes(activeNestedRouteName);
+
   // Check if route is in NON_RESTORABLE_ROUTES or ROUTES_HIDING_TAB_BAR
   const isNonRestorable =
     rootActiveRouteName &&
@@ -84,14 +99,7 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
     (ROUTES_HIDING_TAB_BAR.includes(rootActiveRouteName as any) ||
       isNonRestorable);
 
-  // HARDENING: Also check if we're in a modal/flow that should hide tab bar
-  // This catches cases where the route name might not be detected correctly
-  if (shouldHideForRootRoute) {
-    if (__DEV__) {
-      console.log(
-        `🚫 CustomTabBar: Hiding tab bar for route "${rootActiveRouteName}"`,
-      );
-    }
+  if (shouldHideForNestedRoute || shouldHideForRootRoute) {
     return null;
   }
 
@@ -101,6 +109,8 @@ export const CustomTabBar: React.FC<BottomTabBarProps> = ({
         return focused ? 'home' : 'home-outline';
       case 'Calendar':
         return focused ? 'calendar' : 'calendar-outline';
+      case 'Library':
+        return focused ? 'library' : 'library-outline';
       default:
         return 'help-outline';
     }

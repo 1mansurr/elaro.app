@@ -60,6 +60,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: SPACING.xl,
     overflow: 'visible', // Ensure X button isn't clipped
+    backgroundColor: COLORS.background,
   },
   dismissButton: {
     position: 'absolute',

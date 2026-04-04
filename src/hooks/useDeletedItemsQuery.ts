@@ -1,14 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { Course, Assignment, Lecture, StudySession } from '@/types';
+import { getDeletedTasks, DeletedTaskRow } from '@/services/database';
 
-export type DeletedItem = (Course | Assignment | Lecture | StudySession) & {
-  type: 'course' | 'assignment' | 'lecture' | 'study_session';
+export type DeletedItem = DeletedTaskRow & {
+  type: string; // widened to string to accommodate custom type IDs
 };
 
 export const useDeletedItemsQuery = () => {
   return useQuery<DeletedItem[], Error>({
     queryKey: ['deletedItems'],
-    queryFn: async () => [],
+    queryFn: async () => {
+      const rows = await getDeletedTasks();
+      return rows as DeletedItem[];
+    },
     staleTime: 1000 * 60 * 5,
   });
 };

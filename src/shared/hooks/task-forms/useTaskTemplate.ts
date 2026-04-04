@@ -5,7 +5,7 @@ import { Course } from '@/types';
 
 export interface UseTaskTemplateOptions {
   taskType: 'lecture' | 'assignment' | 'study_session';
-  courses: Course[];
+  courses?: Course[];
   onTemplateDataLoad?: (templateData: any) => void;
 }
 

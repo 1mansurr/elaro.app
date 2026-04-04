@@ -1,8 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Course } from '@/types';
 import {
-  CourseSelector,
   TaskTitleField,
   TaskDateTimeSection,
 } from '@/shared/components/task-forms';
@@ -10,12 +8,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 
 interface AssignmentRequiredFieldsProps {
-  selectedCourse: Course | null;
-  onCourseSelect: (course: Course) => void;
-  isLoadingCourses: boolean;
-  courses: Course[];
-  onOpenCourseModal: () => void;
-
   title: string;
   onTitleChange: (title: string) => void;
 
@@ -26,19 +18,8 @@ interface AssignmentRequiredFieldsProps {
 
 export const AssignmentRequiredFields: React.FC<
   AssignmentRequiredFieldsProps
-> = ({
-  selectedCourse,
-  onCourseSelect,
-  isLoadingCourses,
-  courses,
-  onOpenCourseModal,
-  title,
-  onTitleChange,
-  dueDate,
-  onDateChange,
-  onTimeChange,
-}) => {
-  const { theme, isDark } = useTheme();
+> = ({ title, onTitleChange, dueDate, onDateChange, onTimeChange }) => {
+  const { isDark } = useTheme();
 
   return (
     <View style={styles.section}>
@@ -49,14 +30,6 @@ export const AssignmentRequiredFields: React.FC<
         ]}>
         Required Information
       </Text>
-
-      <CourseSelector
-        selectedCourse={selectedCourse}
-        onSelect={onCourseSelect}
-        isLoading={isLoadingCourses}
-        courses={courses}
-        onOpenModal={onOpenCourseModal}
-      />
 
       <TaskTitleField
         title={title}

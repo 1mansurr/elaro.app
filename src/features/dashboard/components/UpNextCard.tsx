@@ -12,42 +12,24 @@ import {
   SHADOWS,
 } from '@/constants/theme';
 import { format, differenceInMinutes } from 'date-fns';
+import {
+  TASK_TYPE_COLORS,
+  TASK_TYPE_COLOR_NEUTRAL,
+} from '@/constants/taskTypes';
 
 interface UpNextCardProps {
   task: Task | null;
   onPress?: () => void;
 }
 
-const getCategoryConfig = (taskType: string) => {
+const getTypeConfig = (taskType: string) => {
   switch (taskType) {
-    case 'lecture':
-      return {
-        label: 'LECTURE',
-        icon: 'school-outline',
-        bgColor: '#DCFCE7',
-        textColor: '#166534',
-      };
     case 'study_session':
-      return {
-        label: 'STUDY',
-        icon: 'book-outline',
-        bgColor: '#E7F1FF',
-        textColor: '#137FEC',
-      };
+      return { label: 'STUDY', icon: 'book-outline' };
     case 'assignment':
-      return {
-        label: 'ASSIGNMENT',
-        icon: 'document-text-outline',
-        bgColor: '#FFEDD5',
-        textColor: '#C2410C',
-      };
+      return { label: 'ASSIGNMENT', icon: 'document-text-outline' };
     default:
-      return {
-        label: 'REVIEW',
-        icon: 'menu-book-outline',
-        bgColor: '#E7F1FF',
-        textColor: '#137FEC',
-      };
+      return { label: taskType.toUpperCase(), icon: 'ellipse-outline' };
   }
 };
 
@@ -93,7 +75,9 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
     );
   }
 
-  const category = getCategoryConfig(task.type);
+  const typeConfig = getTypeConfig(task.type);
+  const typeColor =
+    task.color ?? TASK_TYPE_COLORS[task.type] ?? TASK_TYPE_COLOR_NEUTRAL;
   const taskTime = task.date ? format(new Date(task.date), 'h:mm a') : '';
 
   return (
@@ -109,26 +93,10 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
       ]}>
       <View style={styles.content}>
         <View style={styles.headerRow}>
-          <View
-            style={[
-              styles.categoryBadge,
-              {
-                backgroundColor: category.bgColor,
-              },
-            ]}>
-            <Ionicons
-              name={category.icon as any}
-              size={16}
-              color={category.textColor}
-            />
-            <Text
-              style={[
-                styles.categoryText,
-                {
-                  color: category.textColor,
-                },
-              ]}>
-              {category.label}
+          <View style={[styles.categoryBadge, { backgroundColor: typeColor }]}>
+            <Ionicons name={typeConfig.icon as any} size={16} color="#FFFFFF" />
+            <Text style={[styles.categoryText, { color: '#FFFFFF' }]}>
+              {typeConfig.label}
             </Text>
           </View>
           {showTimer && timeRemaining !== null && (
@@ -151,15 +119,38 @@ export const UpNextCard: React.FC<UpNextCardProps> = ({ task, onPress }) => {
         <Text style={[styles.taskTitle, { color: theme.text }]}>
           {task.name}
         </Text>
-        {task.courses?.courseName && (
-          <Text
-            style={[
-              styles.taskSubtitle,
-              { color: isDark ? '#9CA3AF' : '#637588' },
-            ]}>
-            {task.courses.courseName}
-          </Text>
-        )}
+        {task.date ? (
+          <View style={styles.dateRow}>
+            <Ionicons
+              name="calendar-outline"
+              size={13}
+              color={isDark ? '#9CA3AF' : '#6B7280'}
+            />
+            <Text
+              style={[
+                styles.dateText,
+                { color: isDark ? '#9CA3AF' : '#6B7280' },
+              ]}>
+              {format(new Date(task.date), 'EEE, MMM d')}
+            </Text>
+            {taskTime ? (
+              <>
+                <Ionicons
+                  name="time-outline"
+                  size={13}
+                  color={isDark ? '#9CA3AF' : '#6B7280'}
+                />
+                <Text
+                  style={[
+                    styles.dateText,
+                    { color: isDark ? '#9CA3AF' : '#6B7280' },
+                  ]}>
+                  {taskTime}
+                </Text>
+              </>
+            ) : null}
+          </View>
+        ) : null}
       </View>
     </TouchableOpacity>
   );
@@ -216,13 +207,18 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     marginBottom: 4,
   },
-  taskSubtitle: {
-    fontSize: FONT_SIZES.sm,
-    lineHeight: 20,
-  },
   emptyText: {
     fontSize: FONT_SIZES.md,
     textAlign: 'center',
     paddingVertical: SPACING.xl,
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: SPACING.xs,
+  },
+  dateText: {
+    fontSize: FONT_SIZES.sm,
   },
 });

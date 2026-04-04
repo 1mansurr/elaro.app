@@ -67,5 +67,38 @@ export type RootStackParamList = {
 export type MainTabParamList = {
   Home: undefined;
   Calendar: undefined;
-  Account: undefined;
+  Library: undefined;
+};
+
+export type LibraryStackParamList = {
+  LibraryScreen: undefined;
+  QuizDetail: { quizId: string };
+  QuizTaking: {
+    quizId: string;
+    mode: 'full' | 'retake';
+    wrongQuestionIds?: string[];
+  };
+  Results: {
+    attemptId: string;
+    quizId: string;
+    score: number;
+    total: number;
+    percentage: number;
+  };
+  QuizPreview: {
+    parsedQuiz: {
+      subject: string;
+      questions: Array<{
+        id: number;
+        question: string;
+        options: { A: string; B: string; C?: string; D?: string };
+        correct_option: string;
+        explanation: string;
+        flagged: boolean;
+        flag_reason?: string;
+      }>;
+    };
+    quizName: string;
+    color: string;
+  };
 };

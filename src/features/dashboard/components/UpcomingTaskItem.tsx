@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { Task } from '@/types';
 import { useTheme } from '@/contexts/ThemeContext';
 import {
@@ -10,41 +9,16 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from '@/constants/theme';
-import { format, isToday, isTomorrow, isSameDay, addDays } from 'date-fns';
+import { format, isToday, isTomorrow } from 'date-fns';
+import {
+  TASK_TYPE_COLORS,
+  TASK_TYPE_COLOR_NEUTRAL,
+} from '@/constants/taskTypes';
 
 interface UpcomingTaskItemProps {
   task: Task;
   onPress?: () => void;
 }
-
-const getCategoryConfig = (taskType: string) => {
-  switch (taskType) {
-    case 'lecture':
-      return {
-        icon: 'school-outline' as const,
-        bgColor: '#DCFCE7',
-        iconColor: '#166534',
-      };
-    case 'study_session':
-      return {
-        icon: 'book-outline' as const,
-        bgColor: '#E7F1FF',
-        iconColor: '#137FEC',
-      };
-    case 'assignment':
-      return {
-        icon: 'document-text-outline' as const,
-        bgColor: '#FFEDD5',
-        iconColor: '#C2410C',
-      };
-    default:
-      return {
-        icon: 'book-outline' as const,
-        bgColor: '#E7F1FF',
-        iconColor: '#137FEC',
-      };
-  }
-};
 
 const getDateLabel = (date: Date): string => {
   if (isToday(date)) return 'Today';
@@ -52,30 +26,16 @@ const getDateLabel = (date: Date): string => {
   return format(date, 'EEE');
 };
 
-const getSubtitle = (task: Task): string => {
-  if (task.type === 'lecture') {
-    const lecture = task as any;
-    const parts: string[] = [];
-    if (lecture.venue) parts.push(lecture.venue);
-    if (lecture.courses?.courseName) parts.push(lecture.courses.courseName);
-    return parts.join(' • ') || task.courses?.courseName || '';
-  }
-  if (task.type === 'assignment') {
-    return task.courses?.courseName || '';
-  }
-  return task.courses?.courseName || '';
-};
-
 export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
   task,
   onPress,
 }) => {
   const { theme, isDark } = useTheme();
-  const category = getCategoryConfig(task.type);
+  const typeColor =
+    task.color ?? TASK_TYPE_COLORS[task.type] ?? TASK_TYPE_COLOR_NEUTRAL;
   const taskDate = new Date(task.date);
   const timeStr = format(taskDate, 'h:mm a');
   const dateLabel = getDateLabel(taskDate);
-  const subtitle = getSubtitle(task);
 
   return (
     <TouchableOpacity
@@ -85,29 +45,15 @@ export const UpcomingTaskItem: React.FC<UpcomingTaskItemProps> = ({
         styles.container,
         {
           backgroundColor: isDark ? '#1E293B' : '#FFFFFF',
-          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
+          borderColor: isDark ? 'rgba(255, 255, 255, 0.1)' : '#F3F4F6',
+          borderLeftColor: typeColor,
+          borderLeftWidth: 4,
         },
       ]}>
-      <View
-        style={[
-          styles.iconContainer,
-          {
-            backgroundColor: category.bgColor,
-          },
-        ]}>
-        <Ionicons name={category.icon} size={24} color={category.iconColor} />
-      </View>
       <View style={styles.content}>
         <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {task.name}
         </Text>
-        {subtitle && (
-          <Text
-            style={[styles.subtitle, { color: isDark ? '#9CA3AF' : '#637588' }]}
-            numberOfLines={1}>
-            {subtitle}
-          </Text>
-        )}
       </View>
       <View style={styles.timeContainer}>
         <Text style={[styles.time, { color: theme.text }]}>{timeStr}</Text>
@@ -129,15 +75,6 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.md,
     ...SHADOWS.xs,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: BORDER_RADIUS.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.md,
-    flexShrink: 0,
-  },
   content: {
     flex: 1,
     minWidth: 0,
@@ -147,10 +84,6 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold,
     marginBottom: 2,
-  },
-  subtitle: {
-    fontSize: 12,
-    lineHeight: 16,
   },
   timeContainer: {
     alignItems: 'flex-end',

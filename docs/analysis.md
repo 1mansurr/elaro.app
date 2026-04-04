@@ -1,915 +1,456 @@
-I now have everything I need. Here is the complete analysis:
+# ELARO — AI Import Feature Spec
+
+> This document specifies the AI-powered past question import feature.
+> It is intended to be read by Claude Code before any code is written.
+> Read LIBRARY_FEATURE_SPEC.md first for full context on the Library feature
+> this builds on top of.
 
 ---
 
-ELARO → Offline-First MVP: Simplification Plan
+## 1. Overview
+
+Replace the manual JSON paste area in `CreateQuizModal` with an AI-powered
+file import flow. The student uploads a past question file (PDF, image, or
+Word document), a Supabase Edge Function makes two sequential Claude API
+calls — the first extracts questions and correct answers from the file, the
+second generates a high-quality explanation for each correct answer. The app
+presents a preview the student can edit before saving to SQLite.
+
+Splitting into two calls is a deliberate quality decision: extraction and
+explanation generation are distinct cognitive tasks. Keeping them separate
+ensures Claude can focus fully on reading accuracy in call 1, and on
+reasoning quality in call 2. It also makes failures easier to diagnose.
+
+Everything downstream of the preview — the quiz taking flow, results screen,
+attempt history — is completely unchanged.
 
 ---
 
-1. Dependency Audit
+## 2. Architecture
 
-dependencies in package.json
+```
+React Native App
+  └── CreateQuizModal
+        └── sends file (base64) + quiz metadata
+              ↓
+        Supabase Edge Function (extract-questions)
+              │
+              ├── Call 1 → Claude API
+              │     "Extract all questions, options and correct answers"
+              │     └── returns raw extracted questions (no explanations yet)
+              │
+              └── Call 2 → Claude API
+                    "Generate an explanation for each correct answer"
+                    (receives the clean extracted questions from Call 1)
+                    └── returns final JSON with explanations attached
+              ↓
+        App receives final JSON
+              ↓
+        QuizPreviewScreen (editable)
+              ↓
+        Student confirms → SQLite (unchanged schema)
+```
 
-┌──────────────────────────────────────────────┬─────────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Package │ Status │ Reason │  
- ├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤  
- │ @supabase/supabase-js │ REMOVE │ Core of everything being stripped │  
- ├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤  
- │ @invertase/react-native-apple-authentication │ REMOVE │ Auth only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-apple-authentication │ REMOVE │ Auth only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-auth-session │ REMOVE │ OAuth auth flows only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-local-authentication │ REMOVE │ Biometric unlock tied to auth sessions │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-purchases │ REMOVE │ RevenueCat, subscriptions entirely │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ mixpanel-react-native │ REMOVE │ Analytics for auth/user events; no user identity without auth │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @sentry/react-native │ REMOVE │ Not MVP; add back post-validation │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ jsonwebtoken │ REMOVE │ JWT parsing for auth sessions │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-qrcode-svg │ REMOVE │ MFA QR code enrollment only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-web-browser │ REMOVE │ OAuth/auth redirect flows only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-linking │ REMOVE │ Deep links used for auth callbacks and password reset │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-webview │ REMOVE │ Used only by InAppBrowserScreen (Intercom/support) │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-sharing │ REMOVE │ Not in MVP feature set │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-image-picker │ REMOVE │ Profile photo uploads only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-image-manipulator │ REMOVE │ Profile photo processing only │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-av │ REMOVE │ Audio/video, no MVP use │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-clipboard │ REMOVE │ Used only in MFA code copying │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-confetti-cannon │ REMOVE │ Subscription upgrade celebration │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-copilot │ REMOVE │ Onboarding tutorial overlay │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ tinycolor2 │ REMOVE │ Color manipulation utility; not needed once auth-tier color logic (Oddity plan colors) is │
-│ │ │ removed │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ dotenv │ REMOVE │ No remote env vars needed offline │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ nativewind │ REMOVE │ ⚠️ Verify: used minimally alongside theme.ts. If any screen uses className= props it must │
-│ │ │ stay, otherwise remove to eliminate Tailwind build overhead │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ tailwindcss-react-native │ REMOVE │ Older Tailwind-for-RN package; dead weight if nativewind removed │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @react-native-community/netinfo │ REMOVE │ Offline-first; NetworkContext becomes a stub │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-updates │ REMOVE │ OTA updates; not needed for dev MVP │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-secure-store │ REMOVE │ Used only for biometric token storage (auth) — ⚠️ verify no other use │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-crypto │ INVESTIGATE │ Verify if used outside auth. If only used for key derivation/auth, remove. │
-│ │ │ react-native-uuid handles UUID generation │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-device │ INVESTIGATE │ Used in Sentry and biometric check. If Sentry removed and biometric removed, likely safe │
-│ │ │ to remove │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-file-system │ INVESTIGATE │ May be used for cache clearing or local file access. Check usages before removing │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-image │ KEEP │ General image rendering (avatars, assets) │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-notifications │ KEEP │ Core SRS local notification scheduling │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-blur │ KEEP │ Modal backdrop blur │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-haptics │ KEEP │ Gesture feedback │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-linear-gradient │ KEEP │ UI gradients │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-splash-screen │ KEEP │ App startup │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-constants │ KEEP │ App config access │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-font │ KEEP │ Font loading │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-status-bar │ KEEP │ Status bar control │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-build-properties │ KEEP │ Native build config │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ expo-dev-client / expo-dev-menu │ KEEP │ Dev tooling │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @expo/vector-icons │ KEEP │ Icons │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @expo/metro-config / @expo/metro-runtime │ KEEP │ Metro bundler │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @tanstack/react-query │ KEEP │ See Section 5 for justification │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @react-navigation/\* (all 4) │ KEEP │ Navigation remains the same │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @react-native-async-storage/async-storage │ KEEP │ Simple key-value preferences (theme, notification prefs) │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @react-native-community/datetimepicker │ KEEP │ Date/time picking in forms │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @react-native-picker/picker │ KEEP │ Dropdowns │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-calendars │ KEEP │ Calendar view │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-gesture-handler │ KEEP │ Navigation dependency │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-reanimated │ KEEP │ Animations │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-safe-area-context │ KEEP │ Layout │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-screens │ KEEP │ Navigation performance │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-modal │ KEEP │ Modal component │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-progress │ KEEP │ SRS progress indicators │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-select-dropdown │ KEEP │ Form dropdowns │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-svg │ KEEP │ SVG rendering │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-uuid │ KEEP │ UUID v4 generation for local IDs │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ react-native-vector-icons │ KEEP │ Icons │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ date-fns │ KEEP │ SRS interval date arithmetic │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ zod │ KEEP │ Form validation │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ @babel/runtime │ KEEP │ Runtime dependency │
-├──────────────────────────────────────────────┼─────────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ metro │ KEEP │ Bundler │
-└──────────────────────────────────────────────┴─────────────┴────────────────────────────────────────────────────────────────────────────────────────────┘
+### Key principles
 
-Add (not yet installed):
-
-- expo-sqlite — the replacement persistence layer
+- The Claude API key never touches the React Native bundle
+- Two sequential Claude calls per import: extraction first, explanation second
+- Separating the calls improves output quality — Claude focuses on one task at a time
+- Only this Edge Function goes to the network — everything else remains offline
+- The existing SQLite schema, JSON contract, and all downstream screens are
+  completely unchanged
 
 ---
 
-2. Feature Folder Audit
+## 3. Supabase Edge Function
 
-src/features/auth/ — REMOVE ENTIRELY
+### 3.1 Function name
 
-All 37 files go. This includes:
+`extract-questions`
 
-- All screens (AuthScreen, EnhancedAuthScreen, MFAEnrollmentScreen, MFAVerificationScreen, ForgotPasswordScreen, ResetPasswordScreen, AppWelcomeScreen)
-- All services (authService, UserProfileService, BiometricAuthService, SessionTimeoutService, AuthAnalyticsService)
-- All hooks (useUserProfile, useBiometricAuth, useSessionTimeout)
-- The entire permissions/ subdirectory (PermissionService, PermissionCacheService, PermissionConstants, permissionGuard) — the permission system is
-  subscription-tier-gated and meaningless without auth
+### 3.2 Location
 
-src/features/onboarding/ — REMOVE ENTIRELY
+`supabase/functions/extract-questions/index.ts`
 
-All 11 files go. Onboarding exists purely to collect a username and link the user to their Supabase account/courses on first launch.
+### 3.3 Security — shared secret
 
-src/features/subscription/ — REMOVE ENTIRELY
+The function is callable without user auth (no auth system exists yet).
+It is secured with a shared secret header:
 
-All 5 files go. PaywallScreen, OddityWelcomeScreen, RevenueCat integration.
+- Header name: `x-elaro-secret`
+- Header value: a random string stored in Supabase secrets as `ELARO_SECRET`
+- The app reads the same value from an environment variable:
+  `EXPO_PUBLIC_ELARO_SECRET` in `.env`
+- If the header is missing or incorrect, the function returns `401 Unauthorized`
+- When auth is introduced in `mvp-v2-auth`, replace this check with JWT
+  verification in one place — no other changes needed
 
-src/features/user-profile/ — REMOVE ENTIRELY
+### 3.4 Request format
 
-All 17 files go. AccountScreen, DeviceManagementScreen, LoginHistoryScreen, DeleteAccountScreen are all auth-dependent. SubscriptionManagementCard is
-RevenueCat. QuietHoursSettings and notification prefs can be reimplemented in a simple local-only settings screen later.
+```json
+{
+  "file": "<base64-encoded file contents>",
+  "mimeType": "application/pdf" | "image/jpeg" | "image/png" | "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "fileName": "past_questions_2023.pdf"
+}
+```
 
-src/features/support/ — REMOVE ENTIRELY
+### 3.5 Claude API — Two sequential calls
 
-3 files. Intercom chat requires a logged-in user identity.
-
-src/features/system-health/ — REMOVE ENTIRELY
-
-3 files. Checks backend connectivity. Meaningless offline.
-
-src/features/data-management/ — REMOVE ENTIRELY
-
-3 files. RecycleBinScreen is a soft-delete restore UI backed by Supabase.
-
-src/features/admin/ — REMOVE ENTIRELY
-
-1 file. AnalyticsAdminDashboard reads from Supabase analytics tables.
-
-src/features/settings/ — REMOVE ENTIRELY
-
-1 file, AnalyticsToggle.tsx. Toggles Mixpanel, which is being removed.
-
-src/features/dev/ — KEEP
-
-NotificationTestScreen.tsx is useful for testing local SRS notifications. Keep it gated behind a dev menu.
+The Edge Function makes two sequential calls to the Claude API. Call 2
+only runs if Call 1 succeeds.
 
 ---
 
-src/features/dashboard/ — PARTIALLY KEEP
+#### Call 1 — Extraction
 
-Keep:
+**Purpose:** Read the file and extract all questions, options, and correct
+answers. No explanations yet — Claude's only job here is accurate reading.
 
-- HomeScreen.tsx (or its OptimizedHomeScreen variant — pick one, delete the others)
-- DraftsScreen.tsx
-- TemplatesScreen.tsx
-- All sub-components in HomeScreen/ that render tasks and navigation
-- SwipeableTaskCard.tsx, TaskCardSkeleton.tsx, HomeScreenEmptyState.tsx
-- HomeScreenFAB.tsx, HomeScreenHeader.tsx, HomeScreenContent.tsx
+**Input:** The file (base64 PDF, image, or extracted DOCX text) + system prompt.
 
-Remove from this feature:
+**System prompt:**
 
-- MonthlyLimitCard.tsx — subscription limit display
-- UpcomingTaskItem references to "locked" items (LockedItemsBanner)
-- Any usePermissions() call checking task creation limits
+```
+You are an academic question extractor. Your job is to read past exam papers
+and extract all multiple choice and true/false questions with high accuracy.
 
-⚠️ There are 3 duplicate HomeScreen files (HomeScreen, OptimizedHomeScreen, RefactoredHomeScreen). Verify which one is actually rendered by the navigator
-before deleting the others.
+For each question you must:
+1. Extract the question text exactly as written
+2. Extract all answer options (A, B, C, D for multiple choice; A=True, B=False
+   for true/false)
+3. Identify the correct answer option
+
+Do NOT generate explanations — that is handled separately.
+
+If you cannot extract a question with confidence (e.g. the image is blurry,
+the question is cut off, or the format is ambiguous), still include it but
+add "flagged": true and a "flag_reason" string explaining the problem.
+
+Return ONLY valid JSON. No preamble, no markdown, no backticks.
+The JSON must match this exact schema:
+
+{
+  "subject": "<inferred subject or empty string>",
+  "questions": [
+    {
+      "id": <number>,
+      "question": "<question text>",
+      "options": {
+        "A": "<option text>",
+        "B": "<option text>",
+        "C": "<option text, omit for true/false>",
+        "D": "<option text, omit for true/false>"
+      },
+      "correct_option": "<A|B|C|D>",
+      "flagged": <true|false>,
+      "flag_reason": "<reason string or omit if not flagged>"
+    }
+  ]
+}
+```
+
+**On failure:** Return 500 with error. Do not proceed to Call 2.
 
 ---
 
-src/features/assignments/ — PARTIALLY KEEP
+#### Call 2 — Explanation generation
 
-Keep:
+**Purpose:** Generate a clear, accurate explanation for why the correct
+answer is correct for each question. Claude receives clean structured data
+from Call 1 — no file reading required, full attention on reasoning quality.
 
-- All screens (AddAssignmentScreen and all flow screens)
-- All components (form sections, ReminderModal)
+**Input:** The extracted questions JSON from Call 1 (as text) + system prompt.
 
-Rewrite:
+**System prompt:**
 
-- services/queries.ts — replace Supabase calls with SQLite queries
-- services/mutations.ts — replace Supabase calls with SQLite mutations
+```
+You are an academic tutor. You will be given a list of exam questions with
+their correct answers. Your job is to write a clear, accurate explanation
+for why the correct answer is correct for each question.
+
+Each explanation should:
+- Be concise but complete (2-4 sentences)
+- Explain the underlying concept, not just restate the answer
+- Be written in plain English suitable for a university student
+
+Return ONLY valid JSON. No preamble, no markdown, no backticks.
+Take the input questions and return them with an "explanation" field added
+to each question. Do not change any other fields.
+
+Output schema:
+{
+  "questions": [
+    {
+      "id": <number>,
+      "explanation": "<explanation text>"
+    }
+  ]
+}
+```
+
+**Merging:** The Edge Function merges the explanations from Call 2 back into
+the extracted questions from Call 1 by matching on `id`, then assembles the
+final response.
+
+**On failure:** Return 500 with error. The student is shown an error and can
+try again.
+
+### 3.6 Final response format
+
+The Edge Function assembles the merged output from both calls and returns:
+
+On success:
+
+```json
+{
+  "success": true,
+  "data": {
+    "quiz": {
+      "subject": "<inferred subject or empty string>",
+      "total_questions": 10,
+      "questions": [
+        {
+          "id": 1,
+          "question": "<question text>",
+          "options": { "A": "...", "B": "...", "C": "...", "D": "..." },
+          "correct_option": "C",
+          "explanation": "<generated explanation>",
+          "flagged": false
+        }
+      ]
+    }
+  }
+}
+```
+
+On failure:
+
+```json
+{
+  "success": false,
+  "error": "Human-readable error message",
+  "failedAt": "extraction" | "explanation"
+}
+```
+
+The `failedAt` field tells the app (and logs) exactly which call failed.
+
+### 3.7 Error handling in the function
+
+- Invalid/missing secret header → 401
+- Missing required request fields → 400
+- Call 1 (extraction) fails → 500 with `failedAt: "extraction"`
+- Call 1 returns malformed JSON → 500 with `failedAt: "extraction"`
+- Call 2 (explanation) fails → 500 with `failedAt: "explanation"`
+- Call 2 returns malformed JSON → 500 with `failedAt: "explanation"`
+- Partial extraction (some questions flagged) → 200, both calls still run,
+  flagged questions included in final response
 
 ---
 
-src/features/lectures/ — PARTIALLY KEEP
+## 4. Supported File Types
 
-Same pattern as assignments. Keep all screens and components, rewrite services/queries.ts and services/mutations.ts to use SQLite.
+| Type          | MIME type                                                               | Notes                                         |
+| ------------- | ----------------------------------------------------------------------- | --------------------------------------------- |
+| PDF           | application/pdf                                                         | Send as base64 document to Claude             |
+| JPEG image    | image/jpeg                                                              | Send as base64 image to Claude                |
+| PNG image     | image/png                                                               | Send as base64 image to Claude                |
+| Word document | application/vnd.openxmlformats-officedocument.wordprocessingml.document | Extract text first, then send as text content |
+
+**DOCX handling note:** Claude does not natively read .docx binary files.
+The Edge Function must extract raw text from the .docx before sending to
+Claude. Use the `mammoth` npm package (already available in Deno/Edge
+Function environments via npm: specifier) to convert .docx → plain text.
 
 ---
 
-src/features/courses/ — PARTIALLY KEEP
+## 5. React Native Changes
 
-Keep:
-
-- All screens (CoursesScreen, CourseDetailScreen, EditCourseModal, AddCourseInfoScreen, AddLectureScreen flows)
-- All components
-- AddCourseContext.tsx
-
-Rewrite:
-
-- services/queries.ts and services/mutations.ts
+### 5.1 CreateQuizModal changes
 
 Remove:
 
-- Any reference to versionedApiClient (used for Supabase edge function routing)
+- The JSON paste textarea
+- The Validate & Save button
+
+Add:
+
+- A file upload area (tappable zone with upload icon + "Choose your past
+  question file" label)
+- Supported formats note: "PDF, Word document, or image"
+- On tap: open native document picker using `expo-document-picker`
+- Once a file is selected: show the selected filename + a "Extract Questions"
+  button
+- On "Extract Questions" tap: begin the upload + processing flow
+
+The quiz name and color picker remain unchanged at the top of the modal.
+
+### 5.2 New service file
+
+`src/features/library/services/aiImportService.ts`
+
+Responsibilities:
+
+- Read the selected file as base64 using `expo-file-system`
+- Detect MIME type from file extension
+- POST to the Supabase Edge Function with the shared secret header
+- Return the parsed quiz JSON or throw a typed error
+
+### 5.3 Loading state — multi-step progress indicator
+
+While the Edge Function is processing, show a full-screen loading overlay
+inside the modal with four sequential steps that map directly to real
+pipeline stages:
+
+1. **Uploading** — file is being sent to the Edge Function
+2. **Reading** — Call 1 is in flight (extraction)
+3. **Generating explanations** — Call 2 is in flight (explanation generation)
+4. **Done ✓** — both calls complete, preview is ready
+
+Each step activates based on real events — no fake timers needed:
+
+- Step 1 activates immediately when the request is sent
+- Step 2 activates when the Edge Function acknowledges receipt and begins
+  Call 1 (or after a short delay if the function doesn't stream progress)
+- Step 3 activates when Call 1 completes and Call 2 begins
+- Step 4 activates when the final response arrives
+
+**Note for Claude Code:** Since Supabase Edge Functions return a single
+response (not a stream), steps 2 and 3 will need to be approximated with
+timing on the client side. The Edge Function should log which step it's on,
+but the client cannot observe mid-function progress. Suggested approach:
+activate Step 2 immediately after Step 1, activate Step 3 after 3s, activate
+Step 4 when the response arrives — regardless of timing.
+
+### 5.4 New screen — QuizPreviewScreen
+
+A full-screen modal pushed on top of CreateQuizModal after successful
+extraction.
+
+**Header:**
+
+- "Review Questions" title
+- Summary banner: "X questions extracted · Y flagged for review" (yellow
+  banner, only shown if Y > 0)
+
+**Question list:**
+
+- Scrollable list of question cards
+- Each card contains:
+  - Question number (e.g. "Q1")
+  - Warning icon + flag reason at the top of the card (yellow, only if
+    `flagged: true`)
+  - Question text field (editable TextInput)
+  - Option rows — each option letter + editable TextInput for option text
+  - Correct answer selector — tappable option letters, selected one is
+    highlighted
+  - Explanation field (editable TextInput, multiline)
+- All fields are editable — student can fix anything before saving
+
+**Bottom bar:**
+
+- "Save Quiz" primary button
+- On tap: run the existing `jsonValidator` against the (possibly edited)
+  data, then call `useCreateQuiz` to save to SQLite, close all modals,
+  navigate to QuizDetailScreen
+
+**Back navigation:**
+
+- Back chevron returns to CreateQuizModal (student can re-upload a
+  different file)
+
+### 5.5 File size limit
+
+Reject files larger than 10MB before uploading. Show an inline error:
+"File is too large. Please use a file under 10MB."
 
 ---
 
-src/features/calendar/ — KEEP ENTIRELY
+## 6. Feature Folder Changes
 
-The calendar screen itself is display-only logic on top of tasks. Rewrite useCalendarTasksWithLockState.ts to remove the "lock state" (premium feature
-gating) and source data from SQLite instead of React Query + Supabase.
+```
+src/features/library/
+  services/
+    aiImportService.ts          ← NEW: handles file reading + Edge Function call
+  screens/
+    QuizPreviewScreen.tsx       ← NEW: editable preview before saving
+  components/
+    FileUploadArea.tsx          ← NEW: tappable upload zone in CreateQuizModal
+    ProgressSteps.tsx           ← NEW: multi-step loading indicator
+    PreviewQuestionCard.tsx     ← NEW: editable question card in preview
+  hooks/
+    useAiImport.ts              ← NEW: orchestrates the full import flow,
+                                        manages loading state + step progression
 
----
-
-src/features/notifications/ — PARTIALLY KEEP
-
-Keep:
-
-- NotificationBell.tsx, NotificationSettings.tsx, SimpleNotificationSettings.tsx
-- usePushNotifications.ts — but strip out Expo push token registration (server registration). Keep only local notification permission request.
-- useNotificationPreferences.ts — rewrite to use AsyncStorage instead of Supabase
-
-Remove:
-
-- NotificationManagementScreen.tsx — if it shows server-side notification history
-- NotificationHistoryModal.tsx — fetches from reminders table in Supabase
-
----
-
-src/features/srs/ — PARTIALLY KEEP
-
-Keep:
-
-- All interfaces and algorithm logic
-- useSRSAnalytics.ts, useSRSScheduling.ts
-
-Rewrite:
-
-- SRSSchedulingService.ts — currently makes 5+ Supabase calls (user subscription tier, srs_schedules table, srs_performance table, a Supabase RPC for
-  timezone scheduling, and inserts into the reminders table). All of this moves to SQLite + expo-notifications.
-- SRSAnalyticsService.ts — rewrite to read from local srs_items table
-
-Remove:
-
-- All subscription-tier branching (free vs. Oddity intervals). MVP gets a single fixed interval set: [1, 3, 7, 14, 30].
+supabase/functions/
+  extract-questions/
+    index.ts                    ← NEW: Edge Function
+```
 
 ---
 
-src/features/studySessions/ — PARTIALLY KEEP
+## 7. Environment Variables
 
-Keep:
+Add to `.env`:
 
-- AddStudySessionScreen.tsx, StudyResultScreen.tsx, StudySessionReviewScreen.tsx, SRSStatisticsScreen.tsx
-- SRSReviewCard.tsx
+```
+EXPO_PUBLIC_ELARO_SECRET=<generated random string>
+```
 
-Rewrite:
+Add to Supabase project secrets (via Supabase dashboard or CLI):
 
-- services/queries.ts and services/mutations.ts
-
----
-
-src/features/templates/ — KEEP ENTIRELY
-
-The template logic is largely pure JavaScript (filtering, applying defaults). Rewrite useTemplateManagement.ts to persist to SQLite and pre-seed built-in
-templates on first launch.
+```
+ELARO_SECRET=<same generated random string>
+ANTHROPIC_API_KEY=<Anthropic API key>
+```
 
 ---
 
-src/features/tasks/ — PARTIALLY KEEP
+## 8. Navigation Changes
 
-Keep and rewrite:
-
-- RecurringTaskService.ts — currently makes 4 Supabase RPC calls. All pattern logic (daily/weekly/monthly calculation) can be done in pure JS. Rewrite to
-  persist to SQLite.
-- useRecurringTasks.ts, useAdvancedTemplates.ts
-
-Remove:
-
-- TaskDependencyService.ts and useTaskDependencies.ts — task blocking/dependency graph is not a core MVP feature and adds significant complexity
+- `LibraryStackParamList` needs a new `QuizPreview` screen entry
+- Params: `{ parsedQuiz: ParsedQuiz, quizName: string, color: string }`
+- `LibraryNavigator.tsx` needs `QuizPreview` registered
 
 ---
 
-3. Shared Code Audit
+## 9. What Is NOT Changing
 
-src/contexts/
-
-┌──────────────────────────────┬──────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ Context │ Status │ Notes │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ AuthContext.tsx │ REMOVE │ The central casualty. All useAuth() calls in features need to be updated │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ OnboardingContext.tsx │ REMOVE │ Supports onboarding flow only │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ UsageLimitPaywallContext.tsx │ REMOVE │ Subscription gating │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ SoftLaunchContext.tsx │ REMOVE │ Feature flags tied to backend │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ThemeContext.tsx │ KEEP │ Pure local state, AsyncStorage only │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ NotificationContext.tsx │ KEEP │ Pure local state │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ │ KEEP as │ Replace @react-native-community/netinfo with a stub that always returns isConnected: true. This prevents │
-│ NetworkContext.tsx │ stub │ runtime crashes in any component still calling useNetwork() without requiring a full purge of every call │
-│ │ │ site on day one │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ToastContext.tsx │ KEEP │ Pure local state │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ LocaleContext.tsx │ KEEP │ Pure local state │
-├──────────────────────────────┼──────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ CreationFlowContext.tsx │ KEEP │ Generic multi-step form context, no external deps │
-└──────────────────────────────┴──────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-
-src/shared/components/
-
-Components that break without auth:
-
-- AuthIssueModal.tsx — REMOVE (auth error display)
-- UpgradeSuccessModal.tsx — REMOVE (subscription)
-- UsageLimitPaywall.tsx — REMOVE (subscription gating)
-- LockedItemsBanner.tsx — REMOVE (premium tier locking)
-- OfflineBanner.tsx — REMOVE (only relevant when network exists)
-- SyncIndicator.tsx — REMOVE (sync state with Supabase)
-- QueryStateWrapper.tsx / SimplifiedQueryStateWrapper.tsx — KEEP but remove any auth-error-specific handling
-
-Components that depend on permissions:
-
-- Any component calling usePermissions() — strip the permission call, replace with unconditional rendering. ⚠️ Do a grep for usePermissions across shared/ to
-  find all callers.
-
-Everything else in shared/components/ — KEEP. The UI component library (buttons, inputs, modals, forms, cards, skeletons) has no auth or Supabase
-dependencies.
-
-src/shared/hooks/
-
-- usePermissions.ts — REMOVE (auth + subscription tier checks)
-- useQuickAddForm.ts — KEEP but remove usePermissions call inside it (the task-limit enforcement)
-- useTemplateSelection.ts / useTemplateManagement.ts — KEEP, rewrite to use SQLite
-- task-forms/ hooks — KEEP all 4 (form state only)
-
-src/shared/utils/
-
-- getSecureChatLink.ts — REMOVE (Intercom)
-- templateUtils.ts — KEEP
-
-src/services/ (root level)
-
-┌────────────────────────────────────────────────────┬────────────────────────────────────────┐
-│ File │ Status │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ supabase.ts │ REMOVE (after all callers migrated) │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ authService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ authSync.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ syncManager.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ revenueCat.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ analytics.ts / mixpanel.ts / analyticsEvents.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ errorTracking.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ healthCheckService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ navigationSync.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ settingsSync.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ studySessionSync.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ ApiVersioningService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ RequestDeduplicationService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ VersionedApiClient.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ bundleSizeTracking.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ cacheMonitoring.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ networkMonitoring.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ PerformanceMonitoringService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ updateService.ts │ REMOVE │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ notifications.ts │ KEEP (local notification setup) │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ reminderRescheduling.ts │ KEEP (local notification rescheduling) │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ api/queries.ts + api/mutations.ts + api/mappers.ts │ REMOVE (Supabase API layer) │
-├────────────────────────────────────────────────────┼────────────────────────────────────────┤
-│ api/errors.ts │ KEEP (generic error types) │
-└────────────────────────────────────────────────────┴────────────────────────────────────────┘
+- SQLite schema — completely unchanged
+- JSON contract used to save to SQLite — unchanged
+- `jsonValidator.ts` — reused as-is to validate edited preview data before save
+- `useCreateQuiz` hook — reused as-is to save the confirmed quiz
+- All quiz taking, results, and history screens — completely unchanged
+- The offline-first nature of everything except this one network call
 
 ---
 
-4. Local Database Schema Design
+## 10. Questions for Claude Code
 
-Install: npx expo install expo-sqlite
+Before writing any code, review this spec alongside the existing codebase
+and answer:
 
-Create src/services/database.ts as the single SQLite entry point.
+1. **expo-document-picker:** Is this already installed? If not, what is the
+   correct Expo SDK 52 compatible version and does it require any additional
+   native config?
 
--- ============================================================
--- ELARO LOCAL MVP SCHEMA (expo-sqlite)
--- Convention: TEXT for all UUIDs, TEXT for all timestamps (ISO8601),
--- INTEGER 0/1 for booleans, TEXT for JSON blobs
--- synced_at IS NULL means "not yet synced to Supabase"
--- ============================================================
+2. **expo-file-system:** Is this already installed and used elsewhere? What
+   is the correct method to read a picked file as base64?
 
-CREATE TABLE IF NOT EXISTS courses (
-id TEXT PRIMARY KEY, -- UUID v4
-name TEXT NOT NULL,
-code TEXT,
-color TEXT, -- hex string from COLORS palette
-icon TEXT, -- optional icon name
-schedule TEXT, -- JSON: [{day:0-6, start:'HH:MM', end:'HH:MM', venue:TEXT}]
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT -- NULL = pending sync
-);
+3. **Edge Function DOCX handling:** Confirm that `mammoth` is available via
+   npm: specifier in Deno Edge Functions, or suggest the best alternative
+   for extracting plain text from .docx in that environment.
 
-CREATE TABLE IF NOT EXISTS tasks (
-id TEXT PRIMARY KEY,
-type TEXT NOT NULL CHECK(type IN ('assignment','lecture','study_session')),
-title TEXT NOT NULL,
-description TEXT,
-course_id TEXT REFERENCES courses(id) ON DELETE SET NULL,
-due_date TEXT, -- ISO8601 — deadline for assignments
-start_time TEXT, -- ISO8601 — for lectures and sessions
-end_time TEXT, -- ISO8601
-is_completed INTEGER NOT NULL DEFAULT 0,
-completed_at TEXT,
-is_deleted INTEGER NOT NULL DEFAULT 0, -- soft delete
-deleted_at TEXT,
-metadata TEXT, -- JSON: type-specific fields
--- assignment: {submission_method, priority}
--- lecture: {venue, is_recurring, recurrence_rule}
--- study_session: {session_type, estimated_duration_mins}
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT
-);
+4. **Existing Edge Functions pattern:** Review the existing 98+ Edge
+   Functions in `supabase/functions/`. What is the shared utility pattern
+   in `supabase/functions/_shared/` and how should the new function follow
+   it? Are there existing functions that call external APIs we can use as
+   a reference?
 
-CREATE TABLE IF NOT EXISTS srs_items (
-id TEXT PRIMARY KEY,
-task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
-topic TEXT NOT NULL,
-interval_days INTEGER NOT NULL DEFAULT 1, -- current SM-2 interval
-ease_factor REAL NOT NULL DEFAULT 2.5, -- SM-2 ease factor
-repetitions INTEGER NOT NULL DEFAULT 0, -- successful reviews
-next_review_date TEXT NOT NULL, -- ISO8601 date YYYY-MM-DD
-last_reviewed_at TEXT,
-last_quality_rating INTEGER, -- 1 (blackout) to 5 (perfect)
-is_active INTEGER NOT NULL DEFAULT 1,
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT
-);
+5. **Base64 file size:** For a 10MB file, base64 encoding adds ~33% overhead
+   (~13.3MB in the request body). Is there any request size limit on Supabase
+   Edge Functions or the Claude API that we need to be aware of?
 
-CREATE TABLE IF NOT EXISTS reminders (
-id TEXT PRIMARY KEY,
-task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
-srs_item_id TEXT REFERENCES srs_items(id) ON DELETE CASCADE,
-expo_notification_id TEXT, -- identifier returned by expo-notifications
--- NULL means not yet scheduled
-title TEXT NOT NULL,
-body TEXT NOT NULL,
-scheduled_time TEXT NOT NULL, -- ISO8601 when to fire
-reminder_type TEXT NOT NULL CHECK(reminder_type IN
-('task_due','study_session','srs_review')),
-is_cancelled INTEGER NOT NULL DEFAULT 0,
-fired_at TEXT, -- set when notification fires
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT
-);
-
-CREATE TABLE IF NOT EXISTS templates (
-id TEXT PRIMARY KEY,
-name TEXT NOT NULL,
-description TEXT,
-task_type TEXT NOT NULL CHECK(task_type IN ('assignment','lecture','study_session')),
-template_data TEXT NOT NULL, -- JSON: pre-filled task fields
-is_built_in INTEGER NOT NULL DEFAULT 0, -- 1 = shipped with app, never deleted
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT
-);
-
-CREATE TABLE IF NOT EXISTS recurring_patterns (
-id TEXT PRIMARY KEY,
-task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE,
-frequency TEXT NOT NULL CHECK(frequency IN ('daily','weekly','monthly')),
-interval_value INTEGER NOT NULL DEFAULT 1,
-days_of_week TEXT, -- JSON array [0-6] for weekly
-day_of_month INTEGER, -- for monthly
-end_date TEXT, -- ISO8601 date
-max_occurrences INTEGER,
-last_generated TEXT, -- ISO8601 date of last generation
-created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
-synced_at TEXT
-);
-
--- Indexes for common query patterns
-CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
-CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date) WHERE is_deleted = 0;
-CREATE INDEX IF NOT EXISTS idx_tasks_course ON tasks(course_id) WHERE is_deleted = 0;
-CREATE INDEX IF NOT EXISTS idx_srs_next_review ON srs_items(next_review_date) WHERE is_active = 1;
-CREATE INDEX IF NOT EXISTS idx_reminders_scheduled ON reminders(scheduled_time) WHERE is_cancelled = 0;
-
-Schema conventions for future Supabase compatibility:
-
-- Column names use snake_case — matches Supabase/PostgreSQL
-- All IDs are UUID v4 strings (use react-native-uuid)
-- All timestamps are ISO8601 strings — PostgreSQL TIMESTAMPTZ accepts these directly
-- Booleans as INTEGER 0/1 in SQLite become BOOLEAN in PostgreSQL with a trivial cast
-- JSON blobs in SQLite become JSONB in PostgreSQL with no data change
-
----
-
-5. State Management Simplification
-
-Recommendation: Keep React Query. Swap only the queryFn internals.
-
-Justification:
-
-React Query's value is not the network — it is the query lifecycle: loading/error/success states, cache invalidation, and the invalidateQueries pattern for
-triggering re-renders after mutations. All of that remains useful with SQLite as the backend.
-
-The migration to Supabase later requires changing only the queryFn body in each service, not the component or hook code. A component calling useQuery({
-queryKey: ['tasks'], queryFn: getTasks }) works identically whether getTasks reads from SQLite or calls Supabase. This is a zero-churn migration later.
-
-What changes:
-// Before (Supabase)
-const queryFn = async () => {
-const { data, error } = await supabase.from('tasks').select('\*');
-if (error) throw error;
-return data;
-};
-
-// After (SQLite) — component code unchanged
-const queryFn = async () => {
-const db = await getDatabase();
-return db.getAllAsync<Task>('SELECT \* FROM tasks WHERE is_deleted = 0');
-};
-
-Reject Zustand for this phase. Zustand is a good fit for UI state (modals, filters) but is not a data persistence layer. You would still need SQLite
-alongside it, duplicating state.
-
-Reject plain React state. The app has 6+ screens that all need the same task/course data. Prop drilling or multiple useEffect fetches breaks the moment you
-navigate away and back.
-
----
-
-6. SRS + Notifications Architecture (Offline)
-
-Data Storage
-
-The srs_items table tracks each reviewable item. After a study session is completed, one srs_item row is created per topic. The SM-2 algorithm runs entirely
-in JS on-device:
-
-// Pure function — no network needed
-function calculateNextInterval(item: SRSItem, qualityRating: 1|2|3|4|5): SRSItem {
-// rating < 3: reset to interval=1, keep ease*factor
-// rating >= 3: interval = prev_interval * ease*factor
-// ease_factor += 0.1 - (5 - rating) * (0.08 + (5 - rating) _ 0.02)
-// ease_factor = max(1.3, ease_factor)
-const newItem = { ...item };
-if (qualityRating < 3) {
-newItem.repetitions = 0;
-newItem.interval_days = 1;
-} else {
-newItem.repetitions += 1;
-newItem.interval_days = newItem.repetitions === 1 ? 1
-: newItem.repetitions === 2 ? 6
-: Math.round(newItem.interval_days _ newItem.ease*factor);
-newItem.ease_factor = Math.max(1.3,
-newItem.ease_factor + 0.1 - (5 - qualityRating) * (0.08 + (5 - qualityRating) \_ 0.02)
-);
-}
-newItem.last_quality_rating = qualityRating;
-newItem.last_reviewed_at = new Date().toISOString();
-newItem.next_review_date = addDays(new Date(), newItem.interval_days).toISOString();
-return newItem;
-}
-
-Local Notification Scheduling
-
-When an SRS item is created or a task reminder is set, call:
-
-import \* as Notifications from 'expo-notifications';
-
-async function scheduleLocalNotification(reminder: Reminder): Promise<string> {
-const notificationId = await Notifications.scheduleNotificationAsync({
-content: {
-title: reminder.title,
-body: reminder.body,
-data: { reminderId: reminder.id, type: reminder.reminder_type },
-},
-trigger: { date: new Date(reminder.scheduled_time) },
-});
-// Store the notificationId in the reminders table
-await db.runAsync(
-'UPDATE reminders SET expo_notification_id = ? WHERE id = ?',
-[notificationId, reminder.id]
-);
-return notificationId;
-}
-
-When a Task Is Rescheduled
-
-This is the most critical flow. The steps must be:
-
-1. Cancel the existing expo-notifications notification using the stored expo_notification_id
-2. Update the reminders row with is_cancelled = 1, updated_at = now()
-3. Create a new reminders row with the new scheduled_time
-4. Schedule a new local notification, store the new expo_notification_id
-5. Persist the task's updated due_date / start_time in the tasks table
-
-async function rescheduleTaskReminder(taskId: string, newTime: Date) {
-const db = await getDatabase();
-// 1. Find existing reminder
-const existing = await db.getFirstAsync<Reminder>(
-'SELECT \* FROM reminders WHERE task_id = ? AND is_cancelled = 0', [taskId]
-);
-if (existing?.expo_notification_id) {
-// 2. Cancel old notification
-await Notifications.cancelScheduledNotificationAsync(existing.expo_notification_id);
-await db.runAsync(
-'UPDATE reminders SET is_cancelled = 1, updated_at = ? WHERE id = ?',
-[now(), existing.id]
-);
-}
-// 3-4. Create and schedule new reminder
-const newReminder = buildReminder(taskId, newTime);
-await db.runAsync('INSERT INTO reminders ...', [...]);
-await scheduleLocalNotification(newReminder);
-}
-
-On app cold start: Call Notifications.getAllScheduledNotificationsAsync() and cross-reference against the reminders table. Any expo_notification_id in the DB
-that is no longer in the OS-scheduled list means the notification fired or was cancelled by the OS. Mark those reminders as fired_at = now() and trigger any
-SRS review prompts.
-
----
-
-7. Migration Path to Supabase (Future)
-
-Step 1 — Add auth without touching existing data
-
-When auth is added:
-
-1. Create a Supabase account for the user (sign-up)
-2. Generate a user_id (UUID) from Supabase
-3. Store it in AsyncStorage as the device's "owner id"
-4. Update every local row: UPDATE tasks SET user_id = ? WHERE user_id IS NULL
-
-Convention to follow NOW: Add a user_id TEXT column to every table in the SQLite schema, defaulting to a device-local UUID generated on first app launch.
-Store this device UUID in AsyncStorage under @elaro/device_id. This UUID becomes the user_id when the user signs up.
-
-// On app first launch
-async function getOrCreateDeviceId(): Promise<string> {
-const existing = await AsyncStorage.getItem('@elaro/device_id');
-if (existing) return existing;
-const newId = uuid.v4();
-await AsyncStorage.setItem('@elaro/device_id', newId);
-return newId;
-}
-
-Step 2 — Claiming local data after sign-up
-
-The "claim" flow:
-
-1. User signs up → Supabase returns a real user_id
-2. App calls a Supabase Edge Function claim-device-data with { device_id, supabase_user_id }
-3. Edge function accepts the sync payload (see Step 3) and inserts all rows into Supabase with the real user_id
-4. On success, app updates AsyncStorage to replace device_id with supabase_user_id
-5. All subsequent inserts use the real user_id
-
-Step 3 — Sync protocol (UUID matching + conflict resolution)
-
-Because every local row already uses UUID v4 as its id, you can use upsert with ON CONFLICT (id) DO UPDATE in Supabase. No ID translation needed.
-
-async function syncToSupabase(tableName: string, rows: Row[]) {
-const { error } = await supabase
-.from(tableName)
-.upsert(rows, { onConflict: 'id' });
-if (!error) {
-const ids = rows.map(r => r.id);
-await db.runAsync(
-`UPDATE ${tableName} SET synced_at = ? WHERE id IN (${ids.map(() => '?').join(',')})`,
-[now(), ...ids]
-);
-}
-}
-
-Conflict resolution policy: updated_at wins. In the upsert, only update the Supabase row if the local updated_at > supabase.updated_at. For the reverse
-(Supabase → device), only overwrite local if supabase.updated_at > local.updated_at.
-
-Sync query: To find unsynced rows: SELECT \* FROM tasks WHERE synced_at IS NULL OR updated_at > synced_at.
-
-Conventions to follow NOW that make migration easy
-
-┌─────────────────────────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
-│ Convention │ Reason │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ Every table has id TEXT PRIMARY KEY (UUID v4) │ Maps directly to Supabase UUID PK — no ID translation │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ Every table has synced_at TEXT │ The sync query is just WHERE synced_at IS NULL │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ Every table has user_id TEXT (device UUID now, real UUID later) │ No schema change at migration time │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ created_at / updated_at in ISO8601 │ PostgreSQL accepts without conversion │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ JSON blobs use snake_case keys in the JSON too │ PostgreSQL JSONB queries will work the same │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ No auto-increment IDs anywhere │ Auto-increment IDs cannot be synced across devices │
-├─────────────────────────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
-│ Business logic in pure JS functions, not SQL procedures │ SQLite has no stored procedures; Supabase Edge Functions replace them │
-└─────────────────────────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
-
-Supabase Edge Functions: Keep vs. Rebuild
-
-┌──────────────────────────────────────────────────────┬──────────────┬─────────────────────────────────────────────────────┐
-│ Function │ Verdict │ Notes │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ auth-signup │ KEEP │ Needed for sign-up flow │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ api-v2 │ REBUILD │ Too tightly coupled to current schema │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ srs-system │ KEEP as base │ SRS logic is sound; adapt to accept local UUIDs │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ migrate-encrypt-user-data │ KEEP │ Useful for data migration at claim time │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ admin-\* │ KEEP │ Operational tooling │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ check-username, restore-account, soft-delete-account │ KEEP │ Standard account ops │
-├──────────────────────────────────────────────────────┼──────────────┼─────────────────────────────────────────────────────┤
-│ All analytics/cost tracking functions │ REBUILD │ Depends on subscription tier logic being redesigned │
-└──────────────────────────────────────────────────────┴──────────────┴─────────────────────────────────────────────────────┘
-
----
-
-8. Deletion Checklist
-
-Order from safest (leaf nodes, no dependents) to deepest (central infrastructure). Each step should leave the app compilable.
-
-Phase 1 — External Analytics & Monitoring (no UI dependents)
-
-1. Delete src/services/analytics.ts, src/services/mixpanel.ts, src/services/analyticsEvents.ts
-2. Delete src/services/errorTracking.ts (src/services/monitoring/sentry.ts)
-3. Delete src/services/revenueCat.ts
-4. Delete src/services/healthCheckService.ts, src/services/networkMonitoring.ts, src/services/cacheMonitoring.ts, src/services/bundleSizeTracking.ts,
-   src/services/PerformanceMonitoringService.ts
-5. Remove the 3 initialize() calls from App.tsx (RevenueCat, Mixpanel, Sentry) and any imports of those services
-
-Phase 2 — Standalone feature folders (nothing imports from them)
-
-6. Delete src/features/admin/
-7. Delete src/features/dev/ ⚠️ (keep if notification testing is wanted)
-8. Delete src/features/support/ (and src/shared/utils/getSecureChatLink.ts)
-9. Delete src/features/system-health/
-10. Delete src/features/data-management/
-11. Delete src/features/subscription/ — also remove PaywallScreen, OddityWelcomeScreen from AuthenticatedNavigator.tsx
-12. Delete src/features/settings/AnalyticsToggle.tsx
-
-Phase 3 — Contexts with no surviving dependents
-
-13. Delete src/contexts/UsageLimitPaywallContext.tsx — remove from AppProviders.tsx
-14. Delete src/contexts/SoftLaunchContext.tsx — remove from AppProviders.tsx
-15. Delete src/contexts/OnboardingContext.tsx — remove from AppProviders.tsx
-
-Phase 4 — Onboarding & user profile (auth-only screens)
-
-16. Delete src/features/onboarding/ — remove OnboardingNavigator from navigation
-17. Delete src/features/user-profile/screens/AccountScreen.tsx, DeviceManagementScreen.tsx, LoginHistoryScreen.tsx, DeleteAccountScreen.tsx
-18. Delete src/features/user-profile/components/SubscriptionManagementCard.tsx
-19. Remove the deleted screens from AuthenticatedNavigator.tsx
-
-Phase 5 — Auth feature services (not the screens yet)
-
-20. Delete src/features/auth/services/AuthAnalyticsService.ts
-21. Delete src/features/auth/services/BiometricAuthService.ts, src/features/auth/hooks/useBiometricAuth.ts
-22. Delete src/features/auth/services/SessionTimeoutService.ts, src/features/auth/hooks/useSessionTimeout.ts
-23. Delete src/features/auth/permissions/ entirely (PermissionService, PermissionCacheService, PermissionConstants, permissionGuard)
-24. Delete src/shared/hooks/usePermissions.ts — fix the 1 import in useQuickAddForm.ts (remove the task-limit check)
-25. Remove LockedItemsBanner, UsageLimitPaywall, AuthIssueModal, UpgradeSuccessModal, SyncIndicator, OfflineBanner from src/shared/components/
-
-Phase 6 — Auth screens and navigator
-
-26. Delete all auth screens: AuthScreen, EnhancedAuthScreen, MFAEnrollmentScreen, MFAVerificationScreen, ForgotPasswordScreen, ResetPasswordScreen,
-    AppWelcomeScreen
-27. Delete src/navigation/AuthNavigator.tsx
-28. Rewrite src/navigation/AppNavigator.tsx — remove auth gating entirely, always render AuthenticatedNavigator
-
-Phase 7 — Install SQLite and build local data layer
-
-29. npx expo install expo-sqlite
-30. Create src/services/database.ts with schema and migration runner
-31. Create src/services/localRepository.ts with generic CRUD helpers typed to the schema
-32. Implement getOrCreateDeviceId() in src/utils/deviceId.ts
-
-Phase 8 — Rewrite feature services (one feature at a time; keep app compiling)
-
-33. Rewrite src/features/courses/services/queries.ts + mutations.ts → SQLite
-34. Rewrite src/features/assignments/services/queries.ts + mutations.ts → SQLite
-35. Rewrite src/features/lectures/services/queries.ts + mutations.ts → SQLite
-36. Rewrite src/features/studySessions/services/queries.ts + mutations.ts → SQLite
-37. Rewrite src/features/tasks/services/RecurringTaskService.ts → pure JS + SQLite
-38. Rewrite src/features/srs/services/SRSSchedulingService.ts → pure JS + SQLite + expo-notifications
-39. Rewrite src/features/srs/services/SRSAnalyticsService.ts → SQLite reads
-40. Rewrite src/features/templates/hooks/useTemplateManagement.ts → SQLite
-
-Phase 9 — Replace AuthContext
-
-41. Delete src/contexts/AuthContext.tsx
-42. Delete src/features/auth/services/UserProfileService.ts
-43. Grep for every useAuth() call in the codebase. For each:
-    - If it only uses user.id → replace with useDeviceId() hook
-    - If it checks session or isLoading → remove the guard entirely
-    - If it calls signOut() → remove the sign-out button/flow
-
-Phase 10 — Remove Supabase core
-
-44. Delete src/services/supabase.ts
-45. Delete src/services/authService.ts
-46. Delete src/services/authSync.ts
-47. Delete src/services/syncManager.ts, src/services/navigationSync.ts, src/services/settingsSync.ts, src/services/studySessionSync.ts
-48. Delete src/services/api/ directory (Supabase query/mutation/mapper layer)
-49. Delete src/services/ApiVersioningService.ts, src/services/VersionedApiClient.ts, src/services/RequestDeduplicationService.ts
-50. Delete src/services/updateService.ts (OTA updates)
-
-Phase 11 — Package cleanup
-
-51. npm uninstall @supabase/supabase-js @invertase/react-native-apple-authentication expo-apple-authentication expo-auth-session expo-local-authentication
-    react-native-purchases mixpanel-react-native @sentry/react-native jsonwebtoken react-native-qrcode-svg react-native-webview react-native-copilot
-    react-native-confetti-cannon tinycolor2 dotenv @react-native-community/netinfo expo-sharing expo-image-picker expo-image-manipulator expo-av expo-clipboard
-    expo-linking expo-web-browser expo-updates
-52. Verify nativewind / tailwindcss-react-native usage: grep -r "className=" src/ — if zero results, uninstall both
-53. Run npx expo-doctor to catch any unresolved native module issues after uninstalling
-
-Phase 12 — Final navigation cleanup
-
-54. Audit AuthenticatedNavigator.tsx — remove any remaining auth/subscription screen registrations
-55. Remove multi-HomeScreen duplicates (RefactoredHomeScreen, OptimizedHomeScreen) — keep one
-56. Remove AppWelcomeScreen from startup if it still appears
-
----
-
-⚠️ Items requiring verification before proceeding:
-
-- expo-secure-store: grep for usage outside biometric auth — if used for any other sensitive storage, keep and replace the biometric usage only
-- expo-crypto: grep for usage outside auth key derivation
-- expo-device: grep for usage outside Sentry/biometric
-- nativewind / className=: grep before uninstalling — the build will silently break without it if any component uses className props
-- Which of the 3 HomeScreen variants is actually mounted by AuthenticatedNavigator — check line by line before deleting the others
-- usePermissions callers: do a project-wide grep before deleting the service so no broken import is left behind
+6. **Suggested implementation order:** What is the recommended phase-by-phase
+   build order for this feature?

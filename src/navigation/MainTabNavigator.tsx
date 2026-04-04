@@ -3,8 +3,8 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { MainTabParamList } from '@/types';
 import HomeScreen from '@/features/dashboard/screens/HomeScreen';
-import ProfileScreen from '@/features/user-profile/screens/ProfileScreen';
 import { CalendarScreen } from '@/navigation/bundles/CalendarBundle';
+import { LibraryNavigator } from '@/navigation/bundles/LibraryBundle';
 import { CustomTabBar } from './components/CustomTabBar';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -39,10 +39,10 @@ export const MainTabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Account"
-        component={ProfileScreen}
+        name="Library"
+        component={LibraryNavigator}
         options={{
-          tabBarLabel: 'Account',
+          tabBarLabel: 'Library',
         }}
       />
     </Tab.Navigator>

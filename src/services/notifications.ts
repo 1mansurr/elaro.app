@@ -449,7 +449,65 @@ export const notificationService = {
     }
   },
 
-  // scheduleItemReminders removed - uses deleted ReminderTime type
+  /**
+   * Schedule a notification AT the task time plus optional advance reminders.
+   * Identifiers are prefixed with taskId so cancelItemReminders can clean them all up.
+   *
+   * @param taskId      The task's database ID (used as notification identifier prefix)
+   * @param title       The notification title (e.g. topic or assignment name)
+   * @param taskDate    The exact datetime of the task / due date
+   * @param reminderOffsets  Array of minute offsets to fire BEFORE taskDate (e.g. [15, 60])
+   * @param type        'study_session' or 'assignment' — controls body copy
+   */
+  async scheduleTaskReminders({
+    taskId,
+    title,
+    taskDate,
+    reminderOffsets = [],
+    type = 'study_session',
+  }: {
+    taskId: string;
+    title: string;
+    taskDate: Date;
+    reminderOffsets?: number[];
+    type?: 'study_session' | 'assignment';
+  }) {
+    const formatOffset = (minutes: number): string => {
+      if (minutes < 60) return `${minutes} min`;
+      if (minutes === 60) return '1 hour';
+      if (minutes < 1440) return `${Math.floor(minutes / 60)} hours`;
+      if (minutes === 1440) return 'tomorrow';
+      return `${Math.floor(minutes / 1440)} days`;
+    };
+
+    // Notification AT the task time
+    const atBody =
+      type === 'assignment' ? `${title} is due now` : `Time to study: ${title}`;
+    await this.scheduleReminder({
+      id: taskId,
+      title,
+      body: atBody,
+      triggerDate: taskDate,
+      data: { itemId: taskId, type },
+    });
+
+    // Advance reminders (X minutes before)
+    for (const minutes of reminderOffsets) {
+      const trigger = new Date(taskDate.getTime() - minutes * 60 * 1000);
+      const offsetLabel = formatOffset(minutes);
+      const advanceBody =
+        type === 'assignment'
+          ? `${title} due in ${offsetLabel}`
+          : `${title} in ${offsetLabel}`;
+      await this.scheduleReminder({
+        id: `${taskId}_${minutes}m`,
+        title,
+        body: advanceBody,
+        triggerDate: trigger,
+        data: { itemId: taskId, type },
+      });
+    }
+  },
 
   async cancelItemReminders(itemId: string) {
     const scheduledNotifications =

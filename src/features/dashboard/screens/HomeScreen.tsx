@@ -27,8 +27,13 @@ import { QueryStateWrapper } from '@/shared/components';
 import { useToast } from '@/contexts/ToastContext';
 import { COLORS, FONT_SIZES, FONT_WEIGHTS, SPACING } from '@/constants/theme';
 import { UpNextCard } from '../components/UpNextCard';
-import { TodayOverviewGrid } from '../components/TodayOverviewGrid';
+import {
+  TodayOverviewGrid,
+  CustomTypeCount,
+} from '../components/TodayOverviewGrid';
 import { MonthlyLimitCard } from '../components/MonthlyLimitCard';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '@/services/api';
 import { UpcomingTaskItem } from '../components/UpcomingTaskItem';
 import TaskDetailSheet from '@/shared/components/TaskDetailSheet';
 import TaskCardSkeleton from '../components/TaskCardSkeleton';
@@ -42,9 +47,9 @@ type HomeScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Main'>;
 // Helper function to get greeting based on time of day
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning'; // 0:00 - 11:59
-  if (hour < 17) return 'Good afternoon'; // 12:00 - 16:59
-  return 'Good evening'; // 17:00 - 23:59
+  if (hour < 12) return 'Good Morning!'; // 0:00 - 11:59
+  if (hour < 17) return 'Good Afternoon!'; // 12:00 - 16:59
+  return 'Good Evening!'; // 17:00 - 23:59
 };
 
 const HomeScreen = () => {
@@ -64,6 +69,11 @@ const HomeScreen = () => {
     [todaysTasks, upcomingTasks],
   );
 
+  const { data: taskTypes = [] } = useQuery({
+    queryKey: ['taskTypes'],
+    queryFn: () => api.taskTypes.getAll(),
+  });
+
   const todayOverview = useMemo<OverviewData | null>(() => {
     if (!todaysTasks.length) return null;
     return {
@@ -73,6 +83,13 @@ const HomeScreen = () => {
       reviews: 0,
     };
   }, [todaysTasks]);
+
+  const customTypeCounts = useMemo<CustomTypeCount[]>(() => {
+    return taskTypes.map(typeDef => ({
+      typeDef,
+      count: todaysTasks.filter(t => t.task_type_id === typeDef.id).length,
+    }));
+  }, [taskTypes, todaysTasks]);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [draftCount, setDraftCount] = useState(0);
@@ -246,7 +263,7 @@ const HomeScreen = () => {
 
   // Get personalized title - memoized to prevent recalculation on every render
   const personalizedTitle = useMemo(() => {
-    return `${getGreeting()}, there!`;
+    return getGreeting();
   }, []);
 
   // Get formatted date for header
@@ -327,7 +344,10 @@ const HomeScreen = () => {
           {todaysTasks.length === 0 ? (
             <Text style={styles.emptyText}>Nothing scheduled for today</Text>
           ) : (
-            <TodayOverviewGrid overview={todayOverview} />
+            <TodayOverviewGrid
+              overview={todayOverview}
+              customTypeCounts={customTypeCounts}
+            />
           )}
           <View style={{ marginTop: SPACING.lg }}>
             <MonthlyLimitCard
@@ -365,7 +385,6 @@ const HomeScreen = () => {
         data={{ loaded: true }}
         refetch={handleRefetch}
         isRefetching={false}
-        onRefresh={refetch}
         skeletonComponent={<TaskCardSkeleton />}
         skeletonCount={3}>
         {content}

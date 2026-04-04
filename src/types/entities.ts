@@ -95,6 +95,12 @@ export interface Lecture {
   createdAt: string;
 }
 
+export type RecurringReminder =
+  | 'daily'
+  | 'every_3_days'
+  | 'weekly'
+  | 'biweekly';
+
 export interface StudySession {
   id: string;
   userId: string;
@@ -103,6 +109,8 @@ export interface StudySession {
   description?: string;
   sessionDate: string;
   hasSpacedRepetition: boolean;
+  recurringReminder?: RecurringReminder | null;
+  recurringReminderEndDate?: string | null;
   difficulty_rating?: number | null;
   confidence_level?: number | null;
   time_spent_minutes?: number | null;
@@ -118,7 +126,7 @@ export interface StudySession {
 
 export type Task = {
   id: string;
-  type: 'lecture' | 'study_session' | 'assignment';
+  type: 'lecture' | 'study_session' | 'assignment' | 'custom' | string;
   date: string;
   startTime?: string;
   endTime?: string;
@@ -127,8 +135,33 @@ export type Task = {
   name: string;
   title?: string; // Alias for name, used in some components
   courses: { courseName: string };
-  isLocked?: boolean; // NEW: Indicates if task is locked due to subscription limits
+  isLocked?: boolean;
+  color?: string; // populated for custom types from task_types.color
+  task_type_id?: string | null;
 };
+
+// ─────────────────────────────────────────────────────────────
+// 🎨 Custom Task Types
+// ─────────────────────────────────────────────────────────────
+
+export type CustomFieldType = 'datetime' | 'checkbox' | 'location' | 'url';
+
+export interface CustomField {
+  id: string;
+  label: string;
+  fieldType: CustomFieldType;
+}
+
+export interface TaskTypeDefinition {
+  id: string;
+  user_id: string;
+  name: string;
+  color: string;
+  icon: string;
+  fields: CustomField[];
+  created_at: string;
+  updated_at: string;
+}
 
 // ─────────────────────────────────────────────────────────────
 // 🏠 Home Screen Data Types
@@ -142,9 +175,8 @@ export interface OverviewData {
 }
 
 export interface HomeScreenData {
-  nextUpcomingTask: Task | null;
-  todayOverview: OverviewData | null;
-  monthlyTaskCount: number;
+  todaysTasks: Task[];
+  upcomingTasks: Task[];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -226,6 +258,81 @@ export interface LoginHistory {
   location?: string | null;
   session_id?: string | null;
   created_at: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// 📖 Library Types
+// ─────────────────────────────────────────────────────────────
+
+export interface Bank {
+  id: string;
+  user_id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  synced_at: string | null;
+}
+
+export interface BankWithCount extends Bank {
+  quiz_count: number;
+}
+
+export interface Quiz {
+  id: string;
+  user_id: string;
+  bank_id: string | null;
+  name: string;
+  subject: string;
+  color: string;
+  total_questions: number;
+  created_at: string;
+  updated_at: string;
+  synced_at: string | null;
+}
+
+export interface Question {
+  id: string;
+  quiz_id: string;
+  position: number;
+  question_text: string;
+  option_a: string;
+  option_b: string;
+  option_c: string | null;
+  option_d: string | null;
+  correct_option: string;
+  explanation: string;
+  question_type: 'multiple_choice' | 'true_false';
+  created_at: string;
+  synced_at: string | null;
+}
+
+export interface QuizAttempt {
+  id: string;
+  user_id: string;
+  quiz_id: string;
+  score: number;
+  total: number;
+  percentage: number;
+  is_retake: number; // 0 | 1
+  attempted_at: string;
+  synced_at: string | null;
+}
+
+export interface AttemptAnswer {
+  id: string;
+  attempt_id: string;
+  question_id: string;
+  selected_option: string | null;
+  is_correct: number; // 0 | 1
+  synced_at: string | null;
+}
+
+export interface QuizStats {
+  total_attempts: number;
+  best_score: number;
+  best_total: number;
+  best_percentage: number;
+  avg_percentage: number;
 }
 
 // ─────────────────────────────────────────────────────────────

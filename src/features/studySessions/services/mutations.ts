@@ -1,7 +1,7 @@
 import { getDatabase } from '@/services/database';
 import { getOrCreateDeviceId } from '@/utils/deviceId';
 import { generateUUID } from '@/utils/uuid';
-import { StudySession } from '@/types';
+import { StudySession, RecurringReminder } from '@/types';
 import {
   CreateStudySessionRequest,
   UpdateStudySessionRequest,
@@ -21,6 +21,8 @@ interface TaskRow {
 
 interface StudySessionMetadata {
   has_spaced_repetition?: boolean;
+  recurring_reminder?: RecurringReminder | null;
+  recurring_reminder_end_date?: string | null;
   difficulty_rating?: number | null;
   confidence_level?: number | null;
   time_spent_minutes?: number | null;
@@ -45,6 +47,8 @@ function rowToStudySession(row: TaskRow): StudySession {
     description: row.description ?? undefined,
     sessionDate: row.due_date ?? '',
     hasSpacedRepetition: meta.has_spaced_repetition ?? false,
+    recurringReminder: meta.recurring_reminder ?? null,
+    recurringReminderEndDate: meta.recurring_reminder_end_date ?? null,
     difficulty_rating: meta.difficulty_rating ?? null,
     confidence_level: meta.confidence_level ?? null,
     time_spent_minutes: meta.time_spent_minutes ?? null,
@@ -79,6 +83,8 @@ export const studySessionsApiMutations = {
 
     const meta: StudySessionMetadata = {
       has_spaced_repetition: request.has_spaced_repetition,
+      recurring_reminder: request.recurring_reminder ?? null,
+      recurring_reminder_end_date: request.recurring_reminder_end_date ?? null,
     };
 
     await db.runAsync(
@@ -87,7 +93,7 @@ export const studySessionsApiMutations = {
       [
         id,
         userId,
-        request.course_id || null,
+        null,
         request.topic,
         request.notes ?? null,
         request.session_date,
@@ -125,7 +131,11 @@ export const studySessionsApiMutations = {
       values.push(request.session_date ?? null);
     }
 
-    if (request.has_spaced_repetition !== undefined) {
+    if (
+      request.has_spaced_repetition !== undefined ||
+      request.recurring_reminder !== undefined ||
+      request.recurring_reminder_end_date !== undefined
+    ) {
       const existing = await fetchTaskRow(sessionId);
       let meta: StudySessionMetadata = {};
       if (existing.metadata) {
@@ -135,7 +145,15 @@ export const studySessionsApiMutations = {
           // ignore
         }
       }
-      meta.has_spaced_repetition = request.has_spaced_repetition;
+      if (request.has_spaced_repetition !== undefined) {
+        meta.has_spaced_repetition = request.has_spaced_repetition;
+      }
+      if (request.recurring_reminder !== undefined) {
+        meta.recurring_reminder = request.recurring_reminder;
+      }
+      if (request.recurring_reminder_end_date !== undefined) {
+        meta.recurring_reminder_end_date = request.recurring_reminder_end_date;
+      }
       setParts.push('metadata = ?');
       values.push(JSON.stringify(meta));
     }

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList, Course } from '@/types';
+import { RootStackParamList } from '@/types';
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -22,11 +22,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { api } from '@/services/api';
 import {
-  CourseModal,
   TaskTemplateSection,
   TaskFormFooter,
 } from '@/shared/components/task-forms';
-import { useCourseSelector } from '@/shared/hooks/task-forms';
 import { useReminders } from '@/shared/hooks/task-forms';
 import { useTaskTemplate } from '@/shared/hooks/task-forms';
 import {
@@ -57,13 +55,7 @@ const AddAssignmentScreen = () => {
   const initialData = route.params?.initialData;
   const taskToEdit = initialData?.taskToEdit || null;
 
-  // Course selector hook
-  const { courses, isLoading: isLoadingCourses } = useCourseSelector();
-
   // Form state
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(
-    initialData?.course || null,
-  );
   const [title, setTitle] = useState(initialData?.title || '');
   const [dueDate, setDueDate] = useState<Date>(() => {
     if (initialData?.dateTime) {
@@ -99,16 +91,9 @@ const AddAssignmentScreen = () => {
     handleMyTemplatesPress,
   } = useTaskTemplate({
     taskType: 'assignment',
-    courses,
     onTemplateDataLoad: templateData => {
       if (templateData.title) {
         setTitle(templateData.title);
-      }
-      if (templateData.course_id) {
-        const course = courses.find(c => c.id === templateData.course_id);
-        if (course) {
-          setSelectedCourse(course);
-        }
       }
       if (templateData.description) {
         setDescription(templateData.description);
@@ -126,7 +111,6 @@ const AddAssignmentScreen = () => {
   });
 
   // UI state
-  const [showCourseModal, setShowCourseModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
@@ -135,13 +119,6 @@ const AddAssignmentScreen = () => {
   // Populate form from taskToEdit if present (for editing)
   useEffect(() => {
     if (taskToEdit && taskToEdit.type === 'assignment') {
-      const course = courses.find(
-        c => c.courseName === taskToEdit.courses?.courseName,
-      );
-      if (course) {
-        setSelectedCourse(course);
-      }
-
       setTitle(taskToEdit.title || taskToEdit.name || '');
       if (taskToEdit.date) {
         setDueDate(new Date(taskToEdit.date));
@@ -156,7 +133,7 @@ const AddAssignmentScreen = () => {
         setSubmissionLink((taskToEdit as any).submission_link);
       }
     }
-  }, [taskToEdit, courses]);
+  }, [taskToEdit]);
 
   // Load draft on mount
   useEffect(() => {
@@ -165,7 +142,6 @@ const AddAssignmentScreen = () => {
 
       const draft = await getDraft('assignment');
       if (draft) {
-        setSelectedCourse(draft.course);
         if (draft.title) {
           setTitle(draft.title);
         }
@@ -195,12 +171,11 @@ const AddAssignmentScreen = () => {
 
   // Auto-save draft when form data changes (debounced)
   useEffect(() => {
-    if (!selectedCourse) return;
+    if (!title) return;
 
     const debouncedSave = debounce(() => {
       saveDraft('assignment', {
         title,
-        course: selectedCourse,
         dateTime: dueDate,
         description,
         submissionMethod,
@@ -216,7 +191,6 @@ const AddAssignmentScreen = () => {
       debouncedSave.cancel();
     };
   }, [
-    selectedCourse,
     title,
     dueDate,
     description,
@@ -254,8 +228,7 @@ const AddAssignmentScreen = () => {
   };
 
   // Check if form is valid
-  const isFormValid =
-    selectedCourse && title.trim().length > 0 && dueDate > new Date();
+  const isFormValid = title.trim().length > 0 && dueDate > new Date();
 
   const handleSave = async () => {
     if (!isFormValid) {
@@ -267,7 +240,6 @@ const AddAssignmentScreen = () => {
 
     try {
       const taskData = {
-        course_id: selectedCourse!.id,
         title: title.trim(),
         description: description.trim(),
         submission_method: submissionMethod || undefined,
@@ -280,6 +252,7 @@ const AddAssignmentScreen = () => {
       };
 
       const isEditing = taskToEdit && taskToEdit.id;
+      let savedTaskId: string;
 
       if (isEditing) {
         const { isTempId, resolveTaskId } = await import('@/utils/taskCache');
@@ -313,12 +286,14 @@ const AddAssignmentScreen = () => {
           isOnline,
           deviceId || '',
         );
+        savedTaskId = taskToEdit.id!;
       } else {
-        await api.mutations.assignments.create(
+        const assignment = await api.mutations.assignments.create(
           taskData,
           isOnline,
           deviceId || '',
         );
+        savedTaskId = assignment.id;
 
         if (saveAsTemplate && canSaveAsTemplate(taskData, 'assignment')) {
           try {
@@ -330,6 +305,19 @@ const AddAssignmentScreen = () => {
             console.error('Error saving template:', templateError);
           }
         }
+      }
+
+      // Schedule local notifications (at due time + any advance reminders)
+      try {
+        await notificationService.scheduleTaskReminders({
+          taskId: savedTaskId,
+          title: title.trim(),
+          taskDate: dueDate,
+          reminderOffsets: reminders,
+          type: 'assignment',
+        });
+      } catch (notifError) {
+        console.warn('Failed to schedule notifications:', notifError);
       }
 
       const { invalidateTaskQueries } =
@@ -393,11 +381,6 @@ const AddAssignmentScreen = () => {
           { paddingBottom: insets.bottom + 100 },
         ]}>
         <AssignmentRequiredFields
-          selectedCourse={selectedCourse}
-          onCourseSelect={setSelectedCourse}
-          isLoadingCourses={isLoadingCourses}
-          courses={courses}
-          onOpenCourseModal={() => setShowCourseModal(true)}
           title={title}
           onTitleChange={setTitle}
           dueDate={dueDate}
@@ -432,7 +415,6 @@ const AddAssignmentScreen = () => {
           onSaveAsTemplate={() => setSaveAsTemplate(true)}
           canSaveAsTemplate={canSaveAsTemplate(
             {
-              course_id: selectedCourse?.id,
               title,
               due_date: dueDate,
               description,
@@ -459,14 +441,6 @@ const AddAssignmentScreen = () => {
       />
 
       {/* Modals */}
-      <CourseModal
-        visible={showCourseModal}
-        courses={courses}
-        selectedCourse={selectedCourse}
-        onSelect={setSelectedCourse}
-        onClose={() => setShowCourseModal(false)}
-      />
-
       <ReminderModal
         visible={showReminderModal}
         selectedReminders={reminders}

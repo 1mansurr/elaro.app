@@ -5,6 +5,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Platform,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker, {
@@ -32,6 +33,8 @@ interface CardBasedDateTimePickerProps {
   hasPickedEndTime?: boolean;
 }
 
+type ActivePicker = 'date' | 'time' | 'start' | 'end' | null;
+
 export const CardBasedDateTimePicker: React.FC<
   CardBasedDateTimePickerProps
 > = ({
@@ -52,18 +55,12 @@ export const CardBasedDateTimePicker: React.FC<
   hasPickedEndTime = false,
 }) => {
   const { theme, isDark } = useTheme();
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState<
-    'start' | 'end' | 'single' | null
-  >(null);
+  const [activePicker, setActivePicker] = useState<ActivePicker>(null);
+  const [hasPickedDate, setHasPickedDate] = useState(false);
+  const [hasPickedTime, setHasPickedTime] = useState(false);
 
-  const formatTime = (date: Date) => {
-    return format(date, 'h:mm a');
-  };
-
-  const formatDate = (date: Date) => {
-    return format(date, 'MMM dd, yyyy');
-  };
+  const formatTime = (d: Date) => format(d, 'h:mm a');
+  const formatDate = (d: Date) => format(d, 'MMM dd, yyyy');
 
   const getDuration = () => {
     if (!startTime || !endTime) return '';
@@ -76,20 +73,26 @@ export const CardBasedDateTimePicker: React.FC<
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
+  const switchPicker = (target: NonNullable<ActivePicker>) => {
+    Keyboard.dismiss();
+    // Commit the departing picker's value so its button shows the chosen value
+    if (activePicker === 'date' && date) setHasPickedDate(true);
+    if (activePicker === 'time' && time) setHasPickedTime(true);
+    setActivePicker(prev => (prev === target ? null : target));
+  };
+
   const handleDateChange = (
     event: DateTimePickerEvent,
     selectedDate?: Date,
   ) => {
-    if (Platform.OS === 'android') {
-      setShowDatePicker(false);
+    if (Platform.OS === 'android') setActivePicker(null);
+    if (event.type === 'dismissed') {
+      setActivePicker(null);
+      return;
     }
     if (event.type === 'set' && selectedDate) {
       onDateChange(selectedDate);
-      if (Platform.OS === 'ios') {
-        setShowDatePicker(false);
-      }
-    } else if (event.type === 'dismissed') {
-      setShowDatePicker(false);
+      setHasPickedDate(true);
     }
   };
 
@@ -97,29 +100,25 @@ export const CardBasedDateTimePicker: React.FC<
     event: DateTimePickerEvent,
     selectedTime?: Date,
   ) => {
-    if (Platform.OS === 'android') {
-      setShowTimePicker(null);
+    if (Platform.OS === 'android') setActivePicker(null);
+    if (event.type === 'dismissed') {
+      setActivePicker(null);
+      return;
     }
     if (event.type === 'set' && selectedTime) {
       if (mode === 'range') {
-        if (showTimePicker === 'start' && onStartTimeChange) {
+        if (activePicker === 'start' && onStartTimeChange)
           onStartTimeChange(selectedTime);
-        } else if (showTimePicker === 'end' && onEndTimeChange) {
+        else if (activePicker === 'end' && onEndTimeChange)
           onEndTimeChange(selectedTime);
-        }
       } else if (onTimeChange) {
         onTimeChange(selectedTime);
+        setHasPickedTime(true);
       }
-      if (Platform.OS === 'ios') {
-        setShowTimePicker(null);
-      }
-    } else if (event.type === 'dismissed') {
-      setShowTimePicker(null);
     }
   };
 
   if (mode === 'range') {
-    // Use default dates for picker when times are null
     const pickerStartTime = startTime || new Date();
     const pickerEndTime = endTime || new Date();
 
@@ -136,7 +135,7 @@ export const CardBasedDateTimePicker: React.FC<
           <View style={styles.cardRow}>
             <Text style={[styles.label, { color: theme.text }]}>{label}</Text>
             <TouchableOpacity
-              onPress={() => setShowDatePicker(true)}
+              onPress={() => switchPicker('date')}
               style={styles.dateButton}>
               <Text style={[styles.dateText, { color: theme.text }]}>
                 {startTime ? formatDate(startTime) : 'Select Date'}
@@ -156,7 +155,7 @@ export const CardBasedDateTimePicker: React.FC<
                 {startLabel}
               </Text>
               <TouchableOpacity
-                onPress={() => setShowTimePicker('start')}
+                onPress={() => switchPicker('start')}
                 style={styles.timeButton}>
                 <Text
                   style={[
@@ -207,7 +206,7 @@ export const CardBasedDateTimePicker: React.FC<
                   )}
               </View>
               <TouchableOpacity
-                onPress={() => setShowTimePicker('end')}
+                onPress={() => switchPicker('end')}
                 style={styles.timeButton}>
                 <Text
                   style={[
@@ -226,27 +225,32 @@ export const CardBasedDateTimePicker: React.FC<
           </View>
         </View>
 
-        {showDatePicker && (
-          <DateTimePicker
-            value={pickerStartTime}
-            mode="date"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleDateChange}
-          />
-        )}
-        {showTimePicker && (
-          <DateTimePicker
-            value={showTimePicker === 'start' ? pickerStartTime : pickerEndTime}
-            mode="time"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={handleTimeChange}
-          />
-        )}
+        {/* Always mounted — display:none hides without unmounting, preventing iOS collapse animation */}
+        <DateTimePicker
+          style={
+            activePicker !== 'date' ? ({ display: 'none' } as any) : undefined
+          }
+          value={pickerStartTime}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleDateChange}
+        />
+        <DateTimePicker
+          style={
+            activePicker !== 'start' && activePicker !== 'end'
+              ? ({ display: 'none' } as any)
+              : undefined
+          }
+          value={activePicker === 'end' ? pickerEndTime : pickerStartTime}
+          mode="time"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleTimeChange}
+        />
       </>
     );
   }
 
-  // Single mode (for assignments and study sessions)
+  // Single mode (assignments and study sessions)
   return (
     <>
       <View style={styles.singleModeContainer}>
@@ -266,7 +270,7 @@ export const CardBasedDateTimePicker: React.FC<
                 borderColor: isDark ? '#374151' : '#E5E7EB',
               },
             ]}
-            onPress={() => setShowDatePicker(true)}>
+            onPress={() => switchPicker('date')}>
             <Ionicons
               name="calendar-outline"
               size={20}
@@ -276,11 +280,11 @@ export const CardBasedDateTimePicker: React.FC<
               style={[
                 styles.singleButtonText,
                 {
-                  color: date ? theme.text : '#9ca3af',
-                  fontWeight: date ? 'medium' : 'normal',
+                  color: hasPickedDate ? theme.text : '#9ca3af',
+                  fontWeight: hasPickedDate ? 'medium' : 'normal',
                 },
               ]}>
-              {date ? 'Select Date' : 'Set Date'}
+              {hasPickedDate && date ? formatDate(date) : 'Set Date'}
             </Text>
           </TouchableOpacity>
 
@@ -293,34 +297,39 @@ export const CardBasedDateTimePicker: React.FC<
                   borderColor: isDark ? '#374151' : '#E5E7EB',
                 },
               ]}
-              onPress={() => setShowTimePicker('single')}>
+              onPress={() => switchPicker('time')}>
               <Ionicons name="time-outline" size={20} color={COLORS.primary} />
               <Text
                 style={[
                   styles.singleButtonText,
                   {
-                    color: time ? theme.text : '#9ca3af',
-                    fontWeight: time ? 'medium' : 'normal',
+                    color: hasPickedTime ? theme.text : '#9ca3af',
+                    fontWeight: hasPickedTime ? 'medium' : 'normal',
                   },
                 ]}>
-                {time ? 'Select Time' : 'Set Time'}
+                {hasPickedTime && time ? formatTime(time) : 'Set Time'}
               </Text>
             </TouchableOpacity>
           )}
         </View>
       </View>
 
-      {showDatePicker && (
+      {/* Always mounted — display:none hides without unmounting, preventing iOS collapse animation */}
+      <DateTimePicker
+        style={
+          activePicker !== 'date' ? ({ display: 'none' } as any) : undefined
+        }
+        value={date || new Date()}
+        mode="date"
+        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+        onChange={handleDateChange}
+        minimumDate={new Date()}
+      />
+      {onTimeChange && (
         <DateTimePicker
-          value={date || new Date()}
-          mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-          onChange={handleDateChange}
-          minimumDate={new Date()}
-        />
-      )}
-      {showTimePicker === 'single' && (
-        <DateTimePicker
+          style={
+            activePicker !== 'time' ? ({ display: 'none' } as any) : undefined
+          }
           value={time || new Date()}
           mode="time"
           display={Platform.OS === 'ios' ? 'spinner' : 'default'}

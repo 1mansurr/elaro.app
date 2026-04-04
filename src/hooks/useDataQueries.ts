@@ -190,54 +190,28 @@ export const useStudySessions = (options?: StudySessionQueryOptions) => {
 
 // Enhanced home screen data hook with persistent caching
 export const useHomeScreenData = (enabled: boolean = true) => {
-  const cacheKey = 'homeScreenData';
-
-  return useQuery<HomeScreenData | null, Error>({
+  const { data, isLoading, refetch } = useQuery<HomeScreenData | null, Error>({
     queryKey: ['homeScreenData'],
     queryFn: async () => {
       try {
-        const data = await api.homeScreen.getData();
-        // Cache for 5 minutes (changes more frequently)
-        await cache.setShort(cacheKey, data);
-        return data;
+        const result = await api.homeScreen.getData();
+        await cache.setShort('homeScreenData', result);
+        return result;
       } catch (error) {
-        // On auth errors or edge function errors, return null instead of throwing
-        // This provides better UX - user sees empty state instead of error screen
-        const errorMessage =
-          error instanceof Error && error.message
-            ? error.message
-            : typeof error === 'string'
-              ? error
-              : 'Unknown error';
-
-        if (
-          error instanceof Error &&
-          errorMessage &&
-          (errorMessage.includes('No valid session') ||
-            errorMessage.includes('Failed to refresh token') ||
-            errorMessage.includes('Session expired') ||
-            errorMessage.includes('Edge Function returned a non-2xx') ||
-            errorMessage.includes('Function failed to start') ||
-            errorMessage.includes('please check logs') ||
-            errorMessage.includes('WORKER_ERROR') ||
-            errorMessage.includes('Authentication required') ||
-            errorMessage.includes('Auth session missing'))
-        ) {
-          // Log warnings for Edge Function failures (these are backend issues)
-          console.warn(
-            '⚠️ [useHomeScreenData] Edge Function error, returning null:',
-            errorMessage,
-          );
-          return null;
-        }
-        // Re-throw other errors
-        throw error;
+        console.warn('[useHomeScreenData] error:', error);
+        return null;
       }
     },
     enabled,
-    // Don't retry if disabled - prevents unnecessary API calls
     retry: enabled ? 3 : false,
   });
+
+  return {
+    todaysTasks: data?.todaysTasks ?? [],
+    upcomingTasks: data?.upcomingTasks ?? [],
+    isLoading,
+    refetch,
+  };
 };
 
 // Enhanced calendar data hook with persistent caching

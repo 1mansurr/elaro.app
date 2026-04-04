@@ -9,6 +9,8 @@ import {
   BORDER_RADIUS,
   SHADOWS,
 } from '@/constants/theme';
+import { TASK_TYPE_COLORS } from '@/constants/taskTypes';
+import { TaskTypeDefinition } from '@/types';
 
 interface OverviewData {
   lectures: number;
@@ -17,8 +19,14 @@ interface OverviewData {
   reviews: number;
 }
 
+export interface CustomTypeCount {
+  typeDef: TaskTypeDefinition;
+  count: number;
+}
+
 interface TodayOverviewGridProps {
   overview: OverviewData | null;
+  customTypeCounts?: CustomTypeCount[];
 }
 
 const StatCard: React.FC<{
@@ -61,36 +69,34 @@ const StatCard: React.FC<{
 
 export const TodayOverviewGrid: React.FC<TodayOverviewGridProps> = ({
   overview,
+  customTypeCounts = [],
 }) => {
   const stats = [
     {
-      label: 'Lectures',
-      count: overview?.lectures || 0,
-      icon: 'school-outline' as const,
-      bgColor: '#DCFCE7',
-      iconColor: '#166534',
+      label: 'Assignments',
+      count: overview?.assignments || 0,
+      icon: 'document-text-outline' as const,
+      bgColor: TASK_TYPE_COLORS.assignment + '22',
+      iconColor: TASK_TYPE_COLORS.assignment,
     },
     {
       label: 'Study Sessions',
       count: overview?.studySessions || 0,
       icon: 'book-outline' as const,
-      bgColor: '#E7F1FF',
-      iconColor: '#137FEC',
+      bgColor: TASK_TYPE_COLORS.study_session + '22',
+      iconColor: TASK_TYPE_COLORS.study_session,
     },
-    {
-      label: 'Assignments',
-      count: overview?.assignments || 0,
-      icon: 'document-text-outline' as const,
-      bgColor: '#FFEDD5',
-      iconColor: '#C2410C',
-    },
-    {
-      label: 'Reviews',
-      count: overview?.reviews || 0,
-      icon: 'clipboard-outline' as const,
-      bgColor: '#E7F1FF',
-      iconColor: '#137FEC',
-    },
+    // Custom types with at least one task today
+    ...customTypeCounts
+      .filter(c => c.count > 0)
+      .map(c => ({
+        label: c.typeDef.name,
+        count: c.count,
+        icon: (c.typeDef.icon ??
+          'ellipse-outline') as keyof typeof Ionicons.glyphMap,
+        bgColor: c.typeDef.color + '22',
+        iconColor: c.typeDef.color,
+      })),
   ];
 
   return (

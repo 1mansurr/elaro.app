@@ -75,7 +75,7 @@ export const assignmentsApiMutations = {
       [
         id,
         userId,
-        request.course_id || null,
+        null,
         request.title,
         request.description ?? null,
         request.due_date,

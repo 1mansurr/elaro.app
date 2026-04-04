@@ -2,19 +2,13 @@ import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import {
-  View,
-  ActivityIndicator,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import {
   NavigationContainer,
   NavigationContainerRef,
   NavigationState,
   LinkingOptions,
+  DefaultTheme,
 } from '@react-navigation/native';
 import { RootStackParamList } from './src/types/navigation';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -68,6 +62,16 @@ import {
 } from './src/utils/logger';
 import { getDatabase } from '@/services/database';
 import { getOrCreateDeviceId } from '@/utils/deviceId';
+
+// Fixed navigation theme - prevents React Navigation from auto-applying DarkTheme
+// (which uses rgb(1,1,1) ≈ black background). The app manages dark mode via ThemeContext.
+const APP_NAV_THEME = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: COLORS.background,
+  },
+};
 
 // Validate configuration on startup
 validateAndLogConfig();
@@ -659,7 +663,7 @@ const linking: LinkingOptions<RootStackParamList> = {
       Main: {
         screens: {
           Home: 'home',
-          Account: 'account',
+          Calendar: 'calendar',
         },
       },
       // Task detail screens - handle different task types
@@ -739,116 +743,6 @@ const DeepLinkHandler: React.FC = () => {
 };
 
 // Debug Log Viewer Component - Shows console logs on screen (enabled for debugging)
-const DebugLogViewer: React.FC = () => {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [isVisible, setIsVisible] = useState(true); // Enable for debugging
-  const [isMinimized, setIsMinimized] = useState(false);
-
-  useEffect(() => {
-    // Capture console logs
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    const addLog = (prefix: string, args: any[]) => {
-      const logMessage = args
-        .map(arg => {
-          if (typeof arg === 'object') {
-            try {
-              return JSON.stringify(arg, null, 2);
-            } catch {
-              return String(arg);
-            }
-          }
-          return String(arg);
-        })
-        .join(' ');
-
-      setLogs(prev => {
-        const newLogs = [...prev.slice(-99), `${prefix} ${logMessage}`];
-        return newLogs;
-      });
-    };
-
-    console.log = (...args: any[]) => {
-      addLog('[LOG]', args);
-      originalLog(...args);
-    };
-
-    console.error = (...args: any[]) => {
-      addLog('[ERROR]', args);
-      originalError(...args);
-    };
-
-    console.warn = (...args: any[]) => {
-      addLog('[WARN]', args);
-      originalWarn(...args);
-    };
-
-    return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-    };
-  }, []);
-
-  if (!isVisible) {
-    return (
-      <TouchableOpacity
-        style={styles.debugToggleButton}
-        onPress={() => setIsVisible(true)}>
-        <Text style={styles.debugToggleText}>Show Logs</Text>
-      </TouchableOpacity>
-    );
-  }
-
-  return (
-    <View
-      style={[
-        styles.debugContainer,
-        isMinimized && styles.debugContainerMinimized,
-      ]}>
-      <View style={styles.debugHeader}>
-        <Text style={styles.debugHeaderText}>Debug Logs ({logs.length})</Text>
-        <View style={styles.debugButtons}>
-          <TouchableOpacity
-            style={styles.debugButton}
-            onPress={() => setIsMinimized(!isMinimized)}>
-            <Text style={styles.debugButtonText}>
-              {isMinimized ? 'Expand' : 'Minimize'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.debugButton}
-            onPress={() => setLogs([])}>
-            <Text style={styles.debugButtonText}>Clear</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.debugButton}
-            onPress={() => setIsVisible(false)}>
-            <Text style={styles.debugButtonText}>Hide</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-      {!isMinimized && (
-        <ScrollView
-          style={styles.debugScrollView}
-          contentContainerStyle={styles.debugScrollContent}>
-          {logs.length === 0 ? (
-            <Text style={styles.debugEmptyText}>No logs yet...</Text>
-          ) : (
-            logs.map((log, i) => (
-              <Text key={i} style={styles.debugLogText}>
-                {log}
-              </Text>
-            ))
-          )}
-        </ScrollView>
-      )}
-    </View>
-  );
-};
-
 // Component to integrate React Query with Error Boundary
 const AppWithErrorBoundary: React.FC<{
   initialNavigationState?: NavigationState;
@@ -896,14 +790,6 @@ const AppWithErrorBoundary: React.FC<{
       isStateValidated,
       appIsReady,
       isAnimationFinished,
-    });
-    // Debug logging for blank screen diagnosis (using console.error so it works in production)
-    console.error('🔍 [DEBUG] App State Changed:', {
-      appIsReady,
-      isAnimationFinished,
-      isStateValidated,
-      shouldShowLoading,
-      navigationContainerMounted,
     });
   }, [
     isStateValidated,
@@ -1092,7 +978,6 @@ const AppWithErrorBoundary: React.FC<{
     <ErrorBoundary onReset={reset}>
       <AppProviders queryClient={queryClient}>
         {!__DEV__ && <QueryCacheSetup queryClient={queryClient} />}
-        <DebugLogViewer />
         <AppInitializer onStateChange={handleAppInitializerStateChange}>
           {shouldShowLoading ? (
             <View
@@ -1112,10 +997,11 @@ const AppWithErrorBoundary: React.FC<{
               />
             </View>
           ) : (
-            <>
+            <View style={{ flex: 1, backgroundColor: COLORS.background }}>
               <ThemedStatusBar />
               <NavigationContainer
                 ref={navigationRef}
+                theme={APP_NAV_THEME}
                 initialState={safeInitialState ?? undefined}
                 linking={linking}
                 onReady={() => {
@@ -1139,7 +1025,7 @@ const AppWithErrorBoundary: React.FC<{
                 {/* DevTools Disabler - prevents overlay from appearing */}
                 {__DEV__ && <DevToolsDisabler />}
               </NavigationContainer>
-            </>
+            </View>
           )}
         </AppInitializer>
       </AppProviders>
@@ -1158,6 +1044,16 @@ const AppInitializer: React.FC<{
   const [appIsReady, setAppIsReady] = useState(false);
   const [isAnimationFinished, setAnimationFinished] = useState(false);
 
+  // Refs so the safety timeout can read current values without a stale closure
+  const appIsReadyRef = useRef(false);
+  const isAnimationFinishedRef = useRef(false);
+  useEffect(() => {
+    appIsReadyRef.current = appIsReady;
+  }, [appIsReady]);
+  useEffect(() => {
+    isAnimationFinishedRef.current = isAnimationFinished;
+  }, [isAnimationFinished]);
+
   // Notify parent when state changes
   useEffect(() => {
     if (onStateChange) {
@@ -1170,14 +1066,14 @@ const AppInitializer: React.FC<{
   }, [appIsReady, isAnimationFinished, onStateChange]);
 
   // CRITICAL: Hard safety net - guarantees app always renders
-  // This is a production-safe fallback that does NOT change happy path behavior
+  // Uses refs so the condition reads current state, not a stale closure value.
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
-      // Force unblock if any gate is still blocking after 4 seconds
-      if (!appIsReady || !isAnimationFinished) {
+      // Read fresh values via refs — avoids stale-closure false-positives
+      if (!appIsReadyRef.current || !isAnimationFinishedRef.current) {
         logWarn('AppInitializer safety timeout - forcing app to show', {
-          appIsReady,
-          isAnimationFinished,
+          appIsReady: appIsReadyRef.current,
+          isAnimationFinished: isAnimationFinishedRef.current,
         });
         setAppIsReady(true);
         setAnimationFinished(true);
@@ -1492,88 +1388,3 @@ function App() {
 }
 
 export default App;
-
-// Styles for Debug Log Viewer
-const styles = StyleSheet.create({
-  debugContainer: {
-    position: 'absolute',
-    top: 50,
-    left: 10,
-    right: 10,
-    maxHeight: 400,
-    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#FF6B6B',
-    zIndex: 99999,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  debugContainerMinimized: {
-    maxHeight: 50,
-  },
-  debugHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  debugHeaderText: {
-    color: '#FF6B6B',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  debugButtons: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  debugButton: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    backgroundColor: '#333',
-    borderRadius: 4,
-  },
-  debugButtonText: {
-    color: '#FFF',
-    fontSize: 10,
-  },
-  debugScrollView: {
-    maxHeight: 350,
-  },
-  debugScrollContent: {
-    padding: 10,
-  },
-  debugLogText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontFamily: 'monospace',
-    marginBottom: 4,
-    lineHeight: 14,
-  },
-  debugEmptyText: {
-    color: '#999',
-    fontSize: 12,
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: 20,
-  },
-  debugToggleButton: {
-    position: 'absolute',
-    top: 50,
-    right: 10,
-    backgroundColor: 'rgba(255, 107, 107, 0.8)',
-    padding: 8,
-    borderRadius: 4,
-    zIndex: 99999,
-  },
-  debugToggleText: {
-    color: '#FFF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-});

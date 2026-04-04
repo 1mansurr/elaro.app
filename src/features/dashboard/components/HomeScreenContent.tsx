@@ -29,16 +29,22 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
   onFabStateChange,
 }) => {
   const navigation = useNavigation<HomeScreenContentNavigationProp>();
-  const {
-    data: homeData,
-    isLoading,
-    isError,
-    error,
-    refetch,
-    isRefetching,
-  } = useHomeScreenData(true);
+  const { todaysTasks, upcomingTasks, isLoading, refetch } =
+    useHomeScreenData(true);
   const { monthlyTaskCount } = useMonthlyTaskCount();
   const queryClient = useQueryClient();
+
+  const nextUpcomingTask = todaysTasks[0] ?? upcomingTasks[0] ?? null;
+  const todayOverview =
+    todaysTasks.length > 0
+      ? {
+          lectures: 0,
+          studySessions: todaysTasks.filter(t => t.type === 'study_session')
+            .length,
+          assignments: todaysTasks.filter(t => t.type === 'assignment').length,
+          reviews: 0,
+        }
+      : null;
 
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['homeScreenData'] });
@@ -51,14 +57,14 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
         <RefreshControl refreshing={isLoading} onRefresh={handleRefresh} />
       }>
       <NextTaskCard
-        task={homeData?.nextUpcomingTask || null}
+        task={nextUpcomingTask}
         isGuestMode={false}
         onAddActivity={() => onFabStateChange({ isOpen: true })}
         onViewDetails={() => {}}
       />
 
       <TodayOverviewCard
-        overview={homeData?.todayOverview || null}
+        overview={todayOverview}
         monthlyTaskCount={monthlyTaskCount}
         subscriptionTier={'free'}
       />
@@ -70,14 +76,16 @@ export const HomeScreenContent: React.FC<HomeScreenContentProps> = ({
     </ScrollView>
   );
 
+  const hasData = todaysTasks.length > 0 || upcomingTasks.length > 0;
+
   return (
     <QueryStateWrapper
       isLoading={isLoading}
-      isError={isError}
-      error={error}
-      data={homeData}
+      isError={false}
+      error={null}
+      data={hasData ? { hasData: true } : null}
       refetch={handleRefresh}
-      isRefetching={isRefetching}
+      isRefetching={false}
       onRefresh={refetch}
       emptyStateComponent={
         <HomeScreenEmptyState

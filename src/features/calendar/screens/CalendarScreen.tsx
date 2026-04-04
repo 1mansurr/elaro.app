@@ -282,6 +282,13 @@ const CalendarScreen = () => {
     }) => {
       const { layoutMeasurement, contentOffset, contentSize } =
         event.nativeEvent;
+
+      // Only navigate when the content is actually taller than the viewport.
+      // Without this guard, an empty agenda immediately fires "at bottom" and
+      // advances the selected date on every render.
+      const isScrollable = contentSize.height > layoutMeasurement.height + 20;
+      if (!isScrollable) return;
+
       const isAtTop = contentOffset.y <= 0;
       const isAtBottom =
         layoutMeasurement.height + contentOffset.y >= contentSize.height - 20;

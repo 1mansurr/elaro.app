@@ -1,29 +1,38 @@
 // 🌐 API Request & Response Types
 // ─────────────────────────────────────────────────────────────
 
-import { Course, Assignment, Lecture, StudySession } from './entities';
+import {
+  Course,
+  Assignment,
+  Lecture,
+  StudySession,
+  RecurringReminder,
+} from './entities';
 
 // ─────────────────────────────────────────────────────────────
 // 📝 Request Payloads for Mutations
 // ─────────────────────────────────────────────────────────────
 
 export interface CreateAssignmentRequest {
-  course_id: string;
+  course_id?: string;
   title: string;
   description?: string;
   submission_method?: string;
   submission_link?: string;
+  submission_venue?: string;
   due_date: string;
   reminders: number[];
 }
 
 export interface CreateStudySessionRequest {
-  course_id: string;
+  course_id?: string;
   topic: string;
   notes?: string;
   session_date: string;
   has_spaced_repetition: boolean;
   reminders: number[];
+  recurring_reminder?: RecurringReminder | null;
+  recurring_reminder_end_date?: string | null;
 }
 
 export interface CreateLectureRequest {
@@ -88,6 +97,8 @@ export interface UpdateStudySessionRequest {
   notes?: string;
   session_date?: string;
   has_spaced_repetition?: boolean;
+  recurring_reminder?: RecurringReminder | null;
+  recurring_reminder_end_date?: string | null;
 }
 
 // ─────────────────────────────────────────────────────────────

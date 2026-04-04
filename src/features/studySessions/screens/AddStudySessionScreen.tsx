@@ -18,18 +18,24 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
 
-import { RootStackParamList, Course, StudySession } from '@/types';
+import { RootStackParamList, StudySession } from '@/types';
+import { RecurringReminder } from '@/types/entities';
+
+const RECURRING_OPTIONS: Array<{ value: RecurringReminder; label: string }> = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'every_3_days', label: 'Every 3 days' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Biweekly' },
+];
 import { useDeviceId } from '@/hooks/useDeviceId';
 import { useNetwork } from '@/contexts/NetworkContext';
 import {
-  Button,
   Input,
   TemplateCard,
   CardBasedDateTimePicker,
   ReminderChip,
 } from '@/shared/components';
 import { api } from '@/services/api';
-import { coursesApi } from '@/features/courses/services/queries';
 import { useQueryClient } from '@tanstack/react-query';
 import { notificationService } from '@/services/notifications';
 import { useMonthlyTaskCount } from '@/hooks';
@@ -91,9 +97,6 @@ const AddStudySessionScreen = () => {
   const taskToEdit = initialData?.taskToEdit || null;
 
   // Required fields
-  const [selectedCourse, setSelectedCourse] = useState<Course | null>(
-    initialData?.course || null,
-  );
   const [topic, setTopic] = useState(initialData?.title || '');
   // Initialize date as null - user must explicitly set it
   const [sessionDate, setSessionDate] = useState<Date | null>(() => {
@@ -110,15 +113,17 @@ const AddStudySessionScreen = () => {
   // Optional fields
   const [description, setDescription] = useState('');
   const [hasSpacedRepetition, setHasSpacedRepetition] = useState(false);
+  const [recurringReminder, setRecurringReminder] =
+    useState<RecurringReminder | null>(null);
+  const [recurringEndDate, setRecurringEndDate] = useState<Date | null>(null);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
+  const [hasPickedEndDate, setHasPickedEndDate] = useState(false);
   // Initialize with empty array - user must explicitly select reminders
   const [reminders, setReminders] = useState<number[]>([]);
 
   // UI state
   const [showOptionalFields, setShowOptionalFields] = useState(true);
-  const [showCourseModal, setShowCourseModal] = useState(false);
   const [showReminderModal, setShowReminderModal] = useState(false);
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [isLoadingCourses, setIsLoadingCourses] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState(false);
   const [showEmptyStateModal, setShowEmptyStateModal] = useState(false);
@@ -126,14 +131,6 @@ const AddStudySessionScreen = () => {
   // Populate form from taskToEdit if present (for editing)
   useEffect(() => {
     if (taskToEdit && taskToEdit.type === 'study_session') {
-      // Find the course by courseName
-      const course = courses.find(
-        c => c.courseName === taskToEdit.courses?.courseName,
-      );
-      if (course) {
-        setSelectedCourse(course);
-      }
-
       setTopic(taskToEdit.title || taskToEdit.name || '');
       if (taskToEdit.date) {
         setSessionDate(new Date(taskToEdit.date));
@@ -146,7 +143,7 @@ const AddStudySessionScreen = () => {
       // Note: hasSpacedRepetition would need to come from study session data
       // which isn't fully available in Task type - this is a limitation
     }
-  }, [taskToEdit, courses]);
+  }, [taskToEdit]);
 
   // Load draft on mount
   useEffect(() => {
@@ -156,7 +153,6 @@ const AddStudySessionScreen = () => {
 
       const draft = await getDraft('study_session');
       if (draft) {
-        setSelectedCourse(draft.course);
         setTopic(draft.title);
         if (draft.dateTime) {
           setSessionDate(new Date(draft.dateTime));
@@ -175,12 +171,11 @@ const AddStudySessionScreen = () => {
   // Auto-save draft when form data changes (debounced)
   useEffect(() => {
     // Don't auto-save if form is empty
-    if (!topic && !selectedCourse) return;
+    if (!topic) return;
 
     const debouncedSave = debounce(() => {
       saveDraft('study_session', {
         title: topic,
-        course: selectedCourse,
         dateTime: sessionDate || undefined,
         description,
         hasSpacedRepetition,
@@ -193,39 +188,11 @@ const AddStudySessionScreen = () => {
     return () => {
       debouncedSave.cancel();
     };
-  }, [
-    topic,
-    selectedCourse,
-    sessionDate,
-    description,
-    hasSpacedRepetition,
-    reminders,
-  ]);
-
-  // Fetch courses
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setIsLoadingCourses(true);
-      try {
-        const page = await coursesApi.getAll();
-        setCourses(page.courses);
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-      } finally {
-        setIsLoadingCourses(false);
-      }
-    };
-
-    fetchCourses();
-  }, []);
+  }, [topic, sessionDate, description, hasSpacedRepetition, reminders]);
 
   // Check if form is valid
   const isFormValid =
-    selectedCourse &&
-    topic.trim().length > 0 &&
-    sessionDate &&
-    hasPickedDate &&
-    hasPickedTime;
+    topic.trim().length > 0 && sessionDate && hasPickedDate && hasPickedTime;
 
   // Handle template selection
   const handleTemplateSelect = (template: any) => {
@@ -238,14 +205,6 @@ const AddStudySessionScreen = () => {
       // Set topic
       if (templateData.topic && typeof templateData.topic === 'string') {
         setTopic(templateData.topic);
-      }
-
-      // Set course if available
-      if (templateData.course_id) {
-        const course = courses.find(c => c.id === templateData.course_id);
-        if (course) {
-          setSelectedCourse(course);
-        }
       }
 
       // Set description
@@ -332,7 +291,6 @@ const AddStudySessionScreen = () => {
 
     try {
       const taskData = {
-        course_id: selectedCourse!.id,
         topic: topic.trim(),
         notes: description.trim(),
         session_date: sessionDate
@@ -340,9 +298,13 @@ const AddStudySessionScreen = () => {
           : new Date().toISOString(),
         has_spaced_repetition: hasSpacedRepetition,
         reminders,
+        recurring_reminder: recurringReminder,
+        recurring_reminder_end_date: recurringEndDate?.toISOString() ?? null,
       };
 
       const isEditing = taskToEdit && taskToEdit.id;
+
+      let savedTaskId: string;
 
       if (isEditing) {
         // Check if task has temp ID and resolve it
@@ -365,14 +327,12 @@ const AddStudySessionScreen = () => {
           taskToEdit.id = realId;
         }
 
-        // Update existing study session
         // Cancel old notifications before updating
         if (taskToEdit.id) {
           try {
             await notificationService.cancelItemReminders(taskToEdit.id);
           } catch (notifError) {
             console.warn('Failed to cancel old notifications:', notifError);
-            // Continue with update even if notification cancellation fails
           }
         }
 
@@ -382,13 +342,15 @@ const AddStudySessionScreen = () => {
           isOnline,
           deviceId || '',
         );
+        savedTaskId = taskToEdit.id!;
       } else {
         // Create new study session
-        await api.mutations.studySessions.create(
+        const session = await api.mutations.studySessions.create(
           taskData,
           isOnline,
           deviceId || '',
         );
+        savedTaskId = session.id;
 
         // Save as template if enabled (only for new tasks)
         if (saveAsTemplate && canSaveAsTemplate(taskData, 'study_session')) {
@@ -401,6 +363,21 @@ const AddStudySessionScreen = () => {
           } catch (templateError) {
             console.error('Error saving template:', templateError);
           }
+        }
+      }
+
+      // Schedule local notifications (at session time + any advance reminders)
+      if (sessionDate) {
+        try {
+          await notificationService.scheduleTaskReminders({
+            taskId: savedTaskId,
+            title: topic.trim(),
+            taskDate: sessionDate,
+            reminderOffsets: reminders,
+            type: 'study_session',
+          });
+        } catch (notifError) {
+          console.warn('Failed to schedule notifications:', notifError);
         }
       }
 
@@ -482,7 +459,7 @@ const AddStudySessionScreen = () => {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: insets.bottom + 100 },
+          { paddingBottom: insets.bottom + 350 },
         ]}>
         {/* Required Fields Section */}
         <View style={styles.section}>
@@ -493,47 +470,6 @@ const AddStudySessionScreen = () => {
             ]}>
             Required Information
           </Text>
-
-          {/* Course Selector */}
-          <View style={styles.field}>
-            <Text
-              style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
-              Course
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.selectButton,
-                {
-                  backgroundColor: isDark ? '#1C252E' : '#FFFFFF',
-                  borderColor: isDark ? '#3B4754' : 'transparent',
-                },
-              ]}
-              onPress={() => setShowCourseModal(true)}
-              disabled={isLoadingCourses}>
-              <Text
-                style={[
-                  styles.selectButtonText,
-                  {
-                    color: !selectedCourse
-                      ? isDark
-                        ? '#9CA3AF'
-                        : '#9CA3AF'
-                      : isDark
-                        ? '#FFFFFF'
-                        : '#111418',
-                  },
-                ]}>
-                {isLoadingCourses
-                  ? 'Loading courses...'
-                  : selectedCourse?.courseName || 'Select Course'}
-              </Text>
-              <Ionicons
-                name="chevron-down"
-                size={24}
-                color={isDark ? '#FFFFFF' : '#111418'}
-              />
-            </TouchableOpacity>
-          </View>
 
           {/* Topic Input */}
           <View style={styles.field}>
@@ -626,19 +562,132 @@ const AddStudySessionScreen = () => {
           </View>
 
           {/* Spaced Repetition */}
-          <View style={styles.field}>
+          <View
+            style={[styles.field, recurringReminder ? { opacity: 0.4 } : null]}
+            pointerEvents={recurringReminder ? 'none' : 'auto'}>
             <TemplateCard
               title="Spaced Repetition"
               description="Get reminders to review at optimal intervals"
               value={hasSpacedRepetition}
               onValueChange={value => {
                 setHasSpacedRepetition(value);
+                if (value) {
+                  setRecurringReminder(null);
+                  setRecurringEndDate(null);
+                  setHasPickedEndDate(false);
+                }
               }}
               icon="repeat-outline"
               iconColor={COLORS.primary}
               iconBgColor="#E5E7EB"
             />
           </View>
+
+          {/* Recurring Reminder */}
+          <View
+            style={[
+              styles.field,
+              hasSpacedRepetition ? { opacity: 0.4 } : null,
+            ]}
+            pointerEvents={hasSpacedRepetition ? 'none' : 'auto'}>
+            <Text
+              style={[styles.label, { color: isDark ? '#FFFFFF' : '#374151' }]}>
+              Recurring Reminder
+            </Text>
+            <View style={styles.recurringPillsRow}>
+              {RECURRING_OPTIONS.map(opt => (
+                <TouchableOpacity
+                  key={opt.value}
+                  style={[
+                    styles.recurringPill,
+                    {
+                      borderColor:
+                        recurringReminder === opt.value
+                          ? COLORS.primary
+                          : isDark
+                            ? '#374151'
+                            : '#E5E7EB',
+                      backgroundColor:
+                        recurringReminder === opt.value
+                          ? COLORS.primary + '15'
+                          : isDark
+                            ? '#1C252E'
+                            : '#F9FAFB',
+                    },
+                  ]}
+                  onPress={() => {
+                    if (recurringReminder === opt.value) {
+                      setRecurringReminder(null);
+                      setRecurringEndDate(null);
+                      setHasPickedEndDate(false);
+                    } else {
+                      setRecurringReminder(opt.value);
+                    }
+                  }}
+                  activeOpacity={0.7}>
+                  <Text
+                    style={[
+                      styles.recurringPillText,
+                      {
+                        color:
+                          recurringReminder === opt.value
+                            ? COLORS.primary
+                            : isDark
+                              ? '#9CA3AF'
+                              : '#6B7280',
+                        fontWeight:
+                          recurringReminder === opt.value ? '600' : '500',
+                      },
+                    ]}>
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            {recurringReminder && (
+              <TouchableOpacity
+                style={[
+                  styles.endDateButton,
+                  {
+                    borderColor: COLORS.primary + '40',
+                    backgroundColor: COLORS.primary + '0D',
+                  },
+                ]}
+                onPress={() => setShowEndDatePicker(true)}
+                activeOpacity={0.7}>
+                <Ionicons
+                  name="calendar-outline"
+                  size={16}
+                  color={COLORS.primary}
+                />
+                <Text
+                  style={[styles.endDateButtonText, { color: COLORS.primary }]}>
+                  {hasPickedEndDate && recurringEndDate
+                    ? `Ends ${format(recurringEndDate, 'MMM dd, yyyy')}`
+                    : 'Set end date'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {showEndDatePicker && (
+            <DateTimePicker
+              value={recurringEndDate || new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={new Date()}
+              onChange={(event, date) => {
+                if (Platform.OS === 'android') setShowEndDatePicker(false);
+                if (event.type === 'set' && date) {
+                  setRecurringEndDate(date);
+                  setHasPickedEndDate(true);
+                  if (Platform.OS === 'ios') setShowEndDatePicker(false);
+                } else if (event.type === 'dismissed') {
+                  setShowEndDatePicker(false);
+                }
+              }}
+            />
+          )}
 
           {/* Reminders */}
           <View style={styles.field}>
@@ -837,59 +886,6 @@ const AddStudySessionScreen = () => {
         </TouchableOpacity>
       </Modal>
 
-      {/* Course Selection Modal */}
-      <Modal
-        visible={showCourseModal}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCourseModal(false)}>
-        <TouchableOpacity
-          style={styles.courseModalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCourseModal(false)}>
-          <View style={styles.courseModalContent}>
-            <Text style={styles.courseModalTitle}>Select Course</Text>
-            <ScrollView style={styles.coursesList}>
-              {courses.length === 0 ? (
-                <View style={styles.noCourses}>
-                  <Text style={styles.noCoursesText}>No courses yet</Text>
-                  <Button
-                    title="Add a Course"
-                    onPress={() => {
-                      setShowCourseModal(false);
-                      navigation.navigate('AddCourseFlow');
-                    }}
-                  />
-                </View>
-              ) : (
-                courses.map(course => (
-                  <TouchableOpacity
-                    key={course.id}
-                    style={[
-                      styles.courseOption,
-                      selectedCourse?.id === course.id &&
-                        styles.courseOptionSelected,
-                    ]}
-                    onPress={() => {
-                      setSelectedCourse(course);
-                      setShowCourseModal(false);
-                    }}>
-                    <Text style={styles.courseOptionName}>
-                      {course.courseName}
-                    </Text>
-                    {course.courseCode && (
-                      <Text style={styles.courseOptionCode}>
-                        {course.courseCode}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-
       {/* Template Browser Modal */}
       <TemplateBrowserModal
         visible={isTemplateBrowserOpen}
@@ -966,25 +962,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'baseline',
     marginBottom: SPACING.sm,
-  },
-  selectButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 56,
-    paddingHorizontal: SPACING.md,
-    borderRadius: 12,
-    borderWidth: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  selectButtonText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.normal,
-    flex: 1,
   },
   characterCount: {
     fontSize: FONT_SIZES.xs,
@@ -1167,63 +1144,6 @@ const styles = StyleSheet.create({
     color: COLORS.gray,
     marginTop: 4,
   },
-  courseModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  courseModalContent: {
-    backgroundColor: COLORS.background,
-    borderRadius: 16,
-    margin: SPACING.xl,
-    maxHeight: '70%',
-    width: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  courseModalTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold as any,
-    color: COLORS.text,
-    padding: SPACING.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  coursesList: {
-    maxHeight: 400,
-  },
-  courseOption: {
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  courseOptionSelected: {
-    backgroundColor: '#F0F5FF',
-  },
-  courseOptionName: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.medium as any,
-    color: COLORS.text,
-  },
-  courseOptionCode: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.gray,
-    marginTop: SPACING.xs,
-  },
-  noCourses: {
-    padding: SPACING.xl,
-    alignItems: 'center',
-  },
-  noCoursesText: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.gray,
-    marginBottom: SPACING.md,
-    textAlign: 'center',
-  },
   myTemplatesButton: {
     backgroundColor: '#007AFF',
     paddingHorizontal: 20,
@@ -1249,6 +1169,36 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginLeft: SPACING.sm,
     flex: 1,
+  },
+  recurringPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+  recurringPill: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  recurringPillText: {
+    fontSize: FONT_SIZES.sm,
+  },
+  endDateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    borderRadius: 10,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  endDateButtonText: {
+    fontSize: FONT_SIZES.sm,
+    fontWeight: FONT_WEIGHTS.medium,
   },
 });
 
